@@ -1,0 +1,10 @@
+{
+	"authors": [
+		"Alexandros F. G. Kapretsos"
+	],
+	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
+	"description": "A lightweight and beginner-friendly 2D game engine for the D programming language.",
+	"license": "MIT",
+	"name": "popka",
+	"sourcePaths": ["."]
+}

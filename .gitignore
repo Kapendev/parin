@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/popka
+popka.so
+popka.dylib
+popka.dll
+popka.a
+popka.lib
+popka-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
