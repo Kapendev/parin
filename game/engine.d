@@ -7,10 +7,12 @@ module popka.game.engine;
 /// designed to provide essential tools and functionalities for developing games with ease and efficiency.
 
 import ray = popka.vendor.ray.raylib;
+import raygl = popka.vendor.ray.rlgl;
 import popka.core.basic;
 
 bool popkaState;
-Color popkaBackgroundColor = gray;
+enum popkaDefaultBackgroundColor = Color(0x2A, 0x36, 0x3A);
+Color popkaBackgroundColor = popkaDefaultBackgroundColor;
 
 View popkaView;
 float popkaViewWidth = 320.0f;
@@ -65,6 +67,7 @@ struct Sprite {
 
 struct Font {
     ray.Font data;
+    Vec2 spacing;
 
     this(const(char)[] path, uint size) {
         load(path, size);
@@ -478,7 +481,7 @@ void randomize() {
     randomize(randi);
 }
 
-void openWindow(float width, float height, const(char)[] title = "Popka", Color backgroundColor = gray) {
+void openWindow(float width, float height, const(char)[] title = "Popka", Color backgroundColor = popkaDefaultBackgroundColor) {
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) width, cast(int) height, toStrz(title));
@@ -684,14 +687,20 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
+Font rayFont() {
+    return toPopka(ray.GetFontDefault());
+}
+
 void drawRect(Rect rect, Color color = white) {
     ray.DrawRectanglePro(rect.floor.toRay(), ray.Vector2(0.0f, 0.0f), 0.0f, color.toRay());
 }
 
-void drawSprite(Sprite sprite, Rect region, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Flip flip = Flip.none, Hook hook = Hook.topLeft) {
-    if (sprite.isEmpty) return;
-    Rect target = Rect(position, region.size * scale);
-    Rect source = region;
+void drawSprite(Sprite sprite, Rect region, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft, Flip flip = Flip.none) {
+    if (sprite.isEmpty) {
+        return;
+    }
+    auto target = Rect(position, region.size * scale);
+    auto source = region;
     if (region.size.x <= 0.0f || region.size.y <= 0.0f) {
         target = Rect(position, sprite.size * scale);
         source = Rect(sprite.size);
@@ -715,7 +724,7 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position = Vec2(), float rotati
     );
 }
 
-void drawTile(Sprite sprite, uint tileID, Vec2 cellSize, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Flip flip = Flip.none, Hook hook = Hook.topLeft) {
+void drawTile(Sprite sprite, uint tileID, Vec2 cellSize, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft, Flip flip = Flip.none) {
     uint gridWidth = cast(uint) (sprite.width / cellSize.x).floor();
     uint gridHeight = cast(uint) (sprite.height / cellSize.y).floor();
     drawSprite(
@@ -725,12 +734,12 @@ void drawTile(Sprite sprite, uint tileID, Vec2 cellSize, Vec2 position = Vec2(),
         rotation,
         scale,
         color,
-        flip,
         hook,
+        flip,
     );
 }
 
-void drawTileMap(Sprite sprite, TileMap map, Camera camera = Camera(), Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Flip flip = Flip.none, Hook hook = Hook.topLeft) {
+void drawTileMap(Sprite sprite, TileMap map, Camera camera, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft, Flip flip = Flip.none) {
     size_t col1, col2, row1, row2;
     if (camera.isAttached) {
         col1 = cast(size_t) clamp((camera.point(Hook.topLeft).x - position.x) / map.cellWidth - 4.0f, 0, map.colCount).floor();
@@ -756,83 +765,70 @@ void drawTileMap(Sprite sprite, TileMap map, Camera camera = Camera(), Vec2 posi
                 rotation,
                 scale,
                 color,
-                flip,
                 hook,
+                flip,
             );
         }
     }
 }
 
-Font raylibFont() {
-    return toPopka(ray.GetFontDefault());
+void drawRune(Font font, dchar rune, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft) {
+    auto origin = toPopka(ray.GetGlyphAtlasRec(toRay(font), rune)).origin(hook);
+    raygl.rlPushMatrix();
+    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    raygl.rlRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    raygl.rlScalef (scale.x, scale.y, 1.0f);
+    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    ray.DrawTextCodepoint(toRay(font), rune, ray.Vector2(0.0f, 0.0f), font.size, toRay(color));
+    raygl.rlPopMatrix();
 }
 
-// -----------------
+/* TODO: Just copy pasted the raylib one. Fix it later.
+void drawText(Font font, const(char)[] text, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft) {
+    raygl.rlPushMatrix();
+    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    raygl.rlRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    raygl.rlScalef (scale.x, scale.y, 1.0f);
+    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
 
-// TODO: Text drawing and measuring need rethinking. Do it later...
+    if (font.texture.id == 0) font = GetFontDefault();  // Security check in case of not valid font
 
-// NOTE: drawing sprites, text, tiles.
-// NOTE: drawign text will be the raylib func copy-pasted but will take popka font. This will also let us remove the global spacing.
-// NOTE: Maybe we can measure the text without using the raylib function???
-Vec2 measureText(const(char)[] text, Font font, float size, Vec2 spacing) {
-    static char[1024] buf = void;
+    int size = TextLength(text);    // Total size in bytes of the text, scanned by codepoints in loop
 
-    const(char)[] strz;
-    if (text.isStrz) {
-        strz = text;
-    } else {
-        buf[0 .. text.length] = text;
-        buf[text.length] = '\0';
-        strz = buf[0 .. text.length];
-    }
+    int textOffsetY = 0;            // Offset between lines (on linebreak '\n')
+    float textOffsetX = 0.0f;       // Offset X to next character to draw
 
-    bool hasNewLineChar;
-    foreach (c; strz) {
-        if (c == '\n') {
-            hasNewLineChar = true;
-            break;
+    float scaleFactor = fontSize/font.baseSize;         // Character quad scaling factor
+
+    for (int i = 0; i < size;)
+    {
+        // Get next codepoint from byte string and glyph index in font
+        int codepointByteCount = 0;
+        int codepoint = GetCodepointNext(&text[i], &codepointByteCount);
+        int index = GetGlyphIndex(font, codepoint);
+
+        if (codepoint == '\n')
+        {
+            // NOTE: Line spacing is a global variable, use SetTextLineSpacing() to setup
+            textOffsetY += textLineSpacing;
+            textOffsetX = 0.0f;
         }
+        else
+        {
+            if ((codepoint != ' ') && (codepoint != '\t'))
+            {
+                DrawTextCodepoint(font, codepoint, (Vector2){ position.x + textOffsetX, position.y + textOffsetY }, fontSize, tint);
+            }
+
+            if (font.glyphs[index].advanceX == 0) textOffsetX += ((float)font.recs[index].width*scaleFactor + spacing);
+            else textOffsetX += ((float)font.glyphs[index].advanceX*scaleFactor + spacing);
+        }
+
+        i += codepointByteCount;   // Move text bytes counter to next codepoint
     }
 
-    ray.SetTextLineSpacing(cast(int) spacing.y);
-    Vec2 trueSize = ray.MeasureTextEx(font.data, &strz[0], size, spacing.x).toPopka();
-    return Vec2(trueSize.x, trueSize.y - (hasNewLineChar ? spacing.y : 0.0f));
+    raygl.rlPopMatrix();
 }
-
-Vec2 measureText(const(char)[] text) {
-    return measureText(text, raylibFont, 10.0f, Vec2(1.0f, 12.0f));
-}
-
-// TODO: Needs thinking of how text drawing works.
-void drawText(const(char)[] text, Font font, float size, Vec2 spacing, Vec2 positionition, Vec2 origin, float rotation, Color color) {
-    static char[1024] buf = void;
-
-    const(char)[] strz;
-    if (text.isStrz) {
-        strz = text;
-    } else {
-        buf[0 .. text.length] = text;
-        buf[text.length] = '\0';
-        strz = buf[0 .. text.length];
-    }
-
-    ray.SetTextLineSpacing(cast(int) spacing.y);
-    ray.DrawTextPro(font.data, &strz[0], positionition.toRay(), origin.toRay(), rotation, size, spacing.x, color.toRay());
-}
-
-// TODO: Needs thinking of how drawing works.
-void drawText(const(char)[] text, Vec2 positionition, Color color) {
-    drawText(text, raylibFont, 10.0f, Vec2(1.0f, 12.0f), positionition, Vec2(), 0.0f, color);
-}
-
-// TODO: Needs thinking of how drawing works.
-void drawText(const(char)[] text) {
-    drawText(text, Vec2(8.0f), white);
-}
-
-// TODO: Needs thinking of how drawing works.
-void drawFPS(float x, float y) {
-    drawText("FPS: {}".fmt(fps));
-}
+*/
 
 unittest {}

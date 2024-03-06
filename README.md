@@ -20,8 +20,14 @@ void main() {
 
 ## Dependencies
 
-Popka requires the raylib library to be installed for full functionality.
-Please install raylib following the official instructions before using this game engine.
+To use Popka, you'll need the raylib library (version 5.0) installed on your system.
+Installing raylib is easy, and the official instructions will guide you through the process.
+
+## Documentation
+
+This project uses the source code as its primary documentation.
+For an initial understanding, the engine.d file inside the game folder can be a good starting point.
+This file provides an overview of the system and can help you navigate the codebase.
 
 ## License
 

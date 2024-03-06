@@ -8,6 +8,8 @@ module popka.game.dialogue;
 
 import popka.core.basic;
 
+// TODO: This module needs a lot of work and testing.
+
 struct DialogueUnit {
     alias Kind = char;
     enum : Kind {
