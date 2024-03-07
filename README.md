@@ -8,9 +8,10 @@ The game engine is currently under development and is not yet ready for use.
 import popka.basic;
 
 void main() {
-    openWindow(800, 600);
+    openWindow(640, 480);
     while (isWindowOpen) {
-        if (Keyboard.q.isPressed) {
+        drawDebugText("Hello world!");
+        if (Keyboard.esc.isPressed) {
             closeWindow();
         }
     }

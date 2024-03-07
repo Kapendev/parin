@@ -10,20 +10,25 @@ import ray = popka.vendor.ray.raylib;
 import raygl = popka.vendor.ray.rlgl;
 import popka.core.basic;
 
+enum {
+    popkaDefaultFPS = 60,
+    popkaDefaultBackgroundColor = Color(0x2A, 0x36, 0x3A),
+    popkaFullscreenWaitTime = 0.125f,
+    rayFontSpacing = Vec2(1.0f, 14.0f),
+}
+
 bool popkaState;
-enum popkaDefaultBackgroundColor = Color(0x2A, 0x36, 0x3A);
-Color popkaBackgroundColor = popkaDefaultBackgroundColor;
+Color popkaBackgroundColor;
 
 View popkaView;
-float popkaViewWidth = 320.0f;
-float popkaViewHeight = 180.0f;
+float popkaViewWidth = 32.0f;
+float popkaViewHeight = 32.0f;
 bool popkaViewLockFlag;
 bool popkaViewUnlockFlag;
 
-bool popkaFullscreenFlag;
 Vec2 popkaFullscreenLastWindowSize;
 float popkaFullscreenTime = 0.0f;
-enum popkaFullscreenWaitTime = 0.175f;
+bool popkaFullscreenFlag;
 
 struct Sprite {
     ray.Texture2D data;
@@ -67,7 +72,6 @@ struct Sprite {
 
 struct Font {
     ray.Font data;
-    Vec2 spacing;
 
     this(const(char)[] path, uint size) {
         load(path, size);
@@ -222,7 +226,7 @@ struct Camera {
     void attach() {
         if (!isAttached) {
             isAttached = true;
-            auto temp = this.toRay();
+            auto temp = toRay(this);
             temp.target.x = floor(temp.target.x);
             temp.target.y = floor(temp.target.y);
             temp.offset.x = floor(temp.offset.x);
@@ -284,6 +288,16 @@ enum Keyboard {
     n7 = ray.KEY_SEVEN,
     n8 = ray.KEY_EIGHT,
     n9 = ray.KEY_NINE,
+    n00 = ray.KEY_KP_0,
+    n11 = ray.KEY_KP_1,
+    n22 = ray.KEY_KP_2,
+    n33 = ray.KEY_KP_3,
+    n44 = ray.KEY_KP_4,
+    n55 = ray.KEY_KP_5,
+    n66 = ray.KEY_KP_6,
+    n77 = ray.KEY_KP_7,
+    n88 = ray.KEY_KP_8,
+    n99 = ray.KEY_KP_9,
     f1 = ray.KEY_F1,
     f2 = ray.KEY_F2,
     f3 = ray.KEY_F3,
@@ -337,8 +351,6 @@ enum Gamepad {
     center = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
-// # Converters
-
 Color toPopka(ray.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
@@ -379,7 +391,7 @@ View toPopka(ray.RenderTexture2D from) {
 
 Camera toPopka(ray.Camera2D from) {
     Camera result;
-    result.position = from.target.toPopka();
+    result.position = toPopka(from.target);
     result.rotation = from.rotation;
     result.scale = from.zoom;
     return result;
@@ -418,51 +430,7 @@ ray.RenderTexture2D toRay(View from) {
 }
 
 ray.Camera2D toRay(Camera from) {
-    return ray.Camera2D(from.origin.toRay(), from.position.toRay(), from.rotation, from.scale);
-}
-
-void gprintf(size_t line = __LINE__, A...)(const(char)[] str, A args) {
-    static auto timer = 0.0f;
-    enum waitTime = 0.5f;
-
-    timer += deltaTime;
-    if (timer > waitTime) {
-        timer -= waitTime;
-        printf(str, args);
-    }
-}
-
-void gprintfln(size_t line = __LINE__, A...)(const(char)[] str, A args) {
-    static auto timer = 0.0f;
-    enum waitTime = 0.5f;
-
-    timer += deltaTime;
-    if (timer > waitTime) {
-        timer -= waitTime;
-        printfln(str, args);
-    }
-}
-
-void gprint(size_t line = __LINE__, A...)(A args) {
-    static auto timer = 0.0f;
-    enum waitTime = 0.5f;
-
-    timer += deltaTime;
-    if (timer > waitTime) {
-        timer -= waitTime;
-        print(args);
-    }
-}
-
-void gprintln(size_t line = __LINE__, A...)(A args) {
-    static auto timer = 0.0f;
-    enum waitTime = 0.5f;
-
-    timer += deltaTime;
-    if (timer > waitTime) {
-        timer -= waitTime;
-        println(args);
-    }
+    return ray.Camera2D(toRay(from.origin), toRay(from.position), from.rotation, from.scale);
 }
 
 int randi() {
@@ -481,16 +449,16 @@ void randomize() {
     randomize(randi);
 }
 
-void openWindow(float width, float height, const(char)[] title = "Popka", Color backgroundColor = popkaDefaultBackgroundColor) {
+void openWindow(float width, float height, const(char)[] title = "Popka", Color color = popkaDefaultBackgroundColor) {
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) width, cast(int) height, toStrz(title));
-    ray.SetWindowMinSize(cast(int) (width * 0.2f), cast(int) (height * 0.2f));
+    ray.SetWindowMinSize(cast(int) (width * 0.25f), cast(int) (height * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);
-    ray.SetTargetFPS(60);
+    ray.SetTargetFPS(popkaDefaultFPS);
     popkaState = true;
+    popkaBackgroundColor = color;
     popkaFullscreenLastWindowSize = Vec2(width, height);
-    popkaBackgroundColor = backgroundColor;
 }
 
 void closeWindow() {
@@ -498,6 +466,7 @@ void closeWindow() {
 }
 
 void freeWindow() {
+    popkaView.free();
     ray.CloseWindow();
 }
 
@@ -513,7 +482,7 @@ bool isWindowOpen() {
             } else {
                 ray.BeginDrawing();
             }
-            ray.ClearBackground(popkaBackgroundColor.toRay());
+            ray.ClearBackground(toRay(popkaBackgroundColor));
             isFirstCall = false;
         } else {
             // End drawing.
@@ -559,7 +528,7 @@ bool isWindowOpen() {
             } else {
                 ray.BeginDrawing();
             }
-            ray.ClearBackground(popkaBackgroundColor.toRay());
+            ray.ClearBackground(toRay(popkaBackgroundColor));
             // Fullscreen code to fix a bug on KDE.
             if (popkaFullscreenFlag) {
                 popkaFullscreenTime += deltaTime;
@@ -692,7 +661,7 @@ Font rayFont() {
 }
 
 void drawRect(Rect rect, Color color = white) {
-    ray.DrawRectanglePro(rect.floor.toRay(), ray.Vector2(0.0f, 0.0f), 0.0f, color.toRay());
+    ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
 }
 
 void drawSprite(Sprite sprite, Rect region, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft, Flip flip = Flip.none) {
@@ -716,11 +685,11 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position = Vec2(), float rotati
     }
     ray.DrawTexturePro(
         sprite.data,
-        source.floor().toRay(),
-        target.floor().toRay(),
-        target.origin(hook).floor().toRay(),
+        toRay(source.floor()),
+        toRay(target.floor()),
+        toRay(target.origin(hook).floor()),
         rotation,
-        color.toRay(),
+        toRay(color),
     );
 }
 
@@ -772,63 +741,106 @@ void drawTileMap(Sprite sprite, TileMap map, Camera camera, Vec2 position = Vec2
     }
 }
 
-void drawRune(Font font, dchar rune, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft) {
-    auto origin = toPopka(ray.GetGlyphAtlasRec(toRay(font), rune)).origin(hook);
-    raygl.rlPushMatrix();
-    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
-    raygl.rlRotatef(rotation, 0.0f, 0.0f, 1.0f);
-    raygl.rlScalef (scale.x, scale.y, 1.0f);
-    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
-    ray.DrawTextCodepoint(toRay(font), rune, ray.Vector2(0.0f, 0.0f), font.size, toRay(color));
-    raygl.rlPopMatrix();
-}
-
-/* TODO: Just copy pasted the raylib one. Fix it later.
-void drawText(Font font, const(char)[] text, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft) {
-    raygl.rlPushMatrix();
-    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
-    raygl.rlRotatef(rotation, 0.0f, 0.0f, 1.0f);
-    raygl.rlScalef (scale.x, scale.y, 1.0f);
-    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
-
-    if (font.texture.id == 0) font = GetFontDefault();  // Security check in case of not valid font
-
-    int size = TextLength(text);    // Total size in bytes of the text, scanned by codepoints in loop
-
-    int textOffsetY = 0;            // Offset between lines (on linebreak '\n')
-    float textOffsetX = 0.0f;       // Offset X to next character to draw
-
-    float scaleFactor = fontSize/font.baseSize;         // Character quad scaling factor
-
-    for (int i = 0; i < size;)
-    {
-        // Get next codepoint from byte string and glyph index in font
-        int codepointByteCount = 0;
-        int codepoint = GetCodepointNext(&text[i], &codepointByteCount);
-        int index = GetGlyphIndex(font, codepoint);
-
-        if (codepoint == '\n')
-        {
-            // NOTE: Line spacing is a global variable, use SetTextLineSpacing() to setup
-            textOffsetY += textLineSpacing;
-            textOffsetX = 0.0f;
-        }
-        else
-        {
-            if ((codepoint != ' ') && (codepoint != '\t'))
-            {
-                DrawTextCodepoint(font, codepoint, (Vector2){ position.x + textOffsetX, position.y + textOffsetY }, fontSize, tint);
-            }
-
-            if (font.glyphs[index].advanceX == 0) textOffsetX += ((float)font.recs[index].width*scaleFactor + spacing);
-            else textOffsetX += ((float)font.glyphs[index].advanceX*scaleFactor + spacing);
-        }
-
-        i += codepointByteCount;   // Move text bytes counter to next codepoint
+Vec2 measureText(Font font, Vec2 spacing, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
+    if (font.isEmpty || text.length == 0) {
+        return Vec2();
     }
+    auto result = Vec2();
+    auto tempByteCounter = 0; // Used to count longer text line num chars.
+    auto byteCounter = 0;
+    auto textWidth = 0.0f;
+    auto tempTextWidth = 0.0f; // Used to count longer text line width.
+    auto textHeight = font.size;
 
+    int letter = 0; // Current character.
+    int index = 0; // Index position in sprite font.
+    auto i = 0;
+    while (i < text.length) {
+        byteCounter += 1;
+
+        auto next = 0;
+        letter = ray.GetCodepointNext(&text[i], &next);
+        index = ray.GetGlyphIndex(font.data, letter);
+        i += next;
+        if (letter != '\n') {
+            if (font.data.glyphs[index].advanceX != 0) {
+                textWidth += font.data.glyphs[index].advanceX;
+            } else {
+                textWidth += font.data.recs[index].width + font.data.glyphs[index].offsetX;
+            }
+        } else {
+            if (tempTextWidth < textWidth) {
+                tempTextWidth = textWidth;
+            }
+            byteCounter = 0;
+            textWidth = 0;
+            textHeight += spacing.y;
+        }
+        if (tempByteCounter < byteCounter) {
+            tempByteCounter = byteCounter;
+        }
+    }
+    if (tempTextWidth < textWidth) {
+        tempTextWidth = textWidth;
+    }
+    result.x = floor(tempTextWidth * scale.x + ((tempByteCounter - 1) * spacing.x * scale.x));
+    result.y = floor(textHeight * scale.y);
+    return result;
+}
+
+void drawRune(Font font, dchar rune, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft) {
+    if (font.isEmpty) {
+        return;
+    }
+    auto origin = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).origin(hook).floor();
+    raygl.rlPushMatrix();
+    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    raygl.rlRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    raygl.rlScalef (scale.x, scale.y, 1.0f);
+    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    ray.DrawTextCodepoint(font.data, rune, ray.Vector2(0.0f, 0.0f), font.size, toRay(color));
     raygl.rlPopMatrix();
 }
-*/
+
+void drawText(Font font, Vec2 spacing, const(char)[] text, Vec2 position = Vec2(), float rotation = 0.0f, Vec2 scale = Vec2(1.0f), Color color = white, Hook hook = Hook.topLeft) {
+    if (font.isEmpty || text.length == 0) {
+        return;
+    }
+    auto origin = Rect(measureText(font, spacing, text, Vec2(1.0f))).origin(hook);
+    raygl.rlPushMatrix();
+    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    raygl.rlRotatef(rotation, 0.0f, 0.0f, 1.0f);
+    raygl.rlScalef (scale.x, scale.y, 1.0f);
+    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    auto textOffsetY = 0.0f; // Offset between lines (on linebreak '\n').
+    auto textOffsetX = 0.0f; // Offset X to next character to draw.
+    auto i = 0;
+    while (i < text.length) {
+        // Get next codepoint from byte string and glyph index in font.
+        auto codepointByteCount = 0;
+        auto codepoint = ray.GetCodepointNext(&text[i], &codepointByteCount);
+        auto index = ray.GetGlyphIndex(font.data, codepoint);
+        if (codepoint == '\n') {
+            textOffsetY += spacing.y;
+            textOffsetX = 0.0f;
+        } else {
+            if (codepoint != ' ' && codepoint != '\t') {
+                drawRune(font, codepoint, Vec2(textOffsetX, textOffsetY), 0.0f, Vec2(1.0f), color);
+            }
+            if (font.data.glyphs[index].advanceX == 0) {
+                textOffsetX += font.data.recs[index].width + spacing.x;
+            } else {
+                textOffsetX += font.data.glyphs[index].advanceX + spacing.x;
+            }
+        }
+        // Move text bytes counter to next codepoint.
+        i += codepointByteCount;
+    }
+    raygl.rlPopMatrix();
+}
+
+void drawDebugText(const(char)[] text, Vec2 position = Vec2(8.0f), float rotation = 0.0f, Vec2 scale = Vec2(2.0f), Color color = gray, Hook hook = Hook.topLeft) {
+    drawText(rayFont, rayFontSpacing, text, position, rotation, scale, color, hook);
+}
 
 unittest {}
