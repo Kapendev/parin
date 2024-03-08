@@ -18,7 +18,7 @@ List!char readText(const(char)[] path) {
     if (io.fseek(f, 0, io.SEEK_END) != 0) {
         io.fclose(f);
         return List!char();
-    };
+    }
 
     auto fsize = io.ftell(f);
     if (fsize == -1) {

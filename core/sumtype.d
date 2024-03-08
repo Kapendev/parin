@@ -34,7 +34,7 @@ struct SumType(A...) {
 
     Data data;
     Kind kind;
-    alias this = data;
+    alias data this;
 
     static foreach (i, T; A) {
         this(T data) {
@@ -76,7 +76,7 @@ bool hasCommonBase(T)() {
 
 mixin template AddBase(T) {
     T base;
-    alias this = base;
+    alias data this;
 }
 
 unittest {}

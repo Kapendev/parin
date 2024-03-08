@@ -160,7 +160,7 @@ struct View {
 
 struct TileMap {
     Grid!short data;
-    alias this = data;
+    alias data this;
 
     Vec2 cellSize() {
         return Vec2(cellWidth, cellHeight);

@@ -32,7 +32,7 @@ This guide outlines the steps to install Popka using Git and the Dub package man
 
 1. **Clone the Popka repository:**
 
-    Open a terminal and navigate to your source code directory.
+    Open a terminal and navigate to your source code folder.
     Then, execute the following command to clone the Popka repository:
 
     ```bash
@@ -41,12 +41,14 @@ This guide outlines the steps to install Popka using Git and the Dub package man
 
 2. **Install raylib using Dub:**
 
-    Navigate to the directory containing your dub.json file (usually the root directory of your project).
+    Navigate to the folder containing your dub.json file (usually the root folder of your project).
     Run the following command to install raylib using Dub:
 
     ```bash
-    dub add raylib-d && dub run raylib-d:install
+    dub add raylib-d && dub run raylib-d:install && dub remove raylib-d
     ```
+
+    After installation, remove the raylib-d dependency from your dub.json file.
 
 3. **Compile example:**
 

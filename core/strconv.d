@@ -136,20 +136,15 @@ const(char)[] strzToStr(const(char)* value) {
 
     size_t strzLength = 0;
     while (value[strzLength] != '\0') {
+        result[strzLength] = value[strzLength];
         strzLength += 1;
     }
-    result[0 .. strzLength] = value[0 .. strzLength];
     result = result[0 .. strzLength];
     return result;
 }
 
 const(char)[] strToStr(const(char)[] value) {
-    static char[1024] buf = void;
-    auto result = buf[];
-
-    result[0 .. value.length] = value;
-    result = result[0 .. value.length];
-    return result;
+    return value;
 }
 
 const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
