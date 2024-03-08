@@ -45,7 +45,7 @@ This guide outlines the steps to install Popka using Git and the Dub package man
     Run the following command to install raylib using Dub:
 
     ```bash
-    dub run raylib-d:install
+    dub add raylib-d && dub run raylib-d:install
     ```
 
 3. **Compile example:**
