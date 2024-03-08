@@ -272,22 +272,22 @@ enum RL_BLEND_COLOR = 0x8005; // GL_BLEND_COLOR
 // Matrix, 4x4 components, column major, OpenGL style, right handed
 struct Matrix
 {
-    float m0;
-    float m4;
-    float m8;
-    float m12; // Matrix first row (4 components)
-    float m1;
-    float m5;
-    float m9;
-    float m13; // Matrix second row (4 components)
-    float m2;
-    float m6;
-    float m10;
-    float m14; // Matrix third row (4 components)
-    float m3;
-    float m7;
-    float m11;
-    float m15; // Matrix fourth row (4 components)
+    float m0 = 0.0f;
+    float m4 = 0.0f;
+    float m8 = 0.0f;
+    float m12 = 0.0f; // Matrix first row (4 components)
+    float m1 = 0.0f;
+    float m5 = 0.0f;
+    float m9 = 0.0f;
+    float m13 = 0.0f; // Matrix second row (4 components)
+    float m2 = 0.0f;
+    float m6 = 0.0f;
+    float m10 = 0.0f;
+    float m14 = 0.0f; // Matrix third row (4 components)
+    float m3 = 0.0f;
+    float m7 = 0.0f;
+    float m11 = 0.0f;
+    float m15 = 0.0f; // Matrix fourth row (4 components)
 }
 
 // Dynamic vertex buffers (position + texcoords + colors + indices arrays)
@@ -333,7 +333,7 @@ struct rlRenderBatch
 
     rlDrawCall* draws; // Draw calls array, depends on textureId
     int drawCounter; // Draw calls counter
-    float currentDepth; // Current depth value for next draw
+    float currentDepth = 0.0f; // Current depth value for next draw
 }
 
 // OpenGL version

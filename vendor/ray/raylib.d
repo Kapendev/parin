@@ -175,25 +175,25 @@ enum RAYWHITE =   Color( 245, 245, 245, 255 );   // My own White (raylib logo)
 // Vector2, 2 components
 struct Vector2
 {
-    float x; // Vector x component
-    float y; // Vector y component
+    float x = 0.0f; // Vector x component
+    float y = 0.0f; // Vector y component
 }
 
 // Vector3, 3 components
 struct Vector3
 {
-    float x; // Vector x component
-    float y; // Vector y component
-    float z; // Vector z component
+    float x = 0.0f; // Vector x component
+    float y = 0.0f; // Vector y component
+    float z = 0.0f; // Vector z component
 }
 
 // Vector4, 4 components
 struct Vector4
 {
-    float x; // Vector x component
-    float y; // Vector y component
-    float z; // Vector z component
-    float w; // Vector w component
+    float x = 0.0f; // Vector x component
+    float y = 0.0f; // Vector y component
+    float z = 0.0f; // Vector z component
+    float w = 0.0f; // Vector w component
 }
 
 // Quaternion, 4 components (Vector4 alias)
@@ -202,22 +202,22 @@ alias Quaternion = Vector4;
 // Matrix, 4x4 components, column major, OpenGL style, right-handed
 struct Matrix
 {
-    float m0;
-    float m4;
-    float m8;
-    float m12; // Matrix first row (4 components)
-    float m1;
-    float m5;
-    float m9;
-    float m13; // Matrix second row (4 components)
-    float m2;
-    float m6;
-    float m10;
-    float m14; // Matrix third row (4 components)
-    float m3;
-    float m7;
-    float m11;
-    float m15; // Matrix fourth row (4 components)
+    float m0 = 0.0f;
+    float m4 = 0.0f;
+    float m8 = 0.0f;
+    float m12 = 0.0f; // Matrix first row (4 components)
+    float m1 = 0.0f;
+    float m5 = 0.0f;
+    float m9 = 0.0f;
+    float m13 = 0.0f; // Matrix second row (4 components)
+    float m2 = 0.0f;
+    float m6 = 0.0f;
+    float m10 = 0.0f;
+    float m14 = 0.0f; // Matrix third row (4 components)
+    float m3 = 0.0f;
+    float m7 = 0.0f;
+    float m11 = 0.0f;
+    float m15 = 0.0f; // Matrix fourth row (4 components)
 }
 
 // Color, 4 components, R8G8B8A8 (32bit)
@@ -232,10 +232,10 @@ struct Color
 // Rectangle, 4 components
 struct Rectangle
 {
-    float x; // Rectangle top-left corner position x
-    float y; // Rectangle top-left corner position y
-    float width; // Rectangle width
-    float height; // Rectangle height
+    float x = 0.0f; // Rectangle top-left corner position x
+    float y = 0.0f; // Rectangle top-left corner position y
+    float width = 0.0f; // Rectangle width
+    float height = 0.0f; // Rectangle height
 }
 
 // Image, pixel data stored in CPU memory (RAM)
@@ -313,7 +313,7 @@ struct Camera3D
     Vector3 position; // Camera position
     Vector3 target; // Camera target it looks-at
     Vector3 up; // Camera up vector (rotation over its axis)
-    float fovy; // Camera field-of-view aperture in Y (degrees) in perspective, used as near plane width in orthographic
+    float fovy = 0.0f; // Camera field-of-view aperture in Y (degrees) in perspective, used as near plane width in orthographic
     int projection; // Camera projection: CAMERA_PERSPECTIVE or CAMERA_ORTHOGRAPHIC
 }
 
@@ -324,8 +324,8 @@ struct Camera2D
 {
     Vector2 offset; // Camera offset (displacement from target)
     Vector2 target; // Camera target (rotation and zoom origin)
-    float rotation; // Camera rotation in degrees
-    float zoom; // Camera zoom (scaling), should be 1.0f by default
+    float rotation = 0.0f; // Camera rotation in degrees
+    float zoom = 0.0f; // Camera zoom (scaling), should be 1.0f by default
 }
 
 // Mesh, vertex data and vao/vbo
@@ -366,7 +366,7 @@ struct MaterialMap
 {
     Texture2D texture; // Material map texture
     Color color; // Material map color
-    float value; // Material map value
+    float value = 0.0f; // Material map value
 }
 
 // Material, includes shader and maps
@@ -374,7 +374,7 @@ struct Material
 {
     Shader shader; // Material shader
     MaterialMap* maps; // Material maps array (MAX_MATERIAL_MAPS)
-    float[4] params; // Material generic parameters (if required)
+    float[4] params = [0.0f, 0.0f, 0.0f, 0.0f]; // Material generic parameters (if required)
 }
 
 // Transform, vertex transformation data
@@ -430,7 +430,7 @@ struct Ray
 struct RayCollision
 {
     bool hit; // Did the ray hit something?
-    float distance; // Distance to the nearest hit
+    float distance = 0.0f; // Distance to the nearest hit
     Vector3 point; // Point of the nearest hit
     Vector3 normal; // Surface normal of hit
 }
@@ -491,14 +491,14 @@ struct VrDeviceInfo
 {
     int hResolution; // Horizontal resolution in pixels
     int vResolution; // Vertical resolution in pixels
-    float hScreenSize; // Horizontal size in meters
-    float vScreenSize; // Vertical size in meters
-    float vScreenCenter; // Screen center in meters
-    float eyeToScreenDistance; // Distance between eye and display in meters
-    float lensSeparationDistance; // Lens separation distance in meters
-    float interpupillaryDistance; // IPD (distance between pupils) in meters
-    float[4] lensDistortionValues; // Lens distortion constant parameters
-    float[4] chromaAbCorrection; // Chromatic aberration correction parameters
+    float hScreenSize = 0.0f; // Horizontal size in meters
+    float vScreenSize = 0.0f; // Vertical size in meters
+    float vScreenCenter = 0.0f; // Screen center in meters
+    float eyeToScreenDistance = 0.0f; // Distance between eye and display in meters
+    float lensSeparationDistance = 0.0f; // Lens separation distance in meters
+    float interpupillaryDistance = 0.0f; // IPD (distance between pupils) in meters
+    float[4] lensDistortionValues = [0.0f, 0.0f, 0.0f, 0.0f]; // Lens distortion constant parameters
+    float[4] chromaAbCorrection = [0.0f, 0.0f, 0.0f, 0.0f]; // Chromatic aberration correction parameters
 }
 
 // VrStereoConfig, VR stereo rendering configuration for simulator
@@ -506,12 +506,12 @@ struct VrStereoConfig
 {
     Matrix[2] projection; // VR projection matrices (per eye)
     Matrix[2] viewOffset; // VR view offset matrices (per eye)
-    float[2] leftLensCenter; // VR left lens center
-    float[2] rightLensCenter; // VR right lens center
-    float[2] leftScreenCenter; // VR left screen center
-    float[2] rightScreenCenter; // VR right screen center
-    float[2] scale; // VR distortion scale
-    float[2] scaleIn; // VR distortion scale in
+    float[2] leftLensCenter = [0.0f, 0.0f]; // VR left lens center
+    float[2] rightLensCenter = [0.0f, 0.0f]; // VR right lens center
+    float[2] leftScreenCenter = [0.0f, 0.0f]; // VR left screen center
+    float[2] rightScreenCenter = [0.0f, 0.0f]; // VR right screen center
+    float[2] scale = [0.0f, 0.0f]; // VR distortion scale
+    float[2] scaleIn = [0.0f, 0.0f]; // VR distortion scale in
 }
 
 // File path list

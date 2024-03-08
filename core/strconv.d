@@ -266,7 +266,9 @@ const(char)* toStrz(const(char)[] str) {
     static char[1024] buf = void;
     auto result = buf[];
 
-    result[0 .. str.length] = str;
+    foreach (i, c; str) {
+        result[i] = c;
+    }
     result[str.length] = '\0';
     return result.ptr;
 }

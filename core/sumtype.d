@@ -6,8 +6,11 @@
 
 module popka.core.sumtype;
 
-struct None {};
+/// The none type.
+struct None {}
 
+/// A data structure that can hold one of several possible types.
+/// Note that generic types are not currently supported.
 struct SumType(A...) {
     template memberName(T) {
         mixin("enum memberName = \"" ~ ((T.stringof[0] >= 'A' && T.stringof[0] <= 'Z') ? cast(char) (T.stringof[0] + 32) : T.stringof[0]) ~ T.stringof[1 .. $] ~ "\";");
@@ -61,6 +64,14 @@ struct SumType(A...) {
 
 alias Optional(T) = SumType!(None, T);
 
+bool isNone(T)(T optional) {
+    return optional.kind == optional.noneKind;
+}
+
+bool isSome(T)(T optional) {
+    return optional.kind != optional.noneKind;
+}
+
 bool hasCommonBase(T)() {
     alias Base = typeof(T.init.data.tupleof[0]);
 
@@ -76,7 +87,14 @@ bool hasCommonBase(T)() {
 
 mixin template AddBase(T) {
     T base;
-    alias data this;
+    alias base this;
 }
 
-unittest {}
+unittest {
+    auto optional = Optional!int();
+    assert(optional.isNone);
+    optional = 69;
+    assert(optional.isSome);
+    optional = None();
+    assert(optional.isNone);
+}

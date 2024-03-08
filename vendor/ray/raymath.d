@@ -98,25 +98,25 @@ extern (D) auto Vector3ToFloat(T)(auto ref T vec)
 // Vector2 type
 struct Vector2
 {
-    float x;
-    float y;
+    float x = 0.0f;
+    float y = 0.0f;
 }
 
 // Vector3 type
 struct Vector3
 {
-    float x;
-    float y;
-    float z;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
 }
 
 // Vector4 type
 struct Vector4
 {
-    float x;
-    float y;
-    float z;
-    float w;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float w = 0.0f;
 }
 
 // Quaternion type
@@ -125,33 +125,33 @@ alias Quaternion = Vector4;
 // Matrix type (OpenGL style 4x4 - right handed, column major)
 struct Matrix
 {
-    float m0;
-    float m4;
-    float m8;
-    float m12; // Matrix first row (4 components)
-    float m1;
-    float m5;
-    float m9;
-    float m13; // Matrix second row (4 components)
-    float m2;
-    float m6;
-    float m10;
-    float m14; // Matrix third row (4 components)
-    float m3;
-    float m7;
-    float m11;
-    float m15; // Matrix fourth row (4 components)
+    float m0 = 0.0f;
+    float m4 = 0.0f;
+    float m8 = 0.0f;
+    float m12 = 0.0f; // Matrix first row (4 components)
+    float m1 = 0.0f;
+    float m5 = 0.0f;
+    float m9 = 0.0f;
+    float m13 = 0.0f; // Matrix second row (4 components)
+    float m2 = 0.0f;
+    float m6 = 0.0f;
+    float m10 = 0.0f;
+    float m14 = 0.0f; // Matrix third row (4 components)
+    float m3 = 0.0f;
+    float m7 = 0.0f;
+    float m11 = 0.0f;
+    float m15 = 0.0f; // Matrix fourth row (4 components)
 }
 
 // NOTE: Helper types to be used instead of array return types for *ToFloat functions
 struct float3
 {
-    float[3] v;
+    float[3] v = [0.0f, 0.0f, 0.0f];
 }
 
 struct float16
 {
-    float[16] v;
+    float[16] v = [0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f];
 }
 
 // Required for: sinf(), cosf(), tan(), atan2f(), sqrtf(), floor(), fminf(), fmaxf(), fabs()

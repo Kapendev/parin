@@ -566,7 +566,10 @@ bool isWindowOpen() {
                     popkaFullscreenFlag = false;
                     ray.ToggleFullscreen();
                     if (!isFullscreen) {
-                        windowSize(popkaFullscreenLastWindowSize);
+                        auto size = popkaFullscreenLastWindowSize;
+                        auto screen = screenSize;
+                        ray.SetWindowSize(cast(int) size.x, cast(int) size.y);
+                        ray.SetWindowPosition(cast(int) (screen.x * 0.5f - size.x * 0.5f), cast(int) (screen.y * 0.5f - size.y * 0.5f));
                     }
                 }
             }
@@ -612,17 +615,25 @@ void toggleFullscreen() {
         popkaFullscreenFlag = true;
         if (!isFullscreen) {
             popkaFullscreenLastWindowSize = windowSize;
-            windowSize(screenSize);
+            auto size = screenSize;
+            auto screen = screenSize;
+            ray.SetWindowSize(cast(int) size.x, cast(int) size.y);
+            ray.SetWindowPosition(cast(int) (screen.x * 0.5f - size.x * 0.5f), cast(int) (screen.y * 0.5f - size.y * 0.5f));
         }
     }
 }
 
-Vec2 screenSize(uint id) {
+Vec2 screenSize() {
+    auto id = ray.GetCurrentMonitor();
     return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
 }
 
-Vec2 screenSize() {
-    return screenSize(ray.GetCurrentMonitor());
+float screenWidth() {
+    return screenSize.x;
+}
+
+float screenHeight() {
+    return screenSize.y;
 }
 
 Vec2 windowSize() {
@@ -633,10 +644,12 @@ Vec2 windowSize() {
     }
 }
 
-void windowSize(Vec2 size) {
-    auto screen = screenSize;
-    ray.SetWindowSize(cast(int) size.x, cast(int) size.y);
-    ray.SetWindowPosition(cast(int) (screen.x * 0.5f - size.x * 0.5f), cast(int) (screen.y * 0.5f - size.y * 0.5f));
+float windowWidth() {
+    return windowSize.x;
+}
+
+float windowHeight() {
+    return windowSize.y;
 }
 
 Vec2 resolution() {
@@ -645,6 +658,36 @@ Vec2 resolution() {
     } else {
         return windowSize;
     }
+}
+
+float resolutionWidth() {
+    return resolution.x;
+}
+
+float resolutionHeight() {
+    return resolution.y;
+}
+
+Vec2 mousePosition() {
+    if (isResolutionLocked) {
+        auto window = windowSize;
+        auto minRatio = min(window.x / popkaView.width, window.y / popkaView.height);
+        auto targetSize = popkaView.size * Vec2(minRatio);
+        return Vec2(
+            clamp((ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio, 0.0f, popkaView.width),
+            clamp((ray.GetMouseY() - (window.y - targetSize.y) * 0.5f) / minRatio, 0.0f, popkaView.height),
+        );
+    } else {
+        return Vec2(ray.GetMouseX(), ray.GetMouseY());
+    }
+}
+
+float mouseX() {
+    return mousePosition.x;
+}
+
+float mouseY() {
+    return mousePosition.y;
 }
 
 int fps() {
