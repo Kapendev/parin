@@ -39,10 +39,11 @@ Color popkaBackgroundColor;
 Font popkaFont;
 DrawOptions popkaFontOptions;
 bool popkaFPSFlag;
+bool popkaCursorFlag;
 
 View popkaView;
-float popkaViewWidth = 32.0f;
-float popkaViewHeight = 32.0f;
+float popkaViewWidth = 320.0f;
+float popkaViewHeight = 180.0f;
 bool popkaViewLockFlag;
 bool popkaViewUnlockFlag;
 
@@ -501,7 +502,7 @@ void freeWindow() {
 }
 
 bool isWindowOpen() {
-    static isFirstCall = true;
+    static auto isFirstCall = true;
     auto result = !(ray.WindowShouldClose() || !popkaState);
     if (result) {
         if (isFirstCall) {
@@ -623,6 +624,20 @@ void toggleFullscreen() {
     }
 }
 
+bool isCursorHidden() {
+    return popkaCursorFlag;
+}
+
+void hideCursor() {
+    ray.HideCursor();
+    popkaCursorFlag = true;
+}
+
+void showCursor() {
+    ray.ShowCursor();
+    popkaCursorFlag = false;
+}
+
 Vec2 screenSize() {
     auto id = ray.GetCurrentMonitor();
     return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
@@ -690,12 +705,28 @@ float mouseY() {
     return mousePosition.y;
 }
 
+float mouseWheel() {
+    return ray.GetMouseWheelMove();
+}
+
 int fps() {
     return ray.GetFPS();
 }
 
 float deltaTime() {
     return ray.GetFrameTime();
+}
+
+Vec2 deltaMousePosition() {
+    return toPopka(ray.GetMouseDelta());
+}
+
+float deltaMouseX() {
+    return deltaMousePosition.x;
+}
+
+float deltaMouseY() {
+    return deltaMousePosition.y;
 }
 
 bool isPressed(Keyboard key) {

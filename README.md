@@ -11,8 +11,12 @@ import popka.basic;
 
 void main() {
     openWindow(640, 480);
+    lockResolution(320, 180);
     while (isWindowOpen) {
-        drawDebugText("Hello world!");
+        drawDebugText("Hello world!", mousePosition);
+        if (Keyboard.f11.isPressed) {
+            toggleFullscreen();
+        }
         if (Keyboard.esc.isPressed) {
             closeWindow();
         }
