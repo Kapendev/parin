@@ -1,10 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.io;
-
 /// The io module facilitates input and output operations,
 /// offering functionalities such as file reading and writing.
+
+module popka.core.io;
 
 import io = core.stdc.stdio;
 import popka.core.container;

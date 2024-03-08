@@ -1,9 +1,9 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.ascii;
-
 /// The ascii module assists in handling ASCII characters.
+
+module popka.core.ascii;
 
 enum {
     spaceChars = " \t\v\r\n\f",

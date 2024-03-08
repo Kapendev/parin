@@ -1,10 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.color;
-
 /// The color module specializes in handling color-related operations,
 /// offering a suite of procedures tailored for manipulating and managing color properties within a program.
+
+module popka.core.color;
 
 enum {
     blank = Color(),

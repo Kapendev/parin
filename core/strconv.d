@@ -1,11 +1,11 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.strconv;
-
 /// The strconv module offers procedures for both
 /// parsing strings into numeric data types
 /// and formatting numbers into string representations.
+
+module popka.core.strconv;
 
 struct ToStrOptions {
     uint floatPrecision = 2;
@@ -152,7 +152,7 @@ const(char)[] strToStr(const(char)[] value) {
     return result;
 }
 
-const(char)[] toStr(T)(T value, ToStrOptions opt = ToStrOptions()) {
+const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     enum isBool = is(T == bool);
     enum isUnsigned = is(T == ubyte) || is(T == ushort) || is(T == uint) || is(T == ulong);
     enum isSigned = is(T == byte) || is(T == short) || is(T == int) || is(T == long);
@@ -168,7 +168,7 @@ const(char)[] toStr(T)(T value, ToStrOptions opt = ToStrOptions()) {
     } else static if (isSigned) {
         return signedToStr(value);
     } else static if (isFloat) {
-        return floatToStr(value, opt.floatPrecision);
+        return floatToStr(value, options.floatPrecision);
     } else static if (isChar) {
         return charToStr(value);
     } else static if (isStrz) {

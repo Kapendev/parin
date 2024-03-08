@@ -1,11 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.basic;
-
 /// The basic module acts as a central hub,
-/// bundling together numerous specialized modules
-/// to provide an extensive array of tools catering to a variety of programming tasks.
+/// bundling together numerous specialized modules.
+
+module popka.basic;
 
 public import popka.core.basic;
 public import popka.game.basic;

@@ -1,10 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.sumtype;
-
 /// The sumtype module defines a data structure that can hold one of several possible types.
 /// It provides functionalities to construct, access, and manipulate these values.
+
+module popka.core.sumtype;
 
 struct None {};
 

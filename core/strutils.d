@@ -1,9 +1,9 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.strutils;
-
 /// The strutils module contains handy procedures designed to assist with various string manipulation tasks.
+
+module popka.core.strutils;
 
 import popka.core.ascii;
 

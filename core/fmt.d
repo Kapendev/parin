@@ -1,10 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.fmt;
-
 /// The fmt module simplifies value formatting,
 /// enabling conversion of data to strings and providing control over output appearance.
+
+module popka.core.fmt;
 
 import io = core.stdc.stdio;
 import popka.core.strconv;

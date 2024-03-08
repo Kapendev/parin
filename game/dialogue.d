@@ -1,14 +1,14 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.game.dialogue;
-
 /// The dialogue module is a versatile dialogue system for games,
 /// enabling the creation of interactive conversations and branching narratives.
 
-import popka.core.basic;
-
 // TODO: This module needs a lot of work and testing.
+
+module popka.game.dialogue;
+
+import popka.core.basic;
 
 struct DialogueUnit {
     alias Kind = char;

@@ -1,10 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.container;
-
 /// The container module serves as a hub for various data structures,
 /// offering a cohesive set of tools for efficient storage and retrieval of information within a program.
+
+module popka.core.container;
 
 import lib = core.stdc.stdlib;
 import popka.core.fmt;

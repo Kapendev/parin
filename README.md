@@ -5,6 +5,8 @@ It focuses on providing a simple and easy-to-understand foundation for building 
 The game engine is currently under development and is not yet ready for use.
 
 ```d
+/// A hello world example.
+
 import popka.basic;
 
 void main() {
@@ -22,7 +24,37 @@ void main() {
 ## Dependencies
 
 To use Popka, you'll need the raylib library (version 5.0) installed on your system.
-Installing raylib is easy, and the official instructions will guide you through the process.
+Installing raylib is easy, and the official raylib instructions will guide you through the process.
+
+## Installation
+
+This guide outlines the steps to install Popka using Git and the Dub package manager.
+
+1. **Clone the Popka repository:**
+
+    Open a terminal and navigate to your source code directory.
+    Then, execute the following command to clone the Popka repository:
+
+    ```bash
+    git clone https://github.com/Kapendev/popka.git
+    ```
+
+2. **Install raylib using Dub:**
+
+    Navigate to the directory containing your dub.json file (usually the root directory of your project).
+    Run the following command to install raylib using Dub:
+
+    ```bash
+    dub run raylib-d:install
+    ```
+
+3. **Compile example:**
+
+    Once the installation is complete, you should be able to compile the provided hello world example by running:
+
+    ```bash
+    dub run
+    ```
 
 ## Documentation
 

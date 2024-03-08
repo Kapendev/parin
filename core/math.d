@@ -1,17 +1,13 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-module popka.core.math;
-
 /// The math module covers essential mathematical operations, vectors, and shapes like rectangles.
+
+module popka.core.math;
 
 import math = core.stdc.math;
 
-enum Flip {
-    none, x, y, xy,
-}
-
-enum Hook {
+enum Hook : ubyte {
     topLeft, top, topRight,
     left, center, right,
     bottomLeft, bottom, bottomRight,
