@@ -5,21 +5,16 @@ It focuses on providing a simple and easy-to-understand foundation for building 
 The game engine is currently under development and is not yet ready for use.
 
 ```d
-/// A hello world example.
+/// A hello-world example.
 
 import popka.basic;
 
 void main() {
     openWindow(640, 480);
     lockResolution(320, 180);
+
     while (isWindowOpen) {
-        drawDebugText("Hello world!", mousePosition);
-        if (Keyboard.f11.isPressed) {
-            toggleFullscreen();
-        }
-        if (Keyboard.esc.isPressed) {
-            closeWindow();
-        }
+        drawDebugText("Hello world!");
     }
     freeWindow();
 }
@@ -56,7 +51,7 @@ This guide outlines the steps to install Popka using Git and the Dub package man
 
 3. **Compile example:**
 
-    Once the installation is complete, you should be able to compile the provided hello world example by running:
+    Once the installation is complete, you should be able to compile the provided example by running:
 
     ```bash
     dub run

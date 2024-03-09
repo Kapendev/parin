@@ -12,6 +12,8 @@ import popka.core.basic;
 
 struct DialogueUnit {
     alias Kind = char;
+
+    enum kindChars = "-#*@>|";
     enum : Kind {
         pause = '-',
         comment = '#',
@@ -32,24 +34,32 @@ struct DialogueUnit {
         }
         return false;
     }
+
+    bool isValid() {
+        return isOneOf(kindChars);
+    }
 }
 
 struct Dialogue {
     List!DialogueUnit units;
-    size_t index;
+    size_t unitIndex;
 
     this(const(char)[] path) {
-        read(path);
+        load(path);
     }
 
-    DialogueUnit* now() {
-        return &units[index];
+    DialogueUnit now() {
+        return units[unitIndex];
     }
 
     void update() {
-        if (units.length != 0 && index < units.length - 1) {
-            index += 1;
+        if (units.length != 0 && unitIndex < units.length - 1) {
+            unitIndex += 1;
         }
+    }
+
+    bool canUpdate() {
+        return unitIndex < units.length && units[unitIndex].kind != DialogueUnit.pause;
     }
 
     void free() {
@@ -59,30 +69,69 @@ struct Dialogue {
         units.free();
     }
 
-    void read(const(char)[] path) {
+    void parse(const(char)[] text) {
         free();
         units.append(DialogueUnit(List!char(), DialogueUnit.pause));
-
-        auto file = readText(path);
-        const(char)[] view = file.items;
-        auto lineNumber = 0;
+        auto isFirstLine = true;
+        auto view = text;
         while (view.length != 0) {
-            auto line = skipLine(view);
+            auto line = trim(skipLine(view));
             if (line.length == 0) {
                 continue;
             }
-            lineNumber += 1;
-            if (lineNumber == 1 && line[0] == DialogueUnit.pause) {
+            auto content = trimStart(line[1 .. $]);
+            auto kind = line[0];
+            if (isFirstLine && kind == DialogueUnit.pause) {
+                isFirstLine = false;
                 continue;
             }
-
-            units.append(DialogueUnit(List!char(trimStart(line[1 .. $])), line[0]));
+            auto unit = DialogueUnit(List!char(), kind);
+            if (unit.isValid) {
+                unit.content = List!char(content);
+                units.append(unit);
+            } else {
+                free();
+                return;
+            }
         }
         if (units.items[$ - 1].kind != DialogueUnit.pause) {
             units.append(DialogueUnit(List!char(), DialogueUnit.pause));
         }
+        return;
+    }
+
+    void load(const(char)[] path) {
+        auto file = readText(path);
+        parse(file.items);
         file.free();
     }
 }
 
-unittest {}
+unittest {
+    auto text = "
+        # This is a comment.
+        > Actor1
+        | First line.
+        | Second line.
+        > Actor2
+        | First line.
+        - Pause
+
+        * Point
+        > Actor3
+        | This is a loop.
+        @ Point
+    ";
+
+    import popka.core.fmt;
+    auto dialogue = Dialogue();
+    dialogue.parse(text);
+    dialogue.update();
+    while (dialogue.canUpdate) {
+        auto unit = dialogue.now;
+        if (unit.isOneOf(">|")) {
+            println(unit.kind, " | ", unit.content.items);
+        }
+        dialogue.update();
+    }
+}
