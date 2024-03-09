@@ -92,13 +92,16 @@ const(char)[] floatToStr(double value, uint precision = 2) {
 
     if (temp.length <= fractionalDigitCount) {
         i -= temp.length;
-        result[i .. i + temp.length] = temp;
+        foreach (ii, c; temp) {
+            result[i + ii] = c;
+        }
         if (temp.length < fractionalDigitCount) {
             i -= fractionalDigitCount - temp.length;
             result[i .. i + fractionalDigitCount - temp.length] = '0';
         }
         i -= 2;
-        result[i .. i + 2] = "0.";
+        result[i] = '0';
+        result[i + 1] = '.';
     } else {
         if (fractionalDigitCount == 0) {
             i -= (precision == 0 ? 1 : precision);
@@ -106,14 +109,20 @@ const(char)[] floatToStr(double value, uint precision = 2) {
             i -= 1;
             result[i] = '.';
             i -= temp.length;
-            result[i .. i + temp.length] = temp;
+            foreach (ii, c; temp) {
+                result[i + ii] = c;
+            }
         } else {
             i -= fractionalDigitCount;
-            result[i .. i + fractionalDigitCount] = temp[$ - fractionalDigitCount .. $];
+            foreach (ii, c; temp[$ - fractionalDigitCount .. $]) {
+                result[i + ii] = c;
+            }
             i -= 1;
             result[i] = '.';
             i -= (temp.length - fractionalDigitCount);
-            result[i .. i + (temp.length - fractionalDigitCount)] = temp[0 .. $ - fractionalDigitCount];
+            foreach (ii, c; temp[0 .. $ - fractionalDigitCount]) {
+                result[i + ii] = c;
+            }
         }
     }
 

@@ -14,13 +14,13 @@ public import popka.core.basic;
 
 PopkaState popkaState;
 
-enum defaultFPS = 60;
-enum defaultBackgroundColor = Color(0x2A, 0x36, 0x3A);
-enum defaultDebugFontSpacing = Vec2(1.0f, 14.0f);
-enum defaultDebugFontColor = lightGray;
-
-enum fullscreenWaitTime = 0.125f;
-enum rayFontSpacing = Vec2(1.0f, 14.0f);
+enum {
+    defaultFPS = 60,
+    defaultBackgroundColor = Color(0x2A, 0x36, 0x3A),
+    defaultDebugFontSpacing = Vec2(1.0f, 14.0f),
+    defaultDebugFontColor = lightGray,
+    toggleFullscreenWaitTime = 0.125f,
+}
 
 enum Flip : ubyte {
     none,
@@ -32,29 +32,6 @@ enum Flip : ubyte {
 enum Filter : ubyte {
     nearest,
     linear,
-}
-
-struct PopkaState {
-    bool isWindowOpen;
-    bool isDrawing;
-    Color backgroundColor;
-
-    Font debugFont;
-    Vec2 debugFontSpacing;
-    DrawOptions debugFontOptions;
-
-    View view;
-    Vec2 bufferViewSize;
-    bool isLockResolutionQueued;
-    bool isUnlockResolutionQueued;
-
-    // TODO: Change the names of this members.
-    // TODO: Change how this members work.
-    Vec2 popkaFullscreenLastWindowSize;
-    float popkaFullscreenTime = 0.0f;
-    bool popkaFullscreenFlag;
-    bool popkaFPSFlag;
-    bool popkaCursorFlag;
 }
 
 struct Sprite {
@@ -294,6 +271,27 @@ struct DrawOptions {
     Filter filter = Filter.nearest;
 }
 
+struct PopkaState {
+    bool isWindowOpen;
+    bool isDrawing;
+    bool isFPSLocked;
+    bool isCursorHidden;
+
+    Color backgroundColor;
+    Font debugFont;
+    Vec2 debugFontSpacing;
+    DrawOptions debugFontOptions;
+
+    View view;
+    Vec2 targetViewSize;
+    bool isLockResolutionQueued;
+    bool isUnlockResolutionQueued;
+
+    Vec2 lastWindowSize;
+    float toggleFullscreenTimer = 0.0f;
+    bool isToggleFullscreenQueued;
+}
+
 enum Keyboard {
     a = ray.KEY_A,
     b = ray.KEY_B,
@@ -501,7 +499,7 @@ void openWindow(float width, float height, const(char)[] title = "Popka", Color 
     lockFPS(defaultFPS);
     popkaState.isWindowOpen = true;
     popkaState.backgroundColor = color;
-    popkaState.popkaFullscreenLastWindowSize = Vec2(width, height);
+    popkaState.lastWindowSize = Vec2(width, height);
     popkaState.debugFont = LoadPixeloidFont();
     popkaState.debugFontSpacing = defaultDebugFontSpacing;
     popkaState.debugFontOptions.color = defaultDebugFontColor;
@@ -558,7 +556,7 @@ bool isWindowOpen() {
         }
         // The lockResolution and unlockResolution queue.
         if (popkaState.isLockResolutionQueued) {
-            popkaState.view.load(popkaState.bufferViewSize);
+            popkaState.view.load(popkaState.targetViewSize);
             popkaState.isLockResolutionQueued = false;
         }
         if (popkaState.isUnlockResolutionQueued) {
@@ -566,18 +564,20 @@ bool isWindowOpen() {
             popkaState.isUnlockResolutionQueued = false;
         }
         // Fullscreen code to fix a bug on KDE.
-        if (popkaState.popkaFullscreenFlag) {
-            popkaState.popkaFullscreenTime += deltaTime;
-            if (popkaState.popkaFullscreenTime >= fullscreenWaitTime) {
-                popkaState.popkaFullscreenTime = 0.0f;
-                popkaState.popkaFullscreenFlag = false;
-                ray.ToggleFullscreen();
-                if (!isFullscreen) {
-                    auto size = popkaState.popkaFullscreenLastWindowSize;
-                    auto screen = screenSize;
-                    ray.SetWindowSize(cast(int) size.x, cast(int) size.y);
-                    ray.SetWindowPosition(cast(int) (screen.x * 0.5f - size.x * 0.5f), cast(int) (screen.y * 0.5f - size.y * 0.5f));
+        if (popkaState.isToggleFullscreenQueued) {
+            popkaState.toggleFullscreenTimer += deltaTime;
+            if (popkaState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
+                popkaState.toggleFullscreenTimer = 0.0f;
+                auto screen = screenSize;
+                auto window = popkaState.lastWindowSize;
+                if (ray.IsWindowFullscreen()) {
+                    ray.ToggleFullscreen();
+                    ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
+                    ray.SetWindowPosition(cast(int) (screen.x * 0.5f - window.x * 0.5f), cast(int) (screen.y * 0.5f - window.y * 0.5f));
+                } else {
+                    ray.ToggleFullscreen();
                 }
+                popkaState.isToggleFullscreenQueued = false;
             }
         }
         // Begin drawing.
@@ -593,17 +593,17 @@ bool isWindowOpen() {
 }
 
 bool isFPSLocked() {
-    return popkaState.popkaFPSFlag;
+    return popkaState.isFPSLocked;
 }
 
 void lockFPS(uint target) {
     ray.SetTargetFPS(target);
-    popkaState.popkaFPSFlag = true;
+    popkaState.isFPSLocked = true;
 }
 
 void unlockFPS() {
     ray.SetTargetFPS(0);
-    popkaState.popkaFPSFlag = false;
+    popkaState.isFPSLocked = false;
 }
 
 bool isResolutionLocked() {
@@ -614,7 +614,7 @@ void lockResolution(Vec2 size) {
     if (popkaState.isWindowOpen && !popkaState.isDrawing) {
         popkaState.view.load(size);
     } else {
-        popkaState.bufferViewSize = size;
+        popkaState.targetViewSize = size;
         popkaState.isLockResolutionQueued = true;
         popkaState.isUnlockResolutionQueued = false;
     }
@@ -638,30 +638,26 @@ bool isFullscreen() {
 }
 
 void toggleFullscreen() {
-    if (!popkaState.popkaFullscreenFlag) {
-        popkaState.popkaFullscreenFlag = true;
-        if (!isFullscreen) {
-            popkaState.popkaFullscreenLastWindowSize = windowSize;
-            auto size = screenSize;
-            auto screen = screenSize;
-            ray.SetWindowSize(cast(int) size.x, cast(int) size.y);
-            ray.SetWindowPosition(cast(int) (screen.x * 0.5f - size.x * 0.5f), cast(int) (screen.y * 0.5f - size.y * 0.5f));
-        }
+    if (!ray.IsWindowFullscreen()) {
+        auto screen = screenSize;
+        popkaState.lastWindowSize = windowSize;
+        ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
     }
+    popkaState.isToggleFullscreenQueued = true;
 }
 
 bool isCursorHidden() {
-    return popkaState.popkaCursorFlag;
+    return popkaState.isCursorHidden;
 }
 
 void hideCursor() {
     ray.HideCursor();
-    popkaState.popkaCursorFlag = true;
+    popkaState.isCursorHidden = true;
 }
 
 void showCursor() {
     ray.ShowCursor();
-    popkaState.popkaCursorFlag = false;
+    popkaState.isCursorHidden = false;
 }
 
 Vec2 screenSize() {
