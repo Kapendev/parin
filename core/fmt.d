@@ -26,7 +26,9 @@ const(char)[] fmt(A...)(const(char)[] str, A args) {
             static foreach (i, arg; args) {
                 if (i == argi) {
                     auto temp = toStr(arg);
-                    result[resi .. resi + temp.length] = temp;
+                    foreach (i, c; temp) {
+                        result[resi + i] = temp[i];
+                    }
                     resi += temp.length;
                     stri += 2;
                     argi += 1;

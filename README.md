@@ -57,6 +57,10 @@ This guide outlines the steps to install Popka using Git and the Dub package man
     dub run
     ```
 
+## Examples
+
+A comprehensive set of code examples showcasing various engine features can be found within the example folder.
+
 ## Documentation
 
 This project uses the source code as its primary documentation.
