@@ -62,11 +62,15 @@ const(char)[] signedToStr(long value) {
     if (value < 0) {
         auto temp = unsignedToStr(-value);
         result[0] = '-';
-        result[1 .. 1 + temp.length] = temp;
+        foreach (i, c; temp) {
+            result[1 + i] = c;
+        }
         result = result[0 .. 1 + temp.length];
     } else {
         auto temp = unsignedToStr(value);
-        result[0 .. temp.length] = temp;
+        foreach (i, c; temp) {
+            result[i] = c;
+        }
         result = result[0 .. temp.length];
     }
     return result;
