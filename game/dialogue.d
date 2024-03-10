@@ -44,7 +44,7 @@ struct Dialogue {
     List!DialogueUnit units;
     size_t unitIndex;
     const(char)[] actor;
-    const(char)[] content;
+    const(char)[] text;
 
     this(const(char)[] path) {
         load(path);
@@ -62,7 +62,7 @@ struct Dialogue {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
             auto unit = units[unitIndex];
-            content = unit.content.items;
+            text = unit.content.items;
             if (unit.isOneOf(DialogueUnit.comment, DialogueUnit.point)) {
                 update();
             }
@@ -93,11 +93,11 @@ struct Dialogue {
         units.free();
     }
 
-    void parse(const(char)[] text) {
+    void parse(const(char)[] script) {
         free();
         units.append(DialogueUnit(List!char(), DialogueUnit.pause));
         auto isFirstLine = true;
-        auto view = text;
+        auto view = script;
         while (view.length != 0) {
             auto line = trim(skipLine(view));
             if (line.length == 0) {
@@ -105,9 +105,11 @@ struct Dialogue {
             }
             auto content = trimStart(line[1 .. $]);
             auto kind = line[0];
-            if (isFirstLine && kind == DialogueUnit.pause) {
+            if (isFirstLine) {
                 isFirstLine = false;
-                continue;
+                if (kind == DialogueUnit.pause) {
+                    continue;
+                }
             }
             auto unit = DialogueUnit(List!char(), kind);
             if (unit.isValid) {

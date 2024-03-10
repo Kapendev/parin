@@ -9,13 +9,13 @@ module popka.example.basic;
 public import popka.example.camera;
 public import popka.example.coins;
 public import popka.example.hello;
-public import popka.example.story;
+public import popka.example.dialogue;
 
 void runEveryExample() {
     runHelloExample();
     runCoinsExample();
     runCameraExample();
-    runStoryExample();
+    runDialogueExample();
 }
 
 unittest {}

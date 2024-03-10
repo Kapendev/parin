@@ -495,7 +495,9 @@ void randomize() {
 }
 
 void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
-    popkaState = PopkaState();
+    if (popkaState.isWindowOpen) {
+        return;
+    }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) width, cast(int) height, toStrz(title));
@@ -515,8 +517,12 @@ void closeWindow() {
 }
 
 void freeWindow() {
+    if (!popkaState.isWindowOpen) {
+        return;
+    }
     popkaState.view.free();
     ray.CloseWindow();
+    popkaState = PopkaState();
 }
 
 bool isWindowOpen() {
