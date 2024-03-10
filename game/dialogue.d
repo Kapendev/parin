@@ -43,6 +43,8 @@ struct DialogueUnit {
 struct Dialogue {
     List!DialogueUnit units;
     size_t unitIndex;
+    const(char)[] actor;
+    const(char)[] content;
 
     this(const(char)[] path) {
         load(path);
@@ -52,11 +54,20 @@ struct Dialogue {
         return units[unitIndex];
     }
 
+    void reset() {
+        unitIndex = 0;
+    }
+
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
             auto unit = units[unitIndex];
+            content = unit.content.items;
             if (unit.isOneOf(DialogueUnit.comment, DialogueUnit.point)) {
+                update();
+            }
+            if (unit.kind == DialogueUnit.actor) {
+                actor = unit.content.items;
                 update();
             }
             if (unit.kind == DialogueUnit.target) {
@@ -120,37 +131,4 @@ struct Dialogue {
     }
 }
 
-unittest {
-    auto text = "
-        # This is a comment.
-        > Actor1
-        | First line.
-        | Second line.
-        > Actor2
-        | First line.
-        -
-
-        * Point
-        > Actor3
-        | This is a loop.
-        @ Point
-    ";
-
-    import popka.basic;
-    auto dialogue = Dialogue();
-    dialogue.parse(text);
-    dialogue.update();
-    openWindow(500, 500);
-    lockResolution(200, 200);
-    foreach (i, u; dialogue.units) {
-        println(i, ": ", u.kind, "|", u.content.items);
-    }
-    println("--- gane");
-    while (isWindowOpen) {
-        if (Keyboard.space.isPressed && dialogue.canUpdate && dialogue.now.kind != DialogueUnit.pause) {
-            auto unit = dialogue.now;
-            println(unit.kind, " | ", unit.content.items);
-            dialogue.update();
-        }
-    }
-}
+unittest {}

@@ -12,7 +12,6 @@ import popka.basic;
 void main() {
     openWindow(640, 480);
     lockResolution(320, 180);
-
     while (isWindowOpen) {
         drawDebugText("Hello world!");
     }
@@ -28,6 +27,7 @@ Installing raylib is easy, and the official raylib instructions will guide you t
 ## Installation
 
 This guide outlines the steps to install Popka using Git and the Dub package manager.
+It is not recommended to use Dub for now.
 
 1. **Clone the Popka repository:**
 
