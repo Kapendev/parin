@@ -7,7 +7,7 @@ module popka.example.hello;
 
 import popka.basic;
 
-void runExample() {
+void runHelloExample() {
     openWindow(640, 480);
     lockResolution(320, 180);
 

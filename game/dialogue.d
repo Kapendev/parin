@@ -55,6 +55,19 @@ struct Dialogue {
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
+            auto unit = units[unitIndex];
+            if (unit.isOneOf(DialogueUnit.comment, DialogueUnit.point)) {
+                update();
+            }
+            if (unit.kind == DialogueUnit.target) {
+                foreach (i, item; units.items) {
+                    if (item.kind == DialogueUnit.point && item.content.items == unit.content.items) {
+                        unitIndex = i;
+                        break;
+                    }
+                }
+                update();
+            }
         }
     }
 
@@ -115,7 +128,7 @@ unittest {
         | Second line.
         > Actor2
         | First line.
-        - Pause
+        -
 
         * Point
         > Actor3
@@ -123,15 +136,21 @@ unittest {
         @ Point
     ";
 
-    import popka.core.fmt;
+    import popka.basic;
     auto dialogue = Dialogue();
     dialogue.parse(text);
     dialogue.update();
-    while (dialogue.canUpdate) {
-        auto unit = dialogue.now;
-        if (unit.isOneOf(">|")) {
+    openWindow(500, 500);
+    lockResolution(200, 200);
+    foreach (i, u; dialogue.units) {
+        println(i, ": ", u.kind, "|", u.content.items);
+    }
+    println("--- gane");
+    while (isWindowOpen) {
+        if (Keyboard.space.isPressed && dialogue.canUpdate && dialogue.now.kind != DialogueUnit.pause) {
+            auto unit = dialogue.now;
             println(unit.kind, " | ", unit.content.items);
+            dialogue.update();
         }
-        dialogue.update();
     }
 }

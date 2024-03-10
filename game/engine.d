@@ -210,6 +210,10 @@ struct Camera {
         this.position = position;
     }
 
+    this(float x, float y) {
+        this.position = Vec2(x, y);
+    }
+
     float width() {
         return resolution.x * scale;
     }
@@ -491,6 +495,7 @@ void randomize() {
 }
 
 void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+    popkaState = PopkaState();
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) width, cast(int) height, toStrz(title));

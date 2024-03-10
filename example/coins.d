@@ -7,7 +7,7 @@ module popka.example.coins;
 
 import popka.basic;
 
-void runExample() {
+void runCoinsExample() {
     openWindow(640, 480);
     lockResolution(320, 180);
 
@@ -42,7 +42,7 @@ void runExample() {
         }
         player.position += playerDirection * playerSpeed * Vec2(deltaTime);
 
-        // Check if the player is touching some coins.
+        // Check if the player is touching some coins and remove those coins.
         foreach (id; coins.ids) {
             if (coins[id].hasIntersection(player)) {
                 coins.remove(id);
