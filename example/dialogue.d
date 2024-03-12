@@ -25,12 +25,20 @@ void runDialogueExample() {
         > Mia
         | Hello!
         | Nice to meet you!
-        @ Point1
+        -
+
+        * Point2
+        > Bob
+        | Yo Mia, this game is the bomb!
+        > Mia
+        | Trueee!
+        -
     ";
 
     // Parse the dialogue script of the game.
     // The first update makes the dialogue go to the first available line.
     dialogue.parse(script);
+    dialogue.jump("Point2");
     dialogue.update();
 
     while (isWindowOpen) {

@@ -11,16 +11,15 @@ struct ToStrOptions {
     uint floatPrecision = 2;
 }
 
-struct ToNumResult(T) {
-    alias Error = ubyte;
-    enum : Error {
-        ok,
-        invalid,
-        overflow,
-    }
+enum ToValueResultError : ubyte {
+    none,
+    invalid,
+    overflow,
+}
 
+struct ToValueResult(T) {
     T value;
-    Error error;
+    ToValueResultError error;
 }
 
 const(char)[] boolToStr(bool value) {
@@ -188,30 +187,29 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     }
 }
 
-ToNumResult!bool toBool(const(char)[] str) {
-    auto result = ToNumResult!bool();
+ToValueResult!bool toBool(const(char)[] str) {
+    auto result = ToValueResult!bool();
     if (str == "true") {
         result.value = true;
     } else if (str == "false") {
         result.value = false;
     } else {
-        result.error = result.invalid;
+        result.error = ToValueResultError.invalid;
     }
     return result;
 }
 
-ToNumResult!ulong toUnsigned(const(char)[] str) {
-    auto result = ToNumResult!ulong();
-
+ToValueResult!ulong toUnsigned(const(char)[] str) {
+    auto result = ToValueResult!ulong();
     if (str.length == 0) {
-        result.error = result.invalid;
+        result.error = ToValueResultError.invalid;
     } else if (str.length >= 18) {
-        result.error = result.overflow;
+        result.error = ToValueResultError.overflow;
     } else {
         ulong level = 1;
         foreach_reverse (i, c; str) {
             if (c < '0' || c > '9') {
-                result.error = result.invalid;
+                result.error = ToValueResultError.invalid;
                 break;
             }
             auto digit = c - '0';
@@ -222,13 +220,12 @@ ToNumResult!ulong toUnsigned(const(char)[] str) {
     return result;
 }
 
-ToNumResult!long toSigned(const(char)[] str) {
-    auto result = ToNumResult!long();
-
+ToValueResult!long toSigned(const(char)[] str) {
+    auto result = ToValueResult!long();
     if (str.length == 0) {
-        result.error = result.invalid;
+        result.error = ToValueResultError.invalid;
     } else if (str.length >= 18) {
-        result.error = result.overflow;
+        result.error = ToValueResultError.overflow;
     } else {
         if (str[0] == '-') {
             auto conv = toUnsigned(str[1 .. $]);
@@ -249,11 +246,13 @@ ToNumResult!long toSigned(const(char)[] str) {
     return result;
 }
 
-ToNumResult!double toFloat(const(char)[] str) {
-    auto result = ToNumResult!double();
-
+ToValueResult!double toFloat(const(char)[] str) {
+    auto result = ToValueResult!double();
+    result.value = 0.0;
+    auto hasDot = false;
     foreach (i, c; str) {
         if (c == '.') {
+            hasDot = true;
             auto lhs = toSigned(str[0 .. i]);
             if (lhs.error) {
                 result.error = lhs.error;
@@ -272,6 +271,9 @@ ToNumResult!double toFloat(const(char)[] str) {
             break;
         }
     }
+    if (!hasDot) {
+        result.error = ToValueResultError.invalid;
+    }
     return result;
 }
 
@@ -286,4 +288,14 @@ const(char)* toStrz(const(char)[] str) {
     return result.ptr;
 }
 
-unittest {}
+unittest {
+    auto text1 = "1.0";
+    auto conv1 = toFloat(text1);
+    assert(conv1.value == 1.0);
+    assert(conv1.error == ToValueResultError.none);
+
+    auto text2 = "1";
+    auto conv2 = toFloat(text2);
+    assert(conv2.value == 0.0);
+    assert(conv2.error == ToValueResultError.invalid);
+}

@@ -4,29 +4,26 @@
 /// The dialogue module is a versatile dialogue system for games,
 /// enabling the creation of interactive conversations and branching narratives.
 
-// TODO: This module needs a lot of work and testing.
-
 module popka.game.dialogue;
 
 import popka.core.basic;
 
+enum dialogueUnitKindChars = "-#*@>|";
+
+enum DialogueUnitKind {
+    pause = '-',
+    comment = '#',
+    point = '*',
+    jump = '@',
+    actor = '>',
+    line = '|',    
+}
+
 struct DialogueUnit {
-    alias Kind = char;
+    List!char text;
+    DialogueUnitKind kind;
 
-    enum kindChars = "-#*@>|";
-    enum : Kind {
-        pause = '-',
-        comment = '#',
-        point = '*',
-        target = '@',
-        actor = '>',
-        line = '|',
-    }
-
-    List!char content;
-    Kind kind = pause;
-
-    bool isOneOf(const(Kind)[] args...) {
+    bool isOneOf(const(DialogueUnitKind)[] args...) {
         foreach (arg; args) {
             if (arg == kind) {
                 return true;
@@ -34,17 +31,13 @@ struct DialogueUnit {
         }
         return false;
     }
-
-    bool isValid() {
-        return isOneOf(kindChars);
-    }
 }
 
 struct Dialogue {
     List!DialogueUnit units;
     size_t unitIndex;
-    const(char)[] actor;
     const(char)[] text;
+    const(char)[] actor;
 
     this(const(char)[] path) {
         load(path);
@@ -56,46 +49,50 @@ struct Dialogue {
 
     void reset() {
         unitIndex = 0;
+        text = "";
+        actor = "";
+    }
+
+    void jump(const(char)[] point) {
+        foreach (i, unit; units.items) {
+            if (unit.kind == DialogueUnitKind.point && unit.text.items == point) {
+                unitIndex = i;
+                break;
+            }
+        }
     }
 
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
             auto unit = units[unitIndex];
-            text = unit.content.items;
-            if (unit.isOneOf(DialogueUnit.comment, DialogueUnit.point)) {
+            text = unit.text.items;
+            if (unit.isOneOf(DialogueUnitKind.comment, DialogueUnitKind.point)) {
                 update();
-            }
-            if (unit.kind == DialogueUnit.actor) {
-                actor = unit.content.items;
+            } else if (unit.kind == DialogueUnitKind.actor) {
+                actor = unit.text.items;
                 update();
-            }
-            if (unit.kind == DialogueUnit.target) {
-                foreach (i, item; units.items) {
-                    if (item.kind == DialogueUnit.point && item.content.items == unit.content.items) {
-                        unitIndex = i;
-                        break;
-                    }
-                }
+            } else if (unit.kind == DialogueUnitKind.jump) {
+                jump(unit.text.items);
                 update();
             }
         }
     }
 
     bool canUpdate() {
-        return unitIndex < units.length && units[unitIndex].kind != DialogueUnit.pause;
+        return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
     void free() {
         foreach (ref unit; units.items) {
-            unit.content.free();
+            unit.text.free();
         }
         units.free();
     }
 
     void parse(const(char)[] script) {
         free();
-        units.append(DialogueUnit(List!char(), DialogueUnit.pause));
+        units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
         auto isFirstLine = true;
         auto view = script;
         while (view.length != 0) {
@@ -103,25 +100,23 @@ struct Dialogue {
             if (line.length == 0) {
                 continue;
             }
-            auto content = trimStart(line[1 .. $]);
+            auto text = trimStart(line[1 .. $]);
             auto kind = line[0];
             if (isFirstLine) {
                 isFirstLine = false;
-                if (kind == DialogueUnit.pause) {
+                if (kind == DialogueUnitKind.pause) {
                     continue;
                 }
             }
-            auto unit = DialogueUnit(List!char(), kind);
-            if (unit.isValid) {
-                unit.content = List!char(content);
-                units.append(unit);
+            if (isValidDialogueUnitKindChar(kind)) {
+                units.append(DialogueUnit(List!char(text), cast(DialogueUnitKind) kind));
             } else {
                 free();
                 return;
             }
         }
-        if (units.items[$ - 1].kind != DialogueUnit.pause) {
-            units.append(DialogueUnit(List!char(), DialogueUnit.pause));
+        if (units.items[$ - 1].kind != DialogueUnitKind.pause) {
+            units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
         }
         return;
     }
@@ -131,6 +126,15 @@ struct Dialogue {
         parse(file.items);
         file.free();
     }
+}
+
+bool isValidDialogueUnitKindChar(char c) {
+    foreach (kind; dialogueUnitKindChars) {
+        if (c == kind) {
+            return true;
+        }
+    }
+    return false;
 }
 
 unittest {}
