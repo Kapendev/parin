@@ -8,8 +8,8 @@ module popka.example.basic;
 
 public import popka.example.camera;
 public import popka.example.coins;
-public import popka.example.hello;
 public import popka.example.dialogue;
+public import popka.example.hello;
 
 void runEveryExample() {
     runHelloExample();

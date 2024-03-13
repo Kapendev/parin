@@ -1,6 +1,5 @@
 # NOW
 
-* Working on menu for dialogue.
 * Test engine on Windows.
 
 # TODO

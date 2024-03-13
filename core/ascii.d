@@ -6,16 +6,20 @@
 module popka.core.ascii;
 
 enum {
+    digitChars = "0123456789",
+    upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    lowerChars = "abcdefghijklmnopqrstuvwxyz",
+    alphaChars = upperChars ~ lowerChars,
     spaceChars = " \t\v\r\n\f",
 }
 
-bool isLower(char c) {
-    return c >= 'a' && c <= 'z';
+bool isDigit(char c) {
+    return c >= '0' && c <= '9';
 }
 
-bool isLower(const(char)[] str) {
+bool isDigit(const(char)[] str) {
     foreach (c; str) {
-        if (!isLower(c)) return false;
+        if (!isDigit(c)) return false;
     }
     return true;
 }
@@ -31,6 +35,17 @@ bool isUpper(const(char)[] str) {
     return true;
 }
 
+bool isLower(char c) {
+    return c >= 'a' && c <= 'z';
+}
+
+bool isLower(const(char)[] str) {
+    foreach (c; str) {
+        if (!isLower(c)) return false;
+    }
+    return true;
+}
+
 bool isAlpha(char c) {
     return isLower(c) || isUpper(c);
 }
@@ -38,17 +53,6 @@ bool isAlpha(char c) {
 bool isAlpha(const(char)[] str) {
     foreach (c; str) {
         if (!isAlpha(c)) return false;
-    }
-    return true;
-}
-
-bool isDigit(char c) {
-    return c >= '0' && c <= '9';
-}
-
-bool isDigit(const(char)[] str) {
-    foreach (c; str) {
-        if (!isDigit(c)) return false;
     }
     return true;
 }
@@ -67,13 +71,13 @@ bool isSpace(const(char)[] str) {
     return true;
 }
 
-char toLower(char c) {
-    return isUpper(c) ? cast(char) (c + 32) : c;
+char toDigit(char c) {
+    return isDigit(c) ? cast(char) (c - 48) : '0';
 }
 
-void toLower(char[] str) {
+void toDigit(char[] str) {
     foreach (ref c; str) {
-        c = toLower(c);
+        c = toDigit(c);
     }
 }
 
@@ -87,13 +91,13 @@ void toUpper(char[] str) {
     }
 }
 
-char toDigit(char c) {
-    return isDigit(c) ? cast(char) (c - 48) : '0';
+char toLower(char c) {
+    return isUpper(c) ? cast(char) (c + 32) : c;
 }
 
-void toDigit(char[] str) {
+void toLower(char[] str) {
     foreach (ref c; str) {
-        c = toDigit(c);
+        c = toLower(c);
     }
 }
 

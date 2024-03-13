@@ -3,12 +3,9 @@
 
 /// An example that shows how to use the dialogue system of Popka.
 
-// TODO: Example might need some work.
-
 module popka.example.dialogue;
 
 import popka.basic;
-import popka.game.dialogue;
 
 void runDialogueExample() {
     openWindow(640, 480);
@@ -28,8 +25,9 @@ void runDialogueExample() {
         > Mia
         | Hello!
         | Nice to meet you!
+        | My name is Mia.
         @ Point1
-        
+
         . Point2
         > Bob
         | Yo Mia, this game is the bomb!
@@ -50,11 +48,10 @@ void runDialogueExample() {
             dialogue.update();
         }
         if (dialogue.canUpdate) {
-            if (dialogue.hasOptions) {
-                foreach (i, key; "123456789"[0 .. dialogue.options.length]) {
+            if (dialogue.hasMenu) {
+                foreach (i, key; digitChars[1 .. 1 + dialogue.options.length]) {
                     if (isPressed(key)) {
-                        dialogue.selectOption(i);
-                        dialogue.update();
+                        dialogue.select(i);
                         break;
                     }
                 }
@@ -64,18 +61,21 @@ void runDialogueExample() {
         }
 
         // Draw the game.
-        if (dialogue.hasOptions) {
-            foreach (i, option; dialogue.options.items) {
+        if (dialogue.hasMenu) {
+            foreach (i, option; dialogue.options) {
                 drawDebugText("{}. {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
             }
         } else if (dialogue.canUpdate) {
             drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
         } else {
-            drawDebugText("No more dialogue.");
+            drawDebugText("The dialogue has ended.");
         }
-        drawDebugText("Press R to restart.", Vec2(8, 140));
+        drawRect(Rect(0, resolution.y * 0.5, resolution.x, 1), lightGray);
+        drawDebugText(
+            "Press a number to pick an option.\nPress space to continue.\nPress R to restart.",
+            Vec2(8, resolution.y - 14 * 3 - 8)
+        );
     }
-
     // Free all the game resources.
     dialogue.free();
     freeWindow();

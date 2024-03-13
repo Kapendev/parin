@@ -1,14 +1,14 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The dialogue module is a versatile dialogue system for games,
+/// The dialogue module is a versatile dialogue system,
 /// enabling the creation of interactive conversations and branching narratives.
 
-// TODO: API might need some work.
+module popka.core.dialogue;
 
-module popka.game.dialogue;
-
-import popka.core.basic;
+import popka.core.container;
+import popka.core.io;
+import popka.core.strutils;
 
 enum dialogueUnitKindChars = "-#.@>|^";
 
@@ -38,7 +38,7 @@ struct DialogueUnit {
 
 struct Dialogue {
     List!DialogueUnit units;
-    List!(const(char)[]) options;
+    List!(const(char)[]) menu;
     size_t unitIndex;
     size_t pointCount;
     const(char)[] text;
@@ -48,16 +48,16 @@ struct Dialogue {
         load(path);
     }
 
-    bool hasOptions() {
-        return options.length != 0;
+    bool hasMenu() {
+        return menu.length != 0;
     }
 
     bool canUpdate() {
         return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
-    DialogueUnit now() {
-        return units[unitIndex];
+    const(char)[][] options() {
+        return menu.items;
     }
 
     void reset() {
@@ -105,9 +105,10 @@ struct Dialogue {
         }
     }
 
-    void selectOption(size_t i) {
+    void select(size_t i) {
+        menu.clear();
         skip(i + 1);
-        options.clear();
+        update();
     }
 
     void update() {
@@ -124,11 +125,11 @@ struct Dialogue {
                 jump(unit.text.items);
                 update();
             } else if (unit.kind == DialogueUnitKind.menu) {
-                options.clear();
+                menu.clear();
                 const(char)[] view = unit.text.items;
                 while (view.length != 0) {
                     auto option = trim(skipValue(view, DialogueUnitKind.menu));
-                    options.append(option);
+                    menu.append(option);
                 }
             }
         }
