@@ -19,19 +19,19 @@ struct List(T) {
         }
     }
 
-    this(TT)(const(TT)[] args) {
+    this(const(T)[] args) {
         foreach (arg; args) {
             append(arg);
         }
     }
 
-    this(TT)(List!TT list) {
+    this(List!T list) {
         foreach (item; list.items) {
             append(item);
         }
     }
 
-    this(TT)(FlagList!TT list) {
+    this(FlagList!T list) {
         foreach (item; list.items) {
             append(item);
         }
@@ -55,11 +55,11 @@ struct List(T) {
         return items[i];
     }
 
-    void opIndexAssign(TT)(TT rhs, size_t i) {
+    void opIndexAssign(T rhs, size_t i) {
         items[i] = rhs;
     }
 
-    void opIndexOpAssign(string op, TT)(TT rhs, size_t i) {
+    void opIndexOpAssign(string op)(T rhs, size_t i) {
         mixin("items[i] " ~ op ~ "= rhs;");
     }
 
@@ -71,7 +71,7 @@ struct List(T) {
         return items.length;
     }
 
-    void append(TT)(const(TT)[] args...) {
+    void append(const(T)[] args...) {
         foreach (arg; args) {
             size_t newLength = length + 1;
             if (newLength > capacity) {
@@ -81,7 +81,7 @@ struct List(T) {
                 items = items.ptr[0 .. newLength];
             }
             // We cast here because of the type system.
-            items[$ - 1] = cast(TT) arg;
+            items[$ - 1] = cast(T) arg;
         }
     }
 
@@ -106,7 +106,7 @@ struct List(T) {
         }
     }
 
-    void fill(TT)(TT value) {
+    void fill(T value) {
         foreach (ref item; items) {
             item = value;
         }
@@ -137,19 +137,19 @@ struct FlagList(T) {
         }
     }
 
-    this(TT)(const(TT)[] args...) {
+    this(const(T)[] args...) {
         foreach (arg; args) {
             append(arg);
         }
     }
 
-    this(TT)(List!TT list) {
+    this(List!T list) {
         foreach (item; list.items) {
             append(item);
         }
     }
 
-    this(TT)(FlagList!TT list) {
+    this(FlagList!T list) {
         data.resize(list.data.length);
         flags.resize(list.flags.length);
         foreach (i; 0 .. flags.length) {
@@ -167,13 +167,13 @@ struct FlagList(T) {
         return data[i];
     }
 
-    void opIndexAssign(TT)(TT rhs, size_t i) {
+    void opIndexAssign(T rhs, size_t i) {
         data[i] = rhs;
         flags[i] = true;
         hotIndex = i;
     }
 
-    void opIndexOpAssign(string op, TT)(TT rhs, size_t i, const(char)[] file = __FILE__, size_t line = __LINE__) {
+    void opIndexOpAssign(string op)(T rhs, size_t i, const(char)[] file = __FILE__, size_t line = __LINE__) {
         if (!flags[i]) {
             assert(0, "{}({}): ID {} doesn't exist.".fmt(file, line, i));
         }
@@ -188,7 +188,7 @@ struct FlagList(T) {
         return result;
     }
 
-    void append(TT)(const(TT)[] args...) {
+    void append(const(T)[] args...) {
         foreach (arg; args) {
             if (openIndex == flags.length) {
                 data.append(arg);
@@ -198,7 +198,8 @@ struct FlagList(T) {
             } else {
                 foreach (i; openIndex .. flags.length) {
                     if (!flags[i]) {
-                        data[i] = arg;
+                        // We cast here because of the type system.
+                        data[i] = cast(T) arg;
                         flags[i] = true;
                         hotIndex = i;
                         openIndex = i + 1;
@@ -230,7 +231,7 @@ struct FlagList(T) {
         flags.resize(length);
     }
 
-    void fill(TT)(TT value) {
+    void fill(T value) {
         data.fill(value);
         flags.fill(true);
         hotIndex = flags.length - 1;
@@ -357,19 +358,19 @@ struct Grid(T) {
         return cells[colCount * row + col];
     }
 
-    void opIndexAssign(TT)(TT rhs, size_t i) {
+    void opIndexAssign(T rhs, size_t i) {
         cells[i] = rhs;
     }
 
-    void opIndexAssign(TT)(TT rhs, size_t row, size_t col) {
+    void opIndexAssign(T rhs, size_t row, size_t col) {
         cells[colCount * row + col] = rhs;
     }
 
-    void opIndexOpAssign(string op, TT)(TT rhs, size_t i) {
+    void opIndexOpAssign(string op)(T rhs, size_t i) {
         mixin("cells[i] " ~ op ~ "= rhs;");
     }
 
-    void opIndexOpAssign(string op, TT)(TT rhs, size_t row, size_t col) {
+    void opIndexOpAssign(string op)(T rhs, size_t row, size_t col) {
         mixin("cells[colCount * row + col] " ~ op ~ "= rhs;");
     }
 
@@ -399,7 +400,7 @@ struct Grid(T) {
         this.colCount = colCount;
     }
 
-    void fill(TT)(TT value) {
+    void fill(T value) {
         cells.fill(value);
     }
 

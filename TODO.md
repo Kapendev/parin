@@ -1,11 +1,12 @@
 # NOW
 
-* Work on dialogue system.
-* Work on UI buttons that work like RPGMaker.
+* Working on menu for dialogue.
 * Test engine on Windows.
 
 # TODO
 
+* Fix SumType to work with generic types.
+* Work on UI.
 * Collision functionality must be implemented.
 * Add more parsing options for fmt.d and strconv.d.
 * Write tests.

@@ -762,6 +762,10 @@ float deltaMouseY() {
     return deltaMousePosition.y;
 }
 
+bool isPressed(char key) {
+    return ray.IsKeyPressed(key);
+}
+
 bool isPressed(Keyboard key) {
     return ray.IsKeyPressed(key);
 }
@@ -774,6 +778,10 @@ bool isPressed(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonPressed(id, key);
 }
 
+bool isDown(char key) {
+    return ray.IsKeyDown(key);
+}
+
 bool isDown(Keyboard key) {
     return ray.IsKeyDown(key);
 }
@@ -784,6 +792,10 @@ bool isDown(Mouse key) {
 
 bool isDown(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonDown(id, key);
+}
+
+bool isReleased(char key) {
+    return ray.IsKeyReleased(key);
 }
 
 bool isReleased(Keyboard key) {

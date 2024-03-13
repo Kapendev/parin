@@ -4,19 +4,22 @@
 /// The dialogue module is a versatile dialogue system for games,
 /// enabling the creation of interactive conversations and branching narratives.
 
+// TODO: API might need some work.
+
 module popka.game.dialogue;
 
 import popka.core.basic;
 
-enum dialogueUnitKindChars = "-#*@>|";
+enum dialogueUnitKindChars = "-#.@>|^";
 
 enum DialogueUnitKind {
     pause = '-',
     comment = '#',
-    point = '*',
+    point = '.',
     jump = '@',
     actor = '>',
-    line = '|',    
+    line = '|',
+    menu = '^',
 }
 
 struct DialogueUnit {
@@ -35,12 +38,22 @@ struct DialogueUnit {
 
 struct Dialogue {
     List!DialogueUnit units;
+    List!(const(char)[]) options;
     size_t unitIndex;
+    size_t pointCount;
     const(char)[] text;
     const(char)[] actor;
 
     this(const(char)[] path) {
         load(path);
+    }
+
+    bool hasOptions() {
+        return options.length != 0;
+    }
+
+    bool canUpdate() {
+        return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
     DialogueUnit now() {
@@ -54,12 +67,47 @@ struct Dialogue {
     }
 
     void jump(const(char)[] point) {
-        foreach (i, unit; units.items) {
-            if (unit.kind == DialogueUnitKind.point && unit.text.items == point) {
-                unitIndex = i;
-                break;
+        if (point.length == 0) {
+            foreach (i; unitIndex + 1 .. units.length) {
+                auto unit = units[i];
+                if (unit.kind == DialogueUnitKind.point) {
+                    unitIndex = i;
+                    break;
+                }
+            }
+        } else {
+            foreach (i; 0 .. units.length) {
+                auto unit = units[i];
+                if (unit.kind == DialogueUnitKind.point && unit.text.items == point) {
+                    unitIndex = i;
+                    break;
+                }
             }
         }
+    }
+
+    void jump(size_t i) {
+        auto currPoint = 0;
+        foreach (j, unit; units.items) {
+            if (unit.kind == DialogueUnitKind.point) {
+                if (currPoint == i) {
+                    unitIndex = j;
+                    break;
+                }
+                currPoint += 1;
+            }
+        }
+    }
+
+    void skip(size_t count) {
+        foreach (i; 0 .. count) {
+            jump("");
+        }
+    }
+
+    void selectOption(size_t i) {
+        skip(i + 1);
+        options.clear();
     }
 
     void update() {
@@ -75,12 +123,15 @@ struct Dialogue {
             } else if (unit.kind == DialogueUnitKind.jump) {
                 jump(unit.text.items);
                 update();
+            } else if (unit.kind == DialogueUnitKind.menu) {
+                options.clear();
+                const(char)[] view = unit.text.items;
+                while (view.length != 0) {
+                    auto option = trim(skipValue(view, DialogueUnitKind.menu));
+                    options.append(option);
+                }
             }
         }
-    }
-
-    bool canUpdate() {
-        return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
     void free() {
@@ -88,6 +139,8 @@ struct Dialogue {
             unit.text.free();
         }
         units.free();
+        reset();
+        pointCount = 0;
     }
 
     void parse(const(char)[] script) {
@@ -108,8 +161,12 @@ struct Dialogue {
                     continue;
                 }
             }
-            if (isValidDialogueUnitKindChar(kind)) {
-                units.append(DialogueUnit(List!char(text), cast(DialogueUnitKind) kind));
+            if (isValidDialogueUnitKind(kind)) {
+                auto realKind = cast(DialogueUnitKind) kind;
+                units.append(DialogueUnit(List!char(text), realKind));
+                if (realKind == DialogueUnitKind.point) {
+                    pointCount += 1;
+                }
             } else {
                 free();
                 return;
@@ -128,7 +185,7 @@ struct Dialogue {
     }
 }
 
-bool isValidDialogueUnitKindChar(char c) {
+bool isValidDialogueUnitKind(char c) {
     foreach (kind; dialogueUnitKindChars) {
         if (c == kind) {
             return true;

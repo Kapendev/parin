@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 /// An example that shows how to use the dialogue system of Popka.
-// TODO: This example needs some work.
+
+// TODO: Example might need some work.
 
 module popka.example.dialogue;
 
@@ -18,38 +19,61 @@ void runDialogueExample() {
     auto script = "
         # This is a comment.
 
-        * Point1
+        ^ Select first point. ^ Select second point.
+
+        . Point1
         > Bob
         | Hi.
         | My name is Bob.
         > Mia
         | Hello!
         | Nice to meet you!
-        -
-
-        * Point2
+        @ Point1
+        
+        . Point2
         > Bob
         | Yo Mia, this game is the bomb!
         > Mia
         | Trueee!
-        -
+        @ Point2
     ";
 
     // Parse the dialogue script of the game.
     // The first update makes the dialogue go to the first available line.
     dialogue.parse(script);
-    dialogue.jump("Point2");
     dialogue.update();
 
     while (isWindowOpen) {
+        // Update the game.
+        if (Keyboard.r.isPressed) {
+            dialogue.reset();
+            dialogue.update();
+        }
         if (dialogue.canUpdate) {
-            if (Keyboard.space.isPressed) {
+            if (dialogue.hasOptions) {
+                foreach (i, key; "123456789"[0 .. dialogue.options.length]) {
+                    if (isPressed(key)) {
+                        dialogue.selectOption(i);
+                        dialogue.update();
+                        break;
+                    }
+                }
+            } else if (Keyboard.space.isPressed) {
                 dialogue.update();
             }
+        }
+
+        // Draw the game.
+        if (dialogue.hasOptions) {
+            foreach (i, option; dialogue.options.items) {
+                drawDebugText("{}. {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
+            }
+        } else if (dialogue.canUpdate) {
             drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
         } else {
-            drawDebugText("End of dialogue.");
+            drawDebugText("No more dialogue.");
         }
+        drawDebugText("Press R to restart.", Vec2(8, 140));
     }
 
     // Free all the game resources.
