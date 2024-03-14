@@ -4,40 +4,49 @@
 /// The dialogue module is a versatile dialogue system,
 /// enabling the creation of interactive conversations and branching narratives.
 
+/*
+# --- Checks
+# ? count
+# ? count = 0
+# --- Commands
+# $ echo count
+*/
+
 module popka.core.dialogue;
 
 import popka.core.container;
 import popka.core.io;
 import popka.core.strutils;
+import popka.core.strconv;
 
-enum dialogueUnitKindChars = "-#.@>|^";
+enum dialogueUnitKindChars = ".#*@>|^!+-";
 
 enum DialogueUnitKind {
-    pause = '-',
+    pause = '.',
     comment = '#',
-    point = '.',
+    point = '*',
     jump = '@',
     actor = '>',
     line = '|',
     menu = '^',
+    variable = '!',
+    plus = '+',
+    minus = '-',
 }
 
 struct DialogueUnit {
     List!char text;
     DialogueUnitKind kind;
+}
 
-    bool isOneOf(const(DialogueUnitKind)[] args...) {
-        foreach (arg; args) {
-            if (arg == kind) {
-                return true;
-            }
-        }
-        return false;
-    }
+struct DialogueVariable {
+    List!char name;
+    long value;
 }
 
 struct Dialogue {
     List!DialogueUnit units;
+    List!DialogueVariable variables;
     List!(const(char)[]) menu;
     size_t unitIndex;
     size_t pointCount;
@@ -48,11 +57,11 @@ struct Dialogue {
         load(path);
     }
 
-    bool hasMenu() {
+    bool hasOptions() {
         return menu.length != 0;
     }
 
-    bool canUpdate() {
+    bool hasText() {
         return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
@@ -114,22 +123,84 @@ struct Dialogue {
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
-            auto unit = units[unitIndex];
-            text = unit.text.items;
-            if (unit.isOneOf(DialogueUnitKind.comment, DialogueUnitKind.point)) {
-                update();
-            } else if (unit.kind == DialogueUnitKind.actor) {
-                actor = unit.text.items;
-                update();
-            } else if (unit.kind == DialogueUnitKind.jump) {
-                jump(unit.text.items);
-                update();
-            } else if (unit.kind == DialogueUnitKind.menu) {
-                menu.clear();
-                const(char)[] view = unit.text.items;
-                while (view.length != 0) {
-                    auto option = trim(skipValue(view, DialogueUnitKind.menu));
-                    menu.append(option);
+            text = units[unitIndex].text.items;
+            final switch (units[unitIndex].kind) {
+                case DialogueUnitKind.pause, DialogueUnitKind.line: {
+                    break;
+                }
+                case DialogueUnitKind.comment, DialogueUnitKind.point: {
+                    update();
+                    break;
+                }
+                case DialogueUnitKind.actor: {
+                    actor = text;
+                    update();
+                    break;
+                }
+                case DialogueUnitKind.jump: {
+                    jump(text);
+                    update();
+                    break;
+                }
+                case DialogueUnitKind.menu: {
+                    menu.clear();
+                    auto view = text;
+                    while (view.length != 0) {
+                        auto option = trim(skipValue(view, DialogueUnitKind.menu));
+                        menu.append(option);
+                    }
+                    break;
+                }
+                case DialogueUnitKind.variable: {
+                    auto variableIndex = -1;
+                    auto view = text;
+                    auto name = trim(skipValue(view, '='));
+                    auto value = trim(skipValue(view, '='));
+                    // Find if variable exists.
+                    foreach (i, variable; variables.items) {
+                        if (variable.name.items == name) {
+                            variableIndex = cast(int) i;
+                        }
+                    }
+                    // Create variable if it does not exist.
+                    if (variableIndex < 0) {
+                        auto variable = DialogueVariable();
+                        variable.name.append(name);
+                        variables.append(variable);
+                        variableIndex = cast(int) variables.length - 1;
+                    }
+                    // Set variable value.
+                    if (value.length != 0) {
+                        auto conv = toSigned(value);
+                        if (conv.error) {
+                            assert(0, "TODO: Do something about the error case.");
+                        } else {
+                            variables[variableIndex].value = conv.value;
+                        }
+                    }
+                    update();
+                    break;
+                }
+                case DialogueUnitKind.plus, DialogueUnitKind.minus: {
+                    auto variableIndex = -1;
+                    auto name = text;
+                    // Find if variable exists.
+                    foreach (i, variable; variables.items) {
+                        if (variable.name.items == name) {
+                            variableIndex = cast(int) i;
+                        }
+                    }
+                    // Add/Remove from variable.
+                    if (variableIndex < 0) {
+                        assert(0, "TODO: Do something about the error case.");
+                    }
+                    if (units[unitIndex].kind == DialogueUnitKind.plus) {
+                        variables[variableIndex].value += 1;
+                    } else {
+                        variables[variableIndex].value -= 1;
+                    }
+                    update();
+                    break;
                 }
             }
         }
@@ -140,6 +211,10 @@ struct Dialogue {
             unit.text.free();
         }
         units.free();
+        foreach (ref variable; variables.items) {
+            variable.name.free();
+        }
+        variables.free();
         reset();
         pointCount = 0;
     }

@@ -16,9 +16,11 @@ void runDialogueExample() {
     auto script = "
         # This is a comment.
 
-        ^ Select first point. ^ Select second point.
+        ! loopCount
+        * Menu
+        ^ Select first loop. ^ Select second loop. ^ End dialogue.
 
-        . Point1
+        * Point1
         > Bob
         | Hi.
         | My name is Bob.
@@ -26,14 +28,18 @@ void runDialogueExample() {
         | Hello!
         | Nice to meet you!
         | My name is Mia.
-        @ Point1
+        + loopCount
+        @ Menu
 
-        . Point2
+        * Point2
         > Bob
         | Yo Mia, this game is the bomb!
         > Mia
         | Trueee!
-        @ Point2
+        + loopCount
+        @ Menu
+
+        * End
     ";
 
     // Parse the dialogue script of the game.
@@ -42,14 +48,12 @@ void runDialogueExample() {
     dialogue.update();
 
     while (isWindowOpen) {
+        if (isPressed('q')) closeWindow();
         // Update the game.
-        if (Keyboard.r.isPressed) {
-            dialogue.reset();
-            dialogue.update();
-        }
-        if (dialogue.canUpdate) {
-            if (dialogue.hasMenu) {
-                foreach (i, key; digitChars[1 .. 1 + dialogue.options.length]) {
+        if (dialogue.hasText) {
+            if (dialogue.hasOptions) {
+                auto digits = digitChars[1 .. 1 + dialogue.options.length];
+                foreach (i, key; digits) {
                     if (isPressed(key)) {
                         dialogue.select(i);
                         break;
@@ -61,20 +65,25 @@ void runDialogueExample() {
         }
 
         // Draw the game.
-        if (dialogue.hasMenu) {
+        if (dialogue.hasOptions) {
             foreach (i, option; dialogue.options) {
                 drawDebugText("{}. {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
             }
-        } else if (dialogue.canUpdate) {
+        } else if (dialogue.hasText) {
             drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
         } else {
             drawDebugText("The dialogue has ended.");
         }
-        drawRect(Rect(0, resolution.y * 0.5, resolution.x, 1), lightGray);
+        drawRect(Rect(0, resolution.y * 0.75, resolution.x, 1), lightGray);
         drawDebugText(
-            "Press a number to pick an option.\nPress space to continue.\nPress R to restart.",
-            Vec2(8, resolution.y - 14 * 3 - 8)
+            "Press a number to pick an option.\nPress space to continue.",
+            Vec2(8, resolution.y - 14 * 2 - 8)
         );
+
+        // Debug stuff.
+        foreach (i, variable; dialogue.variables.items) {
+            drawDebugText("-> {}: {}".fmt(variable.name.items, variable.value), Vec2(8, i * 14 + 60));
+        }
     }
     // Free all the game resources.
     dialogue.free();

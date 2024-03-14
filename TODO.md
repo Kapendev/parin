@@ -1,5 +1,7 @@
 # NOW
 
+* Add commands and checks in dialogue system.
+* Clean up dialogue system and dialogue example.
 * Test engine on Windows.
 
 # TODO
