@@ -844,7 +844,7 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position, DrawOptions options =
         sprite.data,
         toRay(source.floor()),
         toRay(target.floor()),
-        toRay(target.origin(options.hook).floor()),
+        toRay(target.floor().origin(options.hook).floor()),
         options.rotation,
         toRay(options.color),
     );
@@ -937,7 +937,8 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
         case Filter.nearest: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_POINT); break;
         case Filter.linear: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_BILINEAR); break;
     }
-    auto origin = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).origin(options.hook).floor();
+    auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
+    auto origin = rect.origin(options.hook).floor();
     raygl.rlPushMatrix();
     raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     raygl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
@@ -951,7 +952,8 @@ void drawText(Font font, Vec2 spacing, const(char)[] text, Vec2 position, DrawOp
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto origin = Rect(measureText(font, spacing, text)).origin(options.hook);
+    auto rect = Rect(measureText(font, spacing, text)).floor();
+    auto origin = rect.origin(options.hook).floor();
     raygl.rlPushMatrix();
     raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     raygl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
