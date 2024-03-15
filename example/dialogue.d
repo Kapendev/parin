@@ -16,7 +16,8 @@ void runDialogueExample() {
     auto script = "
         # This is a comment.
 
-        ! loopCount
+        ! MyCount = 69
+        ! loopCount = MyCount
         * Menu
         ^ Select first loop. ^ Select second loop. ^ End dialogue.
 

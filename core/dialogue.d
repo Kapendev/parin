@@ -156,10 +156,14 @@ struct Dialogue {
                     auto view = text;
                     auto name = trim(skipValue(view, '='));
                     auto value = trim(skipValue(view, '='));
+                    if (name.length == 0) {
+                        assert(0, "TODO: Do something about the error case.");
+                    }
                     // Find if variable exists.
                     foreach (i, variable; variables.items) {
                         if (variable.name.items == name) {
                             variableIndex = cast(int) i;
+                            break;
                         }
                     }
                     // Create variable if it does not exist.
@@ -173,7 +177,20 @@ struct Dialogue {
                     if (value.length != 0) {
                         auto conv = toSigned(value);
                         if (conv.error) {
-                            assert(0, "TODO: Do something about the error case.");
+                            auto valueVariableIndex = -1;
+                            auto valueName = value;
+                            // Find if variable exists.
+                            foreach (i, variable; variables.items) {
+                                if (variable.name.items == valueName) {
+                                    valueVariableIndex = cast(int) i;
+                                    break;
+                                }
+                            }
+                            if (valueVariableIndex < 0) {
+                                assert(0, "TODO: Do something about the error case.");
+                            } else {
+                                variables[variableIndex].value = variables[valueVariableIndex].value;
+                            }
                         } else {
                             variables[variableIndex].value = conv.value;
                         }
@@ -188,6 +205,7 @@ struct Dialogue {
                     foreach (i, variable; variables.items) {
                         if (variable.name.items == name) {
                             variableIndex = cast(int) i;
+                            break;
                         }
                     }
                     // Add/Remove from variable.
