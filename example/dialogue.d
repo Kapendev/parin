@@ -16,8 +16,7 @@ void runDialogueExample() {
     auto script = "
         # This is a comment.
 
-        ! MyCount = 69
-        ! loopCount = MyCount
+        ! loopCount
         * Menu
         ^ Select first loop. ^ Select second loop. ^ End dialogue.
 
@@ -49,7 +48,6 @@ void runDialogueExample() {
     dialogue.update();
 
     while (isWindowOpen) {
-        if (isPressed('q')) closeWindow();
         // Update the game.
         if (dialogue.hasText) {
             if (dialogue.hasOptions) {
@@ -68,23 +66,21 @@ void runDialogueExample() {
         // Draw the game.
         if (dialogue.hasOptions) {
             foreach (i, option; dialogue.options) {
-                drawDebugText("{}. {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
+                drawDebugText("[{}] {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
             }
         } else if (dialogue.hasText) {
             drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
         } else {
             drawDebugText("The dialogue has ended.");
         }
-        drawRect(Rect(0, resolution.y * 0.75, resolution.x, 1), lightGray);
+        foreach (i, variable; dialogue.variables.items) {
+            drawDebugText("{} = {}".fmt(variable.name.items, variable.value), Vec2(8, 8 + (i + 5) * 14));
+        }
+        drawRect(Rect(0, resolution.y * 0.75, resolution.x, resolution.y * 0.25), darkGray);
         drawDebugText(
             "Press a number to pick an option.\nPress space to continue.",
-            Vec2(8, resolution.y - 14 * 2 - 8)
+            Vec2(8, resolution.y - 7 - 14 * 2)
         );
-
-        // Debug stuff.
-        foreach (i, variable; dialogue.variables.items) {
-            drawDebugText("-> {}: {}".fmt(variable.name.items, variable.value), Vec2(8, i * 14 + 60));
-        }
     }
     // Free all the game resources.
     dialogue.free();

@@ -13,11 +13,11 @@ import popka.game.pixeloid;
 public import popka.core.basic;
 
 PopkaState popkaState;
+Font popkaPixeloidFont;
 
 enum {
     defaultFPS = 60,
     defaultBackgroundColor = Color(0x2A, 0x36, 0x3A),
-    defaultDebugFontSpacing = Vec2(1.0f, 14.0f),
     defaultDebugFontColor = lightGray,
     toggleFullscreenWaitTime = 0.125f,
 }
@@ -76,6 +76,7 @@ struct Sprite {
 
 struct Font {
     ray.Font data;
+    Vec2 spacing;
 
     this(const(char)[] path, uint size, const(dchar)[] runes = []) {
         load(path, size, runes);
@@ -507,8 +508,7 @@ void openWindow(float width, float height, const(char)[] title = "Popka", Color 
     popkaState.isWindowOpen = true;
     popkaState.backgroundColor = color;
     popkaState.lastWindowSize = Vec2(width, height);
-    popkaState.debugFont = LoadPixeloidFont();
-    popkaState.debugFontSpacing = defaultDebugFontSpacing;
+    popkaState.debugFont = popkaFont;
     popkaState.debugFontOptions.color = defaultDebugFontColor;
 }
 
@@ -523,6 +523,7 @@ void freeWindow() {
     popkaState.view.free();
     ray.CloseWindow();
     popkaState = PopkaState();
+    popkaPixeloidFont = Font();
 }
 
 bool isWindowOpen() {
@@ -811,7 +812,16 @@ bool isReleased(Gamepad key, uint id = 0) {
 }
 
 Font rayFont() {
-    return toPopka(ray.GetFontDefault());
+    auto result = toPopka(ray.GetFontDefault());
+    result.spacing = Vec2(1.0f, 14.0f);
+    return result;
+}
+
+Font popkaFont() {
+    if (popkaPixeloidFont.isEmpty) {
+        popkaPixeloidFont = loadPixeloidFont();
+    }
+    return popkaPixeloidFont;
 }
 
 void drawRect(Rect rect, Color color = white) {
@@ -882,7 +892,7 @@ void drawTileMap(Sprite sprite, TileMap map, Camera camera, Vec2 position, DrawO
     }
 }
 
-Vec2 measureText(Font font, Vec2 spacing, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
+Vec2 measureText(Font font, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
     }
@@ -915,7 +925,7 @@ Vec2 measureText(Font font, Vec2 spacing, const(char)[] text, Vec2 scale = Vec2(
             }
             byteCounter = 0;
             textWidth = 0;
-            textHeight += spacing.y;
+            textHeight += font.spacing.y;
         }
         if (tempByteCounter < byteCounter) {
             tempByteCounter = byteCounter;
@@ -924,7 +934,7 @@ Vec2 measureText(Font font, Vec2 spacing, const(char)[] text, Vec2 scale = Vec2(
     if (tempTextWidth < textWidth) {
         tempTextWidth = textWidth;
     }
-    result.x = floor(tempTextWidth * scale.x + ((tempByteCounter - 1) * spacing.x * scale.x));
+    result.x = floor(tempTextWidth * scale.x + ((tempByteCounter - 1) * font.spacing.x * scale.x));
     result.y = floor(textHeight * scale.y);
     return result;
 }
@@ -948,11 +958,11 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     raygl.rlPopMatrix();
 }
 
-void drawText(Font font, Vec2 spacing, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawText(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto rect = Rect(measureText(font, spacing, text)).floor();
+    auto rect = Rect(measureText(font, text)).floor();
     auto origin = rect.origin(options.hook).floor();
     raygl.rlPushMatrix();
     raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
@@ -968,7 +978,7 @@ void drawText(Font font, Vec2 spacing, const(char)[] text, Vec2 position, DrawOp
         auto codepoint = ray.GetCodepointNext(&text[i], &codepointByteCount);
         auto index = ray.GetGlyphIndex(font.data, codepoint);
         if (codepoint == '\n') {
-            textOffsetY += spacing.y;
+            textOffsetY += font.spacing.y;
             textOffsetX = 0.0f;
         } else {
             if (codepoint != ' ' && codepoint != '\t') {
@@ -978,9 +988,9 @@ void drawText(Font font, Vec2 spacing, const(char)[] text, Vec2 position, DrawOp
                 drawRune(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
             }
             if (font.data.glyphs[index].advanceX == 0) {
-                textOffsetX += font.data.recs[index].width + spacing.x;
+                textOffsetX += font.data.recs[index].width + font.spacing.x;
             } else {
-                textOffsetX += font.data.glyphs[index].advanceX + spacing.x;
+                textOffsetX += font.data.glyphs[index].advanceX + font.spacing.x;
             }
         }
         // Move text bytes counter to next codepoint.
@@ -990,5 +1000,5 @@ void drawText(Font font, Vec2 spacing, const(char)[] text, Vec2 position, DrawOp
 }
 
 void drawDebugText(const(char)[] text, Vec2 position = Vec2(8.0f)) {
-    drawText(popkaState.debugFont, popkaState.debugFontSpacing, text, position, popkaState.debugFontOptions);
+    drawText(popkaState.debugFont, text, position, popkaState.debugFontOptions);
 }

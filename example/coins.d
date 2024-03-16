@@ -51,7 +51,7 @@ void runCoinsExample() {
 
         // Draw the game.
         foreach (coin; coins.items) {
-            drawRect(coin, darkGray);
+            drawRect(coin, lightGray);
         }
         drawRect(player, lightGray);
         if (coins.length == 0) {

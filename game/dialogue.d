@@ -12,12 +12,12 @@
 # $ echo count
 */
 
-module popka.core.dialogue;
+module popka.game.dialogue;
 
 import popka.core.container;
 import popka.core.io;
-import popka.core.strutils;
 import popka.core.strconv;
+import popka.core.strutils;
 
 enum dialogueUnitKindChars = ".#*@>|^!+-";
 

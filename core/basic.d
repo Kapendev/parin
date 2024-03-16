@@ -9,7 +9,6 @@ module popka.core.basic;
 public import popka.core.ascii;
 public import popka.core.color;
 public import popka.core.container;
-public import popka.core.dialogue;
 public import popka.core.fmt;
 public import popka.core.io;
 public import popka.core.math;
