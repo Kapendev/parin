@@ -7,6 +7,8 @@ module popka.example.coins;
 
 import popka.basic;
 
+@safe @nogc nothrow:
+
 void runCoinsExample() {
     openWindow(640, 480);
     lockResolution(320, 180);

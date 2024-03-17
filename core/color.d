@@ -6,6 +6,8 @@
 
 module popka.core.color;
 
+@safe @nogc nothrow:
+
 enum {
     blank = Color(),
     black = Color(0),
@@ -25,7 +27,9 @@ struct Color {
     ubyte g;
     ubyte b;
     ubyte a;
-    
+
+    @safe @nogc nothrow:
+
     this(ubyte r, ubyte g, ubyte b, ubyte a) {
         this.r = r;
         this.g = g;

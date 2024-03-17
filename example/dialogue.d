@@ -7,6 +7,8 @@ module popka.example.dialogue;
 
 import popka.basic;
 
+@safe @nogc nothrow:
+
 void runDialogueExample() {
     openWindow(640, 480);
     lockResolution(320, 180);

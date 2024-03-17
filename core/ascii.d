@@ -5,6 +5,8 @@
 
 module popka.core.ascii;
 
+@safe @nogc nothrow:
+
 enum {
     digitChars = "0123456789",
     upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",

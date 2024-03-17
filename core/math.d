@@ -7,6 +7,8 @@ module popka.core.math;
 
 import math = core.stdc.math;
 
+@safe @nogc nothrow:
+
 enum Hook : ubyte {
     topLeft, top, topRight,
     left, center, right,
@@ -17,6 +19,8 @@ struct Vec2 {
     float x = 0.0f;
     float y = 0.0f;
     
+    @safe @nogc nothrow:
+
     this(float x, float y) {
         this.x = x;
         this.y = y;
@@ -99,6 +103,8 @@ struct Vec3 {
     float y = 0.0f;
     float z = 0.0f;
 
+    @safe @nogc nothrow:
+
     this(float x, float y, float z) {
         this.x = x;
         this.y = y;
@@ -150,6 +156,8 @@ struct Vec4 {
     float z = 0.0f;
     float w = 0.0f;
 
+    @safe @nogc nothrow:
+
     this(float x, float y, float z, float w) {
         this.x = x;
         this.y = y;
@@ -198,6 +206,8 @@ struct Vec4 {
 struct Rect {
     Vec2 position;
     Vec2 size;
+
+    @safe @nogc nothrow:
 
     this(Vec2 position, Vec2 size) {
         this.position = position;
@@ -408,24 +418,35 @@ struct Rect {
     }
 }
 
-float sqrt(float x) {
-    return math.sqrtf(x);
+T min(T)(T a, T b) {
+    return a < b ? a : b;
 }
 
-float min(float a, float b) {
-    return a <= b ? a : b;
+T max(T)(T a, T b) {
+    return a < b ? b : a;
 }
 
-float max(float a, float b) {
-    return a <= b ? b : a;
+T sign(T)(T x) {
+    return x < 0 ? -1 : 1;
 }
 
-float sign(float x) {
-    return x <= 0.0f ? -1.0f : 1.0f;
+T abs(T)(T x) {
+    return x < 0 ? -x : x;
 }
 
-float abs(float x) {
-    return x <= 0.0f ? -x : x;
+T clamp(T)(T x, T a, T b) {
+    return x <= a ? a : x >= b ? b : x;
+}
+
+T wrap(T)(T x, T a, T b) {
+    auto result = x;
+    while (result < a) {
+        result += b - a;
+    }
+    while (result > b) {
+        result -= b - a;
+    }
+    return result;
 }
 
 float floor(float x) {
@@ -442,19 +463,8 @@ float round(float x) {
     return x <= 0.0f ? cast(float) cast(int) (x - 0.5f) : cast(float) cast(int) (x + 0.5f);
 }
 
-float clamp(float x, float a, float b) {
-    return x <= a ? a : x >= b ? b : x;
-}
-
-float wrap(float x, float a, float b) {
-    auto result = x;
-    while (result < a) {
-        result += b - a;
-    }
-    while (result > b) {
-        result -= b - a;
-    }
-    return result;
+float sqrt(float x) {
+    return math.sqrtf(x);
 }
 
 float lerp(float from, float to, float weight) {

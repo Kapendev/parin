@@ -7,6 +7,8 @@ module popka.core.strutils;
 
 import popka.core.ascii;
 
+@safe @nogc nothrow:
+
 bool isStrz(const(char)[] str) {
     return str.length != 0 && str[$ - 1] == '\0';
 }

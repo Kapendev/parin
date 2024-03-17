@@ -11,6 +11,8 @@ public import popka.example.coins;
 public import popka.example.dialogue;
 public import popka.example.hello;
 
+@safe @nogc nothrow:
+
 void runEveryExample() {
     runHelloExample();
     runCoinsExample();

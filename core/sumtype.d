@@ -6,6 +6,8 @@
 
 module popka.core.sumtype;
 
+@safe @nogc nothrow:
+
 struct None {}
 
 union SumTypeData(A...) {
@@ -22,6 +24,8 @@ struct SumType(A...) {
     SumTypeData!A data;
     SumTypeKind kind;
     alias data this;
+
+    @safe @nogc nothrow:
 
     static foreach (i, T; A) {
         mixin("enum " ~ sumTypeKindMemberName!T ~ " = i;");

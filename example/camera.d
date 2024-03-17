@@ -7,6 +7,8 @@ module popka.example.camera;
 
 import popka.basic;
 
+@safe @nogc nothrow:
+
 void runCameraExample() {
     openWindow(640, 480);
     lockResolution(320, 180);

@@ -9,4 +9,6 @@ module popka.basic;
 public import popka.core.basic;
 public import popka.game.basic;
 
+@safe @nogc nothrow:
+
 unittest {}

@@ -7,6 +7,8 @@
 
 module popka.core.strconv;
 
+@safe @nogc nothrow:
+
 struct ToStrOptions {
     uint floatPrecision = 2;
 }
@@ -142,6 +144,7 @@ const(char)[] charToStr(char value) {
     return result;
 }
 
+@trusted
 const(char)[] strzToStr(const(char)* value) {
     static char[1024] buf = void;
     auto result = buf[];
@@ -277,6 +280,7 @@ ToValueResult!double toFloat(const(char)[] str) {
     return result;
 }
 
+@trusted
 const(char)* toStrz(const(char)[] str) {
     static char[1024] buf = void;
     auto result = buf[];

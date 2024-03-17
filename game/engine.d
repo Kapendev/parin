@@ -12,6 +12,8 @@ import popka.game.pixeloid;
 
 public import popka.core.basic;
 
+@safe @nogc nothrow:
+
 PopkaState popkaState;
 Font popkaPixeloidFont;
 
@@ -37,6 +39,8 @@ enum Filter : ubyte {
 struct Sprite {
     ray.Texture2D data;
 
+    @safe @nogc nothrow:
+
     this(const(char)[] path) {
         load(path);
     }
@@ -45,16 +49,8 @@ struct Sprite {
         return data.id <= 0;
     }
 
-    float width() {
-        return data.width;
-    }
-
-    float height() {
-        return data.height;
-    }
-
     Vec2 size() {
-        return Vec2(width, height);
+        return Vec2(data.width, data.height);
     }
 
     Rect rect() {
@@ -78,6 +74,8 @@ struct Font {
     ray.Font data;
     Vec2 spacing;
 
+    @safe @nogc nothrow:
+
     this(const(char)[] path, uint size, const(dchar)[] runes = []) {
         load(path, size, runes);
     }
@@ -90,6 +88,7 @@ struct Font {
         return data.baseSize;
     }
 
+    @trusted
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
         data = ray.LoadFontEx(toStrz(path), size, cast(int*) runes.ptr, cast(int) runes.length);
@@ -106,6 +105,8 @@ struct Font {
 struct View {
     ray.RenderTexture2D data;
 
+    @safe @nogc nothrow:
+
     this(Vec2 size) {
         load(size);
     }
@@ -118,16 +119,8 @@ struct View {
         return data.texture.id <= 0;
     }
 
-    float width() {
-        return data.texture.width;
-    }
-
-    float height() {
-        return data.texture.height;
-    }
-
     Vec2 size() {
-        return Vec2(width, height);
+        return Vec2(data.texture.width, data.texture.height);
     }
 
     Rect rect() {
@@ -154,6 +147,8 @@ struct View {
 struct TileMap {
     Grid!short data;
     alias data this;
+
+    @safe @nogc nothrow:
 
     Vec2 cellSize() {
         return Vec2(cellWidth, cellHeight);
@@ -207,6 +202,8 @@ struct Camera {
     Hook hook;
     bool isAttached;
 
+    @safe @nogc nothrow:
+
     this(Vec2 position) {
         this.position = position;
     }
@@ -215,16 +212,8 @@ struct Camera {
         this.position = Vec2(x, y);
     }
 
-    float width() {
-        return resolution.x * scale;
-    }
-
-    float height() {
-        return resolution.y * scale;
-    }
-
     Vec2 size() {
-        return Vec2(width, height);
+        return resolution * Vec2(scale);
     }
 
     Vec2 origin() {
@@ -677,28 +666,12 @@ Vec2 screenSize() {
     return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
 }
 
-float screenWidth() {
-    return screenSize.x;
-}
-
-float screenHeight() {
-    return screenSize.y;
-}
-
 Vec2 windowSize() {
     if (isFullscreen) {
         return screenSize;
     } else {
         return Vec2(ray.GetScreenWidth(), ray.GetScreenHeight());
     }
-}
-
-float windowWidth() {
-    return windowSize.x;
-}
-
-float windowHeight() {
-    return windowSize.y;
 }
 
 Vec2 resolution() {
@@ -709,18 +682,10 @@ Vec2 resolution() {
     }
 }
 
-float resolutionWidth() {
-    return resolution.x;
-}
-
-float resolutionHeight() {
-    return resolution.y;
-}
-
-Vec2 mousePosition() {
+Vec2 mouse() {
     if (isResolutionLocked) {
         auto window = windowSize;
-        auto minRatio = min(window.x / popkaState.view.width, window.y / popkaState.view.height);
+        auto minRatio = min(window.x / popkaState.view.size.x, window.y / popkaState.view.size.y);
         auto targetSize = popkaState.view.size * Vec2(minRatio);
         return Vec2(
             (ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio,
@@ -729,14 +694,6 @@ Vec2 mousePosition() {
     } else {
         return Vec2(ray.GetMouseX(), ray.GetMouseY());
     }
-}
-
-float mouseX() {
-    return mousePosition.x;
-}
-
-float mouseY() {
-    return mousePosition.y;
 }
 
 float mouseWheel() {
@@ -751,16 +708,21 @@ float deltaTime() {
     return ray.GetFrameTime();
 }
 
-Vec2 deltaMousePosition() {
+Vec2 deltaMouse() {
     return toPopka(ray.GetMouseDelta());
 }
 
-float deltaMouseX() {
-    return deltaMousePosition.x;
+Font popkaFont() {
+    if (popkaPixeloidFont.isEmpty) {
+        popkaPixeloidFont = loadPixeloidFont();
+    }
+    return popkaPixeloidFont;
 }
 
-float deltaMouseY() {
-    return deltaMousePosition.y;
+Font rayFont() {
+    auto result = toPopka(ray.GetFontDefault());
+    result.spacing = Vec2(1.0f, 14.0f);
+    return result;
 }
 
 bool isPressed(char key) {
@@ -811,19 +773,6 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
-Font rayFont() {
-    auto result = toPopka(ray.GetFontDefault());
-    result.spacing = Vec2(1.0f, 14.0f);
-    return result;
-}
-
-Font popkaFont() {
-    if (popkaPixeloidFont.isEmpty) {
-        popkaPixeloidFont = loadPixeloidFont();
-    }
-    return popkaPixeloidFont;
-}
-
 void drawRect(Rect rect, Color color = white) {
     ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
 }
@@ -861,8 +810,8 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position, DrawOptions options =
 }
 
 void drawTile(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(uint) (sprite.width / tileSize.x).floor();
-    auto gridHeight = cast(uint) (sprite.height / tileSize.y).floor();
+    auto gridWidth = cast(uint) (sprite.size.x / tileSize.x).floor();
+    auto gridHeight = cast(uint) (sprite.size.y / tileSize.y).floor();
     auto region = Rect((tileID % gridWidth) * tileSize.x, (tileID / gridHeight) * tileSize.y, tileSize.x, tileSize.y);
     drawSprite(sprite, region, position, options);
 }
@@ -892,6 +841,7 @@ void drawTileMap(Sprite sprite, TileMap map, Camera camera, Vec2 position, DrawO
     }
 }
 
+@trusted
 Vec2 measureText(Font font, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
@@ -958,6 +908,7 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     raygl.rlPopMatrix();
 }
 
+@trusted
 void drawText(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;

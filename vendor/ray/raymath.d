@@ -51,6 +51,7 @@
 
 module popka.vendor.ray.raymath;
 
+@trusted @nogc nothrow
 extern (C):
 
 // Function specifiers definition

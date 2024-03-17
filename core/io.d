@@ -10,6 +10,9 @@ import io = core.stdc.stdio;
 import popka.core.container;
 import popka.core.strconv;
 
+@safe @nogc nothrow:
+
+@trusted
 List!char readText(const(char)[] path) {
     auto f = io.fopen(toStrz(path), "rb");
     if (f == null) {
@@ -36,6 +39,7 @@ List!char readText(const(char)[] path) {
     return result;
 }
 
+@trusted
 void writeText(const(char)[] path, List!char content) {
     auto f = io.fopen(toStrz(path), "w");
     if (f == null) {

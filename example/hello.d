@@ -7,6 +7,8 @@ module popka.example.hello;
 
 import popka.basic;
 
+@safe @nogc nothrow:
+
 void runHelloExample() {
     openWindow(640, 480);
     lockResolution(320, 180);

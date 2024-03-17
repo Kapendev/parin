@@ -9,6 +9,8 @@ module popka.core.fmt;
 import io = core.stdc.stdio;
 import popka.core.strconv;
 
+@safe @nogc nothrow:
+
 const(char)[] fmt(A...)(const(char)[] str, A args) {
     static char[1024][4] bufs = void;
     static auto bufi = 0;
@@ -46,10 +48,12 @@ const(char)[] fmt(A...)(const(char)[] str, A args) {
     return result;
 }
 
+@trusted
 void printf(A...)(const(char)[] str, A args) {
     io.fputs(fmt("{}\0", fmt(str, args)).ptr, io.stdout);
 }
 
+@trusted
 void printfln(A...)(const(char)[] str, A args) {
     io.fputs(fmt("{}\n\0", fmt(str, args)).ptr, io.stdout);
 }

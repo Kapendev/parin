@@ -8,8 +8,6 @@
 # --- Checks
 # ? count
 # ? count = 0
-# --- Commands
-# $ echo count
 */
 
 module popka.game.dialogue;
@@ -19,7 +17,9 @@ import popka.core.io;
 import popka.core.strconv;
 import popka.core.strutils;
 
-enum dialogueUnitKindChars = ".#*@>|^!+-";
+@safe @nogc nothrow:
+
+enum dialogueUnitKindChars = ".#*@>|^!+-$";
 
 enum DialogueUnitKind {
     pause = '.',
@@ -32,6 +32,7 @@ enum DialogueUnitKind {
     variable = '!',
     plus = '+',
     minus = '-',
+    command = '$',
 }
 
 struct DialogueUnit {
@@ -44,14 +45,19 @@ struct DialogueVariable {
     long value;
 }
 
+alias DialogueFun = void function(const(char)[][] args);
+
 struct Dialogue {
     List!DialogueUnit units;
     List!DialogueVariable variables;
     List!(const(char)[]) menu;
+    List!(const(char)[]) command;
     size_t unitIndex;
     size_t pointCount;
     const(char)[] text;
     const(char)[] actor;
+
+    @safe @nogc nothrow:
 
     this(const(char)[] path) {
         load(path);
@@ -59,6 +65,10 @@ struct Dialogue {
 
     bool hasOptions() {
         return menu.length != 0;
+    }
+
+    bool hasArgs() {
+        return command.length != 0;
     }
 
     bool hasText() {
@@ -69,8 +79,14 @@ struct Dialogue {
         return menu.items;
     }
 
+    const(char)[][] args() {
+        return command.items;
+    }
+
     void reset() {
         unitIndex = 0;
+        menu.clear();
+        command.clear();
         text = "";
         actor = "";
     }
@@ -120,6 +136,12 @@ struct Dialogue {
         update();
     }
 
+    void run(DialogueFun fun) {
+        fun(args);
+        command.clear();
+        update();
+    }
+
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
@@ -143,6 +165,9 @@ struct Dialogue {
                     break;
                 }
                 case DialogueUnitKind.menu: {
+                    if (text.length == 0) {
+                        assert(0, "TODO: Do something about the error case.");
+                    }
                     menu.clear();
                     auto view = text;
                     while (view.length != 0) {
@@ -220,19 +245,33 @@ struct Dialogue {
                     update();
                     break;
                 }
+                case DialogueUnitKind.command: {
+                    if (text.length == 0) {
+                        assert(0, "TODO: Do something about the error case.");
+                    }
+                    command.clear();
+                    auto view = text;
+                    while (view.length != 0) {
+                        auto arg = trim(skipValue(view, ' '));
+                        command.append(arg);
+                    }
+                    break;
+                }
             }
         }
     }
 
     void free() {
-        foreach (ref unit; units.items) {
+        foreach (ref unit; units) {
             unit.text.free();
         }
         units.free();
-        foreach (ref variable; variables.items) {
+        foreach (ref variable; variables) {
             variable.name.free();
         }
         variables.free();
+        menu.free();
+        command.free();
         reset();
         pointCount = 0;
     }

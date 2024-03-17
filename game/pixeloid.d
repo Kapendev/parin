@@ -28,6 +28,8 @@ module popka.game.pixeloid;
 import ray = popka.vendor.ray.raylib;
 import popka.game.engine;
 
+@safe @nogc nothrow:
+
 enum pixeloidFontRunes = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~äöÜßΑαΒβΓγΔδΕεΖζΗηΘθΙιΚκΛλΜμΝνΞξΟοΠπΡρΣσςΤτΥυΦφΧχΨψΩωʹ͵ͺ;΄΅·ΆΈΉΊΌΎΏΐΪΫάέήίΰϊϋόύώϔ";
 enum pixeloidFontCompressedDataSize = 1708;
 
@@ -486,6 +488,7 @@ ray.GlyphInfo[176] pixeloidFontGlyphs = [
 
 /// Font loading function.
 /// WARNING: This font data must not be unloaded.
+@trusted
 Font loadPixeloidFont() {
     Font result;
     ray.Font font = ray.Font();

@@ -108,6 +108,7 @@ module popka.vendor.ray.rlgl;
 
 import core.stdc.stdlib;
 
+@trusted @nogc nothrow
 extern (C):
 
 enum RLGL_VERSION = "4.5";

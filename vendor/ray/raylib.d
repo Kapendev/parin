@@ -82,6 +82,7 @@ import core.stdc.config;
 import core.stdc.stdarg;
 import core.stdc.stdlib;
 
+@trusted @nogc nothrow
 extern (C):
 
 // Required for: va_list - Only used by TraceLogCallback

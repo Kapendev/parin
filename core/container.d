@@ -9,9 +9,13 @@ module popka.core.container;
 import lib = core.stdc.stdlib;
 import popka.core.fmt;
 
+@safe @nogc nothrow:
+
 struct List(T) {
     T[] items;
     size_t capacity;
+
+    @safe @nogc nothrow:
 
     this(size_t length) {
         foreach (i; 0 .. length) {
@@ -71,6 +75,7 @@ struct List(T) {
         return items.length;
     }
 
+    @trusted
     void append(const(T)[] args...) {
         foreach (arg; args) {
             size_t newLength = length + 1;
@@ -116,6 +121,7 @@ struct List(T) {
         items = items[0 .. 0];
     }
 
+    @trusted
     void free() {
         if (items.ptr != null) {
             lib.free(items.ptr);
@@ -130,6 +136,8 @@ struct FlagList(T) {
     List!bool flags;
     size_t hotIndex;
     size_t openIndex;
+
+    @safe @nogc nothrow:
 
     this(size_t length) {
         foreach (i; 0 .. length) {
@@ -188,6 +196,7 @@ struct FlagList(T) {
         return result;
     }
 
+    @trusted
     void append(const(T)[] args...) {
         foreach (arg; args) {
             if (openIndex == flags.length) {
@@ -326,6 +335,8 @@ struct Grid(T) {
     float cellHeight;
     size_t rowCount;
     size_t colCount;
+
+@safe @nogc nothrow:
 
     this(size_t rowCount, size_t colCount, size_t cellWidth, size_t cellHeight) {
         this.cellWidth = cellWidth;

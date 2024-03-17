@@ -16,4 +16,6 @@ public import popka.core.strconv;
 public import popka.core.strutils;
 public import popka.core.sumtype;
 
+@safe @nogc nothrow:
+
 unittest {}
