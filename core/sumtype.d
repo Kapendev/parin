@@ -32,6 +32,7 @@ struct SumType(A...) {
     }
 
     static foreach (i, T; A) {
+        @trusted
         this(T data) {
             this.data = *(cast(SumTypeData!A*) &data);
             this.kind = i;
@@ -39,6 +40,7 @@ struct SumType(A...) {
     }
 
     static foreach (i, T; A) {
+        @trusted
         void opAssign(T rhs) {
             data = *(cast(SumTypeData!A*) &rhs);
             kind = i;
