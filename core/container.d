@@ -7,7 +7,6 @@
 module popka.core.container;
 
 import lib = core.stdc.stdlib;
-import popka.core.fmt;
 
 @safe @nogc nothrow:
 
@@ -168,9 +167,9 @@ struct FlagList(T) {
         openIndex = list.openIndex;
     }
 
-    ref T opIndex(size_t i, const(char)[] file = __FILE__, size_t line = __LINE__) {
+    ref T opIndex(size_t i) {
         if (!flags[i]) {
-            assert(0, "{}({}): ID {} doesn't exist.".fmt(file, line, i));
+            assert(0, "ID doesn't exist.");
         }
         return data[i];
     }
@@ -183,7 +182,7 @@ struct FlagList(T) {
 
     void opIndexOpAssign(string op)(T rhs, size_t i, const(char)[] file = __FILE__, size_t line = __LINE__) {
         if (!flags[i]) {
-            assert(0, "{}({}): ID {} doesn't exist.".fmt(file, line, i));
+            assert(0, "ID doesn't exist.");
         }
         mixin("data[i] " ~ op ~ "= rhs;");
     }
@@ -219,9 +218,9 @@ struct FlagList(T) {
         }
     }
 
-    void remove(size_t i, const(char)[] file = __FILE__, size_t line = __LINE__) {
+    void remove(size_t i) {
         if (!flags[i]) {
-            assert(0, "{}({}): ID {} doesn't exist.".fmt(file, line, i));
+            assert(0, "ID doesn't exist.");
         }
         flags[i] = false;
         hotIndex = i;

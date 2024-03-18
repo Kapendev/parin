@@ -144,6 +144,51 @@ struct View {
     }
 }
 
+// TODO: Needs a lot of testing and changing.
+// NOTE: This should handle sounds and music.
+// NOTE: I added this basic layer to use it for a visual novel.
+struct AudioAsset {
+    ray.Music data;
+
+    @safe @nogc nothrow:
+
+    this(const(char)[] path) {
+        load(path);
+    }
+
+    bool isEmpty() {
+        return data.stream.sampleRate == 0;
+    }
+
+    void load(const(char)[] path) {
+        free();
+        ray.LoadMusicStream(toStrz(path));
+    }
+
+    void free() {
+        if (!isEmpty) {
+            ray.UnloadMusicStream(data);
+            data = ray.Music();
+        }
+    }
+
+    void play() {
+        ray.PlayMusicStream(data);
+    }
+
+    void stop() {
+        ray.StopMusicStream(data);
+    }
+
+    void pause() {
+        ray.PauseMusicStream(data);
+    }
+
+    void resume() {
+        ray.ResumeMusicStream(data);
+    }
+}
+
 struct TileMap {
     Grid!short data;
     alias data this;
