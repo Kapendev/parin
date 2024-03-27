@@ -687,6 +687,7 @@ void toggleFullscreen() {
     if (!ray.IsWindowFullscreen()) {
         auto screen = screenSize;
         popkaState.lastWindowSize = windowSize;
+        ray.SetWindowPosition(0, 0);
         ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
     }
     popkaState.isToggleFullscreenQueued = true;
@@ -854,10 +855,17 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position, DrawOptions options =
     );
 }
 
+// TODO: Think about when to use ints and when to use floats or vectors.
+// NOTE: For now it will be a vector because I am making a game lol.
 void drawTile(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(uint) (sprite.size.x / tileSize.x).floor();
-    auto gridHeight = cast(uint) (sprite.size.y / tileSize.y).floor();
-    auto region = Rect((tileID % gridWidth) * tileSize.x, (tileID / gridHeight) * tileSize.y, tileSize.x, tileSize.y);
+    auto gridWidth = cast(uint) (sprite.size.x / tileSize.x);
+    auto gridHeight = cast(uint) (sprite.size.y / tileSize.y);
+    if (gridWidth == 0 || gridHeight == 0) {
+        return;
+    }
+    auto row = tileID / gridWidth;
+    auto col = tileID % gridWidth;
+    auto region = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
     drawSprite(sprite, region, position, options);
 }
 

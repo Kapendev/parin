@@ -35,7 +35,7 @@ enum pixeloidFontCompressedDataSize = 1708;
 
 /// Font image pixels data compressed (DEFLATE).
 /// NOTE: Original pixel data simplified to GRAYSCALE.
-ubyte[pixeloidFontCompressedDataSize] pixeloidFontData = [
+immutable ubyte[pixeloidFontCompressedDataSize] pixeloidFontData = [
     0xed,
     0xdd, 0xc1, 0x72, 0xeb, 0x36, 0x10, 0x44, 0x51, 0xfc, 0xff, 0x4f, 0x77, 0x16, 0xd9, 0xa4, 0x2a, 0x16, 0xc0, 0x69, 0xf4,
     0x80, 0x90, 0x7d, 0x73, 0x36, 0x29, 0x3f, 0x5b, 0xa2, 0x38, 0x24, 0x48, 0x69, 0x5a, 0x80, 0x06, 0x00, 0x00, 0x40, 0x03,
@@ -126,7 +126,7 @@ ubyte[pixeloidFontCompressedDataSize] pixeloidFontData = [
 ];
 
 /// Font characters rectangles data.
-ray.Rectangle[176] pixeloidFontRects = [
+immutable ray.Rectangle[176] pixeloidFontRects = [
     ray.Rectangle( 4, 4, 3 , 11 ),
     ray.Rectangle( 15, 4, 1 , 8 ),
     ray.Rectangle( 24, 4, 3 , 3 ),
@@ -307,7 +307,7 @@ ray.Rectangle[176] pixeloidFontRects = [
 
 /// Font glyphs info data.
 /// NOTE: No glyphs.image data provided.
-ray.GlyphInfo[176] pixeloidFontGlyphs = [
+immutable ray.GlyphInfo[176] pixeloidFontGlyphs = [
     ray.GlyphInfo( 32, 0, 9, 3, ray.Image() ),
     ray.GlyphInfo( 33, 0, 1, 2, ray.Image() ),
     ray.GlyphInfo( 34, 0, 1, 4, ray.Image() ),

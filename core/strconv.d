@@ -144,6 +144,24 @@ const(char)[] charToStr(char value) {
     return result;
 }
 
+const(char)[] enumToStr(T)(T value) {
+    static char[128] buf = void;
+    auto result = buf[];
+
+    auto name = "";
+    final switch (value) {
+        static foreach (member; __traits(allMembers, T)) {
+            mixin("case T." ~ member ~ ": name = member; goto exitSwitchEarly;");
+        }
+    }
+    exitSwitchEarly:
+    foreach (i, c; name) {
+        result[i] = c;
+    }
+    result = result[0 .. name.length];
+    return result;
+}
+
 @trusted
 const(char)[] strzToStr(const(char)* value) {
     static char[1024] buf = void;
@@ -168,6 +186,7 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     enum isSigned = is(T == byte) || is(T == short) || is(T == int) || is(T == long);
     enum isFloat = is(T == float) || is(T == double);
     enum isChar = is(T == char) || is(T == const(char)) || is(T == immutable(char));
+    enum isEnum = is(T == enum);
     enum isStrz = is(T : const(char)*);
     enum isStr = is(T : const(char)[]);
 
@@ -181,6 +200,8 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
         return floatToStr(value, options.floatPrecision);
     } else static if (isChar) {
         return charToStr(value);
+    } else static if (isEnum) {
+        return enumToStr(value);
     } else static if (isStrz) {
         return strzToStr(value);
     } else static if (isStr) {
@@ -278,6 +299,15 @@ ToValueResult!double toFloat(const(char)[] str) {
         result.error = ToValueResultError.invalid;
     }
     return result;
+}
+
+T toEnum(T)(const(char)[] str) {
+    switch (str) {
+        static foreach (member; __traits(allMembers, T)) {
+            mixin("case " ~ member.stringof ~ ": return T." ~ member ~ ";");
+        }
+        default: return T.init;
+    }
 }
 
 @trusted
