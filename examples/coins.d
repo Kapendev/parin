@@ -3,7 +3,7 @@
 
 /// A collect-the-coins example.
 
-module popka.example.coins;
+module popka.examples.coins;
 
 import popka.basic;
 

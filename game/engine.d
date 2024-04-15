@@ -8,21 +8,16 @@ module popka.game.engine;
 
 import ray = popka.vendor.ray.raylib;
 import raygl = popka.vendor.ray.rlgl;
-import popka.game.pixeloid;
 
 public import popka.core.basic;
 
 @safe @nogc nothrow:
 
 PopkaState popkaState;
-Font popkaPixeloidFont;
 
-enum {
-    defaultFPS = 60,
-    defaultBackgroundColor = Color(0x2A, 0x36, 0x3A),
-    defaultDebugFontColor = lightGray,
-    toggleFullscreenWaitTime = 0.125f,
-}
+enum defaultFPS = 60;
+enum defaultBackgroundColor = Color(0x2A, 0x36, 0x3A);
+enum toggleFullscreenWaitTime = 0.125f;
 
 enum Flip : ubyte {
     none,
@@ -34,6 +29,32 @@ enum Flip : ubyte {
 enum Filter : ubyte {
     nearest,
     linear,
+}
+
+struct PopkaState {
+    bool isWindowOpen;
+    bool isDrawing;
+    bool isFPSLocked;
+    bool isCursorHidden;
+
+    Color backgroundColor;
+    View view;
+    Vec2 targetViewSize;
+    bool isLockResolutionQueued;
+    bool isUnlockResolutionQueued;
+
+    Vec2 lastWindowSize;
+    float toggleFullscreenTimer = 0.0f;
+    bool isToggleFullscreenQueued;
+}
+
+struct DrawOptions {
+    Vec2 scale = Vec2(1.0f);
+    float rotation = 0.0f;
+    Color color = white;
+    Hook hook = Hook.topLeft;
+    Flip flip = Flip.none;
+    Filter filter = Filter.nearest;
 }
 
 struct Sprite {
@@ -59,7 +80,9 @@ struct Sprite {
 
     void load(const(char)[] path) {
         free();
-        data = ray.LoadTexture(toStrz(path));
+        if (path.length != 0) {
+            data = ray.LoadTexture(toStrz(path));
+        }
     }
 
     void free() {
@@ -91,7 +114,9 @@ struct Font {
     @trusted
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
-        data = ray.LoadFontEx(toStrz(path), size, cast(int*) runes.ptr, cast(int) runes.length);
+        if (path.length != 0) {
+            data = ray.LoadFontEx(toStrz(path), size, cast(int*) runes.ptr, cast(int) runes.length);
+        }
     }
 
     void free() {
@@ -162,7 +187,9 @@ struct AudioAsset {
 
     void load(const(char)[] path) {
         free();
-        ray.LoadMusicStream(toStrz(path));
+        if (path.length != 0) {
+            ray.LoadMusicStream(toStrz(path));
+        }
     }
 
     void free() {
@@ -170,6 +197,10 @@ struct AudioAsset {
             ray.UnloadMusicStream(data);
             data = ray.Music();
         }
+    }
+
+    void update() {
+        ray.UpdateMusicStream(data);
     }
 
     void play() {
@@ -210,6 +241,9 @@ struct TileMap {
 
     void load(const(char)[] path) {
         free();
+        if (path.length == 0) {
+            return;
+        }
         auto file = readText(path);
         const(char)[] view = file.items;
         while (view.length != 0) {
@@ -217,7 +251,7 @@ struct TileMap {
             rowCount += 1;
             colCount = 0;
             while (line.length != 0) {
-                auto value = line.skipValue();
+                auto value = line.skipValue(',');
                 colCount += 1;
             }
         }
@@ -227,7 +261,7 @@ struct TileMap {
         foreach (row; 0 .. rowCount) {
             auto line = view.skipLine();
             foreach (col; 0 .. colCount) {
-                auto value = line.skipValue();
+                auto value = line.skipValue(',');
                 auto conv = value.toSigned();
                 if (conv.error) {
                     data[row, col] = cast(short) -1;
@@ -299,36 +333,6 @@ struct Camera {
             position = position.moveTo(target, Vec2(deltaTime), slowdown);
         }
     }
-}
-
-struct DrawOptions {
-    Vec2 scale = Vec2(1.0f);
-    float rotation = 0.0f;
-    Color color = white;
-    Hook hook = Hook.topLeft;
-    Flip flip = Flip.none;
-    Filter filter = Filter.nearest;
-}
-
-struct PopkaState {
-    bool isWindowOpen;
-    bool isDrawing;
-    bool isFPSLocked;
-    bool isCursorHidden;
-
-    Color backgroundColor;
-    Font debugFont;
-    Vec2 debugFontSpacing;
-    DrawOptions debugFontOptions;
-
-    View view;
-    Vec2 targetViewSize;
-    bool isLockResolutionQueued;
-    bool isUnlockResolutionQueued;
-
-    Vec2 lastWindowSize;
-    float toggleFullscreenTimer = 0.0f;
-    bool isToggleFullscreenQueued;
 }
 
 enum Keyboard {
@@ -542,8 +546,6 @@ void openWindow(float width, float height, const(char)[] title = "Popka", Color 
     popkaState.isWindowOpen = true;
     popkaState.backgroundColor = color;
     popkaState.lastWindowSize = Vec2(width, height);
-    popkaState.debugFont = popkaFont;
-    popkaState.debugFontOptions.color = defaultDebugFontColor;
 }
 
 void closeWindow() {
@@ -557,7 +559,6 @@ void freeWindow() {
     popkaState.view.free();
     ray.CloseWindow();
     popkaState = PopkaState();
-    popkaPixeloidFont = Font();
 }
 
 bool isWindowOpen() {
@@ -758,16 +759,9 @@ Vec2 deltaMouse() {
     return toPopka(ray.GetMouseDelta());
 }
 
-Font popkaFont() {
-    if (popkaPixeloidFont.isEmpty) {
-        popkaPixeloidFont = loadPixeloidFont();
-    }
-    return popkaPixeloidFont;
-}
-
 Font rayFont() {
     auto result = toPopka(ray.GetFontDefault());
-    result.spacing = Vec2(1.0f, 14.0f);
+    result.spacing = Vec2(2.0f, 14.0f);
     return result;
 }
 
@@ -1003,6 +997,8 @@ void drawText(Font font, const(char)[] text, Vec2 position, DrawOptions options 
     raygl.rlPopMatrix();
 }
 
-void drawDebugText(const(char)[] text, Vec2 position = Vec2(8.0f)) {
-    drawText(popkaState.debugFont, text, position, popkaState.debugFontOptions);
+void drawDebugText(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
+    auto options = DrawOptions();
+    options.color = lightGray;
+    drawText(rayFont, text, position, options);
 }

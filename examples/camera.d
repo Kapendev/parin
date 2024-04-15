@@ -3,7 +3,7 @@
 
 /// An example that shows how to use the camera structure.
 
-module popka.example.camera;
+module popka.examples.camera;
 
 import popka.basic;
 

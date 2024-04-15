@@ -1,13 +1,16 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The math module covers essential mathematical operations, vectors, and shapes like rectangles.
+/// The math module covers
+/// essential mathematical operations, vectors, and shapes.
 
 module popka.core.math;
 
 import math = core.stdc.math;
 
 @safe @nogc nothrow:
+
+enum pi = 3.141592f;
 
 enum Hook : ubyte {
     topLeft, top, topRight,
@@ -467,6 +470,14 @@ float sqrt(float x) {
     return math.sqrtf(x);
 }
 
+float sin(float x) {
+    return math.sinf(x);
+}
+
+float cos(float x) {
+    return math.cosf(x);
+}
+
 float lerp(float from, float to, float weight) {
     return from + (to - from) * weight;
 }
@@ -490,5 +501,3 @@ float moveTo(float from, float to, float delta, float slowdown) {
     float target = ((from * (slowdown - 1.0f)) + to) / slowdown;
     return from + (target - from) * delta;
 }
-
-unittest {}

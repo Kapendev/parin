@@ -50,5 +50,3 @@ void writeText(const(char)[] path, List!char content) {
     io.fclose(f);
     content.pop();
 }
-
-unittest {}

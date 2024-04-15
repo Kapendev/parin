@@ -4,12 +4,12 @@
 /// The basic module acts as a central hub,
 /// bundling together numerous specialized modules.
 
-module popka.example.basic;
+module popka.examples.basic;
 
-public import popka.example.camera;
-public import popka.example.coins;
-public import popka.example.dialogue;
-public import popka.example.hello;
+public import popka.examples.camera;
+public import popka.examples.coins;
+public import popka.examples.dialogue;
+public import popka.examples.hello;
 
 @safe @nogc nothrow:
 
@@ -19,5 +19,3 @@ void runEveryExample() {
     runCameraExample();
     runDialogueExample();
 }
-
-unittest {}

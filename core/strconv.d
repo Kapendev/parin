@@ -7,11 +7,10 @@
 
 module popka.core.strconv;
 
-@safe @nogc nothrow:
+import popka.core.strutils;
+import popka.core.traits;
 
-struct ToStrOptions {
-    uint floatPrecision = 2;
-}
+@safe @nogc nothrow:
 
 enum ToValueResultError : ubyte {
     none,
@@ -19,29 +18,40 @@ enum ToValueResultError : ubyte {
     overflow,
 }
 
+struct ToStrOptions {
+    ubyte floatPrecision = 2;
+}
+
 struct ToValueResult(T) {
     T value;
     ToValueResultError error;
 }
 
-const(char)[] boolToStr(bool value) {
-    static char[64] buf = void;
-    auto result = buf[];
+const(char)[] charToStr(char value) {
+    static char[1] buffer = void;
+    auto result = buffer[];
 
+    result[0] = value;
+    result = result[0 .. 1];
+    return result;
+}
+
+const(char)[] boolToStr(bool value) {
+    static char[8] buffer = void;
+
+    auto result = buffer[];
     if (value) {
-        result[0 .. 4] = "true";
-        result = result[0 .. 4];
+        result.copyStr("true");
     } else {
-        result[0 .. 5] = "false";
-        result = result[0 .. 5];
+        result.copyStr("false");
     }
     return result;
 }
 
 const(char)[] unsignedToStr(ulong value) {
-    static char[64] buf = void;
-    auto result = buf[];
-    
+    static char[64] buffer = void;
+
+    auto result = buffer[];
     if (value == 0) {
         result[0] = '0';
         result = result[0 .. 1];
@@ -57,30 +67,24 @@ const(char)[] unsignedToStr(ulong value) {
 }
 
 const(char)[] signedToStr(long value) {
-    static char[64] buf = void;
-    auto result = buf[];
-    
+    static char[64] buffer = void;
+
+    auto result = buffer[];
     if (value < 0) {
         auto temp = unsignedToStr(-value);
         result[0] = '-';
-        foreach (i, c; temp) {
-            result[1 + i] = c;
-        }
-        result = result[0 .. 1 + temp.length];
+        result.copyStr(temp, 1);
     } else {
         auto temp = unsignedToStr(value);
-        foreach (i, c; temp) {
-            result[i] = c;
-        }
-        result = result[0 .. temp.length];
+        result.copyStr(temp, 0);
     }
     return result;
 }
 
-const(char)[] floatToStr(double value, uint precision = 2) {
-    static char[64] buf = void;
-    auto result = buf[];
+const(char)[] doubleToStr(double value, uint precision = 2) {
+    static char[64] buffer = void;
 
+    auto result = buffer[];
     auto fractionalDigitCount = 0;
     auto cleanNumber = value;
     while (cleanNumber != cast(double) (cast(long) cleanNumber)) {
@@ -93,9 +97,7 @@ const(char)[] floatToStr(double value, uint precision = 2) {
 
     if (temp.length <= fractionalDigitCount) {
         i -= temp.length;
-        foreach (ii, c; temp) {
-            result[i + ii] = c;
-        }
+        result.copyStrChars(temp, i);
         if (temp.length < fractionalDigitCount) {
             i -= fractionalDigitCount - temp.length;
             result[i .. i + fractionalDigitCount - temp.length] = '0';
@@ -110,20 +112,14 @@ const(char)[] floatToStr(double value, uint precision = 2) {
             i -= 1;
             result[i] = '.';
             i -= temp.length;
-            foreach (ii, c; temp) {
-                result[i + ii] = c;
-            }
+            result.copyStrChars(temp, i);
         } else {
             i -= fractionalDigitCount;
-            foreach (ii, c; temp[$ - fractionalDigitCount .. $]) {
-                result[i + ii] = c;
-            }
+            result.copyStrChars(temp[$ - fractionalDigitCount .. $], i);
             i -= 1;
             result[i] = '.';
             i -= (temp.length - fractionalDigitCount);
-            foreach (ii, c; temp[0 .. $ - fractionalDigitCount]) {
-                result[i + ii] = c;
-            }
+            result.copyStrChars(temp[0 .. $ - fractionalDigitCount], i);
         }
     }
 
@@ -135,26 +131,18 @@ const(char)[] floatToStr(double value, uint precision = 2) {
     return result;
 }
 
-const(char)[] charToStr(char value) {
-    static char[1] buf = void;
-    auto result = buf[];
-
-    result[0] = value;
-    result = result[0 .. 1];
-    return result;
-}
-
 const(char)[] enumToStr(T)(T value) {
-    static char[128] buf = void;
-    auto result = buf[];
+    static char[64] buffer = void;
 
+    auto result = buffer[];
     auto name = "";
     final switch (value) {
         static foreach (member; __traits(allMembers, T)) {
-            mixin("case T." ~ member ~ ": name = member; goto exitSwitchEarly;");
+            mixin("case T." ~ member ~ ": name = member; goto switchExit;");
         }
     }
-    exitSwitchEarly:
+    switchExit:
+
     foreach (i, c; name) {
         result[i] = c;
     }
@@ -164,9 +152,9 @@ const(char)[] enumToStr(T)(T value) {
 
 @trusted
 const(char)[] strzToStr(const(char)* value) {
-    static char[1024] buf = void;
-    auto result = buf[];
+    static char[1024] buffer = void;
 
+    auto result = buffer[];
     size_t strzLength = 0;
     while (value[strzLength] != '\0') {
         result[strzLength] = value[strzLength];
@@ -176,38 +164,25 @@ const(char)[] strzToStr(const(char)* value) {
     return result;
 }
 
-const(char)[] strToStr(const(char)[] value) {
-    return value;
-}
-
 const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
-    enum isBool = is(T == bool);
-    enum isUnsigned = is(T == ubyte) || is(T == ushort) || is(T == uint) || is(T == ulong);
-    enum isSigned = is(T == byte) || is(T == short) || is(T == int) || is(T == long);
-    enum isFloat = is(T == float) || is(T == double);
-    enum isChar = is(T == char) || is(T == const(char)) || is(T == immutable(char));
-    enum isEnum = is(T == enum);
-    enum isStrz = is(T : const(char)*);
-    enum isStr = is(T : const(char)[]);
-
-    static if (isBool) {
-        return boolToStr(value);
-    } else static if (isUnsigned) {
-        return unsignedToStr(value);
-    } else static if (isSigned) {
-        return signedToStr(value);
-    } else static if (isFloat) {
-        return floatToStr(value, options.floatPrecision);
-    } else static if (isChar) {
+    static if (isChar!T) {
         return charToStr(value);
-    } else static if (isEnum) {
-        return enumToStr(value);
-    } else static if (isStrz) {
+    } else static if (isBool!T) {
+        return boolToStr(value);
+    } else static if (isUnsigned!T) {
+        return unsignedToStr(value);
+    } else static if (isSigned!T) {
+        return signedToStr(value);
+    } else static if (isDouble!T) {
+        return doubleToStr(value, options.floatPrecision);
+    } else static if (isStr!T) {
+        return value;
+    } else static if (isStrz!T) {
         return strzToStr(value);
-    } else static if (isStr) {
-        return strToStr(value);
+    } else static if (isEnum!T) {
+        return enumToStr(value);
     } else {
-        static assert(0, "The 'toStr' function exclusively handles numerical valueues, booleans, characters and strings.");
+        static assert(0, "The 'toStr' function doesn't handle this type.");
     }
 }
 
@@ -270,7 +245,7 @@ ToValueResult!long toSigned(const(char)[] str) {
     return result;
 }
 
-ToValueResult!double toFloat(const(char)[] str) {
+ToValueResult!double toDouble(const(char)[] str) {
     auto result = ToValueResult!double();
     result.value = 0.0;
     auto hasDot = false;
@@ -301,20 +276,32 @@ ToValueResult!double toFloat(const(char)[] str) {
     return result;
 }
 
-T toEnum(T)(const(char)[] str) {
+ToValueResult!T toEnum(T)(const(char)[] str) {
+    auto result = ToValueResult!T();
     switch (str) {
         static foreach (member; __traits(allMembers, T)) {
-            mixin("case " ~ member.stringof ~ ": return T." ~ member ~ ";");
+            mixin("case " ~ member.stringof ~ ": result.value = T." ~ member ~ "; goto switchExit;");
         }
-        default: return T.init;
+        default: result.error = ToValueResultError.invalid;
+    }
+    switchExit:
+    return result;
+}
+
+T toEnumWithNone(T)(const(char)[] str) {
+    auto conv = toEnum!T(str);
+    if (conv.error) {
+        return T.init;
+    } else {
+        return conv.value;
     }
 }
 
 @trusted
 const(char)* toStrz(const(char)[] str) {
-    static char[1024] buf = void;
-    auto result = buf[];
+    static char[1024] buffer = void;
 
+    auto result = buffer[];
     foreach (i, c; str) {
         result[i] = c;
     }
@@ -324,12 +311,12 @@ const(char)* toStrz(const(char)[] str) {
 
 unittest {
     auto text1 = "1.0";
-    auto conv1 = toFloat(text1);
+    auto conv1 = toDouble(text1);
     assert(conv1.value == 1.0);
     assert(conv1.error == ToValueResultError.none);
 
     auto text2 = "1";
-    auto conv2 = toFloat(text2);
+    auto conv2 = toDouble(text2);
     assert(conv2.value == 0.0);
     assert(conv2.error == ToValueResultError.invalid);
 }

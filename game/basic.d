@@ -8,7 +8,3 @@ module popka.game.basic;
 
 public import popka.game.dialogue;
 public import popka.game.engine;
-
-@safe @nogc nothrow:
-
-unittest {}

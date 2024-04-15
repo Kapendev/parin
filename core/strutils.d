@@ -1,23 +1,116 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The strutils module contains handy procedures designed to assist with various string manipulation tasks.
+/// The strutils module contains procedures
+/// designed to assist with various string manipulation tasks.
 
 module popka.core.strutils;
 
-import popka.core.ascii;
-
 @safe @nogc nothrow:
+
+enum digitChars = "0123456789";
+enum upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+enum lowerChars = "abcdefghijklmnopqrstuvwxyz";
+enum alphaChars = upperChars ~ lowerChars;
+enum spaceChars = " \t\v\r\n\f";
 
 bool isStrz(const(char)[] str) {
     return str.length != 0 && str[$ - 1] == '\0';
+}
+
+bool isDigit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+bool isDigit(const(char)[] str) {
+    foreach (c; str) {
+        if (!isDigit(c)) return false;
+    }
+    return true;
+}
+
+bool isUpper(char c) {
+    return c >= 'A' && c <= 'Z';
+}
+
+bool isUpper(const(char)[] str) {
+    foreach (c; str) {
+        if (!isUpper(c)) return false;
+    }
+    return true;
+}
+
+bool isLower(char c) {
+    return c >= 'a' && c <= 'z';
+}
+
+bool isLower(const(char)[] str) {
+    foreach (c; str) {
+        if (!isLower(c)) return false;
+    }
+    return true;
+}
+
+bool isAlpha(char c) {
+    return isLower(c) || isUpper(c);
+}
+
+bool isAlpha(const(char)[] str) {
+    foreach (c; str) {
+        if (!isAlpha(c)) return false;
+    }
+    return true;
+}
+
+bool isSpace(char c) {
+    foreach (sc; spaceChars) {
+        if (c == sc) return true;
+    }
+    return false;
+}
+
+bool isSpace(const(char)[] str) {
+    foreach (c; str) {
+        if (!isSpace(c)) return false;
+    }
+    return true;
+}
+
+char toDigit(char c) {
+    return isDigit(c) ? cast(char) (c - 48) : '?';
+}
+
+void toDigit(char[] str) {
+    foreach (ref c; str) {
+        c = toDigit(c);
+    }
+}
+
+char toUpper(char c) {
+    return isLower(c) ? cast(char) (c - 32) : c;
+}
+
+void toUpper(char[] str) {
+    foreach (ref c; str) {
+        c = toUpper(c);
+    }
+}
+
+char toLower(char c) {
+    return isUpper(c) ? cast(char) (c + 32) : c;
+}
+
+void toLower(char[] str) {
+    foreach (ref c; str) {
+        c = toLower(c);
+    }
 }
 
 bool equals(const(char)[] str, const(char)[] other) {
     return str == other;
 }
 
-bool equalsi(const(char)[] str, const(char)[] other) {
+bool equalsCaseInsensitive(const(char)[] str, const(char)[] other) {
     if (str.length != other.length) return false;
     foreach (i; 0 .. str.length) {
         if (toUpper(str[i]) != toUpper(other[i])) return false;
@@ -30,7 +123,7 @@ bool startsWith(const(char)[] str, const(char)[] start) {
     return str[0 .. start.length] == start;
 }
 
-bool startsWithi(const(char)[] str, const(char)[] start) {
+bool startsWithCaseInsensitive(const(char)[] str, const(char)[] start) {
     if (str.length < start.length) return false;
     foreach (i; 0 .. start.length) {
         if (toUpper(str[i]) != toUpper(start[i])) return false;
@@ -43,7 +136,7 @@ bool endsWith(const(char)[] str, const(char)[] end) {
     return str[$ - end.length - 1 .. end.length] == end;
 }
 
-bool endsWithi(const(char)[] str, const(char)[] end) {
+bool endsWithCaseInsensitive(const(char)[] str, const(char)[] end) {
     if (str.length < end.length) return false;
     foreach (i; str.length - end.length - 1 .. end.length) {
         if (toUpper(str[i]) != toUpper(end[i])) return false;
@@ -63,11 +156,11 @@ int count(const(char)[] str, const(char)[] item) {
     return result;
 }
 
-int counti(const(char)[] str, const(char)[] item) {
+int countCaseInsensitive(const(char)[] str, const(char)[] item) {
     int result = 0;
     if (str.length < item.length || item.length == 0) return result;
     foreach (i; 0 .. str.length - item.length) {
-        if (equalsi(str[i .. i + item.length], item)) {
+        if (equalsCaseInsensitive(str[i .. i + item.length], item)) {
             result += 1;
             i += item.length - 1;
         }
@@ -83,10 +176,10 @@ int findStart(const(char)[] str, const(char)[] item) {
     return -1;
 }
 
-int findStarti(const(char)[] str, const(char)[] item) {
+int findStartCaseInsensitive(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach (i; 0 .. str.length - item.length) {
-        if (equalsi(str[i + item.length .. item.length], item)) return cast(int) i;
+        if (equalsCaseInsensitive(str[i + item.length .. item.length], item)) return cast(int) i;
     }
     return -1;
 }
@@ -99,10 +192,10 @@ int findEnd(const(char)[] str, const(char)[] item) {
     return -1;
 }
 
-int findEndi(const(char)[] str, const(char)[] item) {
+int findEndCaseInsensitive(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach_reverse (i; 0 .. str.length - item.length) {
-        if (equalsi(str[i + item.length .. item.length], item)) return cast(int) i;
+        if (equalsCaseInsensitive(str[i + item.length .. item.length], item)) return cast(int) i;
     }
     return -1;
 }
@@ -129,7 +222,9 @@ const(char)[] trim(const(char)[] str) {
     return str.trimStart().trimEnd();
 }
 
-const(char)[] skipValue(ref const(char)[] str, char sep = ',') {
+// TODO: Add sep that is a string.
+
+const(char)[] skipValue(ref const(char)[] str, char sep) {
     foreach (i; 0 .. str.length) {
         if (str[i] == sep) {
             auto line = str[0 .. i];
@@ -148,4 +243,13 @@ const(char)[] skipLine(ref const(char)[] str) {
     return skipValue(str, '\n');
 }
 
-unittest {}
+void copyStrChars(char[] str, const(char)[] source, size_t startIndex = 0) {
+    foreach (i, c; source) {
+        str[startIndex + i] = c;
+    }
+}
+
+void copyStr(ref char[] str, const(char)[] source, size_t startIndex = 0) {
+    copyStrChars(str, source, startIndex);
+    str = str[0 .. startIndex + source.length];
+}

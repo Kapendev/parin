@@ -3,7 +3,7 @@
 
 /// An example that shows how to use the dialogue system of Popka.
 
-module popka.example.dialogue;
+module popka.examples.dialogue;
 
 import popka.basic;
 
@@ -18,11 +18,12 @@ void runDialogueExample() {
     auto script = "
         # This is a comment.
 
-        ! loopCount
-        * Menu
-        ^ Select first loop. ^ Select second loop. ^ End dialogue.
+        ! choiceCount
 
-        * Point1
+        * menuPoint
+        ^ Select first choice. ^ Select second choice. ^ End dialogue.
+
+        * choice1
         > Bob
         | Hi.
         | My name is Bob.
@@ -30,16 +31,16 @@ void runDialogueExample() {
         | Hello!
         | Nice to meet you!
         | My name is Mia.
-        + loopCount
-        @ Menu
+        + choiceCount
+        @ menuPoint
 
-        * Point2
+        * choice2
         > Bob
         | Yo Mia, this game is the bomb!
         > Mia
         | Trueee!
-        + loopCount
-        @ Menu
+        + choiceCount
+        @ menuPoint
 
         * End
     ";
@@ -55,7 +56,7 @@ void runDialogueExample() {
             if (dialogue.hasOptions) {
                 auto digits = digitChars[1 .. 1 + dialogue.options.length];
                 foreach (i, key; digits) {
-                    if (isPressed(key)) {
+                    if (key.isPressed) {
                         dialogue.select(i);
                         break;
                     }
@@ -68,15 +69,12 @@ void runDialogueExample() {
         // Draw the game.
         if (dialogue.hasOptions) {
             foreach (i, option; dialogue.options) {
-                drawDebugText("[{}] {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
+                drawDebugText("{}. {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
             }
         } else if (dialogue.hasText) {
             drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
         } else {
             drawDebugText("The dialogue has ended.");
-        }
-        foreach (i, variable; dialogue.variables.items) {
-            drawDebugText("{} = {}".fmt(variable.name.items, variable.value), Vec2(8, 8 + (i + 5) * 14));
         }
         drawRect(Rect(0, resolution.y * 0.75, resolution.x, resolution.y * 0.25), darkGray);
         drawDebugText(

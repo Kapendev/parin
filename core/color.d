@@ -1,26 +1,23 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The color module specializes in handling color-related operations,
-/// offering a suite of procedures tailored for manipulating and managing color properties within a program.
+/// The color module specializes in handling color-related operations.
 
 module popka.core.color;
 
 @safe @nogc nothrow:
 
-enum {
-    blank = Color(),
-    black = Color(0),
-    darkGray = Color(40),
-    lightGray = Color(220),
-    white = Color(255),
-    red = Color(255, 0, 0),
-    green = Color(0, 255, 0),
-    blue = Color(0, 0, 255),
-    yellow = Color(255, 255, 0),
-    magenta = Color(255, 0, 255),
-    cyan = Color(0, 255, 255),
-}
+enum blank = Color();
+enum black = Color(0);
+enum darkGray = Color(40);
+enum lightGray = Color(220);
+enum white = Color(255);
+enum red = Color(255, 0, 0);
+enum green = Color(0, 255, 0);
+enum blue = Color(0, 0, 255);
+enum yellow = Color(255, 255, 0);
+enum magenta = Color(255, 0, 255);
+enum cyan = Color(0, 255, 255);
 
 struct Color {
     ubyte r;
@@ -49,5 +46,3 @@ struct Color {
         this(rgba[0], rgba[1], rgba[2], rgba[3]);
     }
 }
-
-unittest {}

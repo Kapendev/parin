@@ -326,5 +326,3 @@ bool isValidDialogueUnitKind(char c) {
     }
     return false;
 }
-
-unittest {}

@@ -1,8 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The container module serves as a hub for various data structures,
-/// offering a cohesive set of tools for efficient storage and retrieval of information within a program.
+/// The container module serves as a hub for various data structures.
 
 module popka.core.container;
 
@@ -426,5 +425,3 @@ struct Grid(T) {
         colCount = 0;
     }
 }
-
-unittest {}

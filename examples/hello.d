@@ -3,7 +3,7 @@
 
 /// A hello-world example.
 
-module popka.example.hello;
+module popka.examples.hello;
 
 import popka.basic;
 
