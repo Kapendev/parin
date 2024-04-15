@@ -198,6 +198,15 @@ ToValueResult!bool toBool(const(char)[] str) {
     return result;
 }
 
+ulong toBoolWithNone(const(char)[] str) {
+    auto conv = toBool(str);
+    if (conv.error) {
+        return false;
+    } else {
+        return conv.value;
+    }
+}
+
 ToValueResult!ulong toUnsigned(const(char)[] str) {
     auto result = ToValueResult!ulong();
     if (str.length == 0) {
@@ -217,6 +226,15 @@ ToValueResult!ulong toUnsigned(const(char)[] str) {
         }
     }
     return result;
+}
+
+ulong toUnsignedWithNone(const(char)[] str) {
+    auto conv = toUnsigned(str);
+    if (conv.error) {
+        return 0;
+    } else {
+        return conv.value;
+    }
 }
 
 ToValueResult!long toSigned(const(char)[] str) {
@@ -243,6 +261,15 @@ ToValueResult!long toSigned(const(char)[] str) {
         }
     }
     return result;
+}
+
+long toSignedWithNone(const(char)[] str) {
+    auto conv = toSigned(str);
+    if (conv.error) {
+        return 0;
+    } else {
+        return conv.value;
+    }
 }
 
 ToValueResult!double toDouble(const(char)[] str) {
@@ -274,6 +301,15 @@ ToValueResult!double toDouble(const(char)[] str) {
         result.error = ToValueResultError.invalid;
     }
     return result;
+}
+
+double toDoubleWithNone(const(char)[] str) {
+    auto conv = toDouble(str);
+    if (conv.error) {
+        return 0.0;
+    } else {
+        return conv.value;
+    }
 }
 
 ToValueResult!T toEnum(T)(const(char)[] str) {

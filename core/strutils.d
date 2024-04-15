@@ -187,7 +187,7 @@ int findStartCaseInsensitive(const(char)[] str, const(char)[] item) {
 int findEnd(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach_reverse (i; 0 .. str.length - item.length) {
-        if (str[i + item.length .. item.length] == item) return cast(int) i;
+        if (str[i + item.length .. i + item.length + item.length] == item) return cast(int) i;
     }
     return -1;
 }
@@ -195,7 +195,7 @@ int findEnd(const(char)[] str, const(char)[] item) {
 int findEndCaseInsensitive(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach_reverse (i; 0 .. str.length - item.length) {
-        if (equalsCaseInsensitive(str[i + item.length .. item.length], item)) return cast(int) i;
+        if (equalsCaseInsensitive(str[i + item.length .. i + item.length + item.length], item)) return cast(int) i;
     }
     return -1;
 }
@@ -220,6 +220,47 @@ const(char)[] trimEnd(const(char)[] str) {
 
 const(char)[] trim(const(char)[] str) {
     return str.trimStart().trimEnd();
+}
+
+// NOTE: Maybe think of other name.
+const(char)[] dirName(const(char)[] path) {
+    version (Windows) {
+        auto end = findEnd(path, "\\");
+    } else {
+        auto end = findEnd(path, "/");
+    }
+    if (end == -1) {
+        return ".";
+    } else {
+        // TODO: Might have some bug in find prodecure.
+        return path[0 .. end + 1];
+    }
+}
+
+// NOTE: Maybe think of other name.
+const(char)[] makePath(const(char)[][] args...) {
+    static char[1024] buffer = void;
+
+    if (args.length == 0) {
+        return ".";
+    }
+
+    auto result = buffer[];
+    auto length = 0;
+    foreach (i, arg; args) {
+        result.copyStrChars(arg, length);
+        length += arg.length;
+        if (i != args.length - 1) {
+            version (Windows) {
+                result.copyStrChars("\\", length);
+            } else {
+                result.copyStrChars("/", length);
+            }
+            length += 1;
+        }
+    }
+    result = result[0 .. length];
+    return result;
 }
 
 // TODO: Add sep that is a string.

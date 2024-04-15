@@ -19,6 +19,8 @@ import popka.core.strutils;
 
 @safe @nogc nothrow:
 
+// TODO: Change names of options to choices.
+
 enum dialogueUnitKindChars = ".#*@>|^!+-$";
 
 enum DialogueUnitKind {
@@ -142,6 +144,7 @@ struct Dialogue {
         update();
     }
 
+    // TODO: Remove the assets!
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
