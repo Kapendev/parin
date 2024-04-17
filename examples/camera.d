@@ -5,7 +5,7 @@
 
 module popka.examples.camera;
 
-import popka.basic;
+import popka;
 
 @safe @nogc nothrow:
 
@@ -15,12 +15,12 @@ void runCameraExample() {
 
     // The game variables.
     auto camera = Camera(0, -14);
-    auto cameraSpeed = Vec2(120);
-    auto cameraTarget = Vec2(0, -14);
+    auto cameraSpeed = Vector2(120);
+    auto cameraTarget = Vector2(0, -14);
 
     while (isWindowOpen) {
         // Move the camera.
-        auto cameraDirection = Vec2();
+        auto cameraDirection = Vector2();
         if (Keyboard.left.isDown) {
             cameraDirection.x = -1;
         }
@@ -33,17 +33,15 @@ void runCameraExample() {
         if (Keyboard.down.isDown) {
             cameraDirection.y = 1;
         }
-        cameraTarget += cameraDirection * cameraSpeed * Vec2(deltaTime);
-        // This will move the camera in a smooth way.
+        cameraTarget += cameraDirection * cameraSpeed * Vector2(deltaTime);
         camera.follow(cameraTarget);
 
         // Draw the game.
         camera.attach();
-        drawDebugText("I am not UI!");
+        draw("I am not UI!");
         camera.detach();
-        drawDebugText("I am UI!");
-        drawDebugText("+", resolution * Vec2(0.5));
-        drawDebugText("+", resolution * Vec2(0.5) + (cameraTarget - camera.position));
+        draw("I am UI!");
+        draw("+", resolution * Vector2(0.5));
+        draw("+", resolution * Vector2(0.5) + (cameraTarget - camera.position));
     }
-    freeWindow();
 }

@@ -1,19 +1,14 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The engine module functions as a lightweight 2D game engine,
-/// designed to provide essential tools and functionalities for developing games with ease and efficiency.
+/// The engine module functions as a lightweight 2D game engine.
 
 module popka.game.engine;
 
-import ray = popka.vendor.ray.raylib;
-import raygl = popka.vendor.ray.rlgl;
-
-public import popka.core.basic;
+import ray = popka.vendor.ray;
+import popka.core;
 
 @safe @nogc nothrow:
-
-// TODO: Think about a lot of things like vecs vs xy, loading with a empty string, cameras, sound, ...
 
 PopkaState popkaState;
 
@@ -40,20 +35,21 @@ struct PopkaState {
     bool isCursorHidden;
 
     Color backgroundColor;
+    Vector2 targetViewSize;
     View view;
-    Vec2 targetViewSize;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
 
-    Vec2 lastWindowSize;
+    Vector2 lastWindowSize;
     float toggleFullscreenTimer = 0.0f;
     bool isToggleFullscreenQueued;
 }
 
 struct DrawOptions {
-    Vec2 scale = Vec2(1.0f);
+    Vector2 scale = Vector2(1.0f);
     float rotation = 0.0f;
     Color color = white;
+
     Hook hook = Hook.topLeft;
     Flip flip = Flip.none;
     Filter filter = Filter.nearest;
@@ -72,12 +68,12 @@ struct Sprite {
         return data.id <= 0;
     }
 
-    Vec2 size() {
-        return Vec2(data.width, data.height);
+    Vector2 size() {
+        return Vector2(data.width, data.height);
     }
 
-    Rect rect() {
-        return Rect(size);
+    Rectangle rectangle() {
+        return Rectangle(size);
     }
 
     void load(const(char)[] path) {
@@ -97,7 +93,7 @@ struct Sprite {
 
 struct Font {
     ray.Font data;
-    Vec2 spacing;
+    Vector2 spacing;
 
     @safe @nogc nothrow:
 
@@ -134,7 +130,7 @@ struct View {
 
     @safe @nogc nothrow:
 
-    this(Vec2 size) {
+    this(Vector2 size) {
         load(size);
     }
 
@@ -146,21 +142,21 @@ struct View {
         return data.texture.id <= 0;
     }
 
-    Vec2 size() {
-        return Vec2(data.texture.width, data.texture.height);
+    Vector2 size() {
+        return Vector2(data.texture.width, data.texture.height);
     }
 
-    Rect rect() {
-        return Rect(size);
+    Rectangle rectangle() {
+        return Rectangle(size);
     }
 
-    void load(Vec2 size) {
+    void load(Vector2 size) {
         free();
         data = ray.LoadRenderTexture(cast(int) size.x, cast(int) size.y);
     }
 
     void load(float width, float height) {
-        load(Vec2(width, height));
+        load(Vector2(width, height));
     }
 
     void free() {
@@ -228,17 +224,17 @@ struct TileMap {
 
     @safe @nogc nothrow:
 
-    Vec2 cellSize() {
-        return Vec2(cellWidth, cellHeight);
+    Vector2 cellSize() {
+        return Vector2(cellWidth, cellHeight);
     }
 
-    void cellSize(Vec2 value) {
+    void cellSize(Vector2 value) {
         cellWidth = value.x;
         cellHeight = value.y;
     }
 
-    Vec2 size() {
-        return Vec2(width, height);
+    Vector2 size() {
+        return Vector2(width, height);
     }
 
     void load(const(char)[] path) {
@@ -277,7 +273,7 @@ struct TileMap {
 }
 
 struct Camera {
-    Vec2 position;
+    Vector2 position;
     float rotation = 0.0f;
     float scale = 1.0f;
     Hook hook;
@@ -285,28 +281,28 @@ struct Camera {
 
     @safe @nogc nothrow:
 
-    this(Vec2 position) {
+    this(Vector2 position) {
         this.position = position;
     }
 
     this(float x, float y) {
-        this.position = Vec2(x, y);
+        this.position = Vector2(x, y);
     }
 
-    Vec2 size() {
-        return resolution * Vec2(scale);
+    Vector2 size() {
+        return resolution * Vector2(scale);
     }
 
-    Vec2 origin() {
-        return Rect(size).origin(hook);
+    Vector2 origin() {
+        return Rectangle(size).origin(hook);
     }
 
-    Rect rect() {
-        return Rect(position - origin, size);
+    Rectangle rectangle() {
+        return Rectangle(position - origin, size);
     }
 
-    Vec2 point(Hook hook) {
-        return rect.point(hook);
+    Vector2 point(Hook hook) {
+        return rectangle.point(hook);
     }
 
     void attach() {
@@ -328,11 +324,11 @@ struct Camera {
         }
     }
 
-    void follow(Vec2 target, float slowdown = 0.14f) {
+    void follow(Vector2 target, float slowdown = 0.14f) {
         if (slowdown <= 0.0f) {
             position = target;
         } else {
-            position = position.moveTo(target, Vec2(deltaTime), slowdown);
+            position = position.moveTo(target, Vector2(deltaTime), slowdown);
         }
     }
 }
@@ -441,20 +437,20 @@ Color toPopka(ray.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
-Vec2 toPopka(ray.Vector2 from) {
-    return Vec2(from.x, from.y);
+Vector2 toPopka(ray.Vector2 from) {
+    return Vector2(from.x, from.y);
 }
 
-Vec3 toPopka(ray.Vector3 from) {
-    return Vec3(from.x, from.y, from.z);
+Vector3 toPopka(ray.Vector3 from) {
+    return Vector3(from.x, from.y, from.z);
 }
 
-Vec4 toPopka(ray.Vector4 from) {
-    return Vec4(from.x, from.y, from.z, from.w);
+Vector4 toPopka(ray.Vector4 from) {
+    return Vector4(from.x, from.y, from.z, from.w);
 }
 
-Rect toPopka(ray.Rectangle from) {
-    return Rect(from.x, from.y, from.width, from.height);
+Rectangle toPopka(ray.Rectangle from) {
+    return Rectangle(from.x, from.y, from.width, from.height);
 }
 
 Sprite toPopka(ray.Texture2D from) {
@@ -487,19 +483,19 @@ ray.Color toRay(Color from) {
     return ray.Color(from.r, from.g, from.b, from.a);
 }
 
-ray.Vector2 toRay(Vec2 from) {
+ray.Vector2 toRay(Vector2 from) {
     return ray.Vector2(from.x, from.y);
 }
 
-ray.Vector3 toRay(Vec3 from) {
+ray.Vector3 toRay(Vector3 from) {
     return ray.Vector3(from.x, from.y, from.z);
 }
 
-ray.Vector4 toRay(Vec4 from) {
+ray.Vector4 toRay(Vector4 from) {
     return ray.Vector4(from.x, from.y, from.z, from.w);
 }
 
-ray.Rectangle toRay(Rect from) {
+ray.Rectangle toRay(Rectangle from) {
     return ray.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
@@ -547,26 +543,24 @@ void openWindow(float width, float height, const(char)[] title = "Popka", Color 
     lockFPS(defaultFPS);
     popkaState.isWindowOpen = true;
     popkaState.backgroundColor = color;
-    popkaState.lastWindowSize = Vec2(width, height);
+    popkaState.lastWindowSize = Vector2(width, height);
 }
 
 void closeWindow() {
     popkaState.isWindowOpen = false;
 }
 
-void freeWindow() {
-    if (!popkaState.isWindowOpen) {
-        return;
-    }
-    popkaState.view.free();
-    ray.CloseWindow();
-    popkaState = PopkaState();
-}
-
 bool isWindowOpen() {
     if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
+        // Free global resources.
+        if (popkaState.isWindowOpen) {
+            popkaState.view.free();
+            ray.CloseWindow();
+            popkaState = PopkaState();
+        }
         return false;
     }
+
     if (!popkaState.isDrawing) {
         if (isResolutionLocked) {
             ray.BeginTextureMode(popkaState.view.data);
@@ -581,8 +575,8 @@ bool isWindowOpen() {
             auto maxSize = windowSize;
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
-            auto targetSize = minSize * Vec2(minRatio);
-            auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+            auto targetSize = minSize * Vector2(minRatio);
+            auto targetPos = maxSize * Vector2(0.5f) - targetSize * Vector2(0.5f);
             ray.EndTextureMode();
             ray.BeginDrawing();
             ray.ClearBackground(ray.BLACK);
@@ -659,7 +653,7 @@ bool isResolutionLocked() {
     return !popkaState.view.isEmpty;
 }
 
-void lockResolution(Vec2 size) {
+void lockResolution(Vector2 size) {
     if (popkaState.isWindowOpen && !popkaState.isDrawing) {
         popkaState.view.load(size);
     } else {
@@ -670,7 +664,7 @@ void lockResolution(Vec2 size) {
 }
 
 void lockResolution(float width, float height) {
-    lockResolution(Vec2(width, height));
+    lockResolution(Vector2(width, height));
 }
 
 void unlockResolution() {
@@ -710,20 +704,20 @@ void showCursor() {
     popkaState.isCursorHidden = false;
 }
 
-Vec2 screenSize() {
+Vector2 screenSize() {
     auto id = ray.GetCurrentMonitor();
-    return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
+    return Vector2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
 }
 
-Vec2 windowSize() {
+Vector2 windowSize() {
     if (isFullscreen) {
         return screenSize;
     } else {
-        return Vec2(ray.GetScreenWidth(), ray.GetScreenHeight());
+        return Vector2(ray.GetScreenWidth(), ray.GetScreenHeight());
     }
 }
 
-Vec2 resolution() {
+Vector2 resolution() {
     if (isResolutionLocked) {
         return popkaState.view.size;
     } else {
@@ -731,17 +725,17 @@ Vec2 resolution() {
     }
 }
 
-Vec2 mouse() {
+Vector2 mousePosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
         auto minRatio = min(window.x / popkaState.view.size.x, window.y / popkaState.view.size.y);
-        auto targetSize = popkaState.view.size * Vec2(minRatio);
-        return Vec2(
+        auto targetSize = popkaState.view.size * Vector2(minRatio);
+        return Vector2(
             (ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio,
             (ray.GetMouseY() - (window.y - targetSize.y) * 0.5f) / minRatio,
         );
     } else {
-        return Vec2(ray.GetMouseX(), ray.GetMouseY());
+        return Vector2(ray.GetMouseX(), ray.GetMouseY());
     }
 }
 
@@ -757,13 +751,61 @@ float deltaTime() {
     return ray.GetFrameTime();
 }
 
-Vec2 deltaMouse() {
+Vector2 deltaMouse() {
     return toPopka(ray.GetMouseDelta());
 }
 
 Font rayFont() {
     auto result = toPopka(ray.GetFontDefault());
-    result.spacing = Vec2(2.0f, 14.0f);
+    result.spacing = Vector2(1.0f, 14.0f);
+    return result;
+}
+
+@trusted
+Vector2 measureText(Font font, const(char)[] text, Vector2 scale = Vector2(1.0f)) {
+    if (font.isEmpty || text.length == 0) {
+        return Vector2();
+    }
+    auto result = Vector2();
+    auto tempByteCounter = 0; // Used to count longer text line num chars.
+    auto byteCounter = 0;
+    auto textWidth = 0.0f;
+    auto tempTextWidth = 0.0f; // Used to count longer text line width.
+    auto textHeight = font.size;
+
+    auto letter = 0; // Current character.
+    auto index = 0; // Index position in sprite font.
+    auto i = 0;
+    while (i < text.length) {
+        byteCounter += 1;
+
+        auto next = 0;
+        letter = ray.GetCodepointNext(&text[i], &next);
+        index = ray.GetGlyphIndex(font.data, letter);
+        i += next;
+        if (letter != '\n') {
+            if (font.data.glyphs[index].advanceX != 0) {
+                textWidth += font.data.glyphs[index].advanceX;
+            } else {
+                textWidth += font.data.recs[index].width + font.data.glyphs[index].offsetX;
+            }
+        } else {
+            if (tempTextWidth < textWidth) {
+                tempTextWidth = textWidth;
+            }
+            byteCounter = 0;
+            textWidth = 0;
+            textHeight += font.spacing.y;
+        }
+        if (tempByteCounter < byteCounter) {
+            tempByteCounter = byteCounter;
+        }
+    }
+    if (tempTextWidth < textWidth) {
+        tempTextWidth = textWidth;
+    }
+    result.x = floor(tempTextWidth * scale.x + ((tempByteCounter - 1) * font.spacing.x * scale.x));
+    result.y = floor(textHeight * scale.y);
     return result;
 }
 
@@ -815,11 +857,11 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
-void drawRect(Rect rect, Color color = white) {
-    ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+void draw(Rectangle rectangle, Color color = white) {
+    ray.DrawRectanglePro(toRay(rectangle.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
 }
 
-void drawSprite(Sprite sprite, Rect region, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options = DrawOptions()) {
     if (sprite.isEmpty) {
         return;
     }
@@ -827,19 +869,19 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position, DrawOptions options =
         case Filter.nearest: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_POINT); break;
         case Filter.linear: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_BILINEAR); break;
     }
-    Rect target, source;
+    Rectangle target, source;
     if (region.size.x <= 0.0f || region.size.y <= 0.0f) {
-        target = Rect(position, sprite.size * options.scale);
-        source = Rect(sprite.size);
+        target = Rectangle(position, sprite.size * options.scale);
+        source = Rectangle(sprite.size);
     } else {
-        target = Rect(position, region.size * options.scale);
+        target = Rectangle(position, region.size * options.scale);
         source = region;
     }
     final switch (options.flip) {
         case Flip.none: break;
         case Flip.x: source.size.x *= -1.0f; break;
         case Flip.y: source.size.y *= -1.0f; break;
-        case Flip.xy: source.size *= Vec2(-1.0f); break;
+        case Flip.xy: source.size *= Vector2(-1.0f); break;
     }
     ray.DrawTexturePro(
         sprite.data,
@@ -853,7 +895,7 @@ void drawSprite(Sprite sprite, Rect region, Vec2 position, DrawOptions options =
 
 // TODO: Think about when to use ints and when to use floats or vectors.
 // NOTE: For now it will be a vector because I am making a game lol.
-void drawTile(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, Vector2 tileSize, uint tileID, Vector2 position, DrawOptions options = DrawOptions()) {
     auto gridWidth = cast(uint) (sprite.size.x / tileSize.x);
     auto gridHeight = cast(uint) (sprite.size.y / tileSize.y);
     if (gridWidth == 0 || gridHeight == 0) {
@@ -861,11 +903,11 @@ void drawTile(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOpti
     }
     auto row = tileID / gridWidth;
     auto col = tileID % gridWidth;
-    auto region = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
-    drawSprite(sprite, region, position, options);
+    auto region = Rectangle(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
+    draw(sprite, region, position, options);
 }
 
-void drawTileMap(Sprite sprite, TileMap map, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, TileMap map, Camera camera, Vector2 position, DrawOptions options = DrawOptions()) {
     auto topLeft = camera.point(Hook.topLeft);
     auto bottomRight = camera.point(Hook.bottomRight);
     size_t col1, col2, row1, row2;
@@ -885,60 +927,12 @@ void drawTileMap(Sprite sprite, TileMap map, Camera camera, Vec2 position, DrawO
             if (map[row, col] == -1) {
                 continue;
             }
-            drawTile(sprite, map.cellSize, map[row, col], position + Vec2(col, row) * map.cellSize, options);
+            draw(sprite, map.cellSize, map[row, col], position + Vector2(col, row) * map.cellSize, options);
         }
     }
 }
 
-@trusted
-Vec2 measureText(Font font, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
-    if (font.isEmpty || text.length == 0) {
-        return Vec2();
-    }
-    auto result = Vec2();
-    auto tempByteCounter = 0; // Used to count longer text line num chars.
-    auto byteCounter = 0;
-    auto textWidth = 0.0f;
-    auto tempTextWidth = 0.0f; // Used to count longer text line width.
-    auto textHeight = font.size;
-
-    auto letter = 0; // Current character.
-    auto index = 0; // Index position in sprite font.
-    auto i = 0;
-    while (i < text.length) {
-        byteCounter += 1;
-
-        auto next = 0;
-        letter = ray.GetCodepointNext(&text[i], &next);
-        index = ray.GetGlyphIndex(font.data, letter);
-        i += next;
-        if (letter != '\n') {
-            if (font.data.glyphs[index].advanceX != 0) {
-                textWidth += font.data.glyphs[index].advanceX;
-            } else {
-                textWidth += font.data.recs[index].width + font.data.glyphs[index].offsetX;
-            }
-        } else {
-            if (tempTextWidth < textWidth) {
-                tempTextWidth = textWidth;
-            }
-            byteCounter = 0;
-            textWidth = 0;
-            textHeight += font.spacing.y;
-        }
-        if (tempByteCounter < byteCounter) {
-            tempByteCounter = byteCounter;
-        }
-    }
-    if (tempTextWidth < textWidth) {
-        tempTextWidth = textWidth;
-    }
-    result.x = floor(tempTextWidth * scale.x + ((tempByteCounter - 1) * font.spacing.x * scale.x));
-    result.y = floor(textHeight * scale.y);
-    return result;
-}
-
-void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Font font, dchar rune, Vector2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) {
         return;
     }
@@ -946,29 +940,29 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
         case Filter.nearest: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_POINT); break;
         case Filter.linear: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_BILINEAR); break;
     }
-    auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
-    auto origin = rect.origin(options.hook).floor();
-    raygl.rlPushMatrix();
-    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
-    raygl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
-    raygl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    auto rectangle = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
+    auto origin = rectangle.origin(options.hook).floor();
+    ray.rlPushMatrix();
+    ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
+    ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
+    ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
     ray.DrawTextCodepoint(font.data, rune, ray.Vector2(0.0f, 0.0f), font.size, toRay(options.color));
-    raygl.rlPopMatrix();
+    ray.rlPopMatrix();
 }
 
 @trusted
-void drawText(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Font font, const(char)[] text, Vector2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto rect = Rect(measureText(font, text)).floor();
-    auto origin = rect.origin(options.hook).floor();
-    raygl.rlPushMatrix();
-    raygl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
-    raygl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
-    raygl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    raygl.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    auto rectangle = Rectangle(measureText(font, text)).floor();
+    auto origin = rectangle.origin(options.hook).floor();
+    ray.rlPushMatrix();
+    ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
+    ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
+    ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
     auto textOffsetY = 0.0f; // Offset between lines (on linebreak '\n').
     auto textOffsetX = 0.0f; // Offset X to next character to draw.
     auto i = 0;
@@ -985,7 +979,7 @@ void drawText(Font font, const(char)[] text, Vec2 position, DrawOptions options 
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
                 runeOptions.filter = options.filter;
-                drawRune(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
+                draw(font, codepoint, Vector2(textOffsetX, textOffsetY), runeOptions);
             }
             if (font.data.glyphs[index].advanceX == 0) {
                 textOffsetX += font.data.recs[index].width + font.spacing.x;
@@ -996,11 +990,11 @@ void drawText(Font font, const(char)[] text, Vec2 position, DrawOptions options 
         // Move text bytes counter to next codepoint.
         i += codepointByteCount;
     }
-    raygl.rlPopMatrix();
+    ray.rlPopMatrix();
 }
 
-void drawDebugText(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
+void draw(const(char)[] text, Vector2 position = Vector2(8.0f, 8.0f)) {
     auto options = DrawOptions();
     options.color = lightGray;
-    drawText(rayFont, text, position, options);
+    draw(rayFont, text, position, options);
 }

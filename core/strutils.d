@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 /// The strutils module contains procedures
-/// designed to assist with string creation or manipulation tasks.
+/// designed to assist with string manipulation tasks.
 
 module popka.core.strutils;
 

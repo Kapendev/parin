@@ -1,10 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The basic module acts as a central hub,
-/// bundling together numerous specialized modules.
-
-module popka.core.basic;
+module popka.core;
 
 public import popka.core.color;
 public import popka.core.container;

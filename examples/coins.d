@@ -5,7 +5,7 @@
 
 module popka.examples.coins;
 
-import popka.basic;
+import popka;
 
 @safe @nogc nothrow:
 
@@ -14,22 +14,22 @@ void runCoinsExample() {
     lockResolution(320, 180);
 
     // The game variables.
-    auto player = Rect(resolution * Vec2(0.5), Vec2(16));
-    auto playerSpeed = Vec2(120);
-    auto coins = FlagList!Rect();
-    auto coinSize = Vec2(8);
+    auto player = Rectangle(resolution * Vector2(0.5), Vector2(16));
+    auto playerSpeed = Vector2(120);
+    auto coins = FlagList!Rectangle();
+    auto coinSize = Vector2(8);
     auto maxCoinCount = 8;
 
     // Create the coins.
     foreach (i; 0 .. maxCoinCount) {
         auto maxPosition = resolution - coinSize;
-        auto coin = Rect(randf * maxPosition.x, randf * maxPosition.y, coinSize.x, coinSize.y);
+        auto coin = Rectangle(randf * maxPosition.x, randf * maxPosition.y, coinSize.x, coinSize.y);
         coins.append(coin);
     }
 
     while (isWindowOpen) {
         // Move the player.
-        auto playerDirection = Vec2();
+        auto playerDirection = Vector2();
         if (Keyboard.left.isDown) {
             playerDirection.x = -1;
         }
@@ -42,7 +42,7 @@ void runCoinsExample() {
         if (Keyboard.down.isDown) {
             playerDirection.y = 1;
         }
-        player.position += playerDirection * playerSpeed * Vec2(deltaTime);
+        player.position += playerDirection * playerSpeed * Vector2(deltaTime);
 
         // Check if the player is touching some coins and remove those coins.
         foreach (id; coins.ids) {
@@ -53,16 +53,13 @@ void runCoinsExample() {
 
         // Draw the game.
         foreach (coin; coins.items) {
-            drawRect(coin, lightGray);
+            draw(coin, lightGray);
         }
-        drawRect(player, lightGray);
+        draw(player, lightGray);
         if (coins.length == 0) {
-            drawDebugText("You collected all the coins!");
+            draw("You collected all the coins!");
         } else {
-            drawDebugText("Coins: {}/{}".fmt(maxCoinCount - coins.length, maxCoinCount));
+            draw("Coins: {}/{}".fmt(maxCoinCount - coins.length, maxCoinCount));
         }
     }
-    // Free all the game resources.
-    coins.free();
-    freeWindow();
 }

@@ -7,15 +7,14 @@ The game engine is currently under development and is not yet ready for use.
 ```d
 /// A hello-world example.
 
-import popka.basic;
+import popka;
 
 void main() {
     openWindow(640, 480);
     lockResolution(320, 180);
     while (isWindowOpen) {
-        drawDebugText("Hello world!");
+        draw("Hello world!");
     }
-    freeWindow();
 }
 ```
 
@@ -26,7 +25,7 @@ The official raylib instructions will guide you through the process.
 
 ## Examples
 
-A comprehensive set of code examples showcasing various engine features can be found within the examples folder.
+A set of code examples showcasing various engine features can be found within the examples folder.
 
 ## Project Layout
 

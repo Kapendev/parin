@@ -5,7 +5,7 @@
 
 module popka.examples.dialogue;
 
-import popka.basic;
+import popka;
 
 @safe @nogc nothrow:
 
@@ -29,7 +29,6 @@ void runDialogueExample() {
         | My name is Bob.
         > Mia
         | Hello!
-        | Nice to meet you!
         | My name is Mia.
         + choiceCount
         @ menuPoint
@@ -69,20 +68,18 @@ void runDialogueExample() {
         // Draw the game.
         if (dialogue.hasChoices) {
             foreach (i, choice; dialogue.choices) {
-                drawDebugText("{}. {}".fmt(i + 1, choice), Vec2(8, 8 + i * 14));
+                auto choicePosition = Vector2(8, 8 + i * 14);
+                draw("{}".fmt(i + 1), choicePosition);
+                draw("   | {}".fmt(choice), choicePosition);
             }
         } else if (dialogue.hasText) {
-            drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
+            draw("{}: {}".fmt(dialogue.actor, dialogue.text));
         } else {
-            drawDebugText("The dialogue has ended.");
+            draw("The dialogue has ended.");
         }
-        drawRect(Rect(0, resolution.y * 0.75, resolution.x, resolution.y * 0.25), darkGray);
-        drawDebugText(
-            "Press a number to select a choice.\nPress space to continue.",
-            Vec2(8, resolution.y - 7 - 14 * 2)
-        );
+        draw(Rectangle(0, resolution.y * 0.8, resolution.x, resolution.y), darkGray);
+        auto infoPosition = Vector2(8, resolution.y - 2 - 14 * 2);
+        draw("Press 1, 2 or 3 to select a choice.", infoPosition);
+        draw("\nPress space to continue.", infoPosition);
     }
-    // Free all the game resources.
-    dialogue.free();
-    freeWindow();
 }

@@ -6,13 +6,9 @@
 
 module popka.game.dialogue;
 
-import popka.core.container;
-import popka.core.io;
-import popka.core.strutils;
+import popka.core;
 
 @safe @nogc nothrow:
-
-// TODO: Needs a lot of cleaning and thinking.
 
 enum dialogueUnitKindChars = ".#*@>|^!+-$";
 

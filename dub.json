@@ -13,7 +13,7 @@
 		},
 		{
 			"name": "popka_test",
-			"excludedSourceFiles": ["basic.d", "examples/*.d", "game/*.d", "vendor/*.d"]
+			"excludedSourceFiles": ["package.d", "examples/*.d", "game/*.d", "vendor/*.d"]
 		}
 	]
 }

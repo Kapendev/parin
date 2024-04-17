@@ -5,7 +5,7 @@
 
 module popka.examples.hello;
 
-import popka.basic;
+import popka;
 
 @safe @nogc nothrow:
 
@@ -13,7 +13,6 @@ void runHelloExample() {
     openWindow(640, 480);
     lockResolution(320, 180);
     while (isWindowOpen) {
-        drawDebugText("Hello world!");
+        draw("Hello world!");
     }
-    freeWindow();
 }

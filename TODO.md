@@ -1,5 +1,8 @@
 # TODO
 
+* Think about Vector vs x and y in API design.
+* Think about empty strings when loading a file.
+* Remove asserts from dialogued.d.
 * Clean up dialogue system and dialogue example.
 * Test str modules and add unicode support.
 * Work on UI.
