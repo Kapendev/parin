@@ -83,7 +83,6 @@ struct List(T) {
             } else {
                 items = items.ptr[0 .. newLength];
             }
-            // We cast here because of the type system.
             items[$ - 1] = cast(T) arg;
         }
     }

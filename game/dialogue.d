@@ -4,22 +4,15 @@
 /// The dialogue module is a versatile dialogue system,
 /// enabling the creation of interactive conversations and branching narratives.
 
-/*
-# --- Checks
-# ? count
-# ? count = 0
-*/
-
 module popka.game.dialogue;
 
 import popka.core.container;
 import popka.core.io;
-import popka.core.strconv;
 import popka.core.strutils;
 
 @safe @nogc nothrow:
 
-// TODO: Change names of options to choices.
+// TODO: Needs a lot of cleaning and thinking.
 
 enum dialogueUnitKindChars = ".#*@>|^!+-$";
 
@@ -65,7 +58,7 @@ struct Dialogue {
         load(path);
     }
 
-    bool hasOptions() {
+    bool hasChoices() {
         return menu.length != 0;
     }
 
@@ -77,7 +70,7 @@ struct Dialogue {
         return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
-    const(char)[][] options() {
+    const(char)[][] choices() {
         return menu.items;
     }
 

@@ -11,5 +11,4 @@ public import popka.core.container;
 public import popka.core.fmt;
 public import popka.core.io;
 public import popka.core.math;
-public import popka.core.strconv;
 public import popka.core.strutils;

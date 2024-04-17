@@ -53,8 +53,8 @@ void runDialogueExample() {
     while (isWindowOpen) {
         // Update the game.
         if (dialogue.hasText) {
-            if (dialogue.hasOptions) {
-                auto digits = digitChars[1 .. 1 + dialogue.options.length];
+            if (dialogue.hasChoices) {
+                auto digits = digitChars[1 .. 1 + dialogue.choices.length];
                 foreach (i, key; digits) {
                     if (key.isPressed) {
                         dialogue.select(i);
@@ -67,9 +67,9 @@ void runDialogueExample() {
         }
 
         // Draw the game.
-        if (dialogue.hasOptions) {
-            foreach (i, option; dialogue.options) {
-                drawDebugText("{}. {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
+        if (dialogue.hasChoices) {
+            foreach (i, choice; dialogue.choices) {
+                drawDebugText("{}. {}".fmt(i + 1, choice), Vec2(8, 8 + i * 14));
             }
         } else if (dialogue.hasText) {
             drawDebugText("{}: {}".fmt(dialogue.actor, dialogue.text));
@@ -78,7 +78,7 @@ void runDialogueExample() {
         }
         drawRect(Rect(0, resolution.y * 0.75, resolution.x, resolution.y * 0.25), darkGray);
         drawDebugText(
-            "Press a number to pick an option.\nPress space to continue.",
+            "Press a number to select a choice.\nPress space to continue.",
             Vec2(8, resolution.y - 7 - 14 * 2)
         );
     }

@@ -13,6 +13,8 @@ public import popka.core.basic;
 
 @safe @nogc nothrow:
 
+// TODO: Think about a lot of things like vecs vs xy, loading with a empty string, cameras, sound, ...
+
 PopkaState popkaState;
 
 enum defaultFPS = 60;

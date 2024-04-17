@@ -7,7 +7,7 @@
 module popka.core.fmt;
 
 import io = core.stdc.stdio;
-import popka.core.strconv;
+import popka.core.strutils;
 
 @safe @nogc nothrow:
 
