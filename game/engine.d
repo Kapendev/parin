@@ -13,7 +13,7 @@ import popka.core;
 PopkaState popkaState;
 
 enum defaultFPS = 60;
-enum defaultBackgroundColor = Color(0x2A, 0x36, 0x3A);
+enum defaultBackgroundColor = Color(0x2A363AFF);
 enum toggleFullscreenWaitTime = 0.125f;
 
 enum Flip : ubyte {
@@ -26,6 +26,106 @@ enum Flip : ubyte {
 enum Filter : ubyte {
     nearest,
     linear,
+}
+
+enum Keyboard {
+    a = ray.KEY_A,
+    b = ray.KEY_B,
+    c = ray.KEY_C,
+    d = ray.KEY_D,
+    e = ray.KEY_E,
+    f = ray.KEY_F,
+    g = ray.KEY_G,
+    h = ray.KEY_H,
+    i = ray.KEY_I,
+    j = ray.KEY_J,
+    k = ray.KEY_K,
+    l = ray.KEY_L,
+    m = ray.KEY_M,
+    n = ray.KEY_N,
+    o = ray.KEY_O,
+    p = ray.KEY_P,
+    q = ray.KEY_Q,
+    r = ray.KEY_R,
+    s = ray.KEY_S,
+    t = ray.KEY_T,
+    u = ray.KEY_U,
+    v = ray.KEY_V,
+    w = ray.KEY_W,
+    x = ray.KEY_X,
+    y = ray.KEY_Y,
+    z = ray.KEY_Z,
+    n0 = ray.KEY_ZERO,
+    n1 = ray.KEY_ONE,
+    n2 = ray.KEY_TWO,
+    n3 = ray.KEY_THREE,
+    n4 = ray.KEY_FOUR,
+    n5 = ray.KEY_FIVE,
+    n6 = ray.KEY_SIX,
+    n7 = ray.KEY_SEVEN,
+    n8 = ray.KEY_EIGHT,
+    n9 = ray.KEY_NINE,
+    nn0 = ray.KEY_KP_0,
+    nn1 = ray.KEY_KP_1,
+    nn2 = ray.KEY_KP_2,
+    nn3 = ray.KEY_KP_3,
+    nn4 = ray.KEY_KP_4,
+    nn5 = ray.KEY_KP_5,
+    nn6 = ray.KEY_KP_6,
+    nn7 = ray.KEY_KP_7,
+    nn8 = ray.KEY_KP_8,
+    nn9 = ray.KEY_KP_9,
+    f1 = ray.KEY_F1,
+    f2 = ray.KEY_F2,
+    f3 = ray.KEY_F3,
+    f4 = ray.KEY_F4,
+    f5 = ray.KEY_F5,
+    f6 = ray.KEY_F6,
+    f7 = ray.KEY_F7,
+    f8 = ray.KEY_F8,
+    f9 = ray.KEY_F9,
+    f10 = ray.KEY_F10,
+    f11 = ray.KEY_F11,
+    f12 = ray.KEY_F12,
+    left = ray.KEY_LEFT,
+    right = ray.KEY_RIGHT,
+    up = ray.KEY_UP,
+    down = ray.KEY_DOWN,
+    esc = ray.KEY_ESCAPE,
+    enter = ray.KEY_ENTER,
+    tab = ray.KEY_TAB,
+    space = ray.KEY_SPACE,
+    backspace = ray.KEY_BACKSPACE,
+    shift = ray.KEY_LEFT_SHIFT,
+    ctrl = ray.KEY_LEFT_CONTROL,
+    alt = ray.KEY_LEFT_ALT,
+    win = ray.KEY_LEFT_SUPER,
+}
+
+enum Mouse {
+    left = ray.MOUSE_BUTTON_LEFT,
+    right = ray.MOUSE_BUTTON_RIGHT,
+    middle = ray.MOUSE_BUTTON_MIDDLE,
+}
+
+enum Gamepad {
+    left = ray.GAMEPAD_BUTTON_LEFT_FACE_LEFT,
+    right = ray.GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
+    up = ray.GAMEPAD_BUTTON_LEFT_FACE_UP,
+    down = ray.GAMEPAD_BUTTON_LEFT_FACE_DOWN,
+    y = ray.GAMEPAD_BUTTON_RIGHT_FACE_UP,
+    x = ray.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
+    a = ray.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
+    b = ray.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,
+    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,
+    lt = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_2,
+    lsb = ray.GAMEPAD_BUTTON_LEFT_THUMB,
+    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
+    rt = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,
+    rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,
+    back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,
+    start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,
+    center = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
 struct PopkaState {
@@ -91,6 +191,44 @@ struct Sprite {
     }
 }
 
+struct View {
+    ray.RenderTexture2D data;
+
+    @safe @nogc nothrow:
+
+    this(Vector2 size) {
+        load(size);
+    }
+
+    this(float width, float height) {
+        this(Vector2(width, height));
+    }
+
+    bool isEmpty() {
+        return data.texture.id <= 0;
+    }
+
+    Vector2 size() {
+        return Vector2(data.texture.width, data.texture.height);
+    }
+
+    Rectangle rectangle() {
+        return Rectangle(size);
+    }
+
+    void load(Vector2 size) {
+        free();
+        data = ray.LoadRenderTexture(cast(int) size.x, cast(int) size.y);
+    }
+
+    void free() {
+        if (!isEmpty) {
+            ray.UnloadRenderTexture(data);
+            data = ray.RenderTexture();
+        }
+    }
+}
+
 struct Font {
     ray.Font data;
     Vector2 spacing;
@@ -125,48 +263,6 @@ struct Font {
     }
 }
 
-struct View {
-    ray.RenderTexture2D data;
-
-    @safe @nogc nothrow:
-
-    this(Vector2 size) {
-        load(size);
-    }
-
-    this(float width, float height) {
-        load(width, height);
-    }
-
-    bool isEmpty() {
-        return data.texture.id <= 0;
-    }
-
-    Vector2 size() {
-        return Vector2(data.texture.width, data.texture.height);
-    }
-
-    Rectangle rectangle() {
-        return Rectangle(size);
-    }
-
-    void load(Vector2 size) {
-        free();
-        data = ray.LoadRenderTexture(cast(int) size.x, cast(int) size.y);
-    }
-
-    void load(float width, float height) {
-        load(Vector2(width, height));
-    }
-
-    void free() {
-        if (!isEmpty) {
-            ray.UnloadRenderTexture(data);
-            data = ray.RenderTexture();
-        }
-    }
-}
-
 // TODO: Needs a lot of testing and changing.
 // NOTE: This should handle sounds and music.
 // NOTE: I added this basic layer to use it for a visual novel.
@@ -197,6 +293,7 @@ struct AudioAsset {
         }
     }
 
+    // NOTE: Yeah, no idea...
     void update() {
         ray.UpdateMusicStream(data);
     }
@@ -220,21 +317,21 @@ struct AudioAsset {
 
 struct TileMap {
     Grid!short data;
+    Vector2 cellSize = Vector2(16.0f);
     alias data this;
 
     @safe @nogc nothrow:
 
-    Vector2 cellSize() {
-        return Vector2(cellWidth, cellHeight);
-    }
-
-    void cellSize(Vector2 value) {
-        cellWidth = value.x;
-        cellHeight = value.y;
+    this(const(char)[] path) {
+        load(path);
     }
 
     Vector2 size() {
-        return Vector2(width, height);
+        return cellSize * Vector2(colCount, rowCount);
+    }
+
+    Rectangle rectangle() {
+        return Rectangle(size);
     }
 
     void load(const(char)[] path) {
@@ -242,23 +339,27 @@ struct TileMap {
         if (path.length == 0) {
             return;
         }
+
         auto file = readText(path);
-        const(char)[] view = file.items;
+        auto view = file.items;
+        auto newRowCount = 0;
+        auto newColCount = 0;
+
         while (view.length != 0) {
             auto line = view.skipLine();
-            rowCount += 1;
-            colCount = 0;
+            newRowCount += 1;
+            newColCount = 0;
             while (line.length != 0) {
                 auto value = line.skipValue(',');
-                colCount += 1;
+                newColCount += 1;
             }
         }
-        resize(rowCount, colCount);
+        resize(newRowCount, newColCount);
 
         view = file.items;
-        foreach (row; 0 .. rowCount) {
+        foreach (row; 0 .. newRowCount) {
             auto line = view.skipLine();
-            foreach (col; 0 .. colCount) {
+            foreach (col; 0 .. newColCount) {
                 auto value = line.skipValue(',');
                 auto conv = value.toSigned();
                 if (conv.error) {
@@ -276,6 +377,7 @@ struct Camera {
     Vector2 position;
     float rotation = 0.0f;
     float scale = 1.0f;
+
     Hook hook;
     bool isAttached;
 
@@ -286,7 +388,7 @@ struct Camera {
     }
 
     this(float x, float y) {
-        this.position = Vector2(x, y);
+        this(Vector2(x, y));
     }
 
     Vector2 size() {
@@ -331,106 +433,6 @@ struct Camera {
             position = position.moveTo(target, Vector2(deltaTime), slowdown);
         }
     }
-}
-
-enum Keyboard {
-    a = ray.KEY_A,
-    b = ray.KEY_B,
-    c = ray.KEY_C,
-    d = ray.KEY_D,
-    e = ray.KEY_E,
-    f = ray.KEY_F,
-    g = ray.KEY_G,
-    h = ray.KEY_H,
-    i = ray.KEY_I,
-    j = ray.KEY_J,
-    k = ray.KEY_K,
-    l = ray.KEY_L,
-    m = ray.KEY_M,
-    n = ray.KEY_N,
-    o = ray.KEY_O,
-    p = ray.KEY_P,
-    q = ray.KEY_Q,
-    r = ray.KEY_R,
-    s = ray.KEY_S,
-    t = ray.KEY_T,
-    u = ray.KEY_U,
-    v = ray.KEY_V,
-    w = ray.KEY_W,
-    x = ray.KEY_X,
-    y = ray.KEY_Y,
-    z = ray.KEY_Z,
-    n0 = ray.KEY_ZERO,
-    n1 = ray.KEY_ONE,
-    n2 = ray.KEY_TWO,
-    n3 = ray.KEY_THREE,
-    n4 = ray.KEY_FOUR,
-    n5 = ray.KEY_FIVE,
-    n6 = ray.KEY_SIX,
-    n7 = ray.KEY_SEVEN,
-    n8 = ray.KEY_EIGHT,
-    n9 = ray.KEY_NINE,
-    n00 = ray.KEY_KP_0,
-    n11 = ray.KEY_KP_1,
-    n22 = ray.KEY_KP_2,
-    n33 = ray.KEY_KP_3,
-    n44 = ray.KEY_KP_4,
-    n55 = ray.KEY_KP_5,
-    n66 = ray.KEY_KP_6,
-    n77 = ray.KEY_KP_7,
-    n88 = ray.KEY_KP_8,
-    n99 = ray.KEY_KP_9,
-    f1 = ray.KEY_F1,
-    f2 = ray.KEY_F2,
-    f3 = ray.KEY_F3,
-    f4 = ray.KEY_F4,
-    f5 = ray.KEY_F5,
-    f6 = ray.KEY_F6,
-    f7 = ray.KEY_F7,
-    f8 = ray.KEY_F8,
-    f9 = ray.KEY_F9,
-    f10 = ray.KEY_F10,
-    f11 = ray.KEY_F11,
-    f12 = ray.KEY_F12,
-    left = ray.KEY_LEFT,
-    right = ray.KEY_RIGHT,
-    up = ray.KEY_UP,
-    down = ray.KEY_DOWN,
-    esc = ray.KEY_ESCAPE,
-    enter = ray.KEY_ENTER,
-    tab = ray.KEY_TAB,
-    space = ray.KEY_SPACE,
-    backspace = ray.KEY_BACKSPACE,
-    shift = ray.KEY_LEFT_SHIFT,
-    ctrl = ray.KEY_LEFT_CONTROL,
-    alt = ray.KEY_LEFT_ALT,
-    win = ray.KEY_LEFT_SUPER,
-}
-
-enum Mouse {
-    left = ray.MOUSE_BUTTON_LEFT,
-    right = ray.MOUSE_BUTTON_RIGHT,
-    middle = ray.MOUSE_BUTTON_MIDDLE,
-}
-
-enum Gamepad {
-    left = ray.GAMEPAD_BUTTON_LEFT_FACE_LEFT,
-    right = ray.GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
-    up = ray.GAMEPAD_BUTTON_LEFT_FACE_UP,
-    down = ray.GAMEPAD_BUTTON_LEFT_FACE_DOWN,
-    y = ray.GAMEPAD_BUTTON_RIGHT_FACE_UP,
-    x = ray.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
-    a = ray.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
-    b = ray.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,
-    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,
-    lt = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_2,
-    lsb = ray.GAMEPAD_BUTTON_LEFT_THUMB,
-    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
-    rt = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,
-    rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,
-    back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,
-    start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,
-    center = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
 Color toPopka(ray.Color from) {
@@ -515,6 +517,12 @@ ray.Camera2D toRay(Camera from) {
     return ray.Camera2D(toRay(from.origin), toRay(from.position), from.rotation, from.scale);
 }
 
+Font rayFont() {
+    auto result = toPopka(ray.GetFontDefault());
+    result.spacing = Vector2(1.0f, 14.0f);
+    return result;
+}
+
 int randi() {
     return ray.GetRandomValue(0, int.max);
 }
@@ -531,19 +539,23 @@ void randomize() {
     randomize(randi);
 }
 
-void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+void openWindow(Vector2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
     if (popkaState.isWindowOpen) {
         return;
     }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
-    ray.InitWindow(cast(int) width, cast(int) height, toStrz(title));
-    ray.SetWindowMinSize(cast(int) (width * 0.25f), cast(int) (height * 0.25f));
+    ray.InitWindow(cast(int) size.x, cast(int) size.y, toStrz(title));
+    ray.SetWindowMinSize(cast(int) (size.x * 0.25f), cast(int) (size.y * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);
     lockFPS(defaultFPS);
     popkaState.isWindowOpen = true;
     popkaState.backgroundColor = color;
-    popkaState.lastWindowSize = Vector2(width, height);
+    popkaState.lastWindowSize = size;
+}
+
+void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+    openWindow(Vector2(width, height), title, color);
 }
 
 void closeWindow() {
@@ -676,20 +688,6 @@ void unlockResolution() {
     }
 }
 
-bool isFullscreen() {
-    return ray.IsWindowFullscreen;
-}
-
-void toggleFullscreen() {
-    if (!ray.IsWindowFullscreen()) {
-        auto screen = screenSize;
-        popkaState.lastWindowSize = windowSize;
-        ray.SetWindowPosition(0, 0);
-        ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
-    }
-    popkaState.isToggleFullscreenQueued = true;
-}
-
 bool isCursorHidden() {
     return popkaState.isCursorHidden;
 }
@@ -702,6 +700,20 @@ void hideCursor() {
 void showCursor() {
     ray.ShowCursor();
     popkaState.isCursorHidden = false;
+}
+
+bool isFullscreen() {
+    return ray.IsWindowFullscreen;
+}
+
+void toggleFullscreen() {
+    if (!ray.IsWindowFullscreen()) {
+        auto screen = screenSize;
+        popkaState.lastWindowSize = windowSize;
+        ray.SetWindowPosition(0, 0);
+        ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
+    }
+    popkaState.isToggleFullscreenQueued = true;
 }
 
 Vector2 screenSize() {
@@ -751,14 +763,8 @@ float deltaTime() {
     return ray.GetFrameTime();
 }
 
-Vector2 deltaMouse() {
+Vector2 deltaMousePosition() {
     return toPopka(ray.GetMouseDelta());
-}
-
-Font rayFont() {
-    auto result = toPopka(ray.GetFontDefault());
-    result.spacing = Vector2(1.0f, 14.0f);
-    return result;
 }
 
 @trusted
@@ -893,8 +899,6 @@ void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options
     );
 }
 
-// TODO: Think about when to use ints and when to use floats or vectors.
-// NOTE: For now it will be a vector because I am making a game lol.
 void draw(Sprite sprite, Vector2 tileSize, uint tileID, Vector2 position, DrawOptions options = DrawOptions()) {
     auto gridWidth = cast(uint) (sprite.size.x / tileSize.x);
     auto gridHeight = cast(uint) (sprite.size.y / tileSize.y);
@@ -912,10 +916,10 @@ void draw(Sprite sprite, TileMap map, Camera camera, Vector2 position, DrawOptio
     auto bottomRight = camera.point(Hook.bottomRight);
     size_t col1, col2, row1, row2;
     if (camera.isAttached) {
-        col1 = cast(size_t) floor(clamp((topLeft.x - position.x) / map.cellWidth - 4.0f, 0, map.colCount));
-        col2 = cast(size_t) floor(clamp((bottomRight.x - position.x) / map.cellWidth + 4.0f, 0, map.colCount));
-        row1 = cast(size_t) floor(clamp((topLeft.y - position.y) / map.cellHeight - 4.0f, 0, map.rowCount));
-        row2 = cast(size_t) floor(clamp((bottomRight.y - position.y) / map.cellHeight + 4.0f, 0, map.rowCount));
+        col1 = cast(size_t) floor(clamp((topLeft.x - position.x) / map.cellSize.x - 4.0f, 0, map.colCount));
+        col2 = cast(size_t) floor(clamp((bottomRight.x - position.x) / map.cellSize.x + 4.0f, 0, map.colCount));
+        row1 = cast(size_t) floor(clamp((topLeft.y - position.y) / map.cellSize.y - 4.0f, 0, map.rowCount));
+        row2 = cast(size_t) floor(clamp((bottomRight.y - position.y) / map.cellSize.y + 4.0f, 0, map.rowCount));
     } else {
         col1 = 0;
         col2 = map.colCount;

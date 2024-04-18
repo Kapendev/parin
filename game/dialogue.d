@@ -133,7 +133,7 @@ struct Dialogue {
         update();
     }
 
-    // TODO: Remove the assets!
+    // TODO: Remove the asserts!
     void update() {
         if (units.length != 0 && unitIndex < units.length - 1) {
             unitIndex += 1;
@@ -253,21 +253,6 @@ struct Dialogue {
         }
     }
 
-    void free() {
-        foreach (ref unit; units) {
-            unit.text.free();
-        }
-        units.free();
-        foreach (ref variable; variables) {
-            variable.name.free();
-        }
-        variables.free();
-        menu.free();
-        command.free();
-        reset();
-        pointCount = 0;
-    }
-
     void parse(const(char)[] script) {
         free();
         units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
@@ -304,9 +289,27 @@ struct Dialogue {
     }
 
     void load(const(char)[] path) {
-        auto file = readText(path);
-        parse(file.items);
-        file.free();
+        free();
+        if (path.length != 0) {
+            auto file = readText(path);
+            parse(file.items);
+            file.free();
+        }
+    }
+
+    void free() {
+        foreach (ref unit; units) {
+            unit.text.free();
+        }
+        units.free();
+        foreach (ref variable; variables) {
+            variable.name.free();
+        }
+        variables.free();
+        menu.free();
+        command.free();
+        reset();
+        pointCount = 0;
     }
 }
 

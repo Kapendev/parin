@@ -348,7 +348,7 @@ const(char)[] skipValue(ref inout(char)[] str, char separator) {
     return skipValue(str, charToStr(separator));
 }
 
-const(char)[] skipLine(ref const(char)[] str) {
+const(char)[] skipLine(ref inout(char)[] str) {
     return skipValue(str, '\n');
 }
 

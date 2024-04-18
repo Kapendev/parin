@@ -1,10 +1,8 @@
 # TODO
 
-* Think about Vector vs x and y in API design.
-* Think about empty strings when loading a file.
-* Remove asserts from dialogued.d.
-* Clean up dialogue system and dialogue example.
-* Test str modules and add unicode support.
+* Add audio support.
 * Work on UI.
-* Collision functionality must be implemented.
+* Test str modules and add unicode support.
 * Add more parsing options for fmt.d and strutils.d.
+* Remove asserts from dialogued.d.
+* Collision functionality must be implemented.

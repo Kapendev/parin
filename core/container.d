@@ -328,18 +328,10 @@ size_t findListCapacity(size_t length) {
 
 struct Grid(T) {
     List!T cells;
-    float cellWidth;
-    float cellHeight;
     size_t rowCount;
     size_t colCount;
 
 @safe @nogc nothrow:
-
-    this(size_t rowCount, size_t colCount, size_t cellWidth, size_t cellHeight) {
-        this.cellWidth = cellWidth;
-        this.cellHeight = cellHeight;
-        resize(rowCount, colCount);
-    }
 
     this(size_t rowCount, size_t colCount) {
         resize(rowCount, colCount);
@@ -392,14 +384,6 @@ struct Grid(T) {
 
     size_t length() {
         return cells.length;
-    }
-
-    float width() {
-        return cellWidth * colCount;
-    }
-
-    float height() {
-        return cellHeight * rowCount;
     }
 
     void resize(size_t rowCount, size_t colCount) {

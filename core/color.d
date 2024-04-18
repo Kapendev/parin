@@ -45,4 +45,13 @@ struct Color {
     this(ubyte[4] rgba) {
         this(rgba[0], rgba[1], rgba[2], rgba[3]);
     }
+
+    this(uint rgba) {
+        this(
+            (rgba & 0xFF000000) >> 24,
+            (rgba & 0xFF0000) >> 16,
+            (rgba & 0xFF00) >> 8,
+            (rgba & 0xFF),
+        );
+    }
 }
