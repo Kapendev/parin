@@ -44,4 +44,5 @@ void runCameraExample() {
         draw("+", resolution * Vector2(0.5));
         draw("+", resolution * Vector2(0.5) + (cameraTarget - camera.position));
     }
+    freeWindow();
 }

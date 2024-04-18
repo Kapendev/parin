@@ -263,10 +263,9 @@ struct Font {
     }
 }
 
-// TODO: Needs a lot of testing and changing.
-// NOTE: This should handle sounds and music.
+// TODO: Needs a lot of testing and changing to make it more easy to use.
 // NOTE: I added this basic layer to use it for a visual novel.
-struct AudioAsset {
+struct Music {
     ray.Music data;
 
     @safe @nogc nothrow:
@@ -279,31 +278,12 @@ struct AudioAsset {
         return data.stream.sampleRate == 0;
     }
 
-    void load(const(char)[] path) {
-        free();
-        if (path.length != 0) {
-            ray.LoadMusicStream(toStrz(path));
-        }
-    }
-
-    void free() {
-        if (!isEmpty) {
-            ray.UnloadMusicStream(data);
-            data = ray.Music();
-        }
-    }
-
-    // NOTE: Yeah, no idea...
-    void update() {
-        ray.UpdateMusicStream(data);
-    }
-
     void play() {
         ray.PlayMusicStream(data);
     }
 
-    void stop() {
-        ray.StopMusicStream(data);
+    void update() {
+        ray.UpdateMusicStream(data);
     }
 
     void pause() {
@@ -312,6 +292,28 @@ struct AudioAsset {
 
     void resume() {
         ray.ResumeMusicStream(data);
+    }
+
+    void stop() {
+        ray.StopMusicStream(data);
+    }
+
+    void volume(float level) {
+        ray.SetMusicVolume(data, level);
+    }
+
+    void load(const(char)[] path) {
+        free();
+        if (path.length != 0) {
+            data = ray.LoadMusicStream(toStrz(path));
+        }
+    }
+
+    void free() {
+        if (!isEmpty) {
+            ray.UnloadMusicStream(data);
+            data = ray.Music();
+        }
     }
 }
 
@@ -546,6 +548,7 @@ void openWindow(Vector2 size, const(char)[] title = "Popka", Color color = defau
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) size.x, cast(int) size.y, toStrz(title));
+    ray.InitAudioDevice();
     ray.SetWindowMinSize(cast(int) (size.x * 0.25f), cast(int) (size.y * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);
     lockFPS(defaultFPS);
@@ -564,12 +567,6 @@ void closeWindow() {
 
 bool isWindowOpen() {
     if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
-        // Free global resources.
-        if (popkaState.isWindowOpen) {
-            popkaState.view.free();
-            ray.CloseWindow();
-            popkaState = PopkaState();
-        }
         return false;
     }
 
@@ -645,6 +642,15 @@ bool isWindowOpen() {
     }
     popkaState.isDrawing = true;
     return true;
+}
+
+void freeWindow() {
+    if (!popkaState.view.isEmpty) {
+        popkaState.view.free();
+        ray.CloseAudioDevice();
+        ray.CloseWindow();
+        popkaState = PopkaState();
+    }
 }
 
 bool isFPSLocked() {

@@ -62,4 +62,5 @@ void runCoinsExample() {
             draw("Coins: {}/{}".fmt(maxCoinCount - coins.length, maxCoinCount));
         }
     }
+    freeWindow();
 }

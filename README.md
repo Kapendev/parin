@@ -15,24 +15,25 @@ void main() {
     while (isWindowOpen) {
         draw("Hello world!");
     }
+    freeWindow();
 }
 ```
+
+## Games Made With Popka
+
+* [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
 
 ## Dependencies
 
 To use Popka, you'll need the raylib library (version 5.0) installed on your system.
 The official raylib instructions will guide you through the process.
 
-## Examples
-
-A set of code examples showcasing various engine features can be found within the examples folder.
-
 ## Project Layout
 
 * core: A standard library designed specifically for game development. 
 * vendor: A collection of third-party libraries.
 * game: A set of tools for creating 2D games.
-* examples: A collection of examples using game.
+* examples: A collection of example projects.
 
 ## Documentation
 

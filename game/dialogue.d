@@ -158,7 +158,7 @@ struct Dialogue {
                 }
                 case DialogueUnitKind.menu: {
                     if (text.length == 0) {
-                        assert(0, "TODO: Do something about the error case.");
+                        assert(0, "TODO: An empty menu is an error for now.");
                     }
                     menu.clear();
                     auto view = text;
@@ -174,7 +174,7 @@ struct Dialogue {
                     auto name = trim(skipValue(view, '='));
                     auto value = trim(skipValue(view, '='));
                     if (name.length == 0) {
-                        assert(0, "TODO: Do something about the error case.");
+                        assert(0, "TODO: An variable without a name is an error for now.");
                     }
                     // Find if variable exists.
                     foreach (i, variable; variables.items) {
@@ -204,7 +204,7 @@ struct Dialogue {
                                 }
                             }
                             if (valueVariableIndex < 0) {
-                                assert(0, "TODO: Do something about the error case.");
+                                assert(0, "TODO: A variable that doesn't exist it an error for now.");
                             } else {
                                 variables[variableIndex].value = variables[valueVariableIndex].value;
                             }
@@ -227,7 +227,7 @@ struct Dialogue {
                     }
                     // Add/Remove from variable.
                     if (variableIndex < 0) {
-                        assert(0, "TODO: Do something about the error case.");
+                        assert(0, "TODO: A variable that doesn't exist it an error for now.");
                     }
                     if (units[unitIndex].kind == DialogueUnitKind.plus) {
                         variables[variableIndex].value += 1;
@@ -239,7 +239,7 @@ struct Dialogue {
                 }
                 case DialogueUnitKind.command: {
                     if (text.length == 0) {
-                        assert(0, "TODO: Do something about the error case.");
+                        assert(0, "TODO: An empty command is an error for now.");
                     }
                     command.clear();
                     auto view = text;

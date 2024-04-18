@@ -1,6 +1,5 @@
 # TODO
 
-* Add audio support.
 * Work on UI.
 * Test str modules and add unicode support.
 * Add more parsing options for fmt.d and strutils.d.

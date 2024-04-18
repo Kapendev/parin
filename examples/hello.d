@@ -15,4 +15,5 @@ void runHelloExample() {
     while (isWindowOpen) {
         draw("Hello world!");
     }
+    freeWindow();
 }

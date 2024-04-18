@@ -82,4 +82,5 @@ void runDialogueExample() {
         draw("Press 1, 2 or 3 to select a choice.", infoPosition);
         draw("\nPress space to continue.", infoPosition);
     }
+    freeWindow();
 }
