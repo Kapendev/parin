@@ -136,7 +136,7 @@ struct PopkaState {
 
     Color backgroundColor;
     Vector2 targetViewSize;
-    View view;
+    Viewport viewport;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
 
@@ -191,7 +191,7 @@ struct Sprite {
     }
 }
 
-struct View {
+struct Viewport {
     ray.RenderTexture2D data;
 
     @safe @nogc nothrow:
@@ -263,8 +263,54 @@ struct Font {
     }
 }
 
-// TODO: Needs a lot of testing and changing to make it more easy to use.
-// NOTE: I added this basic layer to use it for a visual novel.
+struct Sound {
+    ray.Sound data;
+
+    @safe @nogc nothrow:
+
+    this(const(char)[] path) {
+        load(path);
+    }
+
+    bool isEmpty() {
+        return data.stream.sampleRate == 0;
+    }
+
+    void play() {
+        ray.PlaySound(data);
+    }
+
+    void stop() {
+        ray.StopSound(data);
+    }
+
+    void pause() {
+        ray.PauseSound(data);
+    }
+
+    void resume() {
+        ray.ResumeSound(data);
+    }
+
+    void volume(float level) {
+        ray.SetSoundVolume(data, level);
+    }
+
+    void load(const(char)[] path) {
+        free();
+        if (path.length != 0) {
+            data = ray.LoadSound(toStrz(path));
+        }
+    }
+
+    void free() {
+        if (!isEmpty) {
+            ray.UnloadSound(data);
+            data = ray.Sound();
+        }
+    }
+}
+
 struct Music {
     ray.Music data;
 
@@ -282,8 +328,8 @@ struct Music {
         ray.PlayMusicStream(data);
     }
 
-    void update() {
-        ray.UpdateMusicStream(data);
+    void stop() {
+        ray.StopMusicStream(data);
     }
 
     void pause() {
@@ -294,8 +340,8 @@ struct Music {
         ray.ResumeMusicStream(data);
     }
 
-    void stop() {
-        ray.StopMusicStream(data);
+    void update() {
+        ray.UpdateMusicStream(data);
     }
 
     void volume(float level) {
@@ -314,64 +360,6 @@ struct Music {
             ray.UnloadMusicStream(data);
             data = ray.Music();
         }
-    }
-}
-
-struct TileMap {
-    Grid!short data;
-    Vector2 cellSize = Vector2(16.0f);
-    alias data this;
-
-    @safe @nogc nothrow:
-
-    this(const(char)[] path) {
-        load(path);
-    }
-
-    Vector2 size() {
-        return cellSize * Vector2(colCount, rowCount);
-    }
-
-    Rectangle rectangle() {
-        return Rectangle(size);
-    }
-
-    void load(const(char)[] path) {
-        free();
-        if (path.length == 0) {
-            return;
-        }
-
-        auto file = readText(path);
-        auto view = file.items;
-        auto newRowCount = 0;
-        auto newColCount = 0;
-
-        while (view.length != 0) {
-            auto line = view.skipLine();
-            newRowCount += 1;
-            newColCount = 0;
-            while (line.length != 0) {
-                auto value = line.skipValue(',');
-                newColCount += 1;
-            }
-        }
-        resize(newRowCount, newColCount);
-
-        view = file.items;
-        foreach (row; 0 .. newRowCount) {
-            auto line = view.skipLine();
-            foreach (col; 0 .. newColCount) {
-                auto value = line.skipValue(',');
-                auto conv = value.toSigned();
-                if (conv.error) {
-                    data[row, col] = cast(short) -1;
-                } else {
-                    data[row, col] = cast(short) conv.value;
-                }
-            }
-        }
-        file.free();
     }
 }
 
@@ -437,6 +425,64 @@ struct Camera {
     }
 }
 
+struct TileMap {
+    Grid!short data;
+    Vector2 tileSize = Vector2(16.0f);
+    alias data this;
+
+    @safe @nogc nothrow:
+
+    this(const(char)[] path) {
+        load(path);
+    }
+
+    Vector2 size() {
+        return tileSize * Vector2(colCount, rowCount);
+    }
+
+    Rectangle rectangle() {
+        return Rectangle(size);
+    }
+
+    void load(const(char)[] path) {
+        free();
+        if (path.length == 0) {
+            return;
+        }
+
+        auto file = readText(path);
+        auto view = file.items;
+        auto newRowCount = 0;
+        auto newColCount = 0;
+
+        while (view.length != 0) {
+            auto line = view.skipLine();
+            newRowCount += 1;
+            newColCount = 0;
+            while (line.length != 0) {
+                auto value = line.skipValue(',');
+                newColCount += 1;
+            }
+        }
+        resize(newRowCount, newColCount);
+
+        view = file.items;
+        foreach (row; 0 .. newRowCount) {
+            auto line = view.skipLine();
+            foreach (col; 0 .. newColCount) {
+                auto value = line.skipValue(',');
+                auto conv = value.toSigned();
+                if (conv.error) {
+                    data[row, col] = cast(short) -1;
+                } else {
+                    data[row, col] = cast(short) conv.value;
+                }
+            }
+        }
+        file.free();
+    }
+}
+
 Color toPopka(ray.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
@@ -469,8 +515,8 @@ Font toPopka(ray.Font from) {
     return result;
 }
 
-View toPopka(ray.RenderTexture2D from) {
-    View result;
+Viewport toPopka(ray.RenderTexture2D from) {
+    Viewport result;
     result.data = from;
     return result;
 }
@@ -511,7 +557,7 @@ ray.Font toRay(Font from) {
     return from.data;
 }
 
-ray.RenderTexture2D toRay(View from) {
+ray.RenderTexture2D toRay(Viewport from) {
     return from.data;
 }
 
@@ -572,7 +618,7 @@ bool isWindowOpen() {
 
     if (!popkaState.isDrawing) {
         if (isResolutionLocked) {
-            ray.BeginTextureMode(popkaState.view.data);
+            ray.BeginTextureMode(popkaState.viewport.data);
         } else {
             ray.BeginDrawing();
         }
@@ -580,7 +626,7 @@ bool isWindowOpen() {
     } else {
         // End drawing.
         if (isResolutionLocked) {
-            auto minSize = popkaState.view.size;
+            auto minSize = popkaState.viewport.size;
             auto maxSize = windowSize;
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
@@ -590,7 +636,7 @@ bool isWindowOpen() {
             ray.BeginDrawing();
             ray.ClearBackground(ray.BLACK);
             ray.DrawTexturePro(
-                popkaState.view.data.texture,
+                popkaState.viewport.data.texture,
                 ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
                 ray.Rectangle(
                     ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
@@ -608,11 +654,11 @@ bool isWindowOpen() {
         }
         // The lockResolution and unlockResolution queue.
         if (popkaState.isLockResolutionQueued) {
-            popkaState.view.load(popkaState.targetViewSize);
+            popkaState.viewport.load(popkaState.targetViewSize);
             popkaState.isLockResolutionQueued = false;
         }
         if (popkaState.isUnlockResolutionQueued) {
-            popkaState.view.free();
+            popkaState.viewport.free();
             popkaState.isUnlockResolutionQueued = false;
         }
         // Fullscreen code to fix a bug on KDE.
@@ -634,7 +680,7 @@ bool isWindowOpen() {
         }
         // Begin drawing.
         if (isResolutionLocked) {
-            ray.BeginTextureMode(popkaState.view.data);
+            ray.BeginTextureMode(popkaState.viewport.data);
         } else {
             ray.BeginDrawing();
         }
@@ -645,8 +691,8 @@ bool isWindowOpen() {
 }
 
 void freeWindow() {
-    if (!popkaState.view.isEmpty) {
-        popkaState.view.free();
+    if (!popkaState.viewport.isEmpty) {
+        popkaState.viewport.free();
         ray.CloseAudioDevice();
         ray.CloseWindow();
         popkaState = PopkaState();
@@ -668,12 +714,12 @@ void unlockFPS() {
 }
 
 bool isResolutionLocked() {
-    return !popkaState.view.isEmpty;
+    return !popkaState.viewport.isEmpty;
 }
 
 void lockResolution(Vector2 size) {
     if (popkaState.isWindowOpen && !popkaState.isDrawing) {
-        popkaState.view.load(size);
+        popkaState.viewport.load(size);
     } else {
         popkaState.targetViewSize = size;
         popkaState.isLockResolutionQueued = true;
@@ -687,7 +733,7 @@ void lockResolution(float width, float height) {
 
 void unlockResolution() {
     if (popkaState.isWindowOpen && !popkaState.isDrawing) {
-        popkaState.view.free();
+        popkaState.viewport.free();
     } else {
         popkaState.isUnlockResolutionQueued = true;
         popkaState.isLockResolutionQueued = false;
@@ -737,7 +783,7 @@ Vector2 windowSize() {
 
 Vector2 resolution() {
     if (isResolutionLocked) {
-        return popkaState.view.size;
+        return popkaState.viewport.size;
     } else {
         return windowSize;
     }
@@ -746,8 +792,8 @@ Vector2 resolution() {
 Vector2 mousePosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
-        auto minRatio = min(window.x / popkaState.view.size.x, window.y / popkaState.view.size.y);
-        auto targetSize = popkaState.view.size * Vector2(minRatio);
+        auto minRatio = min(window.x / popkaState.viewport.size.x, window.y / popkaState.viewport.size.y);
+        auto targetSize = popkaState.viewport.size * Vector2(minRatio);
         return Vector2(
             (ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio,
             (ray.GetMouseY() - (window.y - targetSize.y) * 0.5f) / minRatio,
@@ -869,8 +915,16 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
+void changeShapeSprite(Sprite sprite, Rectangle region = Rectangle(1.0f, 1.0f)) {
+    ray.SetShapesTexture(sprite.data, toRay(region));
+}
+
 void draw(Rectangle rectangle, Color color = white) {
     ray.DrawRectanglePro(toRay(rectangle.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+}
+
+void draw(Circle circle, Color color = white) {
+    ray.DrawCircleV(toRay(circle.position), circle.radius, toRay(color));
 }
 
 void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options = DrawOptions()) {
@@ -917,27 +971,27 @@ void draw(Sprite sprite, Vector2 tileSize, uint tileID, Vector2 position, DrawOp
     draw(sprite, region, position, options);
 }
 
-void draw(Sprite sprite, TileMap map, Camera camera, Vector2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, TileMap tileMap, Camera camera, Vector2 position, DrawOptions options = DrawOptions()) {
     auto topLeft = camera.point(Hook.topLeft);
     auto bottomRight = camera.point(Hook.bottomRight);
     size_t col1, col2, row1, row2;
     if (camera.isAttached) {
-        col1 = cast(size_t) floor(clamp((topLeft.x - position.x) / map.cellSize.x - 4.0f, 0, map.colCount));
-        col2 = cast(size_t) floor(clamp((bottomRight.x - position.x) / map.cellSize.x + 4.0f, 0, map.colCount));
-        row1 = cast(size_t) floor(clamp((topLeft.y - position.y) / map.cellSize.y - 4.0f, 0, map.rowCount));
-        row2 = cast(size_t) floor(clamp((bottomRight.y - position.y) / map.cellSize.y + 4.0f, 0, map.rowCount));
+        col1 = cast(size_t) floor(clamp((topLeft.x - position.x) / tileMap.tileSize.x - 4.0f, 0, tileMap.colCount));
+        col2 = cast(size_t) floor(clamp((bottomRight.x - position.x) / tileMap.tileSize.x + 4.0f, 0, tileMap.colCount));
+        row1 = cast(size_t) floor(clamp((topLeft.y - position.y) / tileMap.tileSize.y - 4.0f, 0, tileMap.rowCount));
+        row2 = cast(size_t) floor(clamp((bottomRight.y - position.y) / tileMap.tileSize.y + 4.0f, 0, tileMap.rowCount));
     } else {
         col1 = 0;
-        col2 = map.colCount;
+        col2 = tileMap.colCount;
         row1 = 0;
-        row2 = map.rowCount;
+        row2 = tileMap.rowCount;
     }
     foreach (row; row1 .. row2) {
         foreach (col; col1 .. col2) {
-            if (map[row, col] == -1) {
+            if (tileMap[row, col] == -1) {
                 continue;
             }
-            draw(sprite, map.cellSize, map[row, col], position + Vector2(col, row) * map.cellSize, options);
+            draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vector2(col, row) * tileMap.tileSize, options);
         }
     }
 }

@@ -218,19 +218,15 @@ struct Rectangle {
     }
 
     this(Vector2 size) {
-        this.size = size;
+        this(Vector2(), size);
     }
 
     this(float x, float y, float w, float h) {
-        this.position.x = x;
-        this.position.y = y;
-        this.size.x = w;
-        this.size.y = h;
+        this(Vector2(x, y), Vector2(w, h));
     }
 
     this(float w, float h) {
-        this.size.x = w;
-        this.size.y = h;
+        this(Vector2(), Vector2(w, h));
     }
 
     void fix() {
@@ -418,6 +414,22 @@ struct Rectangle {
     Rectangle bottom(float amount) {
         Rectangle temp = this;
         return temp.subBottom(amount);
+    }
+}
+
+struct Circle {
+    Vector2 position;
+    float radius = 0.0f;
+
+    @safe @nogc nothrow:
+
+    this(Vector2 position, float radius) {
+        this.position = position;
+        this.radius = radius;
+    }
+
+    this(float x, float y, float radius) {
+        this(Vector2(x, y), radius);
     }
 }
 

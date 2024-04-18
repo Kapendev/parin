@@ -46,6 +46,10 @@ struct Color {
         this(rgba[0], rgba[1], rgba[2], rgba[3]);
     }
 
+    this(ubyte[3] rgb) {
+        this(rgb[0], rgb[1], rgb[2], 255);
+    }
+
     this(uint rgba) {
         this(
             (rgba & 0xFF000000) >> 24,
