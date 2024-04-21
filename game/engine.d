@@ -14,7 +14,7 @@ PopkaState popkaState;
 
 enum defaultFPS = 60;
 enum defaultBackgroundColor = Color(0x2A363AFF);
-enum toggleFullscreenWaitTime = 0.125f;
+enum toggleFullscreenWaitTime = 0.135f;
 
 enum Flip : ubyte {
     none,
@@ -117,11 +117,11 @@ enum Gamepad {
     x = ray.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
     a = ray.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
     b = ray.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,
-    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,
     lt = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_2,
+    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,
     lsb = ray.GAMEPAD_BUTTON_LEFT_THUMB,
-    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
     rt = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,
+    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
     rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,
     back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,
     start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,
@@ -129,13 +129,13 @@ enum Gamepad {
 }
 
 struct PopkaState {
+    Color backgroundColor;
     bool isWindowOpen;
     bool isDrawing;
     bool isFPSLocked;
     bool isCursorHidden;
 
-    Color backgroundColor;
-    Vector2 targetViewSize;
+    Vector2 targetViewportSize;
     Viewport viewport;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
@@ -172,7 +172,7 @@ struct Sprite {
         return Vector2(data.width, data.height);
     }
 
-    Rectangle rectangle() {
+    Rectangle area() {
         return Rectangle(size);
     }
 
@@ -212,7 +212,7 @@ struct Viewport {
         return Vector2(data.texture.width, data.texture.height);
     }
 
-    Rectangle rectangle() {
+    Rectangle area() {
         return Rectangle(size);
     }
 
@@ -389,12 +389,12 @@ struct Camera {
         return Rectangle(size).origin(hook);
     }
 
-    Rectangle rectangle() {
+    Rectangle area() {
         return Rectangle(position - origin, size);
     }
 
     Vector2 point(Hook hook) {
-        return rectangle.point(hook);
+        return area.point(hook);
     }
 
     void attach() {
@@ -440,7 +440,7 @@ struct TileMap {
         return tileSize * Vector2(colCount, rowCount);
     }
 
-    Rectangle rectangle() {
+    Rectangle area() {
         return Rectangle(size);
     }
 
@@ -654,7 +654,7 @@ bool isWindowOpen() {
         }
         // The lockResolution and unlockResolution queue.
         if (popkaState.isLockResolutionQueued) {
-            popkaState.viewport.load(popkaState.targetViewSize);
+            popkaState.viewport.load(popkaState.targetViewportSize);
             popkaState.isLockResolutionQueued = false;
         }
         if (popkaState.isUnlockResolutionQueued) {
@@ -721,7 +721,7 @@ void lockResolution(Vector2 size) {
     if (popkaState.isWindowOpen && !popkaState.isDrawing) {
         popkaState.viewport.load(size);
     } else {
-        popkaState.targetViewSize = size;
+        popkaState.targetViewportSize = size;
         popkaState.isLockResolutionQueued = true;
         popkaState.isUnlockResolutionQueued = false;
     }

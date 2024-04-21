@@ -1,7 +1,7 @@
 # 🍂 Popka
 
 Popka is a lightweight and beginner-friendly 2D game engine for the D programming language.
-It focuses on providing a simple and easy-to-understand foundation for building 2D games.
+It focuses on providing a simple foundation for building 2D games.
 The game engine is currently under development and is not yet ready for use.
 
 ```d
@@ -10,7 +10,7 @@ The game engine is currently under development and is not yet ready for use.
 import popka;
 
 void main() {
-    openWindow(640, 480);
+    openWindow(640, 360);
     lockResolution(320, 180);
     while (isWindowOpen) {
         draw("Hello world!");
@@ -38,7 +38,7 @@ The official raylib instructions will guide you through the process.
 ## Documentation
 
 This project uses the source code as its primary documentation for now.
-For an initial understanding, the engine.d file inside the game folder can be a good starting point.
+For an initial understanding, the examples folder and the engine.d file inside the game folder can be a good starting point.
 
 ## License
 

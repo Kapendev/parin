@@ -1,7 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// An example that shows how to use the camera structure.
+/// This example shows how to use the camera structure of Popka.
 
 module popka.examples.camera;
 
@@ -10,7 +10,7 @@ import popka;
 @safe @nogc nothrow:
 
 void runCameraExample() {
-    openWindow(640, 480);
+    openWindow(640, 360);
     lockResolution(320, 180);
 
     // The game variables.
@@ -36,10 +36,15 @@ void runCameraExample() {
         cameraTarget += cameraDirection * cameraSpeed * Vector2(deltaTime);
         camera.follow(cameraTarget);
 
-        // Draw the game.
+        // Draw the game world.
         camera.attach();
-        draw("I am not UI!");
+        draw("Move with arrow keys.");
+        auto area = camera.area;
+        area.subAll(3.0f);
+        draw(area, Color(50, 50, 40, 130));
         camera.detach();
+
+        // Draw the game UI.
         draw("I am UI!");
         draw("+", resolution * Vector2(0.5));
         draw("+", resolution * Vector2(0.5) + (cameraTarget - camera.position));

@@ -150,10 +150,7 @@ bool startsWith(const(char)[] str, char start) {
 
 bool startsWithIgnoreCase(const(char)[] str, const(char)[] start) {
     if (str.length < start.length) return false;
-    foreach (i; 0 .. start.length) {
-        if (toUpper(str[i]) != toUpper(start[i])) return false;
-    }
-    return true;
+    return str[0 .. start.length].equalsIgnoreCase(start);
 }
 
 bool startsWithIgnoreCase(const(char)[] str, char start) {
@@ -162,7 +159,7 @@ bool startsWithIgnoreCase(const(char)[] str, char start) {
 
 bool endsWith(const(char)[] str, const(char)[] end) {
     if (str.length < end.length) return false;
-    return str[$ - end.length - 1 .. end.length] == end;
+    return str[$ - end.length .. $] == end;
 }
 
 bool endsWith(const(char)[] str, char end) {
@@ -171,10 +168,7 @@ bool endsWith(const(char)[] str, char end) {
 
 bool endsWithIgnoreCase(const(char)[] str, const(char)[] end) {
     if (str.length < end.length) return false;
-    foreach (i; str.length - end.length - 1 .. end.length) {
-        if (toUpper(str[i]) != toUpper(end[i])) return false;
-    }
-    return true;
+    return str[$ - end.length .. $].equalsIgnoreCase(end);
 }
 
 bool endsWithIgnoreCase(const(char)[] str, char end) {
@@ -201,7 +195,7 @@ int countIgnoreCase(const(char)[] str, const(char)[] item) {
     int result = 0;
     if (str.length < item.length || item.length == 0) return result;
     foreach (i; 0 .. str.length - item.length) {
-        if (equalsIgnoreCase(str[i .. i + item.length], item)) {
+        if (str[i .. i + item.length].equalsIgnoreCase(item)) {
             result += 1;
             i += item.length - 1;
         }
@@ -228,7 +222,7 @@ int findStart(const(char)[] str, char item) {
 int findStartIgnoreCase(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach (i; 0 .. str.length - item.length) {
-        if (equalsIgnoreCase(str[i .. i + item.length], item)) return cast(int) i;
+        if (str[i .. i + item.length].equalsIgnoreCase(item)) return cast(int) i;
     }
     return -1;
 }
@@ -252,7 +246,7 @@ int findEnd(const(char)[] str, char item) {
 int findEndIgnoreCase(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach_reverse (i; 0 .. str.length - item.length) {
-        if (equalsIgnoreCase(str[i .. i + item.length], item)) return cast(int) i;
+        if (str[i .. i + item.length].equalsIgnoreCase(item)) return cast(int) i;
     }
     return -1;
 }
@@ -281,6 +275,22 @@ const(char)[] trimEnd(const(char)[] str) {
 
 const(char)[] trim(const(char)[] str) {
     return str.trimStart().trimEnd();
+}
+
+const(char)[] removePrefix(const(char)[] str, const(char)[] prefix) {
+    if (str.startsWith(prefix)) {
+        return str[prefix.length .. $];
+    } else {
+        return str;
+    }
+}
+
+const(char)[] removeSuffix(const(char)[] str, const(char)[] suffix) {
+    if (str.endsWith(suffix)) {
+        return str[0 .. $ - suffix.length];
+    } else {
+        return str;
+    }
 }
 
 void copyStrChars(char[] str, const(char)[] source, size_t startIndex = 0) {
@@ -712,6 +722,10 @@ unittest {
     assert(str.trimStart() == "Hello world. ");
     assert(str.trimEnd() == " Hello world.");
     assert(str.trim() == "Hello world.");
+    assert(str.removePrefix("Hello") == str);
+    assert(str.trim().removePrefix("Hello") == " world.");
+    assert(str.removeSuffix("world.") == str);
+    assert(str.trim().removeSuffix("world.") == "Hello ");
 
     assert(pathConcat("one", "two").pathDir() == "one");
     assert(pathConcat("one").pathDir() == ".");

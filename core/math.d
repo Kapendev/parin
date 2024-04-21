@@ -78,7 +78,7 @@ struct Vector2 {
     }
 
     Vector2 moveTo(Vector2 to, Vector2 delta) {
-        Vector2 result;
+        Vector2 result = void;
         Vector2 offset = this.directionTo(to) * delta;
         if (abs(to.x - x) > abs(offset.x)) {
             result.x = x + offset.x;
@@ -261,7 +261,7 @@ struct Rectangle {
         }
     }
 
-    Rectangle rectangle(Hook hook) {
+    Rectangle area(Hook hook) {
         Rectangle result = void;
         result.position = position - origin(hook);
         result.size = size;

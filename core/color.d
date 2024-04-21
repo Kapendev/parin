@@ -9,7 +9,7 @@ module popka.core.color;
 
 enum blank = Color();
 enum black = Color(0);
-enum darkGray = Color(40);
+enum darkGray = Color(30);
 enum lightGray = Color(220);
 enum white = Color(255);
 enum red = Color(255, 0, 0);

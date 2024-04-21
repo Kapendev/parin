@@ -1,7 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// An example that shows how to use the dialogue system of Popka.
+/// This example shows how to use the Popka dialogue system.
 
 module popka.examples.dialogue;
 
@@ -10,7 +10,7 @@ import popka;
 @safe @nogc nothrow:
 
 void runDialogueExample() {
-    openWindow(640, 480);
+    openWindow(640, 360);
     lockResolution(320, 180);
 
     // The game variables.
@@ -43,6 +43,9 @@ void runDialogueExample() {
 
         * End
     ";
+
+    // Change the background color.
+    popkaState.backgroundColor = Color(50, 60, 75);
 
     // Parse the dialogue script of the game.
     // The first update makes the dialogue go to the first available line.

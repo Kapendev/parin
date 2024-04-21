@@ -1,7 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// A collect-the-coins example.
+/// This example shows how to create a simple game with Popka.
 
 module popka.examples.coins;
 
@@ -10,7 +10,7 @@ import popka;
 @safe @nogc nothrow:
 
 void runCoinsExample() {
-    openWindow(640, 480);
+    openWindow(640, 360);
     lockResolution(320, 180);
 
     // The game variables.
@@ -20,10 +20,19 @@ void runCoinsExample() {
     auto coinSize = Vector2(8);
     auto maxCoinCount = 8;
 
+    // Change the background color.
+    popkaState.backgroundColor = darkGray;
+
     // Create the coins.
     foreach (i; 0 .. maxCoinCount) {
-        auto maxPosition = resolution - coinSize;
-        auto coin = Rectangle(randf * maxPosition.x, randf * maxPosition.y, coinSize.x, coinSize.y);
+        auto minPosition = Vector2(0, 40);
+        auto maxPosition = resolution - coinSize - minPosition;
+        auto coin = Rectangle(
+            randf * maxPosition.x + minPosition.x,
+            randf * maxPosition.y + minPosition.y,
+            coinSize.x,
+            coinSize.y
+        );
         coins.append(coin);
     }
 
@@ -59,7 +68,7 @@ void runCoinsExample() {
         if (coins.length == 0) {
             draw("You collected all the coins!");
         } else {
-            draw("Coins: {}/{}".fmt(maxCoinCount - coins.length, maxCoinCount));
+            draw("Coins: {}/{}\nMove with arrow keys.".fmt(maxCoinCount - coins.length, maxCoinCount));
         }
     }
     freeWindow();
