@@ -255,6 +255,14 @@ int findEndIgnoreCase(const(char)[] str, char item) {
     return findEndIgnoreCase(str, charToStr(item));
 }
 
+const(char)[] advance(const(char)[] str, size_t amount) {
+    if (str.length < amount) {
+        return str[$ .. $];
+    } else {
+        return str[amount .. $];
+    }
+}
+
 const(char)[] trimStart(const(char)[] str) {
     const(char)[] result = str;
     while (result.length > 0) {
@@ -500,21 +508,21 @@ const(char)[] strzToStr(const(char)* value) {
 }
 
 const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
-    static if (isChar!T) {
+    static if (isCharType!T) {
         return charToStr(value);
-    } else static if (isBool!T) {
+    } else static if (isBoolType!T) {
         return boolToStr(value);
-    } else static if (isUnsigned!T) {
+    } else static if (isUnsignedType!T) {
         return unsignedToStr(value);
-    } else static if (isSigned!T) {
+    } else static if (isSignedType!T) {
         return signedToStr(value);
-    } else static if (isDouble!T) {
+    } else static if (isDoubleType!T) {
         return doubleToStr(value, options.floatPrecision);
-    } else static if (isStr!T) {
+    } else static if (isStrType!T) {
         return value;
-    } else static if (isStrz!T) {
+    } else static if (isStrzType!T) {
         return strzToStr(value);
-    } else static if (isEnum!T) {
+    } else static if (isEnumType!T) {
         return enumToStr(value);
     } else {
         static assert(0, "The 'toStr' function doesn't handle this type.");
@@ -716,7 +724,11 @@ unittest {
     assert(str.findStartIgnoreCase("HELLO") == 0);
     assert(str.findEnd("HELLO") == -1);
     assert(str.findEndIgnoreCase("HELLO") == 6);
-    
+    assert(str.advance(0) == str);
+    assert(str.advance(1) == str[1 .. $]);
+    assert(str.advance(str.length) == "");
+    assert(str.advance(str.length + 1) == "");
+
     str = buffer[];
     str.copyStr(" Hello world. ");
     assert(str.trimStart() == "Hello world. ");

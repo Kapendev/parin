@@ -45,7 +45,7 @@ void runDialogueExample() {
     ";
 
     // Change the background color.
-    popkaState.backgroundColor = Color(50, 60, 75);
+    changeBackgroundColor(Color(50, 60, 75));
 
     // Parse the dialogue script of the game.
     // The first update makes the dialogue go to the first available line.

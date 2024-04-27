@@ -129,7 +129,8 @@ enum Gamepad {
 }
 
 struct PopkaState {
-    Color backgroundColor;
+    Color backgroundColor = defaultBackgroundColor;
+    float timeRate = 1.0f;
     bool isWindowOpen;
     bool isDrawing;
     bool isFPSLocked;
@@ -292,7 +293,7 @@ struct Sound {
         ray.ResumeSound(data);
     }
 
-    void volume(float level) {
+    void changeVolume(float level) {
         ray.SetSoundVolume(data, level);
     }
 
@@ -344,7 +345,7 @@ struct Music {
         ray.UpdateMusicStream(data);
     }
 
-    void volume(float level) {
+    void changeVolume(float level) {
         ray.SetMusicVolume(data, level);
     }
 
@@ -812,11 +813,31 @@ int fps() {
 }
 
 float deltaTime() {
-    return ray.GetFrameTime();
+    return ray.GetFrameTime() * popkaState.timeRate;
 }
 
 Vector2 deltaMousePosition() {
     return toPopka(ray.GetMouseDelta());
+}
+
+float timeRate() {
+    return popkaState.timeRate;
+}
+
+Color backgroundColor() {
+    return popkaState.backgroundColor;
+}
+
+void changeTimeRate(float rate) {
+    popkaState.timeRate = rate;
+}
+
+void changeBackgroundColor(Color color) {
+    popkaState.backgroundColor = color;
+}
+
+void changeShapeSprite(Sprite sprite, Rectangle region = Rectangle(1.0f, 1.0f)) {
+    ray.SetShapesTexture(sprite.data, toRay(region));
 }
 
 @trusted
@@ -913,10 +934,6 @@ bool isReleased(Mouse key) {
 
 bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
-}
-
-void changeShapeSprite(Sprite sprite, Rectangle region = Rectangle(1.0f, 1.0f)) {
-    ray.SetShapesTexture(sprite.data, toRay(region));
 }
 
 void draw(Rectangle rectangle, Color color = white) {

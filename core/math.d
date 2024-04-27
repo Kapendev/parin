@@ -60,6 +60,14 @@ struct Vector2 {
         return Vector2(x.floor, y.floor);
     }
 
+    Vector2 ceil() {
+        return Vector2(x.ceil, y.ceil);
+    }
+
+    Vector2 round() {
+        return Vector2(x.round, y.round);
+    }
+
     float length() {
         return sqrt(x * x + y * y);
     }
@@ -151,6 +159,14 @@ struct Vector3 {
     Vector3 floor() {
         return Vector3(x.floor, y.floor, z.floor);
     }
+
+    Vector3 ceil() {
+        return Vector3(x.ceil, y.ceil, z.ceil);
+    }
+
+    Vector3 round() {
+        return Vector3(x.round, y.round, z.round);
+    }
 }
 
 struct Vector4 {
@@ -204,6 +220,14 @@ struct Vector4 {
     Vector4 floor() {
         return Vector4(x.floor, y.floor, z.floor, w.floor);
     }
+
+    Vector4 ceil() {
+        return Vector4(x.ceil, y.ceil, z.ceil, w.ceil);
+    }
+
+    Vector4 round() {
+        return Vector4(x.round, y.round, z.round, w.round);
+    }
 }
 
 struct Rectangle {
@@ -244,6 +268,20 @@ struct Rectangle {
         Rectangle result = void;
         result.position = position.floor;
         result.size = size.floor;
+        return result;
+    }
+
+    Rectangle ceil() {
+        Rectangle result = void;
+        result.position = position.ceil;
+        result.size = size.ceil;
+        return result;
+    }
+
+    Rectangle round() {
+        Rectangle result = void;
+        result.position = position.round;
+        result.size = size.round;
         return result;
     }
 

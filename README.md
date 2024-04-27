@@ -2,7 +2,7 @@
 
 Popka is a lightweight and beginner-friendly 2D game engine for the D programming language.
 It focuses on providing a simple foundation for building 2D games.
-The game engine is currently under development and is not yet ready for use.
+The engine is currently under development and is not yet ready for use.
 
 ```d
 /// A hello-world example.
@@ -28,17 +28,16 @@ void main() {
 To use Popka, you'll need the raylib library (version 5.0) installed on your system.
 The official raylib instructions will guide you through the process.
 
-## Project Layout
-
-* core: A standard library designed specifically for game development. 
-* vendor: A collection of third-party libraries.
-* game: A set of tools for creating 2D games.
-* examples: A collection of example projects.
-
 ## Documentation
 
-This project uses the source code as its primary documentation for now.
-For an initial understanding, the examples folder and the engine.d file inside the game folder can be a good starting point.
+For an initial understanding, the [examples](examples) folder and the [engine.d](game/engine.d) file can be a good starting point.
+
+## Project Layout
+
+* [core](core): A standard library designed specifically for game development. 
+* [vendor](vendor): A collection of third-party libraries.
+* [game](game): A set of tools for creating 2D games.
+* [examples](examples): A collection of example projects.
 
 ## License
 

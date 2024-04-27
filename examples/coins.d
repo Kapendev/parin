@@ -21,7 +21,7 @@ void runCoinsExample() {
     auto maxCoinCount = 8;
 
     // Change the background color.
-    popkaState.backgroundColor = darkGray;
+    changeBackgroundColor(darkGray);
 
     // Create the coins.
     foreach (i; 0 .. maxCoinCount) {

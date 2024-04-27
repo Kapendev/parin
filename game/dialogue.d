@@ -36,7 +36,7 @@ struct DialogueVariable {
     long value;
 }
 
-alias DialogueFun = void function(const(char)[][] args);
+alias DialogueFunc = void function(const(char)[][] args);
 
 struct Dialogue {
     List!DialogueUnit units;
@@ -127,8 +127,8 @@ struct Dialogue {
         update();
     }
 
-    void run(DialogueFun fun) {
-        fun(args);
+    void run(DialogueFunc func) {
+        func(args);
         command.clear();
         update();
     }
