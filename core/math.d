@@ -10,7 +10,7 @@ import math = core.stdc.math;
 
 @safe @nogc nothrow:
 
-enum pi = 3.141592f;
+enum pi = 3.14159265358979323846f;
 
 enum Hook : ubyte {
     topLeft, top, topRight,

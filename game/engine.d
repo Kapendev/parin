@@ -692,12 +692,10 @@ bool isWindowOpen() {
 }
 
 void freeWindow() {
-    if (!popkaState.viewport.isEmpty) {
-        popkaState.viewport.free();
-        ray.CloseAudioDevice();
-        ray.CloseWindow();
-        popkaState = PopkaState();
-    }
+    popkaState.viewport.free();
+    ray.CloseAudioDevice();
+    ray.CloseWindow();
+    popkaState = PopkaState();
 }
 
 bool isFPSLocked() {
@@ -952,7 +950,9 @@ void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options
         case Filter.nearest: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_POINT); break;
         case Filter.linear: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_BILINEAR); break;
     }
-    Rectangle target, source;
+
+    auto target = Rectangle();
+    auto source = Rectangle();
     if (region.size.x <= 0.0f || region.size.y <= 0.0f) {
         target = Rectangle(position, sprite.size * options.scale);
         source = Rectangle(sprite.size);
@@ -960,6 +960,7 @@ void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options
         target = Rectangle(position, region.size * options.scale);
         source = region;
     }
+
     final switch (options.flip) {
         case Flip.none: break;
         case Flip.x: source.size.x *= -1.0f; break;
@@ -989,19 +990,25 @@ void draw(Sprite sprite, Vector2 tileSize, uint tileID, Vector2 position, DrawOp
 }
 
 void draw(Sprite sprite, TileMap tileMap, Camera camera, Vector2 position, DrawOptions options = DrawOptions()) {
+    enum extraTileCount = 4;
+
     auto topLeft = camera.point(Hook.topLeft);
     auto bottomRight = camera.point(Hook.bottomRight);
-    size_t col1, col2, row1, row2;
+    auto col1 = 0;
+    auto col2 = 0;
+    auto row1 = 0;
+    auto row2 = 0;
+
     if (camera.isAttached) {
-        col1 = cast(size_t) floor(clamp((topLeft.x - position.x) / tileMap.tileSize.x - 4.0f, 0, tileMap.colCount));
-        col2 = cast(size_t) floor(clamp((bottomRight.x - position.x) / tileMap.tileSize.x + 4.0f, 0, tileMap.colCount));
-        row1 = cast(size_t) floor(clamp((topLeft.y - position.y) / tileMap.tileSize.y - 4.0f, 0, tileMap.rowCount));
-        row2 = cast(size_t) floor(clamp((bottomRight.y - position.y) / tileMap.tileSize.y + 4.0f, 0, tileMap.rowCount));
+        col1 = cast(int) floor(clamp((topLeft.x - position.x) / tileMap.tileSize.x - extraTileCount, 0, tileMap.colCount));
+        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / tileMap.tileSize.x + extraTileCount, 0, tileMap.colCount));
+        row1 = cast(int) floor(clamp((topLeft.y - position.y) / tileMap.tileSize.y - extraTileCount, 0, tileMap.rowCount));
+        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / tileMap.tileSize.y + extraTileCount, 0, tileMap.rowCount));
     } else {
         col1 = 0;
-        col2 = tileMap.colCount;
+        col2 = cast(int) tileMap.colCount;
         row1 = 0;
-        row2 = tileMap.rowCount;
+        row2 = cast(int) tileMap.rowCount;
     }
     foreach (row; row1 .. row2) {
         foreach (col; col1 .. col2) {

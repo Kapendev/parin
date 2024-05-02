@@ -13,6 +13,7 @@
 		},
 		{
 			"name": "popka_test",
+			"importPaths": ["."],
 			"excludedSourceFiles": ["package.d", "examples/*.d", "game/*.d", "vendor/*.d"]
 		}
 	]

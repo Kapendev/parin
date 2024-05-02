@@ -1,4 +1,4 @@
-# 🍂 Popka
+# Popka
 
 Popka is a lightweight and beginner-friendly 2D game engine for the D programming language.
 It focuses on providing a simple foundation for building 2D games.

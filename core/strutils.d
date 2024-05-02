@@ -18,8 +18,10 @@ enum spaceChars = " \t\v\r\n\f";
 
 version (Windows) {
     enum pathSeparator = '\\';
+    enum otherPathSeparator = '/';
 } else {
     enum pathSeparator = '/';
+    enum otherPathSeparator = '\\';
 }
 
 enum ToValueResultError : ubyte {
@@ -688,6 +690,43 @@ const(char)* toStrz(const(char)[] str) {
     return result.ptr;
 }
 
+const(char)[] fmt(A...)(const(char)[] str, A args) {
+    static char[1024][4] bufs = void;
+    static auto bufi = 0;
+
+    bufi = (bufi + 1) % bufs.length;
+    auto result = bufs[bufi][];
+    auto resi = 0;
+    auto stri = 0;
+    auto argi = 0;
+
+    while (stri < str.length) {
+        auto c1 = str[stri];
+        auto c2 = stri + 1 >= str.length ? '+' : str[stri + 1];
+        if (c1 == '{' && c2 == '}' && argi < args.length) {
+            static foreach (i, arg; args) {
+                if (i == argi) {
+                    auto temp = toStr(arg);
+                    foreach (i, c; temp) {
+                        result[resi + i] = c;
+                    }
+                    resi += temp.length;
+                    stri += 2;
+                    argi += 1;
+                    goto exitLoopEarly;
+                }
+            }
+            exitLoopEarly:
+        } else {
+            result[resi] = c1;
+            resi += 1;
+            stri += 1;
+        }
+    }
+    result = result[0 .. resi];
+    return result;
+}
+
 unittest {
     assert(isDigit("0123456789?") == false);
     assert(isDigit("0123456789") == true);
@@ -749,9 +788,7 @@ unittest {
     assert(skipValue(str, ',') == "three");
     assert(skipValue(str, ',') == "");
     assert(str.length == 0);
-}
 
-unittest {
     // TODO: I need to write more tests for toValue procedures.
     auto text1 = "1.0";
     auto conv1 = toDouble(text1);
@@ -762,4 +799,14 @@ unittest {
     auto conv2 = toDouble(text2);
     assert(conv2.value == 0.0);
     assert(conv2.error == ToValueResultError.invalid);
+
+    assert(fmt("") == "");
+    assert(fmt("{}") == "{}");
+    assert(fmt("{}", "1") == "1");
+    assert(fmt("{} {}", "1", "2") == "1 2");
+    assert(fmt("{} {} {}", "1", "2", "3") == "1 2 3");
+    assert(fmt("{} {} {}", 1, -2, 3.69) == "1 -2 3.69");
+    assert(fmt("{}", 420, 320, 220, 120, 20) == "420");
+    assert(fmt("", 1, -2, 3.69) == "");
+    assert(fmt("({})", fmt("({}, {})", false, true)) == "((false, true))");
 }

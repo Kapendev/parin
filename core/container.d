@@ -331,7 +331,7 @@ struct Grid(T) {
     size_t rowCount;
     size_t colCount;
 
-@safe @nogc nothrow:
+    @safe @nogc nothrow:
 
     this(size_t rowCount, size_t colCount) {
         resize(rowCount, colCount);

@@ -13,6 +13,29 @@ import popka.core.strutils;
 @safe @nogc nothrow:
 
 @trusted
+void printf(A...)(const(char)[] str, A args) {
+    io.fputs(fmt("{}\0", fmt(str, args)).ptr, io.stdout);
+}
+
+@trusted
+void printfln(A...)(const(char)[] str, A args) {
+    io.fputs(fmt("{}\n\0", fmt(str, args)).ptr, io.stdout);
+}
+
+void print(A...)(A args) {
+    static foreach (arg; args) {
+        printf("{}", arg);
+    }
+}
+
+void println(A...)(A args) {
+    static foreach (arg; args) {
+        printf("{}", arg);
+    }
+    printf("\n");
+}
+
+@trusted
 List!char readText(const(char)[] path) {
     auto f = io.fopen(toStrz(path), "rb");
     if (f == null) {

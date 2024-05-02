@@ -8,6 +8,8 @@ module popka.core.traits;
 
 @safe @nogc nothrow:
 
+alias AliasArgs(A...) = A;
+
 bool isBoolType(T)() {
     return is(T == bool) ||
         is(T == const(bool)) ||
@@ -59,16 +61,20 @@ bool isCharType(T)() {
         is(T == immutable(char));
 }
 
-bool isStrType(T)() {
-    return is(T : const(char)[]);
-}
-
-bool isStrzType(T)() {
-    return is(T : const(char)*);
+bool isPrimaryType(T)() {
+    return isBoolType!T ||
+        isUnsignedType!T ||
+        isSignedType!T ||
+        isDoubleType!T ||
+        isCharType!T;
 }
 
 bool isPtrType(T)() {
     return is(T : const(void)*);
+}
+
+bool isArrayType(T)() {
+    return is(T : const(A)[N], A, N);
 }
 
 bool isSliceType(T)() {
@@ -81,4 +87,31 @@ bool isEnumType(T)() {
 
 bool isStructType(T)() {
     return is(T == struct);
+}
+
+bool isStrType(T)() {
+    return is(T : const(char)[]);
+}
+
+bool isStrzType(T)() {
+    return is(T : const(char)*);
+}
+
+int findInAliasArgs(T, A...)() {
+    int result = -1;
+    static foreach (i, TT; A) {
+        static if (is(T == TT)) {
+            result = i;
+        }
+    }
+    return result;
+}
+
+bool isInAliasArgs(T, A...)() {
+    return findInAliasArgs!(T, A) != -1;
+}
+
+unittest {
+    assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
+    assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
 }
