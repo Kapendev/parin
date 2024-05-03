@@ -46,6 +46,10 @@ bool isSignedType(T)() {
         is(T == immutable(long));
 }
 
+bool isIntegerType(T)() {
+    return isUnsignedType!T || isSignedType!T;
+}
+
 bool isDoubleType(T)() {
     return is(T == float) ||
     is(T == const(float)) ||
