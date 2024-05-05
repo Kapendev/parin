@@ -9,10 +9,10 @@
 	"sourcePaths": ["."],
 	"configurations": [
 		{
-			"name": "popka_default"
+			"name": "pdefault"
 		},
 		{
-			"name": "popka_test",
+			"name": "ptest",
 			"importPaths": ["."],
 			"excludedSourceFiles": ["package.d", "examples/*.d", "game/*.d", "vendor/*.d"]
 		}

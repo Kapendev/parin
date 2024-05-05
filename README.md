@@ -2,7 +2,6 @@
 
 Popka is a lightweight and beginner-friendly 2D game engine for the D programming language.
 It focuses on providing a simple foundation for building 2D games.
-The engine is currently under development and is not yet ready for use.
 
 ```d
 /// A hello-world example.
@@ -18,6 +17,9 @@ void main() {
     freeWindow();
 }
 ```
+
+> [!NOTE]
+> The engine is currently under development and is not yet ready for use.
 
 ## Games Made With Popka
 

@@ -527,7 +527,7 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     } else static if (isEnumType!T) {
         return enumToStr(value);
     } else {
-        static assert(0, "The 'toStr' function doesn't handle this type.");
+        static assert(0, "The 'toStr' function does not handle the '" ~ T.toString ~ "' type.");
     }
 }
 
@@ -643,7 +643,9 @@ ToValueResult!double toDouble(const(char)[] str) {
         }
     }
     if (!hasDot) {
-        result.error = ToValueResultError.invalid;
+        auto conv = toSigned(str);
+        result.value = conv.value;
+        result.error = conv.error;
     }
     return result;
 }
@@ -713,10 +715,10 @@ const(char)[] fmt(A...)(const(char)[] str, A args) {
                     resi += temp.length;
                     stri += 2;
                     argi += 1;
-                    goto exitLoopEarly;
+                    goto loopExit;
                 }
             }
-            exitLoopEarly:
+            loopExit:
         } else {
             result[resi] = c1;
             resi += 1;
@@ -797,8 +799,13 @@ unittest {
 
     auto text2 = "1";
     auto conv2 = toDouble(text2);
-    assert(conv2.value == 0.0);
-    assert(conv2.error == ToValueResultError.invalid);
+    assert(conv2.value == 1.0);
+    assert(conv2.error == ToValueResultError.none);
+
+    auto text3 = "1?";
+    auto conv3 = toDouble(text3);
+    assert(conv3.value == 0.0);
+    assert(conv3.error == ToValueResultError.invalid);
 
     assert(fmt("") == "");
     assert(fmt("{}") == "{}");

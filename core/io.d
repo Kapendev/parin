@@ -37,29 +37,38 @@ void println(A...)(A args) {
 }
 
 @trusted
-List!char readText(const(char)[] path) {
+void readText(const(char)[] path, ref List!char text) {
     auto f = io.fopen(toStrz(path), "rb");
     if (f == null) {
-        return List!char();
+        text.clear();
+        return;
     }
     if (io.fseek(f, 0, io.SEEK_END) != 0) {
         io.fclose(f);
-        return List!char();
+        text.clear();
+        return;
     }
 
     auto fsize = io.ftell(f);
     if (fsize == -1) {
         io.fclose(f);
-        return List!char();
+        text.clear();
+        return;
     }
     if (io.fseek(f, 0, io.SEEK_SET) != 0) {
         io.fclose(f);
-        return List!char();
+        text.clear();
+        return;
     }
 
-    auto result = List!char(fsize);
-    io.fread(result.items.ptr, fsize, 1, f);
+    text.resize(fsize);
+    io.fread(text.items.ptr, fsize, 1, f);
     io.fclose(f);
+}
+
+List!char readText(const(char)[] path) {
+    List!char result;
+    readText(path, result);
     return result;
 }
 
@@ -75,42 +84,52 @@ void writeText(const(char)[] path, List!char content) {
     content.pop();
 }
 
-// TODO: Testing stuff to see how to make it easy to use.
-T readConfig(T)(const(char)[] path) {
-    auto result = T.init;
+// TODO: See what works.
+// NOTE: Testing stuff to see how to make it easy to use.
+// NOTE: Does not do any error checking for now.
+void readConfig(A...)(const(char)[] path, ref A args) {
     auto file = readText(path);
-
-    const(char)[] group = "";
-
-    auto view = file.items;
+    auto group = cast(const(char)[]) "";
     auto lineNumber = 0;
+    auto view = file.items;
     while (view.length != 0) {
         auto line = skipLine(view).trim();
         lineNumber += 1;
         if (line.length == 0) {
             continue;
         }
-
         if (line[0] == '[' && line[$ - 1] == ']') {
             group = line[1 .. $ - 1];
             continue;
+        } else if (line[0] == '#' || line[0] == ';') {
+            continue;
         }
 
-        if (group == T.stringof) {
-            auto separatorIndex = line.findStart('=');
-            auto key = line[0 .. separatorIndex].trimEnd();
-            auto value = line[separatorIndex + 1 .. $].trimStart();
-            static foreach (member; T.tupleof) {
-                if (key == member.stringof) {
-                    static if (isIntegerType!(typeof(member))) {
-                        auto conv = cast(typeof(member)) toSigned(value).value;
-                        mixin("result.", member.stringof, "= conv", ";");
-                        println(key, " -> ", conv);
+        static foreach (arg; args) {
+            if (group == typeof(arg).stringof) {
+                auto separatorIndex = line.findStart('=');
+                auto key = line[0 .. separatorIndex].trimEnd();
+                auto value = line[separatorIndex + 1 .. $].trimStart();
+                static foreach (member; arg.tupleof) {
+                    if (key == member.stringof) {
+                        static if (isIntegerType!(typeof(member))) {
+                            auto conv = toSigned(value);
+                        } else static if (isDoubleType!(typeof(member))) {
+                            auto conv = toDouble(value);
+                        } else {
+                            static assert(0, "The 'readConfig' function does not handle the '" ~ typeof(member).toString ~ "' type.");
+                        }
+                        if (conv.error) {
+                            println("Line ", lineNumber, ": Can not parse value.");
+                        } else {
+                            mixin("arg.", member.stringof, "= cast(typeof(member)) conv.value;");
+                        }
                     }
                 }
+                goto loopExit;
             }
-        }
+        } 
+        loopExit:
     }
     file.free();
-    return result;
 }

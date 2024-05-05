@@ -74,6 +74,18 @@ struct SumType(A...) {
     }
 }
 
+struct NoneType {}
+
+alias Maybe(T) = SumType!(NoneType, T);
+
+bool isNone(A...)(SumType!A maybe) {
+    return maybe.kind == 0;
+}
+
+bool isSome(A...)(SumType!A maybe)  {
+    return maybe.kind != 0;
+}
+
 bool isSumType(T)() {
     return is(T : SumType!A, A...);
 }
@@ -120,4 +132,12 @@ unittest {
     assert(hasCommonBase!Entity1 == true);
     alias Entity2 = SumType!(MyType, int);
     assert(hasCommonBase!Entity2 == false);
+
+    Maybe!int result;
+    result = Maybe!int();
+    assert(result.isNone == true);
+    assert(result.isSome == false);
+    result = 69;
+    assert(result.isNone == false);
+    assert(result.isSome == true);
 }
