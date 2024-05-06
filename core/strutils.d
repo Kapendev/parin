@@ -527,7 +527,7 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     } else static if (isEnumType!T) {
         return enumToStr(value);
     } else {
-        static assert(0, "The 'toStr' function does not handle the '" ~ T.toString ~ "' type.");
+        static assert(0, "The 'toStr' function does not handle the '" ~ T.stringof ~ "' type.");
     }
 }
 

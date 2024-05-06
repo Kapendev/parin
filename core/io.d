@@ -112,18 +112,23 @@ void readConfig(A...)(const(char)[] path, ref A args) {
                 auto value = line[separatorIndex + 1 .. $].trimStart();
                 static foreach (member; arg.tupleof) {
                     if (key == member.stringof) {
+                        auto target = typeof(member).init;
                         static if (isIntegerType!(typeof(member))) {
                             auto conv = toSigned(value);
+                            if (conv.error) {
+                                println("Line ", lineNumber, ": Can not parse value.");
+                            } else {
+                                target = conv.value;
+                            }
                         } else static if (isDoubleType!(typeof(member))) {
                             auto conv = toDouble(value);
-                        } else {
-                            static assert(0, "The 'readConfig' function does not handle the '" ~ typeof(member).toString ~ "' type.");
+                            if (conv.error) {
+                                println("Line ", lineNumber, ": Can not parse value.");
+                            } else {
+                                target = conv.value;
+                            }
                         }
-                        if (conv.error) {
-                            println("Line ", lineNumber, ": Can not parse value.");
-                        } else {
-                            mixin("arg.", member.stringof, "= cast(typeof(member)) conv.value;");
-                        }
+                        mixin("arg.", member.stringof, "= cast(typeof(member)) target;");
                     }
                 }
                 goto loopExit;

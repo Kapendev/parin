@@ -15,12 +15,12 @@ void runCameraExample() {
 
     // The game variables.
     auto camera = Camera(0, -14);
-    auto cameraSpeed = Vector2(120);
-    auto cameraTarget = Vector2(0, -14);
+    auto cameraSpeed = Vec2(120);
+    auto cameraTarget = Vec2(0, -14);
 
     while (isWindowOpen) {
         // Move the camera.
-        auto cameraDirection = Vector2();
+        auto cameraDirection = Vec2();
         if (Keyboard.left.isDown) {
             cameraDirection.x = -1;
         }
@@ -33,7 +33,7 @@ void runCameraExample() {
         if (Keyboard.down.isDown) {
             cameraDirection.y = 1;
         }
-        cameraTarget += cameraDirection * cameraSpeed * Vector2(deltaTime);
+        cameraTarget += cameraDirection * cameraSpeed * Vec2(deltaTime);
         camera.follow(cameraTarget);
 
         // Draw the game world.
@@ -46,8 +46,8 @@ void runCameraExample() {
 
         // Draw the game UI.
         draw("I am UI!");
-        draw("+", resolution * Vector2(0.5));
-        draw("+", resolution * Vector2(0.5) + (cameraTarget - camera.position));
+        draw("+", resolution * Vec2(0.5));
+        draw("+", resolution * Vec2(0.5) + (cameraTarget - camera.position));
     }
     freeWindow();
 }

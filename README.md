@@ -18,9 +18,6 @@ void main() {
 }
 ```
 
-> [!NOTE]
-> The engine is currently under development and is not yet ready for use.
-
 ## Games Made With Popka
 
 * [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)

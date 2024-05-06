@@ -136,18 +136,18 @@ struct PopkaState {
     bool isFPSLocked;
     bool isCursorHidden;
 
-    Vector2 targetViewportSize;
+    Vec2 targetViewportSize;
     Viewport viewport;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
 
-    Vector2 lastWindowSize;
+    Vec2 lastWindowSize;
     float toggleFullscreenTimer = 0.0f;
     bool isToggleFullscreenQueued;
 }
 
 struct DrawOptions {
-    Vector2 scale = Vector2(1.0f);
+    Vec2 scale = Vec2(1.0f);
     float rotation = 0.0f;
     Color color = white;
 
@@ -169,12 +169,12 @@ struct Sprite {
         return data.id <= 0;
     }
 
-    Vector2 size() {
-        return Vector2(data.width, data.height);
+    Vec2 size() {
+        return Vec2(data.width, data.height);
     }
 
-    Rectangle area() {
-        return Rectangle(size);
+    Rect area() {
+        return Rect(size);
     }
 
     void load(const(char)[] path) {
@@ -197,27 +197,27 @@ struct Viewport {
 
     @safe @nogc nothrow:
 
-    this(Vector2 size) {
+    this(Vec2 size) {
         load(size);
     }
 
     this(float width, float height) {
-        this(Vector2(width, height));
+        this(Vec2(width, height));
     }
 
     bool isEmpty() {
         return data.texture.id <= 0;
     }
 
-    Vector2 size() {
-        return Vector2(data.texture.width, data.texture.height);
+    Vec2 size() {
+        return Vec2(data.texture.width, data.texture.height);
     }
 
-    Rectangle area() {
-        return Rectangle(size);
+    Rect area() {
+        return Rect(size);
     }
 
-    void load(Vector2 size) {
+    void load(Vec2 size) {
         free();
         data = ray.LoadRenderTexture(cast(int) size.x, cast(int) size.y);
     }
@@ -232,7 +232,7 @@ struct Viewport {
 
 struct Font {
     ray.Font data;
-    Vector2 spacing;
+    Vec2 spacing;
 
     @safe @nogc nothrow:
 
@@ -365,7 +365,7 @@ struct Music {
 }
 
 struct Camera {
-    Vector2 position;
+    Vec2 position;
     float rotation = 0.0f;
     float scale = 1.0f;
 
@@ -374,27 +374,27 @@ struct Camera {
 
     @safe @nogc nothrow:
 
-    this(Vector2 position) {
+    this(Vec2 position) {
         this.position = position;
     }
 
     this(float x, float y) {
-        this(Vector2(x, y));
+        this(Vec2(x, y));
     }
 
-    Vector2 size() {
-        return resolution * Vector2(scale);
+    Vec2 size() {
+        return resolution * Vec2(scale);
     }
 
-    Vector2 origin() {
-        return Rectangle(size).origin(hook);
+    Vec2 origin() {
+        return Rect(size).origin(hook);
     }
 
-    Rectangle area() {
-        return Rectangle(position - origin, size);
+    Rect area() {
+        return Rect(position - origin, size);
     }
 
-    Vector2 point(Hook hook) {
+    Vec2 point(Hook hook) {
         return area.point(hook);
     }
 
@@ -417,18 +417,18 @@ struct Camera {
         }
     }
 
-    void follow(Vector2 target, float slowdown = 0.14f) {
+    void follow(Vec2 target, float slowdown = 0.14f) {
         if (slowdown <= 0.0f) {
             position = target;
         } else {
-            position = position.moveTo(target, Vector2(deltaTime), slowdown);
+            position = position.moveTo(target, Vec2(deltaTime), slowdown);
         }
     }
 }
 
 struct TileMap {
     Grid!short data;
-    Vector2 tileSize = Vector2(16.0f);
+    Vec2 tileSize = Vec2(16.0f);
     alias data this;
 
     @safe @nogc nothrow:
@@ -437,12 +437,12 @@ struct TileMap {
         load(path);
     }
 
-    Vector2 size() {
-        return tileSize * Vector2(colCount, rowCount);
+    Vec2 size() {
+        return tileSize * Vec2(colCount, rowCount);
     }
 
-    Rectangle area() {
-        return Rectangle(size);
+    Rect area() {
+        return Rect(size);
     }
 
     void load(const(char)[] path) {
@@ -488,20 +488,20 @@ Color toPopka(ray.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
-Vector2 toPopka(ray.Vector2 from) {
-    return Vector2(from.x, from.y);
+Vec2 toPopka(ray.Vector2 from) {
+    return Vec2(from.x, from.y);
 }
 
-Vector3 toPopka(ray.Vector3 from) {
-    return Vector3(from.x, from.y, from.z);
+Vec3 toPopka(ray.Vector3 from) {
+    return Vec3(from.x, from.y, from.z);
 }
 
-Vector4 toPopka(ray.Vector4 from) {
-    return Vector4(from.x, from.y, from.z, from.w);
+Vec4 toPopka(ray.Vector4 from) {
+    return Vec4(from.x, from.y, from.z, from.w);
 }
 
-Rectangle toPopka(ray.Rectangle from) {
-    return Rectangle(from.x, from.y, from.width, from.height);
+Rect toPopka(ray.Rectangle from) {
+    return Rect(from.x, from.y, from.width, from.height);
 }
 
 Sprite toPopka(ray.Texture2D from) {
@@ -534,19 +534,19 @@ ray.Color toRay(Color from) {
     return ray.Color(from.r, from.g, from.b, from.a);
 }
 
-ray.Vector2 toRay(Vector2 from) {
+ray.Vector2 toRay(Vec2 from) {
     return ray.Vector2(from.x, from.y);
 }
 
-ray.Vector3 toRay(Vector3 from) {
+ray.Vector3 toRay(Vec3 from) {
     return ray.Vector3(from.x, from.y, from.z);
 }
 
-ray.Vector4 toRay(Vector4 from) {
+ray.Vector4 toRay(Vec4 from) {
     return ray.Vector4(from.x, from.y, from.z, from.w);
 }
 
-ray.Rectangle toRay(Rectangle from) {
+ray.Rectangle toRay(Rect from) {
     return ray.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
@@ -568,7 +568,7 @@ ray.Camera2D toRay(Camera from) {
 
 Font rayFont() {
     auto result = toPopka(ray.GetFontDefault());
-    result.spacing = Vector2(1.0f, 14.0f);
+    result.spacing = Vec2(1.0f, 14.0f);
     return result;
 }
 
@@ -588,7 +588,7 @@ void randomize() {
     randomize(randi);
 }
 
-void openWindow(Vector2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
     if (popkaState.isWindowOpen) {
         return;
     }
@@ -605,7 +605,7 @@ void openWindow(Vector2 size, const(char)[] title = "Popka", Color color = defau
 }
 
 void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
-    openWindow(Vector2(width, height), title, color);
+    openWindow(Vec2(width, height), title, color);
 }
 
 void closeWindow() {
@@ -631,8 +631,8 @@ bool isWindowOpen() {
             auto maxSize = windowSize;
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
-            auto targetSize = minSize * Vector2(minRatio);
-            auto targetPos = maxSize * Vector2(0.5f) - targetSize * Vector2(0.5f);
+            auto targetSize = minSize * Vec2(minRatio);
+            auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
             ray.EndTextureMode();
             ray.BeginDrawing();
             ray.ClearBackground(ray.BLACK);
@@ -716,7 +716,7 @@ bool isResolutionLocked() {
     return !popkaState.viewport.isEmpty;
 }
 
-void lockResolution(Vector2 size) {
+void lockResolution(Vec2 size) {
     if (popkaState.isWindowOpen && !popkaState.isDrawing) {
         popkaState.viewport.load(size);
     } else {
@@ -727,7 +727,7 @@ void lockResolution(Vector2 size) {
 }
 
 void lockResolution(float width, float height) {
-    lockResolution(Vector2(width, height));
+    lockResolution(Vec2(width, height));
 }
 
 void unlockResolution() {
@@ -767,20 +767,20 @@ void toggleFullscreen() {
     popkaState.isToggleFullscreenQueued = true;
 }
 
-Vector2 screenSize() {
+Vec2 screenSize() {
     auto id = ray.GetCurrentMonitor();
-    return Vector2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
+    return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
 }
 
-Vector2 windowSize() {
+Vec2 windowSize() {
     if (isFullscreen) {
         return screenSize;
     } else {
-        return Vector2(ray.GetScreenWidth(), ray.GetScreenHeight());
+        return Vec2(ray.GetScreenWidth(), ray.GetScreenHeight());
     }
 }
 
-Vector2 resolution() {
+Vec2 resolution() {
     if (isResolutionLocked) {
         return popkaState.viewport.size;
     } else {
@@ -788,17 +788,17 @@ Vector2 resolution() {
     }
 }
 
-Vector2 mousePosition() {
+Vec2 mousePosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
         auto minRatio = min(window.x / popkaState.viewport.size.x, window.y / popkaState.viewport.size.y);
-        auto targetSize = popkaState.viewport.size * Vector2(minRatio);
-        return Vector2(
+        auto targetSize = popkaState.viewport.size * Vec2(minRatio);
+        return Vec2(
             (ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio,
             (ray.GetMouseY() - (window.y - targetSize.y) * 0.5f) / minRatio,
         );
     } else {
-        return Vector2(ray.GetMouseX(), ray.GetMouseY());
+        return Vec2(ray.GetMouseX(), ray.GetMouseY());
     }
 }
 
@@ -814,7 +814,7 @@ float deltaTime() {
     return ray.GetFrameTime() * popkaState.timeRate;
 }
 
-Vector2 deltaMousePosition() {
+Vec2 deltaMousePosition() {
     return toPopka(ray.GetMouseDelta());
 }
 
@@ -834,16 +834,16 @@ void changeBackgroundColor(Color color) {
     popkaState.backgroundColor = color;
 }
 
-void changeShapeSprite(Sprite sprite, Rectangle region = Rectangle(1.0f, 1.0f)) {
+void changeShapeSprite(Sprite sprite, Rect region = Rect(1.0f, 1.0f)) {
     ray.SetShapesTexture(sprite.data, toRay(region));
 }
 
 @trusted
-Vector2 measureText(Font font, const(char)[] text, Vector2 scale = Vector2(1.0f)) {
+Vec2 measureText(Font font, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
     if (font.isEmpty || text.length == 0) {
-        return Vector2();
+        return Vec2();
     }
-    auto result = Vector2();
+    auto result = Vec2();
     auto tempByteCounter = 0; // Used to count longer text line num chars.
     auto byteCounter = 0;
     auto textWidth = 0.0f;
@@ -934,15 +934,15 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
-void draw(Rectangle rectangle, Color color = white) {
-    ray.DrawRectanglePro(toRay(rectangle.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+void draw(Rect rect, Color color = white) {
+    ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
 }
 
-void draw(Circle circle, Color color = white) {
-    ray.DrawCircleV(toRay(circle.position), circle.radius, toRay(color));
+void draw(Circ circ, Color color = white) {
+    ray.DrawCircleV(toRay(circ.position), circ.radius, toRay(color));
 }
 
-void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, Rect region, Vec2 position, DrawOptions options = DrawOptions()) {
     if (sprite.isEmpty) {
         return;
     }
@@ -951,13 +951,13 @@ void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options
         case Filter.linear: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_BILINEAR); break;
     }
 
-    auto target = Rectangle();
-    auto source = Rectangle();
+    auto target = Rect();
+    auto source = Rect();
     if (region.size.x <= 0.0f || region.size.y <= 0.0f) {
-        target = Rectangle(position, sprite.size * options.scale);
-        source = Rectangle(sprite.size);
+        target = Rect(position, sprite.size * options.scale);
+        source = Rect(sprite.size);
     } else {
-        target = Rectangle(position, region.size * options.scale);
+        target = Rect(position, region.size * options.scale);
         source = region;
     }
 
@@ -965,7 +965,7 @@ void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options
         case Flip.none: break;
         case Flip.x: source.size.x *= -1.0f; break;
         case Flip.y: source.size.y *= -1.0f; break;
-        case Flip.xy: source.size *= Vector2(-1.0f); break;
+        case Flip.xy: source.size *= Vec2(-1.0f); break;
     }
     ray.DrawTexturePro(
         sprite.data,
@@ -977,7 +977,7 @@ void draw(Sprite sprite, Rectangle region, Vector2 position, DrawOptions options
     );
 }
 
-void draw(Sprite sprite, Vector2 tileSize, uint tileID, Vector2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
     auto gridWidth = cast(uint) (sprite.size.x / tileSize.x);
     auto gridHeight = cast(uint) (sprite.size.y / tileSize.y);
     if (gridWidth == 0 || gridHeight == 0) {
@@ -985,11 +985,11 @@ void draw(Sprite sprite, Vector2 tileSize, uint tileID, Vector2 position, DrawOp
     }
     auto row = tileID / gridWidth;
     auto col = tileID % gridWidth;
-    auto region = Rectangle(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
+    auto region = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
     draw(sprite, region, position, options);
 }
 
-void draw(Sprite sprite, TileMap tileMap, Camera camera, Vector2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
     enum extraTileCount = 4;
 
     auto topLeft = camera.point(Hook.topLeft);
@@ -1015,12 +1015,12 @@ void draw(Sprite sprite, TileMap tileMap, Camera camera, Vector2 position, DrawO
             if (tileMap[row, col] == -1) {
                 continue;
             }
-            draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vector2(col, row) * tileMap.tileSize, options);
+            draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize, options);
         }
     }
 }
 
-void draw(Font font, dchar rune, Vector2 position, DrawOptions options = DrawOptions()) {
+void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) {
         return;
     }
@@ -1028,8 +1028,8 @@ void draw(Font font, dchar rune, Vector2 position, DrawOptions options = DrawOpt
         case Filter.nearest: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_POINT); break;
         case Filter.linear: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_BILINEAR); break;
     }
-    auto rectangle = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
-    auto origin = rectangle.origin(options.hook).floor();
+    auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
+    auto origin = rect.origin(options.hook).floor();
     ray.rlPushMatrix();
     ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
@@ -1040,12 +1040,12 @@ void draw(Font font, dchar rune, Vector2 position, DrawOptions options = DrawOpt
 }
 
 @trusted
-void draw(Font font, const(char)[] text, Vector2 position, DrawOptions options = DrawOptions()) {
+void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto rectangle = Rectangle(measureText(font, text)).floor();
-    auto origin = rectangle.origin(options.hook).floor();
+    auto rect = Rect(measureText(font, text)).floor();
+    auto origin = rect.origin(options.hook).floor();
     ray.rlPushMatrix();
     ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
@@ -1067,7 +1067,7 @@ void draw(Font font, const(char)[] text, Vector2 position, DrawOptions options =
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
                 runeOptions.filter = options.filter;
-                draw(font, codepoint, Vector2(textOffsetX, textOffsetY), runeOptions);
+                draw(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
             }
             if (font.data.glyphs[index].advanceX == 0) {
                 textOffsetX += font.data.recs[index].width + font.spacing.x;
@@ -1081,7 +1081,7 @@ void draw(Font font, const(char)[] text, Vector2 position, DrawOptions options =
     ray.rlPopMatrix();
 }
 
-void draw(const(char)[] text, Vector2 position = Vector2(8.0f, 8.0f)) {
+void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
     auto options = DrawOptions();
     options.color = lightGray;
     draw(rayFont, text, position, options);

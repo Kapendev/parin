@@ -71,7 +71,7 @@ void runDialogueExample() {
         // Draw the game.
         if (dialogue.hasChoices) {
             foreach (i, choice; dialogue.choices) {
-                auto choicePosition = Vector2(8, 8 + i * 14);
+                auto choicePosition = Vec2(8, 8 + i * 14);
                 draw("{}".fmt(i + 1), choicePosition);
                 draw("   | {}".fmt(choice), choicePosition);
             }
@@ -80,8 +80,8 @@ void runDialogueExample() {
         } else {
             draw("The dialogue has ended.");
         }
-        draw(Rectangle(0, resolution.y * 0.8, resolution.x, resolution.y), darkGray);
-        auto infoPosition = Vector2(8, resolution.y - 2 - 14 * 2);
+        draw(Rect(0, resolution.y * 0.8, resolution.x, resolution.y), darkGray);
+        auto infoPosition = Vec2(8, resolution.y - 2 - 14 * 2);
         draw("Press 1, 2 or 3 to select a choice.", infoPosition);
         draw("\nPress space to continue.", infoPosition);
     }
