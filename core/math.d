@@ -412,34 +412,40 @@ struct Rect {
         return Rect(position.x, position.y + size.y, size.x, amount);
     }
 
-    void addLeftRight(float amount) {
+    Rect addLeftRight(float amount) {
         this.addLeft(amount);
         this.addRight(amount);
+        return this;
     }
 
-    void addTopBottom(float amount) {
+    Rect addTopBottom(float amount) {
         this.addTop(amount);
         this.addBottom(amount);
+        return this;
     }
 
-    void addAll(float amount) {
+    Rect addAll(float amount) {
         this.addLeftRight(amount);
         this.addTopBottom(amount);
+        return this;
     }
 
-    void subLeftRight(float amount) {
+    Rect subLeftRight(float amount) {
         this.subLeft(amount);
         this.subRight(amount);
+        return this;
     }
 
-    void subTopBottom(float amount) {
+    Rect subTopBottom(float amount) {
         this.subTop(amount);
         this.subBottom(amount);
+        return this;
     }
 
-    void subAll(float amount) {
+    Rect subAll(float amount) {
         this.subLeftRight(amount);
         this.subTopBottom(amount);
+        return this;
     }
 
     Rect left(float amount) {
@@ -555,7 +561,10 @@ float moveTo(float from, float to, float delta) {
     else return to;
 }
 
+// NOTE: It moves slower at the end when the offset it negative.
 float moveTo(float from, float to, float delta, float slowdown) {
     float target = ((from * (slowdown - 1.0f)) + to) / slowdown;
-    return from + (target - from) * delta;
+    float offset = target - from;
+    if (abs(offset) > abs(delta)) return from + offset * delta;
+    else return to;
 }

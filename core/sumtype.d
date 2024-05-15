@@ -16,7 +16,7 @@ union SumTypeData(A...) {
     }
 }
 
-alias SumTypeKind = byte;
+alias SumTypeKind = ubyte;
 
 struct SumType(A...) {
     SumTypeData!A data;
@@ -38,6 +38,15 @@ struct SumType(A...) {
             data = *(cast(SumTypeData!A*) &rhs);
             kind = i;
         }
+    }
+
+    const(char)[] typeName() {
+        static foreach (i, T; A) {
+            if (kind == i) {
+                return T.stringof;
+            }
+        }
+        assert(0, "Kind is invalid.");
     }
 
     bool isValue(T)() {
@@ -117,9 +126,11 @@ unittest {
     number = 0;
     assert(number.isValue!int == true);
     assert(number.isValue!float == false);
+    assert(number.typeName == "int");
     number = 0.0;
     assert(number.isValue!int == false);
     assert(number.isValue!float == true);
+    assert(number.typeName == "float");
 
     number = 0;
     number.value!int += 2;

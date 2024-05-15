@@ -120,6 +120,7 @@ void readConfig(A...)(const(char)[] path, ref A args) {
                             } else {
                                 target = conv.value;
                             }
+                            mixin("arg.", member.stringof, "= cast(typeof(member)) target;");
                         } else static if (isDoubleType!(typeof(member))) {
                             auto conv = toDouble(value);
                             if (conv.error) {
@@ -127,8 +128,16 @@ void readConfig(A...)(const(char)[] path, ref A args) {
                             } else {
                                 target = conv.value;
                             }
+                            mixin("arg.", member.stringof, "= cast(typeof(member)) target;");
+                        } else static if (isBoolType!(typeof(member))) {
+                            auto conv = toBool(value);
+                            if (conv.error) {
+                                println("Line ", lineNumber, ": Can not parse value.");
+                            } else {
+                                target = conv.value;
+                            }
+                            mixin("arg.", member.stringof, "= cast(typeof(member)) target;");
                         }
-                        mixin("arg.", member.stringof, "= cast(typeof(member)) target;");
                     }
                 }
                 goto loopExit;

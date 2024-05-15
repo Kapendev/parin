@@ -9,9 +9,10 @@ module popka.core.color;
 
 enum blank = Color();
 enum black = Color(0);
-enum darkGray = Color(30);
-enum lightGray = Color(220);
+enum gray1 = Color(30);
+enum gray2 = Color(225);
 enum white = Color(255);
+
 enum red = Color(255, 0, 0);
 enum green = Color(0, 255, 0);
 enum blue = Color(0, 0, 255);
@@ -57,5 +58,9 @@ struct Color {
             (rgba & 0xFF00) >> 8,
             (rgba & 0xFF),
         );
+    }
+
+    Color alpha(ubyte value) {
+        return Color(r, g, b, value);
     }
 }

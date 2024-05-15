@@ -101,6 +101,10 @@ bool isSpace(const(char)[] str) {
     return true;
 }
 
+int toDigit(char c) {
+    return isDigit(c) ? (c - '0') : -1;
+}
+
 char toUpper(char c) {
     return isLower(c) ? cast(char) (c - 32) : c;
 }
@@ -372,24 +376,16 @@ const(char)[] skipLine(ref inout(char)[] str) {
     return skipValue(str, '\n');
 }
 
-const(char)[] charToStr(char value) {
-    static char[1] buffer = void;
-    auto result = buffer[];
-
-    result[0] = value;
-    result = result[0 .. 1];
-    return result;
+const(char)[] boolToStr(bool value) {
+    return value ? "true" : "false";
 }
 
-const(char)[] boolToStr(bool value) {
-    static char[8] buffer = void;
+const(char)[] charToStr(char value) {
+    static char[1] buffer = void;
 
     auto result = buffer[];
-    if (value) {
-        result.copyStr("true");
-    } else {
-        result.copyStr("false");
-    }
+    result[0] = value;
+    result = result[0 .. 1];
     return result;
 }
 
@@ -429,23 +425,23 @@ const(char)[] signedToStr(long value) {
 const(char)[] doubleToStr(double value, uint precision = 2) {
     static char[64] buffer = void;
 
-    auto result = buffer[];
-    auto fractionalDigitCount = 0;
-    auto cleanNumber = value;
+    auto result = buffer[];        // You know what this is.
+    auto cleanNumber = value;      // Number that has all the digits on the left side.
+    auto fractionalDigitCount = 0; // Digit count on the right size.
     while (cleanNumber != cast(double) (cast(long) cleanNumber)) {
         fractionalDigitCount += 1;
         cleanNumber *= 10;
     }
-    
-    auto temp = signedToStr(cast(long) cleanNumber);
-    auto i = result.length;
 
-    if (temp.length <= fractionalDigitCount) {
-        i -= temp.length;
-        result.copyStrChars(temp, i);
-        if (temp.length < fractionalDigitCount) {
-            i -= fractionalDigitCount - temp.length;
-            result[i .. i + fractionalDigitCount - temp.length] = '0';
+    auto i = result.length; // We put the numbers in the buffer from right to left.
+    auto cleanNumberStr = signedToStr(cast(long) cleanNumber);
+    // TODO: Fix N.00 bug and make it more simple.
+    if (cleanNumberStr.length <= fractionalDigitCount) {
+        i -= cleanNumberStr.length;
+        result.copyStrChars(cleanNumberStr, i);
+        if (cleanNumberStr.length < fractionalDigitCount) {
+            i -= fractionalDigitCount - cleanNumberStr.length;
+            result[i .. i + fractionalDigitCount - cleanNumberStr.length] = '0';
         }
         i -= 2;
         result[i] = '0';
@@ -456,15 +452,15 @@ const(char)[] doubleToStr(double value, uint precision = 2) {
             result[i .. i + (precision == 0 ? 1 : precision)] = '0';
             i -= 1;
             result[i] = '.';
-            i -= temp.length;
-            result.copyStrChars(temp, i);
+            i -= cleanNumberStr.length;
+            result.copyStrChars(cleanNumberStr, i);
         } else {
             i -= fractionalDigitCount;
-            result.copyStrChars(temp[$ - fractionalDigitCount .. $], i);
+            result.copyStrChars(cleanNumberStr[$ - fractionalDigitCount .. $], i);
             i -= 1;
             result[i] = '.';
-            i -= (temp.length - fractionalDigitCount);
-            result.copyStrChars(temp[0 .. $ - fractionalDigitCount], i);
+            i -= (cleanNumberStr.length - fractionalDigitCount);
+            result.copyStrChars(cleanNumberStr[0 .. $ - fractionalDigitCount], i);
         }
     }
 
@@ -816,4 +812,10 @@ unittest {
     assert(fmt("{}", 420, 320, 220, 120, 20) == "420");
     assert(fmt("", 1, -2, 3.69) == "");
     assert(fmt("({})", fmt("({}, {})", false, true)) == "((false, true))");
+
+    // TODO: Uncoment when the N.00 bug is fixed.
+    // assert(fmt("{}", 0.00) == "0.00");
+    // assert(fmt("{}", 0.50) == "0.50");
+    // assert(fmt("{}", 1.00) == "1.00");
+    // assert(fmt("{}", 1.50) == "1.50");
 }

@@ -12,3 +12,12 @@
 * Test strutils.d and add unicode support.
 * Add more parsing options for some functions in strutils.d.
 * Remove asserts from dialogued.d.
+
+## 3
+
+* doubleToStr
+* GUI
+* HashMap
+* LinearAllocator
+* Random
+* Docs

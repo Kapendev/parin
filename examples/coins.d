@@ -21,7 +21,7 @@ void runCoinsExample() {
     auto maxCoinCount = 8;
 
     // Change the background color.
-    changeBackgroundColor(darkGray);
+    changeBackgroundColor(gray1);
 
     // Create the coins.
     foreach (i; 0 .. maxCoinCount) {
@@ -62,9 +62,9 @@ void runCoinsExample() {
 
         // Draw the game.
         foreach (coin; coins.items) {
-            draw(coin, lightGray);
+            draw(coin, gray2);
         }
-        draw(player, lightGray);
+        draw(player, gray2);
         if (coins.length == 0) {
             draw("You collected all the coins!");
         } else {

@@ -132,6 +132,7 @@ struct PopkaState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
     bool isWindowOpen;
+    bool isRunning;
     bool isDrawing;
     bool isFPSLocked;
     bool isCursorHidden;
@@ -147,9 +148,10 @@ struct PopkaState {
 }
 
 struct DrawOptions {
+    Vec2 origin = Vec2(0.0f);
     Vec2 scale = Vec2(1.0f);
-    float rotation = 0.0f;
     Color color = white;
+    float rotation = 0.0f;
 
     Hook hook = Hook.topLeft;
     Flip flip = Flip.none;
@@ -600,6 +602,7 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
     ray.SetExitKey(ray.KEY_NULL);
     lockFPS(defaultFPS);
     popkaState.isWindowOpen = true;
+    popkaState.isRunning = true;
     popkaState.backgroundColor = color;
     popkaState.lastWindowSize = size;
 }
@@ -614,6 +617,7 @@ void closeWindow() {
 
 bool isWindowOpen() {
     if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
+        popkaState.isDrawing = false;
         return false;
     }
 
@@ -692,10 +696,12 @@ bool isWindowOpen() {
 }
 
 void freeWindow() {
-    popkaState.viewport.free();
-    ray.CloseAudioDevice();
-    ray.CloseWindow();
-    popkaState = PopkaState();
+    if (popkaState.isRunning) {
+        popkaState.viewport.free();
+        ray.CloseAudioDevice();
+        ray.CloseWindow();
+        popkaState = PopkaState();
+    }
 }
 
 bool isFPSLocked() {
@@ -934,6 +940,23 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
+Vec2 wasdDirection() {
+    Vec2 result;
+    if (Keyboard.a.isDown || Keyboard.left.isDown) {
+        result.x = -1.0f;
+    }
+    if (Keyboard.d.isDown || Keyboard.right.isDown) {
+        result.x = 1.0f;
+    }
+    if (Keyboard.w.isDown || Keyboard.up.isDown) {
+        result.y = -1.0f;
+    }
+    if (Keyboard.s.isDown || Keyboard.down.isDown) {
+        result.y = 1.0f;
+    }
+    return result;
+}
+
 void draw(Rect rect, Color color = white) {
     ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
 }
@@ -967,14 +990,20 @@ void draw(Sprite sprite, Rect region, Vec2 position, DrawOptions options = DrawO
         case Flip.y: source.size.y *= -1.0f; break;
         case Flip.xy: source.size *= Vec2(-1.0f); break;
     }
+
+    auto origin = options.origin == Vec2() ? target.floor().origin(options.hook) : options.origin;
     ray.DrawTexturePro(
         sprite.data,
         toRay(source.floor()),
         toRay(target.floor()),
-        toRay(target.floor().origin(options.hook).floor()),
+        toRay(origin.floor()),
         options.rotation,
         toRay(options.color),
     );
+}
+
+void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
+    draw(sprite, Rect(), position, options);
 }
 
 void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -987,6 +1016,12 @@ void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions 
     auto col = tileID % gridWidth;
     auto region = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
     draw(sprite, region, position, options);
+}
+
+void draw(Sprite sprite, Vec2 tileSize, uint tileCount, float tileSpacing, Vec2 position, DrawOptions options = DrawOptions()) {
+    foreach_reverse(i; 0 .. tileCount) {
+        draw(sprite, tileSize, i, Vec2(position.x, position.y + i * tileSpacing * options.scale.y), options);
+    }
 }
 
 void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1029,7 +1064,7 @@ void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOption
         case Filter.linear: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_BILINEAR); break;
     }
     auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
-    auto origin = rect.origin(options.hook).floor();
+    auto origin = options.origin == Vec2() ? rect.origin(options.hook).floor() : options.origin.floor();
     ray.rlPushMatrix();
     ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
@@ -1083,6 +1118,6 @@ void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = Dr
 
 void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
     auto options = DrawOptions();
-    options.color = lightGray;
+    options.color = gray2;
     draw(rayFont, text, position, options);
 }

@@ -80,7 +80,7 @@ void runDialogueExample() {
         } else {
             draw("The dialogue has ended.");
         }
-        draw(Rect(0, resolution.y * 0.8, resolution.x, resolution.y), darkGray);
+        draw(Rect(0, resolution.y * 0.8, resolution.x, resolution.y), gray1);
         auto infoPosition = Vec2(8, resolution.y - 2 - 14 * 2);
         draw("Press 1, 2 or 3 to select a choice.", infoPosition);
         draw("\nPress space to continue.", infoPosition);
