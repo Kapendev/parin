@@ -136,6 +136,7 @@ struct PopkaState {
     bool isDrawing;
     bool isFPSLocked;
     bool isCursorHidden;
+    bool isPixelPerfect;
 
     Vec2 targetViewportSize;
     Viewport viewport;
@@ -150,12 +151,11 @@ struct PopkaState {
 struct DrawOptions {
     Vec2 origin = Vec2(0.0f);
     Vec2 scale = Vec2(1.0f);
-    Color color = white;
     float rotation = 0.0f;
 
+    Color color = white;
     Hook hook = Hook.topLeft;
     Flip flip = Flip.none;
-    Filter filter = Filter.nearest;
 }
 
 struct Sprite {
@@ -177,6 +177,10 @@ struct Sprite {
 
     Rect area() {
         return Rect(size);
+    }
+
+    void changeFilter(Filter filter) {
+        ray.SetTextureFilter(data, toRay(filter));
     }
 
     void load(const(char)[] path) {
@@ -219,6 +223,10 @@ struct Viewport {
         return Rect(size);
     }
 
+    void changeFilter(Filter filter) {
+        ray.SetTextureFilter(data.texture, toRay(filter));
+    }
+
     void load(Vec2 size) {
         free();
         data = ray.LoadRenderTexture(cast(int) size.x, cast(int) size.y);
@@ -248,6 +256,10 @@ struct Font {
 
     float size() {
         return data.baseSize;
+    }
+
+    void changeFilter(Filter filter) {
+        ray.SetTextureFilter(data.texture, toRay(filter));
     }
 
     @trusted
@@ -404,10 +416,12 @@ struct Camera {
         if (!isAttached) {
             isAttached = true;
             auto temp = toRay(this);
-            temp.target.x = floor(temp.target.x);
-            temp.target.y = floor(temp.target.y);
-            temp.offset.x = floor(temp.offset.x);
-            temp.offset.y = floor(temp.offset.y);
+            if (isPixelPerfect) {
+                temp.target.x = floor(temp.target.x);
+                temp.target.y = floor(temp.target.y);
+                temp.offset.x = floor(temp.offset.x);
+                temp.offset.y = floor(temp.offset.y);
+            }
             ray.BeginMode2D(temp);
         }
     }
@@ -566,6 +580,21 @@ ray.RenderTexture2D toRay(Viewport from) {
 
 ray.Camera2D toRay(Camera from) {
     return ray.Camera2D(toRay(from.origin), toRay(from.position), from.rotation, from.scale);
+}
+
+int toRay(Filter filter) {
+    final switch (filter) {
+        case Filter.nearest: return ray.TEXTURE_FILTER_POINT;
+        case Filter.linear: return ray.TEXTURE_FILTER_BILINEAR;
+    }
+}
+
+Flip opposite(Flip flip, Flip fallback) {
+    if (flip == fallback) {
+        return Flip.none;
+    } else {
+        return fallback;
+    }
 }
 
 Font rayFont() {
@@ -773,6 +802,14 @@ void toggleFullscreen() {
     popkaState.isToggleFullscreenQueued = true;
 }
 
+bool isPixelPerfect() {
+    return popkaState.isPixelPerfect;
+}
+
+void togglePixelPerfect() {
+    popkaState.isPixelPerfect = !popkaState.isPixelPerfect;
+}
+
 Vec2 screenSize() {
     auto id = ray.GetCurrentMonitor();
     return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
@@ -840,12 +877,12 @@ void changeBackgroundColor(Color color) {
     popkaState.backgroundColor = color;
 }
 
-void changeShapeSprite(Sprite sprite, Rect region = Rect(1.0f, 1.0f)) {
-    ray.SetShapesTexture(sprite.data, toRay(region));
+void changeShapeSprite(Sprite sprite, Rect area = Rect(1.0f, 1.0f)) {
+    ray.SetShapesTexture(sprite.data, toRay(area));
 }
 
 @trusted
-Vec2 measureText(Font font, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
+Vec2 measureText(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
     }
@@ -887,8 +924,8 @@ Vec2 measureText(Font font, const(char)[] text, Vec2 scale = Vec2(1.0f)) {
     if (tempTextWidth < textWidth) {
         tempTextWidth = textWidth;
     }
-    result.x = floor(tempTextWidth * scale.x + ((tempByteCounter - 1) * font.spacing.x * scale.x));
-    result.y = floor(textHeight * scale.y);
+    result.x = floor(tempTextWidth * options.scale.x + ((tempByteCounter - 1) * font.spacing.x * options.scale.x));
+    result.y = floor(textHeight * options.scale.y);
     return result;
 }
 
@@ -958,48 +995,67 @@ Vec2 wasdDirection() {
 }
 
 void draw(Rect rect, Color color = white) {
-    ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+    if (isPixelPerfect) {
+        ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+    } else {
+        ray.DrawRectanglePro(toRay(rect), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+    }
 }
 
 void draw(Circ circ, Color color = white) {
     ray.DrawCircleV(toRay(circ.position), circ.radius, toRay(color));
 }
 
-void draw(Sprite sprite, Rect region, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (sprite.isEmpty) {
         return;
-    }
-    final switch (options.filter) {
-        case Filter.nearest: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_POINT); break;
-        case Filter.linear: ray.SetTextureFilter(sprite.data, ray.TEXTURE_FILTER_BILINEAR); break;
     }
 
     auto target = Rect();
     auto source = Rect();
-    if (region.size.x <= 0.0f || region.size.y <= 0.0f) {
-        target = Rect(position, sprite.size * options.scale);
+    if (area.size.x <= 0.0f || area.size.y <= 0.0f) {
+        target = Rect(position, sprite.size * options.scale.abs());
         source = Rect(sprite.size);
     } else {
-        target = Rect(position, region.size * options.scale);
-        source = region;
+        target = Rect(position, area.size * options.scale.abs());
+        source = area;
     }
 
-    final switch (options.flip) {
+    auto flip = options.flip;
+    if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
+        flip = opposite(flip, Flip.xy);
+    } else if (options.scale.x < 0.0f) {
+        flip = opposite(flip, Flip.x);
+    } else if (options.scale.y < 0.0f) {
+        flip = opposite(flip, Flip.y);
+    }
+    final switch (flip) {
         case Flip.none: break;
         case Flip.x: source.size.x *= -1.0f; break;
         case Flip.y: source.size.y *= -1.0f; break;
         case Flip.xy: source.size *= Vec2(-1.0f); break;
     }
 
-    auto origin = options.origin == Vec2() ? target.floor().origin(options.hook) : options.origin;
-    ray.DrawTexturePro(
-        sprite.data,
-        toRay(source.floor()),
-        toRay(target.floor()),
-        toRay(origin.floor()),
-        options.rotation,
-        toRay(options.color),
-    );
+    auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
+    if (isPixelPerfect) {
+        ray.DrawTexturePro(
+            sprite.data,
+            toRay(source.floor()),
+            toRay(target.floor()),
+            toRay(origin.floor()),
+            options.rotation,
+            toRay(options.color),
+        );
+    } else {
+        ray.DrawTexturePro(
+            sprite.data,
+            toRay(source),
+            toRay(target),
+            toRay(origin),
+            options.rotation,
+            toRay(options.color),
+        );
+    }
 }
 
 void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1014,8 +1070,8 @@ void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions 
     }
     auto row = tileID / gridWidth;
     auto col = tileID % gridWidth;
-    auto region = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
-    draw(sprite, region, position, options);
+    auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
+    draw(sprite, area, position, options);
 }
 
 void draw(Sprite sprite, Vec2 tileSize, uint tileCount, float tileSpacing, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1059,33 +1115,52 @@ void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOption
     if (font.isEmpty) {
         return;
     }
-    final switch (options.filter) {
-        case Filter.nearest: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_POINT); break;
-        case Filter.linear: ray.SetTextureFilter(font.data.texture, ray.TEXTURE_FILTER_BILINEAR); break;
-    }
-    auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune)).floor();
-    auto origin = options.origin == Vec2() ? rect.origin(options.hook).floor() : options.origin.floor();
+
+    auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune));
+    auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
+    
+    // NOTE: Maybe new way of drawing a character.
+    // draw(toPopka(font.data.texture), rect, position + Vec2(0.0f, font.size - rect.size.y), options);
+
+    // NOTE: Old way of drawing a character.
     ray.rlPushMatrix();
-    ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    if (isPixelPerfect) {
+        ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    } else {
+        ray.rlTranslatef(position.x, position.y, 0.0f);
+    }
     ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    if (isPixelPerfect) {
+        ray.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
+    } else {
+        ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    }
     ray.DrawTextCodepoint(font.data, rune, ray.Vector2(0.0f, 0.0f), font.size, toRay(options.color));
     ray.rlPopMatrix();
 }
 
+// TODO: Make it work with negative scale values.
 @trusted
 void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto rect = Rect(measureText(font, text)).floor();
-    auto origin = rect.origin(options.hook).floor();
+    auto rect = Rect(measureText(font, text));
+    auto origin = rect.origin(options.hook);
     ray.rlPushMatrix();
-    ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    if (isPixelPerfect) {
+        ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+    } else {
+        ray.rlTranslatef(position.x, position.y, 0.0f);
+    }
     ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    if (isPixelPerfect) {
+        ray.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
+    } else {
+        ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
+    }
     auto textOffsetY = 0.0f; // Offset between lines (on linebreak '\n').
     auto textOffsetX = 0.0f; // Offset X to next character to draw.
     auto i = 0;
@@ -1101,7 +1176,6 @@ void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = Dr
             if (codepoint != ' ' && codepoint != '\t') {
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
-                runeOptions.filter = options.filter;
                 draw(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
             }
             if (font.data.glyphs[index].advanceX == 0) {

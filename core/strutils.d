@@ -31,6 +31,7 @@ enum ToValueResultError : ubyte {
 }
 
 struct ToStrOptions {
+    bool boolIsShort = false;
     ubyte floatPrecision = 2;
 }
 
@@ -376,8 +377,12 @@ const(char)[] skipLine(ref inout(char)[] str) {
     return skipValue(str, '\n');
 }
 
-const(char)[] boolToStr(bool value) {
-    return value ? "true" : "false";
+const(char)[] boolToStr(bool value, bool isShort = false) {
+    if (isShort) {
+        return value ? "t" : "f";
+    } else {
+        return value ? "true" : "false";
+    }
 }
 
 const(char)[] charToStr(char value) {
@@ -509,7 +514,7 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     static if (isCharType!T) {
         return charToStr(value);
     } else static if (isBoolType!T) {
-        return boolToStr(value);
+        return boolToStr(value, options.boolIsShort);
     } else static if (isUnsignedType!T) {
         return unsignedToStr(value);
     } else static if (isSignedType!T) {
@@ -529,9 +534,9 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
 
 ToValueResult!bool toBool(const(char)[] str) {
     auto result = ToValueResult!bool();
-    if (str == "true") {
+    if (str == "t" || str == "true") {
         result.value = true;
-    } else if (str == "false") {
+    } else if (str == "f" || str == "false") {
         result.value = false;
     } else {
         result.error = ToValueResultError.invalid;

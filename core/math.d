@@ -56,6 +56,10 @@ struct Vec2 {
         mixin("y" ~ op ~ "=" ~ "rhs.y;");
     }
 
+    Vec2 abs() {
+        return Vec2(x.abs, y.abs);
+    }
+
     Vec2 floor() {
         return Vec2(x.floor, y.floor);
     }
@@ -88,12 +92,12 @@ struct Vec2 {
     Vec2 moveTo(Vec2 to, Vec2 delta) {
         Vec2 result = void;
         Vec2 offset = this.directionTo(to) * delta;
-        if (abs(to.x - x) > abs(offset.x)) {
+        if (.abs(to.x - x) > .abs(offset.x)) {
             result.x = x + offset.x;
         } else {
             result.x = to.x;
         }
-        if (abs(to.y - y) > abs(offset.y)) {
+        if (.abs(to.y - y) > .abs(offset.y)) {
             result.y = y + offset.y;
         } else {
             result.y = to.y;
@@ -156,6 +160,10 @@ struct Vec3 {
         mixin("z" ~ op ~ "=" ~ "rhs.z;");
     }
 
+    Vec3 abs() {
+        return Vec3(x.abs, y.abs, z.abs);
+    }
+
     Vec3 floor() {
         return Vec3(x.floor, y.floor, z.floor);
     }
@@ -215,6 +223,10 @@ struct Vec4 {
         mixin("y" ~ op ~ "=" ~ "rhs.y;");
         mixin("z" ~ op ~ "=" ~ "rhs.z;");
         mixin("w" ~ op ~ "=" ~ "rhs.w;");
+    }
+
+    Vec4 abs() {
+        return Vec4(x.abs, y.abs, z.abs, w.abs);
     }
 
     Vec4 floor() {
