@@ -24,6 +24,8 @@ struct SumType(A...) {
 
     @safe @nogc nothrow:
 
+    alias BaseType = A[0];
+
     static foreach (i, T; A) {
         @trusted
         this(T data) {
@@ -72,11 +74,23 @@ struct SumType(A...) {
         return &value!T();
     }
 
+    ref BaseType base() {
+        return data.m0;
+    }
+
+    BaseType* basePtr() {
+        return &data.m0;
+    }
+
     auto call(const(char)[] func, AA...)(AA args) {
         // The slice removes the 'LU' part of the number.
         switch (kind) {
             static foreach (i, T; A) {
-                mixin("case ", i, ": return data.m", i.stringof[0 .. $ - 2], ".", func, "(args);");
+                static if (__traits(hasMember, T, func)) {
+                    mixin("case ", i, ": return data.m", i.stringof[0 .. $ - 2], ".", func, "(args);");
+                } else {
+                    mixin("case ", i, ": return;");
+                }
             }
             default: assert(0, "Kind is invalid.");
         }
@@ -101,15 +115,13 @@ bool isSumType(T)() {
 
 bool hasCommonBase(T)() {
     static assert(isSumType!T, "Type '" ~ T.stringof  ~ "' must be a sum type.");
-    static assert(T.init.tupleof.length != 0, "Sum type must have at least one member.");
-    alias Base = typeof(T.init.data.tupleof[0]);
 
     static foreach (member; T.init.data.tupleof[1 .. $]) {
         static if (isPrimaryType!(typeof(member)) || member.tupleof.length == 0) {
-            static if (!is(typeof(member) == Base)) {
+            static if (!is(typeof(member) == T.BaseType)) {
                 return false;
             }
-        } else static if (!is(Base == typeof(member.tupleof[0]))) {
+        } else static if (!is(T.BaseType == typeof(member.tupleof[0]))) {
             return false;
         }
     }
