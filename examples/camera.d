@@ -21,7 +21,7 @@ void runCameraExample() {
     while (isWindowOpen) {
         // Move the camera.
         cameraTarget += wasdDirection * cameraSpeed * Vec2(deltaTime);
-        camera.follow(cameraTarget);
+        camera.followPosition(cameraTarget);
 
         // Draw the game world.
         camera.attach();

@@ -29,15 +29,11 @@ struct Color {
 
     @safe @nogc nothrow:
 
-    this(ubyte r, ubyte g, ubyte b, ubyte a) {
+    this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
         this.r = r;
         this.g = g;
         this.b = b;
         this.a = a;
-    }
-
-    this(ubyte r, ubyte g, ubyte b) {
-        this(r, g, b, 255);
     }
 
     this(ubyte r) {
@@ -52,16 +48,24 @@ struct Color {
         this(rgb[0], rgb[1], rgb[2], 255);
     }
 
-    this(uint rgba) {
-        this(
-            (rgba & 0xFF000000) >> 24,
-            (rgba & 0xFF0000) >> 16,
-            (rgba & 0xFF00) >> 8,
-            (rgba & 0xFF),
-        );
-    }
-
     Color alpha(ubyte value) {
         return Color(r, g, b, value);
     }
+}
+
+Color toRGB(uint rgb) {
+    return Color(
+        (rgb & 0xFF0000) >> 16,
+        (rgb & 0xFF00) >> 8,
+        (rgb & 0xFF),
+    );
+}
+
+Color toRGBA(uint rgba) {
+    return Color(
+        (rgba & 0xFF000000) >> 24,
+        (rgba & 0xFF0000) >> 16,
+        (rgba & 0xFF00) >> 8,
+        (rgba & 0xFF),
+    );
 }

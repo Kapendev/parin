@@ -39,12 +39,12 @@ This guide outlines the steps to install Popka using Git and Dub.
     git clone https://github.com/Kapendev/popka.git
     ```
 
-2. **Install raylib using Dub:**
+2. **Install raylib:**
 
-    Navigate to the folder containing your dub.json file and run the following command to install raylib using Dub:
+    Navigate to the folder containing your dub.json file and run the following command to install raylib:
 
     ```bash
-    dub add raylib-d && dub run -y raylib-d:install -y
+    dub add raylib-d && dub run raylib-d:install
     ```
 
 3. **Compile example:**

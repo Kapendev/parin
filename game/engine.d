@@ -13,7 +13,7 @@ import popka.core;
 PopkaState popkaState;
 
 enum defaultFPS = 60;
-enum defaultBackgroundColor = Color(0x2A363AFF);
+enum defaultBackgroundColor = toRGB(0x2A363A);
 enum toggleFullscreenWaitTime = 0.135f;
 
 enum Flip : ubyte {
@@ -396,7 +396,7 @@ struct Camera {
     }
 
     Vec2 size() {
-        return resolution * Vec2(scale);
+        return resolution;
     }
 
     Vec2 origin() {
@@ -432,11 +432,19 @@ struct Camera {
         }
     }
 
-    void follow(Vec2 target, float slowdown = 0.14f) {
+    void followPosition(Vec2 target, float slowdown = 0.15f) {
         if (slowdown <= 0.0f) {
             position = target;
         } else {
             position = position.moveTo(target, Vec2(deltaTime), slowdown);
+        }
+    }
+
+    void followScale(float target, float slowdown = 0.15f) {
+        if (slowdown <= 0.0f) {
+            scale = target;
+        } else {
+            scale = scale.moveTo(target, deltaTime, slowdown);
         }
     }
 }
@@ -596,12 +604,6 @@ Flip opposite(Flip flip, Flip fallback) {
     }
 }
 
-Font rayFont() {
-    auto result = toPopka(ray.GetFontDefault());
-    result.spacing = Vec2(1.0f, 14.0f);
-    return result;
-}
-
 int randi() {
     return ray.GetRandomValue(0, int.max);
 }
@@ -616,6 +618,20 @@ void randomize(uint seed) {
 
 void randomize() {
     randomize(randi);
+}
+
+Vec2 toWorldPoint(Vec2 point, Camera camera) {
+    return toPopka(ray.GetScreenToWorld2D(toRay(point), toRay(camera)));
+}
+
+Vec2 toScreenPoint(Vec2 point, Camera camera) {
+    return toPopka(ray.GetWorldToScreen2D(toRay(point), toRay(camera)));
+}
+
+Font rayFont() {
+    auto result = toPopka(ray.GetFontDefault());
+    result.spacing = Vec2(1.0f, 14.0f);
+    return result;
 }
 
 void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
@@ -830,7 +846,7 @@ Vec2 resolution() {
     }
 }
 
-Vec2 mousePosition() {
+Vec2 mouseScreenPosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
         auto minRatio = min(window.x / popkaState.viewport.size.x, window.y / popkaState.viewport.size.y);
@@ -842,6 +858,10 @@ Vec2 mousePosition() {
     } else {
         return Vec2(ray.GetMouseX(), ray.GetMouseY());
     }
+}
+
+Vec2 mouseWorldPosition(Camera camera) {
+    return mouseScreenPosition.toWorldPoint(camera);
 }
 
 float mouseWheel() {

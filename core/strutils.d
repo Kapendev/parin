@@ -102,10 +102,6 @@ bool isSpace(const(char)[] str) {
     return true;
 }
 
-int toDigit(char c) {
-    return isDigit(c) ? (c - '0') : -1;
-}
-
 char toUpper(char c) {
     return isLower(c) ? cast(char) (c - 32) : c;
 }
@@ -562,7 +558,7 @@ ToValueResult!ulong toUnsigned(const(char)[] str) {
     } else {
         ulong level = 1;
         foreach_reverse (i, c; str) {
-            if (c < '0' || c > '9') {
+            if (!isDigit(c)) {
                 result.error = ToValueResultError.invalid;
                 break;
             }
@@ -574,8 +570,27 @@ ToValueResult!ulong toUnsigned(const(char)[] str) {
     return result;
 }
 
+ToValueResult!ulong toUnsigned(char c) {
+    auto result = ToValueResult!ulong();
+    if (isDigit(c)) {
+        result.value = c - '0';
+    } else {
+        result.error = ToValueResultError.invalid;
+    }
+    return result;
+}
+
 ulong toUnsignedWithNone(const(char)[] str) {
     auto conv = toUnsigned(str);
+    if (conv.error) {
+        return 0;
+    } else {
+        return conv.value;
+    }
+}
+
+ulong toUnsignedWithNone(char c) {
+    auto conv = toUnsigned(c);
     if (conv.error) {
         return 0;
     } else {
@@ -609,8 +624,28 @@ ToValueResult!long toSigned(const(char)[] str) {
     return result;
 }
 
+ToValueResult!long toSigned(char c) {
+    auto result = ToValueResult!long();
+    auto conv = toUnsigned(c);
+    if (conv.error) {
+        result.error = conv.error;
+    } else {
+        result.value = cast(long) conv.value;
+    }
+    return result;
+}
+
 long toSignedWithNone(const(char)[] str) {
     auto conv = toSigned(str);
+    if (conv.error) {
+        return 0;
+    } else {
+        return conv.value;
+    }
+}
+
+long toSignedWithNone(char c) {
+    auto conv = toSigned(c);
     if (conv.error) {
         return 0;
     } else {

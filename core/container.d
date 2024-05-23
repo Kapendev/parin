@@ -93,9 +93,13 @@ struct List(T) {
     }
 
     T pop() {
-        T temp = items[$ - 1];
-        remove(length - 1);
-        return temp;
+        if (length > 0) {
+            T temp = items[$ - 1];
+            remove(length - 1);
+            return temp;
+        } else {
+            return T.init;
+        }
     }
 
     void resize(size_t length) {
