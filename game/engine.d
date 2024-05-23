@@ -8,7 +8,7 @@ module popka.game.engine;
 import ray = popka.vendor.ray;
 import popka.core;
 
-@safe @nogc nothrow:
+@trusted @nogc nothrow:
 
 PopkaState popkaState;
 
@@ -161,7 +161,7 @@ struct DrawOptions {
 struct Sprite {
     ray.Texture2D data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     this(const(char)[] path) {
         load(path);
@@ -201,7 +201,7 @@ struct Sprite {
 struct Viewport {
     ray.RenderTexture2D data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     this(Vec2 size) {
         load(size);
@@ -244,7 +244,7 @@ struct Font {
     ray.Font data;
     Vec2 spacing;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     this(const(char)[] path, uint size, const(dchar)[] runes = []) {
         load(path, size, runes);
@@ -262,7 +262,6 @@ struct Font {
         ray.SetTextureFilter(data.texture, toRay(filter));
     }
 
-    @trusted
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
         if (path.length != 0) {
@@ -281,7 +280,7 @@ struct Font {
 struct Sound {
     ray.Sound data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     this(const(char)[] path) {
         load(path);
@@ -329,7 +328,7 @@ struct Sound {
 struct Music {
     ray.Music data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     this(const(char)[] path) {
         load(path);
@@ -386,7 +385,7 @@ struct Camera {
     Hook hook;
     bool isAttached;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     this(Vec2 position) {
         this.position = position;
@@ -668,7 +667,7 @@ bool isWindowOpen() {
             auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
             ray.EndTextureMode();
             ray.BeginDrawing();
-            ray.ClearBackground(ray.BLACK);
+            ray.ClearBackground(ray.Color(0, 0, 0, 255));
             ray.DrawTexturePro(
                 popkaState.viewport.data.texture,
                 ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
@@ -680,7 +679,7 @@ bool isWindowOpen() {
                 ),
                 ray.Vector2(0.0f, 0.0f),
                 0.0f,
-                ray.WHITE,
+                ray.Color(255, 255, 255, 255),
             );
             ray.EndDrawing();
         } else {
@@ -881,7 +880,6 @@ void changeShapeSprite(Sprite sprite, Rect area = Rect(1.0f, 1.0f)) {
     ray.SetShapesTexture(sprite.data, toRay(area));
 }
 
-@trusted
 Vec2 measureText(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
@@ -1141,7 +1139,6 @@ void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOption
 }
 
 // TODO: Make it work with negative scale values.
-@trusted
 void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;

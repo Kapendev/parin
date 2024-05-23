@@ -7,8 +7,7 @@ module popka.core.color;
 
 @safe @nogc nothrow:
 
-enum blank = Color();
-enum black = Color(0);
+enum black = Color();
 enum gray1 = Color(30);
 enum gray2 = Color(225);
 enum white = Color(255);
@@ -20,11 +19,13 @@ enum yellow = Color(255, 255, 0);
 enum magenta = Color(255, 0, 255);
 enum cyan = Color(0, 255, 255);
 
+enum blank = Color(0, 0, 0, 0);
+
 struct Color {
     ubyte r;
     ubyte g;
     ubyte b;
-    ubyte a;
+    ubyte a = 255;
 
     @safe @nogc nothrow:
 
