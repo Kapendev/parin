@@ -6,7 +6,15 @@
 
 module popka.core.math;
 
-import math = core.stdc.math;
+// import math = core.stdc.math;
+
+private {
+    @system @nogc nothrow extern(C):
+
+    float sqrtf(float x);
+    float sinf(float x);
+    float cosf(float x);
+}
 
 @safe @nogc nothrow:
 
@@ -332,6 +340,42 @@ struct Rect {
         return result;
     }
 
+    Vec2 topLeft() {
+        return point(Hook.topLeft);
+    }
+
+    Vec2 top() {
+        return point(Hook.top);
+    }
+
+    Vec2 topRight() {
+        return point(Hook.topRight);
+    }
+
+    Vec2 left() {
+        return point(Hook.left);
+    }
+
+    Vec2 center() {
+        return point(Hook.center);
+    }
+
+    Vec2 right() {
+        return point(Hook.right);
+    }
+
+    Vec2 bottomLeft() {
+        return point(Hook.bottomLeft);
+    }
+
+    Vec2 bottom() {
+        return point(Hook.bottom);
+    }
+
+    Vec2 bottomRight() {
+        return point(Hook.bottomRight);
+    }
+
     bool hasPoint(Vec2 point) {
         return (
             point.x >= position.x &&
@@ -542,16 +586,19 @@ float round(float x) {
     return x <= 0.0f ? cast(float) cast(int) (x - 0.5f) : cast(float) cast(int) (x + 0.5f);
 }
 
+@trusted
 float sqrt(float x) {
-    return math.sqrtf(x);
+    return sqrtf(x);
 }
 
+@trusted
 float sin(float x) {
-    return math.sinf(x);
+    return sinf(x);
 }
 
+@trusted
 float cos(float x) {
-    return math.cosf(x);
+    return cosf(x);
 }
 
 float lerp(float from, float to, float weight) {

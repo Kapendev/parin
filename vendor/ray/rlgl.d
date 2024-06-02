@@ -106,7 +106,7 @@
 
 module popka.vendor.ray.rlgl;
 
-import core.stdc.stdlib;
+// import core.stdc.stdlib;
 
 enum isRaylibPackageAvailable = is(typeof((){import raylib;}));
 
@@ -128,13 +128,13 @@ static if (!isRaylibPackageAvailable) {
 
     // Allow custom memory allocators
 
-    alias RL_MALLOC = malloc;
+    // alias RL_MALLOC = malloc;
 
-    alias RL_CALLOC = calloc;
+    // alias RL_CALLOC = calloc;
 
-    alias RL_REALLOC = realloc;
+    // alias RL_REALLOC = realloc;
 
-    alias RL_FREE = free;
+    // alias RL_FREE = free;
 
     // Security check in case no GRAPHICS_API_OPENGL_* defined
 

@@ -8,6 +8,14 @@ module popka.game.engine;
 import ray = popka.vendor.ray;
 import popka.core;
 
+version (WebAssembly) {
+    private {
+        @trusted @nogc nothrow extern(C):
+
+        void emscripten_set_main_loop(void* ptr, int fps, int loop);
+    }
+}
+
 @trusted @nogc nothrow:
 
 PopkaState popkaState;
@@ -739,12 +747,96 @@ bool isWindowOpen() {
     return true;
 }
 
+void updateWindow(alias loopFunc)() {
+    static void __updateWindow() {
+        // Begin drawing.
+        if (isResolutionLocked) {
+            ray.BeginTextureMode(popkaState.viewport.data);
+        } else {
+            ray.BeginDrawing();
+        }
+        ray.ClearBackground(toRay(popkaState.backgroundColor));
+
+        // The main loop.
+        loopFunc();
+
+        // End drawing.
+        if (isResolutionLocked) {
+            auto minSize = popkaState.viewport.size;
+            auto maxSize = windowSize;
+            auto ratio = maxSize / minSize;
+            auto minRatio = min(ratio.x, ratio.y);
+            auto targetSize = minSize * Vec2(minRatio);
+            auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+            ray.EndTextureMode();
+            ray.BeginDrawing();
+            ray.ClearBackground(ray.Color(0, 0, 0, 255));
+            ray.DrawTexturePro(
+                popkaState.viewport.data.texture,
+                ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
+                ray.Rectangle(
+                    ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
+                    ratio.y == minRatio ? targetPos.y : floor(targetPos.y),
+                    ratio.x == minRatio ? targetSize.x : floor(targetSize.x),
+                    ratio.y == minRatio ? targetSize.y : floor(targetSize.y),
+                ),
+                ray.Vector2(0.0f, 0.0f),
+                0.0f,
+                ray.Color(255, 255, 255, 255),
+            );
+            ray.EndDrawing();
+        } else {
+            ray.EndDrawing();
+        }
+        // The lockResolution and unlockResolution queue.
+        if (popkaState.isLockResolutionQueued) {
+            popkaState.viewport.load(popkaState.targetViewportSize);
+            popkaState.isLockResolutionQueued = false;
+        }
+        if (popkaState.isUnlockResolutionQueued) {
+            popkaState.viewport.free();
+            popkaState.isUnlockResolutionQueued = false;
+        }
+        // Fullscreen code to fix a bug on KDE.
+        if (popkaState.isToggleFullscreenQueued) {
+            popkaState.toggleFullscreenTimer += deltaTime;
+            if (popkaState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
+                popkaState.toggleFullscreenTimer = 0.0f;
+                auto screen = screenSize;
+                auto window = popkaState.lastWindowSize;
+                if (ray.IsWindowFullscreen()) {
+                    ray.ToggleFullscreen();
+                    ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
+                    ray.SetWindowPosition(cast(int) (screen.x * 0.5f - window.x * 0.5f), cast(int) (screen.y * 0.5f - window.y * 0.5f));
+                } else {
+                    ray.ToggleFullscreen();
+                }
+                popkaState.isToggleFullscreenQueued = false;
+            }
+        }
+        popkaState.isDrawing = true;
+    }
+
+    version(WebAssembly) {
+        emscripten_set_main_loop(&__updateWindow, 60, 1);
+    } else {
+        while (true) {
+            if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
+                popkaState.isDrawing = false;
+                return;
+            }
+            popkaState.isDrawing = true;
+            __updateWindow();
+        }
+    }
+}
+
 void freeWindow() {
     if (popkaState.isRunning) {
         popkaState.viewport.free();
         ray.CloseAudioDevice();
         ray.CloseWindow();
-        popkaState = PopkaState();
+        popkaState = PopkaState.init;
     }
 }
 
@@ -900,7 +992,7 @@ void changeShapeSprite(Sprite sprite, Rect area = Rect(1.0f, 1.0f)) {
     ray.SetShapesTexture(sprite.data, toRay(area));
 }
 
-Vec2 measureText(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
+Vec2 measureTextSize(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
     }
@@ -945,6 +1037,14 @@ Vec2 measureText(Font font, const(char)[] text, DrawOptions options = DrawOption
     result.x = floor(tempTextWidth * options.scale.x + ((tempByteCounter - 1) * font.spacing.x * options.scale.x));
     result.y = floor(textHeight * options.scale.y);
     return result;
+}
+
+Rect measureTextArea(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
+    return Rect(position, measureTextSize(font, text, options)).area(options.hook);
+}
+
+Rect measureTextArea(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
+    return Rect(Vec2(), measureTextSize(font, text, options)).area(options.hook);
 }
 
 bool isPressed(char key) {
@@ -1163,7 +1263,7 @@ void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = Dr
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto rect = Rect(measureText(font, text));
+    auto rect = measureTextArea(font, text);
     auto origin = rect.origin(options.hook);
     ray.rlPushMatrix();
     if (isPixelPerfect) {

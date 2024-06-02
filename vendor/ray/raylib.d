@@ -78,9 +78,15 @@
 
 module popka.vendor.ray.raylib;
 
-import core.stdc.config;
-import core.stdc.stdarg;
-import core.stdc.stdlib;
+// import core.stdc.config;
+// import core.stdc.stdarg;
+// import core.stdc.stdlib;
+
+// private {
+//     extern(C):
+//     void* realloc(void* ptr, size_t size);
+//     void free(void* ptr);
+// }
 
 enum isRaylibPackageAvailable = is(typeof((){import raylib;}));
 
@@ -114,13 +120,13 @@ static if (!isRaylibPackageAvailable) {
     // Allow custom memory allocators
     // NOTE: Require recompiling raylib sources
 
-    alias RL_MALLOC = malloc;
+    // alias RL_MALLOC = malloc;
 
-    alias RL_CALLOC = calloc;
+    // alias RL_CALLOC = calloc;
 
-    alias RL_REALLOC = realloc;
+    // alias RL_REALLOC = realloc;
 
-    alias RL_FREE = free;
+    // alias RL_FREE = free;
 
     // NOTE: MSVC C++ compiler does not support compound literals (C99 feature)
     // Plain structures in C++ (without constructors) can be initialized with { }
@@ -973,7 +979,7 @@ static if (!isRaylibPackageAvailable) {
 
     // Callbacks to hook some internal functions
     // WARNING: These callbacks are intended for advance users
-    alias TraceLogCallback = void function (int logLevel, const(char)* text, va_list args); // Logging: Redirect trace log messages
+    // alias TraceLogCallback = void function (int logLevel, const(char)* text, va_list args); // Logging: Redirect trace log messages
     alias LoadFileDataCallback = ubyte* function (const(char)* fileName, int* dataSize); // FileIO: Load binary data
     alias SaveFileDataCallback = bool function (const(char)* fileName, void* data, int dataSize); // FileIO: Save binary data
     alias LoadFileTextCallback = char* function (const(char)* fileName); // FileIO: Load text data
@@ -1128,7 +1134,7 @@ static if (!isRaylibPackageAvailable) {
 
     // Set custom callbacks
     // WARNING: Callbacks setup is intended for advance users
-    void SetTraceLogCallback (TraceLogCallback callback); // Set custom trace log
+    // void SetTraceLogCallback (TraceLogCallback callback); // Set custom trace log
     void SetLoadFileDataCallback (LoadFileDataCallback callback); // Set custom file binary data loader
     void SetSaveFileDataCallback (SaveFileDataCallback callback); // Set custom file binary data saver
     void SetLoadFileTextCallback (LoadFileTextCallback callback); // Set custom file text data loader
@@ -1164,7 +1170,7 @@ static if (!isRaylibPackageAvailable) {
     bool IsFileDropped (); // Check if a file has been dropped into window
     FilePathList LoadDroppedFiles (); // Load dropped filepaths
     void UnloadDroppedFiles (FilePathList files); // Unload dropped filepaths
-    c_long GetFileModTime (const(char)* fileName); // Get file modification time (last write time)
+    // c_long GetFileModTime (const(char)* fileName); // Get file modification time (last write time)
 
     // Compression/Encoding functionality
     ubyte* CompressData (const(ubyte)* data, int dataSize, int* compDataSize); // Compress data (DEFLATE algorithm), memory must be MemFree()
