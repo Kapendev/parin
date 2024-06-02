@@ -18,6 +18,13 @@ void main() {
 }
 ```
 
+## Supported Platforms
+
+* Windows
+* Linux
+* MacOS
+* Web
+
 ## Games Made With Popka
 
 * [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)

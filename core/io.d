@@ -30,6 +30,7 @@ private {
 
     @system @nogc nothrow extern(C):
 
+    // Code from D std.
     version (CRuntime_Microsoft) {
         FILE* __acrt_iob_func(int hnd);     // VS2015+, reimplemented in msvc.d for VS2013-
         FILE* stdin()() { return __acrt_iob_func(0); }
@@ -56,7 +57,7 @@ private {
         alias __stdoutp stdout;
         alias __stderrp stderr;
     } else version (NetBSD) {
-        private extern __gshared FILE[3] __sF;
+        extern __gshared FILE[3] __sF;
 
         auto __stdin()() { return &__sF[0]; }
         auto __stdout()() { return &__sF[1]; }
@@ -66,7 +67,7 @@ private {
         alias __stdout stdout;
         alias __stderr stderr;
     } else version (OpenBSD) {
-        private extern __gshared FILE[3] __sF;
+        extern __gshared FILE[3] __sF;
 
         auto __stdin()() { return &__sF[0]; }
         auto __stdout()() { return &__sF[1]; }
@@ -124,7 +125,7 @@ private {
         extern __gshared FILE* stderr;
     } else {
         pragma(msg, "Unsupported platform.");
-        extern FILE* stdin;
+        extern __gshared FILE* stdin;
         extern __gshared FILE* stdout;
         extern __gshared FILE* stderr;
     }
