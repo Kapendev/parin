@@ -56,14 +56,14 @@ This guide outlines the steps to install Popka and raylib using Dub.
 
 ## Documentation
 
-For an initial understanding, the [examples](examples) folder and the [engine.d](game/engine.d) file can be a good starting point.
+For an initial understanding, the [examples](source/popka/examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
 
 ## Project Layout
 
-* [core](core): A standard library designed specifically for game development. 
-* [vendor](vendor): A collection of third-party libraries.
-* [game](game): A set of tools for creating 2D games.
-* [examples](examples): A collection of example projects.
+* [core](source/popka/core): A standard library designed specifically for game development. 
+* [vendor](source/popka/vendor): A collection of third-party libraries.
+* [game](source/popka/game): A set of tools for creating 2D games.
+* [examples](source/popka/examples): A collection of example projects.
 
 ## Attributes and BetterC Support
 
