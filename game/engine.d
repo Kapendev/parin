@@ -133,7 +133,7 @@ enum Gamepad {
     rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,
     back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,
     start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,
-    center = ray.GAMEPAD_BUTTON_MIDDLE,
+    middle = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
 struct PopkaState {
@@ -1095,7 +1095,7 @@ bool isReleased(Gamepad key, uint id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
-Vec2 wasdDirection() {
+Vec2 wasd() {
     Vec2 result;
     if (Keyboard.a.isDown || Keyboard.left.isDown) {
         result.x = -1.0f;

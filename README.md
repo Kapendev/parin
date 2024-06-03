@@ -4,8 +4,6 @@ Popka is a lightweight and beginner-friendly 2D game engine for the D programmin
 It focuses on providing a simple foundation for building 2D games.
 
 ```d
-/// A hello-world example.
-
 import popka;
 
 void main() {
@@ -14,9 +12,11 @@ void main() {
     while (isWindowOpen) {
         draw("Hello world!");
     }
-    freeWindow();
 }
 ```
+
+> [!WARNING]  
+> Popka is alpha software. Use it only if you are very cool.
 
 ## Supported Platforms
 
@@ -36,25 +36,17 @@ The official raylib instructions will guide you through the process.
 
 ## Installation
 
-This guide outlines the steps to install Popka using Git and Dub.
+This guide outlines the steps to install Popka and raylib using Dub.
 
-1. **Clone the Popka repository:**
+1. **Install Popka and raylib**
 
-    Navigate to your source folder and execute the following command to clone the Popka repository:
-
-    ```bash
-    git clone https://github.com/Kapendev/popka.git
-    ```
-
-2. **Install raylib:**
-
-    Navigate to the folder containing your dub.json file and run the following command to install raylib:
+    Navigate to the folder containing your dub.json file and run the following command:
 
     ```bash
-    dub add raylib-d && dub run raylib-d:install
+    dub add popka raylib-d && dub run raylib-d:install
     ```
 
-3. **Compile example:**
+2. **Compile example**
 
     Once the installation is complete, you should be able to compile the provided hello-world example by running:
 
@@ -72,6 +64,19 @@ For an initial understanding, the [examples](examples) folder and the [engine.d]
 * [vendor](vendor): A collection of third-party libraries.
 * [game](game): A set of tools for creating 2D games.
 * [examples](examples): A collection of example projects.
+
+## Attributes and BetterC Support
+
+This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) and aims for good compatibility with BetterC.
+
+## Web Support
+
+For exporting to web, your project needs to be compatible with BetterC.
+The [web](web) folder contains helper scripts to assist with the web export process on Linux.
+
+## Note
+
+I add things to Popka when I need them.
 
 ## License
 

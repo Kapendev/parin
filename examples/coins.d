@@ -14,7 +14,7 @@ void runCoinsExample() {
     lockResolution(320, 180);
 
     // The game variables.
-    auto player = Rect(resolution * Vec2(0.5), Vec2(16));
+    auto player = Rect(resolution * 0.5, Vec2(16));
     auto playerSpeed = Vec2(120);
     auto coins = FlagList!Rect();
     auto coinSize = Vec2(8);
@@ -51,7 +51,7 @@ void runCoinsExample() {
         if (Keyboard.down.isDown) {
             playerDirection.y = 1;
         }
-        player.position += playerDirection * playerSpeed * Vec2(deltaTime);
+        player.position += playerDirection * playerSpeed * deltaTime;
 
         // Check if the player is touching some coins and remove those coins.
         foreach (id; coins.ids) {

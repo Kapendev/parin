@@ -6,8 +6,6 @@
 
 module popka.core.math;
 
-// import math = core.stdc.math;
-
 private {
     @system @nogc nothrow extern(C):
 
@@ -29,7 +27,10 @@ enum Hook : ubyte {
 struct Vec2 {
     float x = 0.0f;
     float y = 0.0f;
-    
+
+    enum zero = Vec2(0.0f, 0.0f);
+    enum one = Vec2(1.0f, 1.0f);
+
     @safe @nogc nothrow:
 
     this(float x, float y) {
@@ -45,23 +46,42 @@ struct Vec2 {
         this(xy[0], xy[1]);
     }
 
-    Vec2 opUnary(string op)() {
-        Vec2 result = void;
-        result.x = mixin(op ~ "x");
-        result.y = mixin(op ~ "y");
-        return result;
+    Vec2 opUnary(const(char)[] op)() {
+        return Vec2(
+            mixin(op, "x"),
+            mixin(op, "y"),
+        );
     }
 
-    Vec2 opBinary(string op)(Vec2 rhs) {
-        Vec2 result = void;
-        result.x = mixin("x" ~ op ~ "rhs.x");
-        result.y = mixin("y" ~ op ~ "rhs.y");
-        return result;
+    Vec2 opBinary(const(char)[] op)(Vec2 rhs) {
+        return Vec2(
+            mixin("x", op, "rhs.x"),
+            mixin("y", op, "rhs.y"),
+        );
     }
 
-    void opOpAssign(string op)(Vec2 rhs) {
-        mixin("x" ~ op ~ "=" ~ "rhs.x;");
-        mixin("y" ~ op ~ "=" ~ "rhs.y;");
+    Vec2 opBinary(const(char)[] op)(float rhs) {
+        return Vec2(
+            mixin("x", op, "rhs"),
+            mixin("y", op, "rhs"),
+        );
+    }
+
+    Vec2 opBinaryRight(const(char)[] op)(float lhs) {
+        return Vec2(
+            mixin("lhs", op, "x"),
+            mixin("lhs", op, "y"),
+        );
+    }
+
+    void opOpAssign(const(char)[] op)(Vec2 rhs) {
+        mixin("x", op, "=rhs.x;");
+        mixin("y", op, "=rhs.y;");
+    }
+
+    void opOpAssign(const(char)[] op)(float rhs) {
+        mixin("x", op, "=rhs;");
+        mixin("y", op, "=rhs;");
     }
 
     Vec2 abs() {
@@ -126,6 +146,9 @@ struct Vec3 {
     float y = 0.0f;
     float z = 0.0f;
 
+    enum zero = Vec3(0.0f, 0.0f, 0.0f);
+    enum one = Vec3(1.0f, 1.0f, 1.0f);
+
     @safe @nogc nothrow:
 
     this(float x, float y, float z) {
@@ -146,26 +169,48 @@ struct Vec3 {
         this(xy.x, xy.y, z);
     }
 
-    Vec3 opUnary(string op)() {
-        Vec3 result = void;
-        result.x = mixin(op ~ "x");
-        result.y = mixin(op ~ "y");
-        result.z = mixin(op ~ "z");
-        return result;
+    Vec3 opUnary(const(char)[] op)() {
+        return Vec3(
+            mixin(op, "x"),
+            mixin(op, "y"),
+            mixin(op, "z"),
+        );
     }
 
-    Vec3 opBinary(string op)(Vec3 rhs) {
-        Vec3 result = void;
-        result.x = mixin("x" ~ op ~ "rhs.x");
-        result.y = mixin("y" ~ op ~ "rhs.y");
-        result.z = mixin("z" ~ op ~ "rhs.z");
-        return result;
+    Vec3 opBinary(const(char)[] op)(Vec3 rhs) {
+        return Vec3(
+            mixin("x", op, "rhs.x"),
+            mixin("y", op, "rhs.y"),
+            mixin("z", op, "rhs.z"),
+        );
     }
 
-    void opOpAssign(string op)(Vec3 rhs) {
-        mixin("x" ~ op ~ "=" ~ "rhs.x;");
-        mixin("y" ~ op ~ "=" ~ "rhs.y;");
-        mixin("z" ~ op ~ "=" ~ "rhs.z;");
+    Vec3 opBinary(const(char)[] op)(float rhs) {
+        return Vec3(
+            mixin("x", op, "rhs"),
+            mixin("y", op, "rhs"),
+            mixin("z", op, "rhs"),
+        );
+    }
+
+    Vec3 opBinaryRight(const(char)[] op)(float lhs) {
+        return Vec3(
+            mixin("lhs", op, "x"),
+            mixin("lhs", op, "y"),
+            mixin("lhs", op, "z"),
+        );
+    }
+
+    void opOpAssign(const(char)[] op)(Vec3 rhs) {
+        mixin("x", op, "=rhs.x;");
+        mixin("y", op, "=rhs.y;");
+        mixin("z", op, "=rhs.z;");
+    }
+
+    void opOpAssign(const(char)[] op)(float rhs) {
+        mixin("x", op, "=rhs;");
+        mixin("y", op, "=rhs;");
+        mixin("z", op, "=rhs;");
     }
 
     Vec3 abs() {
@@ -191,6 +236,9 @@ struct Vec4 {
     float z = 0.0f;
     float w = 0.0f;
 
+    enum zero = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    enum one = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
     @safe @nogc nothrow:
 
     this(float x, float y, float z, float w) {
@@ -208,29 +256,54 @@ struct Vec4 {
         this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
     }
 
-    Vec4 opUnary(string op)() {
-        Vec4 result = void;
-        result.x = mixin(op ~ "x");
-        result.y = mixin(op ~ "y");
-        result.z = mixin(op ~ "z");
-        result.w = mixin(op ~ "w");
-        return result;
+    Vec4 opUnary(const(char)[] op)() {
+        return Vec4(
+            mixin(op, "x"),
+            mixin(op, "y"),
+            mixin(op, "z"),
+            mixin(op, "w"),
+        );
     }
 
-    Vec4 opBinary(string op)(Vec4 rhs) {
-        Vec4 result = void;
-        result.x = mixin("x" ~ op ~ "rhs.x");
-        result.y = mixin("y" ~ op ~ "rhs.y");
-        result.z = mixin("z" ~ op ~ "rhs.z");
-        result.w = mixin("w" ~ op ~ "rhs.w");
-        return result;
+    Vec4 opBinary(const(char)[] op)(Vec4 rhs) {
+        return Vec4(
+            mixin("x", op, "rhs.x"),
+            mixin("y", op, "rhs.y"),
+            mixin("z", op, "rhs.z"),
+            mixin("w", op, "rhs.w"),
+        );
     }
 
-    void opOpAssign(string op)(Vec4 rhs) {
-        mixin("x" ~ op ~ "=" ~ "rhs.x;");
-        mixin("y" ~ op ~ "=" ~ "rhs.y;");
-        mixin("z" ~ op ~ "=" ~ "rhs.z;");
-        mixin("w" ~ op ~ "=" ~ "rhs.w;");
+    Vec4 opBinary(const(char)[] op)(float rhs) {
+        return Vec4(
+            mixin("x", op, "rhs"),
+            mixin("y", op, "rhs"),
+            mixin("z", op, "rhs"),
+            mixin("w", op, "rhs"),
+        );
+    }
+
+    Vec4 opBinaryRight(const(char)[] op)(float lhs) {
+        return Vec4(
+            mixin("lhs", op, "x"),
+            mixin("lhs", op, "y"),
+            mixin("lhs", op, "z"),
+            mixin("lhs", op, "w"),
+        );
+    }
+
+    void opOpAssign(const(char)[] op)(Vec4 rhs) {
+        mixin("x", op, "=rhs.x;");
+        mixin("y", op, "=rhs.y;");
+        mixin("z", op, "=rhs.z;");
+        mixin("w", op, "=rhs.w;");
+    }
+
+    void opOpAssign(const(char)[] op)(float rhs) {
+        mixin("x", op, "=rhs;");
+        mixin("y", op, "=rhs;");
+        mixin("z", op, "=rhs;");
+        mixin("w", op, "=rhs;");
     }
 
     Vec4 abs() {
@@ -253,6 +326,9 @@ struct Vec4 {
 struct Rect {
     Vec2 position;
     Vec2 size;
+
+    enum zero = Rect(0.0f, 0.0f, 0.0f, 0.0f);
+    enum one = Rect(1.0f, 1.0f, 1.0f, 1.0f);
 
     @safe @nogc nothrow:
 
@@ -529,6 +605,9 @@ struct Circ {
     Vec2 position;
     float radius = 0.0f;
 
+    enum zero = Circ(0.0f, 0.0f, 0.0f);
+    enum one = Circ(1.0f, 1.0f, 1.0f);
+
     @safe @nogc nothrow:
 
     this(Vec2 position, float radius) {
@@ -620,7 +699,6 @@ float moveTo(float from, float to, float delta) {
     else return to;
 }
 
-// NOTE: It moves slower at the end when the offset it negative.
 float moveTo(float from, float to, float delta, float slowdown) {
     float target = ((from * (slowdown - 1.0f)) + to) / slowdown;
     float offset = target - from;

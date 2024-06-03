@@ -1,0 +1,14 @@
+#!/bin/env sh
+
+## A script for running the web build.
+## Just copy-paste the web folder into your project and run the script.
+
+# The config.
+output_file="./web/index.html"
+
+# Build and run.
+script_dir="$(dirname $0)"
+cd $script_dir/..
+./web/build
+[ ! $? = 0 ] && exit 1
+emrun $output_file

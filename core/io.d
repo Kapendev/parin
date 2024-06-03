@@ -1,16 +1,16 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The  module facilitates input and output operations,
+/// The io module facilitates input and output operations,
 /// offering functionalities such as file reading and writing.
 
 module popka.core.io;
 
-// import  = core.stdc.stdio;
 import popka.core.container;
 import popka.core.strutils;
 import popka.core.traits;
 
+// NOTE: Maybe all of this could go inside a module.
 private {
     enum SEEK_SET = 0;
     enum SEEK_CUR = 1;
@@ -22,6 +22,7 @@ private {
 
     alias FILE = void;
 
+    // NOTE: Might be a bad idea.
     version (WebAssembly) {
         alias c_long = int;
     } else {
@@ -30,7 +31,7 @@ private {
 
     @system @nogc nothrow extern(C):
 
-    // Code from D std.
+    // NOTE: Code from D std.
     version (CRuntime_Microsoft) {
         FILE* __acrt_iob_func(int hnd);     // VS2015+, reimplemented in msvc.d for VS2013-
         FILE* stdin()() { return __acrt_iob_func(0); }
@@ -130,7 +131,7 @@ private {
         extern __gshared FILE* stderr;
     }
 
-    FILE* fopen (const(char)* filename, const(char)* mode);
+    FILE* fopen(const(char)* filename, const(char)* mode);
     c_long ftell(FILE* stream);
     int fseek(FILE* stream, c_long offset, int origin);
     size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
