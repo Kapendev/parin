@@ -6,15 +6,13 @@
 	"description": "A lightweight and beginner-friendly 2D game engine for the D programming language.",
 	"license": "MIT",
 	"name": "popka",
-	"sourcePaths": ["."],
 	"configurations": [
 		{
 			"name": "pdefault"
 		},
 		{
 			"name": "ptest",
-			"importPaths": ["."],
-			"excludedSourceFiles": ["package.d", "examples/*.d", "game/*.d", "vendor/*.d"]
+			"excludedSourceFiles": ["source/popka/package.d", "source/popka/examples/*.d", "source/popka/game/*.d", "source/popka/vendor/*.d"]
 		}
 	]
 }
