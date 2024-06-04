@@ -1312,3 +1312,7 @@ void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
     options.color = gray2;
     draw(rayFont, text, position, options);
 }
+
+void draw(const(char)[] text, Vec2 position, DrawOptions options) {
+    draw(rayFont, text, position, options);
+}
