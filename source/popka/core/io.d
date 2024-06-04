@@ -125,7 +125,7 @@ private {
         extern __gshared FILE* stdout;
         extern __gshared FILE* stderr;
     } else {
-        pragma(msg, "Unsupported platform.");
+        pragma(msg, "popka.core.io: Unsupported platform.");
         extern __gshared FILE* stdin;
         extern __gshared FILE* stdout;
         extern __gshared FILE* stderr;

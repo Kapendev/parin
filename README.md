@@ -12,6 +12,7 @@ void main() {
     while (isWindowOpen) {
         draw("Hello world!");
     }
+    freeWindow();
 }
 ```
 

@@ -20,7 +20,7 @@ void runCameraExample() {
 
     while (isWindowOpen) {
         // Move the camera.
-        cameraTarget += wasd.normalize() * cameraSpeed * deltaTime;
+        cameraTarget += wasd * cameraSpeed * deltaTime;
         camera.followPosition(cameraTarget);
 
         // Draw the game world.

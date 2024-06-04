@@ -18,7 +18,7 @@ version (WebAssembly) {
 
 @trusted @nogc nothrow:
 
-PopkaState popkaState;
+EngineState engineState;
 
 enum defaultFPS = 60;
 enum defaultBackgroundColor = toRGB(0x2A363A);
@@ -136,9 +136,11 @@ enum Gamepad {
     middle = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
-struct PopkaState {
+struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
+    
+    // TODO: Do something about those.
     bool isWindowOpen;
     bool isRunning;
     bool isDrawing;
@@ -643,7 +645,7 @@ Font rayFont() {
 }
 
 void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
-    if (popkaState.isWindowOpen) {
+    if (engineState.isWindowOpen) {
         return;
     }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
@@ -653,10 +655,10 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
     ray.SetWindowMinSize(cast(int) (size.x * 0.25f), cast(int) (size.y * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);
     lockFPS(defaultFPS);
-    popkaState.isWindowOpen = true;
-    popkaState.isRunning = true;
-    popkaState.backgroundColor = color;
-    popkaState.lastWindowSize = size;
+    engineState.isWindowOpen = true;
+    engineState.isRunning = true;
+    engineState.backgroundColor = color;
+    engineState.lastWindowSize = size;
 }
 
 void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
@@ -664,26 +666,26 @@ void openWindow(float width, float height, const(char)[] title = "Popka", Color 
 }
 
 void closeWindow() {
-    popkaState.isWindowOpen = false;
+    engineState.isWindowOpen = false;
 }
 
 bool isWindowOpen() {
-    if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
-        popkaState.isDrawing = false;
+    if (ray.WindowShouldClose() || !engineState.isWindowOpen) {
+        engineState.isDrawing = false;
         return false;
     }
 
-    if (!popkaState.isDrawing) {
+    if (!engineState.isDrawing) {
         if (isResolutionLocked) {
-            ray.BeginTextureMode(popkaState.viewport.data);
+            ray.BeginTextureMode(engineState.viewport.data);
         } else {
             ray.BeginDrawing();
         }
-        ray.ClearBackground(toRay(popkaState.backgroundColor));
+        ray.ClearBackground(toRay(engineState.backgroundColor));
     } else {
         // End drawing.
         if (isResolutionLocked) {
-            auto minSize = popkaState.viewport.size;
+            auto minSize = engineState.viewport.size;
             auto maxSize = windowSize;
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
@@ -693,7 +695,7 @@ bool isWindowOpen() {
             ray.BeginDrawing();
             ray.ClearBackground(ray.Color(0, 0, 0, 255));
             ray.DrawTexturePro(
-                popkaState.viewport.data.texture,
+                engineState.viewport.data.texture,
                 ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
                 ray.Rectangle(
                     ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
@@ -710,21 +712,21 @@ bool isWindowOpen() {
             ray.EndDrawing();
         }
         // The lockResolution and unlockResolution queue.
-        if (popkaState.isLockResolutionQueued) {
-            popkaState.viewport.load(popkaState.targetViewportSize);
-            popkaState.isLockResolutionQueued = false;
+        if (engineState.isLockResolutionQueued) {
+            engineState.viewport.load(engineState.targetViewportSize);
+            engineState.isLockResolutionQueued = false;
         }
-        if (popkaState.isUnlockResolutionQueued) {
-            popkaState.viewport.free();
-            popkaState.isUnlockResolutionQueued = false;
+        if (engineState.isUnlockResolutionQueued) {
+            engineState.viewport.free();
+            engineState.isUnlockResolutionQueued = false;
         }
         // Fullscreen code to fix a bug on KDE.
-        if (popkaState.isToggleFullscreenQueued) {
-            popkaState.toggleFullscreenTimer += deltaTime;
-            if (popkaState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
-                popkaState.toggleFullscreenTimer = 0.0f;
+        if (engineState.isToggleFullscreenQueued) {
+            engineState.toggleFullscreenTimer += deltaTime;
+            if (engineState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
+                engineState.toggleFullscreenTimer = 0.0f;
                 auto screen = screenSize;
-                auto window = popkaState.lastWindowSize;
+                auto window = engineState.lastWindowSize;
                 if (ray.IsWindowFullscreen()) {
                     ray.ToggleFullscreen();
                     ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
@@ -732,18 +734,18 @@ bool isWindowOpen() {
                 } else {
                     ray.ToggleFullscreen();
                 }
-                popkaState.isToggleFullscreenQueued = false;
+                engineState.isToggleFullscreenQueued = false;
             }
         }
         // Begin drawing.
         if (isResolutionLocked) {
-            ray.BeginTextureMode(popkaState.viewport.data);
+            ray.BeginTextureMode(engineState.viewport.data);
         } else {
             ray.BeginDrawing();
         }
-        ray.ClearBackground(toRay(popkaState.backgroundColor));
+        ray.ClearBackground(toRay(engineState.backgroundColor));
     }
-    popkaState.isDrawing = true;
+    engineState.isDrawing = true;
     return true;
 }
 
@@ -751,18 +753,18 @@ void updateWindow(alias loopFunc)() {
     static void __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
-            ray.BeginTextureMode(popkaState.viewport.data);
+            ray.BeginTextureMode(engineState.viewport.data);
         } else {
             ray.BeginDrawing();
         }
-        ray.ClearBackground(toRay(popkaState.backgroundColor));
+        ray.ClearBackground(toRay(engineState.backgroundColor));
 
         // The main loop.
         loopFunc();
 
         // End drawing.
         if (isResolutionLocked) {
-            auto minSize = popkaState.viewport.size;
+            auto minSize = engineState.viewport.size;
             auto maxSize = windowSize;
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
@@ -772,7 +774,7 @@ void updateWindow(alias loopFunc)() {
             ray.BeginDrawing();
             ray.ClearBackground(ray.Color(0, 0, 0, 255));
             ray.DrawTexturePro(
-                popkaState.viewport.data.texture,
+                engineState.viewport.data.texture,
                 ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
                 ray.Rectangle(
                     ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
@@ -789,21 +791,21 @@ void updateWindow(alias loopFunc)() {
             ray.EndDrawing();
         }
         // The lockResolution and unlockResolution queue.
-        if (popkaState.isLockResolutionQueued) {
-            popkaState.viewport.load(popkaState.targetViewportSize);
-            popkaState.isLockResolutionQueued = false;
+        if (engineState.isLockResolutionQueued) {
+            engineState.viewport.load(engineState.targetViewportSize);
+            engineState.isLockResolutionQueued = false;
         }
-        if (popkaState.isUnlockResolutionQueued) {
-            popkaState.viewport.free();
-            popkaState.isUnlockResolutionQueued = false;
+        if (engineState.isUnlockResolutionQueued) {
+            engineState.viewport.free();
+            engineState.isUnlockResolutionQueued = false;
         }
         // Fullscreen code to fix a bug on KDE.
-        if (popkaState.isToggleFullscreenQueued) {
-            popkaState.toggleFullscreenTimer += deltaTime;
-            if (popkaState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
-                popkaState.toggleFullscreenTimer = 0.0f;
+        if (engineState.isToggleFullscreenQueued) {
+            engineState.toggleFullscreenTimer += deltaTime;
+            if (engineState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
+                engineState.toggleFullscreenTimer = 0.0f;
                 auto screen = screenSize;
-                auto window = popkaState.lastWindowSize;
+                auto window = engineState.lastWindowSize;
                 if (ray.IsWindowFullscreen()) {
                     ray.ToggleFullscreen();
                     ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
@@ -811,60 +813,62 @@ void updateWindow(alias loopFunc)() {
                 } else {
                     ray.ToggleFullscreen();
                 }
-                popkaState.isToggleFullscreenQueued = false;
+                engineState.isToggleFullscreenQueued = false;
             }
         }
-        popkaState.isDrawing = true;
+        engineState.isDrawing = true;
     }
 
     version(WebAssembly) {
         emscripten_set_main_loop(&__updateWindow, 0, 1);
     } else {
+        // NOTE: Maybe a bad idea, but makes the life of no-attribute people easier.
+        auto __updateWindowScaryEdition = cast(void function() @trusted @nogc nothrow) &__updateWindow;
         while (true) {
-            if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
-                popkaState.isDrawing = false;
+            if (ray.WindowShouldClose() || !engineState.isWindowOpen) {
+                engineState.isDrawing = false;
                 return;
             }
-            popkaState.isDrawing = true;
-            __updateWindow();
+            engineState.isDrawing = true;
+            __updateWindowScaryEdition();
         }
     }
 }
 
 void freeWindow() {
-    if (popkaState.isRunning) {
-        popkaState.viewport.free();
+    if (engineState.isRunning) {
+        engineState.viewport.free();
         ray.CloseAudioDevice();
         ray.CloseWindow();
-        popkaState = PopkaState.init;
+        engineState = EngineState.init;
     }
 }
 
 bool isFPSLocked() {
-    return popkaState.isFPSLocked;
+    return engineState.isFPSLocked;
 }
 
 void lockFPS(uint target) {
     ray.SetTargetFPS(target);
-    popkaState.isFPSLocked = true;
+    engineState.isFPSLocked = true;
 }
 
 void unlockFPS() {
     ray.SetTargetFPS(0);
-    popkaState.isFPSLocked = false;
+    engineState.isFPSLocked = false;
 }
 
 bool isResolutionLocked() {
-    return !popkaState.viewport.isEmpty;
+    return !engineState.viewport.isEmpty;
 }
 
 void lockResolution(Vec2 size) {
-    if (popkaState.isWindowOpen && !popkaState.isDrawing) {
-        popkaState.viewport.load(size);
+    if (engineState.isWindowOpen && !engineState.isDrawing) {
+        engineState.viewport.load(size);
     } else {
-        popkaState.targetViewportSize = size;
-        popkaState.isLockResolutionQueued = true;
-        popkaState.isUnlockResolutionQueued = false;
+        engineState.targetViewportSize = size;
+        engineState.isLockResolutionQueued = true;
+        engineState.isUnlockResolutionQueued = false;
     }
 }
 
@@ -873,26 +877,26 @@ void lockResolution(float width, float height) {
 }
 
 void unlockResolution() {
-    if (popkaState.isWindowOpen && !popkaState.isDrawing) {
-        popkaState.viewport.free();
+    if (engineState.isWindowOpen && !engineState.isDrawing) {
+        engineState.viewport.free();
     } else {
-        popkaState.isUnlockResolutionQueued = true;
-        popkaState.isLockResolutionQueued = false;
+        engineState.isUnlockResolutionQueued = true;
+        engineState.isLockResolutionQueued = false;
     }
 }
 
 bool isCursorHidden() {
-    return popkaState.isCursorHidden;
+    return engineState.isCursorHidden;
 }
 
 void hideCursor() {
     ray.HideCursor();
-    popkaState.isCursorHidden = true;
+    engineState.isCursorHidden = true;
 }
 
 void showCursor() {
     ray.ShowCursor();
-    popkaState.isCursorHidden = false;
+    engineState.isCursorHidden = false;
 }
 
 bool isFullscreen() {
@@ -902,19 +906,19 @@ bool isFullscreen() {
 void toggleFullscreen() {
     if (!ray.IsWindowFullscreen()) {
         auto screen = screenSize;
-        popkaState.lastWindowSize = windowSize;
+        engineState.lastWindowSize = windowSize;
         ray.SetWindowPosition(0, 0);
         ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
     }
-    popkaState.isToggleFullscreenQueued = true;
+    engineState.isToggleFullscreenQueued = true;
 }
 
 bool isPixelPerfect() {
-    return popkaState.isPixelPerfect;
+    return engineState.isPixelPerfect;
 }
 
 void togglePixelPerfect() {
-    popkaState.isPixelPerfect = !popkaState.isPixelPerfect;
+    engineState.isPixelPerfect = !engineState.isPixelPerfect;
 }
 
 Vec2 screenSize() {
@@ -932,7 +936,7 @@ Vec2 windowSize() {
 
 Vec2 resolution() {
     if (isResolutionLocked) {
-        return popkaState.viewport.size;
+        return engineState.viewport.size;
     } else {
         return windowSize;
     }
@@ -941,8 +945,8 @@ Vec2 resolution() {
 Vec2 mouseScreenPosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
-        auto minRatio = min(window.x / popkaState.viewport.size.x, window.y / popkaState.viewport.size.y);
-        auto targetSize = popkaState.viewport.size * Vec2(minRatio);
+        auto minRatio = min(window.x / engineState.viewport.size.x, window.y / engineState.viewport.size.y);
+        auto targetSize = engineState.viewport.size * Vec2(minRatio);
         return Vec2(
             (ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio,
             (ray.GetMouseY() - (window.y - targetSize.y) * 0.5f) / minRatio,
@@ -956,16 +960,16 @@ Vec2 mouseWorldPosition(Camera camera) {
     return mouseScreenPosition.toWorldPoint(camera);
 }
 
-float mouseWheel() {
-    return ray.GetMouseWheelMove();
-}
-
 int fps() {
     return ray.GetFPS();
 }
 
 float deltaTime() {
-    return ray.GetFrameTime() * popkaState.timeRate;
+    return ray.GetFrameTime() * engineState.timeRate;
+}
+
+float deltaMouseWheel() {
+    return ray.GetMouseWheelMove();
 }
 
 Vec2 deltaMousePosition() {
@@ -973,19 +977,19 @@ Vec2 deltaMousePosition() {
 }
 
 float timeRate() {
-    return popkaState.timeRate;
+    return engineState.timeRate;
 }
 
 Color backgroundColor() {
-    return popkaState.backgroundColor;
+    return engineState.backgroundColor;
 }
 
 void changeTimeRate(float rate) {
-    popkaState.timeRate = rate;
+    engineState.timeRate = rate;
 }
 
 void changeBackgroundColor(Color color) {
-    popkaState.backgroundColor = color;
+    engineState.backgroundColor = color;
 }
 
 void changeShapeSprite(Sprite sprite, Rect area = Rect(1.0f, 1.0f)) {
@@ -1315,4 +1319,22 @@ void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
 
 void draw(const(char)[] text, Vec2 position, DrawOptions options) {
     draw(rayFont, text, position, options);
+}
+
+mixin template addGameMain(alias mainFunc) {
+    version (D_BetterC) {
+        pragma(msg, "Using BetterC main function.");
+        extern(C)
+        void main(int argc, const(char)** argv) {
+            static char[1024] pathBuffer = void;
+            auto path = pathBuffer[];
+            path.copyStr(pathDir(toStr(argv[0])));
+            mainFunc(path);
+        }
+    } else {
+        pragma(msg, "Using normal main function.");
+        void main(string[] args) {
+            mainFunc(pathDir(args[0]));
+        }
+    }
 }
