@@ -818,7 +818,7 @@ void updateWindow(alias loopFunc)() {
     }
 
     version(WebAssembly) {
-        emscripten_set_main_loop(&__updateWindow, 60, 1);
+        emscripten_set_main_loop(&__updateWindow, 0, 1);
     } else {
         while (true) {
             if (ray.WindowShouldClose() || !popkaState.isWindowOpen) {
