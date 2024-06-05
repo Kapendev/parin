@@ -1,5 +1,14 @@
 # Examples
 
+You can run every example with:
+
+```d
+void main() {
+    import popka.examples;
+    runEveryExample();
+}
+```
+
 ## [Hello](hello.d)
 
 This example serves as a classic hello-world program, introducing the fundamental structure of a Popka program.
@@ -27,6 +36,21 @@ You can run the example with:
 void main() {
     import popka.examples;
     runCoinsExample();
+}
+```
+
+## [Pong](pong.d)
+
+This example shows how to create a pong-like game with Popka.
+
+![image](pong.png)
+
+You can run the example with:
+
+```d
+void main() {
+    import popka.examples;
+    runPongExample();
 }
 ```
 

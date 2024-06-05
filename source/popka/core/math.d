@@ -416,40 +416,76 @@ struct Rect {
         return result;
     }
 
-    Vec2 topLeft() {
+    Vec2 topLeftPoint() {
         return point(Hook.topLeft);
     }
 
-    Vec2 top() {
+    Vec2 topPoint() {
         return point(Hook.top);
     }
 
-    Vec2 topRight() {
+    Vec2 topRightPoint() {
         return point(Hook.topRight);
     }
 
-    Vec2 left() {
+    Vec2 leftPoint() {
         return point(Hook.left);
     }
 
-    Vec2 center() {
+    Vec2 centerPoint() {
         return point(Hook.center);
     }
 
-    Vec2 right() {
+    Vec2 rightPoint() {
         return point(Hook.right);
     }
 
-    Vec2 bottomLeft() {
+    Vec2 bottomLeftPoint() {
         return point(Hook.bottomLeft);
     }
 
-    Vec2 bottom() {
+    Vec2 bottomPoint() {
         return point(Hook.bottom);
     }
 
-    Vec2 bottomRight() {
+    Vec2 bottomRightPoint() {
         return point(Hook.bottomRight);
+    }
+
+    Rect topLeftArea() {
+        return area(Hook.topLeft);
+    }
+
+    Rect topArea() {
+        return area(Hook.top);
+    }
+
+    Rect topRightArea() {
+        return area(Hook.topRight);
+    }
+
+    Rect leftArea() {
+        return area(Hook.left);
+    }
+
+    Rect centerArea() {
+        return area(Hook.center);
+    }
+
+    Rect rightArea() {
+        return area(Hook.right);
+    }
+
+    Rect bottomLeftArea() {
+        return area(Hook.bottomLeft);
+    }
+
+    Rect bottomArea() {
+        return area(Hook.bottom);
+    }
+
+    Rect bottomRightArea() {
+        return area(Hook.bottomRight);
     }
 
     bool hasPoint(Vec2 point) {
