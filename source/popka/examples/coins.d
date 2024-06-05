@@ -12,6 +12,7 @@ import popka;
 void runCoinsExample() {
     openWindow(640, 360);
     lockResolution(320, 180);
+    changeBackgroundColor(gray1);
 
     // The game variables.
     auto player = Rect(resolution * 0.5, Vec2(16));
@@ -20,9 +21,6 @@ void runCoinsExample() {
     auto coinSize = Vec2(8);
     auto maxCoinCount = 8;
 
-    // Change the background color.
-    changeBackgroundColor(gray1);
-
     // Create the coins.
     foreach (i; 0 .. maxCoinCount) {
         auto minPosition = Vec2(0, 40);
@@ -30,8 +28,7 @@ void runCoinsExample() {
         auto coin = Rect(
             randf * maxPosition.x + minPosition.x,
             randf * maxPosition.y + minPosition.y,
-            coinSize.x,
-            coinSize.y
+            coinSize,
         );
         coins.append(coin);
     }

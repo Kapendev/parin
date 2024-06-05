@@ -72,7 +72,33 @@ This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) an
 
 ## Web Support
 
-For exporting to web, your project needs to be compatible with BetterC.
+For exporting to web, your project needs to be compatible with BetterC and the code has to have a specific structure.
+Games playable on both desktop and web typically follow this structure:
+
+```d
+import popka;
+
+void gameLoop() {
+    draw("I am part of the web.");
+    if ('q'.isPressed) closeWindow();
+}
+
+void gameMain(const(char)[] path) {
+    openWindow(640, 360);
+    updateWindow!gameLoop();
+    freeWindow();
+}
+
+mixin addGameMain!gameMain;
+```
+
+Here's a simple breakdown of the code:
+
+* `mixin addGameMain!gameMain`:
+    This mixin creates a main function that calls the given function. The given function must accept `const(char)[] path` to work properly.
+* `updateWindow!gameLoop()`:
+    This function calls the given function every frame until `closeWindow` is called.
+
 The [web](web) folder contains helper scripts to assist with the web export process on Linux.
 
 ## Note

@@ -1,10 +1,10 @@
 #!/bin/env sh
 
-# TODO: Try bulding a lib file with dub and link with with emcc.
-# This will let us compile dub projects into a web game.
-
 ## A script for creating a web build.
+## This script is designed with the idea that Popka is included inside your source folder.
 ## Just copy-paste the web folder into your project and run the script.
+
+# TODO: Try to build a lib file with Dub and link with emcc.
 
 # The config.
 output_file="./web/index.html"
@@ -14,6 +14,8 @@ library_file="./web/libraylib.a"
 source_dir="./source"
 assets_dir="./assets"
 
+popka_dir="$source_dir/popka/source/popka"
+popka_alt_dir="$source_dir/popka" # This is used to check if just the Popka code is included.
 main_files="$source_dir/*.d"
 
 # Check if things exist.
@@ -28,11 +30,20 @@ echo "OK: Source folder exists."
 [ ! -e "$assets_dir" ] && echo "ERROR: Assets folder doesn't exist." && exit 1
 echo "OK: Assets folder exists."
 
-# Build for web.
-ldc2 -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt -I$source_dir -i $main_files
+## Special check for Popka folder.
+target_popka_dir="$popka_dir"
+if [ ! -e "$target_popka_dir" ]; then
+    target_popka_dir="$popka_alt_dir"
+    if [ ! -e "$target_popka_dir" ]; then
+        echo "ERROR: Popka folder doesn't exist." && exit 1
+    fi
+fi
+echo "OK: Popka folder exists."
 
+# Build for web.
+ldc2 -O -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt -I$target_popka_dir/.. -I$source_dir -i $main_files
 if [ -z "$(ls $assets_dir)" ]; then
-    emcc -o $output_file *.o $library_file -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file $shell_file
+    emcc -o $output_file *.o -Wall -DPLATFORM_WEB $library_file -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file $shell_file
 else
-    emcc -o $output_file *.o $library_file -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file $shell_file --preload-file $assets_dir
+    emcc -o $output_file *.o -Wall -DPLATFORM_WEB $library_file -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file $shell_file --preload-file $assets_dir
 fi

@@ -1323,7 +1323,6 @@ void draw(const(char)[] text, Vec2 position, DrawOptions options) {
 
 mixin template addGameMain(alias mainFunc) {
     version (D_BetterC) {
-        pragma(msg, "Using BetterC main function.");
         extern(C)
         void main(int argc, const(char)** argv) {
             static char[1024] pathBuffer = void;
@@ -1332,7 +1331,6 @@ mixin template addGameMain(alias mainFunc) {
             mainFunc(path);
         }
     } else {
-        pragma(msg, "Using normal main function.");
         void main(string[] args) {
             mainFunc(pathDir(args[0]));
         }

@@ -12,6 +12,7 @@ import popka;
 void runDialogueExample() {
     openWindow(640, 360);
     lockResolution(320, 180);
+    changeBackgroundColor(Color(50, 60, 75));
 
     // The game variables.
     auto dialogue = Dialogue();
@@ -43,9 +44,6 @@ void runDialogueExample() {
 
         * End
     ";
-
-    // Change the background color.
-    changeBackgroundColor(Color(50, 60, 75));
 
     // Parse the dialogue script of the game.
     // The first update makes the dialogue go to the first available line.
