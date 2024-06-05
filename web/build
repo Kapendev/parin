@@ -1,12 +1,14 @@
 #!/bin/env sh
 
 ## A script for creating a web build.
-## This script is designed with the idea that Popka is included inside your source folder.
+## This script is designed with the idea that Popka is included inside your source folder, but it can work wihtout Popka too.
 ## Just copy-paste the web folder into your project and run the script.
 
-# TODO: Try to build a lib file with Dub and link with emcc.
 
 # The config.
+# --------------------
+dflags="" # You can add your local dependencies and other stuff here.
+
 output_file="./web/index.html"
 shell_file="./web/shell.html"
 library_file="./web/libraylib.a"
@@ -14,9 +16,12 @@ library_file="./web/libraylib.a"
 source_dir="./source"
 assets_dir="./assets"
 
+main_files="$source_dir/*.d"
+is_popka_game="T" # Replace 'T' with 'F' if you don't care about Popka.
 popka_dir="$source_dir/popka/source/popka"
 popka_alt_dir="$source_dir/popka" # This is used to check if just the Popka code is included.
-main_files="$source_dir/*.d"
+# --------------------
+
 
 # Check if things exist.
 script_dir="$(dirname $0)"
@@ -30,18 +35,21 @@ echo "OK: Source folder exists."
 [ ! -e "$assets_dir" ] && echo "ERROR: Assets folder doesn't exist." && exit 1
 echo "OK: Assets folder exists."
 
-# Special check for Popka folder.
-target_popka_dir="$popka_dir"
-if [ ! -e "$target_popka_dir" ]; then
-    target_popka_dir="$popka_alt_dir"
-    if [ ! -e "$target_popka_dir" ]; then
-        echo "ERROR: Popka folder doesn't exist." && exit 1
-    fi
-fi
-echo "OK: Popka folder exists."
-
 # Build for web.
-ldc2 -O -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt -I$target_popka_dir/.. -I$source_dir -i $main_files
+if [ "$is_popka_game" = "T" ]; then
+    target_popka_dir="$popka_dir"
+    if [ ! -e "$target_popka_dir" ]; then
+        target_popka_dir="$popka_alt_dir"
+        if [ ! -e "$target_popka_dir" ]; then
+            echo "ERROR: Popka folder doesn't exist." && exit 1
+        fi
+    fi
+    echo "OK: Popka folder exists."
+    ldc2 -O -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt $dflags -I$target_popka_dir/.. -I$source_dir -i $main_files
+else
+    ldc2 -O -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt $dflags -I$source_dir -i $main_files
+fi
+
 if [ -z "$(ls $assets_dir)" ]; then
     emcc -o $output_file *.o -Wall -DPLATFORM_WEB $library_file -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file $shell_file
 else

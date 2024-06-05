@@ -10,5 +10,5 @@ output_file="./web/index.html"
 script_dir="$(dirname $0)"
 cd $script_dir/..
 ./web/build
-[ ! $? = 0 ] && exit 1
+[ ! "$?" = "0" ] && exit 1
 emrun $output_file

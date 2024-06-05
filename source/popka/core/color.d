@@ -28,6 +28,9 @@ struct Color {
     ubyte b;
     ubyte a = 255;
 
+    enum zero = Color(0, 0, 0, 0);
+    enum one = Color(1, 1, 1, 1);
+
     @safe @nogc nothrow:
 
     pragma(inline, true)

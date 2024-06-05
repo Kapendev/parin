@@ -458,6 +458,9 @@ static if (!isRaylibPackageAvailable) {
         ubyte b; // Color blue value
         ubyte a = 255; // Color alpha value
 
+        enum zero = Color(0, 0, 0, 0);
+        enum one = Color(1, 1, 1, 1);
+
         @safe @nogc nothrow:
 
         pragma(inline, true)
