@@ -30,6 +30,7 @@ struct Color {
 
     @safe @nogc nothrow:
 
+    pragma(inline, true)
     this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
         this.r = r;
         this.g = g;
@@ -37,14 +38,17 @@ struct Color {
         this.a = a;
     }
 
+    pragma(inline, true)
     this(ubyte r) {
         this(r, r, r, 255);
     }
 
+    pragma(inline, true)
     this(ubyte[4] rgba) {
         this(rgba[0], rgba[1], rgba[2], rgba[3]);
     }
 
+    pragma(inline, true)
     this(ubyte[3] rgb) {
         this(rgb[0], rgb[1], rgb[2], 255);
     }

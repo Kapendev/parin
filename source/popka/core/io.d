@@ -29,7 +29,7 @@ private {
         alias c_long = long;
     }
 
-    @system @nogc nothrow extern(C):
+    @nogc nothrow extern(C):
 
     // NOTE: Code from D std.
     version (CRuntime_Microsoft) {

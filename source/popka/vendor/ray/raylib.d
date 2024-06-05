@@ -91,7 +91,7 @@ module popka.vendor.ray.raylib;
 enum isRaylibPackageAvailable = is(typeof((){import raylib;}));
 
 static if (!isRaylibPackageAvailable) {
-    extern(C) @nogc nothrow:
+    @nogc nothrow extern(C):
 
     // Required for: va_list - Only used by TraceLogCallback
 
@@ -132,10 +132,10 @@ static if (!isRaylibPackageAvailable) {
     // Plain structures in C++ (without constructors) can be initialized with { }
     // This is called aggregate initialization (C++11 feature)
 
-    extern (D) auto CLITERAL(T)(auto ref T type)
-    {
-        return type;
-    }
+    // extern (D) auto CLITERAL(T)(auto ref T type)
+    // {
+    //     return type;
+    // }
 
     // Some compilers (mostly macos clang) default to C++98,
     // where aggregate initialization can't be used
@@ -186,6 +186,71 @@ static if (!isRaylibPackageAvailable) {
     {
         float x = 0.0f; // Vector x component
         float y = 0.0f; // Vector y component
+
+        enum zero = Vector2(0.0f, 0.0f);
+        enum one = Vector2(1.0f, 1.0f);
+
+        @safe @nogc nothrow:
+
+        pragma(inline, true)
+        this(float x, float y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        pragma(inline, true)
+        this(float x) {
+            this(x, x);
+        }
+
+        pragma(inline, true)
+        this(float[2] xy) {
+            this(xy[0], xy[1]);
+        }
+
+        pragma(inline, true)
+        Vector2 opUnary(const(char)[] op)() {
+            return Vector2(
+                mixin(op, "x"),
+                mixin(op, "y"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector2 opBinary(const(char)[] op)(Vector2 rhs) {
+            return Vector2(
+                mixin("x", op, "rhs.x"),
+                mixin("y", op, "rhs.y"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector2 opBinary(const(char)[] op)(float rhs) {
+            return Vector2(
+                mixin("x", op, "rhs"),
+                mixin("y", op, "rhs"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector2 opBinaryRight(const(char)[] op)(float lhs) {
+            return Vector2(
+                mixin("lhs", op, "x"),
+                mixin("lhs", op, "y"),
+            );
+        }
+
+        pragma(inline, true)
+        void opOpAssign(const(char)[] op)(Vector2 rhs) {
+            mixin("x", op, "=rhs.x;");
+            mixin("y", op, "=rhs.y;");
+        }
+
+        pragma(inline, true)
+        void opOpAssign(const(char)[] op)(float rhs) {
+            mixin("x", op, "=rhs;");
+            mixin("y", op, "=rhs;");
+        }
     }
 
     // Vector3, 3 components
@@ -194,6 +259,83 @@ static if (!isRaylibPackageAvailable) {
         float x = 0.0f; // Vector x component
         float y = 0.0f; // Vector y component
         float z = 0.0f; // Vector z component
+
+        enum zero = Vector3(0.0f, 0.0f, 0.0f);
+        enum one = Vector3(1.0f, 1.0f, 1.0f);
+
+        @safe @nogc nothrow:
+
+        pragma(inline, true)
+        this(float x, float y, float z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        pragma(inline, true)
+        this(float x) {
+            this(x, x, x);
+        }
+
+        pragma(inline, true)
+        this(float[3] xyz) {
+            this(xyz[0], xyz[1], xyz[2]);
+        }
+
+        pragma(inline, true)
+        this(Vector2 xy, float z) {
+            this(xy.x, xy.y, z);
+        }
+
+        pragma(inline, true)
+        Vector3 opUnary(const(char)[] op)() {
+            return Vector3(
+                mixin(op, "x"),
+                mixin(op, "y"),
+                mixin(op, "z"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector3 opBinary(const(char)[] op)(Vector3 rhs) {
+            return Vector3(
+                mixin("x", op, "rhs.x"),
+                mixin("y", op, "rhs.y"),
+                mixin("z", op, "rhs.z"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector3 opBinary(const(char)[] op)(float rhs) {
+            return Vector3(
+                mixin("x", op, "rhs"),
+                mixin("y", op, "rhs"),
+                mixin("z", op, "rhs"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector3 opBinaryRight(const(char)[] op)(float lhs) {
+            return Vector3(
+                mixin("lhs", op, "x"),
+                mixin("lhs", op, "y"),
+                mixin("lhs", op, "z"),
+            );
+        }
+
+        pragma(inline, true)
+        void opOpAssign(const(char)[] op)(Vector3 rhs) {
+            mixin("x", op, "=rhs.x;");
+            mixin("y", op, "=rhs.y;");
+            mixin("z", op, "=rhs.z;");
+        }
+
+        pragma(inline, true)
+        void opOpAssign(const(char)[] op)(float rhs) {
+            mixin("x", op, "=rhs;");
+            mixin("y", op, "=rhs;");
+            mixin("z", op, "=rhs;");
+        }
     }
 
     // Vector4, 4 components
@@ -203,6 +345,85 @@ static if (!isRaylibPackageAvailable) {
         float y = 0.0f; // Vector y component
         float z = 0.0f; // Vector z component
         float w = 0.0f; // Vector w component
+
+        enum zero = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
+        enum one = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
+
+        @safe @nogc nothrow:
+
+        pragma(inline, true)
+        this(float x, float y, float z, float w) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.w = w;
+        }
+
+        pragma(inline, true)
+        this(float x) {
+            this(x, x, x, x);
+        }
+
+        pragma(inline, true)
+        this(float[4] xyzw) {
+            this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
+        }
+
+        pragma(inline, true)
+        Vector4 opUnary(const(char)[] op)() {
+            return Vector4(
+                mixin(op, "x"),
+                mixin(op, "y"),
+                mixin(op, "z"),
+                mixin(op, "w"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector4 opBinary(const(char)[] op)(Vector4 rhs) {
+            return Vector4(
+                mixin("x", op, "rhs.x"),
+                mixin("y", op, "rhs.y"),
+                mixin("z", op, "rhs.z"),
+                mixin("w", op, "rhs.w"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector4 opBinary(const(char)[] op)(float rhs) {
+            return Vector4(
+                mixin("x", op, "rhs"),
+                mixin("y", op, "rhs"),
+                mixin("z", op, "rhs"),
+                mixin("w", op, "rhs"),
+            );
+        }
+
+        pragma(inline, true)
+        Vector4 opBinaryRight(const(char)[] op)(float lhs) {
+            return Vector4(
+                mixin("lhs", op, "x"),
+                mixin("lhs", op, "y"),
+                mixin("lhs", op, "z"),
+                mixin("lhs", op, "w"),
+            );
+        }
+
+        pragma(inline, true)
+        void opOpAssign(const(char)[] op)(Vector4 rhs) {
+            mixin("x", op, "=rhs.x;");
+            mixin("y", op, "=rhs.y;");
+            mixin("z", op, "=rhs.z;");
+            mixin("w", op, "=rhs.w;");
+        }
+
+        pragma(inline, true)
+        void opOpAssign(const(char)[] op)(float rhs) {
+            mixin("x", op, "=rhs;");
+            mixin("y", op, "=rhs;");
+            mixin("z", op, "=rhs;");
+            mixin("w", op, "=rhs;");
+        }
     }
 
     // Quaternion, 4 components (Vector4 alias)
@@ -235,7 +456,32 @@ static if (!isRaylibPackageAvailable) {
         ubyte r; // Color red value
         ubyte g; // Color green value
         ubyte b; // Color blue value
-        ubyte a; // Color alpha value
+        ubyte a = 255; // Color alpha value
+
+        @safe @nogc nothrow:
+
+        pragma(inline, true)
+        this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
+
+        pragma(inline, true)
+        this(ubyte r) {
+            this(r, r, r, 255);
+        }
+
+        pragma(inline, true)
+        this(ubyte[4] rgba) {
+            this(rgba[0], rgba[1], rgba[2], rgba[3]);
+        }
+
+        pragma(inline, true)
+        this(ubyte[3] rgb) {
+            this(rgb[0], rgb[1], rgb[2], 255);
+        }
     }
 
     // Rectangle, 4 components
@@ -245,6 +491,44 @@ static if (!isRaylibPackageAvailable) {
         float y = 0.0f; // Rectangle top-left corner position y
         float width = 0.0f; // Rectangle width
         float height = 0.0f; // Rectangle height
+
+        enum zero = Rectangle(0.0f, 0.0f, 0.0f, 0.0f);
+        enum one = Rectangle(1.0f, 1.0f, 1.0f, 1.0f);
+
+        @safe @nogc nothrow:
+
+        pragma(inline, true)
+        this(Vector2 position, Vector2 size) {
+            this.x = position.x;
+            this.y = position.y;
+            this.width = size.x;
+            this.height = size.y;
+        }
+
+        pragma(inline, true)
+        this(Vector2 size) {
+            this(Vector2(), size);
+        }
+
+        pragma(inline, true)
+        this(float x, float y, float width, float height) {
+            this(Vector2(x, y), Vector2(width, height));
+        }
+
+        pragma(inline, true)
+        this(float width, float height) {
+            this(Vector2(), Vector2(width, height));
+        }
+
+        pragma(inline, true)
+        this(Vector2 position, float width, float height) {
+            this(position, Vector2(width, height));
+        }
+
+        pragma(inline, true)
+        this(float x, float y, Vector2 size) {
+            this(Vector2(x, y), size);
+        }
     }
 
     // Image, pixel data stored in CPU memory (RAM)

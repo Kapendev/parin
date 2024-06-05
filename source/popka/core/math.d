@@ -33,19 +33,23 @@ struct Vec2 {
 
     @safe @nogc nothrow:
 
+    pragma(inline, true)
     this(float x, float y) {
         this.x = x;
         this.y = y;
     }
 
+    pragma(inline, true)
     this(float x) {
         this(x, x);
     }
 
+    pragma(inline, true)
     this(float[2] xy) {
         this(xy[0], xy[1]);
     }
 
+    pragma(inline, true)
     Vec2 opUnary(const(char)[] op)() {
         return Vec2(
             mixin(op, "x"),
@@ -53,6 +57,7 @@ struct Vec2 {
         );
     }
 
+    pragma(inline, true)
     Vec2 opBinary(const(char)[] op)(Vec2 rhs) {
         return Vec2(
             mixin("x", op, "rhs.x"),
@@ -60,6 +65,7 @@ struct Vec2 {
         );
     }
 
+    pragma(inline, true)
     Vec2 opBinary(const(char)[] op)(float rhs) {
         return Vec2(
             mixin("x", op, "rhs"),
@@ -67,6 +73,7 @@ struct Vec2 {
         );
     }
 
+    pragma(inline, true)
     Vec2 opBinaryRight(const(char)[] op)(float lhs) {
         return Vec2(
             mixin("lhs", op, "x"),
@@ -74,11 +81,13 @@ struct Vec2 {
         );
     }
 
+    pragma(inline, true)
     void opOpAssign(const(char)[] op)(Vec2 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
     }
 
+    pragma(inline, true)
     void opOpAssign(const(char)[] op)(float rhs) {
         mixin("x", op, "=rhs;");
         mixin("y", op, "=rhs;");
@@ -151,24 +160,29 @@ struct Vec3 {
 
     @safe @nogc nothrow:
 
+    pragma(inline, true)
     this(float x, float y, float z) {
         this.x = x;
         this.y = y;
         this.z = z;
     }
 
+    pragma(inline, true)
     this(float x) {
         this(x, x, x);
     }
 
+    pragma(inline, true)
     this(float[3] xyz) {
         this(xyz[0], xyz[1], xyz[2]);
     }
 
+    pragma(inline, true)
     this(Vec2 xy, float z) {
         this(xy.x, xy.y, z);
     }
 
+    pragma(inline, true)
     Vec3 opUnary(const(char)[] op)() {
         return Vec3(
             mixin(op, "x"),
@@ -177,6 +191,7 @@ struct Vec3 {
         );
     }
 
+    pragma(inline, true)
     Vec3 opBinary(const(char)[] op)(Vec3 rhs) {
         return Vec3(
             mixin("x", op, "rhs.x"),
@@ -185,6 +200,7 @@ struct Vec3 {
         );
     }
 
+    pragma(inline, true)
     Vec3 opBinary(const(char)[] op)(float rhs) {
         return Vec3(
             mixin("x", op, "rhs"),
@@ -193,6 +209,7 @@ struct Vec3 {
         );
     }
 
+    pragma(inline, true)
     Vec3 opBinaryRight(const(char)[] op)(float lhs) {
         return Vec3(
             mixin("lhs", op, "x"),
@@ -201,12 +218,14 @@ struct Vec3 {
         );
     }
 
+    pragma(inline, true)
     void opOpAssign(const(char)[] op)(Vec3 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
         mixin("z", op, "=rhs.z;");
     }
 
+    pragma(inline, true)
     void opOpAssign(const(char)[] op)(float rhs) {
         mixin("x", op, "=rhs;");
         mixin("y", op, "=rhs;");
@@ -241,6 +260,7 @@ struct Vec4 {
 
     @safe @nogc nothrow:
 
+    pragma(inline, true)
     this(float x, float y, float z, float w) {
         this.x = x;
         this.y = y;
@@ -248,14 +268,17 @@ struct Vec4 {
         this.w = w;
     }
 
+    pragma(inline, true)
     this(float x) {
         this(x, x, x, x);
     }
 
+    pragma(inline, true)
     this(float[4] xyzw) {
         this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
     }
 
+    pragma(inline, true)
     Vec4 opUnary(const(char)[] op)() {
         return Vec4(
             mixin(op, "x"),
@@ -265,6 +288,7 @@ struct Vec4 {
         );
     }
 
+    pragma(inline, true)
     Vec4 opBinary(const(char)[] op)(Vec4 rhs) {
         return Vec4(
             mixin("x", op, "rhs.x"),
@@ -274,6 +298,7 @@ struct Vec4 {
         );
     }
 
+    pragma(inline, true)
     Vec4 opBinary(const(char)[] op)(float rhs) {
         return Vec4(
             mixin("x", op, "rhs"),
@@ -283,6 +308,7 @@ struct Vec4 {
         );
     }
 
+    pragma(inline, true)
     Vec4 opBinaryRight(const(char)[] op)(float lhs) {
         return Vec4(
             mixin("lhs", op, "x"),
@@ -292,6 +318,7 @@ struct Vec4 {
         );
     }
 
+    pragma(inline, true)
     void opOpAssign(const(char)[] op)(Vec4 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
@@ -299,6 +326,7 @@ struct Vec4 {
         mixin("w", op, "=rhs.w;");
     }
 
+    pragma(inline, true)
     void opOpAssign(const(char)[] op)(float rhs) {
         mixin("x", op, "=rhs;");
         mixin("y", op, "=rhs;");
@@ -332,27 +360,33 @@ struct Rect {
 
     @safe @nogc nothrow:
 
+    pragma(inline, true)
     this(Vec2 position, Vec2 size) {
         this.position = position;
         this.size = size;
     }
 
+    pragma(inline, true)
     this(Vec2 size) {
         this(Vec2(), size);
     }
 
+    pragma(inline, true)
     this(float x, float y, float w, float h) {
         this(Vec2(x, y), Vec2(w, h));
     }
 
+    pragma(inline, true)
     this(float w, float h) {
         this(Vec2(), Vec2(w, h));
     }
 
+    pragma(inline, true)
     this(Vec2 position, float w, float h) {
         this(position, Vec2(w, h));
     }
 
+    pragma(inline, true)
     this(float x, float y, Vec2 size) {
         this(Vec2(x, y), size);
     }

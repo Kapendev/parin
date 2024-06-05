@@ -111,7 +111,7 @@ module popka.vendor.ray.rlgl;
 enum isRaylibPackageAvailable = is(typeof((){import raylib;}));
 
 static if (!isRaylibPackageAvailable) {
-    extern(C) @nogc nothrow:
+    @nogc nothrow extern(C):
 
     enum RLGL_VERSION = "4.5";
 

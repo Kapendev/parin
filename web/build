@@ -30,7 +30,7 @@ echo "OK: Source folder exists."
 [ ! -e "$assets_dir" ] && echo "ERROR: Assets folder doesn't exist." && exit 1
 echo "OK: Assets folder exists."
 
-## Special check for Popka folder.
+# Special check for Popka folder.
 target_popka_dir="$popka_dir"
 if [ ! -e "$target_popka_dir" ]; then
     target_popka_dir="$popka_alt_dir"
