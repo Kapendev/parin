@@ -17,7 +17,7 @@ void main() {
 ```
 
 > [!WARNING]  
-> Popka is alpha software. Use it only if you are very cool.
+> This is alpha software. Use it only if you are very cool.
 
 ## Supported Platforms
 
@@ -33,11 +33,12 @@ void main() {
 ## Dependencies
 
 To use Popka, you'll need the raylib library (version 5.0) installed on your system.
-The official raylib instructions will guide you through the process.
+The [official raylib instructions](https://github.com/raysan5/raylib/wiki) will guide you through the process.
 
 ## Installation
 
-This guide outlines the steps to install Popka and raylib using Dub.
+This guide shows how to install Popka and its dependency, raylib, using Dub.
+While Dub simplifies the setup process, Popka itself doesn't require Dub.
 
 1. **Install Popka and raylib**
 
@@ -47,6 +48,8 @@ This guide outlines the steps to install Popka and raylib using Dub.
     dub add popka raylib-d && dub run raylib-d:install
     ```
 
+    Popka doesn't require raylib-d, but we include it as a dependency for its convenient raylib download script.
+
 2. **Compile example**
 
     Once the installation is complete, you should be able to compile the provided hello-world example by running:
@@ -54,6 +57,8 @@ This guide outlines the steps to install Popka and raylib using Dub.
     ```bash
     dub run
     ```
+
+    For more info about exporting to web, see [this](#web-support).
 
 ## Documentation
 
@@ -99,7 +104,7 @@ Here's a simple breakdown of the code:
 * `updateWindow!gameLoop()`:
     This function calls the given function every frame until `closeWindow` is called.
 
-The [web](web) folder contains helper scripts to assist with the web export process on Linux.
+The [web](web) folder contains a helper script to assist with the web export process.
 
 ## Note
 

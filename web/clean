@@ -1,9 +1,0 @@
-#!/bin/env sh
-
-## A script for cleaning the web folder.
-## Just copy-paste the web folder into your project and run the script.
-
-# Delete the files.
-script_dir="$(dirname $0)"
-cd $script_dir
-rm index.data index.html index.js index.wasm
