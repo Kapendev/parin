@@ -4,4 +4,5 @@
 module popka.vendor.ray;
 
 public import popka.vendor.ray.raylib;
+public import popka.vendor.ray.raylibpp;
 public import popka.vendor.ray.rlgl;

@@ -82,12 +82,6 @@ module popka.vendor.ray.raylib;
 // import core.stdc.stdarg;
 // import core.stdc.stdlib;
 
-// private {
-//     extern(C):
-//     void* realloc(void* ptr, size_t size);
-//     void free(void* ptr);
-// }
-
 enum isRaylibPackageAvailable = is(typeof((){import raylib;}));
 
 static if (!isRaylibPackageAvailable) {
