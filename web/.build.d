@@ -16,7 +16,7 @@ import std.process;
 // The config.
 // ----------
 enum lflags = "";                                                 // The linker flags passed to ldc.
-enum dflags = "-O --release";                                     // The compiler flags passed to ldc. Local dependencies can be added here.
+enum dflags = "-betterC -O --release";                            // The compiler flags passed to ldc. Local dependencies can be added here.
 enum cflags = "-Os";                                              // The flags passed to emcc.
 enum output = buildPath(".", "web", "index.html");                // The output file that can be run with emrun.
 enum isPopkaIncluded = true;                                      // Can be used to ignore the Popka library.
@@ -66,6 +66,16 @@ enum defaultShellContent = `<!doctype html>
             animation: spin 2s linear infinite;
         }
 
+        .center {
+            position: fixed;
+            inset: 0px;
+            width: 12rem;
+            height: 5rem;
+            max-width: 100vw;
+            max-height: 100dvh;
+            margin: auto;
+        }
+
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -77,8 +87,10 @@ enum defaultShellContent = `<!doctype html>
     </style>
 </head>
 <body>
-    <div id="loading">
-        <div class="spinner"></div>
+    <div class="center">
+        <div id="loading">
+            <div class="spinner"></div>
+        </div>
     </div>
     <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
     <p id="output" />
@@ -162,10 +174,10 @@ int main(string[] args) {
             popkaParentDir = popkaDir;
         }
         popkaParentDir = buildPath(popkaParentDir, "..");
-        enum command = "ldc2 -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
+        enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
         if (run(command.format(lflags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
     } else {
-        enum command = "ldc2 -c -betterC -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -i %s";
+        enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -i %s";
         if (run(command.format(lflags, dflags, sourceDir, firstFiles))) return 1;
     }
 

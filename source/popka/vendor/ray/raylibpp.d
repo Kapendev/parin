@@ -191,11 +191,15 @@ mixin template addRayStart(alias startFunc) {
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            size_t length = 0;
-            while (argv[0][length] != '\0') {
-                length += 1;
+            @trusted @nogc nothrow
+            static string __helper(immutable(char)* strz) {
+                size_t length = 0;
+                while (strz[length] != '\0') {
+                    length += 1;
+                }
+                return strz[0 .. length];
             }
-            startFunc(argv[0][0 .. length]);
+            startFunc(__helper(argv[0]));
         }
     } else {
         void main(string[] args) {
