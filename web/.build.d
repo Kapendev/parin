@@ -24,7 +24,7 @@ enum isPopkaIncluded = true;                                      // Can be used
 enum shellFile = buildPath(".", "web", "shell.html");             // The shell that will be passed to emcc. A default shell will be used if it doesn't exist.
 enum libraryFile = buildPath(".", "web", "libraylib.a");          // The raylib WebAssembly library that will be passed to emcc.
 enum sourceDir = buildPath(".", "source");                        // The source folder of the project.
-enum assetsDir = buildPath(".", "assets");                        // The assets folder of the projecr.
+enum assetsDir = buildPath(".", "assets");                        // The assets folder of the projecr. This parameter is optional.
 
 enum popkaDir = buildPath(sourceDir, "popka");                    // The first Popka path.
 enum popkaAltDir = buildPath(popkaDir, "source", "popka");        // The second Popka path.
@@ -33,58 +33,75 @@ enum defaultShellFile = buildPath(".", ".__defaultShell__.html"); // The default
 
 
 // This is used if a shell file does not exist.
-enum defaultShellContent = `
-    <!doctype html>
-    <html lang="EN-us">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-        <title>game</title>
-        <meta name="title" content="game">
-        <meta name="viewport" content="width=device-width">
-        <style>
-            body { margin: 0px; }
-            canvas.emscripten { border: 0px none; background-color: black; }
-        </style>
-        <script type='text/javascript' src="https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js"> </script>
-        <script type='text/javascript'>
-            function saveFileFromMEMFSToDisk(memoryFSname, localFSname) // This can be called by C/C++ code
-            {
-                var isSafari = false; // Not supported, navigator.userAgent access is being restricted
-                var data = FS.readFile(memoryFSname);
-                var blob;
-                if (isSafari) blob = new Blob([data.buffer], { type: "application/octet-stream" });
-                else blob = new Blob([data.buffer], { type: "application/octet-binary" });
-                saveAs(blob, localFSname);
-            }
-        </script>
-    </head>
-    <body>
-        <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-        <p id="output" />
-        <script>
-            var Module = {
-                print: (function() {
-                    var element = document.getElementById('output');
-                    if (element) element.value = ''; // clear browser cache
-                    return function(text) {
-                        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-                        console.log(text);
-                        if (element) {
-                            element.value += text + "\n";
-                            element.scrollTop = element.scrollHeight; // focus on bottom
-                        }
-                    };
-                })(),
-                canvas: (function() {
-                    var canvas = document.getElementById('canvas');
-                    return canvas;
-                })()
-            };
-        </script>
-        {{{ SCRIPT }}}
-    </body>
-    </html>
+enum defaultShellContent = `<!doctype html>
+<html lang="EN-us">
+<head>
+    <title>game</title>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width">
+    <style>
+        body { margin: 0px; overflow: hidden; }
+        canvas.emscripten { border: 0px none; background-color: black; }
+        
+        loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex; /* Center content horizontally and vertically */
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+            z-index: 100; /* Ensure loading indicator sits above content */
+        }
+
+        .spinner {
+            border: 16px solid #c0c0c0; /* Big */
+            border-top: 16px solid #343434; /* Small */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        canvas {
+            display: none; /* Initially hide the canvas */
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div class="spinner"></div>
+    </div>
+    <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+    <p id="output" />
+    <script>
+        var Module = {
+            canvas: (function() {
+                var canvas = document.getElementById('canvas');
+                return canvas;
+            })(),
+            preRun: [function() {
+                // Show loading indicator
+                document.getElementById("loading").style.display = "block";
+            }],
+            postRun: [function() {
+                // Hide loading indicator and show canvas
+                document.getElementById("loading").style.display = "none";
+                document.getElementById("canvas").style.display = "block";
+            }]
+        };
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>
 `;
 
 
@@ -124,7 +141,6 @@ int main(string[] args) {
     auto canUseDefaultShell = shellFile.check(false);
     if (libraryFile.check) return 1;
     if (sourceDir.check) return 1;
-    if (assetsDir.check) return 1;
 
     // Get the first D files inside the source folder.
     char[] firstFiles = [];
@@ -158,13 +174,16 @@ int main(string[] args) {
 
     // Build the web app.
     bool isAssetsDirEmpty = true;
-    foreach (item; dirEntries(assetsDir, SpanMode.shallow)) {
-        isAssetsDirEmpty = false;
-        break;
+    if (assetsDir.check(false) == false) {
+        foreach (item; dirEntries(assetsDir, SpanMode.breadth)) {
+            if (item.name.isDir) continue;
+            isAssetsDirEmpty = false;
+            break;
+        }
     }
     if (isAssetsDirEmpty) {
-        enum command = "emcc -o %s *.o -Os -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s";
-        if (run(command.format(output, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile))) {
+        enum command = "emcc -o %s *.o %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s";
+        if (run(command.format(output, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile))) {
             if (canUseDefaultShell) std.file.remove(defaultShellFile);
             return 1;
         }

@@ -165,6 +165,8 @@ alias drawMeshInstanced = DrawMeshInstanced;
 version (WebAssembly) {
     @nogc nothrow extern(C)
     void emscripten_set_main_loop(void* ptr, int fps, int loop);
+    @nogc nothrow extern(C)
+    void emscripten_cancel_main_loop();
 }
 
 // We intentionally leave attributes out to provide maximum flexibility for any use case.
@@ -185,19 +187,19 @@ void updateWindow(alias loopFunc)() {
     }
 }
 
-mixin template addRayMain(alias mainFunc) {
+mixin template addRayStart(alias startFunc) {
     version (D_BetterC) {
         extern(C)
-        void main(int argc, const(char)** argv) {
+        void main(int argc, immutable(char)** argv) {
             size_t length = 0;
             while (argv[0][length] != '\0') {
                 length += 1;
             }
-            mainFunc(argv[0][0 .. length]);
+            startFunc(argv[0][0 .. length]);
         }
     } else {
         void main(string[] args) {
-            mainFunc(args[0]);
+            startFunc(args[0]);
         }
     }
 }

@@ -8,11 +8,12 @@
 	"name": "popka",
 	"configurations": [
 		{
-			"name": "pdefault"
+			"name": "pdefault",
+			"excludedSourceFiles": ["examples/*.d", "web/*.d"]
 		},
 		{
 			"name": "ptest",
-			"excludedSourceFiles": ["source/popka/package.d", "source/popka/examples/*.d", "source/popka/game/*.d", "source/popka/vendor/*.d"]
+			"excludedSourceFiles": ["examples/*.d", "web/*.d", "source/popka/package.d", "source/popka/game/*.d", "source/popka/vendor/*.d"]
 		}
 	]
 }

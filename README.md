@@ -6,14 +6,18 @@ It focuses on providing a simple foundation for building 2D games.
 ```d
 import popka;
 
-void main() {
-    openWindow(640, 360);
-    lockResolution(320, 180);
-    while (isWindowOpen) {
-        draw("Hello world!");
-    }
-    freeWindow();
+bool gameLoop() {
+    draw("Hello worldo!");
+    return false;
 }
+
+void gameStart(string path) {
+    openWindow(640, 360);
+    updateWindow!gameLoop();
+    closeWindow();
+}
+
+mixin addGameStart!gameStart;
 ```
 
 > [!WARNING]  
@@ -62,14 +66,13 @@ While Dub simplifies the setup process, Popka itself doesn't require Dub.
 
 ## Documentation
 
-For an initial understanding, the [examples](source/popka/examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
+For an initial understanding, the [examples](examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
 
 ## Project Layout
 
 * [core](source/popka/core): A standard library designed specifically for game development. 
 * [vendor](source/popka/vendor): A collection of third-party libraries.
 * [game](source/popka/game): A set of tools for creating 2D games.
-* [examples](source/popka/examples): A collection of example projects.
 
 ## Attributes and BetterC Support
 
@@ -77,36 +80,7 @@ This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) an
 
 ## Web Support
 
-For exporting to web, your project needs to be compatible with BetterC and the code has to have a specific structure.
-Games playable on both desktop and web typically follow this structure:
-
-```d
-import popka;
-
-void gameLoop() {
-    draw("I am part of the web.");
-    if ('q'.isPressed) closeWindow();
-}
-
-void gameMain(const(char)[] path) {
-    openWindow(640, 360);
-    updateWindow!gameLoop();
-    freeWindow();
-}
-
-mixin addGameMain!gameMain;
-```
-
-Here's a simple breakdown of the code:
-
-* `mixin addGameMain!gameMain`
-
-    This mixin creates a main function that calls the given function. The given function must accept a `const(char)[]` value.
-
-* `updateWindow!gameLoop()`
-
-    This function calls the given function every frame until `closeWindow` is called.
-
+For exporting to web, your project needs to be compatible with BetterC or use a web compatible runtime.
 The [web](web) folder contains a helper script to assist with the web export process.
 
 ## raylib Bindings
@@ -126,17 +100,14 @@ bool rayLoop() {
     return false;
 }
 
-void rayMain(const(char)[] path) {
+void rayStart(const(char)[] path) {
     InitWindow(800, 450, "raylib");
     updateWindow!rayLoop();
     CloseWindow();
 }
 
-mixin addRayMain!rayMain;
+mixin addRayStart!rayStart;
 ```
-
-This code resembles the above Popka example, with one key distinction. The function given to `updateWindow` must return a `bool` value.
-A return value of true will exit the loop, while false will allow it to continue.
 
 ## Note
 

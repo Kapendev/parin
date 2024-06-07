@@ -6,7 +6,11 @@
 module popka.game.engine;
 
 import ray = popka.vendor.ray;
-import popka.core;
+import popka.core.color;
+import popka.core.container;
+import popka.core.io;
+import popka.core.math;
+import popka.core.strutils;
 
 @trusted @nogc nothrow:
 
@@ -128,14 +132,14 @@ enum Gamepad {
     middle = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
+alias GameLoopFunc = bool function();
+alias GameStartFunc = void function(const(char)[] path);
+
 struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
     
-    // TODO: Do something about those.
-    bool isWindowOpen;
-    bool isRunning;
-    bool isDrawing;
+    bool isUpdating;
     bool isFPSLocked;
     bool isCursorHidden;
     bool isPixelPerfect;
@@ -637,9 +641,6 @@ Font rayFont() {
 }
 
 void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
-    if (engineState.isWindowOpen) {
-        return;
-    }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) size.x, cast(int) size.y, toStrz(title));
@@ -647,8 +648,6 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
     ray.SetWindowMinSize(cast(int) (size.x * 0.25f), cast(int) (size.y * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);
     lockFPS(defaultFPS);
-    engineState.isWindowOpen = true;
-    engineState.isRunning = true;
     engineState.backgroundColor = color;
     engineState.lastWindowSize = size;
 }
@@ -657,92 +656,8 @@ void openWindow(float width, float height, const(char)[] title = "Popka", Color 
     openWindow(Vec2(width, height), title, color);
 }
 
-void closeWindow() {
-    engineState.isWindowOpen = false;
-}
-
-bool isWindowOpen() {
-    if (ray.WindowShouldClose() || !engineState.isWindowOpen) {
-        engineState.isDrawing = false;
-        return false;
-    }
-
-    if (!engineState.isDrawing) {
-        if (isResolutionLocked) {
-            ray.BeginTextureMode(engineState.viewport.data);
-        } else {
-            ray.BeginDrawing();
-        }
-        ray.ClearBackground(toRay(engineState.backgroundColor));
-    } else {
-        // End drawing.
-        if (isResolutionLocked) {
-            auto minSize = engineState.viewport.size;
-            auto maxSize = windowSize;
-            auto ratio = maxSize / minSize;
-            auto minRatio = min(ratio.x, ratio.y);
-            auto targetSize = minSize * Vec2(minRatio);
-            auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-            ray.EndTextureMode();
-            ray.BeginDrawing();
-            ray.ClearBackground(ray.Color(0, 0, 0, 255));
-            ray.DrawTexturePro(
-                engineState.viewport.data.texture,
-                ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
-                ray.Rectangle(
-                    ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
-                    ratio.y == minRatio ? targetPos.y : floor(targetPos.y),
-                    ratio.x == minRatio ? targetSize.x : floor(targetSize.x),
-                    ratio.y == minRatio ? targetSize.y : floor(targetSize.y),
-                ),
-                ray.Vector2(0.0f, 0.0f),
-                0.0f,
-                ray.Color(255, 255, 255, 255),
-            );
-            ray.EndDrawing();
-        } else {
-            ray.EndDrawing();
-        }
-        // The lockResolution and unlockResolution queue.
-        if (engineState.isLockResolutionQueued) {
-            engineState.viewport.load(engineState.targetViewportSize);
-            engineState.isLockResolutionQueued = false;
-        }
-        if (engineState.isUnlockResolutionQueued) {
-            engineState.viewport.free();
-            engineState.isUnlockResolutionQueued = false;
-        }
-        // Fullscreen code to fix a bug on KDE.
-        if (engineState.isToggleFullscreenQueued) {
-            engineState.toggleFullscreenTimer += deltaTime;
-            if (engineState.toggleFullscreenTimer >= toggleFullscreenWaitTime) {
-                engineState.toggleFullscreenTimer = 0.0f;
-                auto screen = screenSize;
-                auto window = engineState.lastWindowSize;
-                if (ray.IsWindowFullscreen()) {
-                    ray.ToggleFullscreen();
-                    ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
-                    ray.SetWindowPosition(cast(int) (screen.x * 0.5f - window.x * 0.5f), cast(int) (screen.y * 0.5f - window.y * 0.5f));
-                } else {
-                    ray.ToggleFullscreen();
-                }
-                engineState.isToggleFullscreenQueued = false;
-            }
-        }
-        // Begin drawing.
-        if (isResolutionLocked) {
-            ray.BeginTextureMode(engineState.viewport.data);
-        } else {
-            ray.BeginDrawing();
-        }
-        ray.ClearBackground(toRay(engineState.backgroundColor));
-    }
-    engineState.isDrawing = true;
-    return true;
-}
-
 void updateWindow(alias loopFunc)() {
-    static void __updateWindow() {
+    static bool __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
             ray.BeginTextureMode(engineState.viewport.data);
@@ -752,7 +667,7 @@ void updateWindow(alias loopFunc)() {
         ray.ClearBackground(toRay(engineState.backgroundColor));
 
         // The main loop.
-        loopFunc();
+        auto result = loopFunc();
 
         // End drawing.
         if (isResolutionLocked) {
@@ -784,12 +699,11 @@ void updateWindow(alias loopFunc)() {
         }
         // The lockResolution and unlockResolution queue.
         if (engineState.isLockResolutionQueued) {
-            engineState.viewport.load(engineState.targetViewportSize);
             engineState.isLockResolutionQueued = false;
-        }
-        if (engineState.isUnlockResolutionQueued) {
-            engineState.viewport.free();
+            engineState.viewport.load(engineState.targetViewportSize);
+        } else if (engineState.isUnlockResolutionQueued) {
             engineState.isUnlockResolutionQueued = false;
+            engineState.viewport.free();
         }
         // Fullscreen code to fix a bug on KDE.
         if (engineState.isToggleFullscreenQueued) {
@@ -808,32 +722,35 @@ void updateWindow(alias loopFunc)() {
                 engineState.isToggleFullscreenQueued = false;
             }
         }
-        engineState.isDrawing = true;
+        return result;
     }
 
+    engineState.isUpdating = true;
     version(WebAssembly) {
-        ray.emscripten_set_main_loop(&__updateWindow, 0, 1);
-    } else {
-        // NOTE: Maybe a bad idea, but makes the life of no-attribute people easier.
-        auto __updateWindowScaryEdition = cast(void function() @trusted @nogc nothrow) &__updateWindow;
-        while (true) {
-            if (ray.WindowShouldClose() || !engineState.isWindowOpen) {
-                engineState.isDrawing = false;
-                return;
+        static void __updateWindow2() {
+            if (__updateWindow()) {
+                engineState.isUpdating = false;
+                ray.emscripten_cancel_main_loop();
             }
-            engineState.isDrawing = true;
-            __updateWindowScaryEdition();
+        }
+        ray.emscripten_set_main_loop(&__updateWindow2, 0, 1);
+    } else {
+        // NOTE: Maybe bad idea, but makes life of no-attribute people easier.
+        auto __updateWindowScaryEdition = cast(bool function() @trusted @nogc nothrow) &__updateWindow;
+        while (true) {
+            if (ray.WindowShouldClose() || __updateWindowScaryEdition()) {
+                engineState.isUpdating = false;
+                break;
+            }
         }
     }
 }
 
-void freeWindow() {
-    if (engineState.isRunning) {
-        engineState.viewport.free();
-        ray.CloseAudioDevice();
-        ray.CloseWindow();
-        engineState = EngineState.init;
-    }
+void closeWindow() {
+    engineState.viewport.free();
+    ray.CloseAudioDevice();
+    ray.CloseWindow();
+    engineState = EngineState.init;
 }
 
 bool isFPSLocked() {
@@ -855,7 +772,7 @@ bool isResolutionLocked() {
 }
 
 void lockResolution(Vec2 size) {
-    if (engineState.isWindowOpen && !engineState.isDrawing) {
+    if (!engineState.isUpdating) {
         engineState.viewport.load(size);
     } else {
         engineState.targetViewportSize = size;
@@ -869,7 +786,7 @@ void lockResolution(float width, float height) {
 }
 
 void unlockResolution() {
-    if (engineState.isWindowOpen && !engineState.isDrawing) {
+    if (!engineState.isUpdating) {
         engineState.viewport.free();
     } else {
         engineState.isUnlockResolutionQueued = true;
@@ -1313,19 +1230,19 @@ void draw(const(char)[] text, Vec2 position, DrawOptions options) {
     draw(rayFont, text, position, options);
 }
 
-mixin template addGameMain(alias mainFunc) {
+mixin template addGameStart(alias startFunc) {
     version (D_BetterC) {
         extern(C)
-        void main(int argc, const(char)** argv) {
+        void main(int argc, immutable(char)** argv) {
             size_t length = 0;
             while (argv[0][length] != '\0') {
                 length += 1;
             }
-            mainFunc(argv[0][0 .. length]);
+            startFunc(argv[0][0 .. length]);
         }
     } else {
         void main(string[] args) {
-            mainFunc(args[0]);
+            startFunc(args[0]);
         }
     }
 }

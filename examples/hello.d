@@ -3,17 +3,17 @@
 
 /// This example serves as a classic hello-world program, introducing the fundamental structure of a Popka program.
 
-module popka.examples.hello;
-
 import popka;
 
-@safe @nogc nothrow:
-
-void runHelloExample() {
-    openWindow(640, 360);
-    lockResolution(320, 180);
-    while (isWindowOpen) {
-        draw("Hello world!");
-    }
-    freeWindow();
+bool gameLoop() {
+    draw("Hello worldo!");
+    return false;
 }
+
+void gameStart(string path) {
+    openWindow(640, 360);
+    updateWindow!gameLoop();
+    closeWindow();
+}
+
+mixin addGameStart!gameStart;

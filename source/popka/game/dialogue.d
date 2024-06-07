@@ -6,7 +6,9 @@
 
 module popka.game.dialogue;
 
-import popka.core;
+import popka.core.container;
+import popka.core.io;
+import popka.core.strutils;
 
 @safe @nogc nothrow:
 
