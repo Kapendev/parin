@@ -15,20 +15,20 @@ import std.process;
 
 // The config.
 // ----------
-enum lflags = "";
-enum dflags = "-O --release";
-enum cflags = "-Os";
-enum output = buildPath(".", "web", "index.html");
-enum isPopkaIncluded = true;
+enum lflags = "";                                                 // The linker flags passed to ldc.
+enum dflags = "-O --release";                                     // The compiler flags passed to ldc. Local dependencies can be added here.
+enum cflags = "-Os";                                              // The flags passed to emcc.
+enum output = buildPath(".", "web", "index.html");                // The output file that can be run with emrun.
+enum isPopkaIncluded = true;                                      // Can be used to ignore the Popka library.
 
-enum shellFile = buildPath(".", "web", "shell.html");
-enum libraryFile = buildPath(".", "web", "libraylib.a");
-enum sourceDir = buildPath(".", "source");
-enum assetsDir = buildPath(".", "assets");
+enum shellFile = buildPath(".", "web", "shell.html");             // The shell that will be passed to emcc. A default shell will be used if it doesn't exist.
+enum libraryFile = buildPath(".", "web", "libraylib.a");          // The raylib WebAssembly library that will be passed to emcc.
+enum sourceDir = buildPath(".", "source");                        // The source folder of the project.
+enum assetsDir = buildPath(".", "assets");                        // The assets folder of the projecr.
 
-enum popkaDir = buildPath(sourceDir, "popka");
-enum popkaAltDir = buildPath(popkaDir, "source", "popka");
-enum defaultShellFile = buildPath(".", ".__defaultShell__.html");
+enum popkaDir = buildPath(sourceDir, "popka");                    // The first Popka path.
+enum popkaAltDir = buildPath(popkaDir, "source", "popka");        // The second Popka path.
+enum defaultShellFile = buildPath(".", ".__defaultShell__.html"); // The default shell file that will be created if no shell file exists.
 // ----------
 
 
@@ -126,7 +126,7 @@ int main(string[] args) {
     if (sourceDir.check) return 1;
     if (assetsDir.check) return 1;
 
-    // Get the first D files files inside the source folder.
+    // Get the first D files inside the source folder.
     char[] firstFiles = [];
     foreach (item; dirEntries(sourceDir, SpanMode.shallow)) {
         if (item.name.length > 2 && item.name[$ - 2 .. $] == ".d") {

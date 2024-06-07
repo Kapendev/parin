@@ -812,7 +812,7 @@ void updateWindow(alias loopFunc)() {
     }
 
     version(WebAssembly) {
-        emscripten_set_main_loop(&__updateWindow, 0, 1);
+        ray.emscripten_set_main_loop(&__updateWindow, 0, 1);
     } else {
         // NOTE: Maybe a bad idea, but makes the life of no-attribute people easier.
         auto __updateWindowScaryEdition = cast(void function() @trusted @nogc nothrow) &__updateWindow;
