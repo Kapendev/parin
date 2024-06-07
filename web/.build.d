@@ -101,7 +101,7 @@ bool check(const(char)[] path, bool isLoud = true) {
 bool run(const(char)[] command, bool isLoud = true) {
     writeln(command);
     auto shell = executeShell(command);
-    // Ignore Python bug.
+    // Ignore Emscripten Python bug.
     if (shell.output.length != 0) {
         enum pythonBug = "not list";
         if (shell.output.length > pythonBug.length && shell.output[$ - pythonBug.length - 1 .. $ - 1] == pythonBug) {

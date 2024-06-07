@@ -8,14 +8,6 @@ module popka.game.engine;
 import ray = popka.vendor.ray;
 import popka.core;
 
-version (WebAssembly) {
-    private {
-        @trusted @nogc nothrow extern(C):
-
-        void emscripten_set_main_loop(void* ptr, int fps, int loop);
-    }
-}
-
 @trusted @nogc nothrow:
 
 EngineState engineState;
@@ -1325,14 +1317,15 @@ mixin template addGameMain(alias mainFunc) {
     version (D_BetterC) {
         extern(C)
         void main(int argc, const(char)** argv) {
-            static char[1024] pathBuffer = void;
-            auto path = pathBuffer[];
-            path.copyStr(pathDir(toStr(argv[0])));
-            mainFunc(path);
+            size_t length = 0;
+            while (argv[0][length] != '\0') {
+                length += 1;
+            }
+            mainFunc(argv[0][0 .. length]);
         }
     } else {
         void main(string[] args) {
-            mainFunc(pathDir(args[0]));
+            mainFunc(args[0]);
         }
     }
 }

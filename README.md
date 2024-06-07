@@ -99,12 +99,44 @@ mixin addGameMain!gameMain;
 
 Here's a simple breakdown of the code:
 
-* `mixin addGameMain!gameMain`:
-    This mixin creates a main function that calls the given function. The given function must accept `const(char)[] path` to work properly.
-* `updateWindow!gameLoop()`:
+* `mixin addGameMain!gameMain`
+
+    This mixin creates a main function that calls the given function. The given function must accept a `const(char)[]` value.
+
+* `updateWindow!gameLoop()`
+
     This function calls the given function every frame until `closeWindow` is called.
 
 The [web](web) folder contains a helper script to assist with the web export process.
+
+## raylib Bindings
+
+Popka provides bindings for raylib that are compatible with BetterC and the web.
+Additionally, it provides helper functions to reduce some boilerplate code.
+All the helper functions are inside the [raylibpp.d](source/popka/vendor/ray/raylibpp.d) file.
+
+```d
+import popka.vendor.ray;
+
+bool rayLoop() {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+    DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+    EndDrawing();
+    return false;
+}
+
+void rayMain(const(char)[] path) {
+    InitWindow(800, 450, "raylib");
+    updateWindow!rayLoop();
+    CloseWindow();
+}
+
+mixin addRayMain!rayMain;
+```
+
+This code resembles the above Popka example, with one key distinction. The function given to `updateWindow` must return a `bool` value.
+A return value of true will exit the loop, while false will allow it to continue.
 
 ## Note
 

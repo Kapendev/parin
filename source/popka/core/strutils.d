@@ -122,6 +122,15 @@ void toLower(char[] str) {
     }
 }
 
+@trusted
+size_t length(const(char)* strz) {
+    size_t result = 0;
+    while (strz[result] != '\0') {
+        result += 1;
+    }
+    return result;
+}
+
 bool equals(const(char)[] str, const(char)[] other) {
     return str == other;
 }
