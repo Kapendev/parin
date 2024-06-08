@@ -53,6 +53,7 @@ While DUB simplifies the setup process, Popka itself doesn't require DUB.
     ```
 
     Popka doesn't require raylib-d, but we include it as a dependency for its convenient raylib download script.
+    It is recommended to remove raylib-d from your dub.json file after the installation is complete.
 
 2. **Compile example**
 

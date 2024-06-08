@@ -143,7 +143,7 @@ int main(string[] args) {
     auto mode = args.length > 1 ? args[1] : "";
     if (mode != "build" && mode != "run") {
         writeln("Error: `", mode, "` isn't a mode.\nAvailable modes: [build, run]");
-        return -1;
+        return 1;
     }
 
 	// Can pass extra flags to ldc if needed.
