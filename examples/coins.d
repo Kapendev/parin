@@ -12,7 +12,7 @@ auto coins = FlagList!Rect();
 auto coinSize = Vec2(8);
 auto maxCoinCount = 8;
 
-void gameLoop() {
+bool gameLoop() {
     // Move the player.
     auto playerDirection = Vec2();
     if ('a'.isDown) {
@@ -46,6 +46,7 @@ void gameLoop() {
     } else {
         draw("Coins: {}/{}\nMove with wasd keys.".fmt(maxCoinCount - coins.length, maxCoinCount));
     }
+    return false;
 }
 
 void gameStart(string path) {

@@ -41,8 +41,8 @@ The [official raylib instructions](https://github.com/raysan5/raylib/wiki) will 
 
 ## Installation
 
-This guide shows how to install Popka and its dependency, raylib, using Dub.
-While Dub simplifies the setup process, Popka itself doesn't require Dub.
+This guide shows how to install Popka and its dependency, raylib, using DUB.
+While DUB simplifies the setup process, Popka itself doesn't require DUB.
 
 1. **Install Popka and raylib**
 
@@ -80,8 +80,13 @@ This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) an
 
 ## Web Support
 
-For exporting to web, your project needs to be compatible with BetterC or use a web compatible runtime.
+For exporting to web, your project needs to be compatible with BetterC.
 The [web](web) folder contains a helper script to assist with the web export process.
+If you use DUB, you can run the script with:
+
+```bash
+dub run popka:web
+```
 
 ## raylib Bindings
 

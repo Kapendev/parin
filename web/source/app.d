@@ -4,8 +4,6 @@
 /// This script is designed with the idea that Popka is included inside your source folder, but it can work without Popka too.
 /// Just copy-paste the web folder into your project and run the script from your project folder.
 
-module build;
-
 import std.format;
 import std.path;
 import std.stdio;
@@ -15,20 +13,19 @@ import std.process;
 
 // The config.
 // ----------
-enum lflags = "";                                                 // The linker flags passed to ldc.
-enum dflags = "-betterC -O --release";                            // The compiler flags passed to ldc. Local dependencies can be added here.
-enum cflags = "";                                                 // The flags passed to emcc.
-enum output = buildPath(".", "web", "index.html");                // The output file that can be run with emrun.
-enum isPopkaIncluded = true;                                      // Can be used to ignore the Popka library.
+enum dflags = "-betterC -O --release";                             // The compiler flags passed to ldc. Local dependencies can be added here.
+enum cflags = "";                                                  // The flags passed to emcc.
+enum output = buildPath(".", "web", "index.html");                 // The output file that can be run with emrun.
+enum isPopkaIncluded = true;                                       // Can be used to ignore the Popka library.
 
-enum shellFile = buildPath(".", "web", "shell.html");             // The shell that will be passed to emcc. A default shell will be used if it doesn't exist.
-enum libraryFile = buildPath(".", "web", "libraylib.a");          // The raylib WebAssembly library that will be passed to emcc.
-enum sourceDir = buildPath(".", "source");                        // The source folder of the project.
-enum assetsDir = buildPath(".", "assets");                        // The assets folder of the projecr. This parameter is optional.
+enum shellFile = buildPath(".", "web", "shell.html");              // The shell that will be passed to emcc. A default shell will be used if it doesn't exist.
+enum libraryFile = buildPath(".", "web", "libraylib.a");           // The raylib WebAssembly library that will be passed to emcc.
+enum sourceDir = buildPath(".", "source");                         // The source folder of the project.
+enum assetsDir = buildPath(".", "assets");                         // The assets folder of the projecr. This parameter is optional.
 
-enum popkaDir = buildPath(sourceDir, "popka");                    // The first Popka path.
-enum popkaAltDir = buildPath(popkaDir, "source", "popka");        // The second Popka path.
-enum defaultShellFile = buildPath(".", ".__defaultShell__.html"); // The default shell file that will be created if no shell file exists.
+enum popkaDir = buildPath(sourceDir, "popka");                     // The first Popka path.
+enum popkaAltDir = buildPath(popkaDir, "source", "popka");         // The second Popka path.
+enum defaultShellFile = buildPath(".", ".__default_shell__.html"); // The default shell file that will be created if no shell file exists.
 // ----------
 
 
@@ -118,7 +115,7 @@ enum defaultShellContent = `<!doctype html>
 /// Check if path exists and print an error message if needed.
 bool check(const(char)[] path, bool isLoud = true) {
     if (!exists(path)) {
-        if (isLoud) writeln("Error: '", path, "' doesn't exist.");
+        if (isLoud) writeln("Error: `", path, "` doesn't exist.");
         return true;
     }
     return false;
@@ -126,26 +123,37 @@ bool check(const(char)[] path, bool isLoud = true) {
 
 /// Run a command and print the output.
 bool run(const(char)[] command, bool isLoud = true) {
-    writeln(command);
+    writeln("Command: ", command);
     auto shell = executeShell(command);
-    // Ignore Emscripten Python bug.
-    if (shell.output.length != 0) {
-        enum pythonBug = "not list";
-        if (shell.output.length > pythonBug.length && shell.output[$ - pythonBug.length - 1 .. $ - 1] == pythonBug) {
-            return false;
-        }
-        if (isLoud) writeln(shell.output);
-    }
+	if (isLoud && shell.output.length != 0) writeln("Output: ", shell.output);
     return shell.status != 0;
+}
+
+/// Delete object files in current folder.
+void deleteObjectFiles() {
+    foreach (item; dirEntries(".", SpanMode.shallow)) {
+        if (item.name.length > 2 && item.name[$ - 2 .. $] == ".o") {
+            std.file.remove(item.name);
+        }
+    }
 }
 
 int main(string[] args) {
     // Check args.
-    auto mode = args.length > 1 ? args[1] : "build";
+    auto mode = args.length > 1 ? args[1] : "";
     if (mode != "build" && mode != "run") {
-        writeln("Error: '", mode, "' isn't a mode.\nModes: build, run");
+        writeln("Error: `", mode, "` isn't a mode.\nAvailable modes: [build, run]");
         return -1;
     }
+
+	// Can pass extra flags to ldc if needed.
+    writeln("Info: All arguments except the first are passed to LDC.\n");
+	char[] extraFlags = [];
+	if (args.length > 2) {
+		foreach (arg; args[2 .. $]) {
+			extraFlags ~= arg;
+		}
+	}
 
     // Check the files that are needed for building.
     auto canUseDefaultShell = shellFile.check(false);
@@ -161,22 +169,25 @@ int main(string[] args) {
         }
     }
 
+	// Delete old object files inside current folder.
+	deleteObjectFiles();
+
     // Build the source code.
     if (isPopkaIncluded) {
         auto popkaParentDir = popkaAltDir;
         if (popkaAltDir.check(false)) {
             if (popkaDir.check(false)) {
-                writeln("Error: Popka doesn't exist.");
+                writeln("Error: Popka folder doesn't exist. Maybe try adding the folder inside your source folder.");
                 return 1;
             }
             popkaParentDir = popkaDir;
         }
         popkaParentDir = buildPath(popkaParentDir, "..");
         enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
-        if (run(command.format(lflags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
+        if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
     } else {
         enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -i %s";
-        if (run(command.format(lflags, dflags, sourceDir, firstFiles))) return 1;
+        if (run(command.format(extraFlags, dflags, sourceDir, firstFiles))) return 1;
     }
 
     // Create a default shell file if needed.
@@ -208,17 +219,15 @@ int main(string[] args) {
     // Delete default shell file if needed.
     if (canUseDefaultShell) std.file.remove(defaultShellFile);
 
-    // Delete object files.
-    foreach (item; dirEntries(".", SpanMode.shallow)) {
-        if (item.name.length > 2 && item.name[$ - 2 .. $] == ".o") {
-            std.file.remove(item.name);
-        }
-    }
+	// Delete new object files inside current folder.
+	deleteObjectFiles();
 
     // Run web app.
     if (mode == "run") {
         enum command = "emrun %s";
         if (run(command.format(output))) return 1;
-    }
+    } else {
+		writeln("To build and run, use the `run` argument.");
+	}
     return 0;
 }
