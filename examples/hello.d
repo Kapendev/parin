@@ -6,7 +6,7 @@
 import popka;
 
 bool gameLoop() {
-    draw("Hello worldo!");
+    draw("Hello world!");
     return false;
 }
 

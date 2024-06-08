@@ -7,7 +7,7 @@ It focuses on providing a simple foundation for building 2D games.
 import popka;
 
 bool gameLoop() {
-    draw("Hello worldo!");
+    draw("Hello world!");
     return false;
 }
 

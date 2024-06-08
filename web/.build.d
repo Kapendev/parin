@@ -17,7 +17,7 @@ import std.process;
 // ----------
 enum lflags = "";                                                 // The linker flags passed to ldc.
 enum dflags = "-betterC -O --release";                            // The compiler flags passed to ldc. Local dependencies can be added here.
-enum cflags = "-Os";                                              // The flags passed to emcc.
+enum cflags = "";                                                 // The flags passed to emcc.
 enum output = buildPath(".", "web", "index.html");                // The output file that can be run with emrun.
 enum isPopkaIncluded = true;                                      // Can be used to ignore the Popka library.
 
@@ -69,10 +69,8 @@ enum defaultShellContent = `<!doctype html>
         .center {
             position: fixed;
             inset: 0px;
-            width: 12rem;
-            height: 5rem;
-            max-width: 100vw;
-            max-height: 100dvh;
+            width: 120px;
+            height: 120px;
             margin: auto;
         }
 
@@ -87,8 +85,8 @@ enum defaultShellContent = `<!doctype html>
     </style>
 </head>
 <body>
-    <div class="center">
-        <div id="loading">
+    <div id="loading">
+        <div class="center">
             <div class="spinner"></div>
         </div>
     </div>
