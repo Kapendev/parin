@@ -113,6 +113,11 @@ void deleteFile(const(char)[] path) {
 }
 
 int main() {
+    if (check(buildPath(".", "dub.json"), false)) {
+        writeln("Error: This is not a DUB project.");
+        return 1;
+    }
+
     // Use the raylib-d script to download the raylib library files.
     // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
     // TODO: Ask the raylib-d project to do something about that.
@@ -124,16 +129,16 @@ int main() {
     wait(pid);
 
     // Delete the old files.
-    deleteFile("./dub.json");
-    deleteFile("./dub.selections.json");
-    deleteFile("./.gitignore");
-    deleteFile("./source/app.d");
+    deleteFile(buildPath(".", "dub.json"));
+    deleteFile(buildPath(".", "dub.selections.json"));
+    deleteFile(buildPath(".", ".gitignore"));
+    deleteFile(buildPath(".", "source", "app.d"));
 
     // Create the new files.
-    std.file.write("./dub.json", defaultDubContent);
-    std.file.write("./.gitignore", defaultGitignoreContent);
-    std.file.write("./source/app.d", defaultAppContent);
-    if (check("./assets", false)) std.file.mkdir("./assets");
-    if (check("./web", false)) std.file.mkdir("./web");
+    std.file.write(buildPath(".", "dub.json"), defaultDubContent);
+    std.file.write(buildPath(".", ".gitignore"), defaultGitignoreContent);
+    std.file.write(buildPath(".", "source", "app.d"), defaultAppContent);
+    if (check(buildPath(".", "assets"), false)) std.file.mkdir(buildPath(".", "assets"));
+    if (check(buildPath(".", "web"), false)) std.file.mkdir(buildPath(".", "web"));
     return 0;
 }
