@@ -1035,6 +1035,10 @@ void draw(Rect rect, Color color = white) {
     }
 }
 
+void draw(Vec2 point, Color color = white) {
+    draw(Rect(point, Vec2(8)).centerArea, color);
+}
+
 void draw(Circ circ, Color color = white) {
     ray.DrawCircleV(toRay(circ.position), circ.radius, toRay(color));
 }

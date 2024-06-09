@@ -32,3 +32,9 @@ This example shows how to use the camera structure of Popka.
 This example shows how to use the Popka dialogue system.
 
 ![image](dialogue.png)
+
+## [Follower](follower.d)
+
+This example shows how to create an animated character that follows the mouse.
+
+![image](follower.png)

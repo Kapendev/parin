@@ -16,7 +16,8 @@ private {
 
 @safe @nogc nothrow:
 
-enum pi = 3.14159265358979323846f;
+enum pi      = 3.141592f;
+enum epsilon = 0.0001f;
 
 enum Hook : ubyte {
     topLeft, top, topRight,
@@ -124,6 +125,10 @@ struct Vec2 {
 
     Vec2 directionTo(Vec2 to) {
         return (to - this).normalize();
+    }
+
+    float distanceTo(Vec2 to) {
+        return (to - this).length;
     }
 
     Vec2 moveTo(Vec2 to, Vec2 delta) {
@@ -774,4 +779,20 @@ float moveTo(float from, float to, float delta, float slowdown) {
     float offset = target - from;
     if (abs(offset) > abs(delta)) return from + offset * delta;
     else return to;
+}
+
+bool equals(float a, float b) {
+    return abs(a - b) < epsilon;
+}
+
+bool equals(Vec2 a, Vec2 b) {
+    return equals(a.x, b.x) && equals(a.y, b.y);
+}
+
+bool equals(Vec3 a, Vec3 b) {
+    return equals(a.x, b.x) && equals(a.y, b.y) && equals(a.z, b.z);
+}
+
+bool equals(Vec4 a, Vec4 b) {
+    return equals(a.x, b.x) && equals(a.y, b.y) && equals(a.z, b.z) && equals(a.w, b.w);
 }
