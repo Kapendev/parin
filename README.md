@@ -13,6 +13,7 @@ bool gameLoop() {
 
 void gameStart(string path) {
     openWindow(640, 360);
+    lockResolution(320, 180);
     updateWindow!gameLoop();
     closeWindow();
 }
@@ -42,28 +43,29 @@ The [official raylib instructions](https://github.com/raysan5/raylib/wiki) will 
 ## Installation
 
 This guide shows how to install Popka and its dependency, raylib, using DUB.
-While DUB simplifies the setup process, Popka itself doesn't require DUB.
+While DUB simplifies the process, Popka itself doesn't require DUB.
 
-1. **Install Popka and raylib**
+Create a new folder and run inside the following commands:
 
-    Navigate to the folder containing your dub.json file and run the following command:
+```bash
+dub init
+dub add popka
+dub run popka:setup
+```
 
-    ```bash
-    dub add popka raylib-d && dub run raylib-d:install
-    ```
+The last line will download raylib and create some folders necessary for Popka to function properly. The folders:
 
-    Popka doesn't require raylib-d, but we include it as a dependency for its convenient raylib download script.
-    It is recommended to remove raylib-d from your dub.json file after the installation is complete.
+* `assets`: This folder is used to store game assets such as images, sounds and fonts.
+* `web`: This folder is used for exporting to the web.
 
-2. **Compile example**
+The last line also changes the default app.d file.
+Once the installation is complete, you should be able to compile by running:
 
-    Once the installation is complete, you should be able to compile the provided hello-world example by running:
+```bash
+dub run
+```
 
-    ```bash
-    dub run
-    ```
-
-    For more info about exporting to web, see [this](#web-support).
+For more info about exporting to web, see [this](#web-support).
 
 ## Documentation
 
@@ -106,7 +108,7 @@ bool rayLoop() {
     return false;
 }
 
-void rayStart(const(char)[] path) {
+void rayStart(string path) {
     InitWindow(800, 450, "raylib");
     updateWindow!rayLoop();
     CloseWindow();

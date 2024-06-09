@@ -24,7 +24,7 @@ enum sourceDir = buildPath(".", "source");                         // The source
 enum assetsDir = buildPath(".", "assets");                         // The assets folder of the projecr. This parameter is optional.
 
 enum popkaDir = buildPath(sourceDir, "popka");                     // The first Popka path.
-enum popkaAltDir = buildPath(popkaDir, "source", "popka");         // The second Popka path.
+enum popkaAltDir = buildPath(".", "web", "popka");                 // The second Popka path.
 enum defaultShellFile = buildPath(".", ".__default_shell__.html"); // The default shell file that will be created if no shell file exists.
 // ----------
 
@@ -125,7 +125,7 @@ bool check(const(char)[] path, bool isLoud = true) {
 bool run(const(char)[] command, bool isLoud = true) {
     writeln("Command: ", command);
     auto shell = executeShell(command);
-	if (isLoud && shell.output.length != 0) writeln("Output: ", shell.output);
+    if (isLoud && shell.output.length != 0) writeln("Output: ", shell.output);
     return shell.status != 0;
 }
 
@@ -139,21 +139,14 @@ void deleteObjectFiles() {
 }
 
 int main(string[] args) {
-    // Check args.
-    auto mode = args.length > 1 ? args[1] : "";
-    if (mode != "build" && mode != "run") {
-        writeln("Error: `", mode, "` isn't a mode.\nAvailable modes: [build, run]");
-        return 1;
+    // Can pass extra flags to ldc if needed.
+    writeln("Info: All arguments are passed to LDC.");
+    char[] extraFlags = [];
+    if (args.length > 1) {
+        foreach (arg; args[1 .. $]) {
+            extraFlags ~= arg;
+        }
     }
-
-	// Can pass extra flags to ldc if needed.
-    writeln("Info: All arguments except the first are passed to LDC.\n");
-	char[] extraFlags = [];
-	if (args.length > 2) {
-		foreach (arg; args[2 .. $]) {
-			extraFlags ~= arg;
-		}
-	}
 
     // Check the files that are needed for building.
     auto canUseDefaultShell = shellFile.check(false);
@@ -169,25 +162,28 @@ int main(string[] args) {
         }
     }
 
-	// Delete old object files inside current folder.
-	deleteObjectFiles();
+    // Delete old object files inside current folder.
+    deleteObjectFiles();
 
     // Build the source code.
-    if (isPopkaIncluded) {
-        auto popkaParentDir = popkaAltDir;
-        if (popkaAltDir.check(false)) {
-            if (popkaDir.check(false)) {
-                writeln("Error: Popka folder doesn't exist. Maybe try adding the folder inside your source folder.");
-                return 1;
-            }
-            popkaParentDir = popkaDir;
-        }
-        popkaParentDir = buildPath(popkaParentDir, "..");
-        enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
-        if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
+    // Popka is needed for the web export. It will search inside the source and web folder.
+    auto popkaParentDir = "";
+    if (!popkaDir.check(false)) {
+        popkaParentDir = buildPath(popkaDir, "..");
+    } else if (!popkaAltDir.check(false)) {
+        popkaParentDir = buildPath(popkaAltDir, "..");
     } else {
+        writeln();
+        writeln("Warning: Popka doesn't exist inside your project. Maybe add it inside your web or source folder if you see an error.");
+        writeln("You can also include by passing `-Ipath_to_popka_parent_dir`.");
+        writeln();
+    }
+    if (popkaParentDir.length == 0) {
         enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -i %s";
         if (run(command.format(extraFlags, dflags, sourceDir, firstFiles))) return 1;
+    } else {
+        enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
+        if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
     }
 
     // Create a default shell file if needed.
@@ -219,15 +215,10 @@ int main(string[] args) {
     // Delete default shell file if needed.
     if (canUseDefaultShell) std.file.remove(defaultShellFile);
 
-	// Delete new object files inside current folder.
-	deleteObjectFiles();
+    // Delete new object files inside current folder.
+    deleteObjectFiles();
 
     // Run web app.
-    if (mode == "run") {
-        enum command = "emrun %s";
-        if (run(command.format(output))) return 1;
-    } else {
-		writeln("To build and run, use the `run` argument.");
-	}
+    if (run("emrun %s".format(output))) return 1;
     return 0;
 }

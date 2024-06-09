@@ -12,6 +12,7 @@ bool gameLoop() {
 
 void gameStart(string path) {
     openWindow(640, 360);
+    lockResolution(320, 180);
     updateWindow!gameLoop();
     closeWindow();
 }
