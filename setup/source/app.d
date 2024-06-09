@@ -113,12 +113,6 @@ void deleteFile(const(char)[] path) {
 }
 
 int main() {
-    bool isDubProject = !check("./source/app.d", false);
-    if (!isDubProject) {
-        writeln("Error: This is not a DUB project.");
-        return 1;
-    }
-
     // Use the raylib-d script to download the raylib library files.
     // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
     // TODO: Ask the raylib-d project to do something about that.
