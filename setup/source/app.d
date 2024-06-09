@@ -9,6 +9,21 @@ import std.stdio;
 import std.file;
 import std.process;
 
+
+// The config.
+// ----------
+enum noLibsArg = "offline";
+
+enum dubFile = buildPath(".", "dub.json");
+enum dubyFile = buildPath(".", "dub.selections.json");
+enum appFile = buildPath(".", "source", "app.d");
+enum gitignoreFile = buildPath(".", ".gitignore");
+
+enum assetsDir = buildPath(".", "assets");
+enum webDir = buildPath(".", "web");
+// ----------
+
+
 enum defaultDubContent = `{
 "name" : "game",
 "description" : "A game made with Popka.",
@@ -39,7 +54,7 @@ enum defaultDubContent = `{
         "targetType": "executable",
         "platforms": ["windows"],
         "libs": [
-            "raylibdll"
+            "raylib"
         ]
     },
     {
@@ -112,33 +127,36 @@ void deleteFile(const(char)[] path) {
     }
 }
 
-int main() {
-    if (check(buildPath(".", "dub.json"), false)) {
+int main(string[] args) {
+    if (check(dubFile, false)) {
         writeln("Error: This is not a DUB project.");
         return 1;
     }
+    writeln("Info: Pass `%s` if you don't want to download raylib.".format(noLibsArg));
 
     // Use the raylib-d script to download the raylib library files.
     // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
     // TODO: Ask the raylib-d project to do something about that.
-    run("dub add raylib-d");
-    writeln();
-    writeln(`"Saying yes to happiness means learning to say no to the things and people that stress you out." - Thema Davis`);
-    writeln();
-    auto pid = spawnShell("dub run raylib-d:install");
-    wait(pid);
+    if (args.length == 1 || (args.length > 1 && args[1] != noLibsArg)) {
+        run("dub add raylib-d");
+        writeln();
+        writeln(`"Saying yes to happiness means learning to say no to the things and people that stress you out." - Thema Davis`);
+        writeln();
+        auto pid = spawnShell("dub run raylib-d:install");
+        wait(pid);
+    }
 
     // Delete the old files.
-    deleteFile(buildPath(".", "dub.json"));
-    deleteFile(buildPath(".", "dub.selections.json"));
-    deleteFile(buildPath(".", ".gitignore"));
-    deleteFile(buildPath(".", "source", "app.d"));
+    deleteFile(dubFile);
+    deleteFile(dubyFile);
+    deleteFile(gitignoreFile);
+    deleteFile(appFile);
 
     // Create the new files.
-    std.file.write(buildPath(".", "dub.json"), defaultDubContent);
-    std.file.write(buildPath(".", ".gitignore"), defaultGitignoreContent);
-    std.file.write(buildPath(".", "source", "app.d"), defaultAppContent);
-    if (check(buildPath(".", "assets"), false)) std.file.mkdir(buildPath(".", "assets"));
-    if (check(buildPath(".", "web"), false)) std.file.mkdir(buildPath(".", "web"));
+    std.file.write(dubFile, defaultDubContent);
+    std.file.write(gitignoreFile, defaultGitignoreContent);
+    std.file.write(appFile, defaultAppContent);
+    if (check(assetsDir, false)) std.file.mkdir(assetsDir);
+    if (check(webDir, false)) std.file.mkdir(webDir);
     return 0;
 }

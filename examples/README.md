@@ -1,5 +1,8 @@
 # Examples
 
+> [!NOTE]
+> For examples that use sprites, you must download the [atlas.png](atlas.png) file and save it in your project's assets folder.
+
 ## [Hello](hello.d)
 
 This example serves as a classic hello-world program, introducing the fundamental structure of a Popka program.

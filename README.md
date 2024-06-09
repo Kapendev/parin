@@ -55,16 +55,17 @@ dub run popka:setup
 
 The last line will download raylib and create some folders necessary for Popka to function properly. The folders:
 
-* `assets`: This folder is used to store game assets such as images, sounds and fonts.
-* `web`: This folder is used for exporting to the web.
+* assets: This folder is used to store game assets such as images, sounds and fonts.
+* web: This folder is used for exporting to the web.
 
 The last line also changes the default app.d file.
-Once the installation is complete, you should be able to compile by running:
+Once the installation is complete, you should be able to compile/run with:
 
 ```bash
 dub run
 ```
 
+You can pass `offline` to the script if you don't want to download raylib.
 For more info about exporting to web, see [this](#web-support).
 
 ## Documentation
