@@ -132,13 +132,11 @@ enum Gamepad {
     middle = ray.GAMEPAD_BUTTON_MIDDLE,
 }
 
-alias GameLoopFunc = bool function();
-alias GameStartFunc = void function(const(char)[] path);
-
 struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
-    
+    const(char)[] assetsDir;
+
     bool isUpdating;
     bool isFPSLocked;
     bool isCursorHidden;
@@ -192,7 +190,7 @@ struct Sprite {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadTexture(toStrz(path));
+            data = ray.LoadTexture(pathConcat(assetsDir, path).toStrz);
         }
     }
 
@@ -271,7 +269,7 @@ struct Font {
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
         if (path.length != 0) {
-            data = ray.LoadFontEx(toStrz(path), size, cast(int*) runes.ptr, cast(int) runes.length);
+            data = ray.LoadFontEx(pathConcat(assetsDir, path).toStrz, size, cast(int*) runes.ptr, cast(int) runes.length);
         }
     }
 
@@ -319,7 +317,7 @@ struct Sound {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadSound(toStrz(path));
+            data = ray.LoadSound(pathConcat(assetsDir, path).toStrz);
         }
     }
 
@@ -371,7 +369,7 @@ struct Music {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadMusicStream(toStrz(path));
+            data = ray.LoadMusicStream(pathConcat(assetsDir, path).toStrz);
         }
     }
 
@@ -480,7 +478,7 @@ struct TileMap {
             return;
         }
 
-        auto file = readText(path);
+        auto file = readText(pathConcat(assetsDir, path));
         auto view = file.items;
         auto newRowCount = 0;
         auto newColCount = 0;
@@ -808,6 +806,10 @@ void showCursor() {
     engineState.isCursorHidden = false;
 }
 
+const(char)[] assetsDir() {
+    return engineState.assetsDir;
+}
+
 bool isFullscreen() {
     return ray.IsWindowFullscreen;
 }
@@ -1093,6 +1095,14 @@ void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
     draw(sprite, Rect(), position, options);
 }
 
+void draw(Sprite sprite, Rect area, DrawOptions options = DrawOptions()) {
+    draw(sprite, area, Vec2(), options);
+}
+
+void draw(Sprite sprite, DrawOptions options = DrawOptions()) {
+    draw(sprite, Rect(), Vec2(), options);
+}
+
 void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
     auto gridWidth = cast(uint) (sprite.size.x / tileSize.x);
     auto gridHeight = cast(uint) (sprite.size.y / tileSize.y);
@@ -1242,11 +1252,19 @@ mixin template addGameStart(alias startFunc) {
                 }
                 return strz[0 .. length];
             }
-            startFunc(__helper(argv[0]));
+            auto path = List!char(pathDir(__helper(argv[0])));
+            path.append(pathSeparator);
+            path.append("assets");
+            engineState.assetsDir = path.items;
+            startFunc();
         }
     } else {
         void main(string[] args) {
-            startFunc(args[0]);
+            auto path = List!char(pathDir(args[0]));
+            path.append(pathSeparator);
+            path.append("assets");
+            engineState.assetsDir = path.items;
+            startFunc();
         }
     }
 }

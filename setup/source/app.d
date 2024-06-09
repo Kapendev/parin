@@ -128,11 +128,15 @@ void deleteFile(const(char)[] path) {
 }
 
 int main(string[] args) {
+    writeln("Info: Pass `%s` if you don't want to download raylib.".format(noLibsArg));
     if (check(dubFile, false)) {
         writeln("Error: This is not a DUB project.");
         return 1;
     }
-    writeln("Info: Pass `%s` if you don't want to download raylib.".format(noLibsArg));
+    // Skip if the folders already exist.
+    if (!check(assetsDir, false) || !check(webDir, false)) {
+        return 0;
+    }
 
     // Use the raylib-d script to download the raylib library files.
     // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
@@ -156,7 +160,7 @@ int main(string[] args) {
     std.file.write(dubFile, defaultDubContent);
     std.file.write(gitignoreFile, defaultGitignoreContent);
     std.file.write(appFile, defaultAppContent);
-    if (check(assetsDir, false)) std.file.mkdir(assetsDir);
-    if (check(webDir, false)) std.file.mkdir(webDir);
+    std.file.mkdir(assetsDir);
+    std.file.mkdir(webDir);
     return 0;
 }

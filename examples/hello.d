@@ -10,7 +10,7 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart(string path) {
+void gameStart() {
     openWindow(640, 360);
     lockResolution(320, 180);
     updateWindow!gameLoop();

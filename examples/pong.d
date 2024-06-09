@@ -69,7 +69,7 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart(string path) {
+void gameStart() {
     openWindow(640, 360);
     lockResolution(320, 180);
     changeBackgroundColor(Color(202,178,106));
