@@ -1,8 +1,3 @@
-// Copyright 2024 Alexandros F. G. Kapretsos
-// SPDX-License-Identifier: MIT
-
-/// This example shows how to create an animated character that follows the mouse.
-
 import popka;
 
 // The game variables.
@@ -43,7 +38,6 @@ bool gameLoop() {
 }
 
 void gameStart() {
-    openWindow(640, 360);
     lockResolution(320, 180);
     changeBackgroundColor(toRGB(0x0b0b0b));
     hideCursor();
@@ -51,9 +45,7 @@ void gameStart() {
 
     atlas.load("atlas.png");
     updateWindow!gameLoop();
-
     atlas.free();
-    closeWindow();
 }
 
-mixin addGameStart!gameStart;
+mixin addGameStart!(gameStart, 640, 360);

@@ -15,16 +15,16 @@ auto maxCoinCount = 8;
 bool gameLoop() {
     // Move the player.
     auto playerDirection = Vec2();
-    if ('a'.isDown) {
+    if (Keyboard.left.isDown || 'a'.isDown) {
         playerDirection.x = -1;
     }
-    if ('d'.isDown) {
+    if (Keyboard.right.isDown || 'd'.isDown) {
         playerDirection.x = 1;
     }
-    if ('w'.isDown) {
+    if (Keyboard.up.isDown || 'w'.isDown) {
         playerDirection.y = -1;
     }
-    if ('s'.isDown) {
+    if (Keyboard.down.isDown || 's'.isDown) {
         playerDirection.y = 1;
     }
     player.position += playerDirection * playerSpeed * deltaTime;
@@ -44,13 +44,12 @@ bool gameLoop() {
     if (coins.length == 0) {
         draw("You collected all the coins!");
     } else {
-        draw("Coins: {}/{}\nMove with wasd keys.".fmt(maxCoinCount - coins.length, maxCoinCount));
+        draw("Coins: {}/{}\nMove with arrow keys.".fmt(maxCoinCount - coins.length, maxCoinCount));
     }
     return false;
 }
 
 void gameStart() {
-    openWindow(640, 360);
     lockResolution(320, 180);
     changeBackgroundColor(gray1);
 
@@ -66,9 +65,7 @@ void gameStart() {
         );
         coins.append(coin);
     }
-
     updateWindow!gameLoop();
-    closeWindow();
 }
 
-mixin addGameStart!gameStart;
+mixin addGameStart!(gameStart, 640, 360);

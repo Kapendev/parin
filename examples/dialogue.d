@@ -72,7 +72,6 @@ bool gameLoop() {
 }
 
 void gameStart() {
-    openWindow(640, 360);
     lockResolution(320, 180);
     changeBackgroundColor(Color(50, 60, 75));
  
@@ -80,9 +79,7 @@ void gameStart() {
     // The first update makes the dialogue go to the first available line.
     dialogue.parse(script);
     dialogue.update();
-
     updateWindow!gameLoop();
-    closeWindow();
 }
 
-mixin addGameStart!gameStart;
+mixin addGameStart!(gameStart, 640, 360);

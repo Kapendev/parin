@@ -70,7 +70,6 @@ bool gameLoop() {
 }
 
 void gameStart() {
-    openWindow(640, 360);
     lockResolution(320, 180);
     changeBackgroundColor(Color(202,178,106));
 
@@ -79,9 +78,7 @@ void gameStart() {
     ball.position = resolution * 0.5;
     paddle1.position = resolution * 0.5 - paddleOffset;
     paddle2.position = resolution * 0.5 + paddleOffset;
-
     updateWindow!gameLoop();
-    closeWindow();
 }
 
-mixin addGameStart!gameStart;
+mixin addGameStart!(gameStart, 640, 360);

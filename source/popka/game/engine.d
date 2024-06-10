@@ -1035,6 +1035,10 @@ void draw(Rect rect, Color color = white) {
     }
 }
 
+void draw(Vec2 point, Vec2 size, Color color = white) {
+    draw(Rect(point, size).centerArea, color);
+}
+
 void draw(Vec2 point, Color color = white) {
     draw(Rect(point, Vec2(8)).centerArea, color);
 }
@@ -1244,7 +1248,7 @@ void draw(const(char)[] text, Vec2 position, DrawOptions options) {
     draw(rayFont, text, position, options);
 }
 
-mixin template addGameStart(alias startFunc) {
+mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "Popka") {
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
@@ -1260,7 +1264,9 @@ mixin template addGameStart(alias startFunc) {
             path.append(pathSeparator);
             path.append("assets");
             engineState.assetsDir = path.items;
+            openWindow(size);
             startFunc();
+            closwWindow();
         }
     } else {
         void main(string[] args) {
@@ -1268,7 +1274,13 @@ mixin template addGameStart(alias startFunc) {
             path.append(pathSeparator);
             path.append("assets");
             engineState.assetsDir = path.items;
+            openWindow(size);
             startFunc();
+            closeWindow();
         }
     }
+}
+
+mixin template addGameStart(alias startFunc, float width, float height, const(char)[] title = "Popka") {
+    mixin addGameStart!(startFunc, Vec2(width, height), title);
 }

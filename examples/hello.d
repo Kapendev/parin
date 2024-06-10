@@ -11,10 +11,8 @@ bool gameLoop() {
 }
 
 void gameStart() {
-    openWindow(640, 360);
     lockResolution(320, 180);
     updateWindow!gameLoop();
-    closeWindow();
 }
 
-mixin addGameStart!gameStart;
+mixin addGameStart!(gameStart, 640, 360);
