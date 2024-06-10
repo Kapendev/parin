@@ -93,14 +93,12 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart(string path) {
-    openWindow(640, 360);
+void gameStart() {
     lockResolution(320, 180);
     updateWindow!gameLoop();
-    closeWindow();
 }
 
-mixin addGameStart!gameStart;
+mixin addGameStart!(gameStart, 640, 360);
 `;
 
 /// Check if path exists and print an error message if needed.
@@ -141,7 +139,8 @@ int main(string[] args) {
     // Use the raylib-d script to download the raylib library files.
     // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
     // TODO: Ask the raylib-d project to do something about that.
-    if (args.length == 1 || (args.length > 1 && args[1] != noLibsArg)) {
+    auto canDownload = (args.length > 1) ? (args[1] != noLibsArg) : true;
+    if (canDownload) {
         run("dub add raylib-d");
         writeln();
         writeln(`"Saying yes to happiness means learning to say no to the things and people that stress you out." - Thema Davis`);
