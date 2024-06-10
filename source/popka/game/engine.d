@@ -1266,7 +1266,7 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
             engineState.assetsDir = path.items;
             openWindow(size);
             startFunc();
-            closwWindow();
+            closeWindow();
         }
     } else {
         void main(string[] args) {
