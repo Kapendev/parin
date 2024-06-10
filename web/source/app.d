@@ -4,6 +4,7 @@
 /// This script is designed with the idea that Popka is included inside your source folder, but it can work without Popka too.
 /// Just copy-paste the web folder into your project and run the script from your project folder.
 
+import std.string;
 import std.format;
 import std.path;
 import std.stdio;
@@ -26,6 +27,10 @@ enum assetsDir = buildPath(".", "assets");                         // The assets
 enum popkaDir = buildPath(sourceDir, "popka");                     // The first Popka path.
 enum popkaAltDir = buildPath(".", "web", "popka");                 // The second Popka path.
 enum defaultShellFile = buildPath(".", ".__default_shell__.html"); // The default shell file that will be created if no shell file exists.
+
+enum dubFile = buildPath(".", "dub.json");                         // DUB is not supported 100%, but it works if it is used with the setup script.
+enum dubWebConfig = "web";                                         // The config that will be used to create a library file for the web.
+enum dubLibName = "webgame";                                       // The library name that DUB will output with the web config.
 // ----------
 
 
@@ -140,50 +145,61 @@ void deleteObjectFiles() {
 
 int main(string[] args) {
     // Can pass extra flags to ldc if needed.
-    writeln("Info: All arguments are passed to LDC.");
+    writeln("Info: All arguments are passed to LDC. If arguments are passed, then the project is not treated as a DUB project.");
     char[] extraFlags = [];
     if (args.length > 1) {
         foreach (arg; args[1 .. $]) {
             extraFlags ~= arg;
         }
     }
+    // If this is a DUB project, then we skip some parts of the script.
+    auto isDUBProject = !check(dubFile, false) && extraFlags.length == 0;
 
     // Check the files that are needed for building.
     auto canUseDefaultShell = shellFile.check(false);
     if (libraryFile.check) return 1;
-    if (sourceDir.check) return 1;
+    if (!isDUBProject) {
+        if (sourceDir.check) return 1;
+    }
 
-    // Get the first D files inside the source folder.
     char[] firstFiles = [];
-    foreach (item; dirEntries(sourceDir, SpanMode.shallow)) {
-        if (item.name.length > 2 && item.name[$ - 2 .. $] == ".d") {
-            firstFiles ~= item.name;
-            firstFiles ~= " ";
+    if (!isDUBProject) {
+        // Get the first D files inside the source folder.
+        foreach (item; dirEntries(sourceDir, SpanMode.shallow)) {
+            if (item.name.length > 2 && item.name[$ - 2 .. $] == ".d") {
+                firstFiles ~= item.name;
+                firstFiles ~= " ";
+            }
         }
     }
 
     // Delete old object files inside current folder.
     deleteObjectFiles();
 
-    // Build the source code.
-    // Popka is needed for the web export. It will search inside the source and web folder.
-    auto popkaParentDir = "";
-    if (!popkaDir.check(false)) {
-        popkaParentDir = buildPath(popkaDir, "..");
-    } else if (!popkaAltDir.check(false)) {
-        popkaParentDir = buildPath(popkaAltDir, "..");
+    if (!isDUBProject) {
+        // Build the source code.
+        // Popka is needed for the web export. It will search inside the source and web folder.
+        auto popkaParentDir = "";
+        if (!popkaDir.check(false)) {
+            popkaParentDir = buildPath(popkaDir, "..");
+        } else if (!popkaAltDir.check(false)) {
+            popkaParentDir = buildPath(popkaAltDir, "..");
+        } else {
+            writeln();
+            writeln("Warning: Popka doesn't exist inside your project. Maybe add it inside your web or source folder if you see an error.");
+            writeln("You can also include by passing `-Ipath_to_popka_parent_dir`.");
+            writeln();
+        }
+        if (popkaParentDir.length == 0) {
+            enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -i %s";
+            if (run(command.format(extraFlags, dflags, sourceDir, firstFiles))) return 1;
+        } else {
+            enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
+            if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
+        }
     } else {
-        writeln();
-        writeln("Warning: Popka doesn't exist inside your project. Maybe add it inside your web or source folder if you see an error.");
-        writeln("You can also include by passing `-Ipath_to_popka_parent_dir`.");
-        writeln();
-    }
-    if (popkaParentDir.length == 0) {
-        enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -i %s";
-        if (run(command.format(extraFlags, dflags, sourceDir, firstFiles))) return 1;
-    } else {
-        enum command = "ldc2 -c -mtriple=wasm32-unknown-unknown-wasm -checkaction=halt %s %s -I%s -I%s -i %s";
-        if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
+        enum command = "dub build --compiler ldc --config %s";
+        if (run(command.format(dubWebConfig))) return 1;
     }
 
     // Create a default shell file if needed.
@@ -198,18 +214,45 @@ int main(string[] args) {
             break;
         }
     }
-    if (isAssetsDirEmpty) {
-        enum command = "emcc -o %s *.o %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s";
-        if (run(command.format(output, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile))) {
-            if (canUseDefaultShell) std.file.remove(defaultShellFile);
-            return 1;
+    if (!isDUBProject) {
+        if (isAssetsDirEmpty) {
+            enum command = "emcc -o %s *.o %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s";
+            if (run(command.format(output, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile))) {
+                if (canUseDefaultShell) std.file.remove(defaultShellFile);
+                return 1;
+            }
+        } else {
+            enum command = "emcc -o %s *.o %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s --preload-file %s";
+            if (run(command.format(output, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile, assetsDir))) {
+                if (canUseDefaultShell) std.file.remove(defaultShellFile);
+                return 1;
+            }
         }
     } else {
-        enum command = "emcc -o %s *.o %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s --preload-file %s";
-        if (run(command.format(output, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile, assetsDir))) {
-            if (canUseDefaultShell) std.file.remove(defaultShellFile);
-            return 1;
+        // Search for the library file that DUB created.
+        auto dubLib = "";
+        foreach (item; dirEntries(".", SpanMode.breadth)) {
+            if (item.name.indexOf(dubLibName) != -1) {
+                dubLib = item.name;
+                break;
+            }
         }
+        if (dubLib.check) return 1;
+
+        if (isAssetsDirEmpty) {
+            enum command = "emcc -o %s %s %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s";
+            if (run(command.format(output, dubLib, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile))) {
+                if (canUseDefaultShell) std.file.remove(defaultShellFile);
+                return 1;
+            }
+        } else {
+            enum command = "emcc -o %s %s %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s --preload-file %s";
+            if (run(command.format(output, dubLib, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile, assetsDir))) {
+                if (canUseDefaultShell) std.file.remove(defaultShellFile);
+                return 1;
+            }
+        }
+        std.file.remove(dubLib);
     }
 
     // Delete default shell file if needed.

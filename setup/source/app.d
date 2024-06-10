@@ -24,7 +24,7 @@ enum webDir = buildPath(".", "web");
 // ----------
 
 
-enum defaultDubContent = `{
+enum defaultDUBContent = `{
 "name" : "game",
 "description" : "A game made with Popka.",
 "authors" : ["Name"],
@@ -65,6 +65,12 @@ enum defaultDubContent = `{
         "libs": [
             "raylib.500"
         ]
+    },
+    {
+        "name": "web",
+        "targetType": "library",
+        "targetName": "webgame",
+        "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release"]
     }
 ]
 }
@@ -158,7 +164,7 @@ int main(string[] args) {
     deleteFile(appFile);
 
     // Create the new files.
-    std.file.write(dubFile, defaultDubContent);
+    std.file.write(dubFile, defaultDUBContent);
     std.file.write(gitignoreFile, defaultGitignoreContent);
     std.file.write(appFile, defaultAppContent);
     std.file.mkdir(assetsDir);

@@ -1267,6 +1267,7 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
             openWindow(size);
             startFunc();
             closeWindow();
+            path.free();
         }
     } else {
         void main(string[] args) {
@@ -1277,6 +1278,7 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
             openWindow(size);
             startFunc();
             closeWindow();
+            path.free();
         }
     }
 }
