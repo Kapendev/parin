@@ -126,20 +126,20 @@ void deleteFile(const(char)[] path) {
 }
 
 int main(string[] args) {
-    writeln("Info: Pass `%s` if you don't want to download raylib.".format(noLibsArg));
     if (check(dubFile, false)) {
         writeln("Error: This is not a DUB project.");
         return 1;
     }
     // Skip if the folders already exist.
     if (!check(assetsDir, false) || !check(webDir, false)) {
+        writeln("Skipping setup because some folders already exist.");
         return 0;
     }
 
     // Use the raylib-d script to download the raylib library files.
     // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
     // TODO: Ask the raylib-d project to do something about that.
-    auto canDownload = (args.length > 1) ? (args[1] != noLibsArg) : true;
+    auto canDownload = args.length == 1 || (args.length > 1 && args[1] != noLibsArg);
     if (canDownload) {
         run("dub add raylib-d");
         writeln();
@@ -147,6 +147,8 @@ int main(string[] args) {
         writeln();
         auto pid = spawnShell("dub run raylib-d:install");
         wait(pid);
+    } else if (args.length > 1 && args[1] != noLibsArg) {
+        writeln("Info: Pass `%s` if you don't want to download raylib.".format(noLibsArg));
     }
 
     // Delete the old files.
