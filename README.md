@@ -69,6 +69,7 @@ For more info about exporting to web, read [this](#web-support).
 ## Documentation
 
 For an initial understanding, the [examples](examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
+You can also read the [TOUR.md](TOUR.md) file for a more in-depth overview of the engine's functionalities.
 
 ## Project Layout
 
