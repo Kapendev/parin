@@ -38,3 +38,9 @@ This example shows how to use the Popka dialogue system.
 This example shows how to create an animated character that follows the mouse.
 
 ![image](follower.png)
+
+## [Map](map.d)
+
+This example shows how to use the tile map structure of Popka.
+
+![image](map.png)

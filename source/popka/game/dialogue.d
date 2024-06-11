@@ -9,6 +9,7 @@ module popka.game.dialogue;
 import popka.core.container;
 import popka.core.io;
 import popka.core.strutils;
+import popka.game.engine;
 
 @safe @nogc nothrow:
 
@@ -293,7 +294,7 @@ struct Dialogue {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            auto file = readText(path);
+            auto file = readText(pathConcat(assetsDir, path));
             parse(file.items);
             file.free();
         }

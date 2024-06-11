@@ -472,14 +472,9 @@ struct TileMap {
         return Rect(size);
     }
 
-    void load(const(char)[] path) {
+    void parse(const(char)[] csv) {
         free();
-        if (path.length == 0) {
-            return;
-        }
-
-        auto file = readText(pathConcat(assetsDir, path));
-        auto view = file.items;
+        auto view = csv;
         auto newRowCount = 0;
         auto newColCount = 0;
 
@@ -494,7 +489,7 @@ struct TileMap {
         }
         resize(newRowCount, newColCount);
 
-        view = file.items;
+        view = csv;
         foreach (row; 0 .. newRowCount) {
             auto line = view.skipLine();
             foreach (col; 0 .. newColCount) {
@@ -507,7 +502,15 @@ struct TileMap {
                 }
             }
         }
-        file.free();
+    }
+
+    void load(const(char)[] path) {
+        free();
+        if (path.length != 0) {
+            auto file = readText(pathConcat(assetsDir, path));
+            parse(file.items);
+            file.free();
+        }
     }
 }
 
@@ -1156,9 +1159,13 @@ void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOpti
             if (tileMap[row, col] == -1) {
                 continue;
             }
-            draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize, options);
+            draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize * options.scale, options);
         }
     }
+}
+
+void draw(Sprite sprite, TileMap tileMap, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
+    draw(sprite, tileMap, camera, Vec2(), options);
 }
 
 void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {

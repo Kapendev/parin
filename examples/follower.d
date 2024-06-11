@@ -27,12 +27,14 @@ bool gameLoop() {
     }
 
     // Draw the game.
+    // The options can change the way something is drawn.
     auto options = DrawOptions();
     options.hook = Hook.center;
     options.flip = frameDirection == 1 ? Flip.x : Flip.none;
     options.scale = Vec2(2);
-
+    // Draw part of the atlas sprite.
     draw(atlas, Rect(frameSize.x * floor(frame), 128, frameSize), framePosition, options);
+    // Draw the mouse position.
     draw(mouseScreenPosition, frame == 0 ? blank : white.alpha(150));
     return false;
 }
