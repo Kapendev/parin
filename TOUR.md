@@ -3,12 +3,9 @@
 > [!WARNING]  
 > I am still working on this.
 
-## Getting Started
+## Your First Popka Game
 
-### Hello-World
-
-As the first Popka game, let's show the message `Hello world!`.
-Write this inside your app.d file:
+Let's get started with Popka by creating a simple game that displays the classic message "Hello world!". Open your app.d file and paste the following code:
 
 ```d
 import popka;
@@ -26,36 +23,47 @@ void gameStart() {
 mixin addGameStart!(gameStart, 640, 360);
 ```
 
-If you see a window with the text `Hello world!`, congratulations, your program works!
-So, how the code work?
-Well...
+Once you've saved the code, you should be able to compile/run with:
 
-```d
-import popka;
+```bash
+dub run
 ```
 
-This imports many Popka modules that provide everything you need to make a game. 
+You should see a window with the text "Hello world!" displayed.
+Congratulations, you've created your first Popka game!
 
-```d
-bool gameLoop() {
-    draw("Hello world!");
-    return false;
-}
-```
+### Understanding the Code
 
-This is the main loop of a Popka game. It has to return bool.
-True will exit the main loop and false will continue the main loop.
+1. Import
 
-```d
-void gameStart() {
-    lockResolution(320, 180);
-    updateWindow!gameLoop();
-}
+    ```d
+    import popka;
+    ```
 
-mixin addGameStart!(gameStart, 640, 360);
-```
+    This line imports some basic Popka modules that are needed to make your game.
 
-This is the starting point of a Popka game.
-The mixin creates a main function that has the given function in it and adds some extra stuff.
+2. Game Loop
 
-That it. Read it later Alex and tell yourself what you like and what you don't. -.-
+    ```d
+    bool gameLoop() {
+        draw("Hello world!");
+        return false;
+    }
+    ```
+
+    This function is the heart of your game. It runs every frame, and on each frame in this example, it draws the message "Hello world!" on the game window.
+    The `return false` statement tells the game to keep running. If true is returned, then the game will stop running.
+
+3. Game Start and Mixin
+
+    ```d
+    void gameStart() {
+        lockResolution(320, 180);
+        updateWindow!gameLoop();
+    }
+
+    mixin addGameStart!(gameStart, 640, 360);
+    ```
+
+    This function is the entry point of your game. It runs only one time, and in this example, it locks the game resolution to 320 pixels wide and 180 pixels tall, and the `updateWindow!gameLoop()` call starts the game loop.
+    The `mixin addGameStart!(gameStart, 640, 360)` line might seem a bit complex right now, but it's a special Popka call that makes sure the `gameStart` function runs when your game starts and creates a game window that is 640 pixels wide and 360 pixels tall.
