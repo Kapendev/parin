@@ -64,7 +64,7 @@ dub run
 ```
 
 You can pass `offline` to the script if you don't want to download raylib.
-For more info about exporting to web, see [this](#web-support).
+For more info about exporting to web, read [this](#web-support).
 
 ## Documentation
 
@@ -82,7 +82,7 @@ This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) an
 
 ## Web Support
 
-For exporting to web, your project needs to be compatible with BetterC.
+For exporting to web, your project needs to be compatible with BetterC and it has to avoid some imports from the standard library.
 The [web](web) folder contains a helper script to assist with the web export process.
 If you use DUB, you can run the script with:
 

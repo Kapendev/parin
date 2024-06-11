@@ -6,13 +6,7 @@
 
 module popka.core.math;
 
-private {
-    @system @nogc nothrow extern(C):
-
-    float sqrtf(float x);
-    float sinf(float x);
-    float cosf(float x);
-}
+import popka.core.stdc;
 
 @safe @nogc nothrow:
 

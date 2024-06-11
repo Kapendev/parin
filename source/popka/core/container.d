@@ -5,12 +5,7 @@
 
 module popka.core.container;
 
-private {
-    @system @nogc nothrow extern(C):
-
-    void* realloc(void* ptr, size_t size);
-    void free(void* ptr);
-}
+import popka.core.stdc;
 
 @safe @nogc nothrow:
 
