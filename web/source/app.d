@@ -198,7 +198,7 @@ int main(string[] args) {
             if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
         }
     } else {
-        enum command = "dub build --compiler ldc --config %s";
+        enum command = "dub build --compiler ldc --config %s --build release";
         if (run(command.format(dubWebConfig))) return 1;
     }
 
@@ -243,12 +243,14 @@ int main(string[] args) {
             enum command = "emcc -o %s %s %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s";
             if (run(command.format(output, dubLib, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile))) {
                 if (canUseDefaultShell) std.file.remove(defaultShellFile);
+                std.file.remove(dubLib);
                 return 1;
             }
         } else {
             enum command = "emcc -o %s %s %s -Wall -DPLATFORM_WEB %s -s USE_GLFW=3 -s ERROR_ON_UNDEFINED_SYMBOLS=0 --shell-file %s --preload-file %s";
             if (run(command.format(output, dubLib, cflags, libraryFile, canUseDefaultShell ? defaultShellFile : shellFile, assetsDir))) {
                 if (canUseDefaultShell) std.file.remove(defaultShellFile);
+                std.file.remove(dubLib);
                 return 1;
             }
         }

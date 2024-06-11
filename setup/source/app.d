@@ -68,7 +68,7 @@ enum defaultDUBContent = `{
     },
     {
         "name": "web",
-        "targetType": "library",
+        "targetType": "staticLibrary",
         "targetName": "webgame",
         "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release", "-i"]
     }

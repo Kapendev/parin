@@ -858,12 +858,13 @@ Vec2 mouseScreenPosition() {
         auto window = windowSize;
         auto minRatio = min(window.x / engineState.viewport.size.x, window.y / engineState.viewport.size.y);
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
+        // We use touch because it works on desktop, web and phones.
         return Vec2(
-            (ray.GetMouseX() - (window.x - targetSize.x) * 0.5f) / minRatio,
-            (ray.GetMouseY() - (window.y - targetSize.y) * 0.5f) / minRatio,
+            (ray.GetTouchX() - (window.x - targetSize.x) * 0.5f) / minRatio,
+            (ray.GetTouchY() - (window.y - targetSize.y) * 0.5f) / minRatio,
         );
     } else {
-        return Vec2(ray.GetMouseX(), ray.GetMouseY());
+        return Vec2(ray.GetTouchX(), ray.GetTouchY());
     }
 }
 
