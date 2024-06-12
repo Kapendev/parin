@@ -294,9 +294,7 @@ struct Dialogue {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            auto file = readText(pathConcat(assetsDir, path));
-            parse(file.items);
-            file.free();
+            parse(loadTempText(path));
         }
     }
 

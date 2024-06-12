@@ -135,7 +135,8 @@ enum Gamepad {
 struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
-    const(char)[] assetsDir;
+    List!char assetsDir;
+    List!char tempText;
 
     bool isUpdating;
     bool isFPSLocked;
@@ -190,7 +191,7 @@ struct Sprite {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadTexture(pathConcat(assetsDir, path).toStrz);
+            data = ray.LoadTexture(path.toAssetsPath.toStrz);
         }
     }
 
@@ -269,7 +270,7 @@ struct Font {
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
         if (path.length != 0) {
-            data = ray.LoadFontEx(pathConcat(assetsDir, path).toStrz, size, cast(int*) runes.ptr, cast(int) runes.length);
+            data = ray.LoadFontEx(path.toAssetsPath.toStrz, size, cast(int*) runes.ptr, cast(int) runes.length);
         }
     }
 
@@ -317,7 +318,7 @@ struct Sound {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadSound(pathConcat(assetsDir, path).toStrz);
+            data = ray.LoadSound(path.toAssetsPath.toStrz);
         }
     }
 
@@ -369,7 +370,7 @@ struct Music {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadMusicStream(pathConcat(assetsDir, path).toStrz);
+            data = ray.LoadMusicStream(path.toAssetsPath.toStrz);
         }
     }
 
@@ -507,27 +508,52 @@ struct TileMap {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            auto file = loadText(path);
-            parse(file.items);
-            file.free();
+            parse(loadTempText(path));
         }
     }
 }
 
 void loadText(const(char)[] path, ref List!char text) {
-    readText(pathConcat(assetsDir, path), text);
+    readText(path.toAssetsPath, text);
 }
 
 List!char loadText(const(char)[] path) {
-    return readText(pathConcat(assetsDir, path));
+    return readText(path.toAssetsPath);
+}
+
+const(char)[] loadTempText(const(char)[] path) {
+    loadText(path, engineState.tempText);
+    return engineState.tempText.items;
 }
 
 void saveText(const(char)[] path, List!char content) {
-    writeText(pathConcat(assetsDir, path), content);
+    writeText(path.toAssetsPath, content);
 }
 
 void loadConfig(A...)(const(char)[] path, ref A args) {
-    readConfig(pathConcat(assetsDir, path), args);
+    readConfig(path.toAssetsPath, args);
+}
+
+const(char)[] toAssetsPath(const(char)[] path) {
+    static char[1024] buffer = void;
+
+    if (path.length == 0) {
+        return assetsDir;
+    }
+
+    auto result = buffer[];
+    result.copyStrChars(assetsDir);
+    result[assetsDir.length] = pathSeparator;
+    foreach (i, c; path) {
+        auto ii = i + assetsDir.length + 1;
+        if (c == otherPathSeparator) {
+            result[ii] = pathSeparator;
+        } else {
+            result[ii] = c;
+        }
+    }
+    result = result[0 .. assetsDir.length + 1 + path.length];
+    return result;
 }
 
 /// Converts a raylib color to a Popka color.
@@ -684,6 +710,9 @@ Font rayFont() {
 }
 
 void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+    if (ray.IsWindowReady) {
+        return;
+    }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
     ray.InitWindow(cast(int) size.x, cast(int) size.y, toStrz(title));
@@ -790,6 +819,9 @@ void updateWindow(alias loopFunc)() {
 }
 
 void closeWindow() {
+    if (!ray.IsWindowReady) {
+        return;
+    }
     engineState.viewport.free();
     ray.CloseAudioDevice();
     ray.CloseWindow();
@@ -852,7 +884,7 @@ void showCursor() {
 }
 
 const(char)[] assetsDir() {
-    return engineState.assetsDir;
+    return engineState.assetsDir.items;
 }
 
 bool isFullscreen() {
@@ -1081,16 +1113,16 @@ void draw(Vec2 point, Color color = white) {
     draw(Rect(point, Vec2(8)).centerArea, color);
 }
 
-void draw(Rect rect, Color color = white) {
+void draw(Rect area, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+        ray.DrawRectanglePro(toRay(area.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
     } else {
-        ray.DrawRectanglePro(toRay(rect), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+        ray.DrawRectanglePro(toRay(area), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
     }
 }
 
-void draw(Circ circ, Color color = white) {
-    ray.DrawCircleV(toRay(circ.position), circ.radius, toRay(color));
+void draw(Circ area, Color color = white) {
+    ray.DrawCircleV(toRay(area.position), area.radius, toRay(color));
 }
 
 void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1145,12 +1177,12 @@ void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOpt
     }
 }
 
-void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
-    draw(sprite, Rect(), position, options);
-}
-
 void draw(Sprite sprite, Rect area, DrawOptions options = DrawOptions()) {
     draw(sprite, area, Vec2(), options);
+}
+
+void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
+    draw(sprite, Rect(), position, options);
 }
 
 void draw(Sprite sprite, DrawOptions options = DrawOptions()) {
@@ -1310,25 +1342,23 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
                 }
                 return strz[0 .. length];
             }
-            auto path = List!char(pathDir(__helper(argv[0])));
-            path.append(pathSeparator);
-            path.append("assets");
-            engineState.assetsDir = path.items;
+            engineState.assetsDir.append(pathDir(__helper(argv[0])));
+            engineState.assetsDir.append(pathSeparator);
+            engineState.assetsDir.append("assets");
             openWindow(size);
             startFunc();
             closeWindow();
-            path.free();
+            engineState.assetsDir.free();
         }
     } else {
         void main(string[] args) {
-            auto path = List!char(pathDir(args[0]));
-            path.append(pathSeparator);
-            path.append("assets");
-            engineState.assetsDir = path.items;
+            engineState.assetsDir.append(pathDir(args[0]));
+            engineState.assetsDir.append(pathSeparator);
+            engineState.assetsDir.append("assets");
             openWindow(size);
             startFunc();
             closeWindow();
-            path.free();
+            engineState.assetsDir.free();
         }
     }
 }
