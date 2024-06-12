@@ -56,7 +56,7 @@ The last line will download raylib and create some folders necessary for Popka t
 * assets: This folder is used to store game assets such as images, sounds and fonts.
 * web: This folder is used for exporting to the web.
 
-The last line also changes the default app.d file.
+The last line also changes the default app.d and dub.json files.
 Once the installation is complete, you should be able to compile/run with:
 
 ```bash
