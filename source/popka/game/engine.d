@@ -514,44 +514,53 @@ struct TileMap {
     }
 }
 
+/// Converts a raylib color to a Popka color.
 Color toPopka(ray.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
+/// Converts a raylib vector to a Popka vector.
 Vec2 toPopka(ray.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
+/// Converts a raylib vector to a Popka vector.
 Vec3 toPopka(ray.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
+/// Converts a raylib vector to a Popka vector.
 Vec4 toPopka(ray.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
+/// Converts a raylib rectangle to a Popka rectangle.
 Rect toPopka(ray.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
+/// Converts a raylib texture to a Popka sprite.
 Sprite toPopka(ray.Texture2D from) {
     Sprite result;
     result.data = from;
     return result;
 }
 
+/// Converts a raylib font to a Popka font.
 Font toPopka(ray.Font from) {
     Font result;
     result.data = from;
     return result;
 }
 
+/// Converts a raylib render texture to a Popka viewport.
 Viewport toPopka(ray.RenderTexture2D from) {
     Viewport result;
     result.data = from;
     return result;
 }
 
+/// Converts a raylib camera to a Popka camera.
 Camera toPopka(ray.Camera2D from) {
     Camera result;
     result.position = toPopka(from.target);
@@ -560,42 +569,52 @@ Camera toPopka(ray.Camera2D from) {
     return result;
 }
 
+/// Converts a Popka color to a raylib color.
 ray.Color toRay(Color from) {
     return ray.Color(from.r, from.g, from.b, from.a);
 }
 
+/// Converts a Popka vector to a raylib vector.
 ray.Vector2 toRay(Vec2 from) {
     return ray.Vector2(from.x, from.y);
 }
 
+/// Converts a Popka vector to a raylib vector.
 ray.Vector3 toRay(Vec3 from) {
     return ray.Vector3(from.x, from.y, from.z);
 }
 
+/// Converts a Popka vector to a raylib vector.
 ray.Vector4 toRay(Vec4 from) {
     return ray.Vector4(from.x, from.y, from.z, from.w);
 }
 
+/// Converts a Popka rectangle to a raylib rectangle.
 ray.Rectangle toRay(Rect from) {
     return ray.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
+/// Converts a Popka sprite to a raylib texture.
 ray.Texture2D toRay(Sprite from) {
     return from.data;
 }
 
+/// Converts a Popka font to a raylib font.
 ray.Font toRay(Font from) {
     return from.data;
 }
 
+/// Converts a Popka viewport to a raylib render texture.
 ray.RenderTexture2D toRay(Viewport from) {
     return from.data;
 }
 
+/// Converts a Popka camera to a raylib camera.
 ray.Camera2D toRay(Camera from) {
     return ray.Camera2D(toRay(from.origin), toRay(from.position), from.rotation, from.scale);
 }
 
+/// Converts a Popka filter to a raylib filter.
 int toRay(Filter filter) {
     final switch (filter) {
         case Filter.nearest: return ray.TEXTURE_FILTER_POINT;
@@ -603,6 +622,9 @@ int toRay(Filter filter) {
     }
 }
 
+/// Returns the opposite flip value.
+/// The opposite of every flip value except none is none.
+/// The fallback value is returned if the flip value is none.
 Flip opposite(Flip flip, Flip fallback) {
     if (flip == fallback) {
         return Flip.none;
@@ -611,18 +633,22 @@ Flip opposite(Flip flip, Flip fallback) {
     }
 }
 
+/// Returns a random int between 0 and int.max (inclusive).
 int randi() {
     return ray.GetRandomValue(0, int.max);
 }
 
+/// Returns a random float between 0.0f and 1.0f (inclusive).
 float randf() {
     return ray.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
+/// Sets the seed for the random number generator to something specific.
 void randomize(uint seed) {
     ray.SetRandomSeed(seed);
 }
 
+/// Randomizes the seed of the random number generator.
 void randomize() {
     randomize(randi);
 }

@@ -333,6 +333,7 @@ const(char)[] pathDir(const(char)[] path) {
     }
 }
 
+// TODO: Make it more safe? Look at how Python does it.
 const(char)[] pathConcat(const(char)[][] args...) {
     static char[1024] buffer = void;
 

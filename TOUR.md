@@ -51,7 +51,7 @@ Congratulations, you've created your first Popka game!
     }
     ```
 
-    This function is the heart of your game. It runs every frame, and on each frame in this example, it draws the message "Hello world!" on the game window.
+    This function is the main loop of your game. It runs every frame, and on each frame in this example, it draws the message "Hello world!" on the game window.
     The `return false` statement tells the game to keep running. If true is returned, then the game will stop running.
 
 3. Game Start and Mixin
@@ -65,5 +65,10 @@ Congratulations, you've created your first Popka game!
     mixin addGameStart!(gameStart, 640, 360);
     ```
 
-    This function is the entry point of your game. It runs only one time, and in this example, it locks the game resolution to 320 pixels wide and 180 pixels tall, and the `updateWindow!gameLoop()` call starts the game loop.
-    The `mixin addGameStart!(gameStart, 640, 360)` line might seem a bit complex right now, but it's a special Popka call that makes sure the `gameStart` function runs when your game starts and creates a game window that is 640 pixels wide and 360 pixels tall.
+    This function is the starting point of your game. It runs only one time, and in this example, it locks the game resolution to 320 pixels wide and 180 pixels tall, and the `updateWindow!gameLoop()` call starts the game loop.
+    The `mixin addGameStart!(gameStart, 640, 360)` line might seem a bit complex right now, but it makes sure the `gameStart` function runs when your game starts and creates a game window that is 640 pixels wide and 360 pixels tall.
+
+In essence, a Popka game typically relies on two key functions:
+
+* A game loop function.
+* A game start function.
