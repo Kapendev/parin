@@ -72,3 +72,26 @@ In essence, a Popka game typically relies on two key functions:
 
 * A game loop function.
 * A game start function.
+
+## Drawing Functions
+
+* draw(Vec2 point, Vec2 size, Color color = white)
+* draw(Vec2 point, Color color = white)
+* draw(Rect rect, Color color = white)
+* draw(Circ circ, Color color = white)
+* draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, Rect area, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, Vec2 tileSize, uint tileCount, float tileSpacing, Vec2 position, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions())
+* draw(Sprite sprite, TileMap tileMap, Camera camera = Camera(), DrawOptions options = DrawOptions())
+* draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions())
+* draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions())
+* draw(const(char)[] text, Vec2 position, DrawOptions options)
+* draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f))
+
+## Loading and Saving
+
+Functions that start with the word load/save will always try to read/write from the assets folder.

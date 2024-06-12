@@ -86,7 +86,7 @@ void writeText(const(char)[] path, List!char content) {
 
 // TODO: See what works.
 // NOTE: Testing stuff to see how to make it easy to use.
-// NOTE: Does not do any error checking for now.
+// Does not do any error checking for now and works only with booleans, integers and floats.
 void readConfig(A...)(const(char)[] path, ref A args) {
     auto file = readText(path);
     auto group = cast(const(char)[]) "";

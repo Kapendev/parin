@@ -507,11 +507,27 @@ struct TileMap {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            auto file = readText(pathConcat(assetsDir, path));
+            auto file = loadText(path);
             parse(file.items);
             file.free();
         }
     }
+}
+
+void loadText(const(char)[] path, ref List!char text) {
+    readText(pathConcat(assetsDir, path), text);
+}
+
+List!char loadText(const(char)[] path) {
+    return readText(pathConcat(assetsDir, path));
+}
+
+void saveText(const(char)[] path, List!char content) {
+    writeText(pathConcat(assetsDir, path), content);
+}
+
+void loadConfig(A...)(const(char)[] path, ref A args) {
+    readConfig(pathConcat(assetsDir, path), args);
 }
 
 /// Converts a raylib color to a Popka color.
@@ -1057,20 +1073,20 @@ Vec2 wasd() {
     return result;
 }
 
-void draw(Rect rect, Color color = white) {
-    if (isPixelPerfect) {
-        ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
-    } else {
-        ray.DrawRectanglePro(toRay(rect), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
-    }
-}
-
 void draw(Vec2 point, Vec2 size, Color color = white) {
     draw(Rect(point, size).centerArea, color);
 }
 
 void draw(Vec2 point, Color color = white) {
     draw(Rect(point, Vec2(8)).centerArea, color);
+}
+
+void draw(Rect rect, Color color = white) {
+    if (isPixelPerfect) {
+        ray.DrawRectanglePro(toRay(rect.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+    } else {
+        ray.DrawRectanglePro(toRay(rect), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+    }
 }
 
 void draw(Circ circ, Color color = white) {
@@ -1272,13 +1288,13 @@ void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = Dr
     ray.rlPopMatrix();
 }
 
-void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
-    auto options = DrawOptions();
-    options.color = gray2;
+void draw(const(char)[] text, Vec2 position, DrawOptions options) {
     draw(rayFont, text, position, options);
 }
 
-void draw(const(char)[] text, Vec2 position, DrawOptions options) {
+void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
+    auto options = DrawOptions();
+    options.color = gray2;
     draw(rayFont, text, position, options);
 }
 
