@@ -90,7 +90,7 @@ void draw(Line area, float size, Color color = white);
 void draw(Line area, Color color = white);
 
 // Point Drawing
-void draw(Vec2 point, Vec2 size, Color color = white);
+void draw(Vec2 point, float size, Color color = white);
 void draw(Vec2 point, Color color = white);
 
 // Sprite Drawing

@@ -513,19 +513,28 @@ struct TileMap {
     }
 }
 
+/// Loads a text file from the assets folder and stores its contents in the given list.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems
 void loadText(const(char)[] path, ref List!char text) {
     readText(path.toAssetsPath, text);
 }
 
+/// Loads a text file from the assets folder and returns its contents as a list.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems
 List!char loadText(const(char)[] path) {
     return readText(path.toAssetsPath);
 }
 
+/// Loads a text file from the assets folder and returns its contents as a slice.
+/// The slice can be safely used until this function is called again.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems
 const(char)[] loadTempText(const(char)[] path) {
     loadText(path, engineState.tempText);
     return engineState.tempText.items;
 }
 
+/// Saves a text file to the assets folder.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems
 void saveText(const(char)[] path, List!char content) {
     writeText(path.toAssetsPath, content);
 }
@@ -1172,8 +1181,8 @@ void draw(Line area, Color color = white) {
     }
 }
 
-void draw(Vec2 point, Vec2 size, Color color = white) {
-    draw(Rect(point, size).centerArea, color);
+void draw(Vec2 point, float size, Color color = white) {
+    draw(Rect(point, size, size).centerArea, color);
 }
 
 void draw(Vec2 point, Color color = white) {
