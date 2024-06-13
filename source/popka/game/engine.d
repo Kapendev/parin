@@ -695,20 +695,26 @@ void randomize() {
     randomize(randi);
 }
 
+/// Converts a screen point to a world point based on the given camera.
 Vec2 toWorldPoint(Vec2 point, Camera camera) {
     return toPopka(ray.GetScreenToWorld2D(toRay(point), toRay(camera)));
 }
 
+/// Converts a world point to a screen point based on the given camera.
 Vec2 toScreenPoint(Vec2 point, Camera camera) {
     return toPopka(ray.GetWorldToScreen2D(toRay(point), toRay(camera)));
 }
 
+/// Returns the default raylib font. This font should not be freed.
 Font rayFont() {
     auto result = toPopka(ray.GetFontDefault());
     result.spacing = Vec2(1.0f, 14.0f);
     return result;
 }
 
+/// Opens the game window with the given size and title.
+/// This function does not work if the window is already open, because Popka only works with one window.
+/// Usually you should avoid calling this function manually.
 void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
     if (ray.IsWindowReady) {
         return;
@@ -724,10 +730,15 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
     engineState.lastWindowSize = size;
 }
 
+/// Opens the game window with the given size and title.
+/// This function does not work if the window is already open, because Popka only works with one window.
+/// Usually you should avoid calling this function manually.
 void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
     openWindow(Vec2(width, height), title, color);
 }
 
+/// Updates the game window every frame with the specified loop function.
+/// This function will return when the loop function returns true.
 void updateWindow(alias loopFunc)() {
     static bool __updateWindow() {
         // Begin drawing.
@@ -818,6 +829,8 @@ void updateWindow(alias loopFunc)() {
     }
 }
 
+/// Closes the game window.
+/// Usually you should avoid calling this function manually.
 void closeWindow() {
     if (!ray.IsWindowReady) {
         return;
@@ -828,24 +841,29 @@ void closeWindow() {
     engineState = EngineState.init;
 }
 
+/// Returns true if the FPS of the game is locked.
 bool isFPSLocked() {
     return engineState.isFPSLocked;
 }
 
+/// Locks the FPS of the game to a specific value.
 void lockFPS(uint target) {
     ray.SetTargetFPS(target);
     engineState.isFPSLocked = true;
 }
 
+/// Unlocks the FPS of the game.
 void unlockFPS() {
     ray.SetTargetFPS(0);
     engineState.isFPSLocked = false;
 }
 
+/// Returns true if the resolution of the game is locked.
 bool isResolutionLocked() {
     return !engineState.viewport.isEmpty;
 }
 
+/// Locks the resolution of the game to a specific value.
 void lockResolution(Vec2 size) {
     if (!engineState.isUpdating) {
         engineState.viewport.load(size);
@@ -856,10 +874,12 @@ void lockResolution(Vec2 size) {
     }
 }
 
+/// Locks the resolution of the game to a specific value.
 void lockResolution(float width, float height) {
     lockResolution(Vec2(width, height));
 }
 
+/// Unlocks the resolution of the game.
 void unlockResolution() {
     if (!engineState.isUpdating) {
         engineState.viewport.free();
@@ -869,38 +889,53 @@ void unlockResolution() {
     }
 }
 
+/// Returns true if the system cursor is hidden.
 bool isCursorHidden() {
     return engineState.isCursorHidden;
 }
 
+/// Hides the system cursor.
+/// This function works only on desktop.
 void hideCursor() {
     ray.HideCursor();
     engineState.isCursorHidden = true;
 }
 
+/// Shows the system cursor.
+/// This function works only on desktop.
 void showCursor() {
     ray.ShowCursor();
     engineState.isCursorHidden = false;
 }
 
+/// Returns the assets folder path.
 const(char)[] assetsDir() {
     return engineState.assetsDir.items;
 }
 
+/// Returns true if the window is in fullscreen mode.
+/// This function works only on desktop.
 bool isFullscreen() {
     return ray.IsWindowFullscreen;
 }
 
+/// Changes the state of the fullscreen mode of the window.
+/// This function works only on desktop.
 void toggleFullscreen() {
-    if (!ray.IsWindowFullscreen()) {
-        auto screen = screenSize;
-        engineState.lastWindowSize = windowSize;
-        ray.SetWindowPosition(0, 0);
-        ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
+    version(WebAssembly) {
+
+    } else {
+        if (!ray.IsWindowFullscreen()) {
+            auto screen = screenSize;
+            engineState.lastWindowSize = windowSize;
+            ray.SetWindowPosition(0, 0);
+            ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
+        }
+        engineState.isToggleFullscreenQueued = true;
     }
-    engineState.isToggleFullscreenQueued = true;
 }
 
+/// Returns true if the drawing is done in a pixel perfect way.
 bool isPixelPerfect() {
     return engineState.isPixelPerfect;
 }
@@ -1122,7 +1157,11 @@ void draw(Rect area, Color color = white) {
 }
 
 void draw(Circ area, Color color = white) {
-    ray.DrawCircleV(toRay(area.position), area.radius, toRay(color));
+    if (isPixelPerfect) {
+        ray.DrawCircleV(toRay(area.position.floor()), area.radius, toRay(color));
+    } else {
+        ray.DrawCircleV(toRay(area.position), area.radius, toRay(color));
+    }
 }
 
 void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {

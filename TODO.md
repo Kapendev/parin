@@ -7,3 +7,4 @@
 * Random
 * Docs
 * Remove asserts from dialogue module.
+* Make pathDir more lenient.
