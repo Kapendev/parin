@@ -115,6 +115,19 @@ bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
 }
 
+const(char)[] toCleanNumber(alias i)() {
+    enum str = i.stringof;
+    static if (str.length >= 3 && (((str[$ - 1] == 'L' || str[$ - 1] == 'l') && (str[$ - 2] == 'U' || str[$ - 2] == 'u')) || ((str[$ - 1] == 'U' || str[$ - 1] == 'u') && (str[$ - 2] == 'L' || str[$ - 2] == 'l')))) {
+        return str[0 .. $ - 2];
+    } else static if (str.length >= 2 && (str[$ - 1] == 'U' || str[$ - 1] == 'u')) {
+        return str[0 .. $ - 1];
+    } else static if (str.length >= 2 && (str[$ - 1] == 'L' || str[$ - 1] == 'l')) {
+        return str[0 .. $ - 1];
+    } else {
+        return str;
+    }
+}
+
 unittest {
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);

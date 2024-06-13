@@ -679,13 +679,46 @@ struct Circ {
 
     @safe @nogc nothrow:
 
+    pragma(inline, true)
     this(Vec2 position, float radius) {
         this.position = position;
         this.radius = radius;
     }
 
+    pragma(inline, true)
     this(float x, float y, float radius) {
         this(Vec2(x, y), radius);
+    }
+}
+
+struct Line {
+    Vec2 a;
+    Vec2 b;
+
+    enum zero = Line(0.0f, 0.0f, 0.0f, 0.0f);
+    enum one = Line(1.0f, 1.0f, 1.0f, 1.0f);
+
+    @safe @nogc nothrow:
+
+    pragma(inline, true)
+    this(Vec2 a, Vec2 b) {
+        this.a = a;
+        this.b = b;
+    }
+
+    pragma(inline, true)
+    this(float ax, float ay, float bx, float by) {
+        this(Vec2(ax, ay), Vec2(bx, by));
+    }
+
+    pragma(inline, true)
+    this(Vec2 a, float bx, float by) {
+        this(a, Vec2(bx, by));
+    }
+
+    pragma(inline, true)
+    this(float ax, float ay, Vec2 b) {
+        this(Vec2(ax, ay), b);
     }
 }
 

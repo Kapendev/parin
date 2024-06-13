@@ -1140,14 +1140,6 @@ Vec2 wasd() {
     return result;
 }
 
-void draw(Vec2 point, Vec2 size, Color color = white) {
-    draw(Rect(point, size).centerArea, color);
-}
-
-void draw(Vec2 point, Color color = white) {
-    draw(Rect(point, Vec2(8)).centerArea, color);
-}
-
 void draw(Rect area, Color color = white) {
     if (isPixelPerfect) {
         ray.DrawRectanglePro(toRay(area.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
@@ -1162,6 +1154,30 @@ void draw(Circ area, Color color = white) {
     } else {
         ray.DrawCircleV(toRay(area.position), area.radius, toRay(color));
     }
+}
+
+void draw(Line area, float size, Color color = white) {
+    if (isPixelPerfect) {
+        ray.DrawLineEx(toRay(area.a.floor()), toRay(area.b.floor()), size, toRay(color));
+    } else {
+        ray.DrawLineEx(toRay(area.a), toRay(area.b), size, toRay(color));
+    }
+}
+
+void draw(Line area, Color color = white) {
+    if (isPixelPerfect) {
+        ray.DrawLineEx(toRay(area.a.floor()), toRay(area.b.floor()), 2.0f, toRay(color));
+    } else {
+        ray.DrawLineEx(toRay(area.a), toRay(area.b), 2.0f, toRay(color));
+    }
+}
+
+void draw(Vec2 point, Vec2 size, Color color = white) {
+    draw(Rect(point, size).centerArea, color);
+}
+
+void draw(Vec2 point, Color color = white) {
+    draw(Rect(point, Vec2(8)).centerArea, color);
 }
 
 void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {

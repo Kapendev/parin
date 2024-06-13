@@ -73,18 +73,25 @@ In essence, a Popka game typically relies on two key functions:
 * A game loop function.
 * A game start function.
 
-## Drawing Functions
+## Drawing
+
+Popka provides a set of drawing functions for creating various graphical elements.
+While drawing is not pixel-perfect by default, you can enable pixel-perfect drawing by calling the `togglePixelPerfect()` function.
 
 ```d
-// Point Drawing
-void draw(Vec2 point, Vec2 size, Color color = white);
-void draw(Vec2 point, Color color = white);
-
 // Rectangle Drawing
 void draw(Rect area, Color color = white);
 
 // Circle Drawing
 void draw(Circ area, Color color = white);
+
+// Line Drawing
+void draw(Line area, float size, Color color = white);
+void draw(Line area, Color color = white);
+
+// Point Drawing
+void draw(Vec2 point, Vec2 size, Color color = white);
+void draw(Vec2 point, Color color = white);
 
 // Sprite Drawing
 void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions());

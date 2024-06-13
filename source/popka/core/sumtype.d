@@ -12,7 +12,7 @@ import popka.core.traits;
 union SumTypeData(A...) {
     // The slice removes the 'LU' part of the number.
     static foreach (i, T; A) {
-        mixin("T ", "m", i.stringof[0 .. $ - 2], ";");
+        mixin("T ", "m", toCleanNumber!i, ";");
     }
 }
 
@@ -87,7 +87,7 @@ struct SumType(A...) {
         switch (kind) {
             static foreach (i, T; A) {
                 static if (__traits(hasMember, T, func)) {
-                    mixin("case ", i, ": return data.m", i.stringof[0 .. $ - 2], ".", func, "(args);");
+                    mixin("case ", i, ": return data.m", toCleanNumber!i, ".", func, "(args);");
                 } else {
                     mixin("case ", i, ": return;");
                 }
