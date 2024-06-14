@@ -1173,20 +1173,8 @@ void draw(Line area, float size, Color color = white) {
     }
 }
 
-void draw(Line area, Color color = white) {
-    if (isPixelPerfect) {
-        ray.DrawLineEx(toRay(area.a.floor()), toRay(area.b.floor()), 2.0f, toRay(color));
-    } else {
-        ray.DrawLineEx(toRay(area.a), toRay(area.b), 2.0f, toRay(color));
-    }
-}
-
 void draw(Vec2 point, float size, Color color = white) {
     draw(Rect(point, size, size).centerArea, color);
-}
-
-void draw(Vec2 point, Color color = white) {
-    draw(Rect(point, Vec2(8)).centerArea, color);
 }
 
 void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1241,21 +1229,13 @@ void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOpt
     }
 }
 
-void draw(Sprite sprite, Rect area, DrawOptions options = DrawOptions()) {
-    draw(sprite, area, Vec2(), options);
-}
-
 void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
     draw(sprite, Rect(), position, options);
 }
 
-void draw(Sprite sprite, DrawOptions options = DrawOptions()) {
-    draw(sprite, Rect(), Vec2(), options);
-}
-
-void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(uint) (sprite.size.x / tileSize.x);
-    auto gridHeight = cast(uint) (sprite.size.y / tileSize.y);
+void draw(Sprite sprite, Vec2 tileSize, int tileID, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto gridWidth = cast(int) (sprite.size.x / tileSize.x);
+    auto gridHeight = cast(int) (sprite.size.y / tileSize.y);
     if (gridWidth == 0 || gridHeight == 0) {
         return;
     }
@@ -1263,12 +1243,6 @@ void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions 
     auto col = tileID % gridWidth;
     auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
     draw(sprite, area, position, options);
-}
-
-void draw(Sprite sprite, Vec2 tileSize, uint tileCount, float tileSpacing, Vec2 position, DrawOptions options = DrawOptions()) {
-    foreach_reverse(i; 0 .. tileCount) {
-        draw(sprite, tileSize, i, Vec2(position.x, position.y + i * tileSpacing * options.scale.y), options);
-    }
 }
 
 void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1300,10 +1274,6 @@ void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOpti
             draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize * options.scale, options);
         }
     }
-}
-
-void draw(Sprite sprite, TileMap tileMap, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
-    draw(sprite, tileMap, camera, Vec2(), options);
 }
 
 void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1384,14 +1354,8 @@ void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = Dr
     ray.rlPopMatrix();
 }
 
-void draw(const(char)[] text, Vec2 position, DrawOptions options) {
-    draw(rayFont, text, position, options);
-}
-
-void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f)) {
-    auto options = DrawOptions();
-    options.color = gray2;
-    draw(rayFont, text, position, options);
+void draw(const(char)[] str, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
+    draw(rayFont, str, position, options);
 }
 
 mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "Popka") {

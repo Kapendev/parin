@@ -9,13 +9,11 @@ import popka;
 auto atlas = Sprite();
 auto map = TileMap();
 auto camera = Camera();
-auto cameraTarget = Vec2();
 auto cameraSpeed = Vec2(120);
 
 bool gameLoop() {
     // Move the camera.
-    cameraTarget += wasd * cameraSpeed * deltaTime;
-    camera.followPosition(cameraTarget);
+    camera.position += wasd * cameraSpeed * deltaTime;
 
     // Draw the game world.
     // The options can change the way something is drawn.
@@ -23,7 +21,7 @@ bool gameLoop() {
     options.scale = Vec2(2);
     // Passing a camera to the tile map drawing function allows for efficient rendering by only drawing the tiles that are currently in view.
     camera.attach();
-    draw(atlas, map, camera, options);
+    draw(atlas, map, camera, Vec2(0), options);
     camera.detach();
     return false;
 }

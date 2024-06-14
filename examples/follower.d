@@ -35,7 +35,7 @@ bool gameLoop() {
     // Draw part of the atlas sprite.
     draw(atlas, Rect(frameSize.x * floor(frame), 128, frameSize), framePosition, options);
     // Draw the mouse position.
-    draw(mouseScreenPosition, frame == 0 ? blank : white.alpha(150));
+    draw(mouseScreenPosition, 8, frame == 0 ? blank : white.alpha(150));
     return false;
 }
 

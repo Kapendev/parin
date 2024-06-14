@@ -1,4 +1,4 @@
-# Tour
+# Tour !TODO!: FIX EXAMPLES
 
 > [!WARNING]  
 > I am still working on this.
@@ -87,27 +87,22 @@ void draw(Circ area, Color color = white);
 
 // Line Drawing
 void draw(Line area, float size, Color color = white);
-void draw(Line area, Color color = white);
 
 // Point Drawing
 void draw(Vec2 point, float size, Color color = white);
-void draw(Vec2 point, Color color = white);
 
 // Sprite Drawing
 void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-void draw(Sprite sprite, Rect area, DrawOptions options = DrawOptions());
 void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions());
-void draw(Sprite sprite, DrawOptions options = DrawOptions());
-void draw(Sprite sprite, Vec2 tileSize, uint tileID, Vec2 position, DrawOptions options = DrawOptions());
-void draw(Sprite sprite, Vec2 tileSize, uint tileCount, float tileSpacing, Vec2 position, DrawOptions options = DrawOptions());
+void draw(Sprite sprite, Vec2 tileSize, int tileID, Vec2 position, DrawOptions options = DrawOptions());
 void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions());
-void draw(Sprite sprite, TileMap tileMap, Camera camera = Camera(), DrawOptions options = DrawOptions());
 
 // Font Drawing
 void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions());
-void draw(const(char)[] text, Vec2 position, DrawOptions options);
-void draw(const(char)[] text, Vec2 position = Vec2(8.0f, 8.0f));
+
+// Debug Drawing
+void draw(const(char)[] str, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions());
 ```
 
 ## Loading and Saving
