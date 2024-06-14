@@ -102,7 +102,7 @@ void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOption
 void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions());
 
 // Debug Drawing
-void draw(const(char)[] str, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions());
+void draw(const(char)[] text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions());
 ```
 
 ## Loading and Saving
