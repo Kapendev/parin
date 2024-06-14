@@ -38,6 +38,7 @@ enum defaultDUBContent = `{
         "name": "linux",
         "targetType": "executable",
         "platforms": ["linux"],
+        "dflags": ["-i"],
         "lflags": ["-L.", "-rpath=$$ORIGIN"],
         "libs": [
             "raylib",
@@ -53,6 +54,7 @@ enum defaultDUBContent = `{
         "name": "windows",
         "targetType": "executable",
         "platforms": ["windows"],
+        "dflags": ["-i"],
         "libs": [
             "raylib"
         ]
@@ -61,6 +63,7 @@ enum defaultDUBContent = `{
         "name": "osx",
         "targetType": "executable",
         "platforms": ["osx"],
+        "dflags": ["-i"],
         "lflags": ["-L.", "-rpath", "@executable_path/"],
         "libs": [
             "raylib.500"

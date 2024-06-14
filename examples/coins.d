@@ -36,11 +36,15 @@ bool gameLoop() {
         }
     }
 
-    // Draw the game.
+    // Draw the coins.
     foreach (coin; coins.items) {
         draw(coin, gray2);
     }
+    
+    // Draw the player.
     draw(player, gray2);
+    
+    // Draw the game info.
     if (coins.length == 0) {
         draw("You collected all the coins!");
     } else {
@@ -65,6 +69,8 @@ void gameStart() {
         );
         coins.append(coin);
     }
+
+    // Start the game loop.
     updateWindow!gameLoop();
 }
 

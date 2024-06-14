@@ -47,7 +47,6 @@ Create a new folder and run inside the following commands:
 
 ```bash
 dub init
-dub add popka
 dub run popka:setup
 ```
 

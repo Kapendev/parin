@@ -5,17 +5,18 @@
 
 import popka;
 
-// The main loop of the game. If true is returned, then the game will stop running.
+// The game loop. This is called every frame.
+// If true is returned, then the game will stop running.
 bool gameLoop() {
     draw("Hello world!");
     return false;
 }
 
-// The starting point of the game.
+// The game start. This is one time.
 void gameStart() {
     lockResolution(320, 180);
     updateWindow!gameLoop();
 }
 
-// Creates a main function that calls the `gameStart` function and creates a game window that is 640 pixels wide and 360 pixels tall.
+// Creates a main function that calls the given function and creates a game window that is 640 pixels wide and 360 pixels tall.
 mixin addGameStart!(gameStart, 640, 360);

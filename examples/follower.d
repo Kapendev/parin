@@ -16,6 +16,7 @@ bool gameLoop() {
 
     // Update the current frame.
     frame = wrap(frame + deltaTime * frameSpeed, 0, frameCount);
+
     // Check the mouse move direction and make the sprite look at that direction.
     auto mouseDirection = framePosition.directionTo(mouseScreenPosition);
     if (framePosition.distanceTo(mouseScreenPosition) < 0.2) {
@@ -26,16 +27,18 @@ bool gameLoop() {
         frameDirection = 1;
     }
 
-    // Draw the game.
-    // The options can change the way something is drawn.
+    // The drawing options can change the way something is drawn.
     auto options = DrawOptions();
     options.hook = Hook.center;
     options.flip = frameDirection == 1 ? Flip.x : Flip.none;
     options.scale = Vec2(2);
-    // Draw part of the atlas sprite.
+
+    // Draw the frame.
     draw(atlas, Rect(frameSize.x * floor(frame), 128, frameSize), framePosition, options);
+    
     // Draw the mouse position.
     draw(mouseScreenPosition, 8, frame == 0 ? blank : white.alpha(150));
+    
     return false;
 }
 
@@ -45,8 +48,12 @@ void gameStart() {
     hideCursor();
     togglePixelPerfect();
 
+    // Loads the `atlas.png` sprite from the assets folder.
     atlas.load("atlas.png");
+
     updateWindow!gameLoop();
+
+    // Frees the loaded sprite.
     atlas.free();
 }
 

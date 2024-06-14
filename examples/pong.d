@@ -14,8 +14,10 @@ auto paddle1 = Rect(5 * 0.35, 5 * 5);
 auto paddle2 = Rect(5 * 0.35, 5 * 5);
 
 bool gameLoop() {
-    // The normal rects hold the real position of a game object.
-    // The centered rects are used for collision checking and drawing.
+    // The objects in this game are centered.
+    // To do that, we split the rectangle data into 2 parts, normal and centered.
+    // A normal rectangle holds the real position of an object.
+    // A centered rectangle is used for collision checking and drawing.
 
     // Move the ball.
     if (ball.centerArea.leftPoint.x < 0) {
@@ -38,8 +40,10 @@ bool gameLoop() {
     }
     ball.position += ballDirection * ballSpeed * deltaTime;
 
-    // Move paddle1 and paddle2.
+    // Move paddle1.
     paddle1.position.y = clamp(paddle1.position.y + wasd.y * ballSpeed * deltaTime, paddle1.size.y * 0.5, resolution.y - paddle1.size.y * 0.5);
+    
+    // Move paddle2.
     auto paddle2Target = ball.position.y;
     if (ballDirection.x < 1) {
         paddle2Target = paddle2.position.y;
@@ -58,14 +62,17 @@ bool gameLoop() {
         gameCounter += 1;
     }
 
-    // Draw the game.
-    auto textOptions = DrawOptions();
-    textOptions.scale = Vec2(2);
-    textOptions.hook = Hook.center;
+    // Draw the objects.
     draw(ball.centerArea);
     draw(paddle1.centerArea);
     draw(paddle2.centerArea);
+
+    // Draw the counter.
+    auto textOptions = DrawOptions();
+    textOptions.scale = Vec2(2);
+    textOptions.hook = Hook.center;
     draw("{}".fmt(gameCounter), Vec2(resolution.x * 0.5, 16), textOptions);
+
     return false;
 }
 
@@ -78,6 +85,7 @@ void gameStart() {
     ball.position = resolution * 0.5;
     paddle1.position = resolution * 0.5 - paddleOffset;
     paddle2.position = resolution * 0.5 + paddleOffset;
+
     updateWindow!gameLoop();
 }
 

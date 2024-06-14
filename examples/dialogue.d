@@ -40,8 +40,8 @@ bool gameLoop() {
     // Update the game.
     if (dialogue.hasText) {
         if (dialogue.hasChoices) {
-            auto digits = digitChars[1 .. 1 + dialogue.choices.length];
-            foreach (i, key; digits) {
+            auto keys = digitChars[1 .. 1 + dialogue.choices.length];
+            foreach (i, key; keys) {
                 if (key.isPressed) {
                     dialogue.select(i);
                     break;
@@ -52,7 +52,7 @@ bool gameLoop() {
         }
     }
 
-    // Draw the game.
+    // Draw the dialogue.
     if (dialogue.hasChoices) {
         foreach (i, choice; dialogue.choices) {
             auto choicePosition = Vec2(8, 8 + i * 14);
@@ -64,10 +64,13 @@ bool gameLoop() {
     } else {
         draw("The dialogue has ended.");
     }
-    draw(Rect(0, resolution.y * 0.8, resolution.x, resolution.y), gray1);
+
+    // Draw the game info/
     auto infoPosition = Vec2(8, resolution.y - 2 - 14 * 2);
+    draw(Rect(0, resolution.y * 0.8, resolution.x, resolution.y), gray1);
     draw("Press 1, 2 or 3 to select a choice.", infoPosition);
     draw("\nPress space to continue.", infoPosition);
+
     return false;
 }
 
@@ -76,9 +79,10 @@ void gameStart() {
     changeBackgroundColor(Color(50, 60, 75));
  
     // Parse the dialogue script of the game.
-    // The first update makes the dialogue go to the first available line.
     dialogue.parse(script);
+    // The first update makes the dialogue go to the first available line.
     dialogue.update();
+
     updateWindow!gameLoop();
 }
 
