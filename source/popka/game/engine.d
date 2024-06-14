@@ -450,7 +450,6 @@ struct TileMap {
         if (path.length != 0) {
             parse(loadTempText(path));
         }
-        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 }
 
@@ -546,7 +545,6 @@ List!char loadText(const(char)[] path) {
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 const(char)[] loadTempText(const(char)[] path) {
     loadText(path, engineState.tempText);
-    if (engineState.tempText.length == 0) printfln("Error: The file `{}` does not exist.", path);
     return engineState.tempText.items;
 }
 
