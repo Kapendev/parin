@@ -20,116 +20,121 @@ enum defaultFPS = 60;
 enum defaultBackgroundColor = toRGB(0x2A363A);
 enum toggleFullscreenWaitTime = 0.135f;
 
+/// A type representing flipping orientations.
 enum Flip : ubyte {
-    none,
-    x,
-    y,
-    xy,
+    none, /// No flipping.
+    x,    /// Flipped along the X-axis.
+    y,    /// Flipped along the Y-axis.
+    xy,   /// Flipped along both X and Y axes.
 }
 
+/// A type representing texture filtering modes.
 enum Filter : ubyte {
-    nearest,
-    linear,
+    nearest, /// Nearest neighbor filtering (blocky).
+    linear,  /// Bilinear filtering (smooth).
 }
 
+/// A type representing a limited set of keyboard keys.
 enum Keyboard {
-    a = ray.KEY_A,
-    b = ray.KEY_B,
-    c = ray.KEY_C,
-    d = ray.KEY_D,
-    e = ray.KEY_E,
-    f = ray.KEY_F,
-    g = ray.KEY_G,
-    h = ray.KEY_H,
-    i = ray.KEY_I,
-    j = ray.KEY_J,
-    k = ray.KEY_K,
-    l = ray.KEY_L,
-    m = ray.KEY_M,
-    n = ray.KEY_N,
-    o = ray.KEY_O,
-    p = ray.KEY_P,
-    q = ray.KEY_Q,
-    r = ray.KEY_R,
-    s = ray.KEY_S,
-    t = ray.KEY_T,
-    u = ray.KEY_U,
-    v = ray.KEY_V,
-    w = ray.KEY_W,
-    x = ray.KEY_X,
-    y = ray.KEY_Y,
-    z = ray.KEY_Z,
-    n0 = ray.KEY_ZERO,
-    n1 = ray.KEY_ONE,
-    n2 = ray.KEY_TWO,
-    n3 = ray.KEY_THREE,
-    n4 = ray.KEY_FOUR,
-    n5 = ray.KEY_FIVE,
-    n6 = ray.KEY_SIX,
-    n7 = ray.KEY_SEVEN,
-    n8 = ray.KEY_EIGHT,
-    n9 = ray.KEY_NINE,
-    nn0 = ray.KEY_KP_0,
-    nn1 = ray.KEY_KP_1,
-    nn2 = ray.KEY_KP_2,
-    nn3 = ray.KEY_KP_3,
-    nn4 = ray.KEY_KP_4,
-    nn5 = ray.KEY_KP_5,
-    nn6 = ray.KEY_KP_6,
-    nn7 = ray.KEY_KP_7,
-    nn8 = ray.KEY_KP_8,
-    nn9 = ray.KEY_KP_9,
-    f1 = ray.KEY_F1,
-    f2 = ray.KEY_F2,
-    f3 = ray.KEY_F3,
-    f4 = ray.KEY_F4,
-    f5 = ray.KEY_F5,
-    f6 = ray.KEY_F6,
-    f7 = ray.KEY_F7,
-    f8 = ray.KEY_F8,
-    f9 = ray.KEY_F9,
-    f10 = ray.KEY_F10,
-    f11 = ray.KEY_F11,
-    f12 = ray.KEY_F12,
-    left = ray.KEY_LEFT,
-    right = ray.KEY_RIGHT,
-    up = ray.KEY_UP,
-    down = ray.KEY_DOWN,
-    esc = ray.KEY_ESCAPE,
-    enter = ray.KEY_ENTER,
-    tab = ray.KEY_TAB,
-    space = ray.KEY_SPACE,
-    backspace = ray.KEY_BACKSPACE,
-    shift = ray.KEY_LEFT_SHIFT,
-    ctrl = ray.KEY_LEFT_CONTROL,
-    alt = ray.KEY_LEFT_ALT,
-    win = ray.KEY_LEFT_SUPER,
+    a = ray.KEY_A,                 /// The A key.
+    b = ray.KEY_B,                 /// The B key.
+    c = ray.KEY_C,                 /// The C key.
+    d = ray.KEY_D,                 /// The D key.
+    e = ray.KEY_E,                 /// The E key.
+    f = ray.KEY_F,                 /// The F key.
+    g = ray.KEY_G,                 /// The G key.
+    h = ray.KEY_H,                 /// The H key.
+    i = ray.KEY_I,                 /// The I key.
+    j = ray.KEY_J,                 /// The J key.
+    k = ray.KEY_K,                 /// The K key.
+    l = ray.KEY_L,                 /// The L key.
+    m = ray.KEY_M,                 /// The M key.
+    n = ray.KEY_N,                 /// The N key.
+    o = ray.KEY_O,                 /// The O key.
+    p = ray.KEY_P,                 /// The P key.
+    q = ray.KEY_Q,                 /// The Q key.
+    r = ray.KEY_R,                 /// The R key.
+    s = ray.KEY_S,                 /// The S key.
+    t = ray.KEY_T,                 /// The T key.
+    u = ray.KEY_U,                 /// The U key.
+    v = ray.KEY_V,                 /// The V key.
+    w = ray.KEY_W,                 /// The W key.
+    x = ray.KEY_X,                 /// The X key.
+    y = ray.KEY_Y,                 /// The Y key.
+    z = ray.KEY_Z,                 /// The Z key.
+    n0 = ray.KEY_ZERO,             /// The 0 key.
+    n1 = ray.KEY_ONE,              /// The 1 key.
+    n2 = ray.KEY_TWO,              /// The 2 key.
+    n3 = ray.KEY_THREE,            /// The 3 key.
+    n4 = ray.KEY_FOUR,             /// The 4 key.
+    n5 = ray.KEY_FIVE,             /// The 5 key.
+    n6 = ray.KEY_SIX,              /// The 6 key.
+    n7 = ray.KEY_SEVEN,            /// The 7 key.
+    n8 = ray.KEY_EIGHT,            /// The 8 key.
+    n9 = ray.KEY_NINE,             /// The 9 key.
+    nn0 = ray.KEY_KP_0,            /// The 0 key on the numpad.
+    nn1 = ray.KEY_KP_1,            /// The 1 key on the numpad.
+    nn2 = ray.KEY_KP_2,            /// The 2 key on the numpad.
+    nn3 = ray.KEY_KP_3,            /// The 3 key on the numpad.
+    nn4 = ray.KEY_KP_4,            /// The 4 key on the numpad.
+    nn5 = ray.KEY_KP_5,            /// The 5 key on the numpad.
+    nn6 = ray.KEY_KP_6,            /// The 6 key on the numpad.
+    nn7 = ray.KEY_KP_7,            /// The 7 key on the numpad.
+    nn8 = ray.KEY_KP_8,            /// The 8 key on the numpad.
+    nn9 = ray.KEY_KP_9,            /// The 9 key on the numpad.
+    f1 = ray.KEY_F1,               /// The f1 key.
+    f2 = ray.KEY_F2,               /// The f2 key.
+    f3 = ray.KEY_F3,               /// The f3 key.
+    f4 = ray.KEY_F4,               /// The f4 key.
+    f5 = ray.KEY_F5,               /// The f5 key.
+    f6 = ray.KEY_F6,               /// The f6 key.
+    f7 = ray.KEY_F7,               /// The f7 key.
+    f8 = ray.KEY_F8,               /// The f8 key.
+    f9 = ray.KEY_F9,               /// The f9 key.
+    f10 = ray.KEY_F10,             /// The f10 key.
+    f11 = ray.KEY_F11,             /// The f11 key.
+    f12 = ray.KEY_F12,             /// The f12 key.
+    left = ray.KEY_LEFT,           /// The left arrow key.
+    right = ray.KEY_RIGHT,         /// The right arrow key.
+    up = ray.KEY_UP,               /// The up arrow key.
+    down = ray.KEY_DOWN,           /// The down arrow key.
+    esc = ray.KEY_ESCAPE,          /// The escape key.
+    enter = ray.KEY_ENTER,         /// The enter key.
+    tab = ray.KEY_TAB,             /// The tab key.
+    space = ray.KEY_SPACE,         /// The space key.
+    backspace = ray.KEY_BACKSPACE, /// THe backspace key.
+    shift = ray.KEY_LEFT_SHIFT,    /// The left shift key.
+    ctrl = ray.KEY_LEFT_CONTROL,   /// The left control key.
+    alt = ray.KEY_LEFT_ALT,        /// The left alt key.
+    win = ray.KEY_LEFT_SUPER,      /// The left windows/super/command key.
 }
 
+/// A type representing a limited set of mouse keys.
 enum Mouse {
-    left = ray.MOUSE_BUTTON_LEFT,
-    right = ray.MOUSE_BUTTON_RIGHT,
-    middle = ray.MOUSE_BUTTON_MIDDLE,
+    left = ray.MOUSE_BUTTON_LEFT,     /// The left mouse button.
+    right = ray.MOUSE_BUTTON_RIGHT,   /// The right mouse button.
+    middle = ray.MOUSE_BUTTON_MIDDLE, /// The middle mouse button.
 }
 
+/// A type representing a limited set of gamepad buttons.
 enum Gamepad {
-    left = ray.GAMEPAD_BUTTON_LEFT_FACE_LEFT,
-    right = ray.GAMEPAD_BUTTON_LEFT_FACE_RIGHT,
-    up = ray.GAMEPAD_BUTTON_LEFT_FACE_UP,
-    down = ray.GAMEPAD_BUTTON_LEFT_FACE_DOWN,
-    y = ray.GAMEPAD_BUTTON_RIGHT_FACE_UP,
-    x = ray.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,
-    a = ray.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,
-    b = ray.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,
-    lt = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_2,
-    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,
-    lsb = ray.GAMEPAD_BUTTON_LEFT_THUMB,
-    rt = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,
-    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,
-    rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,
-    back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,
-    start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,
-    middle = ray.GAMEPAD_BUTTON_MIDDLE,
+    left = ray.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
+    right = ray.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
+    up = ray.GAMEPAD_BUTTON_LEFT_FACE_UP,       /// The up button.
+    down = ray.GAMEPAD_BUTTON_LEFT_FACE_DOWN,   /// The down button.
+    y = ray.GAMEPAD_BUTTON_RIGHT_FACE_UP,       /// The Xbox y, PlayStation triangle and Nintendo x button.
+    x = ray.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,    /// The Xbox x, PlayStation square and Nintendo y button.
+    a = ray.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,     /// The Xbox a, PlayStation cross and Nintendo b button.
+    b = ray.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,     /// The Xbox b, PlayStation circle and Nintendo a button.
+    lt = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_2,     /// The left trigger button.
+    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,     /// The left bumper button.
+    lsb = ray.GAMEPAD_BUTTON_LEFT_THUMB,        /// The left stick button.
+    rt = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,    /// The right trigger button.
+    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,    /// The right bumper button.
+    rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,       /// The right stick button.
+    back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,      /// The back button.
+    start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,    /// The start button.
+    middle = ray.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
 }
 
 struct EngineState {
@@ -154,13 +159,12 @@ struct EngineState {
 }
 
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f);
-    Vec2 scale = Vec2(1.0f);
+    Vec2 origin    = Vec2(0.0f);
+    Vec2 scale     = Vec2(1.0f);
     float rotation = 0.0f;
-
-    Color color = white;
-    Hook hook = Hook.topLeft;
-    Flip flip = Flip.none;
+    Color color    = white;
+    Hook hook      = Hook.topLeft;
+    Flip flip      = Flip.none;
 }
 
 struct Sprite {
@@ -193,6 +197,7 @@ struct Sprite {
         if (path.length != 0) {
             data = ray.LoadTexture(path.toAssetsPath.toStrz);
         }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 
     void free() {
@@ -272,6 +277,7 @@ struct Font {
         if (path.length != 0) {
             data = ray.LoadFontEx(path.toAssetsPath.toStrz, size, cast(int*) runes.ptr, cast(int) runes.length);
         }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 
     void free() {
@@ -320,6 +326,7 @@ struct Sound {
         if (path.length != 0) {
             data = ray.LoadSound(path.toAssetsPath.toStrz);
         }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 
     void free() {
@@ -372,6 +379,7 @@ struct Music {
         if (path.length != 0) {
             data = ray.LoadMusicStream(path.toAssetsPath.toStrz);
         }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 
     void free() {
@@ -379,6 +387,70 @@ struct Music {
             ray.UnloadMusicStream(data);
             data = ray.Music();
         }
+    }
+}
+
+struct TileMap {
+    Grid!short data;
+    Vec2 tileSize = Vec2(16.0f);
+    alias data this;
+
+    @safe @nogc nothrow:
+
+    this(const(char)[] path) {
+        load(path);
+    }
+
+    bool isEmpty() {
+        return data.length == 0;
+    }
+
+    Vec2 size() {
+        return tileSize * Vec2(colCount, rowCount);
+    }
+
+    Rect area() {
+        return Rect(size);
+    }
+
+    void parse(const(char)[] csv) {
+        free();
+        auto view = csv;
+        auto newRowCount = 0;
+        auto newColCount = 0;
+
+        while (view.length != 0) {
+            auto line = view.skipLine();
+            newRowCount += 1;
+            newColCount = 0;
+            while (line.length != 0) {
+                auto value = line.skipValue(',');
+                newColCount += 1;
+            }
+        }
+        resize(newRowCount, newColCount);
+
+        view = csv;
+        foreach (row; 0 .. newRowCount) {
+            auto line = view.skipLine();
+            foreach (col; 0 .. newColCount) {
+                auto value = line.skipValue(',');
+                auto conv = value.toSigned();
+                if (conv.error) {
+                    data[row, col] = cast(short) -1;
+                } else {
+                    data[row, col] = cast(short) conv.value;
+                }
+            }
+        }
+    }
+
+    void load(const(char)[] path) {
+        free();
+        if (path.length != 0) {
+            parse(loadTempText(path));
+        }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 }
 
@@ -454,75 +526,19 @@ struct Camera {
     }
 }
 
-struct TileMap {
-    Grid!short data;
-    Vec2 tileSize = Vec2(16.0f);
-    alias data this;
-
-    @safe @nogc nothrow:
-
-    this(const(char)[] path) {
-        load(path);
-    }
-
-    Vec2 size() {
-        return tileSize * Vec2(colCount, rowCount);
-    }
-
-    Rect area() {
-        return Rect(size);
-    }
-
-    void parse(const(char)[] csv) {
-        free();
-        auto view = csv;
-        auto newRowCount = 0;
-        auto newColCount = 0;
-
-        while (view.length != 0) {
-            auto line = view.skipLine();
-            newRowCount += 1;
-            newColCount = 0;
-            while (line.length != 0) {
-                auto value = line.skipValue(',');
-                newColCount += 1;
-            }
-        }
-        resize(newRowCount, newColCount);
-
-        view = csv;
-        foreach (row; 0 .. newRowCount) {
-            auto line = view.skipLine();
-            foreach (col; 0 .. newColCount) {
-                auto value = line.skipValue(',');
-                auto conv = value.toSigned();
-                if (conv.error) {
-                    data[row, col] = cast(short) -1;
-                } else {
-                    data[row, col] = cast(short) conv.value;
-                }
-            }
-        }
-    }
-
-    void load(const(char)[] path) {
-        free();
-        if (path.length != 0) {
-            parse(loadTempText(path));
-        }
-    }
-}
-
 /// Loads a text file from the assets folder and stores its contents in the given list.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 void loadText(const(char)[] path, ref List!char text) {
     readText(path.toAssetsPath, text);
+    if (text.length == 0) printfln("Error: The file `{}` does not exist.", path);
 }
 
 /// Loads a text file from the assets folder and returns its contents as a list.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 List!char loadText(const(char)[] path) {
-    return readText(path.toAssetsPath);
+    auto result = readText(path.toAssetsPath);
+    if (result.length == 0) printfln("Error: The file `{}` does not exist.", path);
+    return result;
 }
 
 /// Loads a text file from the assets folder and returns its contents as a slice.
@@ -530,6 +546,7 @@ List!char loadText(const(char)[] path) {
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 const(char)[] loadTempText(const(char)[] path) {
     loadText(path, engineState.tempText);
+    if (engineState.tempText.length == 0) printfln("Error: The file `{}` does not exist.", path);
     return engineState.tempText.items;
 }
 
