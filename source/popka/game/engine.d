@@ -140,13 +140,14 @@ enum Gamepad {
 struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
+
     List!char assetsDir;
     List!char tempText;
 
     bool isUpdating;
+    bool isPixelPerfect;
     bool isFPSLocked;
     bool isCursorHidden;
-    bool isPixelPerfect;
 
     Vec2 targetViewportSize;
     Viewport viewport;
@@ -159,12 +160,12 @@ struct EngineState {
 }
 
 struct DrawOptions {
-    Vec2 origin    = Vec2(0.0f);
-    Vec2 scale     = Vec2(1.0f);
-    float rotation = 0.0f;
-    Color color    = white;
-    Hook hook      = Hook.topLeft;
-    Flip flip      = Flip.none;
+    Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object.
+    Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
+    float rotation = 0.0f;         /// The rotation of the drawn object.
+    Color color    = white;        /// The color of the drawn object.
+    Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
+    Flip flip      = Flip.none;    /// An value representing flipping orientations.
 }
 
 struct Sprite {
@@ -172,26 +173,35 @@ struct Sprite {
 
     @trusted @nogc nothrow:
 
+    /// Creates a sprite by loading an image file from the assets folder.
+    /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
     this(const(char)[] path) {
         load(path);
     }
 
+    /// Returns true if the sprite has not been loaded.
     bool isEmpty() {
         return data.id <= 0;
     }
 
+    /// Returns the size of the sprite.
     Vec2 size() {
         return Vec2(data.width, data.height);
     }
 
+    /// Returns the area of the sprite.
     Rect area() {
         return Rect(size);
     }
 
+    /// Changes the filter mode to the sprite.
     void changeFilter(Filter filter) {
         ray.SetTextureFilter(data, toRay(filter));
     }
 
+    /// Loads an image file from the assets folder.
+    /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+    /// If an image is already loaded, then this function will free the current image and load the new one.
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
@@ -200,6 +210,8 @@ struct Sprite {
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 
+    /// Frees the loaded image.
+    /// If an image is already freed, then this function will do nothing.
     void free() {
         if (!isEmpty) {
             ray.UnloadTexture(data);

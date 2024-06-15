@@ -1,4 +1,4 @@
-# Tour !TODO!: FIX EXAMPLES
+# Tour
 
 > [!WARNING]  
 > I am still working on this.
@@ -110,3 +110,4 @@ void draw(const(char)[] text, Vec2 position = Vec2(8.0f), DrawOptions options = 
 Functions that start with the word load/save will always try to read/write from/to the assets folder.
 These functions handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 For instance, `loadText("levels/level5.txt")` and `loadText("levels\\level5.txt")` will function identically on any operating system.
+Also, if you need text data for just a single frame, consider using the `loadTempText(const(char)[] path)` function.

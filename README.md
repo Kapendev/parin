@@ -46,7 +46,7 @@ While DUB simplifies the process, Popka itself doesn't require DUB.
 Create a new folder and run inside the following commands:
 
 ```bash
-dub init
+dub init -n
 dub run popka:setup
 ```
 
