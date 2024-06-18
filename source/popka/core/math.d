@@ -523,19 +523,19 @@ struct Rect {
 
     bool hasPoint(Vec2 point) {
         return (
-            point.x >= position.x &&
-            point.x <= position.x + size.x &&
-            point.y >= position.y &&
-            point.y <= position.y + size.y
+            point.x > position.x &&
+            point.x < position.x + size.x &&
+            point.y > position.y &&
+            point.y < position.y + size.y
         );
     }
 
     bool hasIntersection(Rect area) {
         return (
-            position.x + size.x >= area.position.x &&
-            position.x <= area.position.x + area.size.x &&
-            position.y + size.y >= area.position.y &&
-            position.y <= area.position.y + area.size.y
+            position.x + size.x > area.position.x &&
+            position.x < area.position.x + area.size.x &&
+            position.y + size.y > area.position.y &&
+            position.y < area.position.y + area.size.y
         );
     }
 

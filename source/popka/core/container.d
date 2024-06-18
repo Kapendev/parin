@@ -47,22 +47,24 @@ struct List(T) {
         return items[];
     }
 
+    // D calls this when the slice op is used and it works like this: opIndex(opSlice(i, j))
     T[] opIndex(T[] slice) {
-        // D calls this when the slice op is used and it works like this: opIndex(opSlice(i, j))
         return slice;
     }
 
+    // Returning a ref will let people take a pointer to that value.
     ref T opIndex(size_t i) {
-        // Returning a ref will let people take a pointer to that value.
         return items[i];
     }
 
-    void opIndexAssign(T rhs, size_t i) {
-        items[i] = rhs;
+    @trusted
+    void opIndexAssign(const(T) rhs, size_t i) {
+        items[i] = cast(T) rhs;
     }
 
-    void opIndexOpAssign(string op)(T rhs, size_t i) {
-        mixin("items[i] " ~ op ~ "= rhs;");
+    @trusted
+    void opIndexOpAssign(string op)(const(T) rhs, size_t i) {
+        mixin("items[i] " ~ op ~ "= cast(T) rhs;");
     }
 
     size_t opDollar(size_t dim)() {
@@ -112,9 +114,10 @@ struct List(T) {
         }
     }
 
-    void fill(T value) {
+    @trusted
+    void fill(const(T) value) {
         foreach (ref item; items) {
-            item = value;
+            item = cast(T) value;
         }
     }
 
@@ -176,17 +179,20 @@ struct FlagList(T) {
         return data[i];
     }
 
-    void opIndexAssign(T rhs, size_t i) {
-        data[i] = rhs;
-        flags[i] = true;
-        hotIndex = i;
-    }
-
-    void opIndexOpAssign(string op)(T rhs, size_t i, const(char)[] file = __FILE__, size_t line = __LINE__) {
+    @trusted
+    void opIndexAssign(const(T) rhs, size_t i) {
         if (!flags[i]) {
             assert(0, "ID doesn't exist.");
         }
-        mixin("data[i] " ~ op ~ "= rhs;");
+        data[i] = cast(T) rhs;
+    }
+
+    @trusted
+    void opIndexOpAssign(string op)(const(T) rhs, size_t i) {
+        if (!flags[i]) {
+            assert(0, "ID doesn't exist.");
+        }
+        mixin("data[i] ", op, "= cast(T) rhs;");
     }
 
     size_t length() {
@@ -204,17 +210,24 @@ struct FlagList(T) {
                 data.append(arg);
                 flags.append(true);
                 hotIndex = openIndex;
-                openIndex += 1;
+                openIndex = flags.length;
             } else {
+                auto isFull = true;
                 foreach (i; openIndex .. flags.length) {
                     if (!flags[i]) {
-                        // We cast here because of the type system.
-                        data[i] = cast(T) arg;
+                        data[i] = arg;
                         flags[i] = true;
                         hotIndex = i;
-                        openIndex = i + 1;
+                        openIndex = i;
+                        isFull = false;
                         break;
                     }
+                }
+                if (isFull) {
+                    data.append(arg);
+                    flags.append(true);
+                    hotIndex = openIndex;
+                    openIndex = flags.length;
                 }
             }
         }
@@ -232,8 +245,8 @@ struct FlagList(T) {
     }
 
     void resize(size_t length) {
+        // I could write more code but I don't think that people will really resize.
         if (length < flags.length) {
-            // I could write more code but I don't think that people will really resize.
             hotIndex = 0;
             openIndex = 0;
         }
@@ -241,7 +254,7 @@ struct FlagList(T) {
         flags.resize(length);
     }
 
-    void fill(T value) {
+    void fill(const(T) value) {
         data.fill(value);
         flags.fill(true);
         hotIndex = flags.length - 1;

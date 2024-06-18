@@ -10,7 +10,6 @@ import popka.core.traits;
 @safe @nogc nothrow:
 
 union SumTypeData(A...) {
-    // The slice removes the 'LU' part of the number.
     static foreach (i, T; A) {
         mixin("T ", "m", toCleanNumber!i, ";");
     }
