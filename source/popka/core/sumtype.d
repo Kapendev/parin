@@ -13,6 +13,8 @@ union SumTypeData(A...) {
     static foreach (i, T; A) {
         mixin("T ", "m", toCleanNumber!i, ";");
     }
+
+    enum kindCount = A.length;
 }
 
 alias SumTypeKind = ubyte;
@@ -22,6 +24,8 @@ struct SumType(A...) {
     SumTypeKind kind;
 
     @safe @nogc nothrow:
+
+    enum kindCount = A.length;
 
     alias BaseType = A[0];
 
@@ -41,7 +45,7 @@ struct SumType(A...) {
         }
     }
 
-    const(char)[] typeName() {
+    const(char)[] kindName() {
         static foreach (i, T; A) {
             if (kind == i) {
                 return T.stringof;
@@ -93,6 +97,11 @@ struct SumType(A...) {
             }
             default: assert(0, "Kind is invalid.");
         }
+    }
+
+    template kindValue(T) {
+        static assert(isInAliasArgs!(T, A), "Type '" ~ T.stringof ~ "' is not part of the union.");
+        enum kindValue = findInAliasArgs!(T, A);
     }
 }
 

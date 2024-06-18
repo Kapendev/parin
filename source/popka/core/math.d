@@ -747,7 +747,7 @@ T wrap(T)(T x, T a, T b) {
     while (result < a) {
         result += b - a;
     }
-    while (result > b) {
+    while (result >= b) {
         result -= b - a;
     }
     return result;

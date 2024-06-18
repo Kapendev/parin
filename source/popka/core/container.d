@@ -203,6 +203,10 @@ struct FlagList(T) {
         return result;
     }
 
+    bool hasID(size_t id) {
+        return id < flags.length && flags[id];
+    }
+
     @trusted
     void append(const(T)[] args...) {
         foreach (arg; args) {
