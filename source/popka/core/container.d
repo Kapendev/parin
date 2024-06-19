@@ -140,6 +140,7 @@ struct FlagList(T) {
     List!bool flags;
     size_t hotIndex;
     size_t openIndex;
+    size_t length;
 
     @safe @nogc nothrow:
 
@@ -170,6 +171,7 @@ struct FlagList(T) {
         }
         hotIndex = list.hotIndex;
         openIndex = list.openIndex;
+        length = list.length;
     }
 
     ref T opIndex(size_t i) {
@@ -195,14 +197,6 @@ struct FlagList(T) {
         mixin("data[i] ", op, "= cast(T) rhs;");
     }
 
-    size_t length() {
-        size_t result = 0;
-        foreach (id; ids) {
-            result += 1;
-        }
-        return result;
-    }
-
     bool hasID(size_t id) {
         return id < flags.length && flags[id];
     }
@@ -215,6 +209,7 @@ struct FlagList(T) {
                 flags.append(true);
                 hotIndex = openIndex;
                 openIndex = flags.length;
+                length += 1;
             } else {
                 auto isFull = true;
                 foreach (i; openIndex .. flags.length) {
@@ -233,6 +228,7 @@ struct FlagList(T) {
                     hotIndex = openIndex;
                     openIndex = flags.length;
                 }
+                length += 1;
             }
         }
     }
@@ -246,23 +242,7 @@ struct FlagList(T) {
         if (i < openIndex) {
             openIndex = i;
         }
-    }
-
-    void resize(size_t length) {
-        // I could write more code but I don't think that people will really resize.
-        if (length < flags.length) {
-            hotIndex = 0;
-            openIndex = 0;
-        }
-        data.resize(length);
-        flags.resize(length);
-    }
-
-    void fill(const(T) value) {
-        data.fill(value);
-        flags.fill(true);
-        hotIndex = flags.length - 1;
-        openIndex = flags.length;
+        length -= 1;
     }
 
     void clear() {
@@ -270,6 +250,7 @@ struct FlagList(T) {
         flags.clear();
         hotIndex = 0;
         openIndex = 0;
+        length = 0;
     }
 
     void free() {
@@ -277,6 +258,7 @@ struct FlagList(T) {
         flags.free();
         hotIndex = 0;
         openIndex = 0;
+        length = 0;
     }
 
     auto ids() {
