@@ -54,10 +54,13 @@ struct SumType(A...) {
         assert(0, "Kind is invalid.");
     }
 
+    SumTypeKind kindValue() {
+        return kind;
+    }
+
     bool isValue(T)() {
-        enum target = findInAliasArgs!(T, A);
-        static assert(target != -1, "Type '" ~ T.stringof ~ "' is not part of the union.");
-        return kind == target;
+        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the sum type.");
+        return kind == findInAliasArgs!(T, A);
     }
 
     ref T value(T)() {
@@ -66,7 +69,7 @@ struct SumType(A...) {
         } else {
             static foreach (i, TT; A) {
                 if (kind == i) {
-                    assert(0, "Value is '" ~ A[i].stringof ~ "' and not '" ~ T.stringof ~ "'.");
+                    assert(0, "Value is `" ~ A[i].stringof ~ "` and not `" ~ T.stringof ~ "`.");
                 }
             }
             assert(0, "Kind is invalid.");
@@ -86,7 +89,6 @@ struct SumType(A...) {
     }
 
     auto call(const(char)[] func, AA...)(AA args) {
-        // The slice removes the 'LU' part of the number.
         switch (kind) {
             static foreach (i, T; A) {
                 static if (__traits(hasMember, T, func)) {
@@ -99,9 +101,14 @@ struct SumType(A...) {
         }
     }
 
-    template kindValue(T) {
-        static assert(isInAliasArgs!(T, A), "Type '" ~ T.stringof ~ "' is not part of the union.");
-        enum kindValue = findInAliasArgs!(T, A);
+    template kindNameOf(T) {
+        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the sum type.");
+        enum kindNameOf = T.stringof;
+    }
+
+    template kindValueOf(T) {
+        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the sum type.");
+        enum kindValueOf = findInAliasArgs!(T, A);
     }
 }
 
@@ -117,16 +124,24 @@ bool isSome(A...)(SumType!A maybe)  {
     return maybe.kind != 0;
 }
 
+T toSumType(T)(SumTypeKind kind) {
+    static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
+
+    T result;
+    result.kind = kind;
+    return result;
+}
+
 bool isSumType(T)() {
     return is(T : SumType!A, A...);
 }
 
 bool hasCommonBase(T)() {
-    static assert(isSumType!T, "Type '" ~ T.stringof  ~ "' must be a sum type.");
+    static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
 
     static foreach (member; T.init.data.tupleof[1 .. $]) {
         static if (isPrimaryType!(typeof(member)) || member.tupleof.length == 0) {
-            static if (!is(typeof(member) == T.BaseType)) {
+            static if (!is(T.BaseType == typeof(member))) {
                 return false;
             }
         } else static if (!is(T.BaseType == typeof(member.tupleof[0]))) {
@@ -146,11 +161,11 @@ unittest {
     number = 0;
     assert(number.isValue!int == true);
     assert(number.isValue!float == false);
-    assert(number.typeName == "int");
+    assert(number.kindName == "int");
     number = 0.0;
     assert(number.isValue!int == false);
     assert(number.isValue!float == true);
-    assert(number.typeName == "float");
+    assert(number.kindName == "float");
 
     number = 0;
     number.value!int += 2;
