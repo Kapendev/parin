@@ -6,7 +6,7 @@
 import popka;
 
 // The game variables.
-auto atlas = Sprite();
+auto atlas = Texture();
 auto map = TileMap();
 auto camera = Camera();
 auto cameraSpeed = Vec2(120);

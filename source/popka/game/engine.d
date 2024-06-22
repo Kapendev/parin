@@ -107,6 +107,8 @@ enum Keyboard {
     ctrl = ray.KEY_LEFT_CONTROL,   /// The left control key.
     alt = ray.KEY_LEFT_ALT,        /// The left alt key.
     win = ray.KEY_LEFT_SUPER,      /// The left windows/super/command key.
+    pageUp = ray.KEY_PAGE_UP,          /// The page up key.
+    pageDown = ray.KEY_PAGE_DOWN,      /// The page down key.
 }
 
 /// A type representing a limited set of mouse keys.
@@ -168,33 +170,33 @@ struct DrawOptions {
     Flip flip      = Flip.none;    /// An value representing flipping orientations.
 }
 
-struct Sprite {
+struct Texture {
     ray.Texture2D data;
 
     @trusted @nogc nothrow:
 
-    /// Creates a sprite by loading an image file from the assets folder.
+    /// Creates a texture by loading an image file from the assets folder.
     /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
     this(const(char)[] path) {
         load(path);
     }
 
-    /// Returns true if the sprite has not been loaded.
+    /// Returns true if the texture has not been loaded.
     bool isEmpty() {
         return data.id <= 0;
     }
 
-    /// Returns the size of the sprite.
+    /// Returns the size of the texture.
     Vec2 size() {
         return Vec2(data.width, data.height);
     }
 
-    /// Returns the area of the sprite.
+    /// Returns the area of the texture.
     Rect area() {
         return Rect(size);
     }
 
-    /// Changes the filter mode to the sprite.
+    /// Changes the filter mode of the texture.
     void changeFilter(Filter filter) {
         ray.SetTextureFilter(data, toRay(filter));
     }
@@ -617,9 +619,9 @@ Rect toPopka(ray.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
-/// Converts a raylib texture to a Popka sprite.
-Sprite toPopka(ray.Texture2D from) {
-    Sprite result;
+/// Converts a raylib texture to a Popka texture.
+Texture toPopka(ray.Texture2D from) {
+    Texture result;
     result.data = from;
     return result;
 }
@@ -672,8 +674,8 @@ ray.Rectangle toRay(Rect from) {
     return ray.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
-/// Converts a Popka sprite to a raylib texture.
-ray.Texture2D toRay(Sprite from) {
+/// Converts a Popka texture to a raylib texture.
+ray.Texture2D toRay(Texture from) {
     return from.data;
 }
 
@@ -1052,8 +1054,8 @@ void changeBackgroundColor(Color color) {
     engineState.backgroundColor = color;
 }
 
-void changeShapeSprite(Sprite sprite, Rect area = Rect(1.0f, 1.0f)) {
-    ray.SetShapesTexture(sprite.data, toRay(area));
+void changeShapeTexture(Texture texture, Rect area = Rect(1.0f, 1.0f)) {
+    ray.SetShapesTexture(texture.data, toRay(area));
 }
 
 Vec2 measureTextSize(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
@@ -1068,7 +1070,7 @@ Vec2 measureTextSize(Font font, const(char)[] text, DrawOptions options = DrawOp
     auto textHeight = font.size;
 
     auto letter = 0; // Current character.
-    auto index = 0; // Index position in sprite font.
+    auto index = 0; // Index position in texture font.
     auto i = 0;
     while (i < text.length) {
         byteCounter += 1;
@@ -1204,16 +1206,16 @@ void draw(Vec2 point, float size, Color color = white) {
     draw(Rect(point, size, size).centerArea, color);
 }
 
-void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (sprite.isEmpty) {
+void draw(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    if (texture.isEmpty) {
         return;
     }
 
     auto target = Rect();
     auto source = Rect();
     if (area.size.x <= 0.0f || area.size.y <= 0.0f) {
-        target = Rect(position, sprite.size * options.scale.abs());
-        source = Rect(sprite.size);
+        target = Rect(position, texture.size * options.scale.abs());
+        source = Rect(texture.size);
     } else {
         target = Rect(position, area.size * options.scale.abs());
         source = area;
@@ -1237,7 +1239,7 @@ void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOpt
     auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
     if (isPixelPerfect) {
         ray.DrawTexturePro(
-            sprite.data,
+            texture.data,
             toRay(source.floor()),
             toRay(target.floor()),
             toRay(origin.floor()),
@@ -1246,7 +1248,7 @@ void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOpt
         );
     } else {
         ray.DrawTexturePro(
-            sprite.data,
+            texture.data,
             toRay(source),
             toRay(target),
             toRay(origin),
@@ -1256,23 +1258,23 @@ void draw(Sprite sprite, Rect area, Vec2 position, DrawOptions options = DrawOpt
     }
 }
 
-void draw(Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
-    draw(sprite, Rect(), position, options);
+void draw(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
+    draw(texture, Rect(), position, options);
 }
 
-void draw(Sprite sprite, Vec2 tileSize, int tileID, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(int) (sprite.size.x / tileSize.x);
-    auto gridHeight = cast(int) (sprite.size.y / tileSize.y);
+void draw(Texture texture, Vec2 tileSize, int tileID, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto gridWidth = cast(int) (texture.size.x / tileSize.x);
+    auto gridHeight = cast(int) (texture.size.y / tileSize.y);
     if (gridWidth == 0 || gridHeight == 0) {
         return;
     }
     auto row = tileID / gridWidth;
     auto col = tileID % gridWidth;
     auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
-    draw(sprite, area, position, options);
+    draw(texture, area, position, options);
 }
 
-void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Texture texture, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
     enum extraTileCount = 4;
 
     auto topLeft = camera.point(Hook.topLeft);
@@ -1298,7 +1300,7 @@ void draw(Sprite sprite, TileMap tileMap, Camera camera, Vec2 position, DrawOpti
             if (tileMap[row, col] == -1) {
                 continue;
             }
-            draw(sprite, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize * options.scale, options);
+            draw(texture, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize * options.scale, options);
         }
     }
 }

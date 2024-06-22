@@ -1,7 +1,7 @@
 import popka;
 
 // The game variables.
-auto atlas = Sprite();
+auto atlas = Texture();
 auto frame = 0.0;
 auto frameCount = 2;
 auto frameSpeed = 8;
@@ -48,12 +48,12 @@ void gameStart() {
     hideCursor();
     togglePixelPerfect();
 
-    // Loads the `atlas.png` sprite from the assets folder.
+    // Loads the `atlas.png` texture from the assets folder.
     atlas.load("atlas.png");
 
     updateWindow!gameLoop();
 
-    // Frees the loaded sprite.
+    // Frees the loaded texture.
     atlas.free();
 }
 
