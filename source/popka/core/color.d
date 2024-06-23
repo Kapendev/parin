@@ -8,9 +8,11 @@ module popka.core.color;
 @safe @nogc nothrow:
 
 enum black = Color();
-enum gray = Color(225);
-enum gray1 = Color(30);
-enum gray2 = Color(225);
+enum gray = toRGB(0xdfdfdf);
+enum gray1 = toRGB(0x202020);
+enum gray2 = toRGB(0x606060);
+enum gray3 = toRGB(0x9f9f9f);
+enum gray4 = toRGB(0xdfdfdf);
 enum white = Color(255);
 
 enum red = Color(255, 0, 0);
