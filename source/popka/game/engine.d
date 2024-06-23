@@ -107,8 +107,12 @@ enum Keyboard {
     ctrl = ray.KEY_LEFT_CONTROL,   /// The left control key.
     alt = ray.KEY_LEFT_ALT,        /// The left alt key.
     win = ray.KEY_LEFT_SUPER,      /// The left windows/super/command key.
-    pageUp = ray.KEY_PAGE_UP,          /// The page up key.
-    pageDown = ray.KEY_PAGE_DOWN,      /// The page down key.
+    insert = ray.KEY_INSERT,       /// The insert key.
+    del = ray.KEY_DELETE,          /// The delete key.
+    home = ray.KEY_HOME,           /// The home key.
+    end = ray.KEY_END,             /// The end key.
+    pageUp = ray.KEY_PAGE_UP,      /// The page up key.
+    pageDown = ray.KEY_PAGE_DOWN,  /// The page down key.
 }
 
 /// A type representing a limited set of mouse keys.

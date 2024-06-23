@@ -15,6 +15,7 @@ union SumTypeData(A...) {
     }
 
     enum kindCount = A.length;
+    alias Types = A;
 }
 
 alias SumTypeKind = ubyte;
@@ -28,6 +29,7 @@ struct SumType(A...) {
     enum kindCount = A.length;
 
     alias BaseType = A[0];
+    alias Types = A;
 
     static foreach (i, T; A) {
         @trusted
