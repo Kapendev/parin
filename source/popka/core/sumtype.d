@@ -65,6 +65,7 @@ struct SumType(A...) {
         return kind == findInAliasArgs!(T, A);
     }
 
+    @trusted
     ref T value(T)() {
         if (isValue!T) {
             mixin("return ", "data.m", findInAliasArgs!(T, A), ";"); 
@@ -78,18 +79,22 @@ struct SumType(A...) {
         }
     }
 
+    @trusted
     T* valuePtr(T)() {
         return &value!T();
     }
 
+    @trusted
     ref BaseType base() {
         return data.m0;
     }
 
+    @trusted
     BaseType* basePtr() {
         return &data.m0;
     }
 
+    @trusted
     auto call(const(char)[] func, AA...)(AA args) {
         switch (kind) {
             static foreach (i, T; A) {

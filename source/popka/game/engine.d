@@ -505,6 +505,42 @@ struct Camera {
         return area.point(hook);
     }
 
+    Vec2 topLeftPoint() {
+        return point(Hook.topLeft);
+    }
+
+    Vec2 topPoint() {
+        return point(Hook.top);
+    }
+
+    Vec2 topRightPoint() {
+        return point(Hook.topRight);
+    }
+
+    Vec2 leftPoint() {
+        return point(Hook.left);
+    }
+
+    Vec2 centerPoint() {
+        return point(Hook.center);
+    }
+
+    Vec2 rightPoint() {
+        return point(Hook.right);
+    }
+
+    Vec2 bottomLeftPoint() {
+        return point(Hook.bottomLeft);
+    }
+
+    Vec2 bottomPoint() {
+        return point(Hook.bottom);
+    }
+
+    Vec2 bottomRightPoint() {
+        return point(Hook.bottomRight);
+    }
+
     void attach() {
         if (!isAttached) {
             isAttached = true;
