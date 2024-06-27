@@ -533,8 +533,10 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
         return strzToStr(value);
     } else static if (isEnumType!T) {
         return enumToStr(value);
+    } else static if (__traits(hasMember, T, "toStr")) {
+        return value.toStr();
     } else {
-        static assert(0, "The 'toStr' function does not handle the '" ~ T.stringof ~ "' type.");
+        static assert(0, "The `toStr` function does not handle the `" ~ T.stringof ~ "` type. Implement a `toStr` function for that type.");
     }
 }
 
@@ -738,6 +740,7 @@ const(char)* toStrz(const(char)[] str) {
     return result.ptr;
 }
 
+// TODO: Check if the args count is the same with the `{}` count.
 const(char)[] fmt(A...)(const(char)[] str, A args) {
     static char[1024][4] bufs = void;
     static auto bufi = 0;

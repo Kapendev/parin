@@ -1094,7 +1094,7 @@ void changeBackgroundColor(Color color) {
     engineState.backgroundColor = color;
 }
 
-void changeShapeTexture(Texture texture, Rect area = Rect(1.0f, 1.0f)) {
+void changeShapeTexture(Texture texture, Rect area) {
     ray.SetShapesTexture(texture.data, toRay(area));
 }
 

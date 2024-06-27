@@ -98,11 +98,8 @@ struct SumType(A...) {
     auto call(const(char)[] func, AA...)(AA args) {
         switch (kind) {
             static foreach (i, T; A) {
-                static if (__traits(hasMember, T, func)) {
-                    mixin("case ", i, ": return data.m", toCleanNumber!i, ".", func, "(args);");
-                } else {
-                    mixin("case ", i, ": return;");
-                }
+                static assert(__traits(hasMember, T, func), "Type `" ~ T.stringof ~ "` does not implement the `" ~ func ~ "` function.");
+                mixin("case ", i, ": return data.m", toCleanNumber!i, ".", func, "(args);");
             }
             default: assert(0, "Kind is invalid.");
         }

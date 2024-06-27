@@ -7,6 +7,7 @@
 module popka.core.math;
 
 import popka.core.stdc;
+import popka.core.strutils;
 
 @safe @nogc nothrow:
 
@@ -147,6 +148,10 @@ struct Vec2 {
             .moveTo(y, to.y, delta.y, slowdown),
         );
     }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(x, y);
+    }
 }
 
 struct Vec3 {
@@ -245,6 +250,10 @@ struct Vec3 {
 
     Vec3 round() {
         return Vec3(x.round, y.round, z.round);
+    }
+
+    const(char)[] toStr() {
+        return "{} {} {}".fmt(x, y, z);
     }
 }
 
@@ -347,6 +356,10 @@ struct Vec4 {
 
     Vec4 round() {
         return Vec4(x.round, y.round, z.round, w.round);
+    }
+
+    const(char)[] toStr() {
+        return "{} {} {} {}".fmt(x, y, z, w);
     }
 }
 
@@ -668,6 +681,10 @@ struct Rect {
         Rect temp = this;
         return temp.subBottom(amount);
     }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(position, size);
+    }
 }
 
 struct Circ {
@@ -688,6 +705,10 @@ struct Circ {
     pragma(inline, true)
     this(float x, float y, float radius) {
         this(Vec2(x, y), radius);
+    }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(position, radius);
     }
 }
 
@@ -719,6 +740,126 @@ struct Line {
     pragma(inline, true)
     this(float ax, float ay, Vec2 b) {
         this(Vec2(ax, ay), b);
+    }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(a, b);
+    }
+}
+
+struct IVec2 {
+    int x;
+    int y;
+
+    enum zero = IVec2(0, 0);
+    enum one = IVec2(1, 1);
+
+    @safe @nogc nothrow:
+
+    pragma(inline, true)
+    this(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    pragma(inline, true)
+    this(int x) {
+        this(x, x);
+    }
+
+    pragma(inline, true)
+    this(int[2] xy) {
+        this(xy[0], xy[1]);
+    }
+
+    pragma(inline, true)
+    this(Vec2 xy) {
+        this(cast(int) floor(xy.x), cast(int) floor(xy.y));
+    }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(x, y);
+    }
+}
+
+struct IVec3 {
+    int x;
+    int y;
+    int z;
+
+    enum zero = IVec3(0, 0, 0);
+    enum one = IVec3(1, 1, 1);
+
+    @safe @nogc nothrow:
+
+    pragma(inline, true)
+    this(int x, int y, int z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    pragma(inline, true)
+    this(int x) {
+        this(x, x, x);
+    }
+
+    pragma(inline, true)
+    this(int[3] xyz) {
+        this(xyz[0], xyz[1], xyz[2]);
+    }
+
+    pragma(inline, true)
+    this(IVec2 xy, int z) {
+        this(xy.x, xy.y, z);
+    }
+
+    pragma(inline, true)
+    this(Vec3 xyz) {
+        this(cast(int) floor(xyz.x), cast(int) floor(xyz.y), cast(int) floor(xyz.z));
+    }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(x, y);
+    }
+}
+
+struct IVec4 {
+    int x;
+    int y;
+    int z;
+    int w;
+
+    enum zero = IVec4(0, 0, 0, 0);
+    enum one = IVec4(1, 1, 1, 1);
+
+    @safe @nogc nothrow:
+
+    pragma(inline, true)
+    this(int x, int y, int z, int w) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+
+    pragma(inline, true)
+    this(int x) {
+        this(x, x, x, x);
+    }
+
+    pragma(inline, true)
+    this(int[4] xyzw) {
+        this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
+    }
+
+    pragma(inline, true)
+    this(Vec4 xyzw) {
+        this(cast(int) floor(xyzw.x), cast(int) floor(xyzw.y), cast(int) floor(xyzw.z), cast(int) floor(xyzw.w));
+    }
+
+    const(char)[] toStr() {
+        return "{} {}".fmt(x, y);
     }
 }
 
