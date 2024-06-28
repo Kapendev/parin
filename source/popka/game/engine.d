@@ -468,6 +468,7 @@ struct TileMap {
         if (path.length != 0) {
             parse(loadTempText(path));
         }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 }
 

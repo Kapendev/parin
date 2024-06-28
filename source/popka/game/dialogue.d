@@ -57,6 +57,10 @@ struct Dialogue {
         load(path);
     }
 
+    bool isEmpty() {
+        return units.length == 0;
+    }
+
     bool hasChoices() {
         return menu.length != 0;
     }
@@ -296,6 +300,7 @@ struct Dialogue {
         if (path.length != 0) {
             parse(loadTempText(path));
         }
+        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
 
     void free() {
