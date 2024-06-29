@@ -436,6 +436,10 @@ const(char)[] signedToStr(long value) {
 const(char)[] doubleToStr(double value, uint precision = 2) {
     static char[64] buffer = void;
 
+    if (value != value) {
+        return "nan";
+    }
+
     auto result = buffer[];        // You know what this is.
     auto cleanNumber = value;      // Number that has all the digits on the left side.
     auto fractionalDigitCount = 0; // Digit count on the right size.

@@ -73,6 +73,10 @@ struct Dialogue {
         return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
     }
 
+    bool hasEnded() {
+        return !hasText;
+    }
+
     const(char)[][] choices() {
         return menu.items;
     }
@@ -301,6 +305,21 @@ struct Dialogue {
             parse(loadTempText(path));
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
+    }
+
+    void clear() {
+        foreach (ref unit; units) {
+            unit.text.free();
+        }
+        units.clear();
+        foreach (ref variable; variables) {
+            variable.name.free();
+        }
+        variables.clear();
+        menu.clear();
+        command.clear();
+        reset();
+        pointCount = 0;
     }
 
     void free() {

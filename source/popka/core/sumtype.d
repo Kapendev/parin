@@ -132,7 +132,13 @@ T toSumType(T)(SumTypeKind kind) {
     static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
 
     T result;
-    result.kind = kind;
+    static foreach (i, Type; T.Types) {
+        if (i == kind) {
+            result = Type();
+            goto loopExit;
+        }
+    }
+    loopExit:
     return result;
 }
 
