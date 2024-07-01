@@ -15,12 +15,12 @@ import popka.core.traits;
 
 @trusted
 void printf(A...)(const(char)[] str, A args) {
-    .fputs(fmt("{}\0", fmt(str, args)).ptr, .stdout);
+    .fputs(format("{}\0", format(str, args)).ptr, .stdout);
 }
 
 @trusted
 void printfln(A...)(const(char)[] str, A args) {
-    .fputs(fmt("{}\n\0", fmt(str, args)).ptr, .stdout);
+    .fputs(format("{}\n\0", format(str, args)).ptr, .stdout);
 }
 
 void print(A...)(A args) {
@@ -73,15 +73,14 @@ List!char readText(const(char)[] path) {
 }
 
 @trusted
-void writeText(const(char)[] path, List!char content) {
+void writeText(const(char)[] path, ref List!char text) {
     auto f = .fopen(toStrz(path), "w");
     if (f == null) {
         return;
     }
-    content.append('\0');
-    .fputs(content.items.ptr, f);
+    // NOTE: Maybe check error value.
+    .fwrite(text.ptr, char.sizeof, text.length, f);
     .fclose(f);
-    content.pop();
 }
 
 // TODO: See what works.

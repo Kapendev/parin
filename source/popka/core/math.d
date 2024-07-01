@@ -150,7 +150,7 @@ struct Vec2 {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(x, y);
+        return "{} {}".format(x, y);
     }
 }
 
@@ -253,7 +253,7 @@ struct Vec3 {
     }
 
     const(char)[] toStr() {
-        return "{} {} {}".fmt(x, y, z);
+        return "{} {} {}".format(x, y, z);
     }
 }
 
@@ -359,7 +359,7 @@ struct Vec4 {
     }
 
     const(char)[] toStr() {
-        return "{} {} {} {}".fmt(x, y, z, w);
+        return "{} {} {} {}".format(x, y, z, w);
     }
 }
 
@@ -683,7 +683,7 @@ struct Rect {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(position, size);
+        return "{} {} {} {}".format(position.x, position.y, size.x, size.y);
     }
 }
 
@@ -708,7 +708,7 @@ struct Circ {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(position, radius);
+        return "{} {} {}".format(position.x, position.y, radius);
     }
 }
 
@@ -743,7 +743,7 @@ struct Line {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(a, b);
+        return "{} {} {} {}".format(a.x, a.y, b.x, b.y);
     }
 }
 
@@ -778,7 +778,7 @@ struct IVec2 {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(x, y);
+        return "{} {}".format(x, y);
     }
 }
 
@@ -820,7 +820,7 @@ struct IVec3 {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(x, y);
+        return "{} {}".format(x, y);
     }
 }
 
@@ -859,7 +859,7 @@ struct IVec4 {
     }
 
     const(char)[] toStr() {
-        return "{} {}".fmt(x, y);
+        return "{} {}".format(x, y);
     }
 }
 

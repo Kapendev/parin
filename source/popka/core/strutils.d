@@ -7,6 +7,7 @@
 module popka.core.strutils;
 
 import popka.core.traits;
+import popka.core.container;
 
 @safe @nogc nothrow:
 
@@ -335,13 +336,16 @@ const(char)[] pathDir(const(char)[] path) {
 
 // TODO: Make it more safe? Look at how Python does it.
 const(char)[] pathConcat(const(char)[][] args...) {
-    static char[1024] buffer = void;
+    static char[1024][4] buffers = void;
+    static byte bufferIndex = 0;
 
     if (args.length == 0) {
         return ".";
     }
 
-    auto result = buffer[];
+    bufferIndex = (bufferIndex + 1) % buffers.length;
+
+    auto result = buffers[bufferIndex][];
     auto length = 0;
     foreach (i, arg; args) {
         result.copyStrChars(arg, length);
@@ -508,16 +512,7 @@ const(char)[] enumToStr(T)(T value) {
 
 @trusted
 const(char)[] strzToStr(const(char)* value) {
-    static char[1024] buffer = void;
-
-    auto result = buffer[];
-    size_t strzLength = 0;
-    while (value[strzLength] != '\0') {
-        result[strzLength] = value[strzLength];
-        strzLength += 1;
-    }
-    result = result[0 .. strzLength];
-    return result;
+    return value[0 .. value.length];
 }
 
 const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
@@ -745,41 +740,72 @@ const(char)* toStrz(const(char)[] str) {
 }
 
 // TODO: Check if the args count is the same with the `{}` count.
-const(char)[] fmt(A...)(const(char)[] str, A args) {
-    static char[1024][4] bufs = void;
-    static auto bufi = 0;
+const(char)[] format(A...)(const(char)[] str, A args) {
+    static char[1024][8] buffers = void;
+    static byte bufferIndex = 0;
 
-    bufi = (bufi + 1) % bufs.length;
-    auto result = bufs[bufi][];
-    auto resi = 0;
-    auto stri = 0;
-    auto argi = 0;
+    bufferIndex = (bufferIndex + 1) % buffers.length;
 
-    while (stri < str.length) {
-        auto c1 = str[stri];
-        auto c2 = stri + 1 >= str.length ? '+' : str[stri + 1];
-        if (c1 == '{' && c2 == '}' && argi < args.length) {
+    auto result = buffers[bufferIndex][];
+    auto resultIndex = 0;
+    auto strIndex = 0;
+    auto argIndex = 0;
+
+    while (strIndex < str.length) {
+        auto c1 = str[strIndex];
+        auto c2 = strIndex + 1 >= str.length ? '+' : str[strIndex + 1];
+        if (c1 == '{' && c2 == '}' && argIndex < args.length) {
             static foreach (i, arg; args) {
-                if (i == argi) {
+                if (i == argIndex) {
                     auto temp = toStr(arg);
                     foreach (i, c; temp) {
-                        result[resi + i] = c;
+                        result[resultIndex + i] = c;
                     }
-                    resi += temp.length;
-                    stri += 2;
-                    argi += 1;
+                    resultIndex += temp.length;
+                    strIndex += 2;
+                    argIndex += 1;
                     goto loopExit;
                 }
             }
             loopExit:
         } else {
-            result[resi] = c1;
-            resi += 1;
-            stri += 1;
+            result[resultIndex] = c1;
+            resultIndex += 1;
+            strIndex += 1;
         }
     }
-    result = result[0 .. resi];
+    result = result[0 .. resultIndex];
     return result;
+}
+
+// TODO: Check if the args count is the same with the `{}` count.
+void formatl(A...)(ref List!char text, const(char)[] str, A args) {
+    text.clear();
+
+    auto strIndex = 0;
+    auto argIndex = 0;
+
+    while (strIndex < str.length) {
+        auto c1 = str[strIndex];
+        auto c2 = strIndex + 1 >= str.length ? '+' : str[strIndex + 1];
+        if (c1 == '{' && c2 == '}' && argIndex < args.length) {
+            static foreach (i, arg; args) {
+                if (i == argIndex) {
+                    auto temp = toStr(arg);
+                    foreach (i, c; temp) {
+                        text.append(c);
+                    }
+                    strIndex += 2;
+                    argIndex += 1;
+                    goto loopExit;
+                }
+            }
+            loopExit:
+        } else {
+            text.append(c1);
+            strIndex += 1;
+        }
+    }
 }
 
 unittest {
@@ -860,19 +886,19 @@ unittest {
     assert(conv3.value == 0.0);
     assert(conv3.error == ToValueResultError.invalid);
 
-    assert(fmt("") == "");
-    assert(fmt("{}") == "{}");
-    assert(fmt("{}", "1") == "1");
-    assert(fmt("{} {}", "1", "2") == "1 2");
-    assert(fmt("{} {} {}", "1", "2", "3") == "1 2 3");
-    assert(fmt("{} {} {}", 1, -2, 3.69) == "1 -2 3.69");
-    assert(fmt("{}", 420, 320, 220, 120, 20) == "420");
-    assert(fmt("", 1, -2, 3.69) == "");
-    assert(fmt("({})", fmt("({}, {})", false, true)) == "((false, true))");
+    assert(format("") == "");
+    assert(format("{}") == "{}");
+    assert(format("{}", "1") == "1");
+    assert(format("{} {}", "1", "2") == "1 2");
+    assert(format("{} {} {}", "1", "2", "3") == "1 2 3");
+    assert(format("{} {} {}", 1, -2, 3.69) == "1 -2 3.69");
+    assert(format("{}", 420, 320, 220, 120, 20) == "420");
+    assert(format("", 1, -2, 3.69) == "");
+    assert(format("({})", format("({}, {})", false, true)) == "((false, true))");
 
     // TODO: Uncoment when the N.00 bug is fixed.
-    // assert(fmt("{}", 0.00) == "0.00");
-    // assert(fmt("{}", 0.50) == "0.50");
-    // assert(fmt("{}", 1.00) == "1.00");
-    // assert(fmt("{}", 1.50) == "1.50");
+    // assert(format("{}", 0.00) == "0.00");
+    // assert(format("{}", 0.50) == "0.50");
+    // assert(format("{}", 1.00) == "1.00");
+    // assert(format("{}", 1.50) == "1.50");
 }

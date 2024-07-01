@@ -86,9 +86,9 @@ struct Dialogue {
     }
 
     void reset() {
-        unitIndex = 0;
         menu.clear();
         command.clear();
+        unitIndex = 0;
         text = "";
         actor = "";
     }

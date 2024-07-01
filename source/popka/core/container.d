@@ -9,6 +9,8 @@ import popka.core.stdc;
 
 @safe @nogc nothrow:
 
+auto valueMallocCounter = 0;
+
 struct List(T) {
     T[] items;
     size_t capacity;
@@ -71,12 +73,24 @@ struct List(T) {
         return items.length;
     }
 
+    @trusted
+    T* ptr() {
+        return items.ptr;
+    }
+
     size_t length() {
         return items.length;
     }
 
     @trusted
     void append(const(T)[] args...) {
+        if (capacity == 0) {
+            capacity = findListCapacity(0);
+            items = (cast(T*) malloc(capacity * T.sizeof))[0 .. 0];
+            import popka.core.io;
+            valueMallocCounter += 1;
+            popka.core.io.println(valueMallocCounter, " malloc: ", cast(size_t) items.ptr);
+        }
         foreach (arg; args) {
             size_t newLength = length + 1;
             if (newLength > capacity) {
@@ -105,7 +119,7 @@ struct List(T) {
     }
 
     void resize(size_t length) {
-        if (length < this.length) {
+        if (length <= this.length) {
             items = items[0 .. length];
         } else {
             foreach (i; 0 .. length - this.length) {
@@ -127,7 +141,11 @@ struct List(T) {
 
     @trusted
     void free() {
-        if (items.ptr != null) {
+        if (capacity != 0) {
+            import popka.core.io;
+            valueMallocCounter -= 1;
+            println(valueMallocCounter, " free: ", cast(size_t) items.ptr);
+
             .free(items.ptr);
             items = [];
             capacity = 0;

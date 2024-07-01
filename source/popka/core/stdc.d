@@ -24,7 +24,7 @@ float cosf(float x);
 
 // stdlib.h
 
-void* malloc(void* ptr, size_t size);
+void* malloc(size_t size);
 void* realloc(void* ptr, size_t size);
 void free(void* ptr);
 
@@ -145,3 +145,4 @@ int fseek(FILE* stream, c_long offset, int origin);
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
 int fclose(FILE* stream);
 int fputs(const(char)* str, FILE* stream);
+size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream);

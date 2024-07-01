@@ -147,7 +147,7 @@ struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
 
-    List!char assetsDir;
+    List!char assetsPath;
     List!char tempText;
 
     bool isUpdating;
@@ -432,7 +432,8 @@ struct TileMap {
     }
 
     void parse(const(char)[] csv) {
-        free();
+        data.clear();
+
         auto view = csv;
         auto newRowCount = 0;
         auto newColCount = 0;
@@ -464,7 +465,6 @@ struct TileMap {
     }
 
     void load(const(char)[] path) {
-        free();
         if (path.length != 0) {
             parse(loadTempText(path));
         }
@@ -605,7 +605,7 @@ const(char)[] loadTempText(const(char)[] path) {
 
 /// Saves a text file to the assets folder.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-void saveText(const(char)[] path, List!char content) {
+void saveText(const(char)[] path, ref List!char content) {
     writeText(path.toAssetsPath, content);
 }
 
@@ -617,21 +617,21 @@ const(char)[] toAssetsPath(const(char)[] path) {
     static char[1024] buffer = void;
 
     if (path.length == 0) {
-        return assetsDir;
+        return assetsPath;
     }
 
     auto result = buffer[];
-    result.copyStrChars(assetsDir);
-    result[assetsDir.length] = pathSeparator;
+    result.copyStrChars(assetsPath);
+    result[assetsPath.length] = pathSeparator;
     foreach (i, c; path) {
-        auto ii = i + assetsDir.length + 1;
+        auto ii = i + assetsPath.length + 1;
         if (c == otherPathSeparator) {
             result[ii] = pathSeparator;
         } else {
             result[ii] = c;
         }
     }
-    result = result[0 .. assetsDir.length + 1 + path.length];
+    result = result[0 .. assetsPath.length + 1 + path.length];
     return result;
 }
 
@@ -914,9 +914,14 @@ void closeWindow() {
     if (!ray.IsWindowReady) {
         return;
     }
+    
+    engineState.assetsPath.free();
+    engineState.tempText.free();
     engineState.viewport.free();
+    
     ray.CloseAudioDevice();
     ray.CloseWindow();
+    
     engineState = EngineState.init;
 }
 
@@ -988,8 +993,8 @@ void showCursor() {
 }
 
 /// Returns the assets folder path.
-const(char)[] assetsDir() {
-    return engineState.assetsDir.items;
+const(char)[] assetsPath() {
+    return engineState.assetsPath.items;
 }
 
 /// Returns true if the window is in fullscreen mode.
@@ -1432,31 +1437,21 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            @trusted @nogc nothrow
-            static string __helper(immutable(char)* strz) {
-                size_t length = 0;
-                while (strz[length] != '\0') {
-                    length += 1;
-                }
-                return strz[0 .. length];
-            }
-            engineState.assetsDir.append(pathDir(__helper(argv[0])));
-            engineState.assetsDir.append(pathSeparator);
-            engineState.assetsDir.append("assets");
+            engineState.assetsPath.append(
+                pathConcat(pathDir(argv[0].toStr()), "assets")
+            );
             openWindow(size);
             startFunc();
             closeWindow();
-            engineState.assetsDir.free();
         }
     } else {
         void main(string[] args) {
-            engineState.assetsDir.append(pathDir(args[0]));
-            engineState.assetsDir.append(pathSeparator);
-            engineState.assetsDir.append("assets");
+            engineState.assetsPath.append(
+                pathConcat(pathDir(args[0]), "assets")
+            );
             openWindow(size);
             startFunc();
             closeWindow();
-            engineState.assetsDir.free();
         }
     }
 }
