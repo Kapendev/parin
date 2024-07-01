@@ -73,7 +73,7 @@ List!char readText(const(char)[] path) {
 }
 
 @trusted
-void writeText(const(char)[] path, ref List!char text) {
+void writeText(const(char)[] path, const(char)[] text) {
     auto f = .fopen(toStrz(path), "w");
     if (f == null) {
         return;

@@ -1,69 +1,66 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The raylibpp module contains helper functions to reduce some raylib boilerplate code.
+/// The raylibpp module contains helper functions to reduce some raylib boilerplate.
 
 module popka.vendor.ray.raylibpp;
 
 import popka.vendor.ray.raylib;
 
-// Basic shapes drawing functions
-alias drawPixel = DrawPixel;
-alias drawPixel = DrawPixelV;
+alias drawPixel                        = DrawPixel;
+alias drawPixel                        = DrawPixelV;
 
-alias drawLine = DrawLine;
-alias drawLine = DrawLineV;
-alias drawLine = DrawLineEx;
-alias drawLine = DrawLineStrip;
-alias drawLineBezier = DrawLineBezier;
+alias drawLine                         = DrawLine;
+alias drawLine                         = DrawLineV;
+alias drawLine                         = DrawLineEx;
+alias drawLineStrip                    = DrawLineStrip;
+alias drawLineBezier                   = DrawLineBezier;
 
-alias drawCircle = DrawCircle;
-alias drawCircleSector = DrawCircleSector;
-alias drawCircleSectorLines = DrawCircleSectorLines;
-alias drawCircle = DrawCircleGradient;
-alias drawCircle = DrawCircleV;
-alias drawCircleLines = DrawCircleLines;
-alias drawCircleLines = DrawCircleLinesV;
+alias drawCircle                       = DrawCircle;
+alias drawCircle                       = DrawCircleGradient;
+alias drawCircle                       = DrawCircleV;
+alias drawCircleSector                 = DrawCircleSector;
+alias drawCircleSectorLines            = DrawCircleSectorLines;
+alias drawCircleLines                  = DrawCircleLines;
+alias drawCircleLines                  = DrawCircleLinesV;
 
-alias drawEllipse = DrawEllipse;
-alias drawEllipseLines = DrawEllipseLines;
+alias drawEllipse                      = DrawEllipse;
+alias drawEllipseLines                 = DrawEllipseLines;
 
-alias drawRing = DrawRing;
-alias drawRingLines = DrawRingLines;
+alias drawRing                         = DrawRing;
+alias drawRingLines                    = DrawRingLines;
 
-alias drawRectangle = DrawRectangle;
-alias drawRectangle = DrawRectangleV;
-alias drawRectangle = DrawRectangleRec;
-alias drawRectangle = DrawRectanglePro;
-alias drawRectangleGradientV = DrawRectangleGradientV;
-alias drawRectangleGradientH = DrawRectangleGradientH;
-alias drawRectangle = DrawRectangleGradientEx;
-alias drawRectangleLines = DrawRectangleLines;
-alias drawRectangleLines = DrawRectangleLinesEx;
-alias drawRectangleRounded = DrawRectangleRounded;
-alias drawRectangleRoundedLines = DrawRectangleRoundedLines;
+alias drawRectangle                    = DrawRectangle;
+alias drawRectangle                    = DrawRectangleV;
+alias drawRectangle                    = DrawRectangleRec;
+alias drawRectangle                    = DrawRectanglePro;
+alias drawRectangleGradientV           = DrawRectangleGradientV;
+alias drawRectangleGradientH           = DrawRectangleGradientH;
+alias drawRectangleGradient            = DrawRectangleGradientEx;
+alias drawRectangleLines               = DrawRectangleLines;
+alias drawRectangleLines               = DrawRectangleLinesEx;
+alias drawRectangleRounded             = DrawRectangleRounded;
+alias drawRectangleRoundedLines        = DrawRectangleRoundedLines;
 
-alias drawTriangle = DrawTriangle;
-alias drawTriangleLines = DrawTriangleLines;
-alias drawTriangleFan = DrawTriangleFan;
-alias drawTriangleStrip = DrawTriangleStrip;
-alias drawPoly = DrawPoly;
-alias drawPolyLines = DrawPolyLines;
-alias drawPolyLines = DrawPolyLinesEx;
+alias drawTriangle                     = DrawTriangle;
+alias drawTriangleLines                = DrawTriangleLines;
+alias drawTriangleFan                  = DrawTriangleFan;
+alias drawTriangleStrip                = DrawTriangleStrip;
+alias drawPoly                         = DrawPoly;
+alias drawPolyLines                    = DrawPolyLines;
+alias drawPolyLines                    = DrawPolyLinesEx;
 
-// Splines drawing functions
-alias drawSplineLinear = DrawSplineLinear;
-alias drawSplineBasis = DrawSplineBasis;
-alias drawSplineCatmullRom = DrawSplineCatmullRom;
-alias drawSplineBezierQuadratic = DrawSplineBezierQuadratic;
-alias drawSplineBezierCubic = DrawSplineBezierCubic;
-alias drawSplineSegmentLinear = DrawSplineSegmentLinear;
-alias drawSplineSegmentBasis = DrawSplineSegmentBasis;
-alias drawSplineSegmentCatmullRom = DrawSplineSegmentCatmullRom;
+alias drawSplineLinear                 = DrawSplineLinear;
+alias drawSplineBasis                  = DrawSplineBasis;
+alias drawSplineCatmullRom             = DrawSplineCatmullRom;
+alias drawSplineBezierQuadratic        = DrawSplineBezierQuadratic;
+alias drawSplineBezierCubic            = DrawSplineBezierCubic;
+alias drawSplineSegmentLinear          = DrawSplineSegmentLinear;
+alias drawSplineSegmentBasis           = DrawSplineSegmentBasis;
+alias drawSplineSegmentCatmullRom      = DrawSplineSegmentCatmullRom;
 alias drawSplineSegmentBezierQuadratic = DrawSplineSegmentBezierQuadratic;
-alias drawSplineSegmentBezierCubic = DrawSplineSegmentBezierCubic;
+alias drawSplineSegmentBezierCubic     = DrawSplineSegmentBezierCubic;
 
-// Texture drawing functions
 alias drawTexture = DrawTexture;
 alias drawTexture = DrawTextureV;
 alias drawTexture = DrawTextureEx;
@@ -71,7 +68,6 @@ alias drawTexture = DrawTextureRec;
 alias drawTexture = DrawTexturePro;
 alias drawTexture = DrawTextureNPatch;
 
-// Text drawing functions
 alias drawFPS = DrawFPS;
 
 @trusted @nogc nothrow
@@ -87,11 +83,13 @@ void drawText(Font font, const(char)[] text, Vector2 position, float fontSize, f
 @trusted @nogc nothrow
 void drawText(Font font, const(char)[] text, Vector2 position, Vector2 origin, float rotation, float fontSize, float spacing, Color tint) {
     static char[1024] buffer = void;
+
     auto text2 = buffer[];
     foreach (i, c; text) {
         text2[i] = c;
     }
     text2[text.length] = '\0';
+
     DrawTextPro(font, text2.ptr, position, origin, rotation, fontSize, spacing, tint);
 }
 
@@ -110,57 +108,56 @@ float measureText(const(char)[] text, float fontSize) {
 @trusted @nogc nothrow
 Vector2 measureText(Font font, const(char)[] text, float fontSize, float spacing) {
     static char[1024] buffer = void;
+
     auto text2 = buffer[];
     foreach (i, c; text) {
         text2[i] = c;
     }
     text2[text.length] = '\0';
+
     return MeasureTextEx(font, text2.ptr, fontSize, spacing);
 }
 
-// Basic geometric 3D shapes drawing functions
-alias drawLine3D = DrawLine3D;
-alias drawPoint3D = DrawPoint3D;
-alias drawCircle3D = DrawCircle3D;
+alias drawLine3D          = DrawLine3D;
+alias drawPoint3D         = DrawPoint3D;
+alias drawCircle3D        = DrawCircle3D;
 
-alias drawTriangle3D = DrawTriangle3D;
-alias drawTriangle3D = DrawTriangleStrip3D;
+alias drawTriangle3D      = DrawTriangle3D;
+alias drawTriangleStrip3D = DrawTriangleStrip3D;
 
-alias drawCube = DrawCube;
-alias drawCube = DrawCubeV;
-alias drawCubeWires = DrawCubeWires;
-alias drawCubeWires = DrawCubeWiresV;
+alias drawCube            = DrawCube;
+alias drawCube            = DrawCubeV;
+alias drawCubeWires       = DrawCubeWires;
+alias drawCubeWires       = DrawCubeWiresV;
 
-alias drawSphere = DrawSphere;
-alias drawSphere = DrawSphereEx;
-alias drawSphereWires = DrawSphereWires;
+alias drawSphere          = DrawSphere;
+alias drawSphere          = DrawSphereEx;
+alias drawSphereWires     = DrawSphereWires;
 
-alias drawCylinder = DrawCylinder;
-alias drawCylinder = DrawCylinderEx;
-alias drawCylinderWires = DrawCylinderWires;
-alias drawCylinderWires = DrawCylinderWiresEx;
+alias drawCylinder        = DrawCylinder;
+alias drawCylinder        = DrawCylinderEx;
+alias drawCylinderWires   = DrawCylinderWires;
+alias drawCylinderWires   = DrawCylinderWiresEx;
 
-alias drawCapsule = DrawCapsule;
-alias drawCapsuleWires = DrawCapsuleWires;
-alias drawPlane = DrawPlane;
-alias drawRay = DrawRay;
-alias drawGrid = DrawGrid;
+alias drawCapsule         = DrawCapsule;
+alias drawCapsuleWires    = DrawCapsuleWires;
+alias drawPlane           = DrawPlane;
+alias drawRay             = DrawRay;
+alias drawGrid            = DrawGrid;
 
-// Model drawing functions
-alias drawModel = DrawModel;
-alias drawModel = DrawModelEx;
-alias drawModelWires = DrawModelWires;
-alias drawModelWires = DrawModelWiresEx;
+alias drawModel           = DrawModel;
+alias drawModel           = DrawModelEx;
+alias drawModelWires      = DrawModelWires;
+alias drawModelWires      = DrawModelWiresEx;
 
-alias drawBoundingBox = DrawBoundingBox;
+alias drawBoundingBox     = DrawBoundingBox;
 
-alias drawBillboard = DrawBillboard;
-alias drawBillboard = DrawBillboardRec;
-alias drawBillboard = DrawBillboardPro;
+alias drawBillboard       = DrawBillboard;
+alias drawBillboard       = DrawBillboardRec;
+alias drawBillboard       = DrawBillboardPro;
 
-// Mesh management functions
-alias drawMesh = DrawMesh;
-alias drawMeshInstanced = DrawMeshInstanced;
+alias drawMesh            = DrawMesh;
+alias drawMeshInstanced   = DrawMeshInstanced;
 
 void updateWindow(alias loopFunc)() {
     version(WebAssembly) {

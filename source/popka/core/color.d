@@ -5,6 +5,8 @@
 
 module popka.core.color;
 
+import popka.core.strutils;
+
 @safe @nogc nothrow:
 
 enum black = Color();
@@ -60,6 +62,10 @@ struct Color {
 
     Color alpha(ubyte value) {
         return Color(r, g, b, value);
+    }
+
+    const(char)[] toStr() {
+        return "{} {} {} {}".format(r, g, b, a);
     }
 }
 

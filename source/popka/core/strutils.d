@@ -740,7 +740,7 @@ const(char)* toStrz(const(char)[] str) {
 }
 
 // TODO: Check if the args count is the same with the `{}` count.
-const(char)[] format(A...)(const(char)[] str, A args) {
+const(char)[] format(A...)(const(char)[] formatStr, A args) {
     static char[1024][8] buffers = void;
     static byte bufferIndex = 0;
 
@@ -748,12 +748,12 @@ const(char)[] format(A...)(const(char)[] str, A args) {
 
     auto result = buffers[bufferIndex][];
     auto resultIndex = 0;
-    auto strIndex = 0;
+    auto formatStrIndex = 0;
     auto argIndex = 0;
 
-    while (strIndex < str.length) {
-        auto c1 = str[strIndex];
-        auto c2 = strIndex + 1 >= str.length ? '+' : str[strIndex + 1];
+    while (formatStrIndex < formatStr.length) {
+        auto c1 = formatStr[formatStrIndex];
+        auto c2 = formatStrIndex + 1 >= formatStr.length ? '+' : formatStr[formatStrIndex + 1];
         if (c1 == '{' && c2 == '}' && argIndex < args.length) {
             static foreach (i, arg; args) {
                 if (i == argIndex) {
@@ -762,7 +762,7 @@ const(char)[] format(A...)(const(char)[] str, A args) {
                         result[resultIndex + i] = c;
                     }
                     resultIndex += temp.length;
-                    strIndex += 2;
+                    formatStrIndex += 2;
                     argIndex += 1;
                     goto loopExit;
                 }
@@ -771,7 +771,7 @@ const(char)[] format(A...)(const(char)[] str, A args) {
         } else {
             result[resultIndex] = c1;
             resultIndex += 1;
-            strIndex += 1;
+            formatStrIndex += 1;
         }
     }
     result = result[0 .. resultIndex];
@@ -779,15 +779,15 @@ const(char)[] format(A...)(const(char)[] str, A args) {
 }
 
 // TODO: Check if the args count is the same with the `{}` count.
-void formatl(A...)(ref List!char text, const(char)[] str, A args) {
+void formatl(A...)(ref List!char text, const(char)[] formatStr, A args) {
     text.clear();
 
-    auto strIndex = 0;
+    auto formatStrIndex = 0;
     auto argIndex = 0;
 
-    while (strIndex < str.length) {
-        auto c1 = str[strIndex];
-        auto c2 = strIndex + 1 >= str.length ? '+' : str[strIndex + 1];
+    while (formatStrIndex < formatStr.length) {
+        auto c1 = formatStr[formatStrIndex];
+        auto c2 = formatStrIndex + 1 >= formatStr.length ? '+' : formatStr[formatStrIndex + 1];
         if (c1 == '{' && c2 == '}' && argIndex < args.length) {
             static foreach (i, arg; args) {
                 if (i == argIndex) {
@@ -795,7 +795,7 @@ void formatl(A...)(ref List!char text, const(char)[] str, A args) {
                     foreach (i, c; temp) {
                         text.append(c);
                     }
-                    strIndex += 2;
+                    formatStrIndex += 2;
                     argIndex += 1;
                     goto loopExit;
                 }
@@ -803,7 +803,7 @@ void formatl(A...)(ref List!char text, const(char)[] str, A args) {
             loopExit:
         } else {
             text.append(c1);
-            strIndex += 1;
+            formatStrIndex += 1;
         }
     }
 }

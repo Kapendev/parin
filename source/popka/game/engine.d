@@ -18,6 +18,7 @@ EngineState engineState;
 
 enum defaultFPS = 60;
 enum defaultBackgroundColor = toRGB(0x2A363A);
+enum defaultTempLoadTextCapacity = 8192;
 enum toggleFullscreenWaitTime = 0.135f;
 
 /// A type representing flipping orientations.
@@ -148,7 +149,7 @@ struct EngineState {
     float timeRate = 1.0f;
 
     List!char assetsPath;
-    List!char tempText;
+    List!char tempLoadText;
 
     bool isUpdating;
     bool isPixelPerfect;
@@ -599,14 +600,14 @@ List!char loadText(const(char)[] path) {
 /// The slice can be safely used until this function is called again.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 const(char)[] loadTempText(const(char)[] path) {
-    loadText(path, engineState.tempText);
-    return engineState.tempText.items;
+    loadText(path, engineState.tempLoadText);
+    return engineState.tempLoadText.items;
 }
 
 /// Saves a text file to the assets folder.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-void saveText(const(char)[] path, ref List!char content) {
-    writeText(path.toAssetsPath, content);
+void saveText(const(char)[] path, const(char)[] text) {
+    writeText(path.toAssetsPath, text);
 }
 
 void loadConfig(A...)(const(char)[] path, ref A args) {
@@ -916,7 +917,7 @@ void closeWindow() {
     }
     
     engineState.assetsPath.free();
-    engineState.tempText.free();
+    engineState.tempLoadText.free();
     engineState.viewport.free();
     
     ray.CloseAudioDevice();
@@ -1437,18 +1438,30 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
+            debug {
+                println("Info: Using the C main function.");
+            }
+
             engineState.assetsPath.append(
                 pathConcat(pathDir(argv[0].toStr()), "assets")
             );
+            engineState.tempLoadText.reserve(defaultTempLoadTextCapacity);
+
             openWindow(size);
             startFunc();
             closeWindow();
         }
     } else {
         void main(string[] args) {
+            debug {
+                println("Info: Using the D main function.");
+            }
+
             engineState.assetsPath.append(
                 pathConcat(pathDir(args[0]), "assets")
             );
+            engineState.tempLoadText.reserve(defaultTempLoadTextCapacity);
+
             openWindow(size);
             startFunc();
             closeWindow();
