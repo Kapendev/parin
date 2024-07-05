@@ -13,6 +13,8 @@ import popka.game.engine;
 
 @safe @nogc nothrow:
 
+// TODO: Stupid loading bug where it thinks it could not load a file because I check if the text is empty. Change that in core.io and others by returning a bool if reading failed.
+
 enum dialogueUnitKindChars = ".#*@>|^!+-$";
 
 enum DialogueUnitKind {
@@ -39,7 +41,7 @@ struct DialogueVariable {
     long value;
 }
 
-alias DialogueFunc = void function(const(char)[][] args);
+alias DialogueCommandRunner = void function(const(char)[][] args);
 
 struct Dialogue {
     List!DialogueUnit units;
@@ -65,7 +67,7 @@ struct Dialogue {
         return menu.length != 0;
     }
 
-    bool hasArgs() {
+    bool hasCommand() {
         return command.length != 0;
     }
 
@@ -138,8 +140,8 @@ struct Dialogue {
         update();
     }
 
-    void run(DialogueFunc func) {
-        func(args);
+    void run(DialogueCommandRunner runner) {
+        runner(args);
         command.clear();
         update();
     }
