@@ -15,10 +15,12 @@ union SumTypeData(A...) {
     }
 
     enum kindCount = A.length;
+
+    alias BaseType = A[0];
     alias Types = A;
 }
 
-alias SumTypeKind = ubyte;
+alias SumTypeKind = int;
 
 struct SumType(A...) {
     SumTypeData!A data;
@@ -134,10 +136,25 @@ T toSumType(T)(SumTypeKind kind) {
     T result;
     static foreach (i, Type; T.Types) {
         if (i == kind) {
-            result = Type();
+            result = Type.init;
             goto loopExit;
         }
     }
+    loopExit:
+    return result;
+}
+
+T toSumType(T)(const(char)[] kindName) {
+    static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
+
+    T result;
+    static foreach (i, Type; T.Types) {
+        if (Type.stringof == kindName) {
+            result = Type.init;
+            goto loopExit;
+        }
+    }
+    import popka.core.io;
     loopExit:
     return result;
 }
@@ -146,19 +163,19 @@ bool isSumType(T)() {
     return is(T : SumType!A, A...);
 }
 
-bool hasCommonBase(T)() {
+int checkCommonBase(T)() {
     static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
 
-    static foreach (member; T.init.data.tupleof[1 .. $]) {
+    static foreach (i, member; T.init.data.tupleof[1 .. $]) {
         static if (isPrimaryType!(typeof(member)) || member.tupleof.length == 0) {
             static if (!is(T.BaseType == typeof(member))) {
-                return false;
+                return i + 1;
             }
         } else static if (!is(T.BaseType == typeof(member.tupleof[0]))) {
-            return false;
+            return i + 1;
         }
     }
-    return true;
+    return -1;
 }
 
 mixin template addBase(T) {

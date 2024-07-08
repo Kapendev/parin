@@ -32,7 +32,6 @@ enum ToValueResultError : ubyte {
 }
 
 struct ToStrOptions {
-    bool boolIsShort = false;
     ubyte floatPrecision = 2;
 }
 
@@ -161,15 +160,6 @@ bool startsWith(const(char)[] str, char start) {
     return startsWith(str, charToStr(start));
 }
 
-bool startsWithIgnoreCase(const(char)[] str, const(char)[] start) {
-    if (str.length < start.length) return false;
-    return str[0 .. start.length].equalsIgnoreCase(start);
-}
-
-bool startsWithIgnoreCase(const(char)[] str, char start) {
-    return startsWithIgnoreCase(str, charToStr(start));
-}
-
 bool endsWith(const(char)[] str, const(char)[] end) {
     if (str.length < end.length) return false;
     return str[$ - end.length .. $] == end;
@@ -177,15 +167,6 @@ bool endsWith(const(char)[] str, const(char)[] end) {
 
 bool endsWith(const(char)[] str, char end) {
     return endsWith(str, charToStr(end));
-}
-
-bool endsWithIgnoreCase(const(char)[] str, const(char)[] end) {
-    if (str.length < end.length) return false;
-    return str[$ - end.length .. $].equalsIgnoreCase(end);
-}
-
-bool endsWithIgnoreCase(const(char)[] str, char end) {
-    return endsWithIgnoreCase(str, charToStr(end));
 }
 
 int count(const(char)[] str, const(char)[] item) {
@@ -204,25 +185,9 @@ int count(const(char)[] str, char item) {
     return count(str, charToStr(item));
 }
 
-int countIgnoreCase(const(char)[] str, const(char)[] item) {
-    int result = 0;
-    if (str.length < item.length || item.length == 0) return result;
-    foreach (i; 0 .. str.length - item.length) {
-        if (str[i .. i + item.length].equalsIgnoreCase(item)) {
-            result += 1;
-            i += item.length - 1;
-        }
-    }
-    return result;
-}
-
-int countIgnoreCase(const(char)[] str, char item) {
-    return countIgnoreCase(str, charToStr(item));
-}
-
 int findStart(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
-    foreach (i; 0 .. str.length - item.length) {
+    foreach (i; 0 .. str.length - item.length + 1) {
         if (str[i .. i + item.length] == item) return cast(int) i;
     }
     return -1;
@@ -232,21 +197,9 @@ int findStart(const(char)[] str, char item) {
     return findStart(str, charToStr(item));
 }
 
-int findStartIgnoreCase(const(char)[] str, const(char)[] item) {
-    if (str.length < item.length || item.length == 0) return -1;
-    foreach (i; 0 .. str.length - item.length) {
-        if (str[i .. i + item.length].equalsIgnoreCase(item)) return cast(int) i;
-    }
-    return -1;
-}
-
-int findStartIgnoreCase(const(char)[] str, char item) {
-    return findStartIgnoreCase(str, charToStr(item));
-}
-
 int findEnd(const(char)[] str, const(char)[] item) {
     if (str.length < item.length || item.length == 0) return -1;
-    foreach_reverse (i; 0 .. str.length - item.length) {
+    foreach_reverse (i; 0 .. str.length - item.length + 1) {
         if (str[i .. i + item.length] == item) return cast(int) i;
     }
     return -1;
@@ -254,18 +207,6 @@ int findEnd(const(char)[] str, const(char)[] item) {
 
 int findEnd(const(char)[] str, char item) {
     return findEnd(str, charToStr(item));
-}
-
-int findEndIgnoreCase(const(char)[] str, const(char)[] item) {
-    if (str.length < item.length || item.length == 0) return -1;
-    foreach_reverse (i; 0 .. str.length - item.length) {
-        if (str[i .. i + item.length].equalsIgnoreCase(item)) return cast(int) i;
-    }
-    return -1;
-}
-
-int findEndIgnoreCase(const(char)[] str, char item) {
-    return findEndIgnoreCase(str, charToStr(item));
 }
 
 const(char)[] advance(const(char)[] str, size_t amount) {
@@ -387,12 +328,8 @@ const(char)[] skipLine(ref inout(char)[] str) {
     return skipValue(str, '\n');
 }
 
-const(char)[] boolToStr(bool value, bool isShort = false) {
-    if (isShort) {
-        return value ? "t" : "f";
-    } else {
-        return value ? "true" : "false";
-    }
+const(char)[] boolToStr(bool value) {
+    return value ? "true" : "false";
 }
 
 const(char)[] charToStr(char value) {
@@ -519,7 +456,7 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     static if (isCharType!T) {
         return charToStr(value);
     } else static if (isBoolType!T) {
-        return boolToStr(value, options.boolIsShort);
+        return boolToStr(value);
     } else static if (isUnsignedType!T) {
         return unsignedToStr(value);
     } else static if (isSignedType!T) {
@@ -541,9 +478,9 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
 
 ToValueResult!bool toBool(const(char)[] str) {
     auto result = ToValueResult!bool();
-    if (str == "t" || str == "true") {
+    if (str == "true") {
         result.value = true;
-    } else if (str == "f" || str == "false") {
+    } else if (str == "false") {
         result.value = false;
     } else {
         result.error = ToValueResultError.invalid;

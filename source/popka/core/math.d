@@ -46,6 +46,11 @@ struct Vec2 {
     }
 
     pragma(inline, true)
+    this(IVec2 xy) {
+        this(xy.x, xy.y);
+    }
+
+    pragma(inline, true)
     Vec2 opUnary(const(char)[] op)() {
         return Vec2(
             mixin(op, "x"),
@@ -150,7 +155,7 @@ struct Vec2 {
     }
 
     const(char)[] toStr() {
-        return "{} {}".format(x, y);
+        return "({} {})".format(x, y);
     }
 }
 
@@ -184,6 +189,11 @@ struct Vec3 {
     pragma(inline, true)
     this(Vec2 xy, float z) {
         this(xy.x, xy.y, z);
+    }
+
+    pragma(inline, true)
+    this(IVec3 xyz) {
+        this(xyz.x, xyz.y, xyz.z);
     }
 
     pragma(inline, true)
@@ -253,7 +263,7 @@ struct Vec3 {
     }
 
     const(char)[] toStr() {
-        return "{} {} {}".format(x, y, z);
+        return "({} {} {})".format(x, y, z);
     }
 }
 
@@ -284,6 +294,11 @@ struct Vec4 {
     pragma(inline, true)
     this(float[4] xyzw) {
         this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
+    }
+
+    pragma(inline, true)
+    this(IVec4 xyzw) {
+        this(xyzw.x, xyzw.y, xyzw.z, xyzw.w);
     }
 
     pragma(inline, true)
@@ -359,7 +374,7 @@ struct Vec4 {
     }
 
     const(char)[] toStr() {
-        return "{} {} {} {}".format(x, y, z, w);
+        return "({} {} {} {})".format(x, y, z, w);
     }
 }
 
@@ -683,7 +698,7 @@ struct Rect {
     }
 
     const(char)[] toStr() {
-        return "{} {} {} {}".format(position.x, position.y, size.x, size.y);
+        return "({} {} {} {})".format(position.x, position.y, size.x, size.y);
     }
 }
 
@@ -708,7 +723,7 @@ struct Circ {
     }
 
     const(char)[] toStr() {
-        return "{} {} {}".format(position.x, position.y, radius);
+        return "({} {} {})".format(position.x, position.y, radius);
     }
 }
 
@@ -743,7 +758,7 @@ struct Line {
     }
 
     const(char)[] toStr() {
-        return "{} {} {} {}".format(a.x, a.y, b.x, b.y);
+        return "({} {} {} {})".format(a.x, a.y, b.x, b.y);
     }
 }
 
@@ -774,11 +789,11 @@ struct IVec2 {
 
     pragma(inline, true)
     this(Vec2 xy) {
-        this(cast(int) floor(xy.x), cast(int) floor(xy.y));
+        this(cast(int) xy.x, cast(int) xy.y);
     }
 
     const(char)[] toStr() {
-        return "{} {}".format(x, y);
+        return "({} {})".format(x, y);
     }
 }
 
@@ -816,11 +831,11 @@ struct IVec3 {
 
     pragma(inline, true)
     this(Vec3 xyz) {
-        this(cast(int) floor(xyz.x), cast(int) floor(xyz.y), cast(int) floor(xyz.z));
+        this(cast(int) xyz.x, cast(int) xyz.y, cast(int) xyz.z);
     }
 
     const(char)[] toStr() {
-        return "{} {}".format(x, y);
+        return "({} {})".format(x, y);
     }
 }
 
@@ -855,11 +870,11 @@ struct IVec4 {
 
     pragma(inline, true)
     this(Vec4 xyzw) {
-        this(cast(int) floor(xyzw.x), cast(int) floor(xyzw.y), cast(int) floor(xyzw.z), cast(int) floor(xyzw.w));
+        this(cast(int) xyzw.x, cast(int) xyzw.y, cast(int) xyzw.z, cast(int) xyzw.w);
     }
 
     const(char)[] toStr() {
-        return "{} {}".format(x, y);
+        return "({} {})".format(x, y);
     }
 }
 
@@ -963,4 +978,28 @@ bool equals(Vec3 a, Vec3 b) {
 
 bool equals(Vec4 a, Vec4 b) {
     return equals(a.x, b.x) && equals(a.y, b.y) && equals(a.z, b.z) && equals(a.w, b.w);
+}
+
+Vec2 toVec(IVec2 vec) {
+    return Vec2(vec);
+}
+
+Vec3 toVec(IVec3 vec) {
+    return Vec3(vec);
+}
+
+Vec4 toVec(IVec4 vec) {
+    return Vec4(vec);
+}
+
+IVec2 toIVec(Vec2 vec) {
+    return IVec2(vec);
+}
+
+IVec3 toIVec(Vec3 vec) {
+    return IVec3(vec);
+}
+
+IVec4 toIVec(Vec4 vec) {
+    return IVec4(vec);
 }
