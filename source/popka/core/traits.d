@@ -8,6 +8,8 @@ module popka.core.traits;
 
 @safe @nogc nothrow:
 
+import popka.core.types;
+
 alias AliasArgs(A...) = A;
 
 bool isBoolType(T)() {
@@ -73,12 +75,12 @@ bool isPrimaryType(T)() {
         isCharType!T;
 }
 
-bool isPtrType(T)() {
-    return is(T : const(void)*);
-}
-
 bool isArrayType(T)() {
     return is(T : const(A)[N], A, N);
+}
+
+bool isPtrType(T)() {
+    return is(T : const(void)*);
 }
 
 bool isSliceType(T)() {
@@ -94,11 +96,11 @@ bool isStructType(T)() {
 }
 
 bool isStrType(T)() {
-    return is(T : const(char)[]);
+    return is(T : IStr);
 }
 
-bool isStrzType(T)() {
-    return is(T : const(char)*);
+bool isCStrType(T)() {
+    return is(T : ICStr);
 }
 
 int findInAliasArgs(T, A...)() {
@@ -115,7 +117,7 @@ bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
 }
 
-const(char)[] toCleanNumber(alias i)() {
+IStr toCleanNumber(alias i)() {
     enum str = i.stringof;
     static if (str.length >= 3 && (((str[$ - 1] == 'L' || str[$ - 1] == 'l') && (str[$ - 2] == 'U' || str[$ - 2] == 'u')) || ((str[$ - 1] == 'U' || str[$ - 1] == 'u') && (str[$ - 2] == 'L' || str[$ - 2] == 'l')))) {
         return str[0 .. $ - 2];

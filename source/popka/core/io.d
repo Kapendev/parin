@@ -1,26 +1,26 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The io module facilitates input and output operations,
-/// offering functionalities such as file reading and writing.
+/// The `io` module provides input and output functions such as file reading.
 
 module popka.core.io;
 
-import popka.core.container;
+import popka.core.containers;
 import popka.core.stdc;
-import popka.core.strutils;
+import popka.core.ascii;
 import popka.core.traits;
+import popka.core.types;
 
 @safe @nogc nothrow:
 
 @trusted
-void printf(A...)(const(char)[] str, A args) {
-    .fputs(format("{}\0", format(str, args)).ptr, .stdout);
+void printf(A...)(IStr text, A args) {
+    .fputs(format("{}\0", format(text, args)).ptr, .stdout);
 }
 
 @trusted
-void printfln(A...)(const(char)[] str, A args) {
-    .fputs(format("{}\n\0", format(str, args)).ptr, .stdout);
+void printfln(A...)(IStr text, A args) {
+    .fputs(format("{}\n\0", format(text, args)).ptr, .stdout);
 }
 
 void print(A...)(A args) {
@@ -37,8 +37,9 @@ void println(A...)(A args) {
 }
 
 @trusted
-void readText(const(char)[] path, ref List!char text) {
-    auto f = .fopen(toStrz(path), "rb");
+// TODO: Check the error values and let the user know what went wrong.
+void readText(IStr path, ref List!char text) {
+    auto f = .fopen(toCStr(path), "rb");
     if (f == null) {
         text.clear();
         return;
@@ -66,83 +67,19 @@ void readText(const(char)[] path, ref List!char text) {
     .fclose(f);
 }
 
-List!char readText(const(char)[] path) {
+List!char readText(IStr path) {
     List!char result;
     readText(path, result);
     return result;
 }
 
 @trusted
-void writeText(const(char)[] path, const(char)[] text) {
-    auto f = .fopen(toStrz(path), "w");
+// TODO: Check the error values and let the user know what went wrong.
+void writeText(IStr path, IStr text) {
+    auto f = .fopen(toCStr(path), "w");
     if (f == null) {
         return;
     }
-    // NOTE: Maybe check error value.
     .fwrite(text.ptr, char.sizeof, text.length, f);
     .fclose(f);
-}
-
-// TODO: See what works.
-// NOTE: Testing stuff to see how to make it easy to use.
-// Does not do any error checking for now and works only with booleans, integers and floats.
-void readConfig(A...)(const(char)[] path, ref A args) {
-    auto file = readText(path);
-    auto group = cast(const(char)[]) "";
-    auto lineNumber = 0;
-    auto view = file.items;
-    while (view.length != 0) {
-        auto line = skipLine(view).trim();
-        lineNumber += 1;
-        if (line.length == 0) {
-            continue;
-        }
-        if (line[0] == '[' && line[$ - 1] == ']') {
-            group = line[1 .. $ - 1];
-            continue;
-        } else if (line[0] == '#' || line[0] == ';') {
-            continue;
-        }
-
-        static foreach (arg; args) {
-            if (group == typeof(arg).stringof) {
-                auto separatorIndex = line.findStart('=');
-                auto key = line[0 .. separatorIndex].trimEnd();
-                auto value = line[separatorIndex + 1 .. $].trimStart();
-                static foreach (member; arg.tupleof) {
-                    if (key == member.stringof) {
-                        auto target = typeof(member).init;
-                        static if (isIntegerType!(typeof(member))) {
-                            auto conv = toSigned(value);
-                            if (conv.error) {
-                                println("Line ", lineNumber, ": Can not parse value.");
-                            } else {
-                                target = cast(typeof(member)) conv.value;
-                            }
-                            mixin("arg.", member.stringof, "= target;");
-                        } else static if (isDoubleType!(typeof(member))) {
-                            auto conv = toDouble(value);
-                            if (conv.error) {
-                                println("Line ", lineNumber, ": Can not parse value.");
-                            } else {
-                                target = cast(typeof(member)) conv.value;
-                            }
-                            mixin("arg.", member.stringof, "= target;");
-                        } else static if (isBoolType!(typeof(member))) {
-                            auto conv = toBool(value);
-                            if (conv.error) {
-                                println("Line ", lineNumber, ": Can not parse value.");
-                            } else {
-                                target = cast(typeof(member)) conv.value;
-                            }
-                            mixin("arg.", member.stringof, "= target;");
-                        }
-                    }
-                }
-                goto loopExit;
-            }
-        } 
-        loopExit:
-    }
-    file.free();
 }

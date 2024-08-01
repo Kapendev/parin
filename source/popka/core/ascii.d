@@ -1,13 +1,14 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The strutils module contains procedures
-/// designed to assist with string manipulation tasks.
+/// The `ascii` module provides functions designed to assist with ascii strings.
 
-module popka.core.strutils;
+module popka.core.ascii;
 
+import popka.core.containers;
+import popka.core.errors;
 import popka.core.traits;
-import popka.core.container;
+import popka.core.types;
 
 @safe @nogc nothrow:
 
@@ -18,37 +19,22 @@ enum alphaChars = upperChars ~ lowerChars;
 enum spaceChars = " \t\v\r\n\f";
 
 version (Windows) {
-    enum pathSeparator = '\\';
-    enum otherPathSeparator = '/';
+    enum pathSep = '\\';
+    enum otherPathSep = '/';
 } else {
-    enum pathSeparator = '/';
-    enum otherPathSeparator = '\\';
-}
-
-enum ToValueResultError : ubyte {
-    none,
-    invalid,
-    overflow,
+    enum pathSep = '/';
+    enum otherPathSep = '\\';
 }
 
 struct ToStrOptions {
-    ubyte floatPrecision = 2;
-}
-
-struct ToValueResult(T) {
-    T value;
-    ToValueResultError error;
-}
-
-bool isStrz(const(char)[] str) {
-    return str.length != 0 && str[$ - 1] == '\0';
+    ubyte doublePrecision = 2;
 }
 
 bool isDigit(char c) {
     return c >= '0' && c <= '9';
 }
 
-bool isDigit(const(char)[] str) {
+bool isDigit(IStr str) {
     foreach (c; str) {
         if (!isDigit(c)) return false;
     }
@@ -59,7 +45,7 @@ bool isUpper(char c) {
     return c >= 'A' && c <= 'Z';
 }
 
-bool isUpper(const(char)[] str) {
+bool isUpper(IStr str) {
     foreach (c; str) {
         if (!isUpper(c)) return false;
     }
@@ -70,7 +56,7 @@ bool isLower(char c) {
     return c >= 'a' && c <= 'z';
 }
 
-bool isLower(const(char)[] str) {
+bool isLower(IStr str) {
     foreach (c; str) {
         if (!isLower(c)) return false;
     }
@@ -81,7 +67,7 @@ bool isAlpha(char c) {
     return isLower(c) || isUpper(c);
 }
 
-bool isAlpha(const(char)[] str) {
+bool isAlpha(IStr str) {
     foreach (c; str) {
         if (!isAlpha(c)) return false;
     }
@@ -95,18 +81,22 @@ bool isSpace(char c) {
     return false;
 }
 
-bool isSpace(const(char)[] str) {
+bool isSpace(IStr str) {
     foreach (c; str) {
         if (!isSpace(c)) return false;
     }
     return true;
 }
 
+bool isCStr(IStr str) {
+    return str.length != 0 && str[$ - 1] == '\0';
+}
+
 char toUpper(char c) {
     return isLower(c) ? cast(char) (c - 32) : c;
 }
 
-void toUpper(char[] str) {
+void toUpper(Str str) {
     foreach (ref c; str) {
         c = toUpper(c);
     }
@@ -116,30 +106,30 @@ char toLower(char c) {
     return isUpper(c) ? cast(char) (c + 32) : c;
 }
 
-void toLower(char[] str) {
+void toLower(Str str) {
     foreach (ref c; str) {
         c = toLower(c);
     }
 }
 
 @trusted
-size_t length(const(char)* strz) {
-    size_t result = 0;
-    while (strz[result] != '\0') {
+Sz length(ICStr str) {
+    Sz result = 0;
+    while (str[result] != '\0') {
         result += 1;
     }
     return result;
 }
 
-bool equals(const(char)[] str, const(char)[] other) {
+bool equals(IStr str, IStr other) {
     return str == other;
 }
 
-bool equals(const(char)[] str, char other) {
+bool equals(IStr str, char other) {
     return equals(str, charToStr(other));
 }
 
-bool equalsIgnoreCase(const(char)[] str, const(char)[] other) {
+bool equalsNoCase(IStr str, IStr other) {
     if (str.length != other.length) return false;
     foreach (i; 0 .. str.length) {
         if (toUpper(str[i]) != toUpper(other[i])) return false;
@@ -147,29 +137,29 @@ bool equalsIgnoreCase(const(char)[] str, const(char)[] other) {
     return true;
 }
 
-bool equalsIgnoreCase(const(char)[] str, char other) {
-    return equalsIgnoreCase(str, charToStr(other));
+bool equalsNoCase(IStr str, char other) {
+    return equalsNoCase(str, charToStr(other));
 }
 
-bool startsWith(const(char)[] str, const(char)[] start) {
+bool startsWith(IStr str, IStr start) {
     if (str.length < start.length) return false;
     return str[0 .. start.length] == start;
 }
 
-bool startsWith(const(char)[] str, char start) {
+bool startsWith(IStr str, char start) {
     return startsWith(str, charToStr(start));
 }
 
-bool endsWith(const(char)[] str, const(char)[] end) {
+bool endsWith(IStr str, IStr end) {
     if (str.length < end.length) return false;
     return str[$ - end.length .. $] == end;
 }
 
-bool endsWith(const(char)[] str, char end) {
+bool endsWith(IStr str, char end) {
     return endsWith(str, charToStr(end));
 }
 
-int count(const(char)[] str, const(char)[] item) {
+int count(IStr str, IStr item) {
     int result = 0;
     if (str.length < item.length || item.length == 0) return result;
     foreach (i; 0 .. str.length - item.length) {
@@ -181,11 +171,11 @@ int count(const(char)[] str, const(char)[] item) {
     return result;
 }
 
-int count(const(char)[] str, char item) {
+int count(IStr str, char item) {
     return count(str, charToStr(item));
 }
 
-int findStart(const(char)[] str, const(char)[] item) {
+int findStart(IStr str, IStr item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach (i; 0 .. str.length - item.length + 1) {
         if (str[i .. i + item.length] == item) return cast(int) i;
@@ -193,11 +183,11 @@ int findStart(const(char)[] str, const(char)[] item) {
     return -1;
 }
 
-int findStart(const(char)[] str, char item) {
+int findStart(IStr str, char item) {
     return findStart(str, charToStr(item));
 }
 
-int findEnd(const(char)[] str, const(char)[] item) {
+int findEnd(IStr str, IStr item) {
     if (str.length < item.length || item.length == 0) return -1;
     foreach_reverse (i; 0 .. str.length - item.length + 1) {
         if (str[i .. i + item.length] == item) return cast(int) i;
@@ -205,20 +195,12 @@ int findEnd(const(char)[] str, const(char)[] item) {
     return -1;
 }
 
-int findEnd(const(char)[] str, char item) {
+int findEnd(IStr str, char item) {
     return findEnd(str, charToStr(item));
 }
 
-const(char)[] advance(const(char)[] str, size_t amount) {
-    if (str.length < amount) {
-        return str[$ .. $];
-    } else {
-        return str[amount .. $];
-    }
-}
-
-const(char)[] trimStart(const(char)[] str) {
-    const(char)[] result = str;
+IStr trimStart(IStr str) {
+    IStr result = str;
     while (result.length > 0) {
         if (isSpace(result[0])) result = result[1 .. $];
         else break;
@@ -226,8 +208,8 @@ const(char)[] trimStart(const(char)[] str) {
     return result;
 }
 
-const(char)[] trimEnd(const(char)[] str) {
-    const(char)[] result = str;
+IStr trimEnd(IStr str) {
+    IStr result = str;
     while (result.length > 0) {
         if (isSpace(result[$ - 1])) result = result[0 .. $ - 1];
         else break;
@@ -235,11 +217,19 @@ const(char)[] trimEnd(const(char)[] str) {
     return result;
 }
 
-const(char)[] trim(const(char)[] str) {
+IStr trim(IStr str) {
     return str.trimStart().trimEnd();
 }
 
-const(char)[] removePrefix(const(char)[] str, const(char)[] prefix) {
+IStr advance(IStr str, Sz amount) {
+    if (str.length < amount) {
+        return str[$ .. $];
+    } else {
+        return str[amount .. $];
+    }
+}
+
+IStr removePrefix(IStr str, IStr prefix) {
     if (str.startsWith(prefix)) {
         return str[prefix.length .. $];
     } else {
@@ -247,7 +237,7 @@ const(char)[] removePrefix(const(char)[] str, const(char)[] prefix) {
     }
 }
 
-const(char)[] removeSuffix(const(char)[] str, const(char)[] suffix) {
+IStr removeSuffix(IStr str, IStr suffix) {
     if (str.endsWith(suffix)) {
         return str[0 .. $ - suffix.length];
     } else {
@@ -255,19 +245,19 @@ const(char)[] removeSuffix(const(char)[] str, const(char)[] suffix) {
     }
 }
 
-void copyStrChars(char[] str, const(char)[] source, size_t startIndex = 0) {
+void copyStrChars(Str str, IStr source, Sz startIndex = 0) {
     foreach (i, c; source) {
         str[startIndex + i] = c;
     }
 }
 
-void copyStr(ref char[] str, const(char)[] source, size_t startIndex = 0) {
+void copyStr(ref Str str, IStr source, Sz startIndex = 0) {
     copyStrChars(str, source, startIndex);
     str = str[0 .. startIndex + source.length];
 }
 
-const(char)[] pathDir(const(char)[] path) {
-    auto end = findEnd(path, pathSeparator);
+IStr pathDir(IStr path) {
+    auto end = findEnd(path, pathSep);
     if (end == -1) {
         return ".";
     } else {
@@ -276,7 +266,7 @@ const(char)[] pathDir(const(char)[] path) {
 }
 
 // TODO: Make it more safe? Look at how Python does it.
-const(char)[] pathConcat(const(char)[][] args...) {
+IStr pathConcat(IStr[] args...) {
     static char[1024][4] buffers = void;
     static byte bufferIndex = 0;
 
@@ -292,7 +282,7 @@ const(char)[] pathConcat(const(char)[][] args...) {
         result.copyStrChars(arg, length);
         length += arg.length;
         if (i != args.length - 1) {
-            result.copyStrChars(charToStr(pathSeparator), length);
+            result.copyStrChars(charToStr(pathSep), length);
             length += 1;
         }
     }
@@ -300,7 +290,7 @@ const(char)[] pathConcat(const(char)[][] args...) {
     return result;
 }
 
-const(char)[] skipValue(ref inout(char)[] str, const(char)[] separator) {
+IStr skipValue(ref inout(char)[] str, IStr separator) {
     if (str.length < separator.length || separator.length == 0) {
         str = str[$ .. $];
         return "";
@@ -320,19 +310,19 @@ const(char)[] skipValue(ref inout(char)[] str, const(char)[] separator) {
     return line;
 }
 
-const(char)[] skipValue(ref inout(char)[] str, char separator) {
+IStr skipValue(ref inout(char)[] str, char separator) {
     return skipValue(str, charToStr(separator));
 }
 
-const(char)[] skipLine(ref inout(char)[] str) {
+IStr skipLine(ref inout(char)[] str) {
     return skipValue(str, '\n');
 }
 
-const(char)[] boolToStr(bool value) {
+IStr boolToStr(bool value) {
     return value ? "true" : "false";
 }
 
-const(char)[] charToStr(char value) {
+IStr charToStr(char value) {
     static char[1] buffer = void;
 
     auto result = buffer[];
@@ -341,7 +331,7 @@ const(char)[] charToStr(char value) {
     return result;
 }
 
-const(char)[] unsignedToStr(ulong value) {
+IStr unsignedToStr(ulong value) {
     static char[64] buffer = void;
 
     auto result = buffer[];
@@ -359,7 +349,7 @@ const(char)[] unsignedToStr(ulong value) {
     return result;
 }
 
-const(char)[] signedToStr(long value) {
+IStr signedToStr(long value) {
     static char[64] buffer = void;
 
     auto result = buffer[];
@@ -374,7 +364,8 @@ const(char)[] signedToStr(long value) {
     return result;
 }
 
-const(char)[] doubleToStr(double value, uint precision = 2) {
+// TODO: Fix N.00 bug and make it more simple.
+IStr doubleToStr(double value, uint precision = 2) {
     static char[64] buffer = void;
 
     if (value != value) {
@@ -428,7 +419,12 @@ const(char)[] doubleToStr(double value, uint precision = 2) {
     return result;
 }
 
-const(char)[] enumToStr(T)(T value) {
+@trusted
+IStr cStrToStr(ICStr value) {
+    return value[0 .. value.length];
+}
+
+IStr enumToStr(T)(T value) {
     static char[64] buffer = void;
 
     auto result = buffer[];
@@ -447,12 +443,7 @@ const(char)[] enumToStr(T)(T value) {
     return result;
 }
 
-@trusted
-const(char)[] strzToStr(const(char)* value) {
-    return value[0 .. value.length];
-}
-
-const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
+IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     static if (isCharType!T) {
         return charToStr(value);
     } else static if (isBoolType!T) {
@@ -462,11 +453,11 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     } else static if (isSignedType!T) {
         return signedToStr(value);
     } else static if (isDoubleType!T) {
-        return doubleToStr(value, options.floatPrecision);
+        return doubleToStr(value, options.doublePrecision);
     } else static if (isStrType!T) {
         return value;
-    } else static if (isStrzType!T) {
-        return strzToStr(value);
+    } else static if (isCStrType!T) {
+        return cStrToStr(value);
     } else static if (isEnumType!T) {
         return enumToStr(value);
     } else static if (__traits(hasMember, T, "toStr")) {
@@ -476,19 +467,19 @@ const(char)[] toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     }
 }
 
-ToValueResult!bool toBool(const(char)[] str) {
-    auto result = ToValueResult!bool();
+BasicResult!bool toBool(IStr str) {
+    auto result = BasicResult!bool();
     if (str == "true") {
         result.value = true;
     } else if (str == "false") {
         result.value = false;
     } else {
-        result.error = ToValueResultError.invalid;
+        result.error = BasicError.invalid;
     }
     return result;
 }
 
-ulong toBoolWithNone(const(char)[] str) {
+ulong toBoolWithNone(IStr str) {
     auto conv = toBool(str);
     if (conv.error) {
         return false;
@@ -497,17 +488,17 @@ ulong toBoolWithNone(const(char)[] str) {
     }
 }
 
-ToValueResult!ulong toUnsigned(const(char)[] str) {
-    auto result = ToValueResult!ulong();
+BasicResult!ulong toUnsigned(IStr str) {
+    auto result = BasicResult!ulong();
     if (str.length == 0) {
-        result.error = ToValueResultError.invalid;
+        result.error = BasicError.invalid;
     } else if (str.length >= 18) {
-        result.error = ToValueResultError.overflow;
+        result.error = BasicError.overflow;
     } else {
         ulong level = 1;
         foreach_reverse (i, c; str) {
             if (!isDigit(c)) {
-                result.error = ToValueResultError.invalid;
+                result.error = BasicError.invalid;
                 break;
             }
             auto digit = c - '0';
@@ -518,17 +509,17 @@ ToValueResult!ulong toUnsigned(const(char)[] str) {
     return result;
 }
 
-ToValueResult!ulong toUnsigned(char c) {
-    auto result = ToValueResult!ulong();
+BasicResult!ulong toUnsigned(char c) {
+    auto result = BasicResult!ulong();
     if (isDigit(c)) {
         result.value = c - '0';
     } else {
-        result.error = ToValueResultError.invalid;
+        result.error = BasicError.invalid;
     }
     return result;
 }
 
-ulong toUnsignedWithNone(const(char)[] str) {
+ulong toUnsignedWithNone(IStr str) {
     auto conv = toUnsigned(str);
     if (conv.error) {
         return 0;
@@ -546,12 +537,12 @@ ulong toUnsignedWithNone(char c) {
     }
 }
 
-ToValueResult!long toSigned(const(char)[] str) {
-    auto result = ToValueResult!long();
+BasicResult!long toSigned(IStr str) {
+    auto result = BasicResult!long();
     if (str.length == 0) {
-        result.error = ToValueResultError.invalid;
+        result.error = BasicError.invalid;
     } else if (str.length >= 18) {
-        result.error = ToValueResultError.overflow;
+        result.error = BasicError.overflow;
     } else {
         if (str[0] == '-') {
             auto conv = toUnsigned(str[1 .. $]);
@@ -572,8 +563,8 @@ ToValueResult!long toSigned(const(char)[] str) {
     return result;
 }
 
-ToValueResult!long toSigned(char c) {
-    auto result = ToValueResult!long();
+BasicResult!long toSigned(char c) {
+    auto result = BasicResult!long();
     auto conv = toUnsigned(c);
     if (conv.error) {
         result.error = conv.error;
@@ -583,7 +574,7 @@ ToValueResult!long toSigned(char c) {
     return result;
 }
 
-long toSignedWithNone(const(char)[] str) {
+long toSignedWithNone(IStr str) {
     auto conv = toSigned(str);
     if (conv.error) {
         return 0;
@@ -601,8 +592,8 @@ long toSignedWithNone(char c) {
     }
 }
 
-ToValueResult!double toDouble(const(char)[] str) {
-    auto result = ToValueResult!double();
+BasicResult!double toDouble(IStr str) {
+    auto result = BasicResult!double();
     result.value = 0.0;
     auto hasDot = false;
     foreach (i, c; str) {
@@ -634,7 +625,7 @@ ToValueResult!double toDouble(const(char)[] str) {
     return result;
 }
 
-double toDoubleWithNone(const(char)[] str) {
+double toDoubleWithNone(IStr str) {
     auto conv = toDouble(str);
     if (conv.error) {
         return 0.0;
@@ -643,19 +634,19 @@ double toDoubleWithNone(const(char)[] str) {
     }
 }
 
-ToValueResult!T toEnum(T)(const(char)[] str) {
-    auto result = ToValueResult!T();
+BasicResult!T toEnum(T)(IStr str) {
+    auto result = BasicResult!T();
     switch (str) {
         static foreach (member; __traits(allMembers, T)) {
             mixin("case " ~ member.stringof ~ ": result.value = T." ~ member ~ "; goto switchExit;");
         }
-        default: result.error = ToValueResultError.invalid;
+        default: result.error = BasicError.invalid;
     }
     switchExit:
     return result;
 }
 
-T toEnumWithNone(T)(const(char)[] str) {
+T toEnumWithNone(T)(IStr str) {
     auto conv = toEnum!T(str);
     if (conv.error) {
         return T.init;
@@ -665,7 +656,7 @@ T toEnumWithNone(T)(const(char)[] str) {
 }
 
 @trusted
-const(char)* toStrz(const(char)[] str) {
+ICStr toCStr(IStr str) {
     static char[1024] buffer = void;
 
     auto result = buffer[];
@@ -677,7 +668,7 @@ const(char)* toStrz(const(char)[] str) {
 }
 
 // TODO: Check if the args count is the same with the `{}` count.
-const(char)[] format(A...)(const(char)[] formatStr, A args) {
+IStr format(A...)(IStr formatStr, A args) {
     static char[1024][8] buffers = void;
     static byte bufferIndex = 0;
 
@@ -716,7 +707,7 @@ const(char)[] format(A...)(const(char)[] formatStr, A args) {
 }
 
 // TODO: Check if the args count is the same with the `{}` count.
-void formatl(A...)(ref List!char text, const(char)[] formatStr, A args) {
+void formatl(A...)(ref LStr text, IStr formatStr, A args) {
     text.clear();
 
     auto formatStrIndex = 0;
@@ -745,6 +736,7 @@ void formatl(A...)(ref List!char text, const(char)[] formatStr, A args) {
     }
 }
 
+// TODO: Rewrite the test.
 unittest {
     assert(isDigit("0123456789?") == false);
     assert(isDigit("0123456789") == true);
@@ -755,7 +747,7 @@ unittest {
     assert(isSpace(" \t\r\n ") == true);
     
     char[128] buffer = void;
-    char[] str = [];
+    Str str = [];
 
     str = buffer[];
     str.copyStr("Hello");
@@ -767,20 +759,15 @@ unittest {
 
     str.copyStr("Hello");
     assert(str.equals("HELLO") == false);
-    assert(str.equalsIgnoreCase("HELLO") == true);
+    assert(str.equalsNoCase("HELLO") == true);
     assert(str.startsWith("HELL") == false);
-    assert(str.startsWithIgnoreCase("HELL") == true);
     assert(str.endsWith("LO") == false);
-    assert(str.endsWithIgnoreCase("LO") == true);
 
     str = buffer[];
     str.copyStr("Hello hello world.");
     assert(str.count("HELLO") == 0);
-    assert(str.countIgnoreCase("HELLO") == 2);
     assert(str.findStart("HELLO") == -1);
-    assert(str.findStartIgnoreCase("HELLO") == 0);
     assert(str.findEnd("HELLO") == -1);
-    assert(str.findEndIgnoreCase("HELLO") == 6);
     assert(str.advance(0) == str);
     assert(str.advance(1) == str[1 .. $]);
     assert(str.advance(str.length) == "");
@@ -811,17 +798,17 @@ unittest {
     auto text1 = "1.0";
     auto conv1 = toDouble(text1);
     assert(conv1.value == 1.0);
-    assert(conv1.error == ToValueResultError.none);
+    assert(conv1.error == BasicError.none);
 
     auto text2 = "1";
     auto conv2 = toDouble(text2);
     assert(conv2.value == 1.0);
-    assert(conv2.error == ToValueResultError.none);
+    assert(conv2.error == BasicError.none);
 
     auto text3 = "1?";
     auto conv3 = toDouble(text3);
     assert(conv3.value == 0.0);
-    assert(conv3.error == ToValueResultError.invalid);
+    assert(conv3.error == BasicError.invalid);
 
     assert(format("") == "");
     assert(format("{}") == "{}");

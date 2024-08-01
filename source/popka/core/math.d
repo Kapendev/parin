@@ -7,7 +7,7 @@
 module popka.core.math;
 
 import popka.core.stdc;
-import popka.core.strutils;
+import popka.core.ascii;
 
 @safe @nogc nothrow:
 

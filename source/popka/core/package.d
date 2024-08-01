@@ -3,10 +3,12 @@
 
 module popka.core;
 
-public import popka.core.color;
-public import popka.core.container;
+public import popka.core.ascii;
+public import popka.core.colors;
+public import popka.core.containers;
+public import popka.core.errors;
 public import popka.core.io;
 public import popka.core.math;
-public import popka.core.strutils;
-public import popka.core.sumtype;
 public import popka.core.traits;
+public import popka.core.types;
+public import popka.core.unions;

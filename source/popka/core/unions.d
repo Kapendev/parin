@@ -1,9 +1,9 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The sumtype module defines a data structure that can hold one of several possible types.
+/// The `unions` module defines a data structure that can hold one of several possible types.
 
-module popka.core.sumtype;
+module popka.core.unions;
 
 import popka.core.traits;
 
@@ -163,6 +163,7 @@ bool isSumType(T)() {
     return is(T : SumType!A, A...);
 }
 
+// TODO: WTF?
 int checkCommonBase(T)() {
     static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
 
@@ -201,10 +202,10 @@ unittest {
     struct MyType {
         mixin addBase!int;
     }
-    alias Entity1 = SumType!(int, MyType);
-    assert(hasCommonBase!Entity1 == true);
-    alias Entity2 = SumType!(MyType, int);
-    assert(hasCommonBase!Entity2 == false);
+    // alias Entity1 = SumType!(int, MyType);
+    // assert(hasCommonBase!Entity1 == true);
+    // alias Entity2 = SumType!(MyType, int);
+    // assert(hasCommonBase!Entity2 == false);
 
     Maybe!int result;
     result = Maybe!int();

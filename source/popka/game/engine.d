@@ -6,18 +6,18 @@
 module popka.game.engine;
 
 import ray = popka.vendor.ray;
-import popka.core.color;
-import popka.core.container;
+import popka.core.colors;
+import popka.core.containers;
 import popka.core.io;
 import popka.core.math;
-import popka.core.strutils;
+import popka.core.ascii;
 
 @trusted @nogc nothrow:
 
 EngineState engineState;
 
 enum defaultFPS = 60;
-enum defaultBackgroundColor = toRGB(0x2A363A);
+enum defaultBackgroundColor = toRgb(0x2A363A);
 enum defaultTempLoadTextCapacity = 8192;
 enum toggleFullscreenWaitTime = 0.135f;
 
@@ -212,7 +212,7 @@ struct Texture {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadTexture(path.toAssetsPath.toStrz);
+            data = ray.LoadTexture(path.toAssetsPath.toCStr);
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -294,7 +294,7 @@ struct Font {
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
         if (path.length != 0) {
-            data = ray.LoadFontEx(path.toAssetsPath.toStrz, size, cast(int*) runes.ptr, cast(int) runes.length);
+            data = ray.LoadFontEx(path.toAssetsPath.toCStr, size, cast(int*) runes.ptr, cast(int) runes.length);
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -343,7 +343,7 @@ struct Sound {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadSound(path.toAssetsPath.toStrz);
+            data = ray.LoadSound(path.toAssetsPath.toCStr);
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -396,7 +396,7 @@ struct Music {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadMusicStream(path.toAssetsPath.toStrz);
+            data = ray.LoadMusicStream(path.toAssetsPath.toCStr);
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -623,11 +623,11 @@ const(char)[] toAssetsPath(const(char)[] path) {
 
     auto result = buffer[];
     result.copyStrChars(assetsPath);
-    result[assetsPath.length] = pathSeparator;
+    result[assetsPath.length] = pathSep;
     foreach (i, c; path) {
         auto ii = i + assetsPath.length + 1;
-        if (c == otherPathSeparator) {
-            result[ii] = pathSeparator;
+        if (c == otherPathSep) {
+            result[ii] = pathSep;
         } else {
             result[ii] = c;
         }
@@ -801,7 +801,7 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
     }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
-    ray.InitWindow(cast(int) size.x, cast(int) size.y, toStrz(title));
+    ray.InitWindow(cast(int) size.x, cast(int) size.y, toCStr(title));
     ray.InitAudioDevice();
     ray.SetWindowMinSize(cast(int) (size.x * 0.25f), cast(int) (size.y * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);
