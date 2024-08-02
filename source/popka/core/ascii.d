@@ -221,14 +221,6 @@ IStr trim(IStr str) {
     return str.trimStart().trimEnd();
 }
 
-IStr advance(IStr str, Sz amount) {
-    if (str.length < amount) {
-        return str[$ .. $];
-    } else {
-        return str[amount .. $];
-    }
-}
-
 IStr removePrefix(IStr str, IStr prefix) {
     if (str.startsWith(prefix)) {
         return str[prefix.length .. $];
@@ -245,14 +237,25 @@ IStr removeSuffix(IStr str, IStr suffix) {
     }
 }
 
-void copyStrChars(Str str, IStr source, Sz startIndex = 0) {
+IStr advance(IStr str, Sz amount) {
+    if (str.length < amount) {
+        return str[$ .. $];
+    } else {
+        return str[amount .. $];
+    }
+}
+
+void copyChars(Str str, IStr source, Sz startIndex = 0) {
+    if (str.length < source.length) {
+        assert(0, "The destination string `{}` must be at least as long as the source string `{}`.".format(str, source));
+    }
     foreach (i, c; source) {
         str[startIndex + i] = c;
     }
 }
 
-void copyStr(ref Str str, IStr source, Sz startIndex = 0) {
-    copyStrChars(str, source, startIndex);
+void copy(ref Str str, IStr source, Sz startIndex = 0) {
+    copyChars(str, source, startIndex);
     str = str[0 .. startIndex + source.length];
 }
 
@@ -279,10 +282,10 @@ IStr pathConcat(IStr[] args...) {
     auto result = buffers[bufferIndex][];
     auto length = 0;
     foreach (i, arg; args) {
-        result.copyStrChars(arg, length);
+        result.copyChars(arg, length);
         length += arg.length;
         if (i != args.length - 1) {
-            result.copyStrChars(charToStr(pathSep), length);
+            result.copyChars(charToStr(pathSep), length);
             length += 1;
         }
     }
@@ -356,10 +359,10 @@ IStr signedToStr(long value) {
     if (value < 0) {
         auto temp = unsignedToStr(-value);
         result[0] = '-';
-        result.copyStr(temp, 1);
+        result.copy(temp, 1);
     } else {
         auto temp = unsignedToStr(value);
-        result.copyStr(temp, 0);
+        result.copy(temp, 0);
     }
     return result;
 }
@@ -385,7 +388,7 @@ IStr doubleToStr(double value, uint precision = 2) {
     // TODO: Fix N.00 bug and make it more simple.
     if (cleanNumberStr.length <= fractionalDigitCount) {
         i -= cleanNumberStr.length;
-        result.copyStrChars(cleanNumberStr, i);
+        result.copyChars(cleanNumberStr, i);
         if (cleanNumberStr.length < fractionalDigitCount) {
             i -= fractionalDigitCount - cleanNumberStr.length;
             result[i .. i + fractionalDigitCount - cleanNumberStr.length] = '0';
@@ -400,14 +403,14 @@ IStr doubleToStr(double value, uint precision = 2) {
             i -= 1;
             result[i] = '.';
             i -= cleanNumberStr.length;
-            result.copyStrChars(cleanNumberStr, i);
+            result.copyChars(cleanNumberStr, i);
         } else {
             i -= fractionalDigitCount;
-            result.copyStrChars(cleanNumberStr[$ - fractionalDigitCount .. $], i);
+            result.copyChars(cleanNumberStr[$ - fractionalDigitCount .. $], i);
             i -= 1;
             result[i] = '.';
             i -= (cleanNumberStr.length - fractionalDigitCount);
-            result.copyStrChars(cleanNumberStr[0 .. $ - fractionalDigitCount], i);
+            result.copyChars(cleanNumberStr[0 .. $ - fractionalDigitCount], i);
         }
     }
 
@@ -736,7 +739,8 @@ void formatl(A...)(ref LStr text, IStr formatStr, A args) {
     }
 }
 
-// TODO: Rewrite the test.
+// Function test.
+@trusted
 unittest {
     assert(isDigit("0123456789?") == false);
     assert(isDigit("0123456789") == true);
@@ -745,36 +749,46 @@ unittest {
     assert(isLower("HELLO") == false);
     assert(isLower("hello") == true);
     assert(isSpace(" \t\r\n ") == true);
-    
+    assert(isCStr("hello") == false);
+    assert(isCStr("hello\0") == true);
+
     char[128] buffer = void;
-    Str str = [];
+    Str str;
 
     str = buffer[];
-    str.copyStr("Hello");
+    str.copy("Hello");
     assert(str == "Hello");
     str.toUpper();
     assert(str == "HELLO");
     str.toLower();
     assert(str == "hello");
 
-    str.copyStr("Hello");
+    str = buffer[];
+    str.copy("Hello\0");
+    assert(isCStr(str) == true);
+    assert(str.ptr.length + 1 == str.length);
+
+    str = buffer[];
+    str.copy("Hello");
     assert(str.equals("HELLO") == false);
     assert(str.equalsNoCase("HELLO") == true);
-    assert(str.startsWith("HELL") == false);
-    assert(str.endsWith("LO") == false);
+    assert(str.startsWith("H") == true);
+    assert(str.startsWith("Hell") == true);
+    assert(str.startsWith("Hello") == true);
+    assert(str.endsWith("o") == true);
+    assert(str.endsWith("ello") == true);
+    assert(str.endsWith("Hello") == true);
 
     str = buffer[];
-    str.copyStr("Hello hello world.");
-    assert(str.count("HELLO") == 0);
+    str.copy("hello hello world.");
+    assert(str.count("hello") == 2);
     assert(str.findStart("HELLO") == -1);
+    assert(str.findStart("hello") == 0);
     assert(str.findEnd("HELLO") == -1);
-    assert(str.advance(0) == str);
-    assert(str.advance(1) == str[1 .. $]);
-    assert(str.advance(str.length) == "");
-    assert(str.advance(str.length + 1) == "");
+    assert(str.findEnd("hello") == 6);
 
     str = buffer[];
-    str.copyStr(" Hello world. ");
+    str.copy(" Hello world. ");
     assert(str.trimStart() == "Hello world. ");
     assert(str.trimEnd() == " Hello world.");
     assert(str.trim() == "Hello world.");
@@ -782,17 +796,22 @@ unittest {
     assert(str.trim().removePrefix("Hello") == " world.");
     assert(str.removeSuffix("world.") == str);
     assert(str.trim().removeSuffix("world.") == "Hello ");
-
+    assert(str.advance(0) == str);
+    assert(str.advance(1) == str[1 .. $]);
+    assert(str.advance(str.length) == "");
+    assert(str.advance(str.length + 1) == "");
     assert(pathConcat("one", "two").pathDir() == "one");
     assert(pathConcat("one").pathDir() == ".");
 
     str = buffer[];
-    str.copyStr("one, two ,three,");
+    str.copy("one, two ,three,");
     assert(skipValue(str, ',') == "one");
     assert(skipValue(str, ',') == " two ");
     assert(skipValue(str, ',') == "three");
     assert(skipValue(str, ',') == "");
     assert(str.length == 0);
+
+    
 
     // TODO: I need to write more tests for toValue procedures.
     auto text1 = "1.0";

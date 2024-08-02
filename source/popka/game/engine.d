@@ -622,7 +622,7 @@ const(char)[] toAssetsPath(const(char)[] path) {
     }
 
     auto result = buffer[];
-    result.copyStrChars(assetsPath);
+    result.copyChars(assetsPath);
     result[assetsPath.length] = pathSep;
     foreach (i, c; path) {
         auto ii = i + assetsPath.length + 1;
