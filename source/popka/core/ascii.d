@@ -268,7 +268,6 @@ IStr pathDir(IStr path) {
     }
 }
 
-// TODO: Make it more safe? Look at how Python does it.
 IStr pathConcat(IStr[] args...) {
     static char[1024][4] buffers = void;
     static byte bufferIndex = 0;
@@ -367,59 +366,56 @@ IStr signedToStr(long value) {
     return result;
 }
 
-// TODO: Fix N.00 bug and make it more simple.
-IStr doubleToStr(double value, uint precision = 2) {
+IStr doubleToStr(double value, ulong precision = 2) {
     static char[64] buffer = void;
 
-    if (value != value) {
-        return "nan";
+    if (precision == 0) {
+        return signedToStr(cast(long) value);
     }
 
-    auto result = buffer[];        // You know what this is.
-    auto cleanNumber = value;      // Number that has all the digits on the left side.
-    auto fractionalDigitCount = 0; // Digit count on the right size.
+    auto result = buffer[];
+    auto cleanNumber = value;
+    auto rightDigitCount = 0;
     while (cleanNumber != cast(double) (cast(long) cleanNumber)) {
-        fractionalDigitCount += 1;
+        rightDigitCount += 1;
         cleanNumber *= 10;
     }
 
-    auto i = result.length; // We put the numbers in the buffer from right to left.
-    auto cleanNumberStr = signedToStr(cast(long) cleanNumber);
-    // TODO: Fix N.00 bug and make it more simple.
-    if (cleanNumberStr.length <= fractionalDigitCount) {
-        i -= cleanNumberStr.length;
-        result.copyChars(cleanNumberStr, i);
-        if (cleanNumberStr.length < fractionalDigitCount) {
-            i -= fractionalDigitCount - cleanNumberStr.length;
-            result[i .. i + fractionalDigitCount - cleanNumberStr.length] = '0';
-        }
-        i -= 2;
-        result[i] = '0';
-        result[i + 1] = '.';
-    } else {
-        if (fractionalDigitCount == 0) {
-            i -= (precision == 0 ? 1 : precision);
-            result[i .. i + (precision == 0 ? 1 : precision)] = '0';
-            i -= 1;
-            result[i] = '.';
-            i -= cleanNumberStr.length;
-            result.copyChars(cleanNumberStr, i);
-        } else {
-            i -= fractionalDigitCount;
-            result.copyChars(cleanNumberStr[$ - fractionalDigitCount .. $], i);
-            i -= 1;
-            result[i] = '.';
-            i -= (cleanNumberStr.length - fractionalDigitCount);
-            result.copyChars(cleanNumberStr[0 .. $ - fractionalDigitCount], i);
+    // Add extra zeros at the end if needed.
+    // I do this because it makes it easier to remove the zeros later.
+    if (precision > rightDigitCount) {
+        foreach (j; 0 .. precision - rightDigitCount) {
+            rightDigitCount += 1;
+            cleanNumber *= 10;
         }
     }
 
-    if (precision == 0) {
-        result = result[i .. $];
+    // Digits go in the buffer from right to left.
+    auto cleanNumberStr = signedToStr(cast(long) cleanNumber);
+    auto i = result.length; 
+    // Check two cases: 0.NN, N.NN
+    if (cast(long) value == 0) {
+        i -= cleanNumberStr.length;
+        result.copyChars(cleanNumberStr, i);
+        foreach (j; 0 .. rightDigitCount - cleanNumberStr.length) {
+            i -= 1;
+            result[i] = '0';
+        }
+        i -= 2;
+        result.copyChars("0.", i);
     } else {
-        result = result[i .. $ - fractionalDigitCount + (precision > fractionalDigitCount ? fractionalDigitCount : precision)];
+        i -= rightDigitCount;
+        result.copyChars(cleanNumberStr[$ - rightDigitCount .. $], i);
+        i -= 1;
+        result[i] = '.';
+        i -= cleanNumberStr.length - rightDigitCount;
+        result.copyChars(cleanNumberStr[0 .. $ - rightDigitCount], i);
     }
-    return result;
+    // Remove extra zeros at the end if needed.
+    if (precision < rightDigitCount) {
+        result = result[0 .. $ - rightDigitCount + precision];
+    }
+    return result[i .. $];
 }
 
 @trusted
@@ -811,9 +807,44 @@ unittest {
     assert(skipValue(str, ',') == "");
     assert(str.length == 0);
 
-    
+    assert(boolToStr(false) == "false");
+    assert(boolToStr(true) == "true");
+    assert(charToStr('L') == "L");
 
-    // TODO: I need to write more tests for toValue procedures.
+    assert(unsignedToStr(0) == "0");
+    assert(unsignedToStr(69) == "69");
+    assert(signedToStr(0) == "0");
+    assert(signedToStr(69) == "69");
+    assert(signedToStr(-69) == "-69");
+    assert(signedToStr(-69) == "-69");
+
+    assert(doubleToStr(0.00, 0) == "0");
+    assert(doubleToStr(0.00, 1) == "0.0");
+    assert(doubleToStr(0.00, 2) == "0.00");
+    assert(doubleToStr(0.00, 3) == "0.000");
+    assert(doubleToStr(0.60, 1) == "0.6");
+    assert(doubleToStr(0.60, 2) == "0.60");
+    assert(doubleToStr(0.60, 3) == "0.600");
+    assert(doubleToStr(0.09, 1) == "0.0");
+    assert(doubleToStr(0.09, 2) == "0.09");
+    assert(doubleToStr(0.09, 3) == "0.090");
+    assert(doubleToStr(69.0, 1) == "69.0");
+    assert(doubleToStr(69.0, 2) == "69.00");
+    assert(doubleToStr(69.0, 3) == "69.000");
+
+    assert(cStrToStr("Hello\0") == "Hello");
+    
+    enum TestEnum {
+        one,
+        two,
+    }
+
+    assert(enumToStr(TestEnum.one) == "one");
+    assert(enumToStr(TestEnum.two) == "two");
+
+
+
+    // TODO: ToValue tests write need!!!
     auto text1 = "1.0";
     auto conv1 = toDouble(text1);
     assert(conv1.value == 1.0);

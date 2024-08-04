@@ -17,8 +17,8 @@ Cleaning things in core.
 * [ ] unions
 
 Was working on ascii.
-Was about to rewrite the tests.
-Might fix the doubleToStr function too.
+Was rewriting the tests.
+Was going to write the toValue tests and then I am done!
 
 ## IDEAS
 
