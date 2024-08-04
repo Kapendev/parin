@@ -39,7 +39,7 @@ void println(A...)(A args) {
 @trusted
 // TODO: Check the error values and let the user know what went wrong.
 void readText(IStr path, ref List!char text) {
-    auto f = .fopen(toCStr(path), "rb");
+    auto f = .fopen(toCStr(path).unwrapOr(), "rb");
     if (f == null) {
         text.clear();
         return;
@@ -76,7 +76,7 @@ List!char readText(IStr path) {
 @trusted
 // TODO: Check the error values and let the user know what went wrong.
 void writeText(IStr path, IStr text) {
-    auto f = .fopen(toCStr(path), "w");
+    auto f = .fopen(toCStr(path).unwrapOr(), "w");
     if (f == null) {
         return;
     }

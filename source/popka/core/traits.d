@@ -61,6 +61,10 @@ bool isDoubleType(T)() {
     is(T == immutable(double));
 }
 
+bool isNumberType(T)() {
+    return isIntegerType!T || isDoubleType!T;
+}
+
 bool isCharType(T)() {
     return is(T == char) ||
         is(T == const(char)) ||

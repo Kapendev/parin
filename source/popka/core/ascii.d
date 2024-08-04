@@ -462,208 +462,121 @@ IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else {
-        static assert(0, "The `toStr` function does not handle the `" ~ T.stringof ~ "` type. Implement a `toStr` function for that type.");
+        static assert(0, "Function `toStr` does not handle the `" ~ T.stringof ~ "` type. Implement a `toStr` function for that type.");
     }
 }
 
 BasicResult!bool toBool(IStr str) {
-    auto result = BasicResult!bool();
-    if (str == "true") {
-        result.value = true;
-    } else if (str == "false") {
-        result.value = false;
+    if (str == "false") {
+        return BasicResult!bool(false);
+    } else if (str == "true") {
+        return BasicResult!bool(true);
     } else {
-        result.error = BasicError.invalid;
-    }
-    return result;
-}
-
-ulong toBoolWithNone(IStr str) {
-    auto conv = toBool(str);
-    if (conv.error) {
-        return false;
-    } else {
-        return conv.value;
+        return BasicResult!bool(BasicError.invalid);
     }
 }
 
 BasicResult!ulong toUnsigned(IStr str) {
-    auto result = BasicResult!ulong();
-    if (str.length == 0) {
-        result.error = BasicError.invalid;
-    } else if (str.length >= 18) {
-        result.error = BasicError.overflow;
+    if (str.length == 0 || str.length >= 18) {
+        return BasicResult!ulong(BasicError.invalid);
     } else {
-        ulong level = 1;
-        foreach_reverse (i, c; str) {
-            if (!isDigit(c)) {
-                result.error = BasicError.invalid;
-                break;
-            }
-            auto digit = c - '0';
-            result.value += digit * level;
-            level *= 10;
+        if (str.length == 1 && str[0] == '+') {
+            return BasicResult!ulong(BasicError.invalid);
         }
+        ulong value = 0;
+        ulong level = 1;
+        foreach_reverse (i, c; str[(str[0] == '+' ? 1 : 0) .. $]) {
+            if (isDigit(c)) {
+                value += (c - '0') * level;
+                level *= 10;
+            } else {
+                return BasicResult!ulong(BasicError.invalid);
+            }
+        }
+        return BasicResult!ulong(value);
     }
-    return result;
 }
 
 BasicResult!ulong toUnsigned(char c) {
-    auto result = BasicResult!ulong();
     if (isDigit(c)) {
-        result.value = c - '0';
+        return BasicResult!ulong(c - '0');
     } else {
-        result.error = BasicError.invalid;
-    }
-    return result;
-}
-
-ulong toUnsignedWithNone(IStr str) {
-    auto conv = toUnsigned(str);
-    if (conv.error) {
-        return 0;
-    } else {
-        return conv.value;
-    }
-}
-
-ulong toUnsignedWithNone(char c) {
-    auto conv = toUnsigned(c);
-    if (conv.error) {
-        return 0;
-    } else {
-        return conv.value;
+        return BasicResult!ulong(BasicError.invalid);
     }
 }
 
 BasicResult!long toSigned(IStr str) {
-    auto result = BasicResult!long();
-    if (str.length == 0) {
-        result.error = BasicError.invalid;
-    } else if (str.length >= 18) {
-        result.error = BasicError.overflow;
+    if (str.length == 0 || str.length >= 18) {
+        return BasicResult!long(BasicError.invalid);
     } else {
-        if (str[0] == '-') {
-            auto conv = toUnsigned(str[1 .. $]);
-            if (conv.error) {
-                result.error = conv.error;
-            } else {
-                result.value = -conv.value;
-            }
-        } else {
-            auto conv = toUnsigned(str);
-            if (conv.error) {
-                result.error = conv.error;
-            } else {
-                result.value = conv.value;
-            }
+        auto temp = toUnsigned(str[(str[0] == '-' ? 1 : 0) .. $]);
+        if (temp.isNone) {
+            return BasicResult!long(temp.error);
         }
+        return BasicResult!long(str[0] == '-' ? -temp.value : temp.value);
     }
-    return result;
 }
 
 BasicResult!long toSigned(char c) {
-    auto result = BasicResult!long();
-    auto conv = toUnsigned(c);
-    if (conv.error) {
-        result.error = conv.error;
+    if (isDigit(c)) {
+        return BasicResult!long(c - '0');
     } else {
-        result.value = cast(long) conv.value;
-    }
-    return result;
-}
-
-long toSignedWithNone(IStr str) {
-    auto conv = toSigned(str);
-    if (conv.error) {
-        return 0;
-    } else {
-        return conv.value;
-    }
-}
-
-long toSignedWithNone(char c) {
-    auto conv = toSigned(c);
-    if (conv.error) {
-        return 0;
-    } else {
-        return conv.value;
+        return BasicResult!long(BasicError.invalid);
     }
 }
 
 BasicResult!double toDouble(IStr str) {
-    auto result = BasicResult!double();
-    result.value = 0.0;
-    auto hasDot = false;
-    foreach (i, c; str) {
-        if (c == '.') {
-            hasDot = true;
-            auto lhs = toSigned(str[0 .. i]);
-            if (lhs.error) {
-                result.error = lhs.error;
-            } else {
-                auto rhs = toSigned(str[i + 1 .. $]);
-                if (rhs.error) {
-                    result.error = rhs.error;
-                } else {
-                    auto rhsLevel = 10;
-                    foreach (_; 1 .. str[i + 1 .. $].length) {
-                        rhsLevel *= 10;
-                    }
-                    result.value = lhs.value + ((lhs.value < 0 ? -1 : 1) * rhs.value / cast(double) rhsLevel);
-                }
+    auto dotIndex = findStart(str, '.');
+    if (dotIndex == -1) {
+        auto temp = toSigned(str);
+        return temp.isNone ? BasicResult!double(temp.error) : BasicResult!double(temp.value);
+    } else {
+        auto left = toSigned(str[0 .. dotIndex]);
+        auto right = toSigned(str[dotIndex + 1 .. $]);
+        if (left.isNone || right.isNone) {
+            return BasicResult!double(BasicError.invalid);
+        } else if (str[dotIndex + 1] == '-' || str[dotIndex + 1] == '+') {
+            return BasicResult!double(BasicError.invalid);
+        } else {
+            auto sign = str[0] == '-' ? -1 : 1;
+            auto level = 10;
+            foreach (i; 1 .. str[dotIndex + 1 .. $].length) {
+                level *= 10;
             }
-            break;
+            return BasicResult!double(left.value + sign * (right.value / (cast(double) level)));
         }
     }
-    if (!hasDot) {
-        auto conv = toSigned(str);
-        result.value = conv.value;
-        result.error = conv.error;
-    }
-    return result;
 }
 
-double toDoubleWithNone(IStr str) {
-    auto conv = toDouble(str);
-    if (conv.error) {
-        return 0.0;
+BasicResult!double toDouble(char c) {
+    if (isDigit(c)) {
+        return BasicResult!double(c - '0');
     } else {
-        return conv.value;
+        return BasicResult!double(BasicError.invalid);
     }
 }
 
 BasicResult!T toEnum(T)(IStr str) {
-    auto result = BasicResult!T();
     switch (str) {
         static foreach (member; __traits(allMembers, T)) {
-            mixin("case " ~ member.stringof ~ ": result.value = T." ~ member ~ "; goto switchExit;");
+            mixin("case " ~ member.stringof ~ ": return BasicResult!T(T." ~ member ~ ");");
         }
-        default: result.error = BasicError.invalid;
-    }
-    switchExit:
-    return result;
-}
-
-T toEnumWithNone(T)(IStr str) {
-    auto conv = toEnum!T(str);
-    if (conv.error) {
-        return T.init;
-    } else {
-        return conv.value;
+        default: return BasicResult!T(BasicError.invalid);
     }
 }
 
 @trusted
-ICStr toCStr(IStr str) {
+BasicResult!ICStr toCStr(IStr str) {
     static char[1024] buffer = void;
 
-    auto result = buffer[];
-    foreach (i, c; str) {
-        result[i] = c;
+    if (buffer.length < str.length) {
+        return BasicResult!ICStr(BasicError.invalid);
+    } else {
+        auto value = buffer[];
+        value.copyChars(str);
+        value[str.length] = '\0';
+        return BasicResult!ICStr(value.ptr);
     }
-    result[str.length] = '\0';
-    return result.ptr;
 }
 
 // TODO: Check if the args count is the same with the `{}` count.
@@ -738,6 +651,14 @@ void formatl(A...)(ref LStr text, IStr formatStr, A args) {
 // Function test.
 @trusted
 unittest {
+    enum TestEnum {
+        one,
+        two,
+    }
+
+    char[128] buffer = void;
+    Str str;
+
     assert(isDigit("0123456789?") == false);
     assert(isDigit("0123456789") == true);
     assert(isUpper("hello") == false);
@@ -747,9 +668,6 @@ unittest {
     assert(isSpace(" \t\r\n ") == true);
     assert(isCStr("hello") == false);
     assert(isCStr("hello\0") == true);
-
-    char[128] buffer = void;
-    Str str;
 
     str = buffer[];
     str.copy("Hello");
@@ -833,46 +751,95 @@ unittest {
     assert(doubleToStr(69.0, 3) == "69.000");
 
     assert(cStrToStr("Hello\0") == "Hello");
-    
-    enum TestEnum {
-        one,
-        two,
-    }
 
     assert(enumToStr(TestEnum.one) == "one");
     assert(enumToStr(TestEnum.two) == "two");
 
+    assert(toBool("F").isSome == false);
+    assert(toBool("F").unwrapOr() == false);
+    assert(toBool("T").isSome == false);
+    assert(toBool("T").unwrapOr() == false);
+    assert(toBool("false").isSome == true);
+    assert(toBool("false").unwrapOr() == false);
+    assert(toBool("true").isSome == true);
+    assert(toBool("true").unwrapOr() == true);
 
+    assert(toUnsigned("1_069").isSome == false);
+    assert(toUnsigned("1_069").unwrapOr() == 0);
+    assert(toUnsigned("+1069").isSome == true);
+    assert(toUnsigned("+1069").unwrapOr() == 1069);
+    assert(toUnsigned("1069").isSome == true);
+    assert(toUnsigned("1069").unwrapOr() == 1069);
+    assert(toUnsigned('+').isSome == false);
+    assert(toUnsigned('+').unwrapOr() == 0);
+    assert(toUnsigned('0').isSome == true);
+    assert(toUnsigned('0').unwrapOr() == 0);
+    assert(toUnsigned('9').isSome == true);
+    assert(toUnsigned('9').unwrapOr() == 9);
 
-    // TODO: ToValue tests write need!!!
-    auto text1 = "1.0";
-    auto conv1 = toDouble(text1);
-    assert(conv1.value == 1.0);
-    assert(conv1.error == BasicError.none);
+    assert(toSigned("1_069").isSome == false);
+    assert(toSigned("1_069").unwrapOr() == 0);
+    assert(toSigned("-1069").isSome == true);
+    assert(toSigned("-1069").unwrapOr() == -1069);
+    assert(toSigned("+1069").isSome == true);
+    assert(toSigned("+1069").unwrapOr() == 1069);
+    assert(toSigned("1069").isSome == true);
+    assert(toSigned("1069").unwrapOr() == 1069);
+    assert(toSigned('+').isSome == false);
+    assert(toSigned('+').unwrapOr() == 0);
+    assert(toSigned('0').isSome == true);
+    assert(toSigned('0').unwrapOr() == 0);
+    assert(toSigned('9').isSome == true);
+    assert(toSigned('9').unwrapOr() == 9);
 
-    auto text2 = "1";
-    auto conv2 = toDouble(text2);
-    assert(conv2.value == 1.0);
-    assert(conv2.error == BasicError.none);
+    assert(toDouble("1_069").isSome == false);
+    assert(toDouble("1_069").unwrapOr() == 0);
+    assert(toDouble(".1069").isSome == false);
+    assert(toDouble(".1069").unwrapOr() == 0);
+    assert(toDouble("1069.").isSome == false);
+    assert(toDouble("1069.").unwrapOr() == 0);
+    assert(toDouble(".").isSome == false);
+    assert(toDouble(".").unwrapOr() == 0);
+    assert(toDouble("-1069.-69").isSome == false);
+    assert(toDouble("-1069.-69").unwrapOr() == 0);
+    assert(toDouble("-1069.+69").isSome == false);
+    assert(toDouble("-1069.+69").unwrapOr() == 0);
+    assert(toDouble("-1069").isSome == true);
+    assert(toDouble("-1069").unwrapOr() == -1069);
+    assert(toDouble("+1069").isSome == true);
+    assert(toDouble("+1069").unwrapOr() == 1069);
+    assert(toDouble("1069").isSome == true);
+    assert(toDouble("1069").unwrapOr() == 1069);
+    assert(toDouble("1069.0").isSome == true);
+    assert(toDouble("1069.0").unwrapOr() == 1069);
+    assert(toDouble("-1069.0095").isSome == true);
+    assert(toDouble("-1069.0095").unwrapOr() == -1069.0095);
+    assert(toDouble("+1069.0095").isSome == true);
+    assert(toDouble("+1069.0095").unwrapOr() == 1069.0095);
+    assert(toDouble("1069.0095").isSome == true);
+    assert(toDouble("1069.0095").unwrapOr() == 1069.0095);
+    assert(toDouble("-0.0095").isSome == true);
+    assert(toDouble("-0.0095").unwrapOr() == -0.0095);
+    assert(toDouble("+0.0095").isSome == true);
+    assert(toDouble("+0.0095").unwrapOr() == 0.0095);
+    assert(toDouble("0.0095").isSome == true);
+    assert(toDouble("0.0095").unwrapOr() == 0.0095);
+    assert(toDouble('+').isSome == false);
+    assert(toDouble('+').unwrapOr() == 0);
+    assert(toDouble('0').isSome == true);
+    assert(toDouble('0').unwrapOr() == 0);
+    assert(toDouble('9').isSome == true);
+    assert(toDouble('9').unwrapOr() == 9);
+    
+    assert(toEnum!TestEnum("?").isSome == false);
+    assert(toEnum!TestEnum("?").unwrapOr() == TestEnum.one);
+    assert(toEnum!TestEnum("one").isSome == true);
+    assert(toEnum!TestEnum("one").unwrapOr() == TestEnum.one);
+    assert(toEnum!TestEnum("two").isSome == true);
+    assert(toEnum!TestEnum("two").unwrapOr() == TestEnum.two);
 
-    auto text3 = "1?";
-    auto conv3 = toDouble(text3);
-    assert(conv3.value == 0.0);
-    assert(conv3.error == BasicError.invalid);
+    assert(toCStr("Hello").unwrapOr().length == "Hello".length);
+    assert(toCStr("Hello").unwrapOr().cStrToStr() == "Hello");
 
-    assert(format("") == "");
-    assert(format("{}") == "{}");
-    assert(format("{}", "1") == "1");
-    assert(format("{} {}", "1", "2") == "1 2");
-    assert(format("{} {} {}", "1", "2", "3") == "1 2 3");
-    assert(format("{} {} {}", 1, -2, 3.69) == "1 -2 3.69");
-    assert(format("{}", 420, 320, 220, 120, 20) == "420");
-    assert(format("", 1, -2, 3.69) == "");
-    assert(format("({})", format("({}, {})", false, true)) == "((false, true))");
-
-    // TODO: Uncoment when the N.00 bug is fixed.
-    // assert(format("{}", 0.00) == "0.00");
-    // assert(format("{}", 0.50) == "0.50");
-    // assert(format("{}", 1.00) == "1.00");
-    // assert(format("{}", 1.50) == "1.50");
+    // TODO: Write tests for `format` when it is done.
 }

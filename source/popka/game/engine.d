@@ -212,7 +212,7 @@ struct Texture {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadTexture(path.toAssetsPath.toCStr);
+            data = ray.LoadTexture(path.toAssetsPath.toCStr().unwrapOr());
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -294,7 +294,7 @@ struct Font {
     void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
         free();
         if (path.length != 0) {
-            data = ray.LoadFontEx(path.toAssetsPath.toCStr, size, cast(int*) runes.ptr, cast(int) runes.length);
+            data = ray.LoadFontEx(path.toAssetsPath.toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length);
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -343,7 +343,7 @@ struct Sound {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadSound(path.toAssetsPath.toCStr);
+            data = ray.LoadSound(path.toAssetsPath.toCStr().unwrapOr());
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -396,7 +396,7 @@ struct Music {
     void load(const(char)[] path) {
         free();
         if (path.length != 0) {
-            data = ray.LoadMusicStream(path.toAssetsPath.toCStr);
+            data = ray.LoadMusicStream(path.toAssetsPath.toCStr().unwrapOr());
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -801,7 +801,7 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
     }
     ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
     ray.SetTraceLogLevel(ray.LOG_ERROR);
-    ray.InitWindow(cast(int) size.x, cast(int) size.y, toCStr(title));
+    ray.InitWindow(cast(int) size.x, cast(int) size.y, title.toCStr().unwrapOr());
     ray.InitAudioDevice();
     ray.SetWindowMinSize(cast(int) (size.x * 0.25f), cast(int) (size.y * 0.25f));
     ray.SetExitKey(ray.KEY_NULL);

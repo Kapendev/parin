@@ -4,7 +4,7 @@
 
 Cleaning things in core.
 
-* [ ] ascii
+* [x] ascii
 * [x] colors
 * [x] containers
 * [x] errors
@@ -16,9 +16,10 @@ Cleaning things in core.
 * [ ] types
 * [ ] unions
 
-Was working on ascii.
-Was rewriting the tests.
-Was going to write the toValue tests and then I am done!
+Done with ascii.
+Now I am thinking of making the io module better.
+For example, readin does not tell you right now if something went wrong.
+It just returns an empty list.
 
 ## IDEAS
 
