@@ -105,6 +105,10 @@ bool isCStrType(T)() {
     return is(T : ICStr);
 }
 
+bool hasMember(T, IStr name)() {
+    return __traits(hasMember, T, func);
+}
+
 int findInAliasArgs(T, A...)() {
     int result = -1;
     static foreach (i, TT; A) {
@@ -117,6 +121,10 @@ int findInAliasArgs(T, A...)() {
 
 bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
+}
+
+IStr funcImplementationErrorMessage(T, IStr func)() {
+    return "Type `" ~ T.stringof ~ "` does not implement the `" ~ func ~ "` function.";
 }
 
 IStr toCleanNumber(alias i)() {

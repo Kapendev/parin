@@ -42,7 +42,7 @@ Fault readTextIntoBuffer(IStr path, ref LStr text) {
     if (file == null) {
         return Fault.cantOpen;
     }
-    if (fseek(file, 0, .SEEK_END) != 0) {
+    if (fseek(file, 0, SEEK_END) != 0) {
         fclose(file);
         return Fault.cantRead;
     }
@@ -52,7 +52,7 @@ Fault readTextIntoBuffer(IStr path, ref LStr text) {
         fclose(file);
         return Fault.cantRead;
     }
-    if (fseek(file, 0, .SEEK_SET) != 0) {
+    if (fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
         return Fault.cantRead;
     }
@@ -72,7 +72,7 @@ Result!LStr readText(IStr path) {
 
 @trusted
 Fault writeText(IStr path, IStr text) {
-    auto file = .fopen(toCStr(path).unwrapOr(), "w");
+    auto file = fopen(toCStr(path).unwrapOr(), "w");
     if (file == null) {
         return Fault.cantOpen;
     }

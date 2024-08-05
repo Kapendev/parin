@@ -246,7 +246,7 @@ IStr advance(IStr str, Sz amount) {
 
 void copyChars(Str str, IStr source, Sz startIndex = 0) {
     if (str.length < source.length) {
-        assert(0, "The destination string `{}` must be at least as long as the source string `{}`.".format(str, source));
+        assert(0, "Destination string `{}` must be at least as long as the source string `{}`.".format(str, source));
     }
     foreach (i, c; source) {
         str[startIndex + i] = c;
@@ -451,7 +451,7 @@ IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else {
-        static assert(0, "Function `toStr` does not handle the `" ~ T.stringof ~ "` type. Implement a `toStr` function for that type.");
+        static assert(0, "Type `" ~ T.stringof ~ "` does not implement the `toStr` function.");
     }
 }
 
@@ -499,10 +499,7 @@ Result!long toSigned(IStr str) {
         return Result!long(Fault.invalid);
     } else {
         auto temp = toUnsigned(str[(str[0] == '-' ? 1 : 0) .. $]);
-        if (temp.isNone) {
-            return Result!long(temp.fault);
-        }
-        return Result!long(str[0] == '-' ? -temp.value : temp.value);
+        return Result!long(str[0] == '-' ? -temp.value : temp.value, temp.fault);
     }
 }
 
@@ -518,7 +515,7 @@ Result!double toDouble(IStr str) {
     auto dotIndex = findStart(str, '.');
     if (dotIndex == -1) {
         auto temp = toSigned(str);
-        return temp.isNone ? Result!double(temp.fault) : Result!double(temp.value);
+        return Result!double(temp.value, temp.fault);
     } else {
         auto left = toSigned(str[0 .. dotIndex]);
         auto right = toSigned(str[dotIndex + 1 .. $]);

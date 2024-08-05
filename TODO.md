@@ -17,7 +17,8 @@ Cleaning things in core.
 * [ ] unions
 
 Now I have to do math, stdc and unions.
-Will do unions first.
+Was doing unions.
+Was doing the compile time stuff.
 
 ## IDEAS
 

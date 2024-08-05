@@ -1,8 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The `unions` module defines a data structure that can hold one of several possible types.
-
+/// The `unions` module provides functions and value structures for working with unions.
 module popka.core.unions;
 
 import popka.core.types;
@@ -10,34 +9,34 @@ import popka.core.traits;
 
 @safe @nogc nothrow:
 
-union SumTypeData(A...) {
+alias VariantKind = int;
+
+union VariantValue(A...) {
+    static assert(A.length != 0, "Arguments must contain at least one element.");
+
     static foreach (i, T; A) {
-        mixin("T ", "m", toCleanNumber!i, ";");
+        static if (i == 0 && isNumberType!T) {
+            mixin("T ", "member", toCleanNumber!i, "= 0;");
+        }  else {
+            mixin("T ", "member", toCleanNumber!i, ";");
+        }
     }
 
-    enum kindCount = A.length;
-
-    alias BaseType = A[0];
+    alias Base = A[0];
     alias Types = A;
 }
 
-alias SumTypeKind = int;
-
-struct SumType(A...) {
-    SumTypeData!A data;
-    SumTypeKind kind;
+struct Variant(A...) {
+    VariantValue!A value;
+    VariantKind kind;
+    alias value this;
 
     @safe @nogc nothrow:
 
-    enum kindCount = A.length;
-
-    alias BaseType = A[0];
-    alias Types = A;
-
     static foreach (i, T; A) {
         @trusted
-        this(T data) {
-            this.data = *(cast(SumTypeData!A*) &data);
+        this(T value) {
+            this.value = *(cast(VariantValue!A*) &value);
             this.kind = i;
         }
     }
@@ -45,7 +44,7 @@ struct SumType(A...) {
     static foreach (i, T; A) {
         @trusted
         void opAssign(T rhs) {
-            data = *(cast(SumTypeData!A*) &rhs);
+            value = *(cast(VariantValue!A*) &rhs);
             kind = i;
         }
     }
@@ -56,88 +55,61 @@ struct SumType(A...) {
                 return T.stringof;
             }
         }
-        assert(0, "Kind is invalid.");
+        assert(0, "WTF!");
     }
 
-    SumTypeKind kindValue() {
-        return kind;
-    }
-
-    bool isValue(T)() {
-        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the sum type.");
+    bool isKind(T)() {
+        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
         return kind == findInAliasArgs!(T, A);
     }
 
     @trusted
-    ref T value(T)() {
-        if (isValue!T) {
-            mixin("return ", "data.m", findInAliasArgs!(T, A), ";"); 
+    ref T get(T)() {
+        if (isKind!T) {
+            mixin("return ", "value.member", findInAliasArgs!(T, A), ";"); 
         } else {
             static foreach (i, TT; A) {
-                if (kind == i) {
+                if (i == kind) {
                     assert(0, "Value is `" ~ A[i].stringof ~ "` and not `" ~ T.stringof ~ "`.");
                 }
             }
-            assert(0, "Kind is invalid.");
+            assert(0, "WTF!");
         }
-    }
-
-    @trusted
-    T* valuePtr(T)() {
-        return &value!T();
-    }
-
-    @trusted
-    ref BaseType base() {
-        return data.m0;
-    }
-
-    @trusted
-    BaseType* basePtr() {
-        return &data.m0;
     }
 
     @trusted
     auto call(IStr func, AA...)(AA args) {
         switch (kind) {
             static foreach (i, T; A) {
-                static assert(__traits(hasMember, T, func), "Type `" ~ T.stringof ~ "` does not implement the `" ~ func ~ "` function.");
-                mixin("case ", i, ": return data.m", toCleanNumber!i, ".", func, "(args);");
+                static assert(hasMember!(T, func), funcImplementationErrorMessage!(T, func));
+                mixin("case ", i, ": return value.member", toCleanNumber!i, ".", func, "(args);");
             }
-            default: assert(0, "Kind is invalid.");
+            default: assert(0, "WTF!");
         }
     }
 
+    template kindOf(T) {
+        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
+        enum kindOf = findInAliasArgs!(T, A);
+    }
+
     template kindNameOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the sum type.");
+        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
         enum kindNameOf = T.stringof;
     }
-
-    template kindValueOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the sum type.");
-        enum kindValueOf = findInAliasArgs!(T, A);
-    }
 }
 
-struct NoneType {}
-
-alias Maybe(T) = SumType!(NoneType, T);
-
-bool isNone(A...)(SumType!A maybe) {
-    return maybe.kind == 0;
-}
-
-bool isSome(A...)(SumType!A maybe)  {
-    return maybe.kind != 0;
-}
-
-T toSumType(T)(SumTypeKind kind) {
-    static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
+T toVariant(T)(VariantKind kind) {
+    static assert(isVariantType!T, "Type `" ~ T.stringof  ~ "` is not a variant.");
 
     T result;
     static foreach (i, Type; T.Types) {
         if (i == kind) {
-            result = Type.init;
+            static if (isNumberType!Type) {
+                result = 0;
+            } else {
+                result = Type.init;
+            }
             goto loopExit;
         }
     }
@@ -145,39 +117,26 @@ T toSumType(T)(SumTypeKind kind) {
     return result;
 }
 
-T toSumType(T)(IStr kindName) {
-    static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
+T toVariant(T)(IStr kindName) {
+    static assert(isVariantType!T, "Type `" ~ T.stringof  ~ "` is not a variant.");
 
     T result;
     static foreach (i, Type; T.Types) {
         if (Type.stringof == kindName) {
-            result = Type.init;
+            static if (isNumberType!Type) {
+                result = 0;
+            } else {
+                result = Type.init;
+            }
             goto loopExit;
         }
     }
-    import popka.core.io;
     loopExit:
     return result;
 }
 
-bool isSumType(T)() {
-    return is(T : SumType!A, A...);
-}
-
-// TODO: WTF?
-int checkCommonBase(T)() {
-    static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
-
-    static foreach (i, member; T.init.data.tupleof[1 .. $]) {
-        static if (isPrimaryType!(typeof(member)) || member.tupleof.length == 0) {
-            static if (!is(T.BaseType == typeof(member))) {
-                return i + 1;
-            }
-        } else static if (!is(T.BaseType == typeof(member.tupleof[0]))) {
-            return i + 1;
-        }
-    }
-    return -1;
+bool isVariantType(T)() {
+    return is(T : Variant!A, A...);
 }
 
 mixin template addBase(T) {
@@ -186,33 +145,21 @@ mixin template addBase(T) {
 }
 
 unittest {
-    SumType!(int, float) number;
-    number = 0;
-    assert(number.isValue!int == true);
-    assert(number.isValue!float == false);
-    assert(number.kindName == "int");
-    number = 0.0;
-    assert(number.isValue!int == false);
-    assert(number.isValue!float == true);
-    assert(number.kindName == "float");
+    alias Number = Variant!(float, double);
 
-    number = 0;
-    number.value!int += 2;
-    assert(number.value!int == 2);
-
-    struct MyType {
-        mixin addBase!int;
-    }
-    // alias Entity1 = SumType!(int, MyType);
-    // assert(hasCommonBase!Entity1 == true);
-    // alias Entity2 = SumType!(MyType, int);
-    // assert(hasCommonBase!Entity2 == false);
-
-    Maybe!int result;
-    result = Maybe!int();
-    assert(result.isNone == true);
-    assert(result.isSome == false);
-    result = 69;
-    assert(result.isNone == false);
-    assert(result.isSome == true);
+    assert(Number().kindName == "float");
+    assert(Number().isKind!float == true);
+    assert(Number().isKind!double == false);
+    assert(Number().get!float() == 0);
+    assert(Number(0.0f).kindName == "float");
+    assert(Number(0.0f).isKind!float == true);
+    assert(Number(0.0f).isKind!double == false);
+    assert(Number(0.0f).get!float() == 0);
+    assert(Number(0.0).isKind!float == false);
+    assert(Number(0.0).isKind!double == true);
+    assert(Number(0.0).kindName == "double");
+    assert(Number(0.0).get!double() == 0);
+    
+    // TODO: Was doing the compile time stuff.
+    // assert(toVariant!Number(Variant.kindOf!(float)).isKind!float == true);
 }

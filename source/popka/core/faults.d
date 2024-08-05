@@ -4,6 +4,7 @@
 /// The `faults` module provides a set of codes and data structures for error handling.
 module popka.core.faults;
 
+import popka.core.ascii;
 import popka.core.traits;
 
 @safe @nogc nothrow:
@@ -32,7 +33,7 @@ struct Result(T) {
 
     this(T value) {
         this.value = value;
-        fault = Fault.none;
+        this.fault = Fault.none;
     }
 
     this(Fault fault) {
@@ -44,12 +45,13 @@ struct Result(T) {
             this.fault = fault;
         } else {
             this.value = value;
+            this.fault = Fault.none;
         }
     }
 
     T unwrap() {
         if (fault) {
-            assert(0, "");
+            assert(0, "Fault `{}` was detected.".format(fault));
         }
         return value;
     }
@@ -86,4 +88,16 @@ unittest {
     assert(Result!int(69).isNone == false);
     assert(Result!int(69).isSome == true);
     assert(Result!int(69).unwrapOr() == 69);
+    assert(Result!int(Fault.none).isNone == false);
+    assert(Result!int(Fault.none).isSome == true);
+    assert(Result!int(Fault.none).unwrapOr() == 0);
+    assert(Result!int(Fault.some).isNone == true);
+    assert(Result!int(Fault.some).isSome == false);
+    assert(Result!int(Fault.some).unwrapOr() == 0);
+    assert(Result!int(69, Fault.none).isNone == false);
+    assert(Result!int(69, Fault.none).isSome == true);
+    assert(Result!int(69, Fault.none).unwrapOr() == 69);
+    assert(Result!int(69, Fault.some).isNone == true);
+    assert(Result!int(69, Fault.some).isSome == false);
+    assert(Result!int(69, Fault.some).unwrapOr() == 0);
 }
