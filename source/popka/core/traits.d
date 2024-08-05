@@ -50,17 +50,17 @@ bool isIntegerType(T)() {
     return isUnsignedType!T || isSignedType!T;
 }
 
-bool isDoubleType(T)() {
+bool isFloatingType(T)() {
     return is(T == float) ||
-    is(T == const(float)) ||
-    is(T == immutable(float)) ||
-    is(T == double) ||
-    is(T == const(double)) ||
-    is(T == immutable(double));
+        is(T == const(float)) ||
+        is(T == immutable(float)) ||
+        is(T == double) ||
+        is(T == const(double)) ||
+        is(T == immutable(double));
 }
 
 bool isNumberType(T)() {
-    return isIntegerType!T || isDoubleType!T;
+    return isIntegerType!T || isFloatingType!T;
 }
 
 bool isCharType(T)() {
@@ -106,7 +106,7 @@ bool isCStrType(T)() {
 }
 
 bool hasMember(T, IStr name)() {
-    return __traits(hasMember, T, func);
+    return __traits(hasMember, T, name);
 }
 
 int findInAliasArgs(T, A...)() {

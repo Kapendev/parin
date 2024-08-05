@@ -1,7 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The `unions` module provides functions and value structures for working with unions.
+/// The `unions` module provides functions and data structures for working with unions.
 module popka.core.unions;
 
 import popka.core.types;
@@ -10,6 +10,8 @@ import popka.core.traits;
 @safe @nogc nothrow:
 
 alias VariantKind = int;
+
+struct None {}
 
 union VariantValue(A...) {
     static assert(A.length != 0, "Arguments must contain at least one element.");
@@ -22,7 +24,7 @@ union VariantValue(A...) {
         }
     }
 
-    alias Base = A[0];
+    enum length = A.length;
     alias Types = A;
 }
 
@@ -61,6 +63,11 @@ struct Variant(A...) {
     bool isKind(T)() {
         static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
         return kind == findInAliasArgs!(T, A);
+    }
+
+    @trusted
+    ref A[0] base() {
+        return member0;
     }
 
     @trusted
@@ -106,7 +113,7 @@ T toVariant(T)(VariantKind kind) {
     static foreach (i, Type; T.Types) {
         if (i == kind) {
             static if (isNumberType!Type) {
-                result = 0;
+                result = cast(Type) 0;
             } else {
                 result = Type.init;
             }
@@ -124,7 +131,7 @@ T toVariant(T)(IStr kindName) {
     static foreach (i, Type; T.Types) {
         if (Type.stringof == kindName) {
             static if (isNumberType!Type) {
-                result = 0;
+                result = cast(Type) 0;
             } else {
                 result = Type.init;
             }
@@ -144,6 +151,7 @@ mixin template addBase(T) {
     alias base this;
 }
 
+// Variant test.
 unittest {
     alias Number = Variant!(float, double);
 
@@ -159,7 +167,30 @@ unittest {
     assert(Number(0.0).isKind!double == true);
     assert(Number(0.0).kindName == "double");
     assert(Number(0.0).get!double() == 0);
+    assert(Number.kindOf!float == 0);
+    assert(Number.kindOf!double == 1);
+    assert(Number.kindNameOf!float == "float");
+    assert(Number.kindNameOf!double == "double");
+
+    auto number = Number();
+    number = 0.0;
+    assert(number.get!double() == 0);
+    number = 0.0f;
+    assert(number.get!float() == 0);
+    number.get!float() += 69.0f;
+    assert(number.get!float() == 69);
     
-    // TODO: Was doing the compile time stuff.
-    // assert(toVariant!Number(Variant.kindOf!(float)).isKind!float == true);
+    auto numberPtr = &number.get!float();
+    *numberPtr *= 10;
+    assert(number.get!float() == 690);
+}
+
+// Function test.
+unittest {
+    alias Number = Variant!(float, double);
+
+    assert(toVariant!Number(Number.kindOf!float).get!float() == 0);
+    assert(toVariant!Number(Number.kindOf!double).get!double() == 0);
+    assert(toVariant!Number(Number.kindNameOf!float).get!float() == 0);
+    assert(toVariant!Number(Number.kindNameOf!double).get!double() == 0);
 }

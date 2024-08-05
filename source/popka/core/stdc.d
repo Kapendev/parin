@@ -1,19 +1,19 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The stdc module provides access to C standard library functions and types.
-
+/// The `stdc` module provides access to the C standard library.
 module popka.core.stdc;
 
 @nogc nothrow extern(C):
 
-// types
+// types.l
 
-// NOTE: Might be a bad idea. We care about Windows, MacOS, Linux and Web for now.
 version (WebAssembly) {
-    alias c_long = int;
+    alias CLong = int;
+    alias CULong = uint;
 } else {
-    alias c_long = long;
+    alias CLong = long;
+    alias CULong = ulong;
 }
 
 // math.h
@@ -30,6 +30,8 @@ void free(void* ptr);
 
 // stdio.h
 
+alias FILE = void;
+
 enum SEEK_SET = 0;
 enum SEEK_CUR = 1;
 enum SEEK_END = 2;
@@ -38,9 +40,7 @@ enum STDIN_FILENO  = 0;
 enum STDOUT_FILENO = 1;
 enum STDERR_FILENO = 2;
 
-alias FILE = void;
-
-// NOTE: Code from D std.
+// NOTE: Code from the D standard library.
 version (CRuntime_Microsoft) {
     FILE* __acrt_iob_func(int hnd);     // VS2015+, reimplemented in msvc.d for VS2013-
     FILE* stdin()() { return __acrt_iob_func(0); }
@@ -54,7 +54,6 @@ version (CRuntime_Microsoft) {
     extern __gshared FILE* __stdinp;
     extern __gshared FILE* __stdoutp;
     extern __gshared FILE* __stderrp;
-
     alias __stdinp  stdin;
     alias __stdoutp stdout;
     alias __stderrp stderr;
@@ -62,27 +61,22 @@ version (CRuntime_Microsoft) {
     extern __gshared FILE* __stdinp;
     extern __gshared FILE* __stdoutp;
     extern __gshared FILE* __stderrp;
-
     alias __stdinp  stdin;
     alias __stdoutp stdout;
     alias __stderrp stderr;
 } else version (NetBSD) {
     extern __gshared FILE[3] __sF;
-
     auto __stdin()() { return &__sF[0]; }
     auto __stdout()() { return &__sF[1]; }
     auto __stderr()() { return &__sF[2]; }
-
     alias __stdin stdin;
     alias __stdout stdout;
     alias __stderr stderr;
 } else version (OpenBSD) {
     extern __gshared FILE[3] __sF;
-
     auto __stdin()() { return &__sF[0]; }
     auto __stdout()() { return &__sF[1]; }
     auto __stderr()() { return &__sF[2]; }
-
     alias __stdin stdin;
     alias __stdout stdout;
     alias __stderr stderr;
@@ -90,19 +84,16 @@ version (CRuntime_Microsoft) {
     extern __gshared FILE* __stdinp;
     extern __gshared FILE* __stdoutp;
     extern __gshared FILE* __stderrp;
-
     alias __stdinp  stdin;
     alias __stdoutp stdout;
     alias __stderrp stderr;
 } else version (Solaris) {
     extern __gshared FILE[_NFILE] __iob;
-
     auto stdin()() { return &__iob[0]; }
     auto stdout()() { return &__iob[1]; }
     auto stderr()() { return &__iob[2]; }
 } else version (CRuntime_Bionic) {
     extern __gshared FILE[3] __sF;
-
     auto stdin()() { return &__sF[0]; }
     auto stdout()() { return &__sF[1]; }
     auto stderr()() { return &__sF[2]; }
@@ -117,9 +108,7 @@ version (CRuntime_Microsoft) {
         __sFILE* _stdout;
         __sFILE* _stderr;
     }
-
     _reent* __getreent();
-
     pragma(inline, true) {
         auto stdin()() { return __getreent()._stdin; }
         auto stdout()() { return __getreent()._stdout; }
@@ -140,9 +129,9 @@ version (CRuntime_Microsoft) {
 }
 
 FILE* fopen(const(char)* filename, const(char)* mode);
-c_long ftell(FILE* stream);
-int fseek(FILE* stream, c_long offset, int origin);
+CLong ftell(FILE* stream);
+int fseek(FILE* stream, CLong offset, int origin);
 size_t fread(void* ptr, size_t size, size_t count, FILE* stream);
 int fclose(FILE* stream);
 int fputs(const(char)* str, FILE* stream);
-size_t fwrite(const void* buffer, size_t size, size_t count, FILE* stream);
+size_t fwrite(const(void)* buffer, size_t size, size_t count, FILE* stream);

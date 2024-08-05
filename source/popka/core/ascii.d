@@ -440,7 +440,7 @@ IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
         return unsignedToStr(value);
     } else static if (isSignedType!T) {
         return signedToStr(value);
-    } else static if (isDoubleType!T) {
+    } else static if (isFloatingType!T) {
         return doubleToStr(value, options.doublePrecision);
     } else static if (isStrType!T) {
         return value;
@@ -451,7 +451,7 @@ IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else {
-        static assert(0, "Type `" ~ T.stringof ~ "` does not implement the `toStr` function.");
+        static assert(0, funcImplementationErrorMessage!(T, "toStr"));
     }
 }
 

@@ -11,14 +11,14 @@ Cleaning things in core.
 * [x] io
 * [ ] math
 * [x] package
-* [ ] stdc
+* [x] stdc
 * [x] traits
 * [x] types
-* [ ] unions
+* [x] unions
 
-Now I have to do math, stdc and unions.
-Was doing unions.
-Was doing the compile time stuff.
+Done with unions.
+Now will do math.
+Then do also a file with the abbreviations used. For docs and stuff.
 
 ## IDEAS
 

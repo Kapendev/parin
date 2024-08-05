@@ -1,8 +1,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The math module covers
-/// essential mathematical operations, vectors, and shapes.
+/// The `math` module provides mathematical functions and types.
 
 module popka.core.math;
 
@@ -12,7 +11,7 @@ import popka.core.types;
 
 @safe @nogc nothrow:
 
-enum pi      = 3.141592f;
+enum pi      = 3.1415f;
 enum epsilon = 0.0001f;
 
 enum Hook : ubyte {
