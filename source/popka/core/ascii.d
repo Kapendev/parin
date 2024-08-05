@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: MIT
 
 /// The `ascii` module provides functions designed to assist with ascii strings.
-
 module popka.core.ascii;
 
 import popka.core.containers;
-import popka.core.errors;
+import popka.core.faults;
 import popka.core.traits;
 import popka.core.types;
 
@@ -424,22 +423,12 @@ IStr cStrToStr(ICStr value) {
 }
 
 IStr enumToStr(T)(T value) {
-    static char[64] buffer = void;
-
-    auto result = buffer[];
-    auto name = "";
-    final switch (value) {
+    switch (value) {
         static foreach (member; __traits(allMembers, T)) {
-            mixin("case T." ~ member ~ ": name = member; goto switchExit;");
+            mixin("case T." ~ member ~ ": return member;");
         }
+        default: assert(0, "WTF!");
     }
-    switchExit:
-
-    foreach (i, c; name) {
-        result[i] = c;
-    }
-    result = result[0 .. name.length];
-    return result;
 }
 
 IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
@@ -466,22 +455,22 @@ IStr toStr(T)(T value, ToStrOptions options = ToStrOptions()) {
     }
 }
 
-BasicResult!bool toBool(IStr str) {
+Result!bool toBool(IStr str) {
     if (str == "false") {
-        return BasicResult!bool(false);
+        return Result!bool(false);
     } else if (str == "true") {
-        return BasicResult!bool(true);
+        return Result!bool(true);
     } else {
-        return BasicResult!bool(BasicError.invalid);
+        return Result!bool(Fault.invalid);
     }
 }
 
-BasicResult!ulong toUnsigned(IStr str) {
+Result!ulong toUnsigned(IStr str) {
     if (str.length == 0 || str.length >= 18) {
-        return BasicResult!ulong(BasicError.invalid);
+        return Result!ulong(Fault.invalid);
     } else {
         if (str.length == 1 && str[0] == '+') {
-            return BasicResult!ulong(BasicError.invalid);
+            return Result!ulong(Fault.invalid);
         }
         ulong value = 0;
         ulong level = 1;
@@ -490,92 +479,92 @@ BasicResult!ulong toUnsigned(IStr str) {
                 value += (c - '0') * level;
                 level *= 10;
             } else {
-                return BasicResult!ulong(BasicError.invalid);
+                return Result!ulong(Fault.invalid);
             }
         }
-        return BasicResult!ulong(value);
+        return Result!ulong(value);
     }
 }
 
-BasicResult!ulong toUnsigned(char c) {
+Result!ulong toUnsigned(char c) {
     if (isDigit(c)) {
-        return BasicResult!ulong(c - '0');
+        return Result!ulong(c - '0');
     } else {
-        return BasicResult!ulong(BasicError.invalid);
+        return Result!ulong(Fault.invalid);
     }
 }
 
-BasicResult!long toSigned(IStr str) {
+Result!long toSigned(IStr str) {
     if (str.length == 0 || str.length >= 18) {
-        return BasicResult!long(BasicError.invalid);
+        return Result!long(Fault.invalid);
     } else {
         auto temp = toUnsigned(str[(str[0] == '-' ? 1 : 0) .. $]);
         if (temp.isNone) {
-            return BasicResult!long(temp.error);
+            return Result!long(temp.fault);
         }
-        return BasicResult!long(str[0] == '-' ? -temp.value : temp.value);
+        return Result!long(str[0] == '-' ? -temp.value : temp.value);
     }
 }
 
-BasicResult!long toSigned(char c) {
+Result!long toSigned(char c) {
     if (isDigit(c)) {
-        return BasicResult!long(c - '0');
+        return Result!long(c - '0');
     } else {
-        return BasicResult!long(BasicError.invalid);
+        return Result!long(Fault.invalid);
     }
 }
 
-BasicResult!double toDouble(IStr str) {
+Result!double toDouble(IStr str) {
     auto dotIndex = findStart(str, '.');
     if (dotIndex == -1) {
         auto temp = toSigned(str);
-        return temp.isNone ? BasicResult!double(temp.error) : BasicResult!double(temp.value);
+        return temp.isNone ? Result!double(temp.fault) : Result!double(temp.value);
     } else {
         auto left = toSigned(str[0 .. dotIndex]);
         auto right = toSigned(str[dotIndex + 1 .. $]);
         if (left.isNone || right.isNone) {
-            return BasicResult!double(BasicError.invalid);
+            return Result!double(Fault.invalid);
         } else if (str[dotIndex + 1] == '-' || str[dotIndex + 1] == '+') {
-            return BasicResult!double(BasicError.invalid);
+            return Result!double(Fault.invalid);
         } else {
             auto sign = str[0] == '-' ? -1 : 1;
             auto level = 10;
             foreach (i; 1 .. str[dotIndex + 1 .. $].length) {
                 level *= 10;
             }
-            return BasicResult!double(left.value + sign * (right.value / (cast(double) level)));
+            return Result!double(left.value + sign * (right.value / (cast(double) level)));
         }
     }
 }
 
-BasicResult!double toDouble(char c) {
+Result!double toDouble(char c) {
     if (isDigit(c)) {
-        return BasicResult!double(c - '0');
+        return Result!double(c - '0');
     } else {
-        return BasicResult!double(BasicError.invalid);
+        return Result!double(Fault.invalid);
     }
 }
 
-BasicResult!T toEnum(T)(IStr str) {
+Result!T toEnum(T)(IStr str) {
     switch (str) {
         static foreach (member; __traits(allMembers, T)) {
-            mixin("case " ~ member.stringof ~ ": return BasicResult!T(T." ~ member ~ ");");
+            mixin("case " ~ member.stringof ~ ": return Result!T(T." ~ member ~ ");");
         }
-        default: return BasicResult!T(BasicError.invalid);
+        default: return Result!T(Fault.invalid);
     }
 }
 
 @trusted
-BasicResult!ICStr toCStr(IStr str) {
+Result!ICStr toCStr(IStr str) {
     static char[1024] buffer = void;
 
     if (buffer.length < str.length) {
-        return BasicResult!ICStr(BasicError.invalid);
+        return Result!ICStr(Fault.invalid);
     } else {
         auto value = buffer[];
         value.copyChars(str);
         value[str.length] = '\0';
-        return BasicResult!ICStr(value.ptr);
+        return Result!ICStr(value.ptr);
     }
 }
 

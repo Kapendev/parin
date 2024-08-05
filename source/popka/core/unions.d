@@ -5,6 +5,7 @@
 
 module popka.core.unions;
 
+import popka.core.types;
 import popka.core.traits;
 
 @safe @nogc nothrow:
@@ -49,7 +50,7 @@ struct SumType(A...) {
         }
     }
 
-    const(char)[] kindName() {
+    IStr kindName() {
         static foreach (i, T; A) {
             if (kind == i) {
                 return T.stringof;
@@ -97,7 +98,7 @@ struct SumType(A...) {
     }
 
     @trusted
-    auto call(const(char)[] func, AA...)(AA args) {
+    auto call(IStr func, AA...)(AA args) {
         switch (kind) {
             static foreach (i, T; A) {
                 static assert(__traits(hasMember, T, func), "Type `" ~ T.stringof ~ "` does not implement the `" ~ func ~ "` function.");
@@ -144,7 +145,7 @@ T toSumType(T)(SumTypeKind kind) {
     return result;
 }
 
-T toSumType(T)(const(char)[] kindName) {
+T toSumType(T)(IStr kindName) {
     static assert(isSumType!T, "Type `" ~ T.stringof  ~ "` is not a sum type.");
 
     T result;

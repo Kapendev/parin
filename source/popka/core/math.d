@@ -6,8 +6,9 @@
 
 module popka.core.math;
 
-import popka.core.stdc;
 import popka.core.ascii;
+import popka.core.stdc;
+import popka.core.types;
 
 @safe @nogc nothrow:
 
@@ -51,7 +52,7 @@ struct Vec2 {
     }
 
     pragma(inline, true)
-    Vec2 opUnary(const(char)[] op)() {
+    Vec2 opUnary(IStr op)() {
         return Vec2(
             mixin(op, "x"),
             mixin(op, "y"),
@@ -59,7 +60,7 @@ struct Vec2 {
     }
 
     pragma(inline, true)
-    Vec2 opBinary(const(char)[] op)(Vec2 rhs) {
+    Vec2 opBinary(IStr op)(Vec2 rhs) {
         return Vec2(
             mixin("x", op, "rhs.x"),
             mixin("y", op, "rhs.y"),
@@ -67,7 +68,7 @@ struct Vec2 {
     }
 
     pragma(inline, true)
-    Vec2 opBinary(const(char)[] op)(float rhs) {
+    Vec2 opBinary(IStr op)(float rhs) {
         return Vec2(
             mixin("x", op, "rhs"),
             mixin("y", op, "rhs"),
@@ -75,7 +76,7 @@ struct Vec2 {
     }
 
     pragma(inline, true)
-    Vec2 opBinaryRight(const(char)[] op)(float lhs) {
+    Vec2 opBinaryRight(IStr op)(float lhs) {
         return Vec2(
             mixin("lhs", op, "x"),
             mixin("lhs", op, "y"),
@@ -83,13 +84,13 @@ struct Vec2 {
     }
 
     pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Vec2 rhs) {
+    void opOpAssign(IStr op)(Vec2 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
     }
 
     pragma(inline, true)
-    void opOpAssign(const(char)[] op)(float rhs) {
+    void opOpAssign(IStr op)(float rhs) {
         mixin("x", op, "=rhs;");
         mixin("y", op, "=rhs;");
     }
@@ -154,7 +155,7 @@ struct Vec2 {
         );
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {})".format(x, y);
     }
 }
@@ -197,7 +198,7 @@ struct Vec3 {
     }
 
     pragma(inline, true)
-    Vec3 opUnary(const(char)[] op)() {
+    Vec3 opUnary(IStr op)() {
         return Vec3(
             mixin(op, "x"),
             mixin(op, "y"),
@@ -206,7 +207,7 @@ struct Vec3 {
     }
 
     pragma(inline, true)
-    Vec3 opBinary(const(char)[] op)(Vec3 rhs) {
+    Vec3 opBinary(IStr op)(Vec3 rhs) {
         return Vec3(
             mixin("x", op, "rhs.x"),
             mixin("y", op, "rhs.y"),
@@ -215,7 +216,7 @@ struct Vec3 {
     }
 
     pragma(inline, true)
-    Vec3 opBinary(const(char)[] op)(float rhs) {
+    Vec3 opBinary(IStr op)(float rhs) {
         return Vec3(
             mixin("x", op, "rhs"),
             mixin("y", op, "rhs"),
@@ -224,7 +225,7 @@ struct Vec3 {
     }
 
     pragma(inline, true)
-    Vec3 opBinaryRight(const(char)[] op)(float lhs) {
+    Vec3 opBinaryRight(IStr op)(float lhs) {
         return Vec3(
             mixin("lhs", op, "x"),
             mixin("lhs", op, "y"),
@@ -233,14 +234,14 @@ struct Vec3 {
     }
 
     pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Vec3 rhs) {
+    void opOpAssign(IStr op)(Vec3 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
         mixin("z", op, "=rhs.z;");
     }
 
     pragma(inline, true)
-    void opOpAssign(const(char)[] op)(float rhs) {
+    void opOpAssign(IStr op)(float rhs) {
         mixin("x", op, "=rhs;");
         mixin("y", op, "=rhs;");
         mixin("z", op, "=rhs;");
@@ -262,7 +263,7 @@ struct Vec3 {
         return Vec3(x.round, y.round, z.round);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {} {})".format(x, y, z);
     }
 }
@@ -302,7 +303,7 @@ struct Vec4 {
     }
 
     pragma(inline, true)
-    Vec4 opUnary(const(char)[] op)() {
+    Vec4 opUnary(IStr op)() {
         return Vec4(
             mixin(op, "x"),
             mixin(op, "y"),
@@ -312,7 +313,7 @@ struct Vec4 {
     }
 
     pragma(inline, true)
-    Vec4 opBinary(const(char)[] op)(Vec4 rhs) {
+    Vec4 opBinary(IStr op)(Vec4 rhs) {
         return Vec4(
             mixin("x", op, "rhs.x"),
             mixin("y", op, "rhs.y"),
@@ -322,7 +323,7 @@ struct Vec4 {
     }
 
     pragma(inline, true)
-    Vec4 opBinary(const(char)[] op)(float rhs) {
+    Vec4 opBinary(IStr op)(float rhs) {
         return Vec4(
             mixin("x", op, "rhs"),
             mixin("y", op, "rhs"),
@@ -332,7 +333,7 @@ struct Vec4 {
     }
 
     pragma(inline, true)
-    Vec4 opBinaryRight(const(char)[] op)(float lhs) {
+    Vec4 opBinaryRight(IStr op)(float lhs) {
         return Vec4(
             mixin("lhs", op, "x"),
             mixin("lhs", op, "y"),
@@ -342,7 +343,7 @@ struct Vec4 {
     }
 
     pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Vec4 rhs) {
+    void opOpAssign(IStr op)(Vec4 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
         mixin("z", op, "=rhs.z;");
@@ -350,7 +351,7 @@ struct Vec4 {
     }
 
     pragma(inline, true)
-    void opOpAssign(const(char)[] op)(float rhs) {
+    void opOpAssign(IStr op)(float rhs) {
         mixin("x", op, "=rhs;");
         mixin("y", op, "=rhs;");
         mixin("z", op, "=rhs;");
@@ -373,7 +374,7 @@ struct Vec4 {
         return Vec4(x.round, y.round, z.round, w.round);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {} {} {})".format(x, y, z, w);
     }
 }
@@ -697,7 +698,7 @@ struct Rect {
         return temp.subBottom(amount);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {} {} {})".format(position.x, position.y, size.x, size.y);
     }
 }
@@ -722,7 +723,7 @@ struct Circ {
         this(Vec2(x, y), radius);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {} {})".format(position.x, position.y, radius);
     }
 }
@@ -757,7 +758,7 @@ struct Line {
         this(Vec2(ax, ay), b);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {} {} {})".format(a.x, a.y, b.x, b.y);
     }
 }
@@ -792,7 +793,7 @@ struct IVec2 {
         this(cast(int) xy.x, cast(int) xy.y);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {})".format(x, y);
     }
 }
@@ -834,7 +835,7 @@ struct IVec3 {
         this(cast(int) xyz.x, cast(int) xyz.y, cast(int) xyz.z);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {})".format(x, y);
     }
 }
@@ -873,7 +874,7 @@ struct IVec4 {
         this(cast(int) xyzw.x, cast(int) xyzw.y, cast(int) xyzw.z, cast(int) xyzw.w);
     }
 
-    const(char)[] toStr() {
+    IStr toStr() {
         return "({} {})".format(x, y);
     }
 }

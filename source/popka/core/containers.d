@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 /// The `containers` module provides various data structures.
-
 module popka.core.containers;
 
 import popka.core.ascii;
@@ -120,22 +119,23 @@ struct List(T) {
         }
     }
 
-    void resize(Sz length) {
-        if (length <= this.length) {
-            items = items[0 .. length];
-        } else {
-            foreach (i; 0 .. length - this.length) {
-                this.append(T.init);
-            }
-        }
-    }
-
     @trusted
     void reserve(Sz capacity) {
         auto targetCapacity = findListCapacity(capacity);
         if (targetCapacity > this.capacity) {
             this.capacity = targetCapacity;
             items = (cast(T*) realloc(items.ptr, this.capacity * T.sizeof))[0 .. length];
+        }
+    }
+
+    void resize(Sz length) {
+        if (length <= this.length) {
+            items = items[0 .. length];
+        } else {
+            reserve(length);
+            foreach (i; 0 .. length - this.length) {
+                append(T.init);
+            }
         }
     }
 

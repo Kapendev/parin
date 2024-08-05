@@ -6,11 +6,13 @@
 module popka.game.engine;
 
 import ray = popka.vendor.ray;
+import popka.core.ascii;
 import popka.core.colors;
 import popka.core.containers;
+import popka.core.faults;
 import popka.core.io;
 import popka.core.math;
-import popka.core.ascii;
+import popka.core.types;
 
 @trusted @nogc nothrow:
 
@@ -148,8 +150,8 @@ struct EngineState {
     Color backgroundColor = defaultBackgroundColor;
     float timeRate = 1.0f;
 
-    List!char assetsPath;
-    List!char tempLoadText;
+    LStr assetsPath;
+    LStr tempLoadText;
 
     bool isUpdating;
     bool isPixelPerfect;
@@ -182,7 +184,7 @@ struct Texture {
 
     /// Creates a texture by loading an image file from the assets folder.
     /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-    this(const(char)[] path) {
+    this(IStr path) {
         load(path);
     }
 
@@ -209,7 +211,7 @@ struct Texture {
     /// Loads an image file from the assets folder.
     /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
     /// If an image is already loaded, then this function will free the current image and load the new one.
-    void load(const(char)[] path) {
+    void load(IStr path) {
         free();
         if (path.length != 0) {
             data = ray.LoadTexture(path.toAssetsPath.toCStr().unwrapOr());
@@ -275,7 +277,7 @@ struct Font {
 
     @trusted @nogc nothrow:
 
-    this(const(char)[] path, uint size, const(dchar)[] runes = []) {
+    this(IStr path, uint size, const(dchar)[] runes = []) {
         load(path, size, runes);
     }
 
@@ -291,7 +293,7 @@ struct Font {
         ray.SetTextureFilter(data.texture, toRay(filter));
     }
 
-    void load(const(char)[] path, uint size, const(dchar)[] runes = []) {
+    void load(IStr path, uint size, const(dchar)[] runes = []) {
         free();
         if (path.length != 0) {
             data = ray.LoadFontEx(path.toAssetsPath.toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length);
@@ -312,7 +314,7 @@ struct Sound {
 
     @trusted @nogc nothrow:
 
-    this(const(char)[] path) {
+    this(IStr path) {
         load(path);
     }
 
@@ -340,7 +342,7 @@ struct Sound {
         ray.SetSoundVolume(data, level);
     }
 
-    void load(const(char)[] path) {
+    void load(IStr path) {
         free();
         if (path.length != 0) {
             data = ray.LoadSound(path.toAssetsPath.toCStr().unwrapOr());
@@ -361,7 +363,7 @@ struct Music {
 
     @trusted @nogc nothrow:
 
-    this(const(char)[] path) {
+    this(IStr path) {
         load(path);
     }
 
@@ -393,7 +395,7 @@ struct Music {
         ray.SetMusicVolume(data, level);
     }
 
-    void load(const(char)[] path) {
+    void load(IStr path) {
         free();
         if (path.length != 0) {
             data = ray.LoadMusicStream(path.toAssetsPath.toCStr().unwrapOr());
@@ -416,7 +418,7 @@ struct TileMap {
 
     @safe @nogc nothrow:
 
-    this(const(char)[] path) {
+    this(IStr path) {
         load(path);
     }
 
@@ -432,7 +434,7 @@ struct TileMap {
         return Rect(size);
     }
 
-    void parse(const(char)[] csv) {
+    void parse(IStr csv) {
         data.clear();
 
         auto view = csv;
@@ -456,7 +458,7 @@ struct TileMap {
             foreach (col; 0 .. newColCount) {
                 auto value = line.skipValue(',');
                 auto conv = value.toSigned();
-                if (conv.error) {
+                if (conv.isNone) {
                     data[row, col] = cast(short) -1;
                 } else {
                     data[row, col] = cast(short) conv.value;
@@ -465,9 +467,10 @@ struct TileMap {
         }
     }
 
-    void load(const(char)[] path) {
+    void load(IStr path) {
+        // TODO: Remove the unwrap.
         if (path.length != 0) {
-            parse(loadTempText(path));
+            parse(loadTempText(path).unwrapOr());
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
@@ -583,38 +586,31 @@ struct Camera {
 
 /// Loads a text file from the assets folder and stores its contents in the given list.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-void loadText(const(char)[] path, ref List!char text) {
-    readText(path.toAssetsPath, text);
-    if (text.length == 0) printfln("Error: The file `{}` does not exist.", path);
+Fault loadTextIntoBuffer(IStr path, ref LStr text) {
+    return readTextIntoBuffer(path.toAssetsPath, text);
 }
 
 /// Loads a text file from the assets folder and returns its contents as a list.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-List!char loadText(const(char)[] path) {
-    auto result = readText(path.toAssetsPath);
-    if (result.length == 0) printfln("Error: The file `{}` does not exist.", path);
-    return result;
+Result!LStr loadText(IStr path) {
+    return readText(path.toAssetsPath);
 }
 
 /// Loads a text file from the assets folder and returns its contents as a slice.
 /// The slice can be safely used until this function is called again.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-const(char)[] loadTempText(const(char)[] path) {
-    loadText(path, engineState.tempLoadText);
-    return engineState.tempLoadText.items;
+Result!IStr loadTempText(IStr path) {
+    auto fault = loadTextIntoBuffer(path, engineState.tempLoadText);
+    return Result!IStr(engineState.tempLoadText.items, fault);
 }
 
 /// Saves a text file to the assets folder.
 /// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-void saveText(const(char)[] path, const(char)[] text) {
-    writeText(path.toAssetsPath, text);
+Fault saveText(IStr path, IStr text) {
+    return writeText(path.toAssetsPath, text);
 }
 
-void loadConfig(A...)(const(char)[] path, ref A args) {
-    readConfig(path.toAssetsPath, args);
-}
-
-const(char)[] toAssetsPath(const(char)[] path) {
+IStr toAssetsPath(IStr path) {
     static char[1024] buffer = void;
 
     if (path.length == 0) {
@@ -795,7 +791,7 @@ Font rayFont() {
 /// Opens the game window with the given size and title.
 /// This function does not work if the window is already open, because Popka only works with one window.
 /// Usually you should avoid calling this function manually.
-void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+void openWindow(Vec2 size, IStr title = "Popka", Color color = defaultBackgroundColor) {
     if (ray.IsWindowReady) {
         return;
     }
@@ -813,7 +809,7 @@ void openWindow(Vec2 size, const(char)[] title = "Popka", Color color = defaultB
 /// Opens the game window with the given size and title.
 /// This function does not work if the window is already open, because Popka only works with one window.
 /// Usually you should avoid calling this function manually.
-void openWindow(float width, float height, const(char)[] title = "Popka", Color color = defaultBackgroundColor) {
+void openWindow(float width, float height, IStr title = "Popka", Color color = defaultBackgroundColor) {
     openWindow(Vec2(width, height), title, color);
 }
 
@@ -994,7 +990,7 @@ void showCursor() {
 }
 
 /// Returns the assets folder path.
-const(char)[] assetsPath() {
+IStr assetsPath() {
     return engineState.assetsPath.items;
 }
 
@@ -1105,7 +1101,7 @@ void changeShapeTexture(Texture texture, Rect area) {
     ray.SetShapesTexture(texture.data, toRay(area));
 }
 
-Vec2 measureTextSize(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
+Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
     }
@@ -1152,11 +1148,11 @@ Vec2 measureTextSize(Font font, const(char)[] text, DrawOptions options = DrawOp
     return result;
 }
 
-Rect measureTextArea(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
+Rect measureTextArea(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     return Rect(position, measureTextSize(font, text, options)).area(options.hook);
 }
 
-Rect measureTextArea(Font font, const(char)[] text, DrawOptions options = DrawOptions()) {
+Rect measureTextArea(Font font, IStr text, DrawOptions options = DrawOptions()) {
     return Rect(Vec2(), measureTextSize(font, text, options)).area(options.hook);
 }
 
@@ -1382,7 +1378,7 @@ void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOption
 }
 
 // TODO: Make it work with negative scale values.
-void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = DrawOptions()) {
+void draw(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
@@ -1430,11 +1426,11 @@ void draw(Font font, const(char)[] text, Vec2 position, DrawOptions options = Dr
     ray.rlPopMatrix();
 }
 
-void draw(const(char)[] text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
+void draw(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
     draw(rayFont, text, position, options);
 }
 
-mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "Popka") {
+mixin template addGameStart(alias startFunc, Vec2 size, IStr title = "Popka") {
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
@@ -1469,6 +1465,6 @@ mixin template addGameStart(alias startFunc, Vec2 size, const(char)[] title = "P
     }
 }
 
-mixin template addGameStart(alias startFunc, float width, float height, const(char)[] title = "Popka") {
+mixin template addGameStart(alias startFunc, float width, float height, IStr title = "Popka") {
     mixin addGameStart!(startFunc, Vec2(width, height), title);
 }

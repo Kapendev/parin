@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 /// The `colors` module provides color-related types and functions.
-
 module popka.core.colors;
 
 import popka.core.ascii;

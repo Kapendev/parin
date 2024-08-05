@@ -1,14 +1,12 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The traits module provides compile-time procedures
-/// and enables features like type checking.
-
+/// The `traits` module provides compile-time functions such as type checking.
 module popka.core.traits;
 
-@safe @nogc nothrow:
-
 import popka.core.types;
+
+@safe @nogc nothrow:
 
 alias AliasArgs(A...) = A;
 
@@ -134,6 +132,7 @@ IStr toCleanNumber(alias i)() {
     }
 }
 
+// Function test.
 unittest {
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);

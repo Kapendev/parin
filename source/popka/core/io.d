@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 /// The `io` module provides input and output functions such as file reading.
-
 module popka.core.io;
 
-import popka.core.containers;
-import popka.core.stdc;
 import popka.core.ascii;
+import popka.core.containers;
+import popka.core.faults;
+import popka.core.stdc;
 import popka.core.traits;
 import popka.core.types;
 
@@ -37,49 +37,54 @@ void println(A...)(A args) {
 }
 
 @trusted
-// TODO: Check the error values and let the user know what went wrong.
-void readText(IStr path, ref List!char text) {
-    auto f = .fopen(toCStr(path).unwrapOr(), "rb");
-    if (f == null) {
-        text.clear();
-        return;
+Fault readTextIntoBuffer(IStr path, ref LStr text) {
+    auto file = fopen(toCStr(path).unwrapOr(), "rb");
+    if (file == null) {
+        return Fault.cantOpen;
     }
-    if (.fseek(f, 0, .SEEK_END) != 0) {
-        .fclose(f);
-        text.clear();
-        return;
+    if (fseek(file, 0, .SEEK_END) != 0) {
+        fclose(file);
+        return Fault.cantRead;
     }
 
-    auto fsize = .ftell(f);
-    if (fsize == -1) {
-        .fclose(f);
-        text.clear();
-        return;
+    auto fileSize = ftell(file);
+    if (fileSize == -1) {
+        fclose(file);
+        return Fault.cantRead;
     }
-    if (.fseek(f, 0, .SEEK_SET) != 0) {
-        .fclose(f);
-        text.clear();
-        return;
+    if (fseek(file, 0, .SEEK_SET) != 0) {
+        fclose(file);
+        return Fault.cantRead;
     }
 
-    text.resize(cast(size_t) fsize);
-    .fread(text.items.ptr, cast(size_t) fsize, 1, f);
-    .fclose(f);
+    text.resize(fileSize);
+    fread(text.items.ptr, fileSize, 1, file);
+    if (fclose(file) != 0) {
+        return Fault.cantClose;
+    }
+    return Fault.none;
 }
 
-List!char readText(IStr path) {
-    List!char result;
-    readText(path, result);
-    return result;
+Result!LStr readText(IStr path) {
+    LStr value;
+    return Result!LStr(value, readTextIntoBuffer(path, value));
 }
 
 @trusted
-// TODO: Check the error values and let the user know what went wrong.
-void writeText(IStr path, IStr text) {
-    auto f = .fopen(toCStr(path).unwrapOr(), "w");
-    if (f == null) {
-        return;
+Fault writeText(IStr path, IStr text) {
+    auto file = .fopen(toCStr(path).unwrapOr(), "w");
+    if (file == null) {
+        return Fault.cantOpen;
     }
-    .fwrite(text.ptr, char.sizeof, text.length, f);
-    .fclose(f);
+    fwrite(text.ptr, char.sizeof, text.length, file);
+    if (fclose(file) != 0) {
+        return Fault.cantClose;
+    }
+    return Fault.none;
+}
+
+// Function test.
+unittest {
+    assert(readText("").isSome == false);
+    assert(writeText("", "") != Fault.none);
 }

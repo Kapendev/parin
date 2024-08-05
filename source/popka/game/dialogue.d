@@ -206,7 +206,7 @@ struct Dialogue {
                     // Set variable value.
                     if (value.length != 0) {
                         auto conv = toSigned(value);
-                        if (conv.error) {
+                        if (conv.isNone) {
                             auto valueVariableIndex = -1;
                             auto valueName = value;
                             // Find if variable exists.
@@ -303,8 +303,9 @@ struct Dialogue {
 
     void load(const(char)[] path) {
         free();
+        // TODO: Remove the unwrap.
         if (path.length != 0) {
-            parse(loadTempText(path));
+            parse(loadTempText(path).unwrapOr());
         }
         if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
     }
