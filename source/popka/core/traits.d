@@ -140,6 +140,160 @@ IStr toCleanNumber(alias i)() {
     }
 }
 
+mixin template addXyzwOps(T, Sz N) {
+    static assert(N >= 1 && N <= 4, "Vector `" ~ T.stringof ~ "`  must have a dimension between 1 and 4.");
+
+    pragma(inline, true)
+    T opUnary(IStr op)() {
+        static if (N == 1) {
+            return T(
+                mixin(op, "x"),
+            );
+        } else static if (N == 2) {
+            return T(
+                mixin(op, "x"),
+                mixin(op, "y"),
+            );
+        } else static if (N == 3) {
+            return T(
+                mixin(op, "x"),
+                mixin(op, "y"),
+                mixin(op, "z"),
+            );
+        } else static if (N == 4) {
+            return T(
+                mixin(op, "x"),
+                mixin(op, "y"),
+                mixin(op, "z"),
+                mixin(op, "w"),
+            );
+        }
+    }
+
+    pragma(inline, true)
+    T opBinary(IStr op)(T rhs) {
+        static if (N == 1) {
+            return T(
+                mixin("x", op, "rhs.x"),
+            );
+        } else static if (N == 2) {
+            return T(
+                mixin("x", op, "rhs.x"),
+                mixin("y", op, "rhs.y"),
+            );
+        } else static if (N == 3) {
+            return T(
+                mixin("x", op, "rhs.x"),
+                mixin("y", op, "rhs.y"),
+                mixin("z", op, "rhs.z"),
+            );
+        } else static if (N == 4) {
+            return T(
+                mixin("x", op, "rhs.x"),
+                mixin("y", op, "rhs.y"),
+                mixin("z", op, "rhs.z"),
+                mixin("w", op, "rhs.w"),
+            );
+        }
+    }
+
+    pragma(inline, true)
+    void opOpAssign(IStr op)(T rhs) {
+        static if (N == 1) {
+            mixin("x", op, "=rhs.x;");
+        } else static if (N == 2) {
+            mixin("x", op, "=rhs.x;");
+            mixin("y", op, "=rhs.y;");
+        } else static if (N == 3) {
+            mixin("x", op, "=rhs.x;");
+            mixin("y", op, "=rhs.y;");
+            mixin("z", op, "=rhs.z;");
+        } else static if (N == 4) {
+            mixin("x", op, "=rhs.x;");
+            mixin("y", op, "=rhs.y;");
+            mixin("z", op, "=rhs.z;");
+            mixin("w", op, "=rhs.w;");
+        }
+    }
+}
+
+mixin template addRgbaOps(T, Sz N) {
+    static assert(N >= 1 && N <= 4, "Color `" ~ T.stringof ~ "`  must have a dimension between 1 and 4.");
+
+    pragma(inline, true)
+    T opUnary(IStr op)() {
+        static if (N == 1) {
+            return T(
+                mixin(op, "r"),
+            );
+        } else static if (N == 2) {
+            return T(
+                mixin(op, "r"),
+                mixin(op, "g"),
+            );
+        } else static if (N == 3) {
+            return T(
+                mixin(op, "r"),
+                mixin(op, "g"),
+                mixin(op, "b"),
+            );
+        } else static if (N == 4) {
+            return T(
+                mixin(op, "r"),
+                mixin(op, "g"),
+                mixin(op, "b"),
+                mixin(op, "a"),
+            );
+        }
+    }
+
+    pragma(inline, true)
+    T opBinary(IStr op)(T rhs) {
+        static if (N == 1) {
+            return T(
+                mixin("r", op, "rhs.r"),
+            );
+        } else static if (N == 2) {
+            return T(
+                mixin("r", op, "rhs.r"),
+                mixin("g", op, "rhs.g"),
+            );
+        } else static if (N == 3) {
+            return T(
+                mixin("r", op, "rhs.r"),
+                mixin("g", op, "rhs.g"),
+                mixin("b", op, "rhs.b"),
+            );
+        } else static if (N == 4) {
+            return T(
+                mixin("r", op, "rhs.r"),
+                mixin("g", op, "rhs.g"),
+                mixin("b", op, "rhs.b"),
+                mixin("a", op, "rhs.a"),
+            );
+        }
+    }
+
+    pragma(inline, true)
+    void opOpAssign(IStr op)(T rhs) {
+        static if (N == 1) {
+            mixin("r", op, "=rhs.r;");
+        } else static if (N == 2) {
+            mixin("r", op, "=rhs.r;");
+            mixin("g", op, "=rhs.g;");
+        } else static if (N == 3) {
+            mixin("r", op, "=rhs.r;");
+            mixin("g", op, "=rhs.g;");
+            mixin("b", op, "=rhs.b;");
+        } else static if (N == 4) {
+            mixin("r", op, "=rhs.r;");
+            mixin("g", op, "=rhs.g;");
+            mixin("b", op, "=rhs.b;");
+            mixin("a", op, "=rhs.a;");
+        }
+    }
+}
+
 // Function test.
 unittest {
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);

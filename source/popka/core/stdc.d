@@ -19,8 +19,13 @@ version (WebAssembly) {
 // math.h
 
 float sqrtf(float x);
+float sqrt(double x);
+
 float sinf(float x);
+float sin(double x);
+
 float cosf(float x);
+float cos(double x);
 
 // stdlib.h
 

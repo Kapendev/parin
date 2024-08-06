@@ -5,6 +5,7 @@
 module popka.core.colors;
 
 import popka.core.ascii;
+import popka.core.traits;
 import popka.core.types;
 
 @safe @nogc nothrow:
@@ -33,6 +34,7 @@ struct Color {
     ubyte b;
     ubyte a;
 
+    enum length = 4;
     enum zero = Color(0, 0, 0, 0);
     enum one = Color(1, 1, 1, 1);
 
@@ -50,6 +52,8 @@ struct Color {
     this(ubyte r) {
         this(r, r, r, 255);
     }
+
+    mixin addRgbaOps!(Color, length);
 
     Color alpha(ubyte a) {
         return Color(r, g, b, a);

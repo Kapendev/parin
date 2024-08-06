@@ -2,28 +2,132 @@
 // SPDX-License-Identifier: MIT
 
 /// The `math` module provides mathematical functions and types.
-
 module popka.core.math;
 
 import popka.core.ascii;
 import popka.core.stdc;
+import popka.core.traits;
 import popka.core.types;
 
 @safe @nogc nothrow:
+
+// TODO: It's not important, but remove some functions from the types and make them simple functions.
 
 enum pi      = 3.1415f;
 enum epsilon = 0.0001f;
 
 enum Hook : ubyte {
-    topLeft, top, topRight,
-    left, center, right,
-    bottomLeft, bottom, bottomRight,
+    topLeft,
+    top,
+    topRight,
+    left,
+    center,
+    right,
+    bottomLeft,
+    bottom,
+    bottomRight,
+}
+
+struct IVec2 {
+    int x;
+    int y;
+
+    @safe @nogc nothrow:
+
+    enum length = 2;
+    enum zero = IVec2(0, 0);
+    enum one = IVec2(1, 1);
+
+    pragma(inline, true)
+    this(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    pragma(inline, true)
+    this(int x) {
+        this(x, x);
+    }
+
+    mixin addXyzwOps!(IVec2, length);
+
+    IStr toStr() {
+        return "({} {})".format(x, y);
+    }
+}
+
+struct IVec3 {
+    int x;
+    int y;
+    int z;
+
+    enum length = 3;
+    enum zero = IVec3(0, 0, 0);
+    enum one = IVec3(1, 1, 1);
+
+    @safe @nogc nothrow:
+
+    pragma(inline, true)
+    this(int x, int y, int z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    pragma(inline, true)
+    this(int x) {
+        this(x, x, x);
+    }
+
+    pragma(inline, true)
+    this(IVec2 xy, int z) {
+        this(xy.x, xy.y, z);
+    }
+
+    mixin addXyzwOps!(IVec3, length);
+
+    IStr toStr() {
+        return "({} {})".format(x, y);
+    }
+}
+
+struct IVec4 {
+    int x;
+    int y;
+    int z;
+    int w;
+
+    enum length = 4;
+    enum zero = IVec4(0, 0, 0, 0);
+    enum one = IVec4(1, 1, 1, 1);
+
+    @safe @nogc nothrow:
+
+    pragma(inline, true)
+    this(int x, int y, int z, int w) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
+    }
+
+    pragma(inline, true)
+    this(int x) {
+        this(x, x, x, x);
+    }
+
+    mixin addXyzwOps!(IVec4, length);
+
+    IStr toStr() {
+        return "({} {})".format(x, y);
+    }
 }
 
 struct Vec2 {
     float x = 0.0f;
     float y = 0.0f;
 
+    enum length = 2;
     enum zero = Vec2(0.0f, 0.0f);
     enum one = Vec2(1.0f, 1.0f);
 
@@ -40,86 +144,18 @@ struct Vec2 {
         this(x, x);
     }
 
-    pragma(inline, true)
-    this(float[2] xy) {
-        this(xy[0], xy[1]);
-    }
+    mixin addXyzwOps!(Vec2, length);
 
-    pragma(inline, true)
-    this(IVec2 xy) {
-        this(xy.x, xy.y);
-    }
-
-    pragma(inline, true)
-    Vec2 opUnary(IStr op)() {
-        return Vec2(
-            mixin(op, "x"),
-            mixin(op, "y"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec2 opBinary(IStr op)(Vec2 rhs) {
-        return Vec2(
-            mixin("x", op, "rhs.x"),
-            mixin("y", op, "rhs.y"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec2 opBinary(IStr op)(float rhs) {
-        return Vec2(
-            mixin("x", op, "rhs"),
-            mixin("y", op, "rhs"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec2 opBinaryRight(IStr op)(float lhs) {
-        return Vec2(
-            mixin("lhs", op, "x"),
-            mixin("lhs", op, "y"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(IStr op)(Vec2 rhs) {
-        mixin("x", op, "=rhs.x;");
-        mixin("y", op, "=rhs.y;");
-    }
-
-    pragma(inline, true)
-    void opOpAssign(IStr op)(float rhs) {
-        mixin("x", op, "=rhs;");
-        mixin("y", op, "=rhs;");
-    }
-
-    Vec2 abs() {
-        return Vec2(x.abs, y.abs);
-    }
-
-    Vec2 floor() {
-        return Vec2(x.floor, y.floor);
-    }
-
-    Vec2 ceil() {
-        return Vec2(x.ceil, y.ceil);
-    }
-
-    Vec2 round() {
-        return Vec2(x.round, y.round);
-    }
-
-    float length() {
+    float magnitude() {
         return sqrt(x * x + y * y);
     }
 
     Vec2 normalize() {
-        float l = length;
-        if (l == 0.0f) {
+        float m = magnitude;
+        if (m == 0.0f) {
             return Vec2();
         } else {
-            return this / Vec2(l);
+            return this / Vec2(m);
         }
     }
 
@@ -128,18 +164,18 @@ struct Vec2 {
     }
 
     float distanceTo(Vec2 to) {
-        return (to - this).length;
+        return (to - this).magnitude;
     }
 
     Vec2 moveTo(Vec2 to, Vec2 delta) {
         Vec2 result = void;
         Vec2 offset = this.directionTo(to) * delta;
-        if (.abs(to.x - x) > .abs(offset.x)) {
+        if (abs(to.x - x) > abs(offset.x)) {
             result.x = x + offset.x;
         } else {
             result.x = to.x;
         }
-        if (.abs(to.y - y) > .abs(offset.y)) {
+        if (abs(to.y - y) > abs(offset.y)) {
             result.y = y + offset.y;
         } else {
             result.y = to.y;
@@ -164,6 +200,7 @@ struct Vec3 {
     float y = 0.0f;
     float z = 0.0f;
 
+    enum length = 3;
     enum zero = Vec3(0.0f, 0.0f, 0.0f);
     enum one = Vec3(1.0f, 1.0f, 1.0f);
 
@@ -182,85 +219,11 @@ struct Vec3 {
     }
 
     pragma(inline, true)
-    this(float[3] xyz) {
-        this(xyz[0], xyz[1], xyz[2]);
-    }
-
-    pragma(inline, true)
     this(Vec2 xy, float z) {
         this(xy.x, xy.y, z);
     }
 
-    pragma(inline, true)
-    this(IVec3 xyz) {
-        this(xyz.x, xyz.y, xyz.z);
-    }
-
-    pragma(inline, true)
-    Vec3 opUnary(IStr op)() {
-        return Vec3(
-            mixin(op, "x"),
-            mixin(op, "y"),
-            mixin(op, "z"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec3 opBinary(IStr op)(Vec3 rhs) {
-        return Vec3(
-            mixin("x", op, "rhs.x"),
-            mixin("y", op, "rhs.y"),
-            mixin("z", op, "rhs.z"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec3 opBinary(IStr op)(float rhs) {
-        return Vec3(
-            mixin("x", op, "rhs"),
-            mixin("y", op, "rhs"),
-            mixin("z", op, "rhs"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec3 opBinaryRight(IStr op)(float lhs) {
-        return Vec3(
-            mixin("lhs", op, "x"),
-            mixin("lhs", op, "y"),
-            mixin("lhs", op, "z"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(IStr op)(Vec3 rhs) {
-        mixin("x", op, "=rhs.x;");
-        mixin("y", op, "=rhs.y;");
-        mixin("z", op, "=rhs.z;");
-    }
-
-    pragma(inline, true)
-    void opOpAssign(IStr op)(float rhs) {
-        mixin("x", op, "=rhs;");
-        mixin("y", op, "=rhs;");
-        mixin("z", op, "=rhs;");
-    }
-
-    Vec3 abs() {
-        return Vec3(x.abs, y.abs, z.abs);
-    }
-
-    Vec3 floor() {
-        return Vec3(x.floor, y.floor, z.floor);
-    }
-
-    Vec3 ceil() {
-        return Vec3(x.ceil, y.ceil, z.ceil);
-    }
-
-    Vec3 round() {
-        return Vec3(x.round, y.round, z.round);
-    }
+    mixin addXyzwOps!(Vec3, length);
 
     IStr toStr() {
         return "({} {} {})".format(x, y, z);
@@ -273,6 +236,7 @@ struct Vec4 {
     float z = 0.0f;
     float w = 0.0f;
 
+    enum length = 4;
     enum zero = Vec4(0.0f, 0.0f, 0.0f, 0.0f);
     enum one = Vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -291,87 +255,7 @@ struct Vec4 {
         this(x, x, x, x);
     }
 
-    pragma(inline, true)
-    this(float[4] xyzw) {
-        this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
-    }
-
-    pragma(inline, true)
-    this(IVec4 xyzw) {
-        this(xyzw.x, xyzw.y, xyzw.z, xyzw.w);
-    }
-
-    pragma(inline, true)
-    Vec4 opUnary(IStr op)() {
-        return Vec4(
-            mixin(op, "x"),
-            mixin(op, "y"),
-            mixin(op, "z"),
-            mixin(op, "w"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec4 opBinary(IStr op)(Vec4 rhs) {
-        return Vec4(
-            mixin("x", op, "rhs.x"),
-            mixin("y", op, "rhs.y"),
-            mixin("z", op, "rhs.z"),
-            mixin("w", op, "rhs.w"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec4 opBinary(IStr op)(float rhs) {
-        return Vec4(
-            mixin("x", op, "rhs"),
-            mixin("y", op, "rhs"),
-            mixin("z", op, "rhs"),
-            mixin("w", op, "rhs"),
-        );
-    }
-
-    pragma(inline, true)
-    Vec4 opBinaryRight(IStr op)(float lhs) {
-        return Vec4(
-            mixin("lhs", op, "x"),
-            mixin("lhs", op, "y"),
-            mixin("lhs", op, "z"),
-            mixin("lhs", op, "w"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(IStr op)(Vec4 rhs) {
-        mixin("x", op, "=rhs.x;");
-        mixin("y", op, "=rhs.y;");
-        mixin("z", op, "=rhs.z;");
-        mixin("w", op, "=rhs.w;");
-    }
-
-    pragma(inline, true)
-    void opOpAssign(IStr op)(float rhs) {
-        mixin("x", op, "=rhs;");
-        mixin("y", op, "=rhs;");
-        mixin("z", op, "=rhs;");
-        mixin("w", op, "=rhs;");
-    }
-
-    Vec4 abs() {
-        return Vec4(x.abs, y.abs, z.abs, w.abs);
-    }
-
-    Vec4 floor() {
-        return Vec4(x.floor, y.floor, z.floor, w.floor);
-    }
-
-    Vec4 ceil() {
-        return Vec4(x.ceil, y.ceil, z.ceil, w.ceil);
-    }
-
-    Vec4 round() {
-        return Vec4(x.round, y.round, z.round, w.round);
-    }
+    mixin addXyzwOps!(Vec4, length);
 
     IStr toStr() {
         return "({} {} {} {})".format(x, y, z, w);
@@ -427,27 +311,6 @@ struct Rect {
             position.y = position.y + size.y;
             size.y = -size.y;
         }
-    }
-
-    Rect floor() {
-        Rect result = void;
-        result.position = position.floor;
-        result.size = size.floor;
-        return result;
-    }
-
-    Rect ceil() {
-        Rect result = void;
-        result.position = position.ceil;
-        result.size = size.ceil;
-        return result;
-    }
-
-    Rect round() {
-        Rect result = void;
-        result.position = position.round;
-        result.size = size.round;
-        return result;
     }
 
     Vec2 origin(Hook hook) {
@@ -762,122 +625,6 @@ struct Line {
     }
 }
 
-struct IVec2 {
-    int x;
-    int y;
-
-    enum zero = IVec2(0, 0);
-    enum one = IVec2(1, 1);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(int x, int y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    pragma(inline, true)
-    this(int x) {
-        this(x, x);
-    }
-
-    pragma(inline, true)
-    this(int[2] xy) {
-        this(xy[0], xy[1]);
-    }
-
-    pragma(inline, true)
-    this(Vec2 xy) {
-        this(cast(int) xy.x, cast(int) xy.y);
-    }
-
-    IStr toStr() {
-        return "({} {})".format(x, y);
-    }
-}
-
-struct IVec3 {
-    int x;
-    int y;
-    int z;
-
-    enum zero = IVec3(0, 0, 0);
-    enum one = IVec3(1, 1, 1);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(int x, int y, int z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-
-    pragma(inline, true)
-    this(int x) {
-        this(x, x, x);
-    }
-
-    pragma(inline, true)
-    this(int[3] xyz) {
-        this(xyz[0], xyz[1], xyz[2]);
-    }
-
-    pragma(inline, true)
-    this(IVec2 xy, int z) {
-        this(xy.x, xy.y, z);
-    }
-
-    pragma(inline, true)
-    this(Vec3 xyz) {
-        this(cast(int) xyz.x, cast(int) xyz.y, cast(int) xyz.z);
-    }
-
-    IStr toStr() {
-        return "({} {})".format(x, y);
-    }
-}
-
-struct IVec4 {
-    int x;
-    int y;
-    int z;
-    int w;
-
-    enum zero = IVec4(0, 0, 0, 0);
-    enum one = IVec4(1, 1, 1, 1);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(int x, int y, int z, int w) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.w = w;
-    }
-
-    pragma(inline, true)
-    this(int x) {
-        this(x, x, x, x);
-    }
-
-    pragma(inline, true)
-    this(int[4] xyzw) {
-        this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
-    }
-
-    pragma(inline, true)
-    this(Vec4 xyzw) {
-        this(cast(int) xyzw.x, cast(int) xyzw.y, cast(int) xyzw.z, cast(int) xyzw.w);
-    }
-
-    IStr toStr() {
-        return "({} {})".format(x, y);
-    }
-}
-
 T min(T)(T a, T b) {
     return a < b ? a : b;
 }
@@ -894,6 +641,174 @@ T abs(T)(T x) {
     return x < 0 ? -x : x;
 }
 
+IVec2 abs(IVec2 vec) {
+    return IVec2(vec.x.abs, vec.y.abs);
+}
+
+IVec3 abs(IVec3 vec) {
+    return IVec3(vec.x.abs, vec.y.abs, vec.z.abs);
+}
+
+IVec4 abs(IVec4 vec) {
+    return IVec4(vec.x.abs, vec.y.abs, vec.z.abs, vec.w.abs);
+}
+
+Vec2 abs(Vec2 vec) {
+    return Vec2(vec.x.abs, vec.y.abs);
+}
+
+Vec3 abs(Vec3 vec) {
+    return Vec3(vec.x.abs, vec.y.abs, vec.z.abs);
+}
+
+Vec4 abs(Vec4 vec) {
+    return Vec4(vec.x.abs, vec.y.abs, vec.z.abs, vec.w.abs);
+}
+
+Rect abs(Rect rect) {
+    return Rect(rect.position.abs, rect.size.abs);
+}
+
+float floor(float x) {
+    float xx = cast(float) cast(int) x;
+    return (x <= 0.0f && xx != x) ? xx - 1.0f : xx;
+}
+
+Vec2 floor(Vec2 vec) {
+    return Vec2(vec.x.floor, vec.y.floor);
+}
+
+Vec3 floor(Vec3 vec) {
+    return Vec3(vec.x.floor, vec.y.floor, vec.z.floor);
+}
+
+Vec4 floor(Vec4 vec) {
+    return Vec4(vec.x.floor, vec.y.floor, vec.z.floor, vec.w.floor);
+}
+
+Rect floor(Rect rect) {
+    return Rect(rect.position.floor, rect.size.floor);
+}
+
+float ceil(float x) {
+    float xx = cast(float) cast(int) x;
+    return (x <= 0.0f || xx == x) ? xx : xx + 1.0f;
+}
+
+Vec2 ceil(Vec2 vec) {
+    return Vec2(vec.x.ceil, vec.y.ceil);
+}
+
+Vec3 ceil(Vec3 vec) {
+    return Vec3(vec.x.ceil, vec.y.ceil, vec.z.ceil);
+}
+
+Vec4 ceil(Vec4 vec) {
+    return Vec4(vec.x.ceil, vec.y.ceil, vec.z.ceil, vec.w.ceil);
+}
+
+Rect ceil(Rect rect) {
+    return Rect(rect.position.ceil, rect.size.ceil);
+}
+
+float round(float x) {
+    return x <= 0.0f ? cast(float) cast(int) (x - 0.5f) : cast(float) cast(int) (x + 0.5f);
+}
+
+Vec2 round(Vec2 vec) {
+    return Vec2(vec.x.round, vec.y.round);
+}
+
+Vec3 round(Vec3 vec) {
+    return Vec3(vec.x.round, vec.y.round, vec.z.round);
+}
+
+Vec4 round(Vec4 vec) {
+    return Vec4(vec.x.round, vec.y.round, vec.z.round, vec.w.round);
+}
+
+Rect round(Rect rect) {
+    return Rect(rect.position.round, rect.size.round);
+}
+
+@trusted
+float sqrt(float x) {
+    return sqrtf(x);
+}
+
+@trusted
+float sqrt(double x) {
+    return .sqrt(x);
+}
+
+Vec2 sqrt(Vec2 vec) {
+    return Vec2(vec.x.sqrt, vec.y.sqrt);
+}
+
+Vec3 sqrt(Vec3 vec) {
+    return Vec3(vec.x.sqrt, vec.y.sqrt, vec.z.sqrt);
+}
+
+Vec4 sqrt(Vec4 vec) {
+    return Vec4(vec.x.sqrt, vec.y.sqrt, vec.z.sqrt, vec.w.sqrt);
+}
+
+Rect sqrt(Rect rect) {
+    return Rect(rect.position.sqrt, rect.size.sqrt);
+}
+
+@trusted
+float sin(float x) {
+    return sinf(x);
+}
+
+@trusted
+float sin(double x) {
+    return .sin(x);
+}
+
+Vec2 sin(Vec2 vec) {
+    return Vec2(vec.x.sin, vec.y.sin);
+}
+
+Vec3 sin(Vec3 vec) {
+    return Vec3(vec.x.sin, vec.y.sin, vec.z.sin);
+}
+
+Vec4 sin(Vec4 vec) {
+    return Vec4(vec.x.sin, vec.y.sin, vec.z.sin, vec.w.sin);
+}
+
+Rect sin(Rect rect) {
+    return Rect(rect.position.sin, rect.size.sin);
+}
+
+@trusted
+float cos(float x) {
+    return cosf(x);
+}
+
+@trusted
+float cos(double x) {
+    return .cos(x);
+}
+
+Vec2 cos(Vec2 vec) {
+    return Vec2(vec.x.cos, vec.y.cos);
+}
+
+Vec3 cos(Vec3 vec) {
+    return Vec3(vec.x.cos, vec.y.cos, vec.z.cos);
+}
+
+Vec4 cos(Vec4 vec) {
+    return Vec4(vec.x.cos, vec.y.cos, vec.z.cos, vec.w.cos);
+}
+
+Rect cos(Rect rect) {
+    return Rect(rect.position.cos, rect.size.cos);
+}
+
 T clamp(T)(T x, T a, T b) {
     return x <= a ? a : x >= b ? b : x;
 }
@@ -907,35 +822,6 @@ T wrap(T)(T x, T a, T b) {
         result -= b - a;
     }
     return result;
-}
-
-float floor(float x) {
-    float xx = cast(float) cast(int) x;
-    return (x <= 0.0f && xx != x) ? xx - 1.0f : xx;
-}
-
-float ceil(float x) {
-    float xx = cast(float) cast(int) x;
-    return (x <= 0.0f || xx == x) ? xx : xx + 1.0f;
-}
-
-float round(float x) {
-    return x <= 0.0f ? cast(float) cast(int) (x - 0.5f) : cast(float) cast(int) (x + 0.5f);
-}
-
-@trusted
-float sqrt(float x) {
-    return sqrtf(x);
-}
-
-@trusted
-float sin(float x) {
-    return sinf(x);
-}
-
-@trusted
-float cos(float x) {
-    return cosf(x);
 }
 
 float lerp(float from, float to, float weight) {
@@ -980,26 +866,26 @@ bool equals(Vec4 a, Vec4 b) {
     return equals(a.x, b.x) && equals(a.y, b.y) && equals(a.z, b.z) && equals(a.w, b.w);
 }
 
-Vec2 toVec(IVec2 vec) {
-    return Vec2(vec);
-}
-
-Vec3 toVec(IVec3 vec) {
-    return Vec3(vec);
-}
-
-Vec4 toVec(IVec4 vec) {
-    return Vec4(vec);
-}
-
 IVec2 toIVec(Vec2 vec) {
-    return IVec2(vec);
+    return IVec2(cast(int) vec.x, cast(int) vec.y);
 }
 
 IVec3 toIVec(Vec3 vec) {
-    return IVec3(vec);
+    return IVec3(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z);
 }
 
 IVec4 toIVec(Vec4 vec) {
-    return IVec4(vec);
+    return IVec4(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z, cast(int) vec.w);
+}
+
+Vec2 toVec(IVec2 vec) {
+    return Vec2(vec.x, vec.y);
+}
+
+Vec3 toVec(IVec3 vec) {
+    return Vec3(vec.x, vec.y, vec.z);
+}
+
+Vec4 toVec(IVec4 vec) {
+    return Vec4(vec.x, vec.y, vec.z, vec.w);
 }
