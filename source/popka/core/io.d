@@ -5,11 +5,12 @@
 module popka.core.io;
 
 import popka.core.ascii;
-import popka.core.containers;
-import popka.core.faults;
 import popka.core.stdc;
 import popka.core.traits;
 import popka.core.types;
+
+public import popka.core.containers;
+public import popka.core.faults;
 
 @safe @nogc nothrow:
 

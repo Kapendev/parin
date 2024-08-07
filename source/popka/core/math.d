@@ -11,8 +11,6 @@ import popka.core.types;
 
 @safe @nogc nothrow:
 
-// TODO: It's not important, but remove some functions from the types and make them simple functions.
-
 enum pi      = 3.1415f;
 enum epsilon = 0.0001f;
 
@@ -151,7 +149,7 @@ struct Vec2 {
     }
 
     Vec2 normalize() {
-        float m = magnitude;
+        auto m = magnitude;
         if (m == 0.0f) {
             return Vec2();
         } else {
@@ -159,35 +157,12 @@ struct Vec2 {
         }
     }
 
-    Vec2 directionTo(Vec2 to) {
-        return (to - this).normalize();
-    }
-
     float distanceTo(Vec2 to) {
         return (to - this).magnitude;
     }
 
-    Vec2 moveTo(Vec2 to, Vec2 delta) {
-        Vec2 result = void;
-        Vec2 offset = this.directionTo(to) * delta;
-        if (abs(to.x - x) > abs(offset.x)) {
-            result.x = x + offset.x;
-        } else {
-            result.x = to.x;
-        }
-        if (abs(to.y - y) > abs(offset.y)) {
-            result.y = y + offset.y;
-        } else {
-            result.y = to.y;
-        }
-        return result;
-    }
-
-    Vec2 moveTo(Vec2 to, Vec2 delta, float slowdown) {
-        return Vec2(
-            .moveTo(x, to.x, delta.x, slowdown),
-            .moveTo(y, to.y, delta.y, slowdown),
-        );
+    Vec2 directionTo(Vec2 to) {
+        return (to - this).normalize();
     }
 
     IStr toStr() {
@@ -225,6 +200,27 @@ struct Vec3 {
 
     mixin addXyzwOps!(Vec3, length);
 
+    float magnitude() {
+        return sqrt(x * x + y * y + z * z);
+    }
+
+    Vec3 normalize() {
+        auto m = magnitude;
+        if (m == 0.0f) {
+            return Vec3();
+        } else {
+            return this / Vec3(m);
+        }
+    }
+
+    float distanceTo(Vec3 to) {
+        return (to - this).magnitude;
+    }
+
+    Vec3 directionTo(Vec3 to) {
+        return (to - this).normalize();
+    }
+
     IStr toStr() {
         return "({} {} {})".format(x, y, z);
     }
@@ -256,6 +252,27 @@ struct Vec4 {
     }
 
     mixin addXyzwOps!(Vec4, length);
+
+    float magnitude() {
+        return sqrt(x * x + y * y + z * z + w * w);
+    }
+
+    Vec4 normalize() {
+        auto m = magnitude;
+        if (m == 0.0f) {
+            return Vec4();
+        } else {
+            return this / Vec4(m);
+        }
+    }
+
+    float distanceTo(Vec4 to) {
+        return (to - this).magnitude;
+    }
+
+    Vec4 directionTo(Vec4 to) {
+        return (to - this).normalize();
+    }
 
     IStr toStr() {
         return "({} {} {} {})".format(x, y, z, w);
@@ -328,16 +345,14 @@ struct Rect {
     }
 
     Rect area(Hook hook) {
-        Rect result = void;
-        result.position = position - origin(hook);
-        result.size = size;
-        return result;
+        return Rect(
+            position - origin(hook),
+            size,
+        );
     }
 
     Vec2 point(Hook hook) {
-        Vec2 result = void;
-        result = position + origin(hook);
-        return result;
+        return position + origin(hook);
     }
 
     Vec2 topLeftPoint() {
@@ -431,29 +446,29 @@ struct Rect {
     }
 
     Rect intersection(Rect area) {
-        Rect result = void;
         if (!this.hasIntersection(area)) {
-            result = Rect();
+            return Rect();
         } else {
-            float maxY = max(position.x, area.position.x);
-            float maxX = max(position.y, area.position.y);
-            result.position.x = maxX;
-            result.position.y = maxY;
-            result.size.x = min(position.x + size.x, area.position.x + area.size.x) - maxX;
-            result.size.y = min(position.y + size.y, area.position.y + area.size.y) - maxY;
+            auto maxY = max(position.x, area.position.x);
+            auto maxX = max(position.y, area.position.y);
+            return Rect(
+                maxX,
+                maxY,
+                min(position.x + size.x, area.position.x + area.size.x) - maxX,
+                min(position.y + size.y, area.position.y + area.size.y) - maxY,
+            );
         }
-        return result;
     }
 
     Rect merger(Rect area) {
-        Rect result = void;
-        float minX = min(position.x, area.position.x);
-        float minY = min(position.y, area.position.y);
-        result.position.x = minX;
-        result.position.y = minY;
-        result.size.x = max(position.x + size.x, area.position.x + area.size.x) - minX;
-        result.size.y = max(position.y + size.y, area.position.y + area.size.y) - minY;
-        return result;
+        auto minX = min(position.x, area.position.x);
+        auto minY = min(position.y, area.position.y);
+        return Rect(
+            minX,
+            minY,
+            max(position.x + size.x, area.position.x + area.size.x) - minX,
+            max(position.y + size.y, area.position.y + area.size.y) - minY,
+        );
     }
 
     Rect addLeft(float amount) {
@@ -463,7 +478,7 @@ struct Rect {
     }
 
     Rect addRight(float amount) {
-        float w = size.x;
+        auto w = size.x;
         size.x += amount;
         return Rect(w, position.y, amount, size.y);
     }
@@ -475,13 +490,13 @@ struct Rect {
     }
 
     Rect addBottom(float amount) {
-        float h = size.y;
+        auto h = size.y;
         size.y += amount;
         return Rect(position.x, h, size.x, amount);
     }
 
     Rect subLeft(float amount) {
-        float x = position.x;
+        auto x = position.x;
         position.x = min(position.x + amount, position.x + size.x);
         size.x = max(size.x - amount, 0.0f);
         return Rect(x, position.y, amount, size.y);
@@ -493,7 +508,7 @@ struct Rect {
     }
 
     Rect subTop(float amount) {
-        float y = position.y;
+        auto y = position.y;
         position.y = min(position.y + amount, position.y + size.y);
         size.y = max(size.y - amount, 0.0f);
         return Rect(position.x, y, size.x, amount);
@@ -670,8 +685,13 @@ Rect abs(Rect rect) {
 }
 
 float floor(float x) {
-    float xx = cast(float) cast(int) x;
+    auto xx = cast(float) cast(int) x;
     return (x <= 0.0f && xx != x) ? xx - 1.0f : xx;
+}
+
+double floor(double x) {
+    auto xx = cast(double) cast(long) x;
+    return (x <= 0.0 && xx != x) ? xx - 1.0 : xx;
 }
 
 Vec2 floor(Vec2 vec) {
@@ -691,8 +711,13 @@ Rect floor(Rect rect) {
 }
 
 float ceil(float x) {
-    float xx = cast(float) cast(int) x;
+    auto xx = cast(float) cast(int) x;
     return (x <= 0.0f || xx == x) ? xx : xx + 1.0f;
+}
+
+double ceil(double x) {
+    auto xx = cast(double) cast(long) x;
+    return (x <= 0.0 || xx == x) ? xx : xx + 1.0;
 }
 
 Vec2 ceil(Vec2 vec) {
@@ -713,6 +738,10 @@ Rect ceil(Rect rect) {
 
 float round(float x) {
     return x <= 0.0f ? cast(float) cast(int) (x - 0.5f) : cast(float) cast(int) (x + 0.5f);
+}
+
+double round(double x) {
+    return x <= 0.0 ? cast(double) cast(long) (x - 0.5) : cast(double) cast(long) (x + 0.5);
 }
 
 Vec2 round(Vec2 vec) {
@@ -737,7 +766,7 @@ float sqrt(float x) {
 }
 
 @trusted
-float sqrt(double x) {
+double sqrt(double x) {
     return .sqrt(x);
 }
 
@@ -763,7 +792,7 @@ float sin(float x) {
 }
 
 @trusted
-float sin(double x) {
+double sin(double x) {
     return .sin(x);
 }
 
@@ -789,7 +818,7 @@ float cos(float x) {
 }
 
 @trusted
-float cos(double x) {
+double cos(double x) {
     return .cos(x);
 }
 
@@ -828,14 +857,28 @@ float lerp(float from, float to, float weight) {
     return from + (to - from) * weight;
 }
 
+double lerp(double from, double to, double weight) {
+    return from + (to - from) * weight;
+}
+
 float smoothstep(float from, float to, float weight) {
-    float v = weight * weight * (3.0f - 2.0f * weight);
+    auto v = weight * weight * (3.0f - 2.0f * weight);
     return (to * v) + (from * (1.0f - v));
 }
 
+double smoothstep(double from, double to, double weight) {
+    auto v = weight * weight * (3.0 - 2.0 * weight);
+    return (to * v) + (from * (1.0 - v));
+}
+
 float smootherstep(float from, float to, float weight) {
-    float v = weight * weight * weight * (weight * (weight * 6.0f - 15.0f) + 10.0f);
+    auto v = weight * weight * weight * (weight * (weight * 6.0f - 15.0f) + 10.0f);
     return (to * v) + (from * (1.0f - v));
+}
+
+double smootherstep(double from, double to, double weight) {
+    auto v = weight * weight * weight * (weight * (weight * 6.0 - 15.0) + 10.0);
+    return (to * v) + (from * (1.0 - v));
 }
 
 float moveTo(float from, float to, float delta) {
@@ -843,14 +886,117 @@ float moveTo(float from, float to, float delta) {
     else return to;
 }
 
-float moveTo(float from, float to, float delta, float slowdown) {
-    float target = ((from * (slowdown - 1.0f)) + to) / slowdown;
-    float offset = target - from;
+double moveTo(double from, double to, double delta) {
+    if (abs(to - from) > abs(delta)) return from + sign(to - from) * delta;
+    else return to;
+}
+
+Vec2 moveTo(Vec2 from, Vec2 to, Vec2 delta) {
+    Vec2 result = void;
+    Vec2 offset = from.directionTo(to) * delta;
+    if (abs(to.x - from.x) > abs(offset.x)) {
+        result.x = from.x + offset.x;
+    } else {
+        result.x = to.x;
+    }
+    if (abs(to.y - from.y) > abs(offset.y)) {
+        result.y = from.y + offset.y;
+    } else {
+        result.y = to.y;
+    }
+    return result;
+}
+
+Vec3 moveTo(Vec3 from, Vec3 to, Vec3 delta) {
+    Vec3 result = void;
+    Vec3 offset = from.directionTo(to) * delta;
+    if (abs(to.x - from.x) > abs(offset.x)) {
+        result.x = from.x + offset.x;
+    } else {
+        result.x = to.x;
+    }
+    if (abs(to.y - from.y) > abs(offset.y)) {
+        result.y = from.y + offset.y;
+    } else {
+        result.y = to.y;
+    }
+    if (abs(to.z - from.z) > abs(offset.z)) {
+        result.z = from.z + offset.z;
+    } else {
+        result.z = to.z;
+    }
+    return result;
+}
+
+Vec4 moveTo(Vec4 from, Vec4 to, Vec4 delta) {
+    Vec4 result = void;
+    Vec4 offset = from.directionTo(to) * delta;
+    if (abs(to.x - from.x) > abs(offset.x)) {
+        result.x = from.x + offset.x;
+    } else {
+        result.x = to.x;
+    }
+    if (abs(to.y - from.y) > abs(offset.y)) {
+        result.y = from.y + offset.y;
+    } else {
+        result.y = to.y;
+    }
+    if (abs(to.z - from.z) > abs(offset.z)) {
+        result.z = from.z + offset.z;
+    } else {
+        result.z = to.z;
+    }
+    if (abs(to.w - from.w) > abs(offset.w)) {
+        result.w = from.w + offset.w;
+    } else {
+        result.w = to.w;
+    }
+    return result;
+}
+
+float moveToWithSlowdown(float from, float to, float delta, float slowdown) {
+    auto target = ((from * (slowdown - 1.0f)) + to) / slowdown;
+    auto offset = target - from;
     if (abs(offset) > abs(delta)) return from + offset * delta;
     else return to;
 }
 
+double moveToWithSlowdown(double from, double to, double delta, double slowdown) {
+    auto target = ((from * (slowdown - 1.0)) + to) / slowdown;
+    auto offset = target - from;
+    if (abs(offset) > abs(delta)) return from + offset * delta;
+    else return to;
+}
+
+Vec2 moveToWithSlowdown(Vec2 from, Vec2 to, Vec2 delta, float slowdown) {
+    return Vec2(
+        moveToWithSlowdown(from.x, to.x, delta.x, slowdown),
+        moveToWithSlowdown(from.y, to.y, delta.y, slowdown),
+    );
+}
+
+Vec3 moveToWithSlowdown(Vec3 from, Vec3 to, Vec3 delta, float slowdown) {
+    return Vec3(
+        moveToWithSlowdown(from.x, to.x, delta.x, slowdown),
+        moveToWithSlowdown(from.y, to.y, delta.y, slowdown),
+        moveToWithSlowdown(from.z, to.z, delta.z, slowdown),
+    );
+}
+
+Vec4 moveToWithSlowdown(Vec4 from, Vec4 to, Vec4 delta, float slowdown) {
+    return Vec4(
+        moveToWithSlowdown(from.x, to.x, delta.x, slowdown),
+        moveToWithSlowdown(from.y, to.y, delta.y, slowdown),
+        moveToWithSlowdown(from.z, to.z, delta.z, slowdown),
+        moveToWithSlowdown(from.w, to.w, delta.w, slowdown),
+    );
+}
+
 bool equals(float a, float b) {
+    return abs(a - b) < epsilon;
+}
+
+bool equals(double a, double b) {
     return abs(a - b) < epsilon;
 }
 

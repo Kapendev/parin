@@ -5,9 +5,10 @@
 module popka.core.ascii;
 
 import popka.core.containers;
-import popka.core.faults;
 import popka.core.traits;
 import popka.core.types;
+
+public import popka.core.faults;
 
 @safe @nogc nothrow:
 
@@ -565,7 +566,7 @@ Result!ICStr toCStr(IStr str) {
     }
 }
 
-// TODO: Check if the args count is the same with the `{}` count.
+// TODO: Check if the args count is the same with the `{}` count and also add extra stuff.
 IStr format(A...)(IStr formatStr, A args) {
     static char[1024][8] buffers = void;
     static byte bufferIndex = 0;
@@ -604,7 +605,7 @@ IStr format(A...)(IStr formatStr, A args) {
     return result;
 }
 
-// TODO: Check if the args count is the same with the `{}` count.
+// TODO: Check if the args count is the same with the `{}` count and also add extra stuff.
 void formatl(A...)(ref LStr text, IStr formatStr, A args) {
     text.clear();
 

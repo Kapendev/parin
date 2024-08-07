@@ -571,7 +571,7 @@ struct Camera {
         if (slowdown <= 0.0f) {
             position = target;
         } else {
-            position = position.moveTo(target, Vec2(deltaTime), slowdown);
+            position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
         }
     }
 
@@ -579,7 +579,7 @@ struct Camera {
         if (slowdown <= 0.0f) {
             scale = target;
         } else {
-            scale = scale.moveTo(target, deltaTime, slowdown);
+            scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
         }
     }
 }
