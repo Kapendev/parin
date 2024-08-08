@@ -6,6 +6,9 @@
 	"description": "A lightweight and beginner-friendly 2D game engine for the D programming language.",
 	"license": "MIT",
 	"name": "popka",
+	"dependencies": {
+		"joka": "*"
+	},
 	"configurations": [
 		{
 			"name": "pdefault",

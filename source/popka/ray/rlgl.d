@@ -104,7 +104,7 @@
 *
 **********************************************************************************************/
 
-module popka.vendor.ray.rlgl;
+module popka.ray.rlgl;
 
 @nogc nothrow extern(C):
 

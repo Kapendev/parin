@@ -25,57 +25,58 @@ enum webDir = buildPath(".", "web");
 
 
 enum defaultDUBContent = `{
-"name" : "game",
-"description" : "A game made with Popka.",
-"authors" : ["Name"],
-"copyright" : "Copyright © 2024, Name",
-"license" : "proprietary",
-"dependencies": {
-    "popka": "*"
-},
-"configurations": [
-    {
-        "name": "linux",
-        "targetType": "executable",
-        "platforms": ["linux"],
-        "dflags": ["-i"],
-        "lflags": ["-L.", "-rpath=$$ORIGIN"],
-        "libs": [
-            "raylib",
-            "GL",
-            "m",
-            "pthread",
-            "dl",
-            "rt",
-            "X11"
-        ]
+    "name" : "game",
+    "description" : "A game made with Popka.",
+    "authors" : ["Name"],
+    "copyright" : "Copyright © 2024, Name",
+    "license" : "proprietary",
+    "dependencies": {
+        "joka": "*",
+        "popka": "*"
     },
-    {
-        "name": "windows",
-        "targetType": "executable",
-        "platforms": ["windows"],
-        "dflags": ["-i"],
-        "libs": [
-            "raylib"
-        ]
-    },
-    {
-        "name": "osx",
-        "targetType": "executable",
-        "platforms": ["osx"],
-        "dflags": ["-i"],
-        "lflags": ["-L.", "-rpath", "@executable_path/"],
-        "libs": [
-            "raylib.500"
-        ]
-    },
-    {
-        "name": "web",
-        "targetType": "staticLibrary",
-        "targetName": "webgame",
-        "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release", "-i"]
-    }
-]
+    "configurations": [
+        {
+            "name": "linux",
+            "targetType": "executable",
+            "platforms": ["linux"],
+            "dflags": ["-i"],
+            "lflags": ["-L.", "-rpath=$$ORIGIN"],
+            "libs": [
+                "raylib",
+                "GL",
+                "m",
+                "pthread",
+                "dl",
+                "rt",
+                "X11"
+            ]
+        },
+        {
+            "name": "windows",
+            "targetType": "executable",
+            "platforms": ["windows"],
+            "dflags": ["-i"],
+            "libs": [
+                "raylib"
+            ]
+        },
+        {
+            "name": "osx",
+            "targetType": "executable",
+            "platforms": ["osx"],
+            "dflags": ["-i"],
+            "lflags": ["-L.", "-rpath", "@executable_path/"],
+            "libs": [
+                "raylib.500"
+            ]
+        },
+        {
+            "name": "web",
+            "targetType": "staticLibrary",
+            "targetName": "webgame",
+            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release", "-i"]
+        }
+    ]
 }
 `;
 

@@ -2,7 +2,8 @@
 
 ## NOW
 
-Cleaning done.
+It's time to clean popka...
+I do this because I am thinking of taking part in a game jam.
 
 ## IDEAS
 

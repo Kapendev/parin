@@ -3,16 +3,11 @@
 
 /// The engine module functions as a lightweight 2D game engine.
 
-module popka.game.engine;
+module popka.engine;
 
-import ray = popka.vendor.ray;
-import popka.core.ascii;
-import popka.core.colors;
-import popka.core.containers;
-import popka.core.faults;
-import popka.core.io;
-import popka.core.math;
-import popka.core.types;
+import ray = popka.ray;
+
+public import joka;
 
 @trusted @nogc nothrow:
 

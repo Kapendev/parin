@@ -3,5 +3,5 @@
 
 module popka;
 
-public import popka.core;
-public import popka.game;
+public import popka.dialogue;
+public import popka.engine;

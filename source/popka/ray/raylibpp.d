@@ -3,9 +3,9 @@
 
 /// The raylibpp module contains helper functions to reduce some raylib boilerplate.
 
-module popka.vendor.ray.raylibpp;
+module popka.ray.raylibpp;
 
-import popka.vendor.ray.raylib;
+import popka.ray.raylib;
 
 alias drawPixel                        = DrawPixel;
 alias drawPixel                        = DrawPixelV;

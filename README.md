@@ -70,12 +70,6 @@ For more info about exporting to web, read [this](#web-support).
 For an initial understanding, the [examples](examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
 You can also read the [TOUR.md](TOUR.md) file for a more in-depth overview of the engine's functionalities.
 
-## Project Layout
-
-* [core](source/popka/core): A standard library designed specifically for game development. 
-* [vendor](source/popka/vendor): A collection of third-party libraries.
-* [game](source/popka/game): A set of tools for creating 2D games.
-
 ## Attributes and BetterC Support
 
 This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) and aims for good compatibility with BetterC.
@@ -97,7 +91,7 @@ Additionally, it provides helper functions to reduce some boilerplate code.
 All the helper functions are inside the [raylibpp.d](source/popka/vendor/ray/raylibpp.d) file.
 
 ```d
-import popka.vendor.ray;
+import popka.ray;
 
 bool rayLoop() {
     BeginDrawing();

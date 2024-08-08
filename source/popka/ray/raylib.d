@@ -76,7 +76,7 @@
 *
 **********************************************************************************************/
 
-module popka.vendor.ray.raylib;
+module popka.ray.raylib;
 
 // import core.stdc.config;
 // import core.stdc.stdarg;
