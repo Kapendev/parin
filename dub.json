@@ -7,18 +7,8 @@
 	"license": "MIT",
 	"name": "popka",
 	"dependencies": {
-		"joka": "*"
+		"joka": "~main"
 	},
-	"configurations": [
-		{
-			"name": "pdefault",
-			"excludedSourceFiles": ["examples/*.d", "setup/source/*.d", "web/source/*.d"]
-		},
-		{
-			"name": "ptest",
-			"excludedSourceFiles": ["examples/*.d", "setup/source/*.d", "web/source/*.d", "source/popka/package.d", "source/popka/game/*.d", "source/popka/vendor/*.d"]
-		}
-	],
 	"subPackages" : [
 		"setup",
 		"web"

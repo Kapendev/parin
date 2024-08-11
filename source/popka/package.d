@@ -5,3 +5,5 @@ module popka;
 
 public import popka.dialogue;
 public import popka.engine;
+public import popka.types;
+public import popka.utils;

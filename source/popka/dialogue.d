@@ -3,9 +3,9 @@
 
 /// The dialogue module is a versatile dialogue system,
 /// enabling the creation of interactive conversations and branching narratives.
-
 module popka.dialogue;
 
+import joka;
 import popka.engine;
 
 @safe @nogc nothrow:

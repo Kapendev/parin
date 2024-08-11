@@ -31,7 +31,6 @@ enum defaultDUBContent = `{
     "copyright" : "Copyright © 2024, Name",
     "license" : "proprietary",
     "dependencies": {
-        "joka": "*",
         "popka": "*"
     },
     "configurations": [
