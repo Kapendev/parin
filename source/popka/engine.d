@@ -1,29 +1,42 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The engine module functions as a lightweight 2D game engine.
+// TODO: Needs docs!
+
+/// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
 
 import ray = popka.ray;
 
 public import joka;
 public import popka.types;
-public import popka.utils;
 
-@trusted @nogc nothrow:
+@safe @nogc nothrow:
 
-/// Returns a random int between 0 and int.max (inclusive).
-int randi() {
-    return ray.GetRandomValue(0, int.max);
+private
+ray.Camera2D _toRay(Camera camera) {
+    return ray.Camera2D(
+        Rect(resolution).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRay(),
+        camera.position.toRay(),
+        camera.rotation,
+        camera.scale,
+    );
 }
 
-/// Returns a random float between 0.0f and 1.0f (inclusive).
+/// Returns a random integer between 0 and float.max (inclusive).
+@trusted
+int randi() {
+    return ray.GetRandomValue(0, cast(int) float.max);
+}
+
+/// Returns a random floating point number between 0.0f and 1.0f (inclusive).
 float randf() {
-    return ray.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
+    return randi() / float.max;
 }
 
 /// Sets the seed for the random number generator to something specific.
-void randomize(uint seed) {
+@trusted
+void randomize(int seed) {
     ray.SetRandomSeed(seed);
 }
 
@@ -32,27 +45,88 @@ void randomize() {
     randomize(randi);
 }
 
-/// Converts a screen point to a world point based on the given camera.
-Vec2 toWorldPoint(Vec2 point, Camera camera) {
-    return toPopka(ray.GetScreenToWorld2D(toRay(point), toRay(camera)));
-}
-
 /// Converts a world point to a screen point based on the given camera.
-Vec2 toScreenPoint(Vec2 point, Camera camera) {
-    return toPopka(ray.GetWorldToScreen2D(toRay(point), toRay(camera)));
+@trusted
+Vec2 toScreenPosition(Vec2 point, Camera camera) {
+    return toPopka(ray.GetWorldToScreen2D(point.toRay(), camera._toRay()));
 }
 
-/// Returns the default raylib font. This font should not be freed.
-Font rayFont() {
-    auto result = toPopka(ray.GetFontDefault());
+/// Converts a screen point to a world point based on the given camera.
+@trusted
+Vec2 toWorldPosition(Vec2 point, Camera camera) {
+    return toPopka(ray.GetScreenToWorld2D(point.toRay(), camera._toRay()));
+}
+
+/// Returns the default font. This font should not be freed.
+@trusted
+Font dfltFont() {
+    auto result = ray.GetFontDefault().toPopka();
     result.runeSpacing = 1;
     result.lineSpacing = 14;
     return result;
 }
 
+IStr assetsPath() {
+    return engineState.assetsPath.items;
+}
+
+IStr toAssetsPath(IStr path) {
+    return pathConcat(assetsPath, path).pathFormat();
+}
+
+/// Loads a text file from the assets folder and returns its contents as a list.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+Result!LStr loadText(IStr path) {
+    return readText(path.toAssetsPath());
+}
+
+/// Loads a text file from the assets folder and returns its contents as a slice.
+/// The slice can be safely used until this function is called again.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+Result!IStr loadTempText(IStr path) {
+    auto fault = readTextIntoBuffer(path.toAssetsPath(), engineState.tempText);
+    return Result!IStr(engineState.tempText.items, fault);
+}
+
+Result!TileMap loadTileMap(IStr path) {
+    auto value = TileMap();
+    auto fault = value.parse(loadTempText(path).unwrapOr());
+    if (fault) {
+        value.free();
+    }
+    return Result!TileMap(value, fault);
+}
+
+/// Loads an image file from the assets folder.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+@trusted
+Result!Texture loadTexture(IStr path) {
+    auto value = ray.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
+    return Result!Texture(value, value.isEmpty.toFault());
+}
+
+@trusted
+Result!Viewport loadViewport(int width, int height) {
+    auto value = ray.LoadRenderTexture(width, height).toPopka();
+    return Result!Viewport(value, value.isEmpty.toFault());
+}
+
+@trusted
+Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
+    auto value = ray.LoadFontEx(path.toAssetsPath.toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
+    return Result!Font(value, value.isEmpty.toFault());
+}
+
+/// Saves a text file to the assets folder.
+/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+Fault saveText(IStr path, IStr text) {
+    return writeText(path.toAssetsPath(), text);
+}
+
 /// Opens the game window with the given size and title.
 /// This function does not work if the window is already open, because Popka only works with one window.
 /// Usually you should avoid calling this function manually.
+@trusted
 void openWindow(int width, int height, IStr title = "Popka") {
     if (ray.IsWindowReady) {
         return;
@@ -62,22 +136,23 @@ void openWindow(int width, int height, IStr title = "Popka") {
     ray.InitWindow(width, height, title.toCStr().unwrapOr());
     ray.InitAudioDevice();
     ray.SetExitKey(ray.KEY_NULL);
-    lockFPS(engineState.dfltFPS);
-    engineState.backgroundColor = engineState.dfltBackgroundColor;
-    engineState.lastWindowSize = Vec2(width, height);
+    lockFps(60);
+    engineState.backgroundColor = gray2;
+    engineState.fullscreenState.lastWindowSize = Vec2(width, height);
 }
 
 /// Updates the game window every frame with the specified loop function.
 /// This function will return when the loop function returns true.
+@trusted
 void updateWindow(alias loopFunc)() {
     static bool __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
-            ray.BeginTextureMode(engineState.viewport.data);
+            ray.BeginTextureMode(engineState.viewport.toRay());
         } else {
             ray.BeginDrawing();
         }
-        ray.ClearBackground(toRay(engineState.backgroundColor));
+        ray.ClearBackground(engineState.backgroundColor.toRay());
 
         // The main loop.
         auto result = loopFunc();
@@ -94,7 +169,7 @@ void updateWindow(alias loopFunc)() {
             ray.BeginDrawing();
             ray.ClearBackground(ray.Color(0, 0, 0, 255));
             ray.DrawTexturePro(
-                engineState.viewport.data.texture,
+                engineState.viewport.toRay().texture,
                 ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
                 ray.Rectangle(
                     ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
@@ -111,20 +186,20 @@ void updateWindow(alias loopFunc)() {
             ray.EndDrawing();
         }
         // The lockResolution and unlockResolution queue.
-        if (engineState.isLockResolutionQueued) {
-            engineState.isLockResolutionQueued = false;
+        if (engineState.viewport.isLockResolutionQueued) {
+            engineState.viewport.isLockResolutionQueued = false;
             // engineState.viewport.load(engineState.targetViewportSize); // TODO
-        } else if (engineState.isUnlockResolutionQueued) {
-            engineState.isUnlockResolutionQueued = false;
+        } else if (engineState.viewport.isUnlockResolutionQueued) {
+            engineState.viewport.isUnlockResolutionQueued = false;
             // engineState.viewport.free(); // TODO
         }
         // Fullscreen code to fix a bug on KDE.
-        if (engineState.isToggleFullscreenQueued) {
-            engineState.toggleFullscreenTimer += deltaTime;
-            if (engineState.toggleFullscreenTimer >= engineState.dfltFullscreenWaitTime) {
-                engineState.toggleFullscreenTimer = 0.0f;
+        if (engineState.fullscreenState.isToggleQueued) {
+            engineState.fullscreenState.toggleTimer += deltaTime;
+            if (engineState.fullscreenState.toggleTimer >= engineState.fullscreenState.toggleWaitTime) {
+                engineState.fullscreenState.toggleTimer = 0.0f;
                 auto screen = screenSize;
-                auto window = engineState.lastWindowSize;
+                auto window = engineState.fullscreenState.lastWindowSize;
                 if (ray.IsWindowFullscreen()) {
                     ray.ToggleFullscreen();
                     ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
@@ -132,7 +207,7 @@ void updateWindow(alias loopFunc)() {
                 } else {
                     ray.ToggleFullscreen();
                 }
-                engineState.isToggleFullscreenQueued = false;
+                engineState.fullscreenState.isToggleQueued = false;
             }
         }
         return result;
@@ -140,18 +215,18 @@ void updateWindow(alias loopFunc)() {
 
     engineState.flags.isUpdating = true;
     version(WebAssembly) {
-        static void __updateWindow2() {
+        static void __updateWindowWeb() {
             if (__updateWindow()) {
                 engineState.flags.isUpdating = false;
                 ray.emscripten_cancel_main_loop();
             }
         }
-        ray.emscripten_set_main_loop(&__updateWindow2, 0, 1);
+        ray.emscripten_set_main_loop(&__updateWindowWeb, 0, 1);
     } else {
         // NOTE: Maybe bad idea, but makes life of no-attribute people easier.
-        auto __updateWindowScaryEdition = cast(bool function() @trusted @nogc nothrow) &__updateWindow;
+        auto __updateWindowScary = cast(bool function() @trusted @nogc nothrow) &__updateWindow;
         while (true) {
-            if (ray.WindowShouldClose() || __updateWindowScaryEdition()) {
+            if (ray.WindowShouldClose() || __updateWindowScary()) {
                 engineState.flags.isUpdating = false;
                 break;
             }
@@ -161,19 +236,19 @@ void updateWindow(alias loopFunc)() {
 
 /// Closes the game window.
 /// Usually you should avoid calling this function manually.
+@trusted
 void closeWindow() {
     if (!ray.IsWindowReady) {
         return;
     }
     
-    engineState.assetsPath.free();
     engineState.tempText.free();
-    // engineState.viewport.free(); // TODO: free the viewport.
-    
+    engineState.assetsPath.free();
+    engineState.viewport.free();
+
     ray.CloseAudioDevice();
     ray.CloseWindow();
-    
-    engineState = EngineState.init;
+    engineState = EngineState();
 }
 
 /// Returns true if the FPS of the game is locked.
@@ -182,15 +257,17 @@ bool isFpsLocked() {
 }
 
 /// Locks the FPS of the game to a specific value.
-void lockFPS(uint target) {
-    ray.SetTargetFPS(target);
+@trusted
+void lockFps(int target) {
     engineState.flags.isFpsLocked = true;
+    ray.SetTargetFPS(target);
 }
 
 /// Unlocks the FPS of the game.
-void unlockFPS() {
-    ray.SetTargetFPS(0);
+@trusted
+void unlockFps() {
     engineState.flags.isFpsLocked = false;
+    ray.SetTargetFPS(0);
 }
 
 /// Returns true if the resolution of the game is locked.
@@ -199,28 +276,25 @@ bool isResolutionLocked() {
 }
 
 /// Locks the resolution of the game to a specific value.
-void lockResolution(Vec2 size) {
+@trusted
+void lockResolution(int width, int height) {
     if (!engineState.flags.isUpdating) {
-        // engineState.viewport.load(size); // TODO: Add loading.
+        engineState.viewport.data = loadViewport(width, height).unwrap();
     } else {
-        engineState.targetViewportSize = size;
-        engineState.isLockResolutionQueued = true;
-        engineState.isUnlockResolutionQueued = false;
+        engineState.viewport.targetWidth = width;
+        engineState.viewport.targetHeight = height;
+        engineState.viewport.isLockResolutionQueued = true;
+        engineState.viewport.isUnlockResolutionQueued = false;
     }
-}
-
-/// Locks the resolution of the game to a specific value.
-void lockResolution(float width, float height) {
-    lockResolution(Vec2(width, height));
 }
 
 /// Unlocks the resolution of the game.
 void unlockResolution() {
     if (!engineState.flags.isUpdating) {
-        // engineState.viewport.free(); // TODO: Add free.
+        engineState.viewport.free();
     } else {
-        engineState.isUnlockResolutionQueued = true;
-        engineState.isLockResolutionQueued = false;
+        engineState.viewport.isUnlockResolutionQueued = true;
+        engineState.viewport.isLockResolutionQueued = false;
     }
 }
 
@@ -231,42 +305,41 @@ bool isCursorHidden() {
 
 /// Hides the system cursor.
 /// This function works only on desktop.
+@trusted
 void hideCursor() {
-    ray.HideCursor();
     engineState.flags.isCursorHidden = true;
+    ray.HideCursor();
 }
 
 /// Shows the system cursor.
 /// This function works only on desktop.
+@trusted
 void showCursor() {
-    ray.ShowCursor();
     engineState.flags.isCursorHidden = false;
-}
-
-/// Returns the assets folder path.
-IStr assetsPath() {
-    return engineState.assetsPath.items;
+    ray.ShowCursor();
 }
 
 /// Returns true if the window is in fullscreen mode.
 /// This function works only on desktop.
+@trusted
 bool isFullscreen() {
-    return ray.IsWindowFullscreen;
+    return ray.IsWindowFullscreen();
 }
 
 /// Changes the state of the fullscreen mode of the window.
 /// This function works only on desktop.
+@trusted
 void toggleFullscreen() {
     version(WebAssembly) {
 
     } else {
         if (!ray.IsWindowFullscreen()) {
             auto screen = screenSize;
-            engineState.lastWindowSize = windowSize;
+            engineState.fullscreenState.lastWindowSize = windowSize;
             ray.SetWindowPosition(0, 0);
-            ray.SetWindowSize(cast(int) screen.x, cast(int) screen.y);
+            ray.SetWindowSize(screenWidth, screenHeight);
         }
-        engineState.isToggleFullscreenQueued = true;
+        engineState.fullscreenState.isToggleQueued = true;
     }
 }
 
@@ -279,33 +352,65 @@ void togglePixelPerfect() {
     engineState.flags.isPixelPerfect = !engineState.flags.isPixelPerfect;
 }
 
+@trusted
+int screenWidth() {
+    return ray.GetMonitorWidth(ray.GetCurrentMonitor());
+}
+
+@trusted
+int screenHeight() {
+    return ray.GetMonitorHeight(ray.GetCurrentMonitor());
+}
+
 Vec2 screenSize() {
-    auto id = ray.GetCurrentMonitor();
-    return Vec2(ray.GetMonitorWidth(id), ray.GetMonitorHeight(id));
+    return Vec2(screenWidth, screenHeight);
+}
+
+@trusted
+int windowWidth() {
+    return ray.GetScreenWidth();
+}
+
+@trusted
+int windowHeight() {
+    return ray.GetScreenHeight();
 }
 
 Vec2 windowSize() {
     if (isFullscreen) {
         return screenSize;
     } else {
-        return Vec2(ray.GetScreenWidth(), ray.GetScreenHeight());
+        return Vec2(windowWidth, windowHeight);
+    }
+}
+
+int resolutionWidth() {
+    if (isResolutionLocked) {
+        return engineState.viewport.width;
+    } else {
+        return windowWidth;
+    }
+}
+
+int resolutionHeight() {
+    if (isResolutionLocked) {
+        return engineState.viewport.height;
+    } else {
+        return windowHeight;
     }
 }
 
 Vec2 resolution() {
-    if (isResolutionLocked) {
-        return engineState.viewport.size;
-    } else {
-        return windowSize;
-    }
+    return Vec2(resolutionWidth, resolutionHeight);
 }
 
+@trusted
 Vec2 mouseScreenPosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
         auto minRatio = min(window.x / engineState.viewport.size.x, window.y / engineState.viewport.size.y);
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
-        // We use touch because it works on desktop, web and phones.
+        // We use touch because it works on desktop, web and mobile.
         return Vec2(
             (ray.GetTouchX() - (window.x - targetSize.x) * 0.5f) / minRatio,
             (ray.GetTouchY() - (window.y - targetSize.y) * 0.5f) / minRatio,
@@ -316,37 +421,30 @@ Vec2 mouseScreenPosition() {
 }
 
 Vec2 mouseWorldPosition(Camera camera) {
-    return mouseScreenPosition.toWorldPoint(camera);
+    return mouseScreenPosition.toWorldPosition(camera);
 }
 
+@trusted
+float mouseWheel() {
+    return ray.GetMouseWheelMove();
+}
+
+@trusted
 int fps() {
     return ray.GetFPS();
 }
 
+@trusted
 float deltaTime() {
     return ray.GetFrameTime();
 }
 
-float deltaMouseWheel() {
-    return ray.GetMouseWheelMove();
-}
-
-Vec2 deltaMousePosition() {
+@trusted
+Vec2 deltaMouse() {
     return toPopka(ray.GetMouseDelta());
 }
 
-Color backgroundColor() {
-    return engineState.backgroundColor;
-}
-
-void changeBackgroundColor(Color color) {
-    engineState.backgroundColor = color;
-}
-
-void changeShapeTexture(Texture texture, Rect area) {
-    ray.SetShapesTexture(texture.data, toRay(area));
-}
-
+@trusted
 Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return Vec2();
@@ -394,64 +492,68 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
     return result;
 }
 
-Rect measureTextArea(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    return Rect(position, measureTextSize(font, text, options)).area(options.hook);
-}
-
-Rect measureTextArea(Font font, IStr text, DrawOptions options = DrawOptions()) {
-    return Rect(Vec2(), measureTextSize(font, text, options)).area(options.hook);
-}
-
+@trusted
 bool isPressed(char key) {
     return ray.IsKeyPressed(toUpper(key));
 }
 
+@trusted
 bool isPressed(Keyboard key) {
     return ray.IsKeyPressed(key);
 }
 
+@trusted
 bool isPressed(Mouse key) {
     return ray.IsMouseButtonPressed(key);
 }
 
-bool isPressed(Gamepad key, uint id = 0) {
+@trusted
+bool isPressed(Gamepad key, int id = 0) {
     return ray.IsGamepadButtonPressed(id, key);
 }
 
+@trusted
 bool isDown(char key) {
     return ray.IsKeyDown(toUpper(key));
 }
 
+@trusted
 bool isDown(Keyboard key) {
     return ray.IsKeyDown(key);
 }
 
+@trusted
 bool isDown(Mouse key) {
     return ray.IsMouseButtonDown(key);
 }
 
-bool isDown(Gamepad key, uint id = 0) {
+@trusted
+bool isDown(Gamepad key, int id = 0) {
     return ray.IsGamepadButtonDown(id, key);
 }
 
+@trusted
 bool isReleased(char key) {
     return ray.IsKeyReleased(toUpper(key));
 }
 
+@trusted
 bool isReleased(Keyboard key) {
     return ray.IsKeyReleased(key);
 }
 
+@trusted
 bool isReleased(Mouse key) {
     return ray.IsMouseButtonReleased(key);
 }
 
-bool isReleased(Gamepad key, uint id = 0) {
+@trusted
+bool isReleased(Gamepad key, int id = 0) {
     return ray.IsGamepadButtonReleased(id, key);
 }
 
 Vec2 wasd() {
-    Vec2 result;
+    auto result = Vec2();
     if (Keyboard.a.isDown || Keyboard.left.isDown) {
         result.x = -1.0f;
     }
@@ -467,49 +569,46 @@ Vec2 wasd() {
     return result;
 }
 
-void draw(Rect area, Color color = white) {
+@trusted
+void drawRect(Rect area, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawRectanglePro(toRay(area.floor()), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+        ray.DrawRectanglePro(area.floor().toRay(), ray.Vector2(0.0f, 0.0f), 0.0f, color.toRay());
     } else {
-        ray.DrawRectanglePro(toRay(area), ray.Vector2(0.0f, 0.0f), 0.0f, toRay(color));
+        ray.DrawRectanglePro(area.toRay(), ray.Vector2(0.0f, 0.0f), 0.0f, color.toRay());
     }
 }
 
-void draw(Circ area, Color color = white) {
+void drawVec2(Vec2 point, float size, Color color = white) {
+    drawRect(Rect(point, size, size).centerArea, color);
+}
+
+@trusted
+void drawCirc(Circ area, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawCircleV(toRay(area.position.floor()), area.radius, toRay(color));
+        ray.DrawCircleV(area.position.floor().toRay(), area.radius, color.toRay());
     } else {
-        ray.DrawCircleV(toRay(area.position), area.radius, toRay(color));
+        ray.DrawCircleV(area.position.toRay(), area.radius, color.toRay());
     }
 }
 
-void draw(Line area, float size, Color color = white) {
+@trusted
+void drawLine(Line area, float size, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawLineEx(toRay(area.a.floor()), toRay(area.b.floor()), size, toRay(color));
+        ray.DrawLineEx(area.a.floor().toRay(), area.b.floor().toRay(), size, color.toRay());
     } else {
-        ray.DrawLineEx(toRay(area.a), toRay(area.b), size, toRay(color));
+        ray.DrawLineEx(area.a.toRay(), area.b.toRay(), size, color.toRay());
     }
 }
 
-void draw(Vec2 point, float size, Color color = white) {
-    draw(Rect(point, size, size).centerArea, color);
-}
-
-void draw(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+@trusted
+void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
+        return;
+    } else if (area.size.x <= 0.0f || area.size.y <= 0.0f) {
         return;
     }
 
-    auto target = Rect();
-    auto source = Rect();
-    if (area.size.x <= 0.0f || area.size.y <= 0.0f) {
-        target = Rect(position, texture.size * options.scale.abs());
-        source = Rect(texture.size);
-    } else {
-        target = Rect(position, area.size * options.scale.abs());
-        source = area;
-    }
-
+    auto target = Rect(position, area.size * options.scale.abs());
     auto flip = options.flip;
     if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
         flip = opposite(flip, Flip.xy);
@@ -520,38 +619,38 @@ void draw(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawO
     }
     final switch (flip) {
         case Flip.none: break;
-        case Flip.x: source.size.x *= -1.0f; break;
-        case Flip.y: source.size.y *= -1.0f; break;
-        case Flip.xy: source.size *= Vec2(-1.0f); break;
+        case Flip.x: area.size.x *= -1.0f; break;
+        case Flip.y: area.size.y *= -1.0f; break;
+        case Flip.xy: area.size *= Vec2(-1.0f); break;
     }
 
     auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
     if (isPixelPerfect) {
         ray.DrawTexturePro(
             texture.data,
-            toRay(source.floor()),
-            toRay(target.floor()),
-            toRay(origin.floor()),
+            area.floor().toRay(),
+            target.floor().toRay(),
+            origin.floor().toRay(),
             options.rotation,
-            toRay(options.color),
+            options.color.toRay(),
         );
     } else {
         ray.DrawTexturePro(
             texture.data,
-            toRay(source),
-            toRay(target),
-            toRay(origin),
+            area.toRay(),
+            target.toRay(),
+            origin.toRay(),
             options.rotation,
-            toRay(options.color),
+            options.color.toRay(),
         );
     }
 }
 
-void draw(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    draw(texture, Rect(), position, options);
+void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTexture(texture, position, Rect(texture.size), options);
 }
 
-void draw(Texture texture, Vec2 tileSize, int tileID, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawTile(Texture texture, Vec2 position, int tileID, Vec2 tileSize, DrawOptions options = DrawOptions()) {
     auto gridWidth = cast(int) (texture.size.x / tileSize.x);
     auto gridHeight = cast(int) (texture.size.y / tileSize.y);
     if (gridWidth == 0 || gridHeight == 0) {
@@ -560,10 +659,10 @@ void draw(Texture texture, Vec2 tileSize, int tileID, Vec2 position, DrawOptions
     auto row = tileID / gridWidth;
     auto col = tileID % gridWidth;
     auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
-    draw(texture, area, position, options);
+    drawTexture(texture, position, area, options);
 }
 
-void draw(Texture texture, TileMap tileMap, Camera camera, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawTileMap(Texture texture, Vec2 position, TileMap tileMap, Camera camera, DrawOptions options = DrawOptions()) {
     enum extraTileCount = 4;
 
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook);
@@ -590,47 +689,44 @@ void draw(Texture texture, TileMap tileMap, Camera camera, Vec2 position, DrawOp
             if (tileMap[row, col] == -1) {
                 continue;
             }
-            draw(texture, tileMap.tileSize, tileMap[row, col], position + Vec2(col, row) * tileMap.tileSize * options.scale, options);
+            drawTile(texture, position + Vec2(col, row) * tileMap.tileSize * options.scale, tileMap[row, col], tileMap.tileSize, options);
         }
     }
 }
 
-void draw(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+@trusted
+void drawRune(Font font, Vec2 position, dchar rune, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) {
         return;
     }
 
     auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
-    
-    // NOTE: Maybe new way of drawing a character.
-    // draw(toPopka(font.data.texture), rect, position + Vec2(0.0f, font.size - rect.size.y), options);
-
-    // NOTE: Old way of drawing a character.
     ray.rlPushMatrix();
     if (isPixelPerfect) {
-        ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+        ray.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
     } else {
         ray.rlTranslatef(position.x, position.y, 0.0f);
     }
     ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
     if (isPixelPerfect) {
-        ray.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
+        ray.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
     } else {
         ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
     }
-    ray.DrawTextCodepoint(font.data, rune, ray.Vector2(0.0f, 0.0f), font.size, toRay(options.color));
+    ray.DrawTextCodepoint(font.data, rune, ray.Vector2(0.0f, 0.0f), font.size, options.color.toRay());
     ray.rlPopMatrix();
 }
 
-// TODO: Make it work with negative scale values.
-void draw(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
+@trusted
+void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
-    auto rect = measureTextArea(font, text);
-    auto origin = rect.origin(options.hook);
+
+    // TODO: Make it work with negative scale values.
+    auto origin = Rect(measureTextSize(font, text)).origin(options.hook);
     ray.rlPushMatrix();
     if (isPixelPerfect) {
         ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
@@ -659,7 +755,7 @@ void draw(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions
             if (codepoint != ' ' && codepoint != '\t') {
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
-                draw(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
+                drawRune(font, Vec2(textOffsetX, textOffsetY), codepoint, runeOptions);
             }
             if (font.data.glyphs[index].advanceX == 0) {
                 textOffsetX += font.data.recs[index].width + font.runeSpacing;
@@ -673,38 +769,30 @@ void draw(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions
     ray.rlPopMatrix();
 }
 
-void draw(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
-    draw(rayFont, text, position, options);
+void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
+    drawText(dfltFont, position, text, options);
 }
 
 mixin template addGameStart(alias startFunc, int width, int height, IStr title = "Popka") {
     version (D_BetterC) {
+        pragma(msg, "Popka is using the C main function.");
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            debug {
-                println("Popka is using the C main function.");
-            }
-
             engineState.assetsPath.append(
                 pathConcat(argv[0].toStr().pathDir, "assets")
             );
-            engineState.tempText.reserve(dfltTempTextCapacity);
-
+            engineState.tempText.reserve(8192);
             openWindow(width, height);
             startFunc();
             closeWindow();
         }
     } else {
+        pragma(msg, "Popka is using the D main function.");
         void main(string[] args) {
-            debug {
-                println("Popka is using the D main function.");
-            }
-
             engineState.assetsPath.append(
                 pathConcat(args[0].pathDir, "assets")
             );
-            engineState.tempText.reserve(engineState.dfltTempTextCapacity);
-
+            engineState.tempText.reserve(8192);
             openWindow(width, height);
             startFunc();
             closeWindow();

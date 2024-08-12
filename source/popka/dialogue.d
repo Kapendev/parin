@@ -1,16 +1,16 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// The dialogue module is a versatile dialogue system,
-/// enabling the creation of interactive conversations and branching narratives.
+// TODO: Needs a lot of work.
+
+/// The `dialogue` module provides a simple and versatile dialogue system.
 module popka.dialogue;
 
-import joka;
 import popka.engine;
 
-@safe @nogc nothrow:
+public import joka;
 
-// TODO: Stupid loading bug where it thinks it could not load a file because I check if the text is empty. Change that in core.io and others by returning a bool if reading failed.
+@safe @nogc nothrow:
 
 enum dialogueUnitKindChars = ".#*@>|^!+-$";
 
@@ -51,10 +51,6 @@ struct Dialogue {
     const(char)[] actor;
 
     @safe @nogc nothrow:
-
-    this(const(char)[] path) {
-        load(path);
-    }
 
     bool isEmpty() {
         return units.length == 0;
@@ -263,8 +259,12 @@ struct Dialogue {
         }
     }
 
-    void parse(const(char)[] script) {
-        free();
+    Fault parse(const(char)[] script) {
+        clear();
+        if (script.length == 0) {
+            return Fault.invalid;
+        }
+
         units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
         auto isFirstLine = true;
         auto view = script;
@@ -288,23 +288,14 @@ struct Dialogue {
                     pointCount += 1;
                 }
             } else {
-                free();
-                return;
+                clear();
+                return Fault.invalid;
             }
         }
         if (units.items[$ - 1].kind != DialogueUnitKind.pause) {
             units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
         }
-        return;
-    }
-
-    void load(const(char)[] path) {
-        free();
-        // TODO: Remove the unwrap.
-        if (path.length != 0) {
-            parse(loadTempText(path).unwrapOr());
-        }
-        if (isEmpty) printfln("Error: The file `{}` does not exist.", path);
+        return Fault.none;
     }
 
     void clear() {
@@ -345,4 +336,18 @@ bool isValidDialogueUnitKind(char c) {
         }
     }
     return false;
+}
+
+Result!Dialogue loadDialogue(IStr path) {
+    auto temp = loadTempText(path);
+    if (temp.isNone) {
+        return Result!Dialogue(temp.fault);
+    }
+    
+    auto value = Dialogue();
+    auto fault = value.parse(temp.unwrap());
+    if (fault) {
+        value.free();
+    }
+    return Result!Dialogue(value, fault);
 }

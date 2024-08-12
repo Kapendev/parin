@@ -1,7 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-/// types stuff TODO.
+// TODO: Needs docs!
+// TODO: Move tile map to it's own module like dialogue!
+
+/// The `types` module defines all the types used within the `engine` module.
 module popka.types;
 
 import ray = popka.ray;
@@ -142,26 +145,29 @@ struct EngineFlags {
     bool isCursorHidden;
 }
 
-struct EngineState {
-    EngineFlags flags;
-
-    Color backgroundColor;
-    LStr assetsPath;
-    LStr tempText;
-
-    Vec2 targetViewportSize;
-    Viewport viewport;
+struct EngineViewport {
+    Viewport data;
+    int targetWidth;
+    int targetHeight;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
+    alias data this;
+}
 
+struct EngineFullscreenState {
     Vec2 lastWindowSize;
-    float toggleFullscreenTimer = 0.0f;
-    bool isToggleFullscreenQueued;
+    float toggleTimer = 0.0f;
+    bool isToggleQueued;
+    enum toggleWaitTime = 0.1f;
+}
 
-    enum dfltFPS = 60;
-    enum dfltBackgroundColor = gray2; // TODO: change it to gray
-    enum dfltTempTextCapacity = 8192;
-    enum dfltFullscreenWaitTime = 0.135f;
+struct EngineState {
+    EngineFlags flags;
+    EngineFullscreenState fullscreenState;
+    EngineViewport viewport;
+    Color backgroundColor;
+    LStr tempText;
+    LStr assetsPath;
 }
 
 struct DrawOptions {
@@ -227,6 +233,7 @@ struct TileMap {
     }
 
     Fault parse(IStr csv) {
+        data.clear();
         if (csv.length == 0) {
             return Fault.invalid;
         }
@@ -235,7 +242,6 @@ struct TileMap {
         auto newRowCount = 0;
         auto newColCount = 0;
 
-        data.clear();
         while (view.length != 0) {
             auto line = view.skipLine();
             newRowCount += 1;
@@ -327,7 +333,7 @@ struct Viewport {
 
     /// Returns the height of the viewport.
     int height() {
-        return data.texture.width;
+        return data.texture.height;
     }
 
     /// Returns the size of the viewport.
@@ -435,15 +441,6 @@ Viewport toPopka(ray.RenderTexture2D from) {
     return result;
 }
 
-/// Converts a raylib camera to a Popka camera.
-Camera toPopka(ray.Camera2D from) {
-    auto result = Camera();
-    result.position = from.target.toPopka();
-    result.rotation = from.rotation;
-    result.scale = from.zoom;
-    return result;
-}
-
 /// Converts a Popka color to a raylib color.
 ray.Color toRay(Color from) {
     return ray.Color(from.r, from.g, from.b, from.a);
@@ -482,11 +479,6 @@ ray.Font toRay(Font from) {
 /// Converts a Popka viewport to a raylib render texture.
 ray.RenderTexture2D toRay(Viewport from) {
     return from.data;
-}
-
-/// Converts a Popka camera to a raylib camera.
-ray.Camera2D toRay(Camera from) {
-    return ray.Camera2D(ray.Vector2(), from.position.toRay(), from.rotation, from.scale);
 }
 
 /// Converts a Popka filter to a raylib filter.
