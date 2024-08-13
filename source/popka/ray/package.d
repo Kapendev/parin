@@ -1,6 +1,12 @@
+// ---
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/popka
+// Version: v0.0.14
+// ---
 
+/// The `ray` module provides access to the raylib library.
 module popka.ray;
 
 public import popka.ray.raylib;

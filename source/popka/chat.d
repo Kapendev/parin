@@ -1,5 +1,10 @@
+// ---
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/popka
+// Version: v0.0.14
+// ---
 
 /// The `chat` module provides a simple and versatile dialogue system.
 module popka.chat;
@@ -28,11 +33,23 @@ enum ChatUnitKind {
 struct ChatUnit {
     LStr text;
     ChatUnitKind kind;
+
+    @safe @nogc nothrow:
+
+    void free() {
+        text.free();
+    }
 }
 
 struct ChatValue {
     LStr name;
     long value;
+
+    @safe @nogc nothrow:
+
+    void free() {
+        name.free();
+    }
 }
 
 alias ChatCommandRunner = void function(IStr[] args);
@@ -73,27 +90,10 @@ struct Chat {
     IStr[] choices() {
         static IStr[16] buffer;
 
-        struct Range {
-            IStr menu;
-
-            bool empty() {
-                return menu.length == 0;
-            }
-            
-            IStr front() {
-                auto temp = menu;
-                return temp.skipValue(ChatUnitKind.menu).trim();
-            }
-            
-            void popFront() {
-                menu.skipValue(ChatUnitKind.menu);
-            }
-        }
-
         auto length = 0;
-        auto range = hasChoices ? Range(units[unitIndex].text.items) : Range("");
-        foreach (item; range) {
-            buffer[length] = item;
+        auto temp = hasChoices ? units[unitIndex].text.items : "";
+        while (temp.length != 0) {
+            buffer[length] = temp.skipValue(ChatUnitKind.menu).trim();
             length += 1;
         }
         return buffer[0 .. length];
@@ -102,27 +102,10 @@ struct Chat {
     IStr[] args() {
         static IStr[16] buffer;
 
-        struct Range {
-            IStr command;
-
-            bool empty() {
-                return command.length == 0;
-            }
-            
-            IStr front() {
-                auto temp = command;
-                return temp.skipValue(' ').trim();
-            }
-            
-            void popFront() {
-                command.skipValue(' ');
-            }
-        }
-
         auto length = 0;
-        auto range = hasArgs ? Range(units[unitIndex].text.items) : Range("");
-        foreach (item; range) {
-            buffer[length] = item;
+        auto temp = hasArgs ? units[unitIndex].text.items : "";
+        while (temp.length != 0) {
+            buffer[length] = temp.skipValue(' ').trim();
             length += 1;
         }
         return buffer[0 .. length];
@@ -134,7 +117,6 @@ struct Chat {
         unitIndex = 0;
     }
 
-    // TODO: Make it faster.
     void jump(IStr point) {
         if (point.length == 0) {
             foreach (i; unitIndex + 1 .. units.length) {
@@ -155,7 +137,6 @@ struct Chat {
         }
     }
 
-    // TODO: Make it faster.
     void jump(Sz i) {
         auto currPoint = 0;
         foreach (j, unit; units.items) {
@@ -214,7 +195,7 @@ struct Chat {
                     auto name = trim(skipValue(view, '='));
                     auto value = trim(skipValue(view, '='));
                     if (name.length == 0) {
-                        assert(0, "TODO: An variable without a name is an error for now.");
+                        assert(0, "TODO: A variable without a name is an error for now.");
                     }
                     // Find if variable exists.
                     foreach (i, variable; values.items) {
@@ -244,7 +225,7 @@ struct Chat {
                                 }
                             }
                             if (valueVariableIndex < 0) {
-                                assert(0, "TODO: A variable that doesn't exist it an error for now.");
+                                assert(0, "TODO: A variable that does not exist it an error for now.");
                             } else {
                                 values[variableIndex].value = values[valueVariableIndex].value;
                             }
@@ -267,7 +248,7 @@ struct Chat {
                     }
                     // Add/Remove from variable.
                     if (variableIndex < 0) {
-                        assert(0, "TODO: A variable that doesn't exist it an error for now.");
+                        assert(0, "TODO: A variable that does not exist it an error for now.");
                     }
                     if (units[unitIndex].kind == ChatUnitKind.plus) {
                         values[variableIndex].value += 1;
@@ -319,11 +300,11 @@ struct Chat {
 
     void clear() {
         foreach (ref unit; units) {
-            unit.text.free();
+            unit.free();
         }
         units.clear();
         foreach (ref variable; values) {
-            variable.name.free();
+            variable.free();
         }
         values.clear();
         reset();
@@ -331,11 +312,11 @@ struct Chat {
 
     void free() {
         foreach (ref unit; units) {
-            unit.text.free();
+            unit.free();
         }
         units.free();
         foreach (ref variable; values) {
-            variable.name.free();
+            variable.free();
         }
         values.free();
         reset();

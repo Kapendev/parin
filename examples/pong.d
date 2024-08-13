@@ -1,6 +1,3 @@
-// Copyright 2024 Alexandros F. G. Kapretsos
-// SPDX-License-Identifier: MIT
-
 /// This example shows how to create a pong-like game with Popka.
 import popka;
 
@@ -41,7 +38,6 @@ bool gameLoop() {
 
     // Move paddle1.
     paddle1.position.y = clamp(paddle1.position.y + wasd.y * ballSpeed.y * deltaTime, paddle1.size.y * 0.5, resolution.y - paddle1.size.y * 0.5);
-    
     // Move paddle2.
     auto paddle2Target = ball.position.y;
     if (ballDirection.x < 1) {
@@ -65,7 +61,6 @@ bool gameLoop() {
     drawRect(ball.centerArea);
     drawRect(paddle1.centerArea);
     drawRect(paddle2.centerArea);
-
     // Draw the counter.
     auto textOptions = DrawOptions();
     textOptions.scale = Vec2(2);

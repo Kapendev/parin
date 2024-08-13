@@ -1,28 +1,25 @@
 #!/bin/env rdmd
 
+// TODO: Needs some cleaning, but it works for now and I don't care.
+
 /// A helper script that automates the project setup.
 /// This script is designed with the idea that you use DUB, but it can work without DUB too.
-
 import std.format;
 import std.path;
 import std.stdio;
 import std.file;
 import std.process;
 
-
 // The config.
 // ----------
 enum noLibsArg = "offline";
-
 enum dubFile = buildPath(".", "dub.json");
 enum dubyFile = buildPath(".", "dub.selections.json");
 enum appFile = buildPath(".", "source", "app.d");
 enum gitignoreFile = buildPath(".", ".gitignore");
-
 enum assetsDir = buildPath(".", "assets");
 enum webDir = buildPath(".", "web");
 // ----------
-
 
 enum defaultDUBContent = `{
     "name" : "game",
@@ -31,6 +28,7 @@ enum defaultDUBContent = `{
     "copyright" : "Copyright © 2024, Name",
     "license" : "proprietary",
     "dependencies": {
+        "joka": "*",
         "popka": "*"
     },
     "configurations": [
@@ -73,7 +71,7 @@ enum defaultDUBContent = `{
             "name": "web",
             "targetType": "staticLibrary",
             "targetName": "webgame",
-            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release", "-i"]
+            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "-i", "--release"]
         }
     ]
 }

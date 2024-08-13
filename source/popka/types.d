@@ -1,5 +1,10 @@
+// ---
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/popka
+// Version: v0.0.14
+// ---
 
 /// The `types` module defines all the types used within the `engine` module.
 module popka.types;

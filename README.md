@@ -35,12 +35,12 @@ mixin addGameStart!(gameStart, 640, 360);
 
 ## Dependencies
 
-To use Popka, you'll need the raylib library (version 5.0) installed on your system.
-The [official raylib instructions](https://github.com/raysan5/raylib/wiki) will guide you through the process.
+* [Joka](https://github.com/Kapendev/joka)
+* [raylib](https://github.com/raysan5/raylib)
 
 ## Installation
 
-This guide shows how to install Popka and its dependency, raylib, using DUB.
+This guide shows how to install Popka and its dependencies using DUB.
 While DUB simplifies the process, Popka itself doesn't require DUB.
 
 Create a new folder and run inside the following commands:
@@ -50,12 +50,11 @@ dub init -n
 dub run popka:setup
 ```
 
-The last line will download raylib and create some folders necessary for Popka to function properly. The folders:
+The final line modifies the default app.d and dub.json files, downloads raylib, and creates the necessary folders for Popka to function properly. The following folders will be created:
 
-* assets: This folder is used to store game assets such as images, sounds and fonts.
+* assets: This folder is used to store game assets.
 * web: This folder is used for exporting to the web.
 
-The last line also changes the default app.d and dub.json files.
 Once the installation is complete, you should be able to compile/run with:
 
 ```bash
@@ -68,15 +67,16 @@ For more info about exporting to web, read [this](#web-support).
 ## Documentation
 
 For an initial understanding, the [examples](examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
-You can also read the [TOUR.md](TOUR.md) file for a more in-depth overview of the engine's functionalities.
+You can also read the [TOUR.md](TOUR.md) file for a more in-depth overview.
 
 ## Attributes and BetterC Support
 
 This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) and aims for good compatibility with BetterC.
+If you encounter errors with BetterC, try using the `-i` flag.
 
 ## Web Support
 
-For exporting to web, your project needs to be compatible with BetterC and it has to avoid some imports from the standard library.
+For exporting to web, your project needs to be compatible with BetterC.
 The [web](web) folder contains a helper script to assist with the web export process.
 If you use DUB, you can run the script with:
 
@@ -87,27 +87,24 @@ dub run popka:web
 ## raylib Bindings
 
 Popka provides bindings for raylib that are compatible with BetterC and the web.
-Additionally, it provides helper functions to reduce some boilerplate code.
-All the helper functions are inside the [raylibpp.d](source/popka/vendor/ray/raylibpp.d) file.
 
 ```d
 import popka.ray;
 
-bool rayLoop() {
-    BeginDrawing();
-    ClearBackground(RAYWHITE);
-    DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
-    EndDrawing();
-    return false;
-}
-
-void rayStart(string path) {
-    InitWindow(800, 450, "raylib");
-    updateWindow!rayLoop();
+int main() {
+    const int screenWidth = 800;
+    const int screenHeight = 450;
+    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+    SetTargetFPS(60);
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+        EndDrawing();
+    }
     CloseWindow();
+    return 0;
 }
-
-mixin addRayStart!rayStart;
 ```
 
 ## Note

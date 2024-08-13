@@ -1,3 +1,11 @@
+// ---
+// Copyright 2024 Alexandros F. G. Kapretsos
+// SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/popka
+// Version: v0.0.14
+// ---
+
 /**********************************************************************************************
 *
 *   raylib v5.0 - A simple and easy-to-use library to enjoy videogames programming (www.raylib.com)
@@ -76,6 +84,7 @@
 *
 **********************************************************************************************/
 
+/// The `rayib` module provides access to the raylib.h functions.
 module popka.ray.raylib;
 
 // import core.stdc.config;

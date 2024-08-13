@@ -1,5 +1,10 @@
+// ---
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/popka
+// Version: v0.0.14
+// ---
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
@@ -674,18 +679,6 @@ void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options 
 
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTexture(texture, position, Rect(texture.size), options);
-}
-
-void drawTile(Texture texture, Vec2 position, int tileID, Vec2 tileSize, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(int) (texture.size.x / tileSize.x);
-    auto gridHeight = cast(int) (texture.size.y / tileSize.y);
-    if (gridWidth == 0 || gridHeight == 0) {
-        return;
-    }
-    auto row = tileID / gridWidth;
-    auto col = tileID % gridWidth;
-    auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
-    drawTexture(texture, position, area, options);
 }
 
 @trusted

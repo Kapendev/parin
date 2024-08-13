@@ -1,3 +1,11 @@
+// ---
+// Copyright 2024 Alexandros F. G. Kapretsos
+// SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/popka
+// Version: v0.0.14
+// ---
+
 /**********************************************************************************************
 *
 *   rlgl v4.5 - A multi-OpenGL abstraction layer with an immediate-mode style API
@@ -104,6 +112,7 @@
 *
 **********************************************************************************************/
 
+/// The `rlgl` module provides access to the rlgl.h functions.
 module popka.ray.rlgl;
 
 @nogc nothrow extern(C):

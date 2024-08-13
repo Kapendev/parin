@@ -7,7 +7,7 @@
 	"license": "MIT",
 	"name": "popka",
 	"dependencies": {
-		"joka": "~main"
+		"joka": "*"
 	},
 	"subPackages" : [
 		"setup",

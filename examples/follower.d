@@ -1,3 +1,4 @@
+/// This example shows how to create an animated character that follows the mouse.
 import popka;
 
 // The game variables.

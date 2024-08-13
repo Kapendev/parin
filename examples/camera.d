@@ -1,6 +1,3 @@
-// Copyright 2024 Alexandros F. G. Kapretsos
-// SPDX-License-Identifier: MIT
-
 /// This example shows how to use the camera structure of Popka.
 import popka;
 

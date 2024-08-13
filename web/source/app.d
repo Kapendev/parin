@@ -1,16 +1,16 @@
 #!/bin/env rdmd
 
+// TODO: Needs some cleaning, but it works for now and I don't care.
+
 /// A helper script to assist with the web export process.
 /// This script is designed with the idea that Popka is included inside your source folder, but it can work without Popka too.
 /// Just copy-paste the web folder into your project and run the script from your project folder.
-
 import std.string;
 import std.format;
 import std.path;
 import std.stdio;
 import std.file;
 import std.process;
-
 
 // The config.
 // ----------
@@ -32,7 +32,6 @@ enum dubFile = buildPath(".", "dub.json");                         // DUB is not
 enum dubWebConfig = "web";                                         // The config that will be used to create a library file for the web.
 enum dubLibName = "webgame";                                       // The library name that DUB will output with the web config.
 // ----------
-
 
 // This is used if a shell file does not exist.
 enum defaultShellContent = `<!doctype html>
@@ -115,7 +114,6 @@ enum defaultShellContent = `<!doctype html>
 </body>
 </html>
 `;
-
 
 /// Check if path exists and print an error message if needed.
 bool check(const(char)[] path, bool isLoud = true) {
