@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.14
+// Version: v0.0.15
 // ---
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -25,7 +25,7 @@ ray.Camera2D _toRay(Camera camera) {
     );
 }
 
-/// Returns a random integer between 0 and float.max (inclusive).
+/// Returns a random integer between 0 and int.max (inclusive).
 @trusted
 int randi() {
     return ray.GetRandomValue(0, int.max);
@@ -37,7 +37,7 @@ float randf() {
     return ray.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
-/// Sets the seed for the random number generator to something specific.
+/// Sets the seed of the random number generator to the given value.
 @trusted
 void randomize(int seed) {
     ray.SetRandomSeed(seed);
@@ -48,19 +48,19 @@ void randomize() {
     randomize(randi);
 }
 
-/// Converts a world point to a screen point based on the given camera.
+/// Converts a world position to a screen position based on the given camera.
 @trusted
-Vec2 toScreenPosition(Vec2 point, Camera camera) {
-    return toPopka(ray.GetWorldToScreen2D(point.toRay(), camera._toRay()));
+Vec2 toScreenPosition(Vec2 position, Camera camera) {
+    return toPopka(ray.GetWorldToScreen2D(position.toRay(), camera._toRay()));
 }
 
-/// Converts a screen point to a world point based on the given camera.
+/// Converts a screen position to a world position based on the given camera.
 @trusted
-Vec2 toWorldPosition(Vec2 point, Camera camera) {
-    return toPopka(ray.GetScreenToWorld2D(point.toRay(), camera._toRay()));
+Vec2 toWorldPosition(Vec2 position, Camera camera) {
+    return toPopka(ray.GetScreenToWorld2D(position.toRay(), camera._toRay()));
 }
 
-/// Returns the default font. This font should not be freed.
+/// Returns the default Popka font. This font should not be freed.
 @trusted
 Font dfltFont() {
     auto result = ray.GetFontDefault().toPopka();
@@ -69,6 +69,7 @@ Font dfltFont() {
     return result;
 }
 
+/// Returns an absolute path to the assets folder.
 IStr assetsPath() {
     return engineState.assetsPath.items;
 }
@@ -78,21 +79,21 @@ IStr toAssetsPath(IStr path) {
 }
 
 /// Loads a text file from the assets folder and returns its contents as a list.
-/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+/// Can handle both forward slashes and backslashes in file paths.
 Result!LStr loadText(IStr path) {
     return readText(path.toAssetsPath());
 }
 
 /// Loads a text file from the assets folder and returns its contents as a slice.
 /// The slice can be safely used until this function is called again.
-/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+/// Can handle both forward slashes and backslashes in file paths.
 Result!IStr loadTempText(IStr path) {
     auto fault = readTextIntoBuffer(path.toAssetsPath(), engineState.tempText);
     return Result!IStr(engineState.tempText.items, fault);
 }
 
-/// Loads an image file from the assets folder.
-/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+/// Loads an image file (PNG) from the assets folder.
+/// Can handle both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadTexture(IStr path) {
     auto value = ray.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
@@ -106,20 +107,21 @@ Result!Viewport loadViewport(int width, int height) {
 }
 
 @trusted
+/// Loads a font file (TTF) from the assets folder.
+/// Can handle both forward slashes and backslashes in file paths.
 Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
     auto value = ray.LoadFontEx(path.toAssetsPath.toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Saves a text file to the assets folder.
-/// Can handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
+/// Can handle both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
     return writeText(path.toAssetsPath(), text);
 }
 
-/// Opens the game window with the given size and title.
-/// This function does not work if the window is already open, because Popka only works with one window.
-/// Usually you should avoid calling this function manually.
+/// Opens a window with the given size and title.
+/// You should avoid calling this function manually.
 @trusted
 void openWindow(int width, int height, IStr title = "Popka") {
     if (ray.IsWindowReady) {
@@ -135,7 +137,7 @@ void openWindow(int width, int height, IStr title = "Popka") {
     engineState.fullscreenState.lastWindowSize = Vec2(width, height);
 }
 
-/// Updates the game window every frame with the specified loop function.
+/// Updates the window every frame with the given loop function.
 /// This function will return when the loop function returns true.
 @trusted
 void updateWindow(alias loopFunc)() {
@@ -229,52 +231,49 @@ void updateWindow(alias loopFunc)() {
     }
 }
 
-/// Closes the game window.
-/// Usually you should avoid calling this function manually.
+/// Closes the window.
+/// You should avoid calling this function manually.
 @trusted
 void closeWindow() {
     if (!ray.IsWindowReady) {
         return;
     }
     
-    engineState.tempText.free();
-    engineState.assetsPath.free();
-    engineState.viewport.free();
-
+    engineState.free();
     ray.CloseAudioDevice();
     ray.CloseWindow();
-    engineState = EngineState();
 }
 
+/// Sets the window background color to the given color.
 void setBackgroundColor(Color color) {
     engineState.backgroundColor = color;
 }
 
-/// Returns true if the FPS of the game is locked.
+/// Returns true if the FPS is locked.
 bool isFpsLocked() {
     return engineState.flags.isFpsLocked;
 }
 
-/// Locks the FPS of the game to a specific value.
+/// Locks the FPS to the given value.
 @trusted
 void lockFps(int target) {
     engineState.flags.isFpsLocked = true;
     ray.SetTargetFPS(target);
 }
 
-/// Unlocks the FPS of the game.
+/// Unlocks the FPS.
 @trusted
 void unlockFps() {
     engineState.flags.isFpsLocked = false;
     ray.SetTargetFPS(0);
 }
 
-/// Returns true if the resolution of the game is locked.
+/// Returns true if the resolution is locked.
 bool isResolutionLocked() {
     return !engineState.viewport.isEmpty;
 }
 
-/// Locks the resolution of the game to a specific value.
+/// Locks the resolution to the given value.
 @trusted
 void lockResolution(int width, int height) {
     if (!engineState.flags.isUpdating) {
@@ -287,7 +286,7 @@ void lockResolution(int width, int height) {
     }
 }
 
-/// Unlocks the resolution of the game.
+/// Unlocks the resolution.
 void unlockResolution() {
     if (!engineState.flags.isUpdating) {
         engineState.viewport.free();
@@ -311,7 +310,6 @@ bool isCursorHidden() {
 }
 
 /// Hides the system cursor.
-/// This function works only on desktop.
 @trusted
 void hideCursor() {
     engineState.flags.isCursorHidden = true;
@@ -319,7 +317,6 @@ void hideCursor() {
 }
 
 /// Shows the system cursor.
-/// This function works only on desktop.
 @trusted
 void showCursor() {
     engineState.flags.isCursorHidden = false;
@@ -327,14 +324,12 @@ void showCursor() {
 }
 
 /// Returns true if the window is in fullscreen mode.
-/// This function works only on desktop.
 @trusted
 bool isFullscreen() {
     return ray.IsWindowFullscreen();
 }
 
 /// Changes the state of the fullscreen mode of the window.
-/// This function works only on desktop.
 @trusted
 void toggleFullscreen() {
     version(WebAssembly) {
@@ -355,6 +350,7 @@ bool isPixelPerfect() {
     return engineState.flags.isPixelPerfect;
 }
 
+/// Changes the state of the pixel perfect mode of the window.
 void togglePixelPerfect() {
     engineState.flags.isPixelPerfect = !engineState.flags.isPixelPerfect;
 }
@@ -760,7 +756,7 @@ void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = 
     drawText(dfltFont, position, text, options);
 }
 
-mixin template addGameStart(alias startFunc, int width, int height, IStr title = "Popka") {
+mixin template callGameStart(alias startFunc, int width, int height, IStr title = "Popka") {
     version (D_BetterC) {
         pragma(msg, "Popka is using the C main function.");
         extern(C)

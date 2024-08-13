@@ -96,7 +96,7 @@ lib*
 enum defaultAppContent = `import popka;
 
 bool gameLoop() {
-    draw("Hello world!");
+    drawDebugText("Hello world!");
     return false;
 }
 
@@ -105,7 +105,7 @@ void gameStart() {
     updateWindow!gameLoop();
 }
 
-mixin addGameStart!(gameStart, 640, 360);
+mixin callGameStart!(gameStart, 640, 360);
 `;
 
 /// Check if path exists and print an error message if needed.

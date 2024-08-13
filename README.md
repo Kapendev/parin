@@ -16,7 +16,7 @@ void gameStart() {
     updateWindow!gameLoop();
 }
 
-mixin addGameStart!(gameStart, 640, 360);
+mixin callGameStart!(gameStart, 640, 360);
 ```
 
 > [!WARNING]  
@@ -55,19 +55,19 @@ The final line modifies the default app.d and dub.json files, downloads raylib, 
 * assets: This folder is used to store game assets.
 * web: This folder is used for exporting to the web.
 
-Once the installation is complete, you should be able to compile/run with:
+Once the installation is complete, run the following command:
 
 ```bash
 dub run
 ```
 
-You can pass `offline` to the script if you don't want to download raylib.
-For more info about exporting to web, read [this](#web-support).
+If everything is set up correctly, a window will appear showing the message "Hello world!".
+To avoid downloading raylib, pass `offline` to the script.
 
 ## Documentation
 
-For an initial understanding, the [examples](examples) folder and the [engine.d](source/popka/game/engine.d) file can be a good starting point.
-You can also read the [TOUR.md](TOUR.md) file for a more in-depth overview.
+For an initial understanding, the [examples](examples) folder can be a good starting point.
+For a more detailed overview, check the [TOUR.md](TOUR.md) file.
 
 ## Attributes and BetterC Support
 
@@ -76,9 +76,8 @@ If you encounter errors with BetterC, try using the `-i` flag.
 
 ## Web Support
 
-For exporting to web, your project needs to be compatible with BetterC.
+To export a game to the web, the game must be compatible with BetterC.
 The [web](web) folder contains a helper script to assist with the web export process.
-If you use DUB, you can run the script with:
 
 ```bash
 dub run popka:web

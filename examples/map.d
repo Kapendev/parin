@@ -41,4 +41,4 @@ void gameStart() {
     atlas.free();
 }
 
-mixin addGameStart!(gameStart, 640, 360);
+mixin callGameStart!(gameStart, 640, 360);

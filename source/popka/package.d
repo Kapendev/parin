@@ -3,13 +3,12 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.14
+// Version: v0.0.15
 // ---
 
-// The `popka`` module imports all of its submodules.
 module popka;
 
-public import popka.chat;
+public import popka.dialogue;
 public import popka.engine;
 public import popka.tilemap;
 public import popka.types;

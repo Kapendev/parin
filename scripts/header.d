@@ -10,7 +10,7 @@ enum header = "// ---
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.14
+// Version: v0.0.15
 // ---";
 
 int main(string[] args) {

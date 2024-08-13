@@ -1,15 +1,15 @@
-/// This example shows how to use the Popka chat system.
+/// This example shows how to use the Popka dialogue system.
 import popka;
 
 // The game variables.
-auto chat = Chat();
+auto dialogue = Dialogue();
 auto script = "
     # This is a comment.
 
     ! choiceCount
 
     * menuPoint
-    ^ Select first choice. ^ Select second choice. ^ End chat.
+    ^ Select first choice. ^ Select second choice. ^ End dialogue.
 
     * choice1
     > Bob
@@ -34,34 +34,34 @@ auto script = "
 
 bool gameLoop() {
     // Update the game.
-    if (chat.canUpdate) {
-        if (chat.hasChoices) {
-            auto keys = digitChars[1 .. 1 + chat.choices.length];
+    if (dialogue.canUpdate) {
+        if (dialogue.hasChoices) {
+            auto keys = digitChars[1 .. 1 + dialogue.choices.length];
             foreach (i, key; keys) {
                 if (key.isPressed) {
-                    chat.pick(i);
+                    dialogue.pick(i);
                     break;
                 }
             }
         } else if (Keyboard.space.isPressed) {
-            chat.update();
+            dialogue.update();
         }
     }
 
-    // Draw the chat.
-    if (chat.hasChoices) {
-        foreach (i, choice; chat.choices) {
+    // Draw the dialogue.
+    if (dialogue.hasChoices) {
+        foreach (i, choice; dialogue.choices) {
             auto choicePosition = Vec2(8, 8 + i * 14);
             drawDebugText("{}".format(i + 1), choicePosition);
             drawDebugText("   | {}".format(choice), choicePosition);
         }
-    } else if (chat.canUpdate) {
-        drawDebugText("{}: {}".format(chat.actor, chat.text));
+    } else if (dialogue.canUpdate) {
+        drawDebugText("{}: {}".format(dialogue.actor, dialogue.text));
     } else {
-        drawDebugText("The chat has ended.");
+        drawDebugText("The dialogue has ended.");
     }
 
-    // Draw the game info/
+    // Draw the game info.
     auto infoPosition = Vec2(8, resolution.y - 2 - 14 * 2);
     drawRect(Rect(0, resolution.y * 0.8, resolution.x, resolution.y), gray1);
     drawDebugText("Press 1, 2 or 3 to select a choice.", infoPosition);
@@ -71,11 +71,11 @@ bool gameLoop() {
 
 void gameStart() {
     lockResolution(320, 180);
-    // Parse the chat script of the game.
-    // The first update makes the chat go to the first available line.
-    chat.parse(script);
-    chat.update();
+    // Parse the dialogue script of the game.
+    // The first update makes the dialogue go to the first available line.
+    dialogue.parse(script);
+    dialogue.update();
     updateWindow!gameLoop();
 }
 
-mixin addGameStart!(gameStart, 640, 360);
+mixin callGameStart!(gameStart, 640, 360);
