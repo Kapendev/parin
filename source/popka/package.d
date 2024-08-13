@@ -3,6 +3,7 @@
 
 module popka;
 
-public import popka.dialogue;
+public import popka.chat;
 public import popka.engine;
+public import popka.tilemap;
 public import popka.types;

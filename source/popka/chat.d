@@ -1,20 +1,17 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-// TODO: Needs a lot of work.
-
-/// The `dialogue` module provides a simple and versatile dialogue system.
-module popka.dialogue;
+/// The `chat` module provides a simple and versatile dialogue system.
+module popka.chat;
 
 import popka.engine;
-
 public import joka;
 
 @safe @nogc nothrow:
 
-enum dialogueUnitKindChars = ".#*@>|^!+-$";
+enum ChatUnitKindChars = ".#*@>|^!+-$";
 
-enum DialogueUnitKind {
+enum ChatUnitKind {
     pause = '.',
     comment = '#',
     point = '*',
@@ -28,27 +25,24 @@ enum DialogueUnitKind {
     command = '$',
 }
 
-struct DialogueUnit {
-    List!char text;
-    DialogueUnitKind kind;
+struct ChatUnit {
+    LStr text;
+    ChatUnitKind kind;
 }
 
-struct DialogueVariable {
-    List!char name;
+struct ChatValue {
+    LStr name;
     long value;
 }
 
-alias DialogueCommandRunner = void function(const(char)[][] args);
+alias ChatCommandRunner = void function(IStr[] args);
 
-struct Dialogue {
-    List!DialogueUnit units;
-    List!DialogueVariable variables;
-    List!(const(char)[]) menu;
-    List!(const(char)[]) command;
-    size_t unitIndex;
-    size_t pointCount;
-    const(char)[] text;
-    const(char)[] actor;
+struct Chat {
+    List!ChatUnit units;
+    List!ChatValue values;
+    IStr text;
+    IStr actor;
+    Sz unitIndex;
 
     @safe @nogc nothrow:
 
@@ -56,43 +50,84 @@ struct Dialogue {
         return units.length == 0;
     }
 
+    bool isKind(ChatUnitKind kind) {
+        return unitIndex < units.length && units[unitIndex].kind == kind;
+    }
+
     bool hasChoices() {
-        return menu.length != 0;
+        return isKind(ChatUnitKind.menu);
     }
 
-    bool hasCommand() {
-        return command.length != 0;
-    }
-
-    bool hasText() {
-        return unitIndex < units.length && units[unitIndex].kind != DialogueUnitKind.pause;
+    bool hasArgs() {
+        return isKind(ChatUnitKind.command);
     }
 
     bool hasEnded() {
-        return !hasText;
+        return isKind(ChatUnitKind.pause);
     }
 
-    const(char)[][] choices() {
-        return menu.items;
+    auto choices() {
+        struct Range {
+            IStr menu;
+
+            bool empty() {
+                return menu.length == 0;
+            }
+            
+            IStr front() {
+                auto temp = menu;
+                return temp.skipValue(ChatUnitKind.menu).trim();
+            }
+            
+            void popFront() {
+                menu.skipValue(ChatUnitKind.menu);
+            }
+        }
+
+        return hasChoices ? Range(units[unitIndex].text.items) : Range("");
     }
 
-    const(char)[][] args() {
-        return command.items;
+    IStr[] args() {
+        static IStr[16] buffer;
+
+        struct Range {
+            IStr command;
+
+            bool empty() {
+                return command.length == 0;
+            }
+            
+            IStr front() {
+                auto temp = command;
+                return temp.skipValue(' ').trim();
+            }
+            
+            void popFront() {
+                command.skipValue(' ');
+            }
+        }
+
+        auto length = 0;
+        auto range = hasArgs ? Range(units[unitIndex].text.items) : Range("");
+        foreach (item; range) {
+            buffer[length] = item;
+            length += 1;
+        }
+        return buffer[0 .. length];
     }
 
     void reset() {
-        menu.clear();
-        command.clear();
-        unitIndex = 0;
         text = "";
         actor = "";
+        unitIndex = 0;
     }
 
-    void jump(const(char)[] point) {
+    // TODO: Make it faster.
+    void jump(IStr point) {
         if (point.length == 0) {
             foreach (i; unitIndex + 1 .. units.length) {
                 auto unit = units[i];
-                if (unit.kind == DialogueUnitKind.point) {
+                if (unit.kind == ChatUnitKind.point) {
                     unitIndex = i;
                     break;
                 }
@@ -100,7 +135,7 @@ struct Dialogue {
         } else {
             foreach (i; 0 .. units.length) {
                 auto unit = units[i];
-                if (unit.kind == DialogueUnitKind.point && unit.text.items == point) {
+                if (unit.kind == ChatUnitKind.point && unit.text.items == point) {
                     unitIndex = i;
                     break;
                 }
@@ -108,10 +143,11 @@ struct Dialogue {
         }
     }
 
-    void jump(size_t i) {
+    // TODO: Make it faster.
+    void jump(Sz i) {
         auto currPoint = 0;
         foreach (j, unit; units.items) {
-            if (unit.kind == DialogueUnitKind.point) {
+            if (unit.kind == ChatUnitKind.point) {
                 if (currPoint == i) {
                     unitIndex = j;
                     break;
@@ -121,21 +157,19 @@ struct Dialogue {
         }
     }
 
-    void skip(size_t count) {
+    void skip(Sz count) {
         foreach (i; 0 .. count) {
             jump("");
         }
     }
 
-    void select(size_t i) {
-        menu.clear();
+    void pick(Sz i) {
         skip(i + 1);
         update();
     }
 
-    void run(DialogueCommandRunner runner) {
+    void run(ChatCommandRunner runner) {
         runner(args);
-        command.clear();
         update();
     }
 
@@ -145,36 +179,24 @@ struct Dialogue {
             unitIndex += 1;
             text = units[unitIndex].text.items;
             final switch (units[unitIndex].kind) {
-                case DialogueUnitKind.pause, DialogueUnitKind.line: {
+                case ChatUnitKind.line, ChatUnitKind.menu, ChatUnitKind.command, ChatUnitKind.pause: {
                     break;
                 }
-                case DialogueUnitKind.comment, DialogueUnitKind.point: {
+                case ChatUnitKind.comment, ChatUnitKind.point: {
                     update();
                     break;
                 }
-                case DialogueUnitKind.actor: {
+                case ChatUnitKind.actor: {
                     actor = text;
                     update();
                     break;
                 }
-                case DialogueUnitKind.jump: {
+                case ChatUnitKind.jump: {
                     jump(text);
                     update();
                     break;
                 }
-                case DialogueUnitKind.menu: {
-                    if (text.length == 0) {
-                        assert(0, "TODO: An empty menu is an error for now.");
-                    }
-                    menu.clear();
-                    auto view = text;
-                    while (view.length != 0) {
-                        auto option = trim(skipValue(view, DialogueUnitKind.menu));
-                        menu.append(option);
-                    }
-                    break;
-                }
-                case DialogueUnitKind.variable: {
+                case ChatUnitKind.variable: {
                     auto variableIndex = -1;
                     auto view = text;
                     auto name = trim(skipValue(view, '='));
@@ -183,7 +205,7 @@ struct Dialogue {
                         assert(0, "TODO: An variable without a name is an error for now.");
                     }
                     // Find if variable exists.
-                    foreach (i, variable; variables.items) {
+                    foreach (i, variable; values.items) {
                         if (variable.name.items == name) {
                             variableIndex = cast(int) i;
                             break;
@@ -191,10 +213,10 @@ struct Dialogue {
                     }
                     // Create variable if it does not exist.
                     if (variableIndex < 0) {
-                        auto variable = DialogueVariable();
+                        auto variable = ChatValue();
                         variable.name.append(name);
-                        variables.append(variable);
-                        variableIndex = cast(int) variables.length - 1;
+                        values.append(variable);
+                        variableIndex = cast(int) values.length - 1;
                     }
                     // Set variable value.
                     if (value.length != 0) {
@@ -203,7 +225,7 @@ struct Dialogue {
                             auto valueVariableIndex = -1;
                             auto valueName = value;
                             // Find if variable exists.
-                            foreach (i, variable; variables.items) {
+                            foreach (i, variable; values.items) {
                                 if (variable.name.items == valueName) {
                                     valueVariableIndex = cast(int) i;
                                     break;
@@ -212,20 +234,20 @@ struct Dialogue {
                             if (valueVariableIndex < 0) {
                                 assert(0, "TODO: A variable that doesn't exist it an error for now.");
                             } else {
-                                variables[variableIndex].value = variables[valueVariableIndex].value;
+                                values[variableIndex].value = values[valueVariableIndex].value;
                             }
                         } else {
-                            variables[variableIndex].value = conv.value;
+                            values[variableIndex].value = conv.value;
                         }
                     }
                     update();
                     break;
                 }
-                case DialogueUnitKind.plus, DialogueUnitKind.minus: {
+                case ChatUnitKind.plus, ChatUnitKind.minus: {
                     auto variableIndex = -1;
                     auto name = text;
                     // Find if variable exists.
-                    foreach (i, variable; variables.items) {
+                    foreach (i, variable; values.items) {
                         if (variable.name.items == name) {
                             variableIndex = cast(int) i;
                             break;
@@ -235,37 +257,25 @@ struct Dialogue {
                     if (variableIndex < 0) {
                         assert(0, "TODO: A variable that doesn't exist it an error for now.");
                     }
-                    if (units[unitIndex].kind == DialogueUnitKind.plus) {
-                        variables[variableIndex].value += 1;
+                    if (units[unitIndex].kind == ChatUnitKind.plus) {
+                        values[variableIndex].value += 1;
                     } else {
-                        variables[variableIndex].value -= 1;
+                        values[variableIndex].value -= 1;
                     }
                     update();
-                    break;
-                }
-                case DialogueUnitKind.command: {
-                    if (text.length == 0) {
-                        assert(0, "TODO: An empty command is an error for now.");
-                    }
-                    command.clear();
-                    auto view = text;
-                    while (view.length != 0) {
-                        auto arg = trim(skipValue(view, ' '));
-                        command.append(arg);
-                    }
                     break;
                 }
             }
         }
     }
 
-    Fault parse(const(char)[] script) {
+    Fault parse(IStr script) {
         clear();
         if (script.length == 0) {
             return Fault.invalid;
         }
 
-        units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
+        units.append(ChatUnit(LStr(), ChatUnitKind.pause));
         auto isFirstLine = true;
         auto view = script;
         while (view.length != 0) {
@@ -277,23 +287,20 @@ struct Dialogue {
             auto kind = line[0];
             if (isFirstLine) {
                 isFirstLine = false;
-                if (kind == DialogueUnitKind.pause) {
+                if (kind == ChatUnitKind.pause) {
                     continue;
                 }
             }
-            if (isValidDialogueUnitKind(kind)) {
-                auto realKind = cast(DialogueUnitKind) kind;
-                units.append(DialogueUnit(List!char(text), realKind));
-                if (realKind == DialogueUnitKind.point) {
-                    pointCount += 1;
-                }
+            if (isValidChatUnitKind(kind)) {
+                auto realKind = cast(ChatUnitKind) kind;
+                units.append(ChatUnit(LStr(text), realKind));
             } else {
                 clear();
                 return Fault.invalid;
             }
         }
-        if (units.items[$ - 1].kind != DialogueUnitKind.pause) {
-            units.append(DialogueUnit(List!char(), DialogueUnitKind.pause));
+        if (units.items[$ - 1].kind != ChatUnitKind.pause) {
+            units.append(ChatUnit(LStr(), ChatUnitKind.pause));
         }
         return Fault.none;
     }
@@ -303,14 +310,11 @@ struct Dialogue {
             unit.text.free();
         }
         units.clear();
-        foreach (ref variable; variables) {
+        foreach (ref variable; values) {
             variable.name.free();
         }
-        variables.clear();
-        menu.clear();
-        command.clear();
+        values.clear();
         reset();
-        pointCount = 0;
     }
 
     void free() {
@@ -318,19 +322,16 @@ struct Dialogue {
             unit.text.free();
         }
         units.free();
-        foreach (ref variable; variables) {
+        foreach (ref variable; values) {
             variable.name.free();
         }
-        variables.free();
-        menu.free();
-        command.free();
+        values.free();
         reset();
-        pointCount = 0;
     }
 }
 
-bool isValidDialogueUnitKind(char c) {
-    foreach (kind; dialogueUnitKindChars) {
+bool isValidChatUnitKind(char c) {
+    foreach (kind; ChatUnitKindChars) {
         if (c == kind) {
             return true;
         }
@@ -338,16 +339,19 @@ bool isValidDialogueUnitKind(char c) {
     return false;
 }
 
-Result!Dialogue loadDialogue(IStr path) {
-    auto temp = loadTempText(path);
-    if (temp.isNone) {
-        return Result!Dialogue(temp.fault);
-    }
-    
-    auto value = Dialogue();
-    auto fault = value.parse(temp.unwrap());
+Result!Chat toChat(IStr script) {
+    auto value = Chat();
+    auto fault = value.parse(script);
     if (fault) {
         value.free();
     }
-    return Result!Dialogue(value, fault);
+    return Result!Chat(value, fault);
+}
+
+Result!Chat loadChat(IStr path) {
+    auto temp = loadTempText(path);
+    if (temp.isNone) {
+        return Result!Chat(temp.fault);
+    }
+    return toChat(temp.unwrap());
 }

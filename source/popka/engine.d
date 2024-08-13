@@ -1,13 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-// TODO: Needs docs!
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
 
 import ray = popka.ray;
-
 public import joka;
 public import popka.types;
 
@@ -86,15 +83,6 @@ Result!LStr loadText(IStr path) {
 Result!IStr loadTempText(IStr path) {
     auto fault = readTextIntoBuffer(path.toAssetsPath(), engineState.tempText);
     return Result!IStr(engineState.tempText.items, fault);
-}
-
-Result!TileMap loadTileMap(IStr path) {
-    auto value = TileMap();
-    auto fault = value.parse(loadTempText(path).unwrapOr());
-    if (fault) {
-        value.free();
-    }
-    return Result!TileMap(value, fault);
 }
 
 /// Loads an image file from the assets folder.
@@ -660,38 +648,6 @@ void drawTile(Texture texture, Vec2 position, int tileID, Vec2 tileSize, DrawOpt
     auto col = tileID % gridWidth;
     auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
     drawTexture(texture, position, area, options);
-}
-
-void drawTileMap(Texture texture, Vec2 position, TileMap tileMap, Camera camera, DrawOptions options = DrawOptions()) {
-    enum extraTileCount = 4;
-
-    auto cameraArea = Rect(camera.position, resolution).area(camera.hook);
-    auto topLeft = cameraArea.point(Hook.topLeft);
-    auto bottomRight = cameraArea.point(Hook.bottomRight);
-    auto col1 = 0;
-    auto col2 = 0;
-    auto row1 = 0;
-    auto row2 = 0;
-
-    if (camera.isAttached) {
-        col1 = cast(int) floor(clamp((topLeft.x - position.x) / tileMap.tileSize.x - extraTileCount, 0, tileMap.colCount));
-        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / tileMap.tileSize.x + extraTileCount, 0, tileMap.colCount));
-        row1 = cast(int) floor(clamp((topLeft.y - position.y) / tileMap.tileSize.y - extraTileCount, 0, tileMap.rowCount));
-        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / tileMap.tileSize.y + extraTileCount, 0, tileMap.rowCount));
-    } else {
-        col1 = 0;
-        col2 = cast(int) tileMap.colCount;
-        row1 = 0;
-        row2 = cast(int) tileMap.rowCount;
-    }
-    foreach (row; row1 .. row2) {
-        foreach (col; col1 .. col2) {
-            if (tileMap[row, col] == -1) {
-                continue;
-            }
-            drawTile(texture, position + Vec2(col, row) * tileMap.tileSize * options.scale, tileMap[row, col], tileMap.tileSize, options);
-        }
-    }
 }
 
 @trusted

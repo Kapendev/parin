@@ -1,14 +1,10 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 
-// TODO: Needs docs!
-// TODO: Move tile map to it's own module like dialogue!
-
 /// The `types` module defines all the types used within the `engine` module.
 module popka.types;
 
 import ray = popka.ray;
-
 public import joka;
 
 @safe @nogc nothrow:
@@ -151,6 +147,7 @@ struct EngineViewport {
     int targetHeight;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
+
     alias data this;
 }
 
@@ -206,66 +203,6 @@ struct Camera {
         } else {
             scale = scale.moveToWithSlowdown(target, delta, slowdown);
         }
-    }
-}
-
-struct TileMap {
-    Grid!short data;
-    int tileWidth;
-    int tileHeight;
-    alias data this;
-
-    @safe @nogc nothrow:
-
-    /// Returns true if the tile map has not been loaded.
-    bool isEmpty() {
-        return data.length == 0;
-    }
-
-    /// Returns the tile size of the tile map.
-    Vec2 tileSize() {
-        return Vec2(tileWidth, tileHeight);
-    }
-
-    /// Returns the size of the tile map.
-    Vec2 size() {
-        return tileSize * Vec2(colCount, rowCount);
-    }
-
-    Fault parse(IStr csv) {
-        data.clear();
-        if (csv.length == 0) {
-            return Fault.invalid;
-        }
-
-        auto view = csv;
-        auto newRowCount = 0;
-        auto newColCount = 0;
-
-        while (view.length != 0) {
-            auto line = view.skipLine();
-            newRowCount += 1;
-            newColCount = 0;
-            while (line.length != 0) {
-                auto value = line.skipValue(',');
-                newColCount += 1;
-            }
-        }
-        resize(newRowCount, newColCount);
-
-        view = csv;
-        foreach (row; 0 .. newRowCount) {
-            auto line = view.skipLine();
-            foreach (col; 0 .. newColCount) {
-                auto value = line.skipValue(',').toSigned();
-                if (value.isNone) {
-                    data.clear();
-                    return Fault.invalid;
-                }
-                data[row, col] = cast(short) value.unwrap();
-            }
-        }
-        return Fault.none;
     }
 }
 
