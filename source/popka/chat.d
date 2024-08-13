@@ -66,7 +66,13 @@ struct Chat {
         return isKind(ChatUnitKind.pause);
     }
 
-    auto choices() {
+    bool canUpdate() {
+        return !hasEnded;
+    }
+
+    IStr[] choices() {
+        static IStr[16] buffer;
+
         struct Range {
             IStr menu;
 
@@ -84,7 +90,13 @@ struct Chat {
             }
         }
 
-        return hasChoices ? Range(units[unitIndex].text.items) : Range("");
+        auto length = 0;
+        auto range = hasChoices ? Range(units[unitIndex].text.items) : Range("");
+        foreach (item; range) {
+            buffer[length] = item;
+            length += 1;
+        }
+        return buffer[0 .. length];
     }
 
     IStr[] args() {

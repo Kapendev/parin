@@ -11,10 +11,8 @@ auto frameDirection = 1;
 auto frameSlowdown = 0.2;
 
 bool gameLoop() {
-    // Move the frame around in a smooth way.
-    framePosition = framePosition.moveTo(mouseScreenPosition, Vec2(deltaTime), frameSlowdown);
-
-    // Update the current frame.
+    // Move the frame around in a smooth way and update the current frame.
+    framePosition = framePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(deltaTime), frameSlowdown);
     frame = wrap(frame + deltaTime * frameSpeed, 0, frameCount);
 
     // Check the mouse move direction and make the sprite look at that direction.
@@ -33,27 +31,27 @@ bool gameLoop() {
     options.flip = frameDirection == 1 ? Flip.x : Flip.none;
     options.scale = Vec2(2);
 
-    // Draw the frame.
-    draw(atlas, Rect(frameSize.x * floor(frame), 128, frameSize), framePosition, options);
-    
-    // Draw the mouse position.
-    draw(mouseScreenPosition, 8, frame == 0 ? blank : white.alpha(150));
-    
+    // Draw the frame and the mouse position.
+    drawTexture(atlas, framePosition, Rect(frameSize.x * floor(frame), 128, frameSize), options);
+    drawVec2(mouseScreenPosition, 8, frame == 0 ? blank : white.alpha(150));
     return false;
 }
 
 void gameStart() {
     lockResolution(320, 180);
-    changeBackgroundColor(toRGB(0x0b0b0b));
-    hideCursor();
+    setBackgroundColor(toRgb(0x0b0b0b));
     togglePixelPerfect();
+    hideCursor();
 
     // Loads the `atlas.png` texture from the assets folder.
-    atlas.load("atlas.png");
+    auto result = loadTexture("atlas.png");
+    if (result.isSome) {
+        atlas = result.unwrap();
+    } else {
+        printfln("Can not load texture. Fault: `{}`", result.fault);
+    }
 
     updateWindow!gameLoop();
-
-    // Frees the loaded texture.
     atlas.free();
 }
 

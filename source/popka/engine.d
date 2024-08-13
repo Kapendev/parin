@@ -23,12 +23,13 @@ ray.Camera2D _toRay(Camera camera) {
 /// Returns a random integer between 0 and float.max (inclusive).
 @trusted
 int randi() {
-    return ray.GetRandomValue(0, cast(int) float.max);
+    return ray.GetRandomValue(0, int.max);
 }
 
 /// Returns a random floating point number between 0.0f and 1.0f (inclusive).
+@trusted
 float randf() {
-    return randi() / float.max;
+    return ray.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
 /// Sets the seed for the random number generator to something specific.
@@ -90,7 +91,7 @@ Result!IStr loadTempText(IStr path) {
 @trusted
 Result!Texture loadTexture(IStr path) {
     auto value = ray.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
-    return Result!Texture(value, value.isEmpty.toFault());
+    return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 @trusted
@@ -102,7 +103,7 @@ Result!Viewport loadViewport(int width, int height) {
 @trusted
 Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
     auto value = ray.LoadFontEx(path.toAssetsPath.toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
-    return Result!Font(value, value.isEmpty.toFault());
+    return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Saves a text file to the assets folder.
@@ -176,10 +177,11 @@ void updateWindow(alias loopFunc)() {
         // The lockResolution and unlockResolution queue.
         if (engineState.viewport.isLockResolutionQueued) {
             engineState.viewport.isLockResolutionQueued = false;
-            // engineState.viewport.load(engineState.targetViewportSize); // TODO
+            engineState.viewport.free();
+            engineState.viewport.data = loadViewport(engineState.viewport.targetWidth, engineState.viewport.targetHeight).unwrapOr();
         } else if (engineState.viewport.isUnlockResolutionQueued) {
             engineState.viewport.isUnlockResolutionQueued = false;
-            // engineState.viewport.free(); // TODO
+            engineState.viewport.free();
         }
         // Fullscreen code to fix a bug on KDE.
         if (engineState.fullscreenState.isToggleQueued) {
@@ -239,6 +241,10 @@ void closeWindow() {
     engineState = EngineState();
 }
 
+void setBackgroundColor(Color color) {
+    engineState.backgroundColor = color;
+}
+
 /// Returns true if the FPS of the game is locked.
 bool isFpsLocked() {
     return engineState.flags.isFpsLocked;
@@ -283,6 +289,14 @@ void unlockResolution() {
     } else {
         engineState.viewport.isUnlockResolutionQueued = true;
         engineState.viewport.isLockResolutionQueued = false;
+    }
+}
+
+void toggleResolution(int width, int height) {
+    if (isResolutionLocked) {
+        unlockResolution();
+    } else {
+        lockResolution(width, height);
     }
 }
 
@@ -430,6 +444,30 @@ float deltaTime() {
 @trusted
 Vec2 deltaMouse() {
     return toPopka(ray.GetMouseDelta());
+}
+
+@trusted
+void attachCamera(ref Camera camera) {
+    if (camera.isAttached) {
+        return;
+    }
+    camera.isAttached = true;
+    auto temp = camera._toRay();
+    if (isPixelPerfect) {
+        temp.target.x = floor(temp.target.x);
+        temp.target.y = floor(temp.target.y);
+        temp.offset.x = floor(temp.offset.x);
+        temp.offset.y = floor(temp.offset.y);
+    }
+    ray.BeginMode2D(temp);
+}
+
+@trusted
+void detachCamera(ref Camera camera) {
+    if (camera.isAttached) {
+        camera.isAttached = false;
+        ray.EndMode2D();
+    }
 }
 
 @trusted

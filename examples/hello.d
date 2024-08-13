@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: MIT
 
 /// This example serves as a classic hello-world program, introducing the fundamental structure of a Popka program.
-
 import popka;
 
 // The game loop. This is called every frame.
 // If true is returned, then the game will stop running.
 bool gameLoop() {
-    draw("Hello world!");
+    drawDebugText("Hello world!");
     return false;
 }
 

@@ -185,6 +185,14 @@ struct Camera {
 
     @safe @nogc nothrow:
 
+    this(Vec2 position) {
+        this.position = position;
+    }
+
+    this(float x, float y) {
+        this(Vec2(x, y));
+    }
+
     Hook hook() {
         return isCentered ? Hook.center : Hook.topLeft;
     }
@@ -436,24 +444,3 @@ Flip opposite(Flip flip, Flip fallback) {
         return fallback;
     }
 }
-
-// void attach() {
-//     if (!isAttached) {
-//         isAttached = true;
-//         auto temp = toRay(this);
-//         if (isPixelPerfect) {
-//             temp.target.x = floor(temp.target.x);
-//             temp.target.y = floor(temp.target.y);
-//             temp.offset.x = floor(temp.offset.x);
-//             temp.offset.y = floor(temp.offset.y);
-//         }
-//         ray.BeginMode2D(temp);
-//     }
-// }
-
-// void detach() {
-//     if (isAttached) {
-//         isAttached = false;
-//         ray.EndMode2D();
-//     }
-// }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 /// This example shows how to create a simple game with Popka.
-
 import popka;
 
 // The game variables.
@@ -27,7 +26,7 @@ bool gameLoop() {
     if (Keyboard.down.isDown || 's'.isDown) {
         playerDirection.y = 1;
     }
-    player.position += playerDirection * playerSpeed * deltaTime;
+    player.position += playerDirection * playerSpeed * Vec2(deltaTime);
 
     // Check if the player is touching some coins and remove those coins.
     foreach (id; coins.ids) {
@@ -36,29 +35,25 @@ bool gameLoop() {
         }
     }
 
-    // Draw the coins.
+    // Draw the coins and the player.
     foreach (coin; coins.items) {
-        draw(coin, gray2);
+        drawRect(coin);
     }
-    
-    // Draw the player.
-    draw(player, gray2);
+    drawRect(player);
     
     // Draw the game info.
     if (coins.length == 0) {
-        draw("You collected all the coins!");
+        drawDebugText("You collected all the coins!");
     } else {
-        draw("Coins: {}/{}\nMove with arrow keys.".fmt(maxCoinCount - coins.length, maxCoinCount));
+        drawDebugText("Coins: {}/{}\nMove with arrow keys.".format(maxCoinCount - coins.length, maxCoinCount));
     }
     return false;
 }
 
 void gameStart() {
     lockResolution(320, 180);
-    changeBackgroundColor(gray1);
-
     // Place the player and create the coins.
-    player.position = resolution * 0.5;
+    player.position = resolution * Vec2(0.5);
     foreach (i; 0 .. maxCoinCount) {
         auto minPosition = Vec2(0, 40);
         auto maxPosition = resolution - coinSize - minPosition;
