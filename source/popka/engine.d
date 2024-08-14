@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.15
+// Version: v0.0.16
 // ---
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -146,6 +146,7 @@ void openWindow(int width, int height, IStr title = "Popka") {
     ray.InitAudioDevice();
     ray.SetExitKey(ray.KEY_NULL);
     lockFps(60);
+    engineState.flags.isVsync = true;
     engineState.backgroundColor = gray2;
     engineState.fullscreenState.lastWindowSize = Vec2(width, height);
 }
@@ -346,6 +347,14 @@ void showCursor() {
     ray.ShowCursor();
 }
 
+void toggleCursor() {
+    if (isCursorHidden) {
+        showCursor();
+    } else {
+        hideCursor();
+    }
+}
+
 /// Returns true if the window is in fullscreen mode.
 @trusted
 bool isFullscreen() {
@@ -376,6 +385,16 @@ bool isPixelPerfect() {
 /// Changes the state of the pixel perfect mode of the window.
 void togglePixelPerfect() {
     engineState.flags.isPixelPerfect = !engineState.flags.isPixelPerfect;
+}
+
+bool isVsync() {
+    return engineState.flags.isVsync;
+}
+
+@trusted
+void toggleVsync() {
+    engineState.flags.isVsync = !engineState.flags.isVsync;
+    ray.glfwSwapInterval(engineState.flags.isVsync ? 1 : 0);
 }
 
 @trusted

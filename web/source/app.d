@@ -196,7 +196,7 @@ int main(string[] args) {
             if (run(command.format(extraFlags, dflags, popkaParentDir, sourceDir, firstFiles))) return 1;
         }
     } else {
-        enum command = "dub build --compiler ldc --config %s --build release";
+        enum command = "dub build --compiler ldc2 --config %s --build release";
         if (run(command.format(dubWebConfig))) return 1;
     }
 

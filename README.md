@@ -79,6 +79,8 @@ If you encounter errors with BetterC, try using the `-i` flag.
 To export a game to the web, the game must be compatible with BetterC.
 The [web](web) folder contains a helper script to assist with the web export process.
 
+It can be used with DUB by running the following command:
+
 ```bash
 dub run popka:web
 ```
@@ -90,19 +92,15 @@ Popka provides bindings for raylib that are compatible with BetterC and the web.
 ```d
 import popka.ray;
 
-int main() {
-    const int screenWidth = 800;
-    const int screenHeight = 450;
-    InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
-    SetTargetFPS(60);
+void main() {
+    InitWindow(800, 450, "raylib");
     while (!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+        DrawText("Hello world from raylib!", 16, 16, 20, GRAY);
         EndDrawing();
     }
     CloseWindow();
-    return 0;
 }
 ```
 

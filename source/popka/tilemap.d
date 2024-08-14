@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.15
+// Version: v0.0.16
 // ---
 
 /// The `tilemap` module provides a simple and fast tile map.

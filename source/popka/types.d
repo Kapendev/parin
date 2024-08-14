@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.15
+// Version: v0.0.16
 // ---
 
 /// The `types` module defines all the types used within the `engine` module.
@@ -142,6 +142,7 @@ enum Gamepad {
 struct EngineFlags {
     bool isUpdating;
     bool isPixelPerfect;
+    bool isVsync;
     bool isFpsLocked;
     bool isCursorHidden;
 }
