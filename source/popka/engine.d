@@ -106,12 +106,25 @@ Result!Viewport loadViewport(int width, int height) {
     return Result!Viewport(value, value.isEmpty.toFault());
 }
 
-@trusted
 /// Loads a font file (TTF) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
+@trusted
 Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
-    auto value = ray.LoadFontEx(path.toAssetsPath.toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
+    auto value = ray.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads a audio file (WAV, OGG, MP3) from the assets folder.
+/// Can handle both forward slashes and backslashes in file paths.
+@trusted
+Result!Audio loadAudio(IStr path) {
+    auto value = Audio();
+    if (path.endsWith(".wav")) {
+        value.data = ray.LoadSound(path.toAssetsPath().toCStr().unwrapOr());
+    } else {
+        value.data = ray.LoadMusicStream(path.toAssetsPath().toCStr().unwrapOr());
+    }
+    return Result!Audio(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Saves a text file to the assets folder.
@@ -245,8 +258,18 @@ void closeWindow() {
 }
 
 /// Sets the window background color to the given color.
-void setBackgroundColor(Color color) {
-    engineState.backgroundColor = color;
+void setBackgroundColor(Color value) {
+    engineState.backgroundColor = value;
+}
+
+@trusted
+void setMasterVolume(float value) {
+    ray.SetMasterVolume(value);
+}
+
+@trusted
+float masterVolume() {
+    return ray.GetMasterVolume();
 }
 
 /// Returns true if the FPS is locked.
@@ -594,6 +617,69 @@ Vec2 wasd() {
         result.y = 1.0f;
     }
     return result;
+}
+
+@trusted
+void playAudio(Audio audio) {
+    if (audio.isEmpty) {
+        return;
+    }
+
+    if (audio.isSound) {
+        ray.PlaySound(audio.sound);
+    } else {
+        ray.PlayMusicStream(audio.music);
+    }
+}
+
+@trusted
+void updateAudio(Audio audio) {
+    if (audio.isEmpty) {
+        return;
+    }
+
+    if (audio.isMusic) {
+        ray.UpdateMusicStream(audio.music);
+    }
+}
+
+@trusted
+void pauseAudio(Audio audio) {
+    if (audio.isEmpty) {
+        return;
+    }
+
+    if (audio.isSound) {
+        ray.PauseSound(audio.sound);
+    } else {
+        ray.PauseMusicStream(audio.music);
+    }
+}
+
+@trusted
+void resumeAudio(Audio audio) {
+    if (audio.isEmpty) {
+        return;
+    }
+
+    if (audio.isSound) {
+        ray.ResumeSound(audio.sound);
+    } else {
+        ray.ResumeMusicStream(audio.music);
+    }
+}
+
+@trusted
+void stopAudio(Audio audio) {
+    if (audio.isEmpty) {
+        return;
+    }
+
+    if (audio.isSound) {
+        ray.StopSound(audio.sound);
+    } else {
+        ray.StopMusicStream(audio.music);
+    }
 }
 
 @trusted

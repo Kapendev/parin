@@ -17,7 +17,7 @@ public import joka;
 EngineState engineState;
 
 /// A type representing flipping orientations.
-enum Flip {
+enum Flip : ubyte {
     none, /// No flipping.
     x,    /// Flipped along the X-axis.
     y,    /// Flipped along the Y-axis.
@@ -25,7 +25,7 @@ enum Flip {
 }
 
 /// A type representing texture filtering modes.
-enum Filter {
+enum Filter : ubyte {
     nearest, /// Nearest neighbor filtering (blocky).
     linear,  /// Bilinear filtering (smooth).
 }
@@ -256,10 +256,10 @@ struct Texture {
 
     /// Set the filter mode of the texture.
     @trusted
-    void setFilter(Filter filter) {
+    void setFilter(Filter value) {
         if (isEmpty) return;
-        this.filter = filter;
-        ray.SetTextureFilter(data, filter.toRay());
+        filter = value;
+        ray.SetTextureFilter(data, value.toRay());
     }
 
     /// Frees the loaded image.
@@ -302,10 +302,10 @@ struct Viewport {
 
     /// Set the filter mode of the viewport.
     @trusted
-    void setFilter(Filter filter) {
+    void setFilter(Filter value) {
         if (isEmpty) return;
-        this.filter = filter;
-        ray.SetTextureFilter(data.texture, filter.toRay());
+        filter = value;
+        ray.SetTextureFilter(data.texture, value.toRay());
     }
 
     @trusted
@@ -338,10 +338,10 @@ struct Font {
 
     /// Set the filter mode of the font.
     @trusted
-    void setFilter(Filter filter) {
+    void setFilter(Filter value) {
         if (isEmpty) return;
-        this.filter = filter;
-        ray.SetTextureFilter(data.texture, filter.toRay());
+        filter = value;
+        ray.SetTextureFilter(data.texture, value.toRay());
     }
 
     @trusted
@@ -351,6 +351,98 @@ struct Font {
         }
         ray.UnloadFont(data);
         this = Font();
+    }
+}
+
+struct Audio {
+    Data data;
+
+    alias Sound = ray.Sound;
+    alias Music = ray.Music;
+    alias Data = Variant!(Sound, Music);
+
+    @safe @nogc nothrow:
+
+    Sound sound() {
+        return data.get!Sound();
+    }
+
+    Music music() {
+        return data.get!Music();
+    }
+
+    bool isSound() {
+        return data.isKind!Sound;
+    }
+
+    bool isMusic() {
+        return data.isKind!Music;
+    }
+
+    bool isEmpty() {
+        if (isSound) {
+            return sound.stream.sampleRate == 0;
+        } else {
+            return music.stream.sampleRate == 0;
+        }
+    }
+
+    @trusted
+    float time() {
+        if (isSound) {
+            return 0.0f;
+        } else {
+            return ray.GetMusicTimePlayed(music);
+        }
+    }
+
+    @trusted
+    float waitTime() {
+        if (isSound) {
+            return 0.0f;
+        } else {
+            return ray.GetMusicTimeLength(music);
+        }
+    }
+
+    @trusted
+    void setVolume(float value) {
+        if (isSound) {
+            ray.SetSoundVolume(sound, value);
+        } else {
+            ray.SetMusicVolume(music, value);
+        }
+    }
+
+    @trusted
+    void setPitch(float value) {
+        if (isSound) {
+            ray.SetSoundPitch(sound, value);
+        } else {
+            ray.SetMusicPitch(music, value);
+        }
+    }
+
+    @trusted
+    void setPan(float value) {
+        if (isSound) {
+            ray.SetSoundPan(sound, value);
+        } else {
+            ray.SetMusicPan(music, value);
+        }
+    }
+
+    @trusted
+    void free() {
+        if (isEmpty) {
+            return;
+        }
+        if (isSound) {
+            ray.UnloadSound(sound);
+        } else {
+            ray.UnloadMusicStream(music);
+        }
+        this = Audio();
     }
 }
 
