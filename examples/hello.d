@@ -1,18 +1,20 @@
 /// This example serves as a classic hello-world program, introducing the fundamental structure of a Popka program.
 import popka;
 
-// The loop function. This is called every frame.
-// If true is returned, then the game will stop.
-bool gameLoop() {
+// The ready function. This is called once when the game starts.
+void ready() {
+    lockResolution(320, 180);
+}
+
+// The update function. This is called every frame while the game is running.
+// If true is returned, then the game will stop running.
+bool update() {
     drawDebugText("Hello world!");
     return false;
 }
 
-// The start function. This is called once.
-void gameStart() {
-    lockResolution(320, 180);
-    updateWindow!gameLoop();
-}
+// The finish function. This is called once when the game ends.
+void finish() { }
 
-// Creates a main function that calls the given function and creates a game window that is 640 pixels wide and 360 pixels tall.
-mixin callGameStart!(gameStart, 640, 360);
+// Creates a main function that calls the given functions.
+mixin runGame!(ready, update, finish);

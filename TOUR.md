@@ -7,17 +7,18 @@ To begin, open the main file of your project and copy-paste the following code:
 ```d
 import popka;
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+}
+
+bool update() {
     drawDebugText("Hello world!");
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    updateWindow!gameLoop();
-}
+void finish() { }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);
 ```
 
 This code will create a window that displays the message "Hello world!".

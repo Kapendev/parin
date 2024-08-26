@@ -6,7 +6,11 @@ auto camera = Camera(0, -14);
 auto cameraTarget = Vec2(0, -14);
 auto cameraSpeed = Vec2(120);
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+}
+
+bool update() {
     // Move the camera.
     cameraTarget += wasd * cameraSpeed * Vec2(deltaTime);
     camera.followPosition(cameraTarget, Vec2(deltaTime));
@@ -25,9 +29,6 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    updateWindow!gameLoop();
-}
+void finish() { }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);

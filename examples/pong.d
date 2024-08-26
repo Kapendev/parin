@@ -9,7 +9,16 @@ auto ball = Rect(5, 5);
 auto paddle1 = Rect(5 * 0.35, 5 * 5);
 auto paddle2 = Rect(5 * 0.35, 5 * 5);
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+    // Place the game objects.
+    auto paddleOffset = Vec2(resolution.x * 0.4, 0);
+    ball.position = resolution * Vec2(0.5);
+    paddle1.position = resolution * Vec2(0.5) - paddleOffset;
+    paddle2.position = resolution * Vec2(0.5) + paddleOffset;
+}
+
+bool update() {
     // The objects in this game are centered.
     // To do that, we split the rectangle data into 2 parts, normal and centered.
     // A normal rectangle holds the real position of an object.
@@ -69,14 +78,6 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    // Place the game objects.
-    auto paddleOffset = Vec2(resolution.x * 0.4, 0);
-    ball.position = resolution * Vec2(0.5);
-    paddle1.position = resolution * Vec2(0.5) - paddleOffset;
-    paddle2.position = resolution * Vec2(0.5) + paddleOffset;
-    updateWindow!gameLoop();
-}
+void finish() { }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);

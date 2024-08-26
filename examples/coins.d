@@ -8,7 +8,23 @@ auto coins = FlagList!Rect();
 auto coinSize = Vec2(8);
 auto maxCoinCount = 8;
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+    // Place the player and create the coins.
+    player.position = resolution * Vec2(0.5);
+    foreach (i; 0 .. maxCoinCount) {
+        auto minPosition = Vec2(0, 40);
+        auto maxPosition = resolution - coinSize - minPosition;
+        auto coin = Rect(
+            randf * maxPosition.x + minPosition.x,
+            randf * maxPosition.y + minPosition.y,
+            coinSize,
+        );
+        coins.append(coin);
+    }
+}
+
+bool update() {
     // Move the player.
     auto playerDirection = Vec2();
     if (Keyboard.left.isDown || 'a'.isDown) {
@@ -37,7 +53,6 @@ bool gameLoop() {
         drawRect(coin);
     }
     drawRect(player);
-    
     // Draw the game info.
     if (coins.length == 0) {
         drawDebugText("You collected all the coins!");
@@ -47,23 +62,8 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    // Place the player and create the coins.
-    player.position = resolution * Vec2(0.5);
-    foreach (i; 0 .. maxCoinCount) {
-        auto minPosition = Vec2(0, 40);
-        auto maxPosition = resolution - coinSize - minPosition;
-        auto coin = Rect(
-            randf * maxPosition.x + minPosition.x,
-            randf * maxPosition.y + minPosition.y,
-            coinSize,
-        );
-        coins.append(coin);
-    }
-
-    // Start the game loop.
-    updateWindow!gameLoop();
+void finish() {
+    coins.free();
 }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);

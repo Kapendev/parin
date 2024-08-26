@@ -7,7 +7,9 @@
 // ---
 
 // TODO: Make a timer struct.
-// TODO: Think about the toggle functions.
+// TODO: Think about toggle functions.
+// TODO: Update setup script.
+// TODO: Clean web script.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
@@ -697,8 +699,12 @@ void openWindow(int width, int height, IStr title = "Popka") {
 
 /// Updates the window every frame with the given loop function.
 /// This function will return when the loop function returns true.
+/// You should avoid calling this function manually.
 @trusted
-void updateWindow(alias loopFunc)() {
+void updateWindow(bool function() updateFunc) {
+    static bool function() @trusted @nogc nothrow __updateFunc;
+
+    @trusted @nogc nothrow
     static bool __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
@@ -709,7 +715,7 @@ void updateWindow(alias loopFunc)() {
         rl.ClearBackground(engineState.backgroundColor.toRl());
 
         // The main loop.
-        auto result = loopFunc();
+        auto result = __updateFunc();
 
         // End drawing.
         if (isResolutionLocked) {
@@ -768,7 +774,10 @@ void updateWindow(alias loopFunc)() {
         return result;
     }
 
+    // Maybe bad idea, but makes life of no-attribute people easier.
+    __updateFunc = cast(bool function() @trusted @nogc nothrow) updateFunc;
     engineState.flags.isUpdating = true;
+
     version(WebAssembly) {
         static void __updateWindowWeb() {
             if (__updateWindow()) {
@@ -778,10 +787,8 @@ void updateWindow(alias loopFunc)() {
         }
         rl.emscripten_set_main_loop(&__updateWindowWeb, 0, 1);
     } else {
-        // NOTE: Maybe bad idea, but makes life of no-attribute people easier.
-        auto __updateWindowScary = cast(bool function() @trusted @nogc nothrow) &__updateWindow;
         while (true) {
-            if (rl.WindowShouldClose() || __updateWindowScary()) {
+            if (rl.WindowShouldClose() || __updateWindow()) {
                 engineState.flags.isUpdating = false;
                 break;
             }
@@ -1400,9 +1407,8 @@ void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = 
     drawText(engineFont, position, text, options);
 }
 
-mixin template callGameStart(alias startFunc, int width, int height, IStr title = "Popka") {
+mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Popka") {
     version (D_BetterC) {
-        pragma(msg, "Popka is using the C main function.");
         extern(C)
         void main(int argc, immutable(char)** argv) {
             engineState.assetsPath.append(
@@ -1410,18 +1416,21 @@ mixin template callGameStart(alias startFunc, int width, int height, IStr title 
             );
             engineState.tempText.reserve(8192);
             openWindow(width, height);
-            startFunc();
+            readyFunc();
+            updateWindow(&updateFunc);
+            finishFunc();
             closeWindow();
         }
     } else {
-        pragma(msg, "Popka is using the D main function.");
         void main(string[] args) {
             engineState.assetsPath.append(
                 pathConcat(args[0].pathDir, "assets")
             );
             engineState.tempText.reserve(8192);
             openWindow(width, height);
-            startFunc();
+            readyFunc();
+            updateWindow(&updateFunc);
+            finishFunc();
             closeWindow();
         }
     }

@@ -32,7 +32,15 @@ auto script = "
     * End
 ";
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+    // Parse the dialogue script of the game.
+    // The first update makes the dialogue go to the first available line.
+    dialogue.parse(script);
+    dialogue.update();
+}
+
+bool update() {
     // Update the game.
     if (dialogue.canUpdate) {
         if (dialogue.hasChoices) {
@@ -69,13 +77,8 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    // Parse the dialogue script of the game.
-    // The first update makes the dialogue go to the first available line.
-    dialogue.parse(script);
-    dialogue.update();
-    updateWindow!gameLoop();
+void finish() {
+    dialogue.free();
 }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);

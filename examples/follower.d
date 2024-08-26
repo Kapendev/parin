@@ -11,7 +11,16 @@ auto frameSize = Vec2(16);
 auto frameDirection = 1;
 auto frameSlowdown = 0.2;
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+    setBackgroundColor(toRgb(0x0b0b0b));
+    togglePixelPerfect();
+    hideCursor();
+    // Loads the `atlas.png` file from the assets folder.
+    atlas = loadTexture("atlas.png").unwrap();
+}
+
+bool update() {
     // Move the frame around in a smooth way and update the current frame.
     framePosition = framePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(deltaTime), frameSlowdown);
     frame = wrap(frame + deltaTime * frameSpeed, 0, frameCount);
@@ -38,22 +47,8 @@ bool gameLoop() {
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    setBackgroundColor(toRgb(0x0b0b0b));
-    togglePixelPerfect();
-    hideCursor();
-
-    // Loads the `atlas.png` texture from the assets folder.
-    auto result = loadTexture("atlas.png");
-    if (result.isSome) {
-        atlas = result.unwrap();
-    } else {
-        printfln("Can not load texture. Fault: `{}`", result.fault);
-    }
-
-    updateWindow!gameLoop();
+void finish() {
     atlas.free();
 }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);

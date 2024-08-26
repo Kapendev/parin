@@ -6,17 +6,18 @@ It focuses on providing a simple foundation for building 2D games.
 ```d
 import popka;
 
-bool gameLoop() {
+void ready() {
+    lockResolution(320, 180);
+}
+
+bool update() {
     drawDebugText("Hello world!");
     return false;
 }
 
-void gameStart() {
-    lockResolution(320, 180);
-    updateWindow!gameLoop();
-}
+void finish() { }
 
-mixin callGameStart!(gameStart, 640, 360);
+mixin runGame!(ready, update, finish);
 ```
 
 > [!WARNING]  
