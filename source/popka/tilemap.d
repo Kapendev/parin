@@ -38,8 +38,11 @@ struct TileMap {
         return tileSize * Vec2(colCount, rowCount);
     }
 
-    Fault parse(IStr csv) {
+    Fault parse(IStr csv, int tileWidth, int tileHeight) {
         data.clear();
+        this.tileWidth = 0;
+        this.tileHeight = 0;
+
         if (csv.length == 0) {
             return Fault.invalid;
         }
@@ -65,23 +68,25 @@ struct TileMap {
                 auto value = line.skipValue(',').toSigned();
                 if (value.isNone) {
                     data.clear();
+                    this.tileWidth = 0;
+                    this.tileHeight = 0;
                     return Fault.invalid;
                 }
                 data[row, col] = cast(short) value.unwrap();
             }
         }
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
         return Fault.none;
     }
 }
 
 Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
     auto value = TileMap();
-    auto fault = value.parse(csv);
+    auto fault = value.parse(csv, tileWidth, tileHeight);
     if (fault) {
         value.free();
     }
-    value.tileWidth = tileWidth;
-    value.tileHeight = tileHeight;
     return Result!TileMap(value, fault);
 }
 
@@ -93,46 +98,50 @@ Result!TileMap loadTileMap(IStr path, int tileWidth, int tileHeight) {
     return toTileMap(temp.unwrap(), tileWidth, tileHeight);
 }
 
-void drawTile(Texture texture, Vec2 position, int tileID, Vec2 tileSize, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(int) (texture.size.x / tileSize.x);
-    auto gridHeight = cast(int) (texture.size.y / tileSize.y);
+void drawTile(Texture texture, Vec2 position, int tileID, int tileWidth, int tileHeight, DrawOptions options = DrawOptions()) {
+    auto gridWidth = cast(int) (texture.size.x / tileWidth);
+    auto gridHeight = cast(int) (texture.size.y / tileHeight);
     if (gridWidth == 0 || gridHeight == 0) {
         return;
     }
     auto row = tileID / gridWidth;
     auto col = tileID % gridWidth;
-    auto area = Rect(col * tileSize.x, row * tileSize.y, tileSize.x, tileSize.y);
+    auto area = Rect(col * tileWidth, row * tileHeight, tileWidth, tileHeight);
     drawTexture(texture, position, area, options);
 }
 
-void drawTileMap(Texture texture, Vec2 position, TileMap tileMap, Camera camera, DrawOptions options = DrawOptions()) {
-    enum extraTileCount = 1;
-
+void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook);
-    auto topLeft = cameraArea.point(Hook.topLeft);
-    auto bottomRight = cameraArea.point(Hook.bottomRight);
-    auto col1 = 0;
-    auto col2 = 0;
-    auto row1 = 0;
-    auto row2 = 0;
+    auto topLeft = cameraArea.topLeftPoint;
+    auto bottomRight = cameraArea.bottomRightPoint;
+    auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
+    auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
+    auto targetTileSize = Vec2(targetTileWidth, targetTileHeight);
 
+    auto row1 = 0;
+    auto col1 = 0;
+    auto row2 = 0;
+    auto col2 = 0;
     if (camera.isAttached) {
-        col1 = cast(int) floor(clamp((topLeft.x - position.x) / tileMap.tileSize.x - extraTileCount, 0, tileMap.colCount));
-        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / tileMap.tileSize.x + extraTileCount, 0, tileMap.colCount));
-        row1 = cast(int) floor(clamp((topLeft.y - position.y) / tileMap.tileSize.y - extraTileCount, 0, tileMap.rowCount));
-        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / tileMap.tileSize.y + extraTileCount, 0, tileMap.rowCount));
+        row1 = cast(int) floor(clamp((topLeft.y - position.y) / targetTileHeight, 0, map.rowCount));
+        col1 = cast(int) floor(clamp((topLeft.x - position.x) / targetTileWidth, 0, map.colCount));
+        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / targetTileHeight + 1, 0, map.rowCount));
+        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / targetTileWidth + 1, 0, map.colCount));
     } else {
-        col1 = 0;
-        col2 = cast(int) tileMap.colCount;
-        row1 = 0;
-        row2 = cast(int) tileMap.rowCount;
+        row1 = cast(int) 0;
+        col1 = cast(int) 0;
+        row2 = cast(int) map.rowCount;
+        col2 = cast(int) map.colCount;
     }
+
+    if (row1 == row2 || col1 == col2) {
+        return;
+    }
+
     foreach (row; row1 .. row2) {
         foreach (col; col1 .. col2) {
-            if (tileMap[row, col] == -1) {
-                continue;
-            }
-            drawTile(texture, position + Vec2(col, row) * tileMap.tileSize * options.scale, tileMap[row, col], tileMap.tileSize, options);
+            if (map[row, col] == -1) continue;
+            drawTile(texture, position + Vec2(col, row) * targetTileSize, map[row, col], map.tileWidth, map.tileHeight, options);
         }
     }
 }

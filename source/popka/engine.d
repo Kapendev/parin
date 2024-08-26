@@ -1019,6 +1019,11 @@ int fps() {
 }
 
 @trusted
+double elapsedTime() {
+    return ray.GetTime();
+}
+
+@trusted
 float deltaTime() {
     return ray.GetFrameTime();
 }
