@@ -329,7 +329,7 @@ struct Font {
 
     /// Returns true if the font has not been loaded.
     bool isEmpty() {
-        return data.texture.id <= 0 || data.texture.id == engineFont.data.texture.id;
+        return data.texture.id <= 0;
     }
 
     /// Returns the size of the font.
@@ -647,6 +647,9 @@ Result!Viewport loadViewport(int width, int height) {
 @trusted
 Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
     auto value = ray.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
+    if (value.data.texture.id == engineFont.data.texture.id) {
+        value = Font();
+    }
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
