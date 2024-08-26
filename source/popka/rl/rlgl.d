@@ -113,7 +113,7 @@
 **********************************************************************************************/
 
 /// The `rlgl` module provides access to the rlgl.h functions.
-module popka.ray.rlgl;
+module popka.rl.rlgl;
 
 @nogc nothrow extern(C):
 

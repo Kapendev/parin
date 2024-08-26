@@ -86,25 +86,6 @@ It can be used with DUB by running the following command:
 dub run popka:web
 ```
 
-## raylib Bindings
-
-Popka provides bindings for raylib that are compatible with BetterC and the web.
-
-```d
-import popka.ray;
-
-void main() {
-    InitWindow(800, 450, "raylib");
-    while (!WindowShouldClose()) {
-        BeginDrawing();
-        ClearBackground(RAYWHITE);
-        DrawText("Hello world from raylib!", 16, 16, 20, GRAY);
-        EndDrawing();
-    }
-    CloseWindow();
-}
-```
-
 ## Note
 
 I add things to Popka when I need them.

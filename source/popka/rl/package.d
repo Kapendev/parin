@@ -6,15 +6,11 @@
 // Version: v0.0.17
 // ---
 
-/// The `ray` module provides access to the raylib library.
-module popka.ray;
+/// The `rl` module provides access to the raylib library.
+module popka.rl;
 
-public import popka.ray.raylib;
-public import popka.ray.rlgl;
-
-@nogc nothrow extern(C):
-
-void glfwSwapInterval(int interval);
+public import popka.rl.raylib;
+public import popka.rl.rlgl;
 
 version (WebAssembly) {
     @nogc nothrow extern(C):

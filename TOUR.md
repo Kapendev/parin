@@ -83,7 +83,7 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
 void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions());
 
 void drawTile(Texture texture, Vec2 position, int tileID, Vec2 tileSize, DrawOptions options = DrawOptions());
-void drawTileMap(Texture texture, Vec2 position, TileMap tileMap, Camera camera, DrawOptions options = DrawOptions());
+void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, DrawOptions options = DrawOptions())
 ```
 
 ## Loading and Saving

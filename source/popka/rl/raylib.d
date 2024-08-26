@@ -85,7 +85,7 @@
 **********************************************************************************************/
 
 /// The `rayib` module provides access to the raylib.h functions.
-module popka.ray.raylib;
+module popka.rl.raylib;
 
 // import core.stdc.config;
 // import core.stdc.stdarg;

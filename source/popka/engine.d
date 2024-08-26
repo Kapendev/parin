@@ -6,10 +6,13 @@
 // Version: v0.0.17
 // ---
 
+// TODO: Make a timer struct.
+// TODO: Think about the toggle functions.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
 
-import ray = popka.ray;
+import rl = popka.rl;
 public import joka;
 
 @safe @nogc nothrow:
@@ -32,154 +35,111 @@ enum Filter : ubyte {
 
 /// A type representing a limited set of keyboard keys.
 enum Keyboard {
-    a = ray.KEY_A,                 /// The A key.
-    b = ray.KEY_B,                 /// The B key.
-    c = ray.KEY_C,                 /// The C key.
-    d = ray.KEY_D,                 /// The D key.
-    e = ray.KEY_E,                 /// The E key.
-    f = ray.KEY_F,                 /// The F key.
-    g = ray.KEY_G,                 /// The G key.
-    h = ray.KEY_H,                 /// The H key.
-    i = ray.KEY_I,                 /// The I key.
-    j = ray.KEY_J,                 /// The J key.
-    k = ray.KEY_K,                 /// The K key.
-    l = ray.KEY_L,                 /// The L key.
-    m = ray.KEY_M,                 /// The M key.
-    n = ray.KEY_N,                 /// The N key.
-    o = ray.KEY_O,                 /// The O key.
-    p = ray.KEY_P,                 /// The P key.
-    q = ray.KEY_Q,                 /// The Q key.
-    r = ray.KEY_R,                 /// The R key.
-    s = ray.KEY_S,                 /// The S key.
-    t = ray.KEY_T,                 /// The T key.
-    u = ray.KEY_U,                 /// The U key.
-    v = ray.KEY_V,                 /// The V key.
-    w = ray.KEY_W,                 /// The W key.
-    x = ray.KEY_X,                 /// The X key.
-    y = ray.KEY_Y,                 /// The Y key.
-    z = ray.KEY_Z,                 /// The Z key.
-    n0 = ray.KEY_ZERO,             /// The 0 key.
-    n1 = ray.KEY_ONE,              /// The 1 key.
-    n2 = ray.KEY_TWO,              /// The 2 key.
-    n3 = ray.KEY_THREE,            /// The 3 key.
-    n4 = ray.KEY_FOUR,             /// The 4 key.
-    n5 = ray.KEY_FIVE,             /// The 5 key.
-    n6 = ray.KEY_SIX,              /// The 6 key.
-    n7 = ray.KEY_SEVEN,            /// The 7 key.
-    n8 = ray.KEY_EIGHT,            /// The 8 key.
-    n9 = ray.KEY_NINE,             /// The 9 key.
-    nn0 = ray.KEY_KP_0,            /// The 0 key on the numpad.
-    nn1 = ray.KEY_KP_1,            /// The 1 key on the numpad.
-    nn2 = ray.KEY_KP_2,            /// The 2 key on the numpad.
-    nn3 = ray.KEY_KP_3,            /// The 3 key on the numpad.
-    nn4 = ray.KEY_KP_4,            /// The 4 key on the numpad.
-    nn5 = ray.KEY_KP_5,            /// The 5 key on the numpad.
-    nn6 = ray.KEY_KP_6,            /// The 6 key on the numpad.
-    nn7 = ray.KEY_KP_7,            /// The 7 key on the numpad.
-    nn8 = ray.KEY_KP_8,            /// The 8 key on the numpad.
-    nn9 = ray.KEY_KP_9,            /// The 9 key on the numpad.
-    f1 = ray.KEY_F1,               /// The f1 key.
-    f2 = ray.KEY_F2,               /// The f2 key.
-    f3 = ray.KEY_F3,               /// The f3 key.
-    f4 = ray.KEY_F4,               /// The f4 key.
-    f5 = ray.KEY_F5,               /// The f5 key.
-    f6 = ray.KEY_F6,               /// The f6 key.
-    f7 = ray.KEY_F7,               /// The f7 key.
-    f8 = ray.KEY_F8,               /// The f8 key.
-    f9 = ray.KEY_F9,               /// The f9 key.
-    f10 = ray.KEY_F10,             /// The f10 key.
-    f11 = ray.KEY_F11,             /// The f11 key.
-    f12 = ray.KEY_F12,             /// The f12 key.
-    left = ray.KEY_LEFT,           /// The left arrow key.
-    right = ray.KEY_RIGHT,         /// The right arrow key.
-    up = ray.KEY_UP,               /// The up arrow key.
-    down = ray.KEY_DOWN,           /// The down arrow key.
-    esc = ray.KEY_ESCAPE,          /// The escape key.
-    enter = ray.KEY_ENTER,         /// The enter key.
-    tab = ray.KEY_TAB,             /// The tab key.
-    space = ray.KEY_SPACE,         /// The space key.
-    backspace = ray.KEY_BACKSPACE, /// THe backspace key.
-    shift = ray.KEY_LEFT_SHIFT,    /// The left shift key.
-    ctrl = ray.KEY_LEFT_CONTROL,   /// The left control key.
-    alt = ray.KEY_LEFT_ALT,        /// The left alt key.
-    win = ray.KEY_LEFT_SUPER,      /// The left windows/super/command key.
-    insert = ray.KEY_INSERT,       /// The insert key.
-    del = ray.KEY_DELETE,          /// The delete key.
-    home = ray.KEY_HOME,           /// The home key.
-    end = ray.KEY_END,             /// The end key.
-    pageUp = ray.KEY_PAGE_UP,      /// The page up key.
-    pageDown = ray.KEY_PAGE_DOWN,  /// The page down key.
+    a = rl.KEY_A,                 /// The A key.
+    b = rl.KEY_B,                 /// The B key.
+    c = rl.KEY_C,                 /// The C key.
+    d = rl.KEY_D,                 /// The D key.
+    e = rl.KEY_E,                 /// The E key.
+    f = rl.KEY_F,                 /// The F key.
+    g = rl.KEY_G,                 /// The G key.
+    h = rl.KEY_H,                 /// The H key.
+    i = rl.KEY_I,                 /// The I key.
+    j = rl.KEY_J,                 /// The J key.
+    k = rl.KEY_K,                 /// The K key.
+    l = rl.KEY_L,                 /// The L key.
+    m = rl.KEY_M,                 /// The M key.
+    n = rl.KEY_N,                 /// The N key.
+    o = rl.KEY_O,                 /// The O key.
+    p = rl.KEY_P,                 /// The P key.
+    q = rl.KEY_Q,                 /// The Q key.
+    r = rl.KEY_R,                 /// The R key.
+    s = rl.KEY_S,                 /// The S key.
+    t = rl.KEY_T,                 /// The T key.
+    u = rl.KEY_U,                 /// The U key.
+    v = rl.KEY_V,                 /// The V key.
+    w = rl.KEY_W,                 /// The W key.
+    x = rl.KEY_X,                 /// The X key.
+    y = rl.KEY_Y,                 /// The Y key.
+    z = rl.KEY_Z,                 /// The Z key.
+    n0 = rl.KEY_ZERO,             /// The 0 key.
+    n1 = rl.KEY_ONE,              /// The 1 key.
+    n2 = rl.KEY_TWO,              /// The 2 key.
+    n3 = rl.KEY_THREE,            /// The 3 key.
+    n4 = rl.KEY_FOUR,             /// The 4 key.
+    n5 = rl.KEY_FIVE,             /// The 5 key.
+    n6 = rl.KEY_SIX,              /// The 6 key.
+    n7 = rl.KEY_SEVEN,            /// The 7 key.
+    n8 = rl.KEY_EIGHT,            /// The 8 key.
+    n9 = rl.KEY_NINE,             /// The 9 key.
+    nn0 = rl.KEY_KP_0,            /// The 0 key on the numpad.
+    nn1 = rl.KEY_KP_1,            /// The 1 key on the numpad.
+    nn2 = rl.KEY_KP_2,            /// The 2 key on the numpad.
+    nn3 = rl.KEY_KP_3,            /// The 3 key on the numpad.
+    nn4 = rl.KEY_KP_4,            /// The 4 key on the numpad.
+    nn5 = rl.KEY_KP_5,            /// The 5 key on the numpad.
+    nn6 = rl.KEY_KP_6,            /// The 6 key on the numpad.
+    nn7 = rl.KEY_KP_7,            /// The 7 key on the numpad.
+    nn8 = rl.KEY_KP_8,            /// The 8 key on the numpad.
+    nn9 = rl.KEY_KP_9,            /// The 9 key on the numpad.
+    f1 = rl.KEY_F1,               /// The f1 key.
+    f2 = rl.KEY_F2,               /// The f2 key.
+    f3 = rl.KEY_F3,               /// The f3 key.
+    f4 = rl.KEY_F4,               /// The f4 key.
+    f5 = rl.KEY_F5,               /// The f5 key.
+    f6 = rl.KEY_F6,               /// The f6 key.
+    f7 = rl.KEY_F7,               /// The f7 key.
+    f8 = rl.KEY_F8,               /// The f8 key.
+    f9 = rl.KEY_F9,               /// The f9 key.
+    f10 = rl.KEY_F10,             /// The f10 key.
+    f11 = rl.KEY_F11,             /// The f11 key.
+    f12 = rl.KEY_F12,             /// The f12 key.
+    left = rl.KEY_LEFT,           /// The left arrow key.
+    right = rl.KEY_RIGHT,         /// The right arrow key.
+    up = rl.KEY_UP,               /// The up arrow key.
+    down = rl.KEY_DOWN,           /// The down arrow key.
+    esc = rl.KEY_ESCAPE,          /// The escape key.
+    enter = rl.KEY_ENTER,         /// The enter key.
+    tab = rl.KEY_TAB,             /// The tab key.
+    space = rl.KEY_SPACE,         /// The space key.
+    backspace = rl.KEY_BACKSPACE, /// THe backspace key.
+    shift = rl.KEY_LEFT_SHIFT,    /// The left shift key.
+    ctrl = rl.KEY_LEFT_CONTROL,   /// The left control key.
+    alt = rl.KEY_LEFT_ALT,        /// The left alt key.
+    win = rl.KEY_LEFT_SUPER,      /// The left windows/super/command key.
+    insert = rl.KEY_INSERT,       /// The insert key.
+    del = rl.KEY_DELETE,          /// The delete key.
+    home = rl.KEY_HOME,           /// The home key.
+    end = rl.KEY_END,             /// The end key.
+    pageUp = rl.KEY_PAGE_UP,      /// The page up key.
+    pageDown = rl.KEY_PAGE_DOWN,  /// The page down key.
 }
 
 /// A type representing a limited set of mouse keys.
 enum Mouse {
-    left = ray.MOUSE_BUTTON_LEFT,     /// The left mouse button.
-    right = ray.MOUSE_BUTTON_RIGHT,   /// The right mouse button.
-    middle = ray.MOUSE_BUTTON_MIDDLE, /// The middle mouse button.
+    left = rl.MOUSE_BUTTON_LEFT,     /// The left mouse button.
+    right = rl.MOUSE_BUTTON_RIGHT,   /// The right mouse button.
+    middle = rl.MOUSE_BUTTON_MIDDLE, /// The middle mouse button.
 }
 
 /// A type representing a limited set of gamepad buttons.
 enum Gamepad {
-    left = ray.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
-    right = ray.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
-    up = ray.GAMEPAD_BUTTON_LEFT_FACE_UP,       /// The up button.
-    down = ray.GAMEPAD_BUTTON_LEFT_FACE_DOWN,   /// The down button.
-    y = ray.GAMEPAD_BUTTON_RIGHT_FACE_UP,       /// The Xbox y, PlayStation triangle and Nintendo x button.
-    x = ray.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,    /// The Xbox x, PlayStation square and Nintendo y button.
-    a = ray.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,     /// The Xbox a, PlayStation cross and Nintendo b button.
-    b = ray.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,     /// The Xbox b, PlayStation circle and Nintendo a button.
-    lt = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_2,     /// The left trigger button.
-    lb = ray.GAMEPAD_BUTTON_LEFT_TRIGGER_1,     /// The left bumper button.
-    lsb = ray.GAMEPAD_BUTTON_LEFT_THUMB,        /// The left stick button.
-    rt = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,    /// The right trigger button.
-    rb = ray.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,    /// The right bumper button.
-    rsb = ray.GAMEPAD_BUTTON_RIGHT_THUMB,       /// The right stick button.
-    back = ray.GAMEPAD_BUTTON_MIDDLE_LEFT,      /// The back button.
-    start = ray.GAMEPAD_BUTTON_MIDDLE_RIGHT,    /// The start button.
-    middle = ray.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
-}
-
-struct EngineFlags {
-    bool isUpdating;
-    bool isPixelPerfect;
-    bool isVsync;
-    bool isFpsLocked;
-    bool isCursorHidden;
-}
-
-struct EngineViewport {
-    Viewport data;
-    int targetWidth;
-    int targetHeight;
-    bool isLockResolutionQueued;
-    bool isUnlockResolutionQueued;
-
-    alias data this;
-}
-
-struct EngineFullscreenState {
-    Vec2 lastWindowSize;
-    float toggleTimer = 0.0f;
-    bool isToggleQueued;
-    enum toggleWaitTime = 0.1f;
-}
-
-struct EngineState {
-    EngineFlags flags;
-    EngineFullscreenState fullscreenState;
-    EngineViewport viewport;
-    Color backgroundColor;
-    LStr tempText;
-    LStr assetsPath;
-
-    @safe @nogc nothrow:
-
-    void free() {
-        viewport.free();
-        tempText.free();
-        assetsPath.free();
-        this = EngineState();
-    }
+    left = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
+    right = rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
+    up = rl.GAMEPAD_BUTTON_LEFT_FACE_UP,       /// The up button.
+    down = rl.GAMEPAD_BUTTON_LEFT_FACE_DOWN,   /// The down button.
+    y = rl.GAMEPAD_BUTTON_RIGHT_FACE_UP,       /// The Xbox y, PlayStation triangle and Nintendo x button.
+    x = rl.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,    /// The Xbox x, PlayStation square and Nintendo y button.
+    a = rl.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,     /// The Xbox a, PlayStation cross and Nintendo b button.
+    b = rl.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,     /// The Xbox b, PlayStation circle and Nintendo a button.
+    lt = rl.GAMEPAD_BUTTON_LEFT_TRIGGER_2,     /// The left trigger button.
+    lb = rl.GAMEPAD_BUTTON_LEFT_TRIGGER_1,     /// The left bumper button.
+    lsb = rl.GAMEPAD_BUTTON_LEFT_THUMB,        /// The left stick button.
+    rt = rl.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,    /// The right trigger button.
+    rb = rl.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,    /// The right bumper button.
+    rsb = rl.GAMEPAD_BUTTON_RIGHT_THUMB,       /// The right stick button.
+    back = rl.GAMEPAD_BUTTON_MIDDLE_LEFT,      /// The back button.
+    start = rl.GAMEPAD_BUTTON_MIDDLE_RIGHT,    /// The start button.
+    middle = rl.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
 }
 
 struct DrawOptions {
@@ -230,7 +190,7 @@ struct Camera {
 }
 
 struct Texture {
-    ray.Texture2D data;
+    rl.Texture2D data;
     Filter filter;
 
     @safe @nogc nothrow:
@@ -260,7 +220,7 @@ struct Texture {
     void setFilter(Filter value) {
         if (isEmpty) return;
         filter = value;
-        ray.SetTextureFilter(data, value.toRay());
+        rl.SetTextureFilter(data, value.toRl());
     }
 
     /// Frees the loaded image.
@@ -270,13 +230,13 @@ struct Texture {
         if (isEmpty) {
             return;
         }
-        ray.UnloadTexture(data);
+        rl.UnloadTexture(data);
         this = Texture();
     }
 }
 
 struct Viewport {
-    ray.RenderTexture2D data;
+    rl.RenderTexture2D data;
     Filter filter;
 
     @safe @nogc nothrow:
@@ -306,7 +266,7 @@ struct Viewport {
     void setFilter(Filter value) {
         if (isEmpty) return;
         filter = value;
-        ray.SetTextureFilter(data.texture, value.toRay());
+        rl.SetTextureFilter(data.texture, value.toRl());
     }
 
     @trusted
@@ -314,13 +274,13 @@ struct Viewport {
         if (isEmpty) {
             return;
         }
-        ray.UnloadRenderTexture(data);
+        rl.UnloadRenderTexture(data);
         this = Viewport();
     }
 }
 
 struct Font {
-    ray.Font data;
+    rl.Font data;
     Filter filter;
     int runeSpacing;
     int lineSpacing;
@@ -342,7 +302,7 @@ struct Font {
     void setFilter(Filter value) {
         if (isEmpty) return;
         filter = value;
-        ray.SetTextureFilter(data.texture, value.toRay());
+        rl.SetTextureFilter(data.texture, value.toRl());
     }
 
     @trusted
@@ -350,7 +310,7 @@ struct Font {
         if (isEmpty) {
             return;
         }
-        ray.UnloadFont(data);
+        rl.UnloadFont(data);
         this = Font();
     }
 }
@@ -358,8 +318,8 @@ struct Font {
 struct Audio {
     Data data;
 
-    alias Sound = ray.Sound;
-    alias Music = ray.Music;
+    alias Sound = rl.Sound;
+    alias Music = rl.Music;
     alias Data = Variant!(Sound, Music);
 
     @safe @nogc nothrow:
@@ -393,7 +353,7 @@ struct Audio {
         if (isSound) {
             return 0.0f;
         } else {
-            return ray.GetMusicTimePlayed(music);
+            return rl.GetMusicTimePlayed(music);
         }
     }
 
@@ -402,34 +362,34 @@ struct Audio {
         if (isSound) {
             return 0.0f;
         } else {
-            return ray.GetMusicTimeLength(music);
+            return rl.GetMusicTimeLength(music);
         }
     }
 
     @trusted
     void setVolume(float value) {
         if (isSound) {
-            ray.SetSoundVolume(sound, value);
+            rl.SetSoundVolume(sound, value);
         } else {
-            ray.SetMusicVolume(music, value);
+            rl.SetMusicVolume(music, value);
         }
     }
 
     @trusted
     void setPitch(float value) {
         if (isSound) {
-            ray.SetSoundPitch(sound, value);
+            rl.SetSoundPitch(sound, value);
         } else {
-            ray.SetMusicPitch(music, value);
+            rl.SetMusicPitch(music, value);
         }
     }
 
     @trusted
     void setPan(float value) {
         if (isSound) {
-            ray.SetSoundPan(sound, value);
+            rl.SetSoundPan(sound, value);
         } else {
-            ray.SetMusicPan(music, value);
+            rl.SetMusicPan(music, value);
         }
     }
 
@@ -439,112 +399,157 @@ struct Audio {
             return;
         }
         if (isSound) {
-            ray.UnloadSound(sound);
+            rl.UnloadSound(sound);
         } else {
-            ray.UnloadMusicStream(music);
+            rl.UnloadMusicStream(music);
         }
         this = Audio();
     }
 }
 
+struct EngineFlags {
+    bool isUpdating;
+    bool isPixelPerfect;
+    bool isVsync;
+    bool isFpsLocked;
+    bool isCursorHidden;
+}
+
+struct EngineViewport {
+    Viewport data;
+    int targetWidth;
+    int targetHeight;
+    bool isLockResolutionQueued;
+    bool isUnlockResolutionQueued;
+
+    alias data this;
+}
+
+struct EngineFullscreenState {
+    Vec2 lastWindowSize;
+    float toggleTimer = 0.0f;
+    bool isToggleQueued;
+
+    enum toggleWaitTime = 0.1f;
+}
+
+// TODO: Make it more simple.
+struct EngineState {
+    EngineFlags flags;
+    EngineFullscreenState fullscreenState;
+    EngineViewport viewport;
+    Color backgroundColor;
+    LStr tempText;
+    LStr assetsPath;
+
+    @safe @nogc nothrow:
+
+    void free() {
+        viewport.free();
+        tempText.free();
+        assetsPath.free();
+        this = EngineState();
+    }
+}
+
 /// Converts a raylib color to a Popka color.
-Color toPopka(ray.Color from) {
+Color toPopka(rl.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a raylib vector to a Popka vector.
-Vec2 toPopka(ray.Vector2 from) {
+Vec2 toPopka(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
 /// Converts a raylib vector to a Popka vector.
-Vec3 toPopka(ray.Vector3 from) {
+Vec3 toPopka(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
 /// Converts a raylib vector to a Popka vector.
-Vec4 toPopka(ray.Vector4 from) {
+Vec4 toPopka(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a raylib rectangle to a Popka rectangle.
-Rect toPopka(ray.Rectangle from) {
+Rect toPopka(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
 /// Converts a raylib texture to a Popka texture.
-Texture toPopka(ray.Texture2D from) {
+Texture toPopka(rl.Texture2D from) {
     auto result = Texture();
     result.data = from;
     return result;
 }
 
 /// Converts a raylib font to a Popka font.
-Font toPopka(ray.Font from) {
+Font toPopka(rl.Font from) {
     auto result = Font();
     result.data = from;
     return result;
 }
 
 /// Converts a raylib render texture to a Popka viewport.
-Viewport toPopka(ray.RenderTexture2D from) {
+Viewport toPopka(rl.RenderTexture2D from) {
     auto result = Viewport();
     result.data = from;
     return result;
 }
 
 /// Converts a Popka color to a raylib color.
-ray.Color toRay(Color from) {
-    return ray.Color(from.r, from.g, from.b, from.a);
+rl.Color toRl(Color from) {
+    return rl.Color(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a Popka vector to a raylib vector.
-ray.Vector2 toRay(Vec2 from) {
-    return ray.Vector2(from.x, from.y);
+rl.Vector2 toRl(Vec2 from) {
+    return rl.Vector2(from.x, from.y);
 }
 
 /// Converts a Popka vector to a raylib vector.
-ray.Vector3 toRay(Vec3 from) {
-    return ray.Vector3(from.x, from.y, from.z);
+rl.Vector3 toRl(Vec3 from) {
+    return rl.Vector3(from.x, from.y, from.z);
 }
 
 /// Converts a Popka vector to a raylib vector.
-ray.Vector4 toRay(Vec4 from) {
-    return ray.Vector4(from.x, from.y, from.z, from.w);
+rl.Vector4 toRl(Vec4 from) {
+    return rl.Vector4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a Popka rectangle to a raylib rectangle.
-ray.Rectangle toRay(Rect from) {
-    return ray.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
+rl.Rectangle toRl(Rect from) {
+    return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
 /// Converts a Popka texture to a raylib texture.
-ray.Texture2D toRay(Texture from) {
+rl.Texture2D toRl(Texture from) {
     return from.data;
 }
 
 /// Converts a Popka font to a raylib font.
-ray.Font toRay(Font from) {
+rl.Font toRl(Font from) {
     return from.data;
 }
 
 /// Converts a Popka viewport to a raylib render texture.
-ray.RenderTexture2D toRay(Viewport from) {
+rl.RenderTexture2D toRl(Viewport from) {
     return from.data;
 }
 
 /// Converts a Popka filter to a raylib filter.
-int toRay(Filter filter) {
+int toRl(Filter filter) {
     final switch (filter) {
-        case Filter.nearest: return ray.TEXTURE_FILTER_POINT;
-        case Filter.linear: return ray.TEXTURE_FILTER_BILINEAR;
+        case Filter.nearest: return rl.TEXTURE_FILTER_POINT;
+        case Filter.linear: return rl.TEXTURE_FILTER_BILINEAR;
     }
 }
 
-ray.Camera2D toRay(Camera camera) {
-    return ray.Camera2D(
-        Rect(resolution).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRay(),
-        camera.position.toRay(),
+rl.Camera2D toRl(Camera camera) {
+    return rl.Camera2D(
+        Rect(resolution).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
+        camera.position.toRl(),
         camera.rotation,
         camera.scale,
     );
@@ -564,19 +569,19 @@ Flip opposite(Flip flip, Flip fallback) {
 /// Returns a random integer between 0 and int.max (inclusive).
 @trusted
 int randi() {
-    return ray.GetRandomValue(0, int.max);
+    return rl.GetRandomValue(0, int.max);
 }
 
 /// Returns a random floating point number between 0.0f and 1.0f (inclusive).
 @trusted
 float randf() {
-    return ray.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
+    return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
 /// Sets the seed of the random number generator to the given value.
 @trusted
 void randomize(int seed) {
-    ray.SetRandomSeed(seed);
+    rl.SetRandomSeed(seed);
 }
 
 /// Randomizes the seed of the random number generator.
@@ -587,19 +592,19 @@ void randomize() {
 /// Converts a world position to a screen position based on the given camera.
 @trusted
 Vec2 toScreenPosition(Vec2 position, Camera camera) {
-    return toPopka(ray.GetWorldToScreen2D(position.toRay(), camera.toRay()));
+    return toPopka(rl.GetWorldToScreen2D(position.toRl(), camera.toRl()));
 }
 
 /// Converts a screen position to a world position based on the given camera.
 @trusted
 Vec2 toWorldPosition(Vec2 position, Camera camera) {
-    return toPopka(ray.GetScreenToWorld2D(position.toRay(), camera.toRay()));
+    return toPopka(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
 }
 
 /// Returns the default Popka font. This font should not be freed.
 @trusted
 Font engineFont() {
-    auto result = ray.GetFontDefault().toPopka();
+    auto result = rl.GetFontDefault().toPopka();
     result.runeSpacing = 1;
     result.lineSpacing = 14;
     return result;
@@ -632,13 +637,13 @@ Result!IStr loadTempText(IStr path) {
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadTexture(IStr path) {
-    auto value = ray.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
+    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 @trusted
 Result!Viewport loadViewport(int width, int height) {
-    auto value = ray.LoadRenderTexture(width, height).toPopka();
+    auto value = rl.LoadRenderTexture(width, height).toPopka();
     return Result!Viewport(value, value.isEmpty.toFault());
 }
 
@@ -646,7 +651,7 @@ Result!Viewport loadViewport(int width, int height) {
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
-    auto value = ray.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
+    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
     }
@@ -659,9 +664,9 @@ Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
 Result!Audio loadAudio(IStr path) {
     auto value = Audio();
     if (path.endsWith(".wav")) {
-        value.data = ray.LoadSound(path.toAssetsPath().toCStr().unwrapOr());
+        value.data = rl.LoadSound(path.toAssetsPath().toCStr().unwrapOr());
     } else {
-        value.data = ray.LoadMusicStream(path.toAssetsPath().toCStr().unwrapOr());
+        value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().unwrapOr());
     }
     return Result!Audio(value, value.isEmpty.toFault(Fault.cantFind));
 }
@@ -676,14 +681,14 @@ Fault saveText(IStr path, IStr text) {
 /// You should avoid calling this function manually.
 @trusted
 void openWindow(int width, int height, IStr title = "Popka") {
-    if (ray.IsWindowReady) {
+    if (rl.IsWindowReady) {
         return;
     }
-    ray.SetConfigFlags(ray.FLAG_VSYNC_HINT | ray.FLAG_WINDOW_RESIZABLE);
-    ray.SetTraceLogLevel(ray.LOG_ERROR);
-    ray.InitWindow(width, height, title.toCStr().unwrapOr());
-    ray.InitAudioDevice();
-    ray.SetExitKey(ray.KEY_NULL);
+    rl.SetConfigFlags(rl.FLAG_VSYNC_HINT | rl.FLAG_WINDOW_RESIZABLE);
+    rl.SetTraceLogLevel(rl.LOG_ERROR);
+    rl.InitWindow(width, height, title.toCStr().unwrapOr());
+    rl.InitAudioDevice();
+    rl.SetExitKey(rl.KEY_NULL);
     lockFps(60);
     engineState.flags.isVsync = true;
     engineState.backgroundColor = gray2;
@@ -697,11 +702,11 @@ void updateWindow(alias loopFunc)() {
     static bool __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
-            ray.BeginTextureMode(engineState.viewport.toRay());
+            rl.BeginTextureMode(engineState.viewport.toRl());
         } else {
-            ray.BeginDrawing();
+            rl.BeginDrawing();
         }
-        ray.ClearBackground(engineState.backgroundColor.toRay());
+        rl.ClearBackground(engineState.backgroundColor.toRl());
 
         // The main loop.
         auto result = loopFunc();
@@ -714,25 +719,25 @@ void updateWindow(alias loopFunc)() {
             auto minRatio = min(ratio.x, ratio.y);
             auto targetSize = minSize * Vec2(minRatio);
             auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-            ray.EndTextureMode();
-            ray.BeginDrawing();
-            ray.ClearBackground(ray.Color(0, 0, 0, 255));
-            ray.DrawTexturePro(
-                engineState.viewport.toRay().texture,
-                ray.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
-                ray.Rectangle(
+            rl.EndTextureMode();
+            rl.BeginDrawing();
+            rl.ClearBackground(rl.Color(0, 0, 0, 255));
+            rl.DrawTexturePro(
+                engineState.viewport.toRl().texture,
+                rl.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
+                rl.Rectangle(
                     ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
                     ratio.y == minRatio ? targetPos.y : floor(targetPos.y),
                     ratio.x == minRatio ? targetSize.x : floor(targetSize.x),
                     ratio.y == minRatio ? targetSize.y : floor(targetSize.y),
                 ),
-                ray.Vector2(0.0f, 0.0f),
+                rl.Vector2(0.0f, 0.0f),
                 0.0f,
-                ray.Color(255, 255, 255, 255),
+                rl.Color(255, 255, 255, 255),
             );
-            ray.EndDrawing();
+            rl.EndDrawing();
         } else {
-            ray.EndDrawing();
+            rl.EndDrawing();
         }
         // The lockResolution and unlockResolution queue.
         if (engineState.viewport.isLockResolutionQueued) {
@@ -750,12 +755,12 @@ void updateWindow(alias loopFunc)() {
                 engineState.fullscreenState.toggleTimer = 0.0f;
                 auto screen = screenSize;
                 auto window = engineState.fullscreenState.lastWindowSize;
-                if (ray.IsWindowFullscreen()) {
-                    ray.ToggleFullscreen();
-                    ray.SetWindowSize(cast(int) window.x, cast(int) window.y);
-                    ray.SetWindowPosition(cast(int) (screen.x * 0.5f - window.x * 0.5f), cast(int) (screen.y * 0.5f - window.y * 0.5f));
+                if (rl.IsWindowFullscreen()) {
+                    rl.ToggleFullscreen();
+                    rl.SetWindowSize(cast(int) window.x, cast(int) window.y);
+                    rl.SetWindowPosition(cast(int) (screen.x * 0.5f - window.x * 0.5f), cast(int) (screen.y * 0.5f - window.y * 0.5f));
                 } else {
-                    ray.ToggleFullscreen();
+                    rl.ToggleFullscreen();
                 }
                 engineState.fullscreenState.isToggleQueued = false;
             }
@@ -768,15 +773,15 @@ void updateWindow(alias loopFunc)() {
         static void __updateWindowWeb() {
             if (__updateWindow()) {
                 engineState.flags.isUpdating = false;
-                ray.emscripten_cancel_main_loop();
+                rl.emscripten_cancel_main_loop();
             }
         }
-        ray.emscripten_set_main_loop(&__updateWindowWeb, 0, 1);
+        rl.emscripten_set_main_loop(&__updateWindowWeb, 0, 1);
     } else {
         // NOTE: Maybe bad idea, but makes life of no-attribute people easier.
         auto __updateWindowScary = cast(bool function() @trusted @nogc nothrow) &__updateWindow;
         while (true) {
-            if (ray.WindowShouldClose() || __updateWindowScary()) {
+            if (rl.WindowShouldClose() || __updateWindowScary()) {
                 engineState.flags.isUpdating = false;
                 break;
             }
@@ -788,13 +793,13 @@ void updateWindow(alias loopFunc)() {
 /// You should avoid calling this function manually.
 @trusted
 void closeWindow() {
-    if (!ray.IsWindowReady) {
+    if (!rl.IsWindowReady) {
         return;
     }
     
     engineState.free();
-    ray.CloseAudioDevice();
-    ray.CloseWindow();
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
 }
 
 /// Sets the window background color to the given color.
@@ -804,12 +809,12 @@ void setBackgroundColor(Color value) {
 
 @trusted
 void setMasterVolume(float value) {
-    ray.SetMasterVolume(value);
+    rl.SetMasterVolume(value);
 }
 
 @trusted
 float masterVolume() {
-    return ray.GetMasterVolume();
+    return rl.GetMasterVolume();
 }
 
 /// Returns true if the FPS is locked.
@@ -821,14 +826,14 @@ bool isFpsLocked() {
 @trusted
 void lockFps(int target) {
     engineState.flags.isFpsLocked = true;
-    ray.SetTargetFPS(target);
+    rl.SetTargetFPS(target);
 }
 
 /// Unlocks the FPS.
 @trusted
 void unlockFps() {
     engineState.flags.isFpsLocked = false;
-    ray.SetTargetFPS(0);
+    rl.SetTargetFPS(0);
 }
 
 /// Returns true if the resolution is locked.
@@ -876,14 +881,14 @@ bool isCursorHidden() {
 @trusted
 void hideCursor() {
     engineState.flags.isCursorHidden = true;
-    ray.HideCursor();
+    rl.HideCursor();
 }
 
 /// Shows the system cursor.
 @trusted
 void showCursor() {
     engineState.flags.isCursorHidden = false;
-    ray.ShowCursor();
+    rl.ShowCursor();
 }
 
 void toggleCursor() {
@@ -897,7 +902,7 @@ void toggleCursor() {
 /// Returns true if the window is in fullscreen mode.
 @trusted
 bool isFullscreen() {
-    return ray.IsWindowFullscreen();
+    return rl.IsWindowFullscreen();
 }
 
 /// Changes the state of the fullscreen mode of the window.
@@ -906,11 +911,11 @@ void toggleFullscreen() {
     version(WebAssembly) {
 
     } else {
-        if (!ray.IsWindowFullscreen()) {
+        if (!rl.IsWindowFullscreen()) {
             auto screen = screenSize;
             engineState.fullscreenState.lastWindowSize = windowSize;
-            ray.SetWindowPosition(0, 0);
-            ray.SetWindowSize(screenWidth, screenHeight);
+            rl.SetWindowPosition(0, 0);
+            rl.SetWindowSize(screenWidth, screenHeight);
         }
         engineState.fullscreenState.isToggleQueued = true;
     }
@@ -926,24 +931,14 @@ void togglePixelPerfect() {
     engineState.flags.isPixelPerfect = !engineState.flags.isPixelPerfect;
 }
 
-bool isVsync() {
-    return engineState.flags.isVsync;
-}
-
-@trusted
-void toggleVsync() {
-    engineState.flags.isVsync = !engineState.flags.isVsync;
-    ray.glfwSwapInterval(engineState.flags.isVsync ? 1 : 0);
-}
-
 @trusted
 int screenWidth() {
-    return ray.GetMonitorWidth(ray.GetCurrentMonitor());
+    return rl.GetMonitorWidth(rl.GetCurrentMonitor());
 }
 
 @trusted
 int screenHeight() {
-    return ray.GetMonitorHeight(ray.GetCurrentMonitor());
+    return rl.GetMonitorHeight(rl.GetCurrentMonitor());
 }
 
 Vec2 screenSize() {
@@ -952,12 +947,12 @@ Vec2 screenSize() {
 
 @trusted
 int windowWidth() {
-    return ray.GetScreenWidth();
+    return rl.GetScreenWidth();
 }
 
 @trusted
 int windowHeight() {
-    return ray.GetScreenHeight();
+    return rl.GetScreenHeight();
 }
 
 Vec2 windowSize() {
@@ -996,11 +991,11 @@ Vec2 mouseScreenPosition() {
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
         // We use touch because it works on desktop, web and mobile.
         return Vec2(
-            (ray.GetTouchX() - (window.x - targetSize.x) * 0.5f) / minRatio,
-            (ray.GetTouchY() - (window.y - targetSize.y) * 0.5f) / minRatio,
+            (rl.GetTouchX() - (window.x - targetSize.x) * 0.5f) / minRatio,
+            (rl.GetTouchY() - (window.y - targetSize.y) * 0.5f) / minRatio,
         );
     } else {
-        return Vec2(ray.GetTouchX(), ray.GetTouchY());
+        return Vec2(rl.GetTouchX(), rl.GetTouchY());
     }
 }
 
@@ -1010,27 +1005,27 @@ Vec2 mouseWorldPosition(Camera camera) {
 
 @trusted
 float mouseWheel() {
-    return ray.GetMouseWheelMove();
+    return rl.GetMouseWheelMove();
 }
 
 @trusted
 int fps() {
-    return ray.GetFPS();
+    return rl.GetFPS();
 }
 
 @trusted
 double elapsedTime() {
-    return ray.GetTime();
+    return rl.GetTime();
 }
 
 @trusted
 float deltaTime() {
-    return ray.GetFrameTime();
+    return rl.GetFrameTime();
 }
 
 @trusted
 Vec2 deltaMouse() {
-    return toPopka(ray.GetMouseDelta());
+    return toPopka(rl.GetMouseDelta());
 }
 
 @trusted
@@ -1039,21 +1034,21 @@ void attachCamera(ref Camera camera) {
         return;
     }
     camera.isAttached = true;
-    auto temp = camera.toRay();
+    auto temp = camera.toRl();
     if (isPixelPerfect) {
         temp.target.x = floor(temp.target.x);
         temp.target.y = floor(temp.target.y);
         temp.offset.x = floor(temp.offset.x);
         temp.offset.y = floor(temp.offset.y);
     }
-    ray.BeginMode2D(temp);
+    rl.BeginMode2D(temp);
 }
 
 @trusted
 void detachCamera(ref Camera camera) {
     if (camera.isAttached) {
         camera.isAttached = false;
-        ray.EndMode2D();
+        rl.EndMode2D();
     }
 }
 
@@ -1076,8 +1071,8 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
         byteCounter += 1;
 
         auto next = 0;
-        letter = ray.GetCodepointNext(&text[i], &next);
-        index = ray.GetGlyphIndex(font.data, letter);
+        letter = rl.GetCodepointNext(&text[i], &next);
+        index = rl.GetGlyphIndex(font.data, letter);
         i += next;
         if (letter != '\n') {
             if (font.data.glyphs[index].advanceX != 0) {
@@ -1107,62 +1102,62 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
 
 @trusted
 bool isPressed(char key) {
-    return ray.IsKeyPressed(toUpper(key));
+    return rl.IsKeyPressed(toUpper(key));
 }
 
 @trusted
 bool isPressed(Keyboard key) {
-    return ray.IsKeyPressed(key);
+    return rl.IsKeyPressed(key);
 }
 
 @trusted
 bool isPressed(Mouse key) {
-    return ray.IsMouseButtonPressed(key);
+    return rl.IsMouseButtonPressed(key);
 }
 
 @trusted
 bool isPressed(Gamepad key, int id = 0) {
-    return ray.IsGamepadButtonPressed(id, key);
+    return rl.IsGamepadButtonPressed(id, key);
 }
 
 @trusted
 bool isDown(char key) {
-    return ray.IsKeyDown(toUpper(key));
+    return rl.IsKeyDown(toUpper(key));
 }
 
 @trusted
 bool isDown(Keyboard key) {
-    return ray.IsKeyDown(key);
+    return rl.IsKeyDown(key);
 }
 
 @trusted
 bool isDown(Mouse key) {
-    return ray.IsMouseButtonDown(key);
+    return rl.IsMouseButtonDown(key);
 }
 
 @trusted
 bool isDown(Gamepad key, int id = 0) {
-    return ray.IsGamepadButtonDown(id, key);
+    return rl.IsGamepadButtonDown(id, key);
 }
 
 @trusted
 bool isReleased(char key) {
-    return ray.IsKeyReleased(toUpper(key));
+    return rl.IsKeyReleased(toUpper(key));
 }
 
 @trusted
 bool isReleased(Keyboard key) {
-    return ray.IsKeyReleased(key);
+    return rl.IsKeyReleased(key);
 }
 
 @trusted
 bool isReleased(Mouse key) {
-    return ray.IsMouseButtonReleased(key);
+    return rl.IsMouseButtonReleased(key);
 }
 
 @trusted
 bool isReleased(Gamepad key, int id = 0) {
-    return ray.IsGamepadButtonReleased(id, key);
+    return rl.IsGamepadButtonReleased(id, key);
 }
 
 Vec2 wasd() {
@@ -1189,9 +1184,9 @@ void playAudio(Audio audio) {
     }
 
     if (audio.isSound) {
-        ray.PlaySound(audio.sound);
+        rl.PlaySound(audio.sound);
     } else {
-        ray.PlayMusicStream(audio.music);
+        rl.PlayMusicStream(audio.music);
     }
 }
 
@@ -1202,7 +1197,7 @@ void updateAudio(Audio audio) {
     }
 
     if (audio.isMusic) {
-        ray.UpdateMusicStream(audio.music);
+        rl.UpdateMusicStream(audio.music);
     }
 }
 
@@ -1213,9 +1208,9 @@ void pauseAudio(Audio audio) {
     }
 
     if (audio.isSound) {
-        ray.PauseSound(audio.sound);
+        rl.PauseSound(audio.sound);
     } else {
-        ray.PauseMusicStream(audio.music);
+        rl.PauseMusicStream(audio.music);
     }
 }
 
@@ -1226,9 +1221,9 @@ void resumeAudio(Audio audio) {
     }
 
     if (audio.isSound) {
-        ray.ResumeSound(audio.sound);
+        rl.ResumeSound(audio.sound);
     } else {
-        ray.ResumeMusicStream(audio.music);
+        rl.ResumeMusicStream(audio.music);
     }
 }
 
@@ -1239,18 +1234,18 @@ void stopAudio(Audio audio) {
     }
 
     if (audio.isSound) {
-        ray.StopSound(audio.sound);
+        rl.StopSound(audio.sound);
     } else {
-        ray.StopMusicStream(audio.music);
+        rl.StopMusicStream(audio.music);
     }
 }
 
 @trusted
 void drawRect(Rect area, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawRectanglePro(area.floor().toRay(), ray.Vector2(0.0f, 0.0f), 0.0f, color.toRay());
+        rl.DrawRectanglePro(area.floor().toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
     } else {
-        ray.DrawRectanglePro(area.toRay(), ray.Vector2(0.0f, 0.0f), 0.0f, color.toRay());
+        rl.DrawRectanglePro(area.toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
     }
 }
 
@@ -1261,18 +1256,18 @@ void drawVec2(Vec2 point, float size, Color color = white) {
 @trusted
 void drawCirc(Circ area, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawCircleV(area.position.floor().toRay(), area.radius, color.toRay());
+        rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
     } else {
-        ray.DrawCircleV(area.position.toRay(), area.radius, color.toRay());
+        rl.DrawCircleV(area.position.toRl(), area.radius, color.toRl());
     }
 }
 
 @trusted
 void drawLine(Line area, float size, Color color = white) {
     if (isPixelPerfect) {
-        ray.DrawLineEx(area.a.floor().toRay(), area.b.floor().toRay(), size, color.toRay());
+        rl.DrawLineEx(area.a.floor().toRl(), area.b.floor().toRl(), size, color.toRl());
     } else {
-        ray.DrawLineEx(area.a.toRay(), area.b.toRay(), size, color.toRay());
+        rl.DrawLineEx(area.a.toRl(), area.b.toRl(), size, color.toRl());
     }
 }
 
@@ -1302,22 +1297,22 @@ void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options 
 
     auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
     if (isPixelPerfect) {
-        ray.DrawTexturePro(
+        rl.DrawTexturePro(
             texture.data,
-            area.floor().toRay(),
-            target.floor().toRay(),
-            origin.floor().toRay(),
+            area.floor().toRl(),
+            target.floor().toRl(),
+            origin.floor().toRl(),
             options.rotation,
-            options.color.toRay(),
+            options.color.toRl(),
         );
     } else {
-        ray.DrawTexturePro(
+        rl.DrawTexturePro(
             texture.data,
-            area.toRay(),
-            target.toRay(),
-            origin.toRay(),
+            area.toRl(),
+            target.toRl(),
+            origin.toRl(),
             options.rotation,
-            options.color.toRay(),
+            options.color.toRl(),
         );
     }
 }
@@ -1332,23 +1327,23 @@ void drawRune(Font font, Vec2 position, dchar rune, DrawOptions options = DrawOp
         return;
     }
 
-    auto rect = toPopka(ray.GetGlyphAtlasRec(font.data, rune));
+    auto rect = toPopka(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
-    ray.rlPushMatrix();
+    rl.rlPushMatrix();
     if (isPixelPerfect) {
-        ray.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
+        rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
     } else {
-        ray.rlTranslatef(position.x, position.y, 0.0f);
+        rl.rlTranslatef(position.x, position.y, 0.0f);
     }
-    ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
-    ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
+    rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
+    rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     if (isPixelPerfect) {
-        ray.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
+        rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
     } else {
-        ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
+        rl.rlTranslatef(-origin.x, -origin.y, 0.0f);
     }
-    ray.DrawTextCodepoint(font.data, rune, ray.Vector2(0.0f, 0.0f), font.size, options.color.toRay());
-    ray.rlPopMatrix();
+    rl.DrawTextCodepoint(font.data, rune, rl.Vector2(0.0f, 0.0f), font.size, options.color.toRl());
+    rl.rlPopMatrix();
 }
 
 @trusted
@@ -1359,18 +1354,18 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
 
     // TODO: Make it work with negative scale values.
     auto origin = Rect(measureTextSize(font, text)).origin(options.hook);
-    ray.rlPushMatrix();
+    rl.rlPushMatrix();
     if (isPixelPerfect) {
-        ray.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+        rl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     } else {
-        ray.rlTranslatef(position.x, position.y, 0.0f);
+        rl.rlTranslatef(position.x, position.y, 0.0f);
     }
-    ray.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
-    ray.rlScalef(options.scale.x, options.scale.y, 1.0f);
+    rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
+    rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     if (isPixelPerfect) {
-        ray.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
+        rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
     } else {
-        ray.rlTranslatef(-origin.x, -origin.y, 0.0f);
+        rl.rlTranslatef(-origin.x, -origin.y, 0.0f);
     }
     auto textOffsetY = 0.0f; // Offset between lines (on linebreak '\n').
     auto textOffsetX = 0.0f; // Offset X to next character to draw.
@@ -1378,8 +1373,8 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
     while (i < text.length) {
         // Get next codepoint from byte string and glyph index in font.
         auto codepointByteCount = 0;
-        auto codepoint = ray.GetCodepointNext(&text[i], &codepointByteCount);
-        auto index = ray.GetGlyphIndex(font.data, codepoint);
+        auto codepoint = rl.GetCodepointNext(&text[i], &codepointByteCount);
+        auto index = rl.GetGlyphIndex(font.data, codepoint);
         if (codepoint == '\n') {
             textOffsetY += font.lineSpacing;
             textOffsetX = 0.0f;
@@ -1398,7 +1393,7 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
         // Move text bytes counter to next codepoint.
         i += codepointByteCount;
     }
-    ray.rlPopMatrix();
+    rl.rlPopMatrix();
 }
 
 void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
