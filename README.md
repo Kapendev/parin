@@ -31,6 +31,7 @@ mixin callGameStart!(gameStart, 640, 360);
 
 ## Games Made With Popka
 
+* [Runani](https://kapendev.itch.io/runani)
 * [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
 
 ## Dependencies

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.16
+// Version: v0.0.17
 // ---
 
 /// The `dialogue` module provides a simple and versatile dialogue system.

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.16
+// Version: v0.0.17
 // ---
 
 /// The `tilemap` module provides a simple and fast tile map.
@@ -74,21 +74,23 @@ struct TileMap {
     }
 }
 
-Result!TileMap toTileMap(IStr csv) {
+Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
     auto value = TileMap();
     auto fault = value.parse(csv);
     if (fault) {
         value.free();
     }
+    value.tileWidth = tileWidth;
+    value.tileHeight = tileHeight;
     return Result!TileMap(value, fault);
 }
 
-Result!TileMap loadTileMap(IStr path) {
+Result!TileMap loadTileMap(IStr path, int tileWidth, int tileHeight) {
     auto temp = loadTempText(path);
     if (temp.isNone) {
         return Result!TileMap(temp.fault);
     }
-    return toTileMap(temp.unwrap());
+    return toTileMap(temp.unwrap(), tileWidth, tileHeight);
 }
 
 void drawTile(Texture texture, Vec2 position, int tileID, Vec2 tileSize, DrawOptions options = DrawOptions()) {

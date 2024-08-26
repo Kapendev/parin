@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.16
+// Version: v0.0.17
 // ---
 
 /**********************************************************************************************
@@ -204,11 +204,6 @@ struct Vector2
     }
 
     pragma(inline, true)
-    this(float[2] xy) {
-        this(xy[0], xy[1]);
-    }
-
-    pragma(inline, true)
     Vector2 opUnary(const(char)[] op)() {
         return Vector2(
             mixin(op, "x"),
@@ -225,31 +220,9 @@ struct Vector2
     }
 
     pragma(inline, true)
-    Vector2 opBinary(const(char)[] op)(float rhs) {
-        return Vector2(
-            mixin("x", op, "rhs"),
-            mixin("y", op, "rhs"),
-        );
-    }
-
-    pragma(inline, true)
-    Vector2 opBinaryRight(const(char)[] op)(float lhs) {
-        return Vector2(
-            mixin("lhs", op, "x"),
-            mixin("lhs", op, "y"),
-        );
-    }
-
-    pragma(inline, true)
     void opOpAssign(const(char)[] op)(Vector2 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(float rhs) {
-        mixin("x", op, "=rhs;");
-        mixin("y", op, "=rhs;");
     }
 }
 
@@ -278,16 +251,6 @@ struct Vector3
     }
 
     pragma(inline, true)
-    this(float[3] xyz) {
-        this(xyz[0], xyz[1], xyz[2]);
-    }
-
-    pragma(inline, true)
-    this(Vector2 xy, float z) {
-        this(xy.x, xy.y, z);
-    }
-
-    pragma(inline, true)
     Vector3 opUnary(const(char)[] op)() {
         return Vector3(
             mixin(op, "x"),
@@ -306,35 +269,10 @@ struct Vector3
     }
 
     pragma(inline, true)
-    Vector3 opBinary(const(char)[] op)(float rhs) {
-        return Vector3(
-            mixin("x", op, "rhs"),
-            mixin("y", op, "rhs"),
-            mixin("z", op, "rhs"),
-        );
-    }
-
-    pragma(inline, true)
-    Vector3 opBinaryRight(const(char)[] op)(float lhs) {
-        return Vector3(
-            mixin("lhs", op, "x"),
-            mixin("lhs", op, "y"),
-            mixin("lhs", op, "z"),
-        );
-    }
-
-    pragma(inline, true)
     void opOpAssign(const(char)[] op)(Vector3 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
         mixin("z", op, "=rhs.z;");
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(float rhs) {
-        mixin("x", op, "=rhs;");
-        mixin("y", op, "=rhs;");
-        mixin("z", op, "=rhs;");
     }
 }
 
@@ -365,11 +303,6 @@ struct Vector4
     }
 
     pragma(inline, true)
-    this(float[4] xyzw) {
-        this(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);
-    }
-
-    pragma(inline, true)
     Vector4 opUnary(const(char)[] op)() {
         return Vector4(
             mixin(op, "x"),
@@ -390,39 +323,11 @@ struct Vector4
     }
 
     pragma(inline, true)
-    Vector4 opBinary(const(char)[] op)(float rhs) {
-        return Vector4(
-            mixin("x", op, "rhs"),
-            mixin("y", op, "rhs"),
-            mixin("z", op, "rhs"),
-            mixin("w", op, "rhs"),
-        );
-    }
-
-    pragma(inline, true)
-    Vector4 opBinaryRight(const(char)[] op)(float lhs) {
-        return Vector4(
-            mixin("lhs", op, "x"),
-            mixin("lhs", op, "y"),
-            mixin("lhs", op, "z"),
-            mixin("lhs", op, "w"),
-        );
-    }
-
-    pragma(inline, true)
     void opOpAssign(const(char)[] op)(Vector4 rhs) {
         mixin("x", op, "=rhs.x;");
         mixin("y", op, "=rhs.y;");
         mixin("z", op, "=rhs.z;");
         mixin("w", op, "=rhs.w;");
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(float rhs) {
-        mixin("x", op, "=rhs;");
-        mixin("y", op, "=rhs;");
-        mixin("z", op, "=rhs;");
-        mixin("w", op, "=rhs;");
     }
 }
 
@@ -456,7 +361,7 @@ struct Color
     ubyte r; // Color red value
     ubyte g; // Color green value
     ubyte b; // Color blue value
-    ubyte a = 255; // Color alpha value
+    ubyte a; // Color alpha value
 
     enum zero = Color(0, 0, 0, 0);
     enum one = Color(1, 1, 1, 1);
@@ -477,13 +382,31 @@ struct Color
     }
 
     pragma(inline, true)
-    this(ubyte[4] rgba) {
-        this(rgba[0], rgba[1], rgba[2], rgba[3]);
+    Color opUnary(const(char)[] op)() {
+        return Color(
+            mixin(op, "r"),
+            mixin(op, "g"),
+            mixin(op, "b"),
+            mixin(op, "a"),
+        );
     }
 
     pragma(inline, true)
-    this(ubyte[3] rgb) {
-        this(rgb[0], rgb[1], rgb[2], 255);
+    Color opBinary(const(char)[] op)(Color rhs) {
+        return Color(
+            mixin("r", op, "rhs.r"),
+            mixin("g", op, "rhs.g"),
+            mixin("b", op, "rhs.b"),
+            mixin("a", op, "rhs.a"),
+        );
+    }
+
+    pragma(inline, true)
+    void opOpAssign(const(char)[] op)(Color rhs) {
+        mixin("r", op, "=rhs.r;");
+        mixin("g", op, "=rhs.g;");
+        mixin("b", op, "=rhs.b;");
+        mixin("a", op, "=rhs.a;");
     }
 }
 
@@ -501,36 +424,26 @@ struct Rectangle
     @safe @nogc nothrow:
 
     pragma(inline, true)
-    this(Vector2 position, Vector2 size) {
-        this.x = position.x;
-        this.y = position.y;
-        this.width = size.x;
-        this.height = size.y;
-    }
-
-    pragma(inline, true)
-    this(Vector2 size) {
-        this(Vector2(), size);
-    }
-
-    pragma(inline, true)
     this(float x, float y, float width, float height) {
-        this(Vector2(x, y), Vector2(width, height));
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
     }
 
     pragma(inline, true)
-    this(float width, float height) {
-        this(Vector2(), Vector2(width, height));
-    }
-
-    pragma(inline, true)
-    this(Vector2 position, float width, float height) {
-        this(position, Vector2(width, height));
+    this(Vector2 position, Vector2 size) {
+        this(position.x, position.y, size.x, size.y);
     }
 
     pragma(inline, true)
     this(float x, float y, Vector2 size) {
-        this(Vector2(x, y), size);
+        this(x, y, size.x, size.y);
+    }
+
+    pragma(inline, true)
+    this(Vector2 position, float width, float height) {
+        this(position.x, position.y, width, height);
     }
 }
 
