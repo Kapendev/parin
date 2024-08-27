@@ -237,48 +237,8 @@ struct Texture {
     }
 }
 
-struct Viewport {
-    rl.RenderTexture2D data;
-    Filter filter;
-
-    @safe @nogc nothrow:
-
-    /// Returns true if the viewport has not been loaded.
-    bool isEmpty() {
-        return data.texture.id <= 0;
-    }
-
-    /// Returns the width of the viewport.
-    int width() {
-        return data.texture.width;
-    }
-
-    /// Returns the height of the viewport.
-    int height() {
-        return data.texture.height;
-    }
-
-    /// Returns the size of the viewport.
-    Vec2 size() {
-        return Vec2(width, height);
-    }
-
-    /// Set the filter mode of the viewport.
-    @trusted
-    void setFilter(Filter value) {
-        if (isEmpty) return;
-        filter = value;
-        rl.SetTextureFilter(data.texture, value.toRl());
-    }
-
-    @trusted
-    void free() {
-        if (isEmpty) {
-            return;
-        }
-        rl.UnloadRenderTexture(data);
-        this = Viewport();
-    }
+struct TextureId {
+    GenerationalIndex data;
 }
 
 struct Font {
@@ -315,6 +275,10 @@ struct Font {
         rl.UnloadFont(data);
         this = Font();
     }
+}
+
+struct FontId {
+    GenerationalIndex data;
 }
 
 struct Audio {
@@ -409,6 +373,54 @@ struct Audio {
     }
 }
 
+struct AudioId {
+    GenerationalIndex data;
+}
+
+struct Viewport {
+    rl.RenderTexture2D data;
+    Filter filter;
+
+    @safe @nogc nothrow:
+
+    /// Returns true if the viewport has not been loaded.
+    bool isEmpty() {
+        return data.texture.id <= 0;
+    }
+
+    /// Returns the width of the viewport.
+    int width() {
+        return data.texture.width;
+    }
+
+    /// Returns the height of the viewport.
+    int height() {
+        return data.texture.height;
+    }
+
+    /// Returns the size of the viewport.
+    Vec2 size() {
+        return Vec2(width, height);
+    }
+
+    /// Set the filter mode of the viewport.
+    @trusted
+    void setFilter(Filter value) {
+        if (isEmpty) return;
+        filter = value;
+        rl.SetTextureFilter(data.texture, value.toRl());
+    }
+
+    @trusted
+    void free() {
+        if (isEmpty) {
+            return;
+        }
+        rl.UnloadRenderTexture(data);
+        this = Viewport();
+    }
+}
+
 struct EngineFlags {
     bool isUpdating;
     bool isPixelPerfect;
@@ -417,13 +429,41 @@ struct EngineFlags {
     bool isCursorHidden;
 }
 
+struct EngineResources {
+    GenerationalList!Texture textures;
+    GenerationalList!Font fonts;
+    GenerationalList!Audio audios;
+
+    @safe @nogc nothrow:
+
+    void free() {
+        debug println("Ending cleanup:");
+        debug printfln("  Texture count freed: {}", textures.length);
+        foreach (ref texture; textures.items) {
+            texture.free();
+        }
+        textures.free();
+
+        debug printfln("  Font count freed: {}", fonts.length);
+        foreach (ref font; fonts.items) {
+            font.free();
+        }
+        fonts.free();
+
+        debug printfln("  Audio count freed: {}", audios.length);
+        foreach (ref audio; audios.items) {
+            audio.free();
+        }
+        audios.free();
+    }
+}
+
 struct EngineViewport {
     Viewport data;
     int targetWidth;
     int targetHeight;
     bool isLockResolutionQueued;
     bool isUnlockResolutionQueued;
-
     alias data this;
 }
 
@@ -431,13 +471,13 @@ struct EngineFullscreenState {
     Vec2 lastWindowSize;
     float toggleTimer = 0.0f;
     bool isToggleQueued;
-
     enum toggleWaitTime = 0.1f;
 }
 
 // TODO: Make it more simple.
 struct EngineState {
     EngineFlags flags;
+    EngineResources resources;
     EngineFullscreenState fullscreenState;
     EngineViewport viewport;
     Color backgroundColor;
@@ -447,6 +487,7 @@ struct EngineState {
     @safe @nogc nothrow:
 
     void free() {
+        resources.free();
         viewport.free();
         tempText.free();
         assetsPath.free();
@@ -557,6 +598,63 @@ rl.Camera2D toRl(Camera camera) {
     );
 }
 
+bool hasResource(TextureId id) {
+    return engineState.resources.textures.has(id.data);
+}
+
+bool hasResource(FontId id) {
+    return engineState.resources.fonts.has(id.data);
+}
+
+bool hasResource(AudioId id) {
+    return engineState.resources.audios.has(id.data);
+}
+
+ref Texture getResource(TextureId id) {
+    return engineState.resources.textures[id.data];
+}
+
+ref Font getResource(FontId id) {
+    return engineState.resources.fonts[id.data];
+}
+
+ref Audio getResource(AudioId id) {
+    return engineState.resources.audios[id.data];
+}
+
+Texture getResourceOr(TextureId id) {
+    return hasResource(id) ? getResource(id) : Texture();
+}
+
+Font getResourceOr(FontId id) {
+    return hasResource(id) ? getResource(id) : Font();
+}
+
+Audio getResourceOr(AudioId id) {
+    return hasResource(id) ? getResource(id) : Audio();
+}
+
+void unloadResource(TextureId id) {
+    if (engineState.resources.textures.has(id.data)) {
+        engineState.resources.textures[id.data].free();
+        engineState.resources.textures.remove(id.data);
+    }
+}
+
+void unloadResource(FontId id) {
+    if (engineState.resources.fonts.has(id.data)) {
+        engineState.resources.fonts[id.data].free();
+        engineState.resources.fonts.remove(id.data);
+    }
+}
+
+void unloadResource(AudioId id) {
+    if (engineState.resources.audios.has(id.data)) {
+        engineState.resources.audios[id.data].free();
+        engineState.resources.audios.remove(id.data);
+    }
+}
+
 /// Returns the opposite flip value.
 /// The opposite of every flip value except none is none.
 /// The fallback value is returned if the flip value is none.
@@ -638,21 +736,24 @@ Result!IStr loadTempText(IStr path) {
 /// Loads an image file (PNG) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
-Result!Texture loadTexture(IStr path) {
+Result!Texture loadRawTexture(IStr path) {
     auto value = rl.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-@trusted
-Result!Viewport loadViewport(int width, int height) {
-    auto value = rl.LoadRenderTexture(width, height).toPopka();
-    return Result!Viewport(value, value.isEmpty.toFault());
+Result!TextureId loadTexture(IStr path) {
+    auto result = loadRawTexture(path);
+    if (result.isSome) {
+        return Result!TextureId(TextureId(engineState.resources.textures.append(result.unwrap())));
+    } else {
+        return Result!TextureId(Fault.cantFind);
+    }
 }
 
 /// Loads a font file (TTF) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
-Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
+Result!Font loadRawFont(IStr path, uint size, const(dchar)[] runes = []) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
@@ -660,10 +761,19 @@ Result!Font loadFont(IStr path, uint size, const(dchar)[] runes = []) {
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
+Result!FontId loadFont(IStr path, uint size, const(dchar)[] runes = []) {
+    auto result = loadRawFont(path, size, runes);
+    if (result.isSome) {
+        return Result!FontId(FontId(engineState.resources.fonts.append(result.unwrap())));
+    } else {
+        return Result!FontId(Fault.cantFind);
+    }
+}
+
 /// Loads a audio file (WAV, OGG, MP3) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
-Result!Audio loadAudio(IStr path) {
+Result!Audio loadRawAudio(IStr path) {
     auto value = Audio();
     if (path.endsWith(".wav")) {
         value.data = rl.LoadSound(path.toAssetsPath().toCStr().unwrapOr());
@@ -671,6 +781,21 @@ Result!Audio loadAudio(IStr path) {
         value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().unwrapOr());
     }
     return Result!Audio(value, value.isEmpty.toFault(Fault.cantFind));
+}
+
+Result!AudioId loadAudio(IStr path) {
+    auto result = loadRawAudio(path);
+    if (result.isSome) {
+        return Result!AudioId(AudioId(engineState.resources.audios.append(result.unwrap())));
+    } else {
+        return Result!AudioId(Fault.cantFind);
+    }
+}
+
+@trusted
+Result!Viewport loadViewport(int width, int height) {
+    auto value = rl.LoadRenderTexture(width, height).toPopka();
+    return Result!Viewport(value, value.isEmpty.toFault());
 }
 
 /// Saves a text file to the assets folder.
