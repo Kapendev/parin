@@ -2,7 +2,7 @@
 import popka;
 
 // The game variables.
-auto atlas = Texture();
+auto atlas = TextureId();
 auto map = TileMap();
 
 void ready() {
@@ -12,16 +12,13 @@ void ready() {
     map.parse("145,0,65\n21,22,23\n37,38,39\n53,54,55", 16, 16);
 }
 
-bool update() {
+bool update(float dt) {
     auto options = DrawOptions();
     options.scale = Vec2(2.0f);
-    drawTileMap(atlas, Vec2(), map, Camera(), options);
+    drawTileMap(atlas.get(), Vec2(), map, Camera(), options);
     return false;
 }
 
-void finish() {
-    atlas.free();
-    map.free();
-}
+void finish() { }
 
 mixin runGame!(ready, update, finish);

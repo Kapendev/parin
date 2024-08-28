@@ -343,7 +343,7 @@ Result!Dialogue toDialogue(IStr script) {
     return Result!Dialogue(value, fault);
 }
 
-Result!Dialogue loadDialogue(IStr path) {
+Result!Dialogue loadRawDialogue(IStr path) {
     auto temp = loadTempText(path);
     if (temp.isNone) {
         return Result!Dialogue(temp.fault);

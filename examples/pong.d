@@ -18,7 +18,7 @@ void ready() {
     paddle2.position = resolution * Vec2(0.5) + paddleOffset;
 }
 
-bool update() {
+bool update(float dt) {
     // The objects in this game are centered.
     // To do that, we split the rectangle data into 2 parts, normal and centered.
     // A normal rectangle holds the real position of an object.
@@ -43,16 +43,16 @@ bool update() {
         ballDirection.y *= -1;
         ball.position.y = resolution.y - ball.size.y * 0.5;
     }
-    ball.position += ballDirection * ballSpeed * Vec2(deltaTime);
+    ball.position += ballDirection * ballSpeed * Vec2(dt);
 
     // Move paddle1.
-    paddle1.position.y = clamp(paddle1.position.y + wasd.y * ballSpeed.y * deltaTime, paddle1.size.y * 0.5, resolution.y - paddle1.size.y * 0.5);
+    paddle1.position.y = clamp(paddle1.position.y + wasd.y * ballSpeed.y * dt, paddle1.size.y * 0.5, resolution.y - paddle1.size.y * 0.5);
     // Move paddle2.
     auto paddle2Target = ball.position.y;
     if (ballDirection.x < 1) {
         paddle2Target = paddle2.position.y;
     }
-    paddle2.position.y = paddle2.position.y.moveTo(clamp(paddle2Target, paddle2.size.y * 0.5f, resolution.y - paddle2.size.y * 0.5f), ballSpeed.y * deltaTime);
+    paddle2.position.y = paddle2.position.y.moveTo(clamp(paddle2Target, paddle2.size.y * 0.5f, resolution.y - paddle2.size.y * 0.5f), ballSpeed.y * dt);
 
     // Check for collisions.
     if (paddle1.centerArea.hasIntersection(ball.centerArea)) {

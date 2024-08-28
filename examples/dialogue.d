@@ -40,7 +40,7 @@ void ready() {
     dialogue.update();
 }
 
-bool update() {
+bool update(float dt) {
     // Update the game.
     if (dialogue.canUpdate) {
         if (dialogue.hasChoices) {
@@ -77,8 +77,6 @@ bool update() {
     return false;
 }
 
-void finish() {
-    dialogue.free();
-}
+void finish() { }
 
 mixin runGame!(ready, update, finish);

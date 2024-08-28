@@ -10,17 +10,17 @@ void ready() {
     lockResolution(320, 180);
 }
 
-bool update() {
+bool update(float dt) {
     // Move the camera.
-    cameraTarget += wasd * cameraSpeed * Vec2(deltaTime);
-    camera.followPosition(cameraTarget, Vec2(deltaTime));
+    cameraTarget += wasd * cameraSpeed * Vec2(dt);
+    camera.followPosition(cameraTarget, Vec2(dt));
 
     // Draw the game world.
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook).subAll(3);
-    attachCamera(camera);
+    camera.attach();
     drawDebugText("Move with arrow keys.");
     drawRect(cameraArea, Color(50, 50, 40, 130));
-    detachCamera(camera);
+    camera.detach();
 
     // Draw the game UI.
     drawDebugText("I am UI!");

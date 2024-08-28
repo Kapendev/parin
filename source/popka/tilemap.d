@@ -33,9 +33,17 @@ struct TileMap {
         return Vec2(tileWidth, tileHeight);
     }
 
+    int width() {
+        return cast(int) (colCount * tileWidth);
+    }
+
+    int height() {
+        return cast(int) (rowCount * tileHeight);
+    }
+
     /// Returns the size of the tile map.
     Vec2 size() {
-        return tileSize * Vec2(colCount, rowCount);
+        return Vec2(width, height);
     }
 
     Fault parse(IStr csv, int tileWidth, int tileHeight) {
@@ -90,7 +98,7 @@ Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
     return Result!TileMap(value, fault);
 }
 
-Result!TileMap loadTileMap(IStr path, int tileWidth, int tileHeight) {
+Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
     auto temp = loadTempText(path);
     if (temp.isNone) {
         return Result!TileMap(temp.fault);
@@ -99,8 +107,8 @@ Result!TileMap loadTileMap(IStr path, int tileWidth, int tileHeight) {
 }
 
 void drawTile(Texture texture, Vec2 position, int tileID, int tileWidth, int tileHeight, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(int) (texture.size.x / tileWidth);
-    auto gridHeight = cast(int) (texture.size.y / tileHeight);
+    auto gridWidth = cast(int) (texture.width / tileWidth);
+    auto gridHeight = cast(int) (texture.height / tileHeight);
     if (gridWidth == 0 || gridHeight == 0) {
         return;
     }

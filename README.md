@@ -10,7 +10,7 @@ void ready() {
     lockResolution(320, 180);
 }
 
-bool update() {
+bool update(float dt) {
     drawDebugText("Hello world!");
     return false;
 }

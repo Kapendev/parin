@@ -432,8 +432,18 @@ struct Rectangle
     }
 
     pragma(inline, true)
+    this(float width, float height) {
+        this(0.0f, 0.0f, width, height);
+    }
+
+    pragma(inline, true)
     this(Vector2 position, Vector2 size) {
         this(position.x, position.y, size.x, size.y);
+    }
+
+    pragma(inline, true)
+    this(Vector2 size) {
+        this(0.0f, 0.0f, size.x, size.y);
     }
 
     pragma(inline, true)

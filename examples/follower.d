@@ -2,7 +2,7 @@
 import popka;
 
 // The game variables.
-auto atlas = Texture();
+auto atlas = TextureId();
 auto frame = 0.0;
 auto frameCount = 2;
 auto frameSpeed = 8;
@@ -20,10 +20,10 @@ void ready() {
     atlas = loadTexture("atlas.png").unwrap();
 }
 
-bool update() {
+bool update(float dt) {
     // Move the frame around in a smooth way and update the current frame.
-    framePosition = framePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(deltaTime), frameSlowdown);
-    frame = wrap(frame + deltaTime * frameSpeed, 0, frameCount);
+    framePosition = framePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(dt), frameSlowdown);
+    frame = wrap(frame + dt * frameSpeed, 0, frameCount);
 
     // Check the mouse move direction and make the sprite look at that direction.
     auto mouseDirection = framePosition.directionTo(mouseScreenPosition);
@@ -42,13 +42,11 @@ bool update() {
     options.scale = Vec2(2);
 
     // Draw the frame and the mouse position.
-    drawTexture(atlas, framePosition, Rect(frameSize.x * floor(frame), 128, frameSize), options);
+    drawTexture(atlas.get(), framePosition, Rect(frameSize.x * floor(frame), 128, frameSize), options);
     drawVec2(mouseScreenPosition, 8, frame == 0 ? blank : white.alpha(150));
     return false;
 }
 
-void finish() {
-    atlas.free();
-}
+void finish() { }
 
 mixin runGame!(ready, update, finish);
