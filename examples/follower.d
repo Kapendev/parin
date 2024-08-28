@@ -14,8 +14,8 @@ auto frameSlowdown = 0.2;
 void ready() {
     lockResolution(320, 180);
     setBackgroundColor(toRgb(0x0b0b0b));
-    togglePixelPerfect();
-    hideCursor();
+    setIsPixelPerfect(true);
+    setIsCursorVisible(false);
     // Load the `atlas.png` file from the assets folder.
     atlas = loadTexture("atlas.png").unwrap();
 }

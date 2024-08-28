@@ -9,7 +9,6 @@
 // TODO: Make a timer struct.
 // TODO: Make a sprite struct.
 
-// TODO: Think about toggle functions.
 // TODO: Update setup script.
 // TODO: Clean web script.
 
@@ -227,9 +226,15 @@ struct Camera {
 
 struct TextId {
     GenerationalIndex data;
+    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
+
+    this(GenerationalIndex data, Sz tag) {
+        this.data = data;
+        this.tag = tag;
+    }
 
     bool isValid() {
         return data.value != 0 && engineState.resources.texts.has(data);
@@ -248,9 +253,12 @@ struct TextId {
 
     void free() {
         if (engineState.resources.texts.has(data)) {
+            engineState.resources.textNames[data].free();
             engineState.resources.texts[data].free();
-            engineState.resources.texts.remove(data);
+
             engineState.resources.textNames.remove(data);
+            engineState.resources.textTags.remove(data);
+            engineState.resources.texts.remove(data);
         }
     }
 }
@@ -301,12 +309,17 @@ struct Texture {
     }
 }
 
-// Note: Think about adding a tag to the resource ids. A tag could be used to free only some resources.
 struct TextureId {
     GenerationalIndex data;
+    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
+
+    this(GenerationalIndex data, Sz tag) {
+        this.data = data;
+        this.tag = tag;
+    }
 
     bool isValid() {
         return data.value != 0 && engineState.resources.textures.has(data);
@@ -325,9 +338,12 @@ struct TextureId {
 
     void free() {
         if (engineState.resources.textures.has(data)) {
+            engineState.resources.textureNames[data].free();
             engineState.resources.textures[data].free();
-            engineState.resources.textures.remove(data);
+
             engineState.resources.textureNames.remove(data);
+            engineState.resources.textureTags.remove(data);
+            engineState.resources.textures.remove(data);
         }
     }
 }
@@ -370,9 +386,15 @@ struct Font {
 
 struct FontId {
     GenerationalIndex data;
+    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
+
+    this(GenerationalIndex data, Sz tag) {
+        this.data = data;
+        this.tag = tag;
+    }
 
     bool isValid() {
         return data.value != 0 && engineState.resources.fonts.has(data);
@@ -391,9 +413,12 @@ struct FontId {
 
     void free() {
         if (engineState.resources.fonts.has(data)) {
+            engineState.resources.fontNames[data].free();
             engineState.resources.fonts[data].free();
-            engineState.resources.fonts.remove(data);
+
             engineState.resources.fontNames.remove(data);
+            engineState.resources.fontTags.remove(data);
+            engineState.resources.fonts.remove(data);
         }
     }
 }
@@ -480,9 +505,15 @@ struct Sound {
 
 struct SoundId {
     GenerationalIndex data;
+    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
+
+    this(GenerationalIndex data, Sz tag) {
+        this.data = data;
+        this.tag = tag;
+    }
 
     bool isValid() {
         return data.value != 0 && engineState.resources.sounds.has(data);
@@ -501,9 +532,12 @@ struct SoundId {
 
     void free() {
         if (engineState.resources.sounds.has(data)) {
+            engineState.resources.soundNames[data].free();
             engineState.resources.sounds[data].free();
-            engineState.resources.sounds.remove(data);
+
             engineState.resources.soundNames.remove(data);
+            engineState.resources.soundTags.remove(data);
+            engineState.resources.sounds.remove(data);
         }
     }
 }
@@ -555,7 +589,7 @@ struct Viewport {
 struct EngineFlags {
     bool isUpdating;
     bool isPixelPerfect;
-    bool isCursorHidden;
+    bool isCursorVisible;
 }
 
 struct EngineFullscreenState {
@@ -590,55 +624,125 @@ struct EngineFullscreenState {
 
 struct EngineResources {
     GenerationalList!LStr textNames;
+    GenerationalList!Sz textTags;
     GenerationalList!LStr texts;
 
     GenerationalList!LStr textureNames;
+    GenerationalList!Sz textureTags;
     GenerationalList!Texture textures;
 
     GenerationalList!LStr fontNames;
+    GenerationalList!Sz fontTags;
     GenerationalList!Font fonts;
 
     GenerationalList!LStr soundNames;
+    GenerationalList!Sz soundTags;
     GenerationalList!Sound sounds;
 
     @safe @nogc nothrow:
 
-    void free() {
-        foreach (name; textNames.items) {
-            name.free();
-        }
-        textNames.free();
-        foreach (ref text; texts.items) {
-            text.free();
-        }
-        texts.free();
+    // Free tag 0       : Free everything.
+    // Free tag 1,2,... : Free only resources with that tag.
+    // TODO: Maybe name, tag and resource can be combined into a generic struct.
+    // TODO: Needs testing.
+    void free(Sz tag = 0) {
+        if (tag == 0) {
+            foreach (ref name; textNames.items) {
+                name.free();
+            }
+            textNames.free();
+            foreach (ref text; texts.items) {
+                text.free();
+            }
+            texts.free();
+            textTags.free();
 
-        foreach (name; textureNames.items) {
-            name.free();
-        }
-        textureNames.free();
-        foreach (ref texture; textures.items) {
-            texture.free();
-        }
-        textures.free();
+            foreach (ref name; textureNames.items) {
+                name.free();
+            }
+            textureNames.free();
+            foreach (ref texture; textures.items) {
+                texture.free();
+            }
+            textures.free();
+            textureTags.free();
 
-        foreach (name; fontNames.items) {
-            name.free();
-        }
-        fontNames.free();
-        foreach (ref font; fonts.items) {
-            font.free();
-        }
-        fonts.free();
+            foreach (ref name; fontNames.items) {
+                name.free();
+            }
+            fontNames.free();
+            foreach (ref font; fonts.items) {
+                font.free();
+            }
+            fonts.free();
+            fontTags.free();
 
-        foreach (name; soundNames.items) {
-            name.free();
+            foreach (ref name; soundNames.items) {
+                name.free();
+            }
+            soundNames.free();
+            foreach (ref sound; sounds.items) {
+                sound.free();
+            }
+            sounds.free();
+            soundTags.free();
+        } else {
+            foreach (id; textNames.ids) {
+                if (tag == textTags[id]) {
+                    textNames[id].free();
+                    textNames.remove(id);
+                }
+            }
+            foreach (id; texts.ids) {
+                if (tag == textTags[id]) {
+                    texts[id].free();
+                    texts.remove(id);
+                    textTags.remove(id);
+                }
+            }
+
+            foreach (id; textureNames.ids) {
+                if (tag == textureTags[id]) {
+                    textureNames[id].free();
+                    textureNames.remove(id);
+                }
+            }
+            foreach (id; textures.ids) {
+                if (tag == textureTags[id]) {
+                    textures[id].free();
+                    textures.remove(id);
+                    textureTags.remove(id);
+                }
+            }
+
+            foreach (id; fontNames.ids) {
+                if (tag == fontTags[id]) {
+                    fontNames[id].free();
+                    fontNames.remove(id);
+                }
+            }
+            foreach (id; fonts.ids) {
+                if (tag == fontTags[id]) {
+                    fonts[id].free();
+                    fonts.remove(id);
+                    fontTags.remove(id);
+                }
+            }
+
+            foreach (id; soundNames.ids) {
+                if (tag == soundTags[id]) {
+                    soundNames[id].free();
+                    soundNames.remove(id);
+                }
+            }
+            foreach (id; sounds.ids) {
+                if (tag == soundTags[id]) {
+                    sounds[id].free();
+                    sounds.remove(id);
+                    soundTags.remove(id);
+                }
+            }
         }
-        soundNames.free();
-        foreach (ref sound; sounds.items) {
-            sound.free();
-        }
-        sounds.free();
     }
 }
 
@@ -873,22 +977,24 @@ Result!LStr loadRawText(IStr path) {
 
 /// Loads a text file from the assets folder and returns its contents as a list.
 /// Can handle both forward slashes and backslashes in file paths.
-Result!TextId loadText(IStr path) {
+Result!TextId loadText(IStr path, Sz tag = 0) {
     if (engineState.resources.textNames.length == 0) {
         engineState.resources.textNames.append(LStr());
+        engineState.resources.textTags.append(0);
         engineState.resources.texts.append(LStr());
     }
 
     foreach (id; engineState.resources.textNames.ids) {
         if (engineState.resources.textNames[id] == path) {
-            return Result!TextId(TextId(id));
+            return Result!TextId(TextId(id, engineState.resources.textTags[id]));
         }
     }
 
     auto result = loadRawText(path);
     if (result.isSome) {
         engineState.resources.textNames.append(LStr(path));
-        return Result!TextId(TextId(engineState.resources.texts.append(result.unwrap())));
+        engineState.resources.textTags.append(tag);
+        return Result!TextId(TextId(engineState.resources.texts.append(result.unwrap()), tag));
     } else {
         return Result!TextId(Fault.cantFind);
     }
@@ -902,22 +1008,24 @@ Result!Texture loadRawTexture(IStr path) {
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!TextureId loadTexture(IStr path) {
+Result!TextureId loadTexture(IStr path, Sz tag = 0) {
     if (engineState.resources.textureNames.length == 0) {
         engineState.resources.textureNames.append(LStr());
+        engineState.resources.textureTags.append(0);
         engineState.resources.textures.append(Texture());
     }
 
     foreach (id; engineState.resources.textureNames.ids) {
         if (engineState.resources.textureNames[id] == path) {
-            return Result!TextureId(TextureId(id));
+            return Result!TextureId(TextureId(id, engineState.resources.textureTags[id]));
         }
     }
 
     auto result = loadRawTexture(path);
     if (result.isSome) {
         engineState.resources.textureNames.append(LStr(path));
-        return Result!TextureId(TextureId(engineState.resources.textures.append(result.unwrap())));
+        engineState.resources.textureTags.append(tag);
+        return Result!TextureId(TextureId(engineState.resources.textures.append(result.unwrap()), tag));
     } else {
         return Result!TextureId(Fault.cantFind);
     }
@@ -934,21 +1042,24 @@ Result!Font loadRawFont(IStr path, uint size, const(dchar)[] runes = []) {
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!FontId loadFont(IStr path, uint size, const(dchar)[] runes = []) {
+Result!FontId loadFont(IStr path, uint size, const(dchar)[] runes = [], Sz tag = 0) {
     if (engineState.resources.fontNames.length == 0) {
         engineState.resources.fontNames.append(LStr());
+        engineState.resources.fontTags.append(0);
         engineState.resources.fonts.append(Font());
     }
 
     foreach (id; engineState.resources.fontNames.ids) {
         if (engineState.resources.fontNames[id] == path) {
-            return Result!FontId(FontId(id));
+            return Result!FontId(FontId(id, engineState.resources.fontTags[id]));
         }
     }
 
     auto result = loadRawFont(path, size, runes);
     if (result.isSome) {
-        return Result!FontId(FontId(engineState.resources.fonts.append(result.unwrap())));
+        engineState.resources.fontNames.append(LStr(path));
+        engineState.resources.fontTags.append(tag);
+        return Result!FontId(FontId(engineState.resources.fonts.append(result.unwrap()), tag));
     } else {
         return Result!FontId(Fault.cantFind);
     }
@@ -967,21 +1078,24 @@ Result!Sound loadRawSound(IStr path) {
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!SoundId loadSound(IStr path) {
+Result!SoundId loadSound(IStr path, Sz tag = 0) {
     if (engineState.resources.soundNames.length == 0) {
         engineState.resources.soundNames.append(LStr());
+        engineState.resources.soundTags.append(0);
         engineState.resources.sounds.append(Sound());
     }
 
     foreach (id; engineState.resources.soundNames.ids) {
         if (engineState.resources.soundNames[id] == path) {
-            return Result!SoundId(SoundId(id));
+            return Result!SoundId(SoundId(id, engineState.resources.soundTags[id]));
         }
     }
 
     auto result = loadRawSound(path);
     if (result.isSome) {
-        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.unwrap())));
+        engineState.resources.soundNames.append(LStr(path));
+        engineState.resources.soundTags.append(tag);
+        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.unwrap()), tag));
     } else {
         return Result!SoundId(Fault.cantFind);
     }
@@ -999,8 +1113,8 @@ Fault saveText(IStr path, IStr text) {
     return writeText(path.toAssetsPath(), text);
 }
 
-void freeResources() {
-    engineState.resources.free();
+void freeResources(Sz tag = 0) {
+    engineState.resources.free(tag);
 }
 
 /// Opens a window with the given size and title.
@@ -1140,19 +1254,83 @@ void closeWindow() {
     rl.CloseWindow();
 }
 
+/// Returns true if the drawing is done in a pixel perfect way.
+bool isPixelPerfect() {
+    return engineState.flags.isPixelPerfect;
+}
+
+void setIsPixelPerfect(bool value) {
+    engineState.flags.isPixelPerfect = value;
+}
+
+void toggleIsPixelPerfect() {
+    setIsPixelPerfect(!isPixelPerfect);
+}
+
+/// Returns true if the system cursor is hidden.
+bool isCursorVisible() {
+    return engineState.flags.isCursorVisible;
+}
+
+@trusted
+void setIsCursorVisible(bool value) {
+    engineState.flags.isCursorVisible = value;
+    if (value) {
+        rl.ShowCursor();
+    } else {
+        rl.HideCursor();
+    }
+}
+
+void toggleIsCursorVisible() {
+    setIsCursorVisible(!isCursorVisible);
+}
+
+/// Returns true if the window is in fullscreen mode.
+@trusted
+bool isFullscreen() {
+    return rl.IsWindowFullscreen();
+}
+
+/// Changes the state of the fullscreen mode of the window.
+@trusted
+void setIsFullscreen(bool value) {
+    version(WebAssembly) {
+
+    } else {
+        if (value && !isFullscreen) {
+            engineState.fullscreenState.lastWindowWidth = windowWidth;
+            engineState.fullscreenState.lastWindowHeight = windowHeight;
+            rl.SetWindowPosition(0, 0);
+            rl.SetWindowSize(screenWidth, screenHeight);
+            engineState.fullscreenState.startToggleTimer();
+        } else if (!value && isFullscreen) {
+            engineState.fullscreenState.startToggleTimer();
+        }
+    }
+}
+
+void toggleIsFullscreen() {
+    setIsFullscreen(!isFullscreen);
+}
+
+Color backgroundColor() {
+    return engineState.backgroundColor;
+}
+
 /// Sets the window background color to the given color.
 void setBackgroundColor(Color value) {
     engineState.backgroundColor = value;
 }
 
 @trusted
-void setMasterVolume(float value) {
-    rl.SetMasterVolume(value);
+float masterVolume() {
+    return rl.GetMasterVolume();
 }
 
 @trusted
-float masterVolume() {
-    return rl.GetMasterVolume();
+void setMasterVolume(float value) {
+    rl.SetMasterVolume(value);
 }
 
 /// Returns true if the resolution is locked.
@@ -1184,66 +1362,6 @@ void toggleResolution(int width, int height) {
     } else {
         lockResolution(width, height);
     }
-}
-
-/// Returns true if the system cursor is hidden.
-bool isCursorHidden() {
-    return engineState.flags.isCursorHidden;
-}
-
-/// Hides the system cursor.
-@trusted
-void hideCursor() {
-    engineState.flags.isCursorHidden = true;
-    rl.HideCursor();
-}
-
-/// Shows the system cursor.
-@trusted
-void showCursor() {
-    engineState.flags.isCursorHidden = false;
-    rl.ShowCursor();
-}
-
-void toggleCursor() {
-    if (isCursorHidden) {
-        showCursor();
-    } else {
-        hideCursor();
-    }
-}
-
-/// Returns true if the window is in fullscreen mode.
-@trusted
-bool isFullscreen() {
-    return rl.IsWindowFullscreen();
-}
-
-/// Changes the state of the fullscreen mode of the window.
-@trusted
-void toggleFullscreen() {
-    version(WebAssembly) {
-
-    } else {
-        // Fullscreen code to fix a bug on Linux.
-        if (!isFullscreen) {
-            engineState.fullscreenState.lastWindowWidth = windowWidth;
-            engineState.fullscreenState.lastWindowHeight = windowHeight;
-            rl.SetWindowPosition(0, 0);
-            rl.SetWindowSize(screenWidth, screenHeight);
-        }
-        engineState.fullscreenState.startToggleTimer();
-    }
-}
-
-/// Returns true if the drawing is done in a pixel perfect way.
-bool isPixelPerfect() {
-    return engineState.flags.isPixelPerfect;
-}
-
-/// Changes the state of the pixel perfect mode of the window.
-void togglePixelPerfect() {
-    engineState.flags.isPixelPerfect = !engineState.flags.isPixelPerfect;
 }
 
 @trusted

@@ -35,15 +35,17 @@ mixin runGame!(ready, update, finish);
 * [Runani](https://kapendev.itch.io/runani)
 * [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
 
-## Dependencies
-
-* [Joka](https://github.com/Kapendev/joka)
-* [raylib](https://github.com/raysan5/raylib)
-
 ## Installation
 
 This guide shows how to install Popka and its dependencies using DUB.
 While DUB simplifies the process, Popka itself doesn't require DUB.
+
+Popka has the following dependencies:
+
+* [Joka](https://github.com/Kapendev/joka): A simple nogc utility library.
+* [raylib](https://github.com/raysan5/raylib): A simple graphics library.
+
+### Installation Steps
 
 Create a new folder and run inside the following commands:
 
