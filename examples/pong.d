@@ -3,9 +3,11 @@ import popka;
 
 // The game variables.
 auto gameCounter = 0;
+
 auto ballDirection = Vec2(1, 1);
 auto ballSpeed = Vec2(120);
 auto ball = Rect(5, 5);
+
 auto paddle1 = Rect(5 * 0.35, 5 * 5);
 auto paddle2 = Rect(5 * 0.35, 5 * 5);
 
@@ -70,6 +72,7 @@ bool update(float dt) {
     drawRect(ball.centerArea);
     drawRect(paddle1.centerArea);
     drawRect(paddle2.centerArea);
+
     // Draw the counter.
     auto textOptions = DrawOptions();
     textOptions.scale = Vec2(2);

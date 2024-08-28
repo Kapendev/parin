@@ -16,7 +16,7 @@ void ready() {
     setBackgroundColor(toRgb(0x0b0b0b));
     togglePixelPerfect();
     hideCursor();
-    // Loads the `atlas.png` file from the assets folder.
+    // Load the `atlas.png` file from the assets folder.
     atlas = loadTexture("atlas.png").unwrap();
 }
 
@@ -38,11 +38,11 @@ bool update(float dt) {
     // The drawing options can change the way something is drawn.
     auto options = DrawOptions();
     options.hook = Hook.center;
-    options.flip = frameDirection == 1 ? Flip.x : Flip.none;
     options.scale = Vec2(2);
+    options.flip = frameDirection == 1 ? Flip.x : Flip.none;
 
     // Draw the frame and the mouse position.
-    drawTexture(atlas.get(), framePosition, Rect(frameSize.x * floor(frame), 128, frameSize), options);
+    drawTexture(atlas, framePosition, Rect(frameSize.x * floor(frame), 128, frameSize), options);
     drawVec2(mouseScreenPosition, 8, frame == 0 ? blank : white.alpha(150));
     return false;
 }

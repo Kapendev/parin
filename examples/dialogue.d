@@ -34,14 +34,13 @@ auto script = "
 
 void ready() {
     lockResolution(320, 180);
-    // Parse the dialogue script of the game.
-    // The first update makes the dialogue go to the first available line.
+    // Parse the dialogue script. The first update makes the dialogue go to the first available line.
     dialogue.parse(script);
     dialogue.update();
 }
 
 bool update(float dt) {
-    // Update the game.
+    // Update the dialogue.
     if (dialogue.canUpdate) {
         if (dialogue.hasChoices) {
             auto keys = digitChars[1 .. 1 + dialogue.choices.length];

@@ -13,7 +13,7 @@ void ready() {
 bool update(float dt) {
     // Move the camera.
     cameraTarget += wasd * cameraSpeed * Vec2(dt);
-    camera.followPosition(cameraTarget, Vec2(dt));
+    camera.followPositionWithSlowdown(cameraTarget);
 
     // Draw the game world.
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook).subAll(3);

@@ -153,3 +153,7 @@ void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, Dra
         }
     }
 }
+
+void drawTileMap(TextureId texture, Vec2 position, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+    drawTileMap(texture.getOr(), position, map, camera, options);
+}

@@ -7,10 +7,11 @@
 // ---
 
 // TODO: Make a timer struct.
+// TODO: Make a sprite struct.
+
 // TODO: Think about toggle functions.
 // TODO: Update setup script.
 // TODO: Clean web script.
-// TODO: Make the locked resolution image more pixel perfect friendly by maybe hiding some pixels when the window resolution is weird.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
@@ -175,19 +176,27 @@ struct Camera {
         return isCentered ? Hook.center : Hook.topLeft;
     }
 
-    void followPosition(Vec2 target, Vec2 delta, float slowdown = 0.15f) {
+    void followPosition(Vec2 target, float delta = 120.0f) {
+        position = position.moveTo(target, Vec2(delta * deltaTime));
+    }
+
+    void followPositionWithSlowdown(Vec2 target, float slowdown = 0.15f) {
         if (slowdown <= 0.0f) {
             position = target;
         } else {
-            position = position.moveToWithSlowdown(target, delta, slowdown);
+            position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
         }
     }
 
-    void followScale(float target, float delta, float slowdown = 0.15f) {
+    void followScale(float target, float delta = 0.75f) {
+        scale = scale.moveTo(target, delta * deltaTime);
+    }
+
+    void followScaleWithSlowdown(float target, float slowdown = 0.15f) {
         if (slowdown <= 0.0f) {
             scale = target;
         } else {
-            scale = scale.moveToWithSlowdown(target, delta, slowdown);
+            scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
         }
     }
 
@@ -549,6 +558,36 @@ struct EngineFlags {
     bool isCursorHidden;
 }
 
+struct EngineFullscreenState {
+    int lastWindowWidth;
+    int lastWindowHeight;
+    float toggleTimer = toggleTimerDuration;
+
+    enum toggleTimerDuration = 0.1f;
+
+    @safe @nogc nothrow:
+
+    bool isToggleTimerRunning() {
+        return toggleTimer != toggleTimerDuration;
+    }
+
+    bool hasToggleTimerEnded() {
+        return toggleTimer == toggleTimerDuration;
+    }
+
+    void startToggleTimer() {
+        toggleTimer = 0.0f;
+    }
+
+    void endToggleTimer() {
+        toggleTimer = toggleTimerDuration;
+    }
+
+    void updateToggleTimer() {
+        toggleTimer = min(toggleTimer + deltaTime, toggleTimerDuration);
+    }
+}
+
 struct EngineResources {
     GenerationalList!LStr textNames;
     GenerationalList!LStr texts;
@@ -607,34 +646,46 @@ struct EngineViewport {
     Viewport data;
     int targetWidth;
     int targetHeight;
-    bool isLockResolutionQueued;
-    bool isUnlockResolutionQueued;
     alias data this;
+
+    @safe @nogc nothrow:
+
+    bool isLocking() {
+        return (targetWidth != 0 && targetHeight != 0) && (data.width != targetWidth && data.height != targetHeight);
+    }
+
+    bool isUnlocking() {
+        return (targetWidth == 0 && targetHeight == 0) && (!data.isEmpty);
+    }
+
+    void startLocking(int width, int height) {
+        targetWidth = width;
+        targetHeight = height;
+    }
+
+    void startUnlocking() {
+        targetWidth = 0;
+        targetHeight = 0;
+    }
 }
 
-struct EngineFullscreenState {
-    Vec2 lastWindowSize;
-    float toggleTimer = 0.0f;
-    bool isToggleQueued;
-    enum toggleWaitTime = 0.1f;
-}
-
-// TODO: Make it more simple.
 struct EngineState {
     EngineFlags flags;
-    EngineResources resources;
     EngineFullscreenState fullscreenState;
     EngineViewport viewport;
-    Color backgroundColor;
+    EngineResources resources;
+
     LStr tempText;
     LStr assetsPath;
+
+    Color backgroundColor;
     ulong tickCount;
 
     @safe @nogc nothrow:
 
     void free() {
-        resources.free();
         viewport.free();
+        resources.free();
         tempText.free();
         assetsPath.free();
         this = EngineState();
@@ -966,7 +1017,8 @@ void openWindow(int width, int height, IStr title = "Popka") {
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
     engineState.backgroundColor = gray2;
-    engineState.fullscreenState.lastWindowSize = Vec2(width, height);
+    engineState.fullscreenState.lastWindowWidth = width;
+    engineState.fullscreenState.lastWindowHeight = height;
 }
 
 /// Updates the window every frame with the given loop function.
@@ -994,10 +1046,13 @@ void updateWindow(bool function(float dt) updateFunc) {
         if (isResolutionLocked) {
             auto minSize = engineState.viewport.size;
             auto maxSize = windowSize;
+
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
+
             auto targetSize = minSize * Vec2(minRatio);
-            auto targetPos = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+            auto targetPosition = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+
             rl.EndTextureMode();
             rl.BeginDrawing();
             rl.ClearBackground(rl.Color(0, 0, 0, 255));
@@ -1005,8 +1060,8 @@ void updateWindow(bool function(float dt) updateFunc) {
                 engineState.viewport.toRl().texture,
                 rl.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
                 rl.Rectangle(
-                    ratio.x == minRatio ? targetPos.x : floor(targetPos.x),
-                    ratio.y == minRatio ? targetPos.y : floor(targetPos.y),
+                    floor(targetPosition.x),
+                    floor(targetPosition.y),
                     ratio.x == minRatio ? targetSize.x : floor(targetSize.x),
                     ratio.y == minRatio ? targetSize.y : floor(targetSize.y),
                 ),
@@ -1018,32 +1073,35 @@ void updateWindow(bool function(float dt) updateFunc) {
         } else {
             rl.EndDrawing();
         }
-        // The lockResolution and unlockResolution queue.
-        if (engineState.viewport.isLockResolutionQueued) {
-            engineState.viewport.isLockResolutionQueued = false;
+
+        // Main viewport code.
+        if (engineState.viewport.isLocking) {
             engineState.viewport.free();
             engineState.viewport.data = loadRawViewport(engineState.viewport.targetWidth, engineState.viewport.targetHeight).unwrapOr();
-        } else if (engineState.viewport.isUnlockResolutionQueued) {
-            engineState.viewport.isUnlockResolutionQueued = false;
+        } else if (engineState.viewport.isUnlocking) {
             engineState.viewport.free();
         }
-        // Fullscreen code to fix a bug on KDE.
-        if (engineState.fullscreenState.isToggleQueued) {
-            engineState.fullscreenState.toggleTimer += deltaTime;
-            if (engineState.fullscreenState.toggleTimer >= engineState.fullscreenState.toggleWaitTime) {
-                engineState.fullscreenState.toggleTimer = 0.0f;
-                auto screen = screenSize;
-                auto window = engineState.fullscreenState.lastWindowSize;
-                if (rl.IsWindowFullscreen()) {
+
+        // Fullscreen code to fix a bug on Linux.
+        if (engineState.fullscreenState.isToggleTimerRunning) {
+            engineState.fullscreenState.updateToggleTimer();
+            if (engineState.fullscreenState.hasToggleTimerEnded) {
+                if (isFullscreen) {
                     rl.ToggleFullscreen();
-                    rl.SetWindowSize(cast(int) window.x, cast(int) window.y);
-                    rl.SetWindowPosition(cast(int) (screen.x * 0.5f - window.x * 0.5f), cast(int) (screen.y * 0.5f - window.y * 0.5f));
+                    rl.SetWindowSize(
+                        engineState.fullscreenState.lastWindowWidth,
+                        engineState.fullscreenState.lastWindowHeight,
+                    );
+                    rl.SetWindowPosition(
+                        cast(int) (screenWidth * 0.5f - engineState.fullscreenState.lastWindowWidth * 0.5f),
+                        cast(int) (screenHeight * 0.5f - engineState.fullscreenState.lastWindowHeight * 0.5f),
+                    );
                 } else {
                     rl.ToggleFullscreen();
                 }
-                engineState.fullscreenState.isToggleQueued = false;
             }
         }
+
         return result;
     }
 
@@ -1105,23 +1163,18 @@ bool isResolutionLocked() {
 /// Locks the resolution to the given value.
 @trusted
 void lockResolution(int width, int height) {
+    engineState.viewport.startLocking(width, height);
     if (!engineState.flags.isUpdating) {
+        engineState.viewport.free();
         engineState.viewport.data = loadRawViewport(width, height).unwrap();
-    } else {
-        engineState.viewport.targetWidth = width;
-        engineState.viewport.targetHeight = height;
-        engineState.viewport.isLockResolutionQueued = true;
-        engineState.viewport.isUnlockResolutionQueued = false;
     }
 }
 
 /// Unlocks the resolution.
 void unlockResolution() {
+    engineState.viewport.startUnlocking();
     if (!engineState.flags.isUpdating) {
         engineState.viewport.free();
-    } else {
-        engineState.viewport.isUnlockResolutionQueued = true;
-        engineState.viewport.isLockResolutionQueued = false;
     }
 }
 
@@ -1172,13 +1225,14 @@ void toggleFullscreen() {
     version(WebAssembly) {
 
     } else {
-        if (!rl.IsWindowFullscreen()) {
-            auto screen = screenSize;
-            engineState.fullscreenState.lastWindowSize = windowSize;
+        // Fullscreen code to fix a bug on Linux.
+        if (!isFullscreen) {
+            engineState.fullscreenState.lastWindowWidth = windowWidth;
+            engineState.fullscreenState.lastWindowHeight = windowHeight;
             rl.SetWindowPosition(0, 0);
             rl.SetWindowSize(screenWidth, screenHeight);
         }
-        engineState.fullscreenState.isToggleQueued = true;
+        engineState.fullscreenState.startToggleTimer();
     }
 }
 
@@ -1558,8 +1612,16 @@ void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options 
     }
 }
 
+void drawTexture(TextureId texture, Vec2 position, Rect area, DrawOptions options = DrawOptions()) {
+    drawTexture(texture.getOr(), position, area, options);
+}
+
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTexture(texture, position, Rect(texture.size), options);
+}
+
+void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTexture(texture.getOr(), position, options);
 }
 
 @trusted
@@ -1585,6 +1647,10 @@ void drawRune(Font font, Vec2 position, dchar rune, DrawOptions options = DrawOp
     }
     rl.DrawTextCodepoint(font.data, rune, rl.Vector2(0.0f, 0.0f), font.size, options.color.toRl());
     rl.rlPopMatrix();
+}
+
+void drawRune(FontId font, Vec2 position, dchar rune, DrawOptions options = DrawOptions()) {
+    drawRune(font.getOr(), position, rune, options);
 }
 
 @trusted
@@ -1635,6 +1701,10 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
         i += codepointByteCount;
     }
     rl.rlPopMatrix();
+}
+
+void drawText(FontId font, Vec2 position, IStr text, DrawOptions options = DrawOptions()) {
+    drawText(font.getOr(), position, text, options);
 }
 
 void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {

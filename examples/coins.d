@@ -4,13 +4,15 @@ import popka;
 // The game variables.
 auto player = Rect(16, 16);
 auto playerSpeed = Vec2(120);
+
 auto coins = SparseList!Rect();
 auto coinSize = Vec2(8);
 auto maxCoinCount = 8;
 
 void ready() {
     lockResolution(320, 180);
-    // Place the player and create the coins.
+
+    // Place the player and create the coins. Every coin will have a random starting position.
     player.position = resolution * Vec2(0.5);
     foreach (i; 0 .. maxCoinCount) {
         auto minPosition = Vec2(0, 40);
@@ -40,12 +42,11 @@ bool update(float dt) {
         }
     }
 
-    // Draw the coins and the player.
+    // Draw the game.
     foreach (coin; coins.items) {
         drawRect(coin);
     }
     drawRect(player);
-    // Draw the game info.
     if (coins.length == 0) {
         drawDebugText("You collected all the coins!");
     } else {
