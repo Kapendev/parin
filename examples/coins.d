@@ -27,18 +27,10 @@ void ready() {
 bool update(float dt) {
     // Move the player.
     auto playerDirection = Vec2();
-    if (Keyboard.left.isDown || 'a'.isDown) {
-        playerDirection.x = -1;
-    }
-    if (Keyboard.right.isDown || 'd'.isDown) {
-        playerDirection.x = 1;
-    }
-    if (Keyboard.up.isDown || 'w'.isDown) {
-        playerDirection.y = -1;
-    }
-    if (Keyboard.down.isDown || 's'.isDown) {
-        playerDirection.y = 1;
-    }
+    if (Keyboard.left.isDown || 'a'.isDown) playerDirection.x = -1;
+    if (Keyboard.right.isDown || 'd'.isDown) playerDirection.x = 1;
+    if (Keyboard.up.isDown || 'w'.isDown)  playerDirection.y = -1;
+    if (Keyboard.down.isDown || 's'.isDown) playerDirection.y = 1;
     player.position += playerDirection * playerSpeed * Vec2(dt);
 
     // Check if the player is touching some coins and remove those coins.
