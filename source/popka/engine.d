@@ -6,11 +6,9 @@
 // Version: v0.0.17
 // ---
 
+// TODO: Text the resource code and the tag thing.
 // TODO: Make a timer struct.
 // TODO: Make a sprite struct.
-
-// TODO: Update setup script.
-// TODO: Clean web script.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;

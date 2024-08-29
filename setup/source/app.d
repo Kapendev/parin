@@ -1,27 +1,34 @@
 #!/bin/env rdmd
 
-// TODO: Needs some cleaning, but it works for now and I don't care.
-
 /// A helper script that automates the project setup.
-/// This script is designed with the idea that you use DUB, but it can work without DUB too.
-import std.format;
-import std.path;
-import std.stdio;
-import std.file;
-import std.process;
 
-// The config.
-// ----------
-enum noLibsArg = "offline";
-enum dubFile = buildPath(".", "dub.json");
-enum dubyFile = buildPath(".", "dub.selections.json");
-enum appFile = buildPath(".", "source", "app.d");
-enum gitignoreFile = buildPath(".", ".gitignore");
+import std;
+
 enum assetsDir = buildPath(".", "assets");
 enum webDir = buildPath(".", "web");
-// ----------
 
-enum defaultDUBContent = `{
+enum appFile = buildPath(".", "source", "app.d");
+enum dubFile = buildPath(".", "dub.json");
+enum dubLockFile = buildPath(".", "dub.selections.json");
+enum gitignoreFile = buildPath(".", ".gitignore");
+
+enum appFileContent = `import popka;
+
+void ready() {
+    lockResolution(320, 180);
+}
+
+bool update(float dt) {
+    drawDebugText("Hello world!");
+    return false;
+}
+
+void finish() { }
+
+mixin runGame!(ready, update, finish);
+`;
+
+enum dubFileContent = `{
     "name" : "game",
     "description" : "A game made with Popka.",
     "authors" : ["Name"],
@@ -77,7 +84,7 @@ enum defaultDUBContent = `{
 }
 `;
 
-enum defaultGitignoreContent = `.dub
+enum gitignoreFileContent = `.dub
 game
 web
 lib*
@@ -93,85 +100,36 @@ lib*
 *.lst
 `;
 
-enum defaultAppContent = `import popka;
-
-bool gameLoop() {
-    drawDebugText("Hello world!");
-    return false;
-}
-
-void gameStart() {
-    lockResolution(320, 180);
-    updateWindow!gameLoop();
-}
-
-mixin callGameStart!(gameStart, 640, 360);
-`;
-
-/// Check if path exists and print an error message if needed.
-bool check(const(char)[] path, bool isLoud = true) {
-    if (!exists(path)) {
-        if (isLoud) writeln("Error: `", path, "` doesn't exist.");
-        return true;
-    }
-    return false;
-}
-
-/// Run a command and print the output.
-bool run(const(char)[] command, bool isLoud = true) {
-    writeln("Command: ", command);
-    auto shell = executeShell(command);
-    if (isLoud && shell.output.length != 0) writeln("Output: ", shell.output);
-    return shell.status != 0;
-}
-
-/// Deletes a file if it exists.
-void deleteFile(const(char)[] path) {
-    if (!check(path, false)) {
-        std.file.remove(path);
-    }
-}
-
 int main(string[] args) {
-    auto isDUBProject = !check(dubFile, false);
-    // Skip if the folders already exist.
-    if (!check(assetsDir, false) || !check(webDir, false)) {
-        writeln("Skipping setup because some folders already exist.");
-        return 0;
-    }
+    auto isDubProject = exists(dubFile);
+    auto isFirstRun = !exists(assetsDir);
 
     // Use the raylib-d script to download the raylib library files.
-    // We also have to use `spawnShell` here because raylib-d:install does not accept arguments.
-    // TODO: Ask the raylib-d project to do something about that.
-    if (isDUBProject) {
-        auto canDownload = args.length == 1 || (args.length > 1 && args[1] != noLibsArg);
-        if (canDownload) {
-            run("dub add raylib-d");
-            writeln();
-            writeln(`"Saying yes to happiness means learning to say no to the things and people that stress you out." - Thema Davis`);
-            writeln();
-            auto pid = spawnShell("dub run raylib-d:install");
-            wait(pid);
-        } else if (args.length > 1 && args[1] != noLibsArg) {
-            writeln("Info: Pass `%s` if you don't want to download raylib.".format(noLibsArg));
-        }
+    if (isDubProject) {
+        writeln("\n  Simply say \"yes\" to all prompts.  \n");
+        auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
+        if (dub1 != 0) return dub1;
+        auto dub2 = spawnProcess(["dub", "run", "raylib-d:install"]).wait();
+        if (dub2 != 0) return dub2;
     }
 
-    // Delete the old files.
-    if (isDUBProject) {
-        deleteFile(dubFile);
-        deleteFile(dubyFile);
-        deleteFile(appFile);
+    // Remove old files.
+    if (isDubProject) {
+        if (isFirstRun && exists(appFile)) std.file.remove(appFile);
+        if (exists(dubFile)) std.file.remove(dubFile);
+        if (exists(dubLockFile)) std.file.remove(dubLockFile);
     }
-    deleteFile(gitignoreFile);
+    if (isFirstRun && exists(gitignoreFile)) std.file.remove(gitignoreFile);
 
-    // Create the new files.
-    if (isDUBProject) {
-        std.file.write(dubFile, defaultDUBContent);
-        std.file.write(appFile, defaultAppContent);
+    // Create new files.
+    if (isDubProject) {
+        if (isFirstRun) std.file.write(appFile, appFileContent);
+        std.file.write(dubFile, dubFileContent);
     }
-    std.file.write(gitignoreFile, defaultGitignoreContent);
-    std.file.mkdir(assetsDir);
-    std.file.mkdir(webDir);
+    if (isFirstRun) std.file.write(gitignoreFile, gitignoreFileContent);
+
+    // Create folders.
+    if (!exists(assetsDir)) std.file.mkdir(assetsDir);
+    if (!exists(webDir)) std.file.mkdir(webDir);
     return 0;
 }
