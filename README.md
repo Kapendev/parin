@@ -66,7 +66,6 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
-To avoid downloading raylib, pass `offline` to the script.
 
 ## Documentation
 

@@ -118,6 +118,10 @@ void drawTile(Texture texture, Vec2 position, int tileID, int tileWidth, int til
     drawTexture(texture, position, area, options);
 }
 
+void drawTile(TextureId texture, Vec2 position, int tileID, int tileWidth, int tileHeight, DrawOptions options = DrawOptions()) {
+    drawTile(texture.getOr(), position, tileID, tileWidth, tileHeight, options);
+}
+
 void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook);
     auto topLeft = cameraArea.topLeftPoint;

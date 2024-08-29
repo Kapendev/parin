@@ -6,7 +6,7 @@
 // Version: v0.0.17
 // ---
 
-// TODO: Text the resource code and the tag thing.
+// TODO: Test the resources code and the tag thing.
 // TODO: Make a timer struct.
 // TODO: Make a sprite struct.
 
@@ -786,6 +786,13 @@ struct EngineState {
     @safe @nogc nothrow:
 
     void free() {
+        debug {
+            println("Resources that will be freed automatically:");
+            println("  Text count: ", resources.texts.length != 0 ? resources.texts.length - 1 : 0);
+            println("  Texture count: ", resources.textures.length != 0 ? resources.textures.length - 1 : 0);
+            println("  Font count: ", resources.fonts.length != 0 ? resources.fonts.length - 1 : 0);
+            println("  Sound count: ", resources.sounds.length != 0 ? resources.sounds.length - 1 : 0);
+        }
         viewport.free();
         resources.free();
         tempText.free();
@@ -1032,15 +1039,17 @@ Result!TextureId loadTexture(IStr path, Sz tag = 0) {
 /// Loads a font file (TTF) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
-Result!Font loadRawFont(IStr path, uint size, const(dchar)[] runes = []) {
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = []) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
     }
+    value.runeSpacing = runeSpacing;
+    value.lineSpacing = lineSpacing;
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!FontId loadFont(IStr path, uint size, const(dchar)[] runes = [], Sz tag = 0) {
+Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0) {
     if (engineState.resources.fontNames.length == 0) {
         engineState.resources.fontNames.append(LStr());
         engineState.resources.fontTags.append(0);
@@ -1053,7 +1062,7 @@ Result!FontId loadFont(IStr path, uint size, const(dchar)[] runes = [], Sz tag =
         }
     }
 
-    auto result = loadRawFont(path, size, runes);
+    auto result = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
     if (result.isSome) {
         engineState.resources.fontNames.append(LStr(path));
         engineState.resources.fontTags.append(tag);
@@ -1066,17 +1075,19 @@ Result!FontId loadFont(IStr path, uint size, const(dchar)[] runes = [], Sz tag =
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
-Result!Sound loadRawSound(IStr path) {
+Result!Sound loadRawSound(IStr path, float volume, float pitch) {
     auto value = Sound();
     if (path.endsWith(".wav")) {
         value.data = rl.LoadSound(path.toAssetsPath().toCStr().unwrapOr());
     } else {
         value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().unwrapOr());
     }
+    value.setVolume(volume);
+    value.setPitch(pitch);
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!SoundId loadSound(IStr path, Sz tag = 0) {
+Result!SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
     if (engineState.resources.soundNames.length == 0) {
         engineState.resources.soundNames.append(LStr());
         engineState.resources.soundTags.append(0);
@@ -1089,7 +1100,7 @@ Result!SoundId loadSound(IStr path, Sz tag = 0) {
         }
     }
 
-    auto result = loadRawSound(path);
+    auto result = loadRawSound(path, volume, pitch);
     if (result.isSome) {
         engineState.resources.soundNames.append(LStr(path));
         engineState.resources.soundTags.append(tag);
@@ -1601,6 +1612,10 @@ void playSound(Sound sound) {
     }
 }
 
+void playSound(SoundId sound) {
+    playSound(sound.getOr());
+}
+
 @trusted
 void updateSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1610,6 +1625,10 @@ void updateSound(Sound sound) {
     if (sound.isMusic) {
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
+}
+
+void updateSound(SoundId sound) {
+    updateSound(sound.getOr());
 }
 
 @trusted
@@ -1625,6 +1644,10 @@ void pauseSound(Sound sound) {
     }
 }
 
+void pauseSound(SoundId sound) {
+    pauseSound(sound.getOr());
+}
+
 @trusted
 void resumeSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1638,6 +1661,10 @@ void resumeSound(Sound sound) {
     }
 }
 
+void resumeSound(SoundId sound) {
+    resumeSound(sound.getOr());
+}
+
 @trusted
 void stopSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1649,6 +1676,10 @@ void stopSound(Sound sound) {
     } else {
         rl.StopMusicStream(sound.data.get!(rl.Music)());
     }
+}
+
+void stopSound(SoundId sound) {
+    stopSound(sound.getOr());
 }
 
 @trusted
