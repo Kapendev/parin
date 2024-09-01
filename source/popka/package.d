@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.17
+// Version: v0.0.18
 // ---
 
 module popka;
@@ -11,3 +11,4 @@ module popka;
 public import popka.dialogue;
 public import popka.engine;
 public import popka.tilemap;
+public import popka.timer;

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.17
+// Version: v0.0.18
 // ---
 
 // TODO: Test the resources code and the tag thing.
