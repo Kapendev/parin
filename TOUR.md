@@ -12,7 +12,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    drawDebugText("Hello world!");
+    drawDebugText("Hello world!", Vec2(8.0));
     return false;
 }
 
@@ -39,13 +39,13 @@ Here is a breakdown of how this code works:
 
     ```d
     bool update(float dt) {
-        drawDebugText("Hello world!");
+        drawDebugText("Hello world!", Vec2(8.0));
         return false;
     }
     ```
 
     This function is the main loop of the game.
-    It is called every frame while the game is running and, in this example, draws the message "Hello world!".
+    It is called every frame while the game is running and, in this example, draws the message "Hello world!" at position `Vec2(8.0)`.
     The `return false` statement indicates that the game should continue running.
     If `true` were returned, the game would stop running.
 
@@ -83,12 +83,12 @@ void drawVec2(Vec2 point, float size, Color color = white);
 void drawCirc(Circ area, Color color = white);
 void drawLine(Line area, float size, Color color = white);
 
-void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options = DrawOptions());
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions());
+void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
-void drawRune(Font font, Vec2 position, dchar rune, DrawOptions options = DrawOptions());
-void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOptions());
-void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions());
+void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions());
+void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions());
 ```
 
 Additional drawing functions can be found in other modules, such as `popka.tilemap`.

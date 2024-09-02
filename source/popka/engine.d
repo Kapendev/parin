@@ -7,7 +7,6 @@
 // ---
 
 // TODO: Test the resources code and the tag thing.
-// TODO: Make a sprite struct. Something that should help with animation maybe.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
@@ -1600,7 +1599,7 @@ void drawLine(Line area, float size, Color color = white) {
 }
 
 @trusted
-void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options = DrawOptions()) {
+void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
         return;
     } else if (area.size.x <= 0.0f || area.size.y <= 0.0f) {
@@ -1645,12 +1644,12 @@ void drawTexture(Texture texture, Vec2 position, Rect area, DrawOptions options 
     }
 }
 
-void drawTexture(TextureId texture, Vec2 position, Rect area, DrawOptions options = DrawOptions()) {
-    drawTexture(texture.getOr(), position, area, options);
+void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTextureArea(texture.getOr(), area, position, options);
 }
 
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTexture(texture, position, Rect(texture.size), options);
+    drawTextureArea(texture, Rect(texture.size), position, options);
 }
 
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -1658,7 +1657,7 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 }
 
 @trusted
-void drawRune(Font font, Vec2 position, dchar rune, DrawOptions options = DrawOptions()) {
+void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) {
         return;
     }
@@ -1682,12 +1681,12 @@ void drawRune(Font font, Vec2 position, dchar rune, DrawOptions options = DrawOp
     rl.rlPopMatrix();
 }
 
-void drawRune(FontId font, Vec2 position, dchar rune, DrawOptions options = DrawOptions()) {
-    drawRune(font.getOr(), position, rune, options);
+void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawRune(font.getOr(), rune, position, options);
 }
 
 @trusted
-void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOptions()) {
+void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
         return;
     }
@@ -1722,7 +1721,7 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
             if (codepoint != ' ' && codepoint != '\t') {
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
-                drawRune(font, Vec2(textOffsetX, textOffsetY), codepoint, runeOptions);
+                drawRune(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
             }
             if (font.data.glyphs[index].advanceX == 0) {
                 textOffsetX += font.data.recs[index].width + font.runeSpacing;
@@ -1736,12 +1735,12 @@ void drawText(Font font, Vec2 position, IStr text, DrawOptions options = DrawOpt
     rl.rlPopMatrix();
 }
 
-void drawText(FontId font, Vec2 position, IStr text, DrawOptions options = DrawOptions()) {
-    drawText(font.getOr(), position, text, options);
+void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawText(font.getOr(), text, position, options);
 }
 
-void drawDebugText(IStr text, Vec2 position = Vec2(8.0f), DrawOptions options = DrawOptions()) {
-    drawText(engineFont, position, text, options);
+void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawText(engineFont, text, position, options);
 }
 
 mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Popka") {

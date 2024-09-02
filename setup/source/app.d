@@ -19,7 +19,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    drawDebugText("Hello world!");
+    drawDebugText("Hello world!", Vec2(8.0));
     return false;
 }
 

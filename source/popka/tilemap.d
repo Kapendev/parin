@@ -18,11 +18,26 @@ public import joka.types;
 
 @safe @nogc nothrow:
 
+// TODO: Think about gaps in an atlas texture.
+
+struct Tile {
+    int id;
+    int width;
+    int height;
+
+    @safe @nogc nothrow:
+
+    this(int id, int width, int height) {
+        this.id = id;
+        this.width = width;
+        this.height = height;
+    }
+}
+
 struct TileMap {
     Grid!short data;
     int tileWidth;
     int tileHeight;
-
     alias data this;
 
     @safe @nogc nothrow:
@@ -110,28 +125,28 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
     return toTileMap(temp.unwrap(), tileWidth, tileHeight);
 }
 
-void drawTile(Texture texture, Vec2 position, int tileID, int tileWidth, int tileHeight, DrawOptions options = DrawOptions()) {
-    auto gridWidth = cast(int) (texture.width / tileWidth);
-    auto gridHeight = cast(int) (texture.height / tileHeight);
+void drawTile(Texture texture, Tile tile, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto gridWidth = texture.width / tile.width;
+    auto gridHeight = texture.height / tile.height;
     if (gridWidth == 0 || gridHeight == 0) {
         return;
     }
-    auto row = tileID / gridWidth;
-    auto col = tileID % gridWidth;
-    auto area = Rect(col * tileWidth, row * tileHeight, tileWidth, tileHeight);
-    drawTexture(texture, position, area, options);
+    auto row = tile.id / gridWidth;
+    auto col = tile.id % gridWidth;
+    auto area = Rect(col * tile.width, row * tile.height, tile.width, tile.height);
+    drawTextureArea(texture, area, position, options);
 }
 
-void drawTile(TextureId texture, Vec2 position, int tileID, int tileWidth, int tileHeight, DrawOptions options = DrawOptions()) {
-    drawTile(texture.getOr(), position, tileID, tileWidth, tileHeight, options);
+void drawTile(TextureId texture, Tile tile, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTile(texture.getOr(), tile, position, options);
 }
 
-void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMap(Texture texture, TileMap tileMap, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook);
     auto topLeft = cameraArea.topLeftPoint;
     auto bottomRight = cameraArea.bottomRightPoint;
-    auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
-    auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
+    auto targetTileWidth = cast(int) (tileMap.tileWidth * options.scale.x);
+    auto targetTileHeight = cast(int) (tileMap.tileHeight * options.scale.y);
     auto targetTileSize = Vec2(targetTileWidth, targetTileHeight);
 
     auto row1 = 0;
@@ -139,15 +154,15 @@ void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, Dra
     auto row2 = 0;
     auto col2 = 0;
     if (camera.isAttached) {
-        row1 = cast(int) floor(clamp((topLeft.y - position.y) / targetTileHeight, 0, map.rowCount));
-        col1 = cast(int) floor(clamp((topLeft.x - position.x) / targetTileWidth, 0, map.colCount));
-        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / targetTileHeight + 1, 0, map.rowCount));
-        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / targetTileWidth + 1, 0, map.colCount));
+        row1 = cast(int) floor(clamp((topLeft.y - position.y) / targetTileHeight, 0, tileMap.rowCount));
+        col1 = cast(int) floor(clamp((topLeft.x - position.x) / targetTileWidth, 0, tileMap.colCount));
+        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / targetTileHeight + 1, 0, tileMap.rowCount));
+        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / targetTileWidth + 1, 0, tileMap.colCount));
     } else {
         row1 = cast(int) 0;
         col1 = cast(int) 0;
-        row2 = cast(int) map.rowCount;
-        col2 = cast(int) map.colCount;
+        row2 = cast(int) tileMap.rowCount;
+        col2 = cast(int) tileMap.colCount;
     }
 
     if (row1 == row2 || col1 == col2) {
@@ -156,12 +171,14 @@ void drawTileMap(Texture texture, Vec2 position, TileMap map, Camera camera, Dra
 
     foreach (row; row1 .. row2) {
         foreach (col; col1 .. col2) {
-            if (map[row, col] == -1) continue;
-            drawTile(texture, position + Vec2(col, row) * targetTileSize, map[row, col], map.tileWidth, map.tileHeight, options);
+            if (tileMap[row, col] == -1) continue;
+            auto tile = Tile(tileMap[row, col], tileMap.tileWidth, tileMap.tileHeight);
+            auto tilePosition = position + Vec2(col, row) * targetTileSize;
+            drawTile(texture, tile, tilePosition, options);
         }
     }
 }
 
-void drawTileMap(TextureId texture, Vec2 position, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-    drawTileMap(texture.getOr(), position, map, camera, options);
+void drawTileMap(TextureId texture, TileMap tileMap, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
+    drawTileMap(texture.getOr(), tileMap, position, camera, options);
 }

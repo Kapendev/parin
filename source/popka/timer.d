@@ -49,7 +49,7 @@ struct Timer {
 
     void stop() {
         time = duration;
-        prevTime = duration;
+        prevTime = duration - 0.1f;
     }
 
     void pause() {
