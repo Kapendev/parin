@@ -9,8 +9,12 @@
 /// The `tilemap` module provides a simple and fast tile map.
 module popka.tilemap;
 
+import joka.ascii;
 import popka.engine;
-public import joka;
+public import joka.containers;
+public import joka.faults;
+public import joka.math;
+public import joka.types;
 
 @safe @nogc nothrow:
 

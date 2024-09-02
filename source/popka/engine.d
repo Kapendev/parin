@@ -7,14 +7,21 @@
 // ---
 
 // TODO: Test the resources code and the tag thing.
-// TODO: Make a timer struct.
-// TODO: Make a sprite struct.
+// TODO: Make a sprite struct. Something that should help with animation maybe.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
 
 import rl = popka.rl;
-public import joka;
+import joka.unions;
+import joka.ascii;
+import joka.io;
+import popka.timer;
+public import joka.colors;
+public import joka.containers;
+public import joka.faults;
+public import joka.math;
+public import joka.types;
 
 @safe @nogc nothrow:
 
@@ -224,14 +231,12 @@ struct Camera {
 
 struct TextId {
     GenerationalIndex data;
-    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data, Sz tag) {
+    this(GenerationalIndex data) {
         this.data = data;
-        this.tag = tag;
     }
 
     bool isValid() {
@@ -242,7 +247,7 @@ struct TextId {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
         }
-        return engineState.resources.texts[data];
+        return engineState.resources.texts.data[data];
     }
 
     LStr getOr() {
@@ -251,11 +256,6 @@ struct TextId {
 
     void free() {
         if (engineState.resources.texts.has(data)) {
-            engineState.resources.textNames[data].free();
-            engineState.resources.texts[data].free();
-
-            engineState.resources.textNames.remove(data);
-            engineState.resources.textTags.remove(data);
             engineState.resources.texts.remove(data);
         }
     }
@@ -309,14 +309,12 @@ struct Texture {
 
 struct TextureId {
     GenerationalIndex data;
-    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data, Sz tag) {
+    this(GenerationalIndex data) {
         this.data = data;
-        this.tag = tag;
     }
 
     bool isValid() {
@@ -327,7 +325,7 @@ struct TextureId {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
         }
-        return engineState.resources.textures[data];
+        return engineState.resources.textures.data[data];
     }
 
     Texture getOr() {
@@ -336,11 +334,6 @@ struct TextureId {
 
     void free() {
         if (engineState.resources.textures.has(data)) {
-            engineState.resources.textureNames[data].free();
-            engineState.resources.textures[data].free();
-
-            engineState.resources.textureNames.remove(data);
-            engineState.resources.textureTags.remove(data);
             engineState.resources.textures.remove(data);
         }
     }
@@ -384,14 +377,12 @@ struct Font {
 
 struct FontId {
     GenerationalIndex data;
-    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data, Sz tag) {
+    this(GenerationalIndex data) {
         this.data = data;
-        this.tag = tag;
     }
 
     bool isValid() {
@@ -402,7 +393,7 @@ struct FontId {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
         }
-        return engineState.resources.fonts[data];
+        return engineState.resources.fonts.data[data];
     }
 
     Font getOr() {
@@ -411,11 +402,6 @@ struct FontId {
 
     void free() {
         if (engineState.resources.fonts.has(data)) {
-            engineState.resources.fontNames[data].free();
-            engineState.resources.fonts[data].free();
-
-            engineState.resources.fontNames.remove(data);
-            engineState.resources.fontTags.remove(data);
             engineState.resources.fonts.remove(data);
         }
     }
@@ -426,16 +412,8 @@ struct Sound {
 
     @safe @nogc nothrow:
 
-    bool isSound() {
-        return data.isKind!(rl.Sound);
-    }
-
-    bool isMusic() {
-        return data.isKind!(rl.Music);
-    }
-
     bool isEmpty() {
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             return data.get!(rl.Sound)().stream.sampleRate == 0;
         } else {
             return data.get!(rl.Music)().stream.sampleRate == 0;
@@ -444,7 +422,7 @@ struct Sound {
 
     @trusted
     float time() {
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             return 0.0f;
         } else {
             return rl.GetMusicTimePlayed(data.get!(rl.Music)());
@@ -453,7 +431,7 @@ struct Sound {
 
     @trusted
     float waitTime() {
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             return 0.0f;
         } else {
             return rl.GetMusicTimeLength(data.get!(rl.Music)());
@@ -462,7 +440,7 @@ struct Sound {
 
     @trusted
     void setVolume(float value) {
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             rl.SetSoundVolume(data.get!(rl.Sound)(), value);
         } else {
             rl.SetMusicVolume(data.get!(rl.Music)(), value);
@@ -471,7 +449,7 @@ struct Sound {
 
     @trusted
     void setPitch(float value) {
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             rl.SetSoundPitch(data.get!(rl.Sound)(), value);
         } else {
             rl.SetMusicPitch(data.get!(rl.Music)(), value);
@@ -480,7 +458,7 @@ struct Sound {
 
     @trusted
     void setPan(float value) {
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             rl.SetSoundPan(data.get!(rl.Sound)(), value);
         } else {
             rl.SetMusicPan(data.get!(rl.Music)(), value);
@@ -492,7 +470,7 @@ struct Sound {
         if (isEmpty) {
             return;
         }
-        if (isSound) {
+        if (data.isKind!(rl.Sound)) {
             rl.UnloadSound(data.get!(rl.Sound)());
         } else {
             rl.UnloadMusicStream(data.get!(rl.Music)());
@@ -503,14 +481,12 @@ struct Sound {
 
 struct SoundId {
     GenerationalIndex data;
-    Sz tag;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data, Sz tag) {
+    this(GenerationalIndex data) {
         this.data = data;
-        this.tag = tag;
     }
 
     bool isValid() {
@@ -521,7 +497,7 @@ struct SoundId {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
         }
-        return engineState.resources.sounds[data];
+        return engineState.resources.sounds.data[data];
     }
 
     Sound getOr() {
@@ -530,11 +506,6 @@ struct SoundId {
 
     void free() {
         if (engineState.resources.sounds.has(data)) {
-            engineState.resources.soundNames[data].free();
-            engineState.resources.sounds[data].free();
-
-            engineState.resources.soundNames.remove(data);
-            engineState.resources.soundTags.remove(data);
             engineState.resources.sounds.remove(data);
         }
     }
@@ -593,154 +564,84 @@ struct EngineFlags {
 struct EngineFullscreenState {
     int lastWindowWidth;
     int lastWindowHeight;
-    float toggleTimer = toggleTimerDuration;
+    Timer toggleTimer = Timer(0.1f);
+}
 
-    enum toggleTimerDuration = 0.1f;
+struct EngineResourceGroup(T) {
+    GenerationalList!T data;
+    GenerationalList!LStr names;
+    GenerationalList!Sz tags;
 
     @safe @nogc nothrow:
 
-    bool isToggleTimerRunning() {
-        return toggleTimer != toggleTimerDuration;
+    Sz length() {
+        return data.length;
     }
 
-    bool hasToggleTimerEnded() {
-        return toggleTimer == toggleTimerDuration;
+    bool has(GenerationalIndex i) {
+        return data.has(i);
     }
 
-    void startToggleTimer() {
-        toggleTimer = 0.0f;
+    GenerationalIndex append(T arg, IStr name, Sz tag) {
+        data.append(arg);
+        names.append(LStr(name));
+        return tags.append(tag);
     }
 
-    void endToggleTimer() {
-        toggleTimer = toggleTimerDuration;
+    GenerationalIndex appendEmpty() {
+        return append(T(), "", 0);
     }
 
-    void updateToggleTimer() {
-        toggleTimer = min(toggleTimer + deltaTime, toggleTimerDuration);
+    void remove(GenerationalIndex i) {
+        data[i].free();
+        data.remove(i);
+        names[i].free();
+        names.remove(i);
+        tags.remove(i);
+    }
+
+    void free(Sz tag = 0) {
+        if (tag == 0) {
+            foreach (ref item; data.items) {
+                item.free();
+            }
+            data.free();
+            foreach (ref item; names.items) {
+                item.free();
+            }
+            names.free();
+            tags.free();
+        } else {
+            foreach (id; data.ids) {
+                if (tag == tags[id]) {
+                    remove(id);
+                }
+            }
+        }
+    }
+
+    auto items() {
+        return data.items;
+    }
+
+    auto ids() {
+        return data.ids;
     }
 }
 
 struct EngineResources {
-    GenerationalList!LStr textNames;
-    GenerationalList!Sz textTags;
-    GenerationalList!LStr texts;
-
-    GenerationalList!LStr textureNames;
-    GenerationalList!Sz textureTags;
-    GenerationalList!Texture textures;
-
-    GenerationalList!LStr fontNames;
-    GenerationalList!Sz fontTags;
-    GenerationalList!Font fonts;
-
-    GenerationalList!LStr soundNames;
-    GenerationalList!Sz soundTags;
-    GenerationalList!Sound sounds;
+    EngineResourceGroup!LStr texts;
+    EngineResourceGroup!Texture textures;
+    EngineResourceGroup!Font fonts;
+    EngineResourceGroup!Sound sounds;
 
     @safe @nogc nothrow:
 
-    // Free tag 0       : Free everything.
-    // Free tag 1,2,... : Free only resources with that tag.
-    // TODO: Maybe name, tag and resource can be combined into a generic struct.
-    // TODO: Needs testing.
     void free(Sz tag = 0) {
-        if (tag == 0) {
-            foreach (ref name; textNames.items) {
-                name.free();
-            }
-            textNames.free();
-            foreach (ref text; texts.items) {
-                text.free();
-            }
-            texts.free();
-            textTags.free();
-
-            foreach (ref name; textureNames.items) {
-                name.free();
-            }
-            textureNames.free();
-            foreach (ref texture; textures.items) {
-                texture.free();
-            }
-            textures.free();
-            textureTags.free();
-
-            foreach (ref name; fontNames.items) {
-                name.free();
-            }
-            fontNames.free();
-            foreach (ref font; fonts.items) {
-                font.free();
-            }
-            fonts.free();
-            fontTags.free();
-
-            foreach (ref name; soundNames.items) {
-                name.free();
-            }
-            soundNames.free();
-            foreach (ref sound; sounds.items) {
-                sound.free();
-            }
-            sounds.free();
-            soundTags.free();
-        } else {
-            foreach (id; textNames.ids) {
-                if (tag == textTags[id]) {
-                    textNames[id].free();
-                    textNames.remove(id);
-                }
-            }
-            foreach (id; texts.ids) {
-                if (tag == textTags[id]) {
-                    texts[id].free();
-                    texts.remove(id);
-                    textTags.remove(id);
-                }
-            }
-
-            foreach (id; textureNames.ids) {
-                if (tag == textureTags[id]) {
-                    textureNames[id].free();
-                    textureNames.remove(id);
-                }
-            }
-            foreach (id; textures.ids) {
-                if (tag == textureTags[id]) {
-                    textures[id].free();
-                    textures.remove(id);
-                    textureTags.remove(id);
-                }
-            }
-
-            foreach (id; fontNames.ids) {
-                if (tag == fontTags[id]) {
-                    fontNames[id].free();
-                    fontNames.remove(id);
-                }
-            }
-            foreach (id; fonts.ids) {
-                if (tag == fontTags[id]) {
-                    fonts[id].free();
-                    fonts.remove(id);
-                    fontTags.remove(id);
-                }
-            }
-
-            foreach (id; soundNames.ids) {
-                if (tag == soundTags[id]) {
-                    soundNames[id].free();
-                    soundNames.remove(id);
-                }
-            }
-            foreach (id; sounds.ids) {
-                if (tag == soundTags[id]) {
-                    sounds[id].free();
-                    sounds.remove(id);
-                    soundTags.remove(id);
-                }
-            }
-        }
+        texts.free(tag);
+        textures.free(tag);
+        fonts.free(tag);
+        sounds.free(tag);
     }
 }
 
@@ -983,23 +884,19 @@ Result!LStr loadRawText(IStr path) {
 /// Loads a text file from the assets folder and returns its contents as a list.
 /// Can handle both forward slashes and backslashes in file paths.
 Result!TextId loadText(IStr path, Sz tag = 0) {
-    if (engineState.resources.textNames.length == 0) {
-        engineState.resources.textNames.append(LStr());
-        engineState.resources.textTags.append(0);
-        engineState.resources.texts.append(LStr());
+    if (engineState.resources.texts.length == 0) {
+        engineState.resources.texts.appendEmpty();
     }
 
-    foreach (id; engineState.resources.textNames.ids) {
-        if (engineState.resources.textNames[id] == path) {
-            return Result!TextId(TextId(id, engineState.resources.textTags[id]));
+    foreach (id; engineState.resources.texts.ids) {
+        if (engineState.resources.texts.names[id] == path) {
+            return Result!TextId(TextId(id));
         }
     }
 
     auto result = loadRawText(path);
     if (result.isSome) {
-        engineState.resources.textNames.append(LStr(path));
-        engineState.resources.textTags.append(tag);
-        return Result!TextId(TextId(engineState.resources.texts.append(result.unwrap()), tag));
+        return Result!TextId(TextId(engineState.resources.texts.append(result.unwrap(), path, tag)));
     } else {
         return Result!TextId(Fault.cantFind);
     }
@@ -1014,23 +911,19 @@ Result!Texture loadRawTexture(IStr path) {
 }
 
 Result!TextureId loadTexture(IStr path, Sz tag = 0) {
-    if (engineState.resources.textureNames.length == 0) {
-        engineState.resources.textureNames.append(LStr());
-        engineState.resources.textureTags.append(0);
-        engineState.resources.textures.append(Texture());
+    if (engineState.resources.textures.length == 0) {
+        engineState.resources.textures.appendEmpty();
     }
 
-    foreach (id; engineState.resources.textureNames.ids) {
-        if (engineState.resources.textureNames[id] == path) {
-            return Result!TextureId(TextureId(id, engineState.resources.textureTags[id]));
+    foreach (id; engineState.resources.textures.ids) {
+        if (engineState.resources.textures.names[id] == path) {
+            return Result!TextureId(TextureId(id));
         }
     }
 
     auto result = loadRawTexture(path);
     if (result.isSome) {
-        engineState.resources.textureNames.append(LStr(path));
-        engineState.resources.textureTags.append(tag);
-        return Result!TextureId(TextureId(engineState.resources.textures.append(result.unwrap()), tag));
+        return Result!TextureId(TextureId(engineState.resources.textures.append(result.unwrap(), path, tag)));
     } else {
         return Result!TextureId(Fault.cantFind);
     }
@@ -1050,23 +943,19 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, c
 }
 
 Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0) {
-    if (engineState.resources.fontNames.length == 0) {
-        engineState.resources.fontNames.append(LStr());
-        engineState.resources.fontTags.append(0);
-        engineState.resources.fonts.append(Font());
+    if (engineState.resources.fonts.length == 0) {
+        engineState.resources.fonts.appendEmpty();
     }
 
-    foreach (id; engineState.resources.fontNames.ids) {
-        if (engineState.resources.fontNames[id] == path) {
-            return Result!FontId(FontId(id, engineState.resources.fontTags[id]));
+    foreach (id; engineState.resources.fonts.ids) {
+        if (engineState.resources.fonts.names[id] == path) {
+            return Result!FontId(FontId(id));
         }
     }
 
     auto result = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
     if (result.isSome) {
-        engineState.resources.fontNames.append(LStr(path));
-        engineState.resources.fontTags.append(tag);
-        return Result!FontId(FontId(engineState.resources.fonts.append(result.unwrap()), tag));
+        return Result!FontId(FontId(engineState.resources.fonts.append(result.unwrap(), path, tag)));
     } else {
         return Result!FontId(Fault.cantFind);
     }
@@ -1088,23 +977,19 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
 }
 
 Result!SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
-    if (engineState.resources.soundNames.length == 0) {
-        engineState.resources.soundNames.append(LStr());
-        engineState.resources.soundTags.append(0);
-        engineState.resources.sounds.append(Sound());
+    if (engineState.resources.sounds.length == 0) {
+        engineState.resources.sounds.appendEmpty();
     }
 
-    foreach (id; engineState.resources.soundNames.ids) {
-        if (engineState.resources.soundNames[id] == path) {
-            return Result!SoundId(SoundId(id, engineState.resources.soundTags[id]));
+    foreach (id; engineState.resources.sounds.ids) {
+        if (engineState.resources.sounds.names[id] == path) {
+            return Result!SoundId(SoundId(id));
         }
     }
 
     auto result = loadRawSound(path, volume, pitch);
     if (result.isSome) {
-        engineState.resources.soundNames.append(LStr(path));
-        engineState.resources.soundTags.append(tag);
-        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.unwrap()), tag));
+        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.unwrap(), path, tag)));
     } else {
         return Result!SoundId(Fault.cantFind);
     }
@@ -1129,7 +1014,7 @@ void freeResources(Sz tag = 0) {
 /// Opens a window with the given size and title.
 /// You should avoid calling this function manually.
 @trusted
-void openWindow(int width, int height, IStr title = "Popka") {
+void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
     if (rl.IsWindowReady) {
         return;
     }
@@ -1142,6 +1027,8 @@ void openWindow(int width, int height, IStr title = "Popka") {
     engineState.backgroundColor = gray2;
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
+    engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
+    engineState.tempText.reserve(8192);
 }
 
 /// Updates the window every frame with the given loop function.
@@ -1162,7 +1049,8 @@ void updateWindow(bool function(float dt) updateFunc) {
         rl.ClearBackground(engineState.backgroundColor.toRl());
 
         // The main loop.
-        auto result = _updateFunc(deltaTime);
+        auto dt = deltaTime;
+        auto result = _updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % typeof(engineState.tickCount).max;
 
         // End drawing.
@@ -1206,22 +1094,20 @@ void updateWindow(bool function(float dt) updateFunc) {
         }
 
         // Fullscreen code to fix a bug on Linux.
-        if (engineState.fullscreenState.isToggleTimerRunning) {
-            engineState.fullscreenState.updateToggleTimer();
-            if (engineState.fullscreenState.hasToggleTimerEnded) {
-                if (isFullscreen) {
-                    rl.ToggleFullscreen();
-                    rl.SetWindowSize(
-                        engineState.fullscreenState.lastWindowWidth,
-                        engineState.fullscreenState.lastWindowHeight,
-                    );
-                    rl.SetWindowPosition(
-                        cast(int) (screenWidth * 0.5f - engineState.fullscreenState.lastWindowWidth * 0.5f),
-                        cast(int) (screenHeight * 0.5f - engineState.fullscreenState.lastWindowHeight * 0.5f),
-                    );
-                } else {
-                    rl.ToggleFullscreen();
-                }
+        engineState.fullscreenState.toggleTimer.update(dt);
+        if (engineState.fullscreenState.toggleTimer.hasStopped) {
+            if (isFullscreen) {
+                rl.ToggleFullscreen();
+                rl.SetWindowSize(
+                    engineState.fullscreenState.lastWindowWidth,
+                    engineState.fullscreenState.lastWindowHeight,
+                );
+                rl.SetWindowPosition(
+                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.lastWindowWidth * 0.5f),
+                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.lastWindowHeight * 0.5f),
+                );
+            } else {
+                rl.ToggleFullscreen();
             }
         }
 
@@ -1312,9 +1198,9 @@ void setIsFullscreen(bool value) {
             engineState.fullscreenState.lastWindowHeight = windowHeight;
             rl.SetWindowPosition(0, 0);
             rl.SetWindowSize(screenWidth, screenHeight);
-            engineState.fullscreenState.startToggleTimer();
+            engineState.fullscreenState.toggleTimer.start();
         } else if (!value && isFullscreen) {
-            engineState.fullscreenState.startToggleTimer();
+            engineState.fullscreenState.toggleTimer.start();
         }
     }
 }
@@ -1605,7 +1491,7 @@ void playSound(Sound sound) {
         return;
     }
 
-    if (sound.isSound) {
+    if (sound.data.isKind!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
         rl.PlayMusicStream(sound.data.get!(rl.Music)());
@@ -1617,18 +1503,20 @@ void playSound(SoundId sound) {
 }
 
 @trusted
-void updateSound(Sound sound) {
+void stopSound(Sound sound) {
     if (sound.isEmpty) {
         return;
     }
 
-    if (sound.isMusic) {
-        rl.UpdateMusicStream(sound.data.get!(rl.Music)());
+    if (sound.data.isKind!(rl.Sound)) {
+        rl.StopSound(sound.data.get!(rl.Sound)());
+    } else {
+        rl.StopMusicStream(sound.data.get!(rl.Music)());
     }
 }
 
-void updateSound(SoundId sound) {
-    updateSound(sound.getOr());
+void stopSound(SoundId sound) {
+    stopSound(sound.getOr());
 }
 
 @trusted
@@ -1637,7 +1525,7 @@ void pauseSound(Sound sound) {
         return;
     }
 
-    if (sound.isSound) {
+    if (sound.data.isKind!(rl.Sound)) {
         rl.PauseSound(sound.data.get!(rl.Sound)());
     } else {
         rl.PauseMusicStream(sound.data.get!(rl.Music)());
@@ -1654,7 +1542,7 @@ void resumeSound(Sound sound) {
         return;
     }
 
-    if (sound.isSound) {
+    if (sound.data.isKind!(rl.Sound)) {
         rl.ResumeSound(sound.data.get!(rl.Sound)());
     } else {
         rl.ResumeMusicStream(sound.data.get!(rl.Music)());
@@ -1666,20 +1554,18 @@ void resumeSound(SoundId sound) {
 }
 
 @trusted
-void stopSound(Sound sound) {
+void updateSound(Sound sound) {
     if (sound.isEmpty) {
         return;
     }
 
-    if (sound.isSound) {
-        rl.StopSound(sound.data.get!(rl.Sound)());
-    } else {
-        rl.StopMusicStream(sound.data.get!(rl.Music)());
+    if (sound.data.isKind!(rl.Music)) {
+        rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }
 
-void stopSound(SoundId sound) {
-    stopSound(sound.getOr());
+void updateSound(SoundId sound) {
+    updateSound(sound.getOr());
 }
 
 @trusted
@@ -1862,11 +1748,7 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            engineState.assetsPath.append(
-                pathConcat(argv[0].toStr().pathDir, "assets")
-            );
-            engineState.tempText.reserve(8192);
-            openWindow(width, height);
+            openWindow(width, height, argv[0].toStr(), title);
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();
@@ -1874,11 +1756,7 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
         }
     } else {
         void main(string[] args) {
-            engineState.assetsPath.append(
-                pathConcat(args[0].pathDir, "assets")
-            );
-            engineState.tempText.reserve(8192);
-            openWindow(width, height);
+            openWindow(width, height, args[0], title);
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();

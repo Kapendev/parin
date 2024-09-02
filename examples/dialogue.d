@@ -43,9 +43,9 @@ bool update(float dt) {
     // Update the dialogue.
     if (dialogue.canUpdate) {
         if (dialogue.hasChoices) {
-            auto keys = digitChars[1 .. 1 + dialogue.choices.length];
-            foreach (i, key; keys) {
-                if (key.isPressed) {
+            // Check if 1, 2, or 3 is pressed and pick a choice based on that number.
+            foreach (i, digit; digitChars[1 .. 4]) {
+                if (digit.isPressed) {
                     dialogue.pick(i);
                     break;
                 }

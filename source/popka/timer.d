@@ -6,20 +6,17 @@
 // Version: v0.0.18
 // ---
 
-// TODO: Think about it. Just testing things for now.
-
-/// The `timer` module provides a simple timer.
+/// The `timer` module provides a simple and extensible timer.
 module popka.timer;
 
 import popka.engine;
-public import joka;
 
 @safe @nogc nothrow:
 
 struct Timer {
-    float time = 0.0f;
-    float duration = 0.0f;
-    float prevTime = 0.0f;
+    float time = 1.0f;
+    float duration = 1.0f;
+    float prevTime = 1.0f;
     bool isPaused;
     bool canRepeat;
 
@@ -33,14 +30,14 @@ struct Timer {
     }
 
     bool isRunning() {
-        return !isPaused && time != duration;
+        return !isPaused && time != duration && prevTime != duration;
     }
 
     bool hasStarted() {
         return !isPaused && time != duration && prevTime != time && prevTime == 0.0f;
     }
 
-    bool hasEnded() {
+    bool hasStopped() {
         return !isPaused && time == duration && prevTime != duration;
     }
 
@@ -48,7 +45,11 @@ struct Timer {
         if (duration >= 0.0f) this.duration = duration;
         time = 0.0f;
         prevTime = 0.0f;
-        isPaused = false;
+    }
+
+    void stop() {
+        time = duration;
+        prevTime = duration;
     }
 
     void pause() {
@@ -63,16 +64,10 @@ struct Timer {
         isPaused = !isPaused;
     }
 
-    void end() {
-        time = duration;
-        prevTime = duration;
-        isPaused = false;
-    }
-
-    void update() {
-        if (isPaused) return;
-        if (canRepeat && hasEnded) start();
+    void update(float dt) {
+        if (isPaused || (time == duration && prevTime == duration)) return;
+        if (canRepeat && hasStopped) start();
         prevTime = time;
-        time = min(time + deltaTime, duration);
+        time = min(time + dt, duration);
     }
 }

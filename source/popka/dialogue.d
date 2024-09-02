@@ -9,8 +9,11 @@
 /// The `dialogue` module provides a simple and versatile dialogue system.
 module popka.dialogue;
 
+import joka.ascii;
 import popka.engine;
-public import joka;
+public import joka.containers;
+public import joka.faults;
+public import joka.types;
 
 @safe @nogc nothrow:
 
@@ -69,24 +72,24 @@ struct Dialogue {
         return units.length == 0;
     }
 
-    bool isKind(DialogueUnitKind kind) {
+    bool hasKind(DialogueUnitKind kind) {
         return unitIndex < units.length && units[unitIndex].kind == kind;
     }
 
+    bool hasPause() {
+        return hasKind(DialogueUnitKind.pause);
+    }
+
     bool hasChoices() {
-        return isKind(DialogueUnitKind.menu);
+        return hasKind(DialogueUnitKind.menu);
     }
 
     bool hasArgs() {
-        return isKind(DialogueUnitKind.command);
-    }
-
-    bool hasEnded() {
-        return isKind(DialogueUnitKind.pause);
+        return hasKind(DialogueUnitKind.command);
     }
 
     bool canUpdate() {
-        return !hasEnded;
+        return !hasPause;
     }
 
     IStr[] choices() {

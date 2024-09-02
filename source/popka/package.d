@@ -8,6 +8,7 @@
 
 module popka;
 
+public import joka;
 public import popka.dialogue;
 public import popka.engine;
 public import popka.tilemap;
