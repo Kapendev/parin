@@ -1408,6 +1408,10 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
     return result;
 }
 
+Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()) {
+    return measureTextSize(font.getOr(), text, options);
+}
+
 @trusted
 bool isPressed(char key) {
     return rl.IsKeyPressed(toUpper(key));
