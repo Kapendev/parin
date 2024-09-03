@@ -1,7 +1,7 @@
 # Examples
 
 > [!NOTE]
-> For examples that use sprites, you must download the [atlas.png](atlas.png) file and save it in your project's assets folder.
+> For examples that use textures, the [atlas.png](atlas.png) file must be downloaded and saved in the project's assets folder.
 
 ## [Hello](hello.d)
 
@@ -23,10 +23,10 @@ This example shows how to use the camera structure of Popka.
 
 This example shows how to use the Popka dialogue system.
 
-## [Follower](follower.d)
-
-This example shows how to create an animated character that follows the mouse.
-
 ## [Map](map.d)
 
 This example shows how to use the tile map structure of Popka.
+
+## [Follower](follower.d)
+
+This example shows how to create an animated character that follows the mouse.

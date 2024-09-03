@@ -48,9 +48,9 @@ bool update(float dt) {
     }
     drawRect(player);
     if (coins.length == 0) {
-        drawDebugText("You collected all the coins!", Vec2(8.0));
+        drawDebugText("You collected all the coins!", Vec2(8));
     } else {
-        drawDebugText("Coins: {}/{}\nMove with arrow keys.".format(maxCoinCount - coins.length, maxCoinCount), Vec2(8.0));
+        drawDebugText("Coins: {}/{}\nMove with arrow keys.".format(maxCoinCount - coins.length, maxCoinCount), Vec2(8));
     }
     return false;
 }

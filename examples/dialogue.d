@@ -63,9 +63,9 @@ bool update(float dt) {
             drawDebugText("   | {}".format(choice), choicePosition);
         }
     } else if (dialogue.canUpdate) {
-        drawDebugText("{}: {}".format(dialogue.actor, dialogue.text), Vec2(8.0));
+        drawDebugText("{}: {}".format(dialogue.actor, dialogue.text), Vec2(8));
     } else {
-        drawDebugText("The dialogue has ended.", Vec2(8.0));
+        drawDebugText("The dialogue has ended.", Vec2(8));
     }
 
     // Draw the game info.

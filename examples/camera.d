@@ -18,12 +18,12 @@ bool update(float dt) {
     // Draw the game world.
     auto cameraArea = Rect(camera.position, resolution).area(camera.hook).subAll(3);
     camera.attach();
-    drawDebugText("Move with arrow keys.", Vec2(8.0));
+    drawDebugText("Move with arrow keys.", Vec2(8));
     drawRect(cameraArea, Color(50, 50, 40, 130));
     camera.detach();
 
     // Draw the game UI.
-    drawDebugText("I am UI!", Vec2(8.0));
+    drawDebugText("I am UI!", Vec2(8));
     drawDebugText("+", resolution * Vec2(0.5));
     drawDebugText("+", resolution * Vec2(0.5) + (cameraTarget - camera.position));
     return false;

@@ -9,7 +9,7 @@ void ready() {
 // The update function. This is called every frame while the game is running.
 // If true is returned, then the game will stop running.
 bool update(float dt) {
-    drawDebugText("Hello world!", Vec2(8.0));
+    drawDebugText("Hello world!", Vec2(8));
     return false;
 }
 

@@ -15,28 +15,36 @@ import popka.engine;
 
 // TODO: Think about gaps in an atlas texture.
 
-struct Sprite {
-    int width;
-    int height;
-    int atlasLeft;
-    int atlasTop;
-    int frameCount = 1;
-    float frameSpeed = 1.0f;
-    float frameProgress = 0.0f;
+struct SpriteAnimation {
+    ubyte frameRow;
+    ubyte frameCount = 1;
+    ubyte frameSpeed = 1;
 
     @safe @nogc nothrow:
 
-    this(int width, int height, int atlasLeft, int atlasTop, int frameCount = 1, float frameSpeed = 1.0f) {
+    this(ubyte frameRow, ubyte frameCount, ubyte frameSpeed) {
+        this.frameRow = frameRow;
+        this.frameCount = frameCount;
+        this.frameSpeed = frameSpeed;
+    }
+}
+
+struct Sprite {
+    int width;
+    int height;
+    ushort atlasLeft;
+    ushort atlasTop;
+    float frameProgress = 0.0f;
+    SpriteAnimation animation;
+
+    @safe @nogc nothrow:
+
+    this(int width, int height, ushort atlasLeft, ushort atlasTop, SpriteAnimation animation = SpriteAnimation()) {
         this.width = width;
         this.height = height;
         this.atlasLeft = atlasLeft;
         this.atlasTop = atlasTop;
-        this.frameCount = frameCount;
-        this.frameSpeed = frameSpeed;
-    }
-
-    this(int width, int height) {
-        this(width, height, 0, 0);
+        this.animation = animation;
     }
 
     int frame() {
@@ -48,19 +56,20 @@ struct Sprite {
     }
 
     void update(float dt) {
-        frameProgress = wrap(frameProgress + frameSpeed * dt, 0.0f, frameCount);
+        frameProgress = wrap(frameProgress + animation.frameSpeed * dt, 0.0f, animation.frameCount);
     }
 }
 
 void drawSprite(Texture texture, Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
     auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width;
-    auto gridHeight = max(texture.height - sprite.atlasTop, 0) / sprite.height;
+    auto gridHeight = max(texture.height - top, 0) / sprite.height;
     if (gridWidth == 0 || gridHeight == 0) {
         return;
     }
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;
-    auto area = Rect(sprite.atlasLeft + col * sprite.width, sprite.atlasTop + row * sprite.height, sprite.width, sprite.height);
+    auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
     drawTextureArea(texture, area, position, options);
 }
 

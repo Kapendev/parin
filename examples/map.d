@@ -17,7 +17,8 @@ void ready() {
 bool update(float dt) {
     // Set the drawing options for the tile map.
     auto options = DrawOptions();
-    options.scale = Vec2(2.0f);
+    options.scale = Vec2(2);
+
     // Draw the tile map.
     drawTileMap(atlas, tileMap, Vec2(), Camera(), options);
     return false;
