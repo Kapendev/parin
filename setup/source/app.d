@@ -104,6 +104,12 @@ int main(string[] args) {
     auto isDubProject = exists(dubFile);
     auto isFirstRun = !exists(assetsDir);
 
+    // Sometimes I remove the app.d file and this makes a new one lol.
+    // Also raylib-d:install does not like it when you don't have one.
+    if (isDubProject) {
+        if (!exists(appFile)) std.file.write(appFile, appFileContent);
+    }
+
     // Use the raylib-d script to download the raylib library files.
     if (isDubProject) {
         writeln("\n  Simply say \"yes\" to all prompts.  \n");

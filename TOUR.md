@@ -2,7 +2,7 @@
 
 ## Understanding the Code
 
-To begin, open the main file of your project and copy-paste the following code:
+To begin, open the main project file and copy-paste the following code:
 
 ```d
 import popka;
@@ -45,7 +45,7 @@ Here is a breakdown of how this code works:
     ```
 
     This function is the main loop of the game.
-    It is called every frame while the game is running and, in this example, draws the message "Hello world!" at position `Vec2(8.0)`.
+    It is called every frame while the game is running and, in this example, draws the message "Hello world!" at position `Vec2(8)`.
     The `return false` statement indicates that the game should continue running.
     If `true` were returned, the game would stop running.
 
@@ -84,14 +84,18 @@ void drawCirc(Circ area, Color color = white);
 void drawLine(Line area, float size, Color color = white);
 
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions());
+void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions());
+void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions());
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions());
 ```
 
-Additional drawing functions can be found in other modules, such as `popka.tilemap`.
+Additional drawing functions can be found in other modules, such as `popka.sprite`.
 
 ## Loading and Saving Resources
 
@@ -99,8 +103,33 @@ Functions that start with the word load/save will always try to read/write resou
 These functions handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 
 ```d
-loadText("levels/level5.txt");  // Works on Windows, Linux and MacOS.
-loadText("levels\\level5.txt"); // Works on Windows, Linux and MacOS.
+Result!TextId loadText(IStr path, Sz tag = 0);
+Result!TextureId loadTexture(IStr path, Sz tag = 0);
+Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0);
+Result!SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
+
+Result!LStr loadRawText(IStr path);
+Result!Texture loadRawTexture(IStr path);
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = []);
+Result!Sound loadRawSound(IStr path, float volume, float pitch);
+
+Result!IStr loadTempText(IStr path);
+
+Fault saveText(IStr path, IStr text);
 ```
 
-If text is needed for only a single frame, use the `loadTempText` function.
+### Managed Resources
+
+Managed resources are cached by their path and grouped based on the tag they were loaded with.
+To free these resources, use the `freeResources` function or the `free` method on the resource identifier.
+The resource identifier is automatically invalidated when the resource is freed.
+
+### Raw Resources
+
+Raw resources are managed directly by the user and are not cached or grouped.
+They must be freed manually when no longer needed.
+
+### Temporary Resources
+
+Temporary resources are only valid until the function that provided them is called again.
+They don’t need to be freed manually.

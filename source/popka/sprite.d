@@ -6,7 +6,7 @@
 // Version: v0.0.18
 // ---
 
-/// The `sprite` module provides a simple and extensible sprite.
+/// The `sprite` module provides a simple and flexible sprite.
 module popka.sprite;
 
 import popka.engine;

@@ -701,93 +701,93 @@ struct EngineState {
     }
 }
 
-/// Converts a raylib color to a Popka color.
+private
 Color toPopka(rl.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
-/// Converts a raylib vector to a Popka vector.
+private
 Vec2 toPopka(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
-/// Converts a raylib vector to a Popka vector.
+private
 Vec3 toPopka(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
-/// Converts a raylib vector to a Popka vector.
+private
 Vec4 toPopka(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
-/// Converts a raylib rectangle to a Popka rectangle.
+private
 Rect toPopka(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
-/// Converts a raylib texture to a Popka texture.
+private
 Texture toPopka(rl.Texture2D from) {
     auto result = Texture();
     result.data = from;
     return result;
 }
 
-/// Converts a raylib font to a Popka font.
+private
 Font toPopka(rl.Font from) {
     auto result = Font();
     result.data = from;
     return result;
 }
 
-/// Converts a raylib render texture to a Popka viewport.
+private
 Viewport toPopka(rl.RenderTexture2D from) {
     auto result = Viewport();
     result.data = from;
     return result;
 }
 
-/// Converts a Popka color to a raylib color.
+private
 rl.Color toRl(Color from) {
     return rl.Color(from.r, from.g, from.b, from.a);
 }
 
-/// Converts a Popka vector to a raylib vector.
+private
 rl.Vector2 toRl(Vec2 from) {
     return rl.Vector2(from.x, from.y);
 }
 
-/// Converts a Popka vector to a raylib vector.
+private
 rl.Vector3 toRl(Vec3 from) {
     return rl.Vector3(from.x, from.y, from.z);
 }
 
-/// Converts a Popka vector to a raylib vector.
+private
 rl.Vector4 toRl(Vec4 from) {
     return rl.Vector4(from.x, from.y, from.z, from.w);
 }
 
-/// Converts a Popka rectangle to a raylib rectangle.
+private
 rl.Rectangle toRl(Rect from) {
     return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
-/// Converts a Popka texture to a raylib texture.
+private
 rl.Texture2D toRl(Texture from) {
     return from.data;
 }
 
-/// Converts a Popka font to a raylib font.
+private
 rl.Font toRl(Font from) {
     return from.data;
 }
 
-/// Converts a Popka viewport to a raylib render texture.
+private
 rl.RenderTexture2D toRl(Viewport from) {
     return from.data;
 }
 
-/// Converts a Popka filter to a raylib filter.
+private
 int toRl(Filter filter) {
     final switch (filter) {
         case Filter.nearest: return rl.TEXTURE_FILTER_POINT;
@@ -795,6 +795,7 @@ int toRl(Filter filter) {
     }
 }
 
+private
 rl.Camera2D toRl(Camera camera) {
     return rl.Camera2D(
         Rect(resolution).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
