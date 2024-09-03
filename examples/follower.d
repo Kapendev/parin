@@ -15,7 +15,7 @@ void ready() {
     setIsPixelPerfect(true);
     setIsCursorVisible(false);
     // Load the `atlas.png` file from the assets folder.
-    atlas = loadTexture("atlas.png").unwrap();
+    atlas = loadTexture("atlas.png").get();
 }
 
 bool update(float dt) {

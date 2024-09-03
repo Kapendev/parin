@@ -353,5 +353,5 @@ Result!Dialogue loadRawDialogue(IStr path) {
     if (temp.isNone) {
         return Result!Dialogue(temp.fault);
     }
-    return toDialogue(temp.unwrap());
+    return toDialogue(temp.get());
 }

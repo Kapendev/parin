@@ -896,7 +896,7 @@ Result!TextId loadText(IStr path, Sz tag = 0) {
 
     auto result = loadRawText(path);
     if (result.isSome) {
-        return Result!TextId(TextId(engineState.resources.texts.append(result.unwrap(), path, tag)));
+        return Result!TextId(TextId(engineState.resources.texts.append(result.get(), path, tag)));
     } else {
         return Result!TextId(Fault.cantFind);
     }
@@ -906,7 +906,7 @@ Result!TextId loadText(IStr path, Sz tag = 0) {
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadRawTexture(IStr path) {
-    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().unwrapOr()).toPopka();
+    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPopka();
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -923,7 +923,7 @@ Result!TextureId loadTexture(IStr path, Sz tag = 0) {
 
     auto result = loadRawTexture(path);
     if (result.isSome) {
-        return Result!TextureId(TextureId(engineState.resources.textures.append(result.unwrap(), path, tag)));
+        return Result!TextureId(TextureId(engineState.resources.textures.append(result.get(), path, tag)));
     } else {
         return Result!TextureId(Fault.cantFind);
     }
@@ -933,7 +933,7 @@ Result!TextureId loadTexture(IStr path, Sz tag = 0) {
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = []) {
-    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().unwrapOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
+    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
     }
@@ -955,7 +955,7 @@ Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, co
 
     auto result = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
     if (result.isSome) {
-        return Result!FontId(FontId(engineState.resources.fonts.append(result.unwrap(), path, tag)));
+        return Result!FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
     } else {
         return Result!FontId(Fault.cantFind);
     }
@@ -967,9 +967,9 @@ Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, co
 Result!Sound loadRawSound(IStr path, float volume, float pitch) {
     auto value = Sound();
     if (path.endsWith(".wav")) {
-        value.data = rl.LoadSound(path.toAssetsPath().toCStr().unwrapOr());
+        value.data = rl.LoadSound(path.toAssetsPath().toCStr().getOr());
     } else {
-        value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().unwrapOr());
+        value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
     }
     value.setVolume(volume);
     value.setPitch(pitch);
@@ -989,7 +989,7 @@ Result!SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
 
     auto result = loadRawSound(path, volume, pitch);
     if (result.isSome) {
-        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.unwrap(), path, tag)));
+        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.get(), path, tag)));
     } else {
         return Result!SoundId(Fault.cantFind);
     }
@@ -1020,7 +1020,7 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
     }
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
-    rl.InitWindow(width, height, title.toCStr().unwrapOr());
+    rl.InitWindow(width, height, title.toCStr().getOr());
     rl.InitAudioDevice();
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
@@ -1088,7 +1088,7 @@ void updateWindow(bool function(float dt) updateFunc) {
         // Main viewport code.
         if (engineState.viewport.isLocking) {
             engineState.viewport.free();
-            engineState.viewport.data = loadRawViewport(engineState.viewport.targetWidth, engineState.viewport.targetHeight).unwrapOr();
+            engineState.viewport.data = loadRawViewport(engineState.viewport.targetWidth, engineState.viewport.targetHeight).getOr();
         } else if (engineState.viewport.isUnlocking) {
             engineState.viewport.free();
         }
@@ -1239,7 +1239,7 @@ void lockResolution(int width, int height) {
     engineState.viewport.startLocking(width, height);
     if (!engineState.flags.isUpdating) {
         engineState.viewport.free();
-        engineState.viewport.data = loadRawViewport(width, height).unwrap();
+        engineState.viewport.data = loadRawViewport(width, height).get();
     }
 }
 

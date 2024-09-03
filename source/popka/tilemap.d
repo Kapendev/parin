@@ -99,7 +99,7 @@ struct TileMap {
                     this.tileHeight = 0;
                     return Fault.invalid;
                 }
-                data[row, col] = cast(short) value.unwrap();
+                data[row, col] = cast(short) value.get();
             }
         }
         this.tileWidth = tileWidth;
@@ -122,7 +122,7 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
     if (temp.isNone) {
         return Result!TileMap(temp.fault);
     }
-    return toTileMap(temp.unwrap(), tileWidth, tileHeight);
+    return toTileMap(temp.get(), tileWidth, tileHeight);
 }
 
 void drawTile(Texture texture, Tile tile, Vec2 position, DrawOptions options = DrawOptions()) {
