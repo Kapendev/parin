@@ -17,8 +17,8 @@ import popka.engine;
 
 struct SpriteAnimation {
     ubyte frameRow;
-    ubyte frameCount = 1;
-    ubyte frameSpeed = 1;
+    ubyte frameCount;
+    ubyte frameSpeed;
 
     @safe @nogc nothrow:
 
@@ -47,6 +47,14 @@ struct Sprite {
         this.animation = animation;
     }
 
+    bool isFirstFrame() {
+        return frame == 0;
+    }
+
+    bool isLastFrame() {
+        return animation.frameCount != 0 ? (frame == animation.frameCount - 1) : true;
+    }
+
     int frame() {
         return cast(int) frameProgress;
     }
@@ -55,7 +63,15 @@ struct Sprite {
         frameProgress = 0.0f;
     }
 
+    void play(SpriteAnimation animation) {
+        if (this.animation != animation) {
+            reset();
+            this.animation = animation;
+        }
+    }
+
     void update(float dt) {
+        if (animation.frameCount <= 1) return;
         frameProgress = wrap(frameProgress + animation.frameSpeed * dt, 0.0f, animation.frameCount);
     }
 }

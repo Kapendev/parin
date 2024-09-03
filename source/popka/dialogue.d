@@ -17,6 +17,8 @@ public import joka.types;
 
 @safe @nogc nothrow:
 
+// TODO: The DialogueCommandRunner should work with gc functions too. Think about how to do it.
+
 enum DialogueUnitKindChars = ".#*@>|^!+-$";
 
 enum DialogueUnitKind {
