@@ -30,3 +30,7 @@ This example shows how to use the tile map structure of Popka.
 ## [Follower](follower.d)
 
 This example shows how to create an animated character that follows the mouse.
+
+## [Timer](timer.d)
+
+This example shows how to use the timer structure of Popka.

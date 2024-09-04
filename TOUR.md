@@ -72,10 +72,48 @@ In essence, a Popka game typically relies on three key functions:
 * An update function.
 * A finish function.
 
+## Input
+
+Popka provides a set of input functions inside the `popka.engine` module.
+
+```d
+bool isPressed(char key);
+bool isPressed(Keyboard key);
+bool isPressed(Mouse key);
+bool isPressed(Gamepad key, int id = 0);
+
+bool isDown(char key);
+bool isDown(Keyboard key);
+bool isDown(Mouse key);
+bool isDown(Gamepad key, int id = 0);
+
+bool isReleased(char key);
+bool isReleased(Keyboard key);
+bool isReleased(Mouse key);
+bool isReleased(Gamepad key, int id = 0);
+```
+
+## Sound
+
+Popka provides a set of sound functions inside the `popka.engine` module.
+
+```d
+void playSound(Sound sound);
+void playSound(SoundId sound);
+void stopSound(Sound sound);
+void stopSound(SoundId sound);
+void pauseSound(Sound sound);
+void pauseSound(SoundId sound);
+void resumeSound(Sound sound);
+void resumeSound(SoundId sound);
+void updateSound(Sound sound);
+void updateSound(SoundId sound);
+```
+
 ## Drawing
 
 Popka provides a set of drawing functions inside the `popka.engine` module.
-While drawing is not pixel-perfect by default, you can enable pixel-perfect drawing by calling the `setIsPixelPerfect` function.
+While drawing is not pixel-perfect by default, it can be by calling the `setIsPixelPerfect` function.
 
 ```d
 void drawRect(Rect area, Color color = white);
@@ -133,3 +171,48 @@ They must be freed manually when no longer needed.
 
 Temporary resources are only valid until the function that provided them is called again.
 They don’t need to be freed manually.
+
+## Sprites and Tile Maps
+
+Sprites and tile maps can be implemented in various ways.
+To avoid imposing a single approach, Popka offers additional modules for these features. This allows for someone to include or ignore them as needed. Popka's implementations are designed with simplicity and speed in mind.
+
+### Sprites
+
+Popka provides a sprite and a sprite animation type inside the `popka.sprite` module.
+
+```d
+struct SpriteAnimation {
+    ubyte frameRow;
+    ubyte frameCount;
+    ubyte frameSpeed;
+}
+
+struct Sprite {
+    int width;
+    int height;
+    ushort atlasLeft;
+    ushort atlasTop;
+    float frameProgress = 0.0f;
+    SpriteAnimation animation;
+}
+```
+
+### Tile Maps
+
+Popka provides a tile and a tile map type inside the `popka.tilemap` module.
+
+```d
+struct Tile {
+    int id;
+    int width;
+    int height;
+}
+
+struct TileMap {
+    Grid!short data;
+    int tileWidth;
+    int tileHeight;
+    alias data this;
+}
+```
