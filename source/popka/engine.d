@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.18
+// Version: v0.0.19
 // ---
 
 // TODO: Test the resources code and the tag thing.
+// TODO: Update all the doc comments here.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
@@ -179,6 +180,10 @@ struct Camera {
         return isCentered ? Hook.center : Hook.topLeft;
     }
 
+    Rect area() {
+        return Rect(position, resolution).area(hook);
+    }
+
     void followPosition(Vec2 target, float delta = 120.0f) {
         position = position.moveTo(target, Vec2(delta * deltaTime));
     }
@@ -236,6 +241,10 @@ struct TextId {
 
     this(GenerationalIndex data) {
         this.data = data;
+    }
+
+    Sz length() {
+        return getOr().length;
     }
 
     bool isValid() {
@@ -316,6 +325,21 @@ struct TextureId {
         this.data = data;
     }
 
+    /// Returns the width of the texture.
+    int width() {
+        return getOr().width;
+    }
+
+    /// Returns the height of the texture.
+    int height() {
+        return getOr().height;
+    }
+
+    /// Returns the size of the texture.
+    Vec2 size() {
+        return getOr().size;
+    }
+
     bool isValid() {
         return data.value != 0 && engineState.resources.textures.has(data);
     }
@@ -384,6 +408,11 @@ struct FontId {
         this.data = data;
     }
 
+    /// Returns the size of the font.
+    int size() {
+        return getOr().size;
+    }
+
     bool isValid() {
         return data.value != 0 && engineState.resources.fonts.has(data);
     }
@@ -421,6 +450,7 @@ struct Sound {
 
     @trusted
     float time() {
+        if (isEmpty) return 0.0f;
         if (data.isKind!(rl.Sound)) {
             return 0.0f;
         } else {
@@ -429,7 +459,8 @@ struct Sound {
     }
 
     @trusted
-    float waitTime() {
+    float duration() {
+        if (isEmpty) return 0.0f;
         if (data.isKind!(rl.Sound)) {
             return 0.0f;
         } else {
@@ -486,6 +517,14 @@ struct SoundId {
 
     this(GenerationalIndex data) {
         this.data = data;
+    }
+
+    float time() {
+        return getOr().time;
+    }
+
+    float duration() {
+        return getOr().duration;
     }
 
     bool isValid() {
@@ -681,6 +720,7 @@ struct EngineState {
     LStr assetsPath;
 
     Color backgroundColor;
+    Filter defaultFilter;
     ulong tickCount;
 
     @safe @nogc nothrow:
@@ -883,22 +923,22 @@ Result!LStr loadRawText(IStr path) {
 
 /// Loads a text file from the assets folder and returns its contents as a list.
 /// Can handle both forward slashes and backslashes in file paths.
-Result!TextId loadText(IStr path, Sz tag = 0) {
+TextId loadText(IStr path, Sz tag = 0) {
     if (engineState.resources.texts.length == 0) {
         engineState.resources.texts.appendEmpty();
     }
 
     foreach (id; engineState.resources.texts.ids) {
         if (engineState.resources.texts.names[id] == path) {
-            return Result!TextId(TextId(id));
+            return TextId(id);
         }
     }
 
     auto result = loadRawText(path);
     if (result.isSome) {
-        return Result!TextId(TextId(engineState.resources.texts.append(result.get(), path, tag)));
+        return TextId(engineState.resources.texts.append(result.get(), path, tag));
     } else {
-        return Result!TextId(Fault.cantFind);
+        return TextId();
     }
 }
 
@@ -907,25 +947,26 @@ Result!TextId loadText(IStr path, Sz tag = 0) {
 @trusted
 Result!Texture loadRawTexture(IStr path) {
     auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPopka();
+    value.setFilter(engineState.defaultFilter);
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!TextureId loadTexture(IStr path, Sz tag = 0) {
+TextureId loadTexture(IStr path, Sz tag = 0) {
     if (engineState.resources.textures.length == 0) {
         engineState.resources.textures.appendEmpty();
     }
 
     foreach (id; engineState.resources.textures.ids) {
         if (engineState.resources.textures.names[id] == path) {
-            return Result!TextureId(TextureId(id));
+            return TextureId(id);
         }
     }
 
     auto result = loadRawTexture(path);
     if (result.isSome) {
-        return Result!TextureId(TextureId(engineState.resources.textures.append(result.get(), path, tag)));
+        return TextureId(engineState.resources.textures.append(result.get(), path, tag));
     } else {
-        return Result!TextureId(Fault.cantFind);
+        return TextureId();
     }
 }
 
@@ -939,25 +980,26 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, c
     }
     value.runeSpacing = runeSpacing;
     value.lineSpacing = lineSpacing;
+    value.setFilter(engineState.defaultFilter);
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0) {
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0) {
     if (engineState.resources.fonts.length == 0) {
         engineState.resources.fonts.appendEmpty();
     }
 
     foreach (id; engineState.resources.fonts.ids) {
         if (engineState.resources.fonts.names[id] == path) {
-            return Result!FontId(FontId(id));
+            return FontId(id);
         }
     }
 
     auto result = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
     if (result.isSome) {
-        return Result!FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
+        return FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
     } else {
-        return Result!FontId(Fault.cantFind);
+        return FontId();
     }
 }
 
@@ -976,22 +1018,22 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-Result!SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
+SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
     if (engineState.resources.sounds.length == 0) {
         engineState.resources.sounds.appendEmpty();
     }
 
     foreach (id; engineState.resources.sounds.ids) {
         if (engineState.resources.sounds.names[id] == path) {
-            return Result!SoundId(SoundId(id));
+            return SoundId(id);
         }
     }
 
     auto result = loadRawSound(path, volume, pitch);
     if (result.isSome) {
-        return Result!SoundId(SoundId(engineState.resources.sounds.append(result.get(), path, tag)));
+        return SoundId(engineState.resources.sounds.append(result.get(), path, tag));
     } else {
-        return Result!SoundId(Fault.cantFind);
+        return SoundId();
     }
 }
 
@@ -1216,6 +1258,14 @@ Color backgroundColor() {
 /// Sets the window background color to the given color.
 void setBackgroundColor(Color value) {
     engineState.backgroundColor = value;
+}
+
+Filter defaultFilter() {
+    return engineState.defaultFilter;
+}
+
+void setDefaultFilter(Filter value) {
+    engineState.defaultFilter = value;
 }
 
 @trusted
@@ -1474,18 +1524,10 @@ bool isReleased(Gamepad key, int id = 0) {
 
 Vec2 wasd() {
     auto result = Vec2();
-    if (Keyboard.a.isDown || Keyboard.left.isDown) {
-        result.x = -1.0f;
-    }
-    if (Keyboard.d.isDown || Keyboard.right.isDown) {
-        result.x = 1.0f;
-    }
-    if (Keyboard.w.isDown || Keyboard.up.isDown) {
-        result.y = -1.0f;
-    }
-    if (Keyboard.s.isDown || Keyboard.down.isDown) {
-        result.y = 1.0f;
-    }
+    if (Keyboard.a.isDown || Keyboard.left.isDown) result.x += -1.0f;
+    if (Keyboard.d.isDown || Keyboard.right.isDown) result.x += 1.0f;
+    if (Keyboard.w.isDown || Keyboard.up.isDown) result.y += -1.0f;
+    if (Keyboard.s.isDown || Keyboard.down.isDown) result.y += 1.0f;
     return result;
 }
 

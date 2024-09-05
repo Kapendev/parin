@@ -16,10 +16,9 @@ bool update(float dt) {
     camera.followPositionWithSlowdown(cameraTarget);
 
     // Draw the game world.
-    auto cameraArea = Rect(camera.position, resolution).area(camera.hook).subAll(3);
     camera.attach();
     drawDebugText("Move with arrow keys.", Vec2(8));
-    drawRect(cameraArea, Color(50, 50, 40, 130));
+    drawRect(camera.area.subAll(3), Color(50, 50, 40, 130));
     camera.detach();
 
     // Draw the game UI.

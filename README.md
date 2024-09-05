@@ -25,9 +25,7 @@ mixin runGame!(ready, update, finish);
 
 ## Supported Platforms
 
-* Windows
-* Linux
-* MacOS
+* PC: Windows, Linux, macOS
 * Web
 
 ## Games Made With Popka

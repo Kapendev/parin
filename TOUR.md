@@ -91,6 +91,8 @@ bool isReleased(char key);
 bool isReleased(Keyboard key);
 bool isReleased(Mouse key);
 bool isReleased(Gamepad key, int id = 0);
+
+Vec2 wasd();
 ```
 
 ## Sound
@@ -137,14 +139,15 @@ Additional drawing functions can be found in other modules, such as `popka.sprit
 
 ## Loading and Saving Resources
 
+Popka provides a set of loading functions inside the `popka.engine` module.
 Functions that start with the word load/save will always try to read/write resources from/to the assets folder.
 These functions handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 
 ```d
-Result!TextId loadText(IStr path, Sz tag = 0);
-Result!TextureId loadTexture(IStr path, Sz tag = 0);
-Result!FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0);
-Result!SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
+TextId loadText(IStr path, Sz tag = 0);
+TextureId loadTexture(IStr path, Sz tag = 0);
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0);
+SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
 
 Result!LStr loadRawText(IStr path);
 Result!Texture loadRawTexture(IStr path);
@@ -155,6 +158,8 @@ Result!IStr loadTempText(IStr path);
 
 Fault saveText(IStr path, IStr text);
 ```
+
+Additional loading functions can be found in other modules, such as `popka.tilemap`.
 
 ### Managed Resources
 
@@ -175,44 +180,35 @@ They don’t need to be freed manually.
 ## Sprites and Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
-To avoid imposing a single approach, Popka offers additional modules for these features. This allows for someone to include or ignore them as needed. Popka's implementations are designed with simplicity and speed in mind.
+To avoid enforcing a specific approach, Popka provides optional modules for these features, allowing users to include or omit them as needed.
+Popka's implementations are designed with simplicity in mind.
 
 ### Sprites
 
-Popka provides a sprite and a sprite animation type inside the `popka.sprite` module.
+Popka provides a sprite type inside the `popka.sprite` module.
 
 ```d
-struct SpriteAnimation {
-    ubyte frameRow;
-    ubyte frameCount;
-    ubyte frameSpeed;
-}
-
 struct Sprite {
-    int width;
-    int height;
-    ushort atlasLeft;
-    ushort atlasTop;
-    float frameProgress = 0.0f;
-    SpriteAnimation animation;
+    bool hasFirstFrame();
+    bool hasLastFrame();
+    int frame();
+    void reset(int resetFrame = 0);
+    void play(SpriteAnimation animation);
+    void update(float dt);
 }
 ```
 
 ### Tile Maps
 
-Popka provides a tile and a tile map type inside the `popka.tilemap` module.
+Popka provides a tile map type inside the `popka.tilemap` module.
 
 ```d
-struct Tile {
-    int id;
-    int width;
-    int height;
-}
-
 struct TileMap {
-    Grid!short data;
-    int tileWidth;
-    int tileHeight;
-    alias data this;
+    bool isEmpty();
+    Vec2 tileSize();
+    int width();
+    int height();
+    Vec2 size();
+    Fault parse(IStr csv, int tileWidth, int tileHeight);
 }
 ```

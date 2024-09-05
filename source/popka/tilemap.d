@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.18
+// Version: v0.0.19
 // ---
+
+// TODO: Think about gaps in an atlas texture.
+// TODO: Update all the doc comments here.
 
 /// The `tilemap` module provides a simple and fast tile map.
 module popka.tilemap;
@@ -17,8 +20,6 @@ public import joka.math;
 public import joka.types;
 
 @safe @nogc nothrow:
-
-// TODO: Think about gaps in an atlas texture.
 
 struct Tile {
     int id;
@@ -142,9 +143,9 @@ void drawTile(TextureId texture, Tile tile, Vec2 position, DrawOptions options =
 }
 
 void drawTileMap(Texture texture, TileMap tileMap, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
-    auto cameraArea = Rect(camera.position, resolution).area(camera.hook);
-    auto topLeft = cameraArea.topLeftPoint;
-    auto bottomRight = cameraArea.bottomRightPoint;
+    auto area = camera.area;
+    auto topLeft = area.topLeftPoint;
+    auto bottomRight = area.bottomRightPoint;
     auto targetTileWidth = cast(int) (tileMap.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (tileMap.tileHeight * options.scale.y);
     auto targetTileSize = Vec2(targetTileWidth, targetTileHeight);

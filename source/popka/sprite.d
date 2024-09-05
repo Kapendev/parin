@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.18
+// Version: v0.0.19
 // ---
+
+// TODO: Think about gaps in an atlas texture.
+// TODO: Update all the doc comments here.
 
 /// The `sprite` module provides a simple and flexible sprite.
 module popka.sprite;
@@ -12,8 +15,6 @@ module popka.sprite;
 import popka.engine;
 
 @safe @nogc nothrow:
-
-// TODO: Think about gaps in an atlas texture.
 
 struct SpriteAnimation {
     ubyte frameRow;
@@ -47,11 +48,11 @@ struct Sprite {
         this.animation = animation;
     }
 
-    bool isFirstFrame() {
+    bool hasFirstFrame() {
         return frame == 0;
     }
 
-    bool isLastFrame() {
+    bool hasLastFrame() {
         return animation.frameCount != 0 ? (frame == animation.frameCount - 1) : true;
     }
 
@@ -59,8 +60,8 @@ struct Sprite {
         return cast(int) frameProgress;
     }
 
-    void reset() {
-        frameProgress = 0.0f;
+    void reset(int resetFrame = 0) {
+        frameProgress = resetFrame;
     }
 
     void play(SpriteAnimation animation) {

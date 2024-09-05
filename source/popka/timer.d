@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.18
+// Version: v0.0.19
 // ---
+
+// TODO: Update all the doc comments here.
 
 /// The `timer` module provides a simple and extensible timer.
 module popka.timer;
@@ -31,6 +33,14 @@ struct Timer {
 
     bool isRunning() {
         return !isPaused && time != duration && prevTime != duration;
+    }
+
+    bool hasFirstTime() {
+        return time == 0.0f;
+    }
+
+    bool hasLastTime() {
+        return time == duration;
     }
 
     bool hasStarted() {

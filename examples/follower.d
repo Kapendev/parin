@@ -15,14 +15,16 @@ void ready() {
     setIsPixelPerfect(true);
     setIsCursorVisible(false);
     // Load the `atlas.png` file from the assets folder.
-    atlas = loadTexture("atlas.png").get();
+    atlas = loadTexture("atlas.png");
 }
 
 bool update(float dt) {
+    // The sprite should be updated every frame, regardless of whether it is running.
+    sprite.update(dt);
+
     // Get some basic info about the mouse.
     auto mouseDistance = spritePosition.distanceTo(mouseScreenPosition);
     auto mouseDirection = spritePosition.directionTo(mouseScreenPosition);
-
     // Move the sprite around in a smooth way.
     spritePosition = spritePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(dt), 0.2);
 
@@ -33,7 +35,6 @@ bool update(float dt) {
     } else {
         sprite.play(walkAnimation);
     }
-    sprite.update(dt);
 
     // Flip the sprite based on the mouse direction.
     if (mouseDirection.x > 0) {

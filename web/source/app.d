@@ -128,11 +128,11 @@ int main(string[] args) {
 
     // Check if the files that are needed for building exist.
     if (!exists(sourceDir)) {
-        writeln("Folder `", sourceDir, "` does not exist.");
+        writeln("Folder `", sourceDir, "` does not exist. Create one.");
         return 1;
     }
     if (!exists(libraryFile)) {
-        writeln("File `", libraryFile, "` does not exist.");
+        writeln("File `", libraryFile, "` does not exist. Download it from the raylib repository and place it in the specified folder.");
         return 1;
     }
 

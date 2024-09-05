@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.18
+// Version: v0.0.19
 // ---
+
+// TODO: The DialogueCommandRunner should work with gc functions too. Think about how to do it.
+// TODO: Update all the doc comments here.
 
 /// The `dialogue` module provides a simple and versatile dialogue system.
 module popka.dialogue;
@@ -16,8 +19,6 @@ public import joka.faults;
 public import joka.types;
 
 @safe @nogc nothrow:
-
-// TODO: The DialogueCommandRunner should work with gc functions too. Think about how to do it.
 
 enum DialogueUnitKindChars = ".#*@>|^!+-$";
 
