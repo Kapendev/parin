@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.19
+// Version: v0.0.20
 // ---
 
 // TODO: Test the resources code and the tag thing.
@@ -184,11 +184,12 @@ struct Camera {
         return Rect(position, resolution).area(hook);
     }
 
-    void followPosition(Vec2 target, float delta = 120.0f) {
-        position = position.moveTo(target, Vec2(delta * deltaTime));
+    void followPosition(Vec2 target, float speed) {
+        position = position.moveTo(target, Vec2(speed * deltaTime));
     }
 
-    void followPositionWithSlowdown(Vec2 target, float slowdown = 0.15f) {
+    void followPositionWithSlowdown(Vec2 target, float slowdown) {
+        // TODO: Remove the if because joka should do this. Will change that when joka is fixed.
         if (slowdown <= 0.0f) {
             position = target;
         } else {
@@ -196,11 +197,11 @@ struct Camera {
         }
     }
 
-    void followScale(float target, float delta = 0.75f) {
-        scale = scale.moveTo(target, delta * deltaTime);
+    void followScale(float target, float speed) {
+        scale = scale.moveTo(target, speed * deltaTime);
     }
 
-    void followScaleWithSlowdown(float target, float slowdown = 0.15f) {
+    void followScaleWithSlowdown(float target, float slowdown) {
         if (slowdown <= 0.0f) {
             scale = target;
         } else {
@@ -1266,6 +1267,10 @@ Filter defaultFilter() {
 
 void setDefaultFilter(Filter value) {
     engineState.defaultFilter = value;
+}
+
+void setEngineViewportFilter(Filter value) {
+    engineState.viewport.setFilter(value);
 }
 
 @trusted
