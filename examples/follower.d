@@ -28,7 +28,7 @@ bool update(float dt) {
     // Move the sprite around in a smooth way.
     spritePosition = spritePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(dt), 0.2);
 
-    // Play the right animation and update the sprite.
+    // Play the right animation.
     auto isWaiting = mouseDistance < 0.2;
     if (isWaiting) {
         sprite.play(idleAnimation);

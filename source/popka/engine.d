@@ -974,7 +974,7 @@ TextureId loadTexture(IStr path, Sz tag = 0) {
 /// Loads a font file (TTF) from the assets folder.
 /// Can handle both forward slashes and backslashes in file paths.
 @trusted
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = []) {
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
@@ -985,7 +985,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, c
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0) {
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes, Sz tag = 0) {
     if (engineState.resources.fonts.length == 0) {
         engineState.resources.fonts.appendEmpty();
     }

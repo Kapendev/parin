@@ -146,12 +146,12 @@ These functions handle both forward slashes and backslashes in file paths, ensur
 ```d
 TextId loadText(IStr path, Sz tag = 0);
 TextureId loadTexture(IStr path, Sz tag = 0);
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = [], Sz tag = 0);
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes, Sz tag = 0);
 SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
 
 Result!LStr loadRawText(IStr path);
 Result!Texture loadRawTexture(IStr path);
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, const(dchar)[] runes = []);
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes);
 Result!Sound loadRawSound(IStr path, float volume, float pitch);
 
 Result!IStr loadTempText(IStr path);
@@ -181,34 +181,4 @@ They don’t need to be freed manually.
 
 Sprites and tile maps can be implemented in various ways.
 To avoid enforcing a specific approach, Popka provides optional modules for these features, allowing users to include or omit them as needed.
-Popka's implementations are designed with simplicity in mind.
-
-### Sprites
-
-Popka provides a sprite type inside the `popka.sprite` module.
-
-```d
-struct Sprite {
-    bool hasFirstFrame();
-    bool hasLastFrame();
-    int frame();
-    void reset(int resetFrame = 0);
-    void play(SpriteAnimation animation);
-    void update(float dt);
-}
-```
-
-### Tile Maps
-
-Popka provides a tile map type inside the `popka.tilemap` module.
-
-```d
-struct TileMap {
-    bool isEmpty();
-    Vec2 tileSize();
-    int width();
-    int height();
-    Vec2 size();
-    Fault parse(IStr csv, int tileWidth, int tileHeight);
-}
-```
+Popka provides a sprite type inside the `popka.sprite` module and a tile map type inside the `popka.tilemap` module.

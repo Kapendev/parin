@@ -6,8 +6,6 @@ auto dialogue = Dialogue();
 auto script = "
     # This is a comment.
 
-    ! choiceCount
-
     * menuPoint
     ^ Select first choice. ^ Select second choice. ^ End dialogue.
 
@@ -18,7 +16,6 @@ auto script = "
     > Mia
     | Hello!
     | My name is Mia.
-    + choiceCount
     @ menuPoint
 
     * choice2
@@ -26,7 +23,6 @@ auto script = "
     | Yo Mia, this game is the bomb!
     > Mia
     | Trueee!
-    + choiceCount
     @ menuPoint
 
     * End
