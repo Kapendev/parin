@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.20
+// Version: v0.0.21
 // ---
 
 // TODO: Test the resources code and the tag thing.
@@ -1041,6 +1041,7 @@ SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
 @trusted
 Result!Viewport loadRawViewport(int width, int height) {
     auto value = rl.LoadRenderTexture(width, height).toPopka();
+    value.setFilter(engineState.defaultFilter);
     return Result!Viewport(value, value.isEmpty.toFault());
 }
 

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.20
+// Version: v0.0.21
 // ---
 
 /// The `rl` module provides access to the raylib library.
