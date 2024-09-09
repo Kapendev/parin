@@ -7,7 +7,6 @@
 // ---
 
 // TODO: Test the resources code and the tag thing.
-// TODO: Update all the doc comments here.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module popka.engine;
@@ -150,6 +149,7 @@ enum Gamepad {
     middle = rl.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
 }
 
+/// A structure containing options for configuring drawing parameters.
 struct DrawOptions {
     Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object.
     Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
@@ -159,35 +159,39 @@ struct DrawOptions {
     Flip flip      = Flip.none;    /// An value representing flipping orientations.
 }
 
+/// A structure representing a camera.
 struct Camera {
-    Vec2 position;
-    float rotation = 0.0f;
-    float scale = 1.0f;
-    bool isAttached;
-    bool isCentered;
+    Vec2 position;         /// The position of the cammera.
+    float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
+    float scale = 1.0f;    /// The zoom level of the camera.
+    bool isAttached;       /// Indicates whether the camera is currently in use.
+    bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
 
     @safe @nogc nothrow:
 
-    this(Vec2 position) {
-        this.position = position;
+    /// Initializes the camera with the given position and optional centering.
+    this(float x, float y, bool isCentered = false) {
+        this.position.x = x;
+        this.position.y = y;
+        this.isCentered = isCentered;
     }
 
-    this(float x, float y) {
-        this(Vec2(x, y));
-    }
-
+    /// Returns the current hook associated with the camera.
     Hook hook() {
         return isCentered ? Hook.center : Hook.topLeft;
     }
 
+    /// Returns the area covered by the camera.
     Rect area() {
         return Rect(position, resolution).area(hook);
     }
 
+    /// Moves the camera to follow the target position at the specified speed.
     void followPosition(Vec2 target, float speed) {
         position = position.moveTo(target, Vec2(speed * deltaTime));
     }
 
+    /// Moves the camera to follow the target position with gradual slowdown.
     void followPositionWithSlowdown(Vec2 target, float slowdown) {
         // TODO: Remove the if because joka should do this. Will change that when joka is fixed.
         if (slowdown <= 0.0f) {
@@ -197,10 +201,12 @@ struct Camera {
         }
     }
 
+    /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
     void followScale(float target, float speed) {
         scale = scale.moveTo(target, speed * deltaTime);
     }
 
+    /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
     void followScaleWithSlowdown(float target, float slowdown) {
         if (slowdown <= 0.0f) {
             scale = target;
@@ -209,6 +215,7 @@ struct Camera {
         }
     }
 
+    /// Attaches the camera, making it active.
     @trusted
     void attach() {
         if (isAttached) {
@@ -225,6 +232,7 @@ struct Camera {
         rl.BeginMode2D(temp);
     }
 
+    /// Detaches the camera, making it inactive.
     @trusted
     void detach() {
         if (isAttached) {
@@ -234,24 +242,24 @@ struct Camera {
     }
 }
 
+/// Represents an identifier for a managed resource.
 struct TextId {
     GenerationalIndex data;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data) {
-        this.data = data;
-    }
-
+    /// Returns the length of the text associated with the resource identifier.
     Sz length() {
         return getOr().length;
     }
 
+    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
         return data.value != 0 && engineState.resources.texts.has(data);
     }
 
+    /// Retrieves the text associated with the resource identifier.
     ref LStr get() {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
@@ -259,10 +267,12 @@ struct TextId {
         return engineState.resources.texts.data[data];
     }
 
+    /// Retrieves the text associated with the resource identifier or returns a default value if invalid.
     LStr getOr() {
         return isValid ? get() : LStr();
     }
 
+    /// Frees the resource associated with the identifier.
     void free() {
         if (engineState.resources.texts.has(data)) {
             engineState.resources.texts.remove(data);
@@ -270,13 +280,13 @@ struct TextId {
     }
 }
 
+/// Represents a texture resource.
 struct Texture {
     rl.Texture2D data;
-    Filter filter;
 
     @safe @nogc nothrow:
 
-    /// Returns true if the texture has not been loaded.
+    /// Checks if the texture is not loaded.
     bool isEmpty() {
         return data.id <= 0;
     }
@@ -296,16 +306,14 @@ struct Texture {
         return Vec2(width, height);
     }
 
-    /// Set the filter mode of the texture.
+    /// Sets the filter mode of the texture.
     @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
-        filter = value;
         rl.SetTextureFilter(data, value.toRl());
     }
 
-    /// Frees the loaded image.
-    /// If an image is already freed, then this function will do nothing.
+    /// Frees the loaded texture.
     @trusted
     void free() {
         if (isEmpty) {
@@ -316,35 +324,34 @@ struct Texture {
     }
 }
 
+/// Represents an identifier for a managed resource.
 struct TextureId {
     GenerationalIndex data;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data) {
-        this.data = data;
-    }
-
-    /// Returns the width of the texture.
+    /// Returns the width of the texture associated with the resource identifier.
     int width() {
         return getOr().width;
     }
 
-    /// Returns the height of the texture.
+    /// Returns the height of the texture associated with the resource identifier.
     int height() {
         return getOr().height;
     }
 
-    /// Returns the size of the texture.
+    /// Returns the size of the texture associated with the resource identifier.
     Vec2 size() {
         return getOr().size;
     }
 
+    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
         return data.value != 0 && engineState.resources.textures.has(data);
     }
 
+    /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
@@ -352,10 +359,12 @@ struct TextureId {
         return engineState.resources.textures.data[data];
     }
 
+    /// Retrieves the texture associated with the resource identifier or returns a default value if invalid.
     Texture getOr() {
         return isValid ? get() : Texture();
     }
 
+    /// Frees the resource associated with the identifier.
     void free() {
         if (engineState.resources.textures.has(data)) {
             engineState.resources.textures.remove(data);
@@ -363,15 +372,15 @@ struct TextureId {
     }
 }
 
+/// Represents a font resource.
 struct Font {
     rl.Font data;
-    Filter filter;
-    int runeSpacing;
-    int lineSpacing;
+    int runeSpacing; /// The spacing between individual characters.
+    int lineSpacing; /// The spacing between lines of text.
 
     @safe @nogc nothrow:
 
-    /// Returns true if the font has not been loaded.
+    /// Checks if the font is not loaded.
     bool isEmpty() {
         return data.texture.id <= 0;
     }
@@ -381,14 +390,14 @@ struct Font {
         return data.baseSize;
     }
 
-    /// Set the filter mode of the font.
+    /// Sets the filter mode of the font.
     @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
-        filter = value;
         rl.SetTextureFilter(data.texture, value.toRl());
     }
 
+    /// Frees the loaded font.
     @trusted
     void free() {
         if (isEmpty) {
@@ -399,25 +408,34 @@ struct Font {
     }
 }
 
+/// Represents an identifier for a managed resource.
 struct FontId {
     GenerationalIndex data;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data) {
-        this.data = data;
+    /// Returns the spacing between individual characters of the font associated with the resource identifier.
+    int runeSpacing() {
+        return getOr().runeSpacing;
     }
 
-    /// Returns the size of the font.
+    /// Returns the spacing between lines of text of the font associated with the resource identifier.
+    int lineSpacing() {
+        return getOr().lineSpacing;
+    };
+
+    /// Returns the size of the font associated with the resource identifier.
     int size() {
         return getOr().size;
     }
 
+    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
         return data.value != 0 && engineState.resources.fonts.has(data);
     }
 
+    /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
@@ -425,10 +443,12 @@ struct FontId {
         return engineState.resources.fonts.data[data];
     }
 
+    /// Retrieves the font associated with the resource identifier or returns a default value if invalid.
     Font getOr() {
         return isValid ? get() : Font();
     }
 
+    /// Frees the resource associated with the identifier.
     void free() {
         if (engineState.resources.fonts.has(data)) {
             engineState.resources.fonts.remove(data);
@@ -436,11 +456,13 @@ struct FontId {
     }
 }
 
+/// Represents a sound resource.
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
 
     @safe @nogc nothrow:
 
+    /// Checks if the sound is not loaded.
     bool isEmpty() {
         if (data.isKind!(rl.Sound)) {
             return data.get!(rl.Sound)().stream.sampleRate == 0;
@@ -449,6 +471,7 @@ struct Sound {
         }
     }
 
+    /// Returns the current playback time of the sound.
     @trusted
     float time() {
         if (isEmpty) return 0.0f;
@@ -459,6 +482,7 @@ struct Sound {
         }
     }
 
+    /// Returns the total duration of the sound.
     @trusted
     float duration() {
         if (isEmpty) return 0.0f;
@@ -469,6 +493,7 @@ struct Sound {
         }
     }
 
+    /// Sets the volume level for the sound.
     @trusted
     void setVolume(float value) {
         if (data.isKind!(rl.Sound)) {
@@ -478,6 +503,7 @@ struct Sound {
         }
     }
 
+    /// Sets the pitch of the sound.
     @trusted
     void setPitch(float value) {
         if (data.isKind!(rl.Sound)) {
@@ -487,6 +513,7 @@ struct Sound {
         }
     }
 
+    /// Sets the stereo panning of the sound.
     @trusted
     void setPan(float value) {
         if (data.isKind!(rl.Sound)) {
@@ -496,6 +523,7 @@ struct Sound {
         }
     }
 
+    /// Frees the loaded sound.
     @trusted
     void free() {
         if (isEmpty) {
@@ -510,28 +538,29 @@ struct Sound {
     }
 }
 
+/// Represents an identifier for a managed resource.
 struct SoundId {
     GenerationalIndex data;
     alias data this;
 
     @safe @nogc nothrow:
 
-    this(GenerationalIndex data) {
-        this.data = data;
-    }
-
+    /// Returns the current playback time of the sound associated with the resource identifier.
     float time() {
         return getOr().time;
     }
 
+    /// Returns the total duration of the sound associated with the resource identifier.
     float duration() {
         return getOr().duration;
     }
 
+    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
         return data.value != 0 && engineState.resources.sounds.has(data);
     }
 
+    /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) {
             assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
@@ -539,10 +568,12 @@ struct SoundId {
         return engineState.resources.sounds.data[data];
     }
 
+    /// Retrieves the sound associated with the resource identifier or returns a default value if invalid.
     Sound getOr() {
         return isValid ? get() : Sound();
     }
 
+    /// Frees the resource associated with the identifier.
     void free() {
         if (engineState.resources.sounds.has(data)) {
             engineState.resources.sounds.remove(data);
@@ -550,13 +581,13 @@ struct SoundId {
     }
 }
 
+/// Represents the viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
-    Filter filter;
 
     @safe @nogc nothrow:
 
-    /// Returns true if the viewport has not been loaded.
+    /// Checks if the viewport is not loaded.
     bool isEmpty() {
         return data.texture.id <= 0;
     }
@@ -576,14 +607,14 @@ struct Viewport {
         return Vec2(width, height);
     }
 
-    /// Set the filter mode of the viewport.
+    /// Sets the filter mode of the viewport.
     @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
-        filter = value;
         rl.SetTextureFilter(data.texture, value.toRl());
     }
 
+    /// Frees the loaded viewport.
     @trusted
     void free() {
         if (isEmpty) {
@@ -713,9 +744,9 @@ struct EngineViewport {
 
 struct EngineState {
     EngineFlags flags;
-    EngineFullscreenState fullscreenState;
     EngineViewport viewport;
     EngineResources resources;
+    EngineFullscreenState fullscreenState;
 
     LStr tempText;
     LStr assetsPath;
@@ -850,11 +881,7 @@ rl.Camera2D toRl(Camera camera) {
 /// The opposite of every flip value except none is none.
 /// The fallback value is returned if the flip value is none.
 Flip opposite(Flip flip, Flip fallback) {
-    if (flip == fallback) {
-        return Flip.none;
-    } else {
-        return fallback;
-    }
+    return flip == fallback ? Flip.none : fallback;
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
@@ -863,7 +890,7 @@ int randi() {
     return rl.GetRandomValue(0, int.max);
 }
 
-/// Returns a random floating point number between 0.0f and 1.0f (inclusive).
+/// Returns a random floating point number between 0.0 and 1.0 (inclusive).
 @trusted
 float randf() {
     return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
@@ -906,9 +933,12 @@ IStr assetsPath() {
     return engineState.assetsPath.items;
 }
 
+/// Converts a relative path to an absolute path within the assets folder.
 IStr toAssetsPath(IStr path) {
     return pathConcat(assetsPath, path).pathFormat();
 }
+
+// TODO: SHOULD CONTINUE FROM HERE TO ADD MORE DOCS. ---------------------------------------
 
 /// Loads a text file from the assets folder and returns its contents as a slice.
 /// The slice can be safely used until this function is called again.

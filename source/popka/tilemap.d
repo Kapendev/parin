@@ -25,14 +25,6 @@ struct Tile {
     int id;
     int width;
     int height;
-
-    @safe @nogc nothrow:
-
-    this(int id, int width, int height) {
-        this.id = id;
-        this.width = width;
-        this.height = height;
-    }
 }
 
 struct TileMap {

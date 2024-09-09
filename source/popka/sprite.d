@@ -131,6 +131,7 @@ struct Sprite {
 }
 
 // TODO: wrap!uint NOT WORKING BECUASE IT HAS AN OVERFLOW ERROR!!!
+// TODO: Add angle functin to Joka for vec2, ... and think about radians, degress, ...
 // TODO: Add this to Joka and also make it more generic.
 private
 float snap(float x, float step) {
