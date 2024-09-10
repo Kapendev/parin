@@ -3,9 +3,11 @@ import popka;
 
 // The game variables.
 auto atlas = TextureId();
+
 auto sprite = Sprite(16, 16, 0, 128);
 auto spritePosition = Vec2();
 auto spriteFlip = Flip.none;
+
 auto idleAnimation = SpriteAnimation(0, 1, 6);
 auto walkAnimation = SpriteAnimation(0, 2, 6);
 

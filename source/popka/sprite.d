@@ -31,7 +31,7 @@ struct SpriteAnimationGroup2 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap!int(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -50,7 +50,7 @@ struct SpriteAnimationGroup4 {
         if (hackAngle == 135) return SpriteAnimation(frameRows[1], frameCount, frameSpeed);
         if (hackAngle == -135) return SpriteAnimation(frameRows[3], frameCount, frameSpeed);
 
-        auto id = wrap!int(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -64,7 +64,7 @@ struct SpriteAnimationGroup8 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap!int(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -78,7 +78,7 @@ struct SpriteAnimationGroup16 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap!int(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -134,7 +134,7 @@ struct Sprite {
 // TODO: Add angle functin to Joka for vec2, ... and think about radians, degress, ...
 // TODO: Add this to Joka and also make it more generic.
 private
-float snap(float x, float step) {
+float my_temp_snap(float x, float step) {
     return round(x / step) * step;
 }
 

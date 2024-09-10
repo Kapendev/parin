@@ -112,7 +112,7 @@ int main(string[] args) {
 
     // Use the raylib-d script to download the raylib library files.
     if (isDubProject) {
-        writeln("\n  Simply say \"yes\" to all prompts.  \n");
+        writeln("Simply say \"yes\" to all prompts.\n");
         auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
         if (dub1 != 0) return dub1;
         auto dub2 = spawnProcess(["dub", "run", "raylib-d:install"]).wait();
@@ -137,5 +137,7 @@ int main(string[] args) {
     // Create folders.
     if (!exists(assetsDir)) std.file.mkdir(assetsDir);
     if (!exists(webDir)) std.file.mkdir(webDir);
+
+    writeln("\nHappy hacking!");
     return 0;
 }

@@ -118,7 +118,7 @@ void deleteObjectFiles() {
 
 int main(string[] args) {
     // Pass extra arguments to ldc if needed.
-    writeln("\n  All arguments are passed to LDC. If arguments are passed, then the project is not treated as a DUB project.  \n");
+    writeln("If arguments are passed, then the project is not treated as a DUB project.");
     string[] extraArgs = [];
     foreach (arg; args[1 .. $]) {
         extraArgs ~= arg;

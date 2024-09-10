@@ -153,7 +153,7 @@ enum Gamepad {
 struct DrawOptions {
     Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object.
     Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
-    float rotation = 0.0f;         /// The rotation of the drawn object.
+    float rotation = 0.0f;         /// The rotation of the drawn object, in degrees.
     Color color    = white;        /// The color of the drawn object.
     Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
     Flip flip      = Flip.none;    /// An value representing flipping orientations.
@@ -938,22 +938,25 @@ IStr toAssetsPath(IStr path) {
     return pathConcat(assetsPath, path).pathFormat();
 }
 
-// TODO: SHOULD CONTINUE FROM HERE TO ADD MORE DOCS. ---------------------------------------
-
-/// Loads a text file from the assets folder and returns its contents as a slice.
-/// The slice can be safely used until this function is called again.
-/// Can handle both forward slashes and backslashes in file paths.
+/// Loads a text file from the assets folder.
+/// The resource remains valid until this function is called again. 
+/// Supports both forward slashes and backslashes in file paths.
 Result!IStr loadTempText(IStr path) {
     auto fault = readTextIntoBuffer(path.toAssetsPath(), engineState.tempText);
     return Result!IStr(engineState.tempText.items, fault);
 }
 
+/// Loads a text file from the assets folder.
+/// The resource must be manually freed.
+/// Supports both forward slashes and backslashes in file paths.
 Result!LStr loadRawText(IStr path) {
     return readText(path.toAssetsPath());
 }
 
-/// Loads a text file from the assets folder and returns its contents as a list.
-/// Can handle both forward slashes and backslashes in file paths.
+/// Loads a text file from the assets folder.
+/// Optionally assigns a tag for resource management.
+/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// Supports both forward slashes and backslashes in file paths.
 TextId loadText(IStr path, Sz tag = 0) {
     if (engineState.resources.texts.length == 0) {
         engineState.resources.texts.appendEmpty();
@@ -973,8 +976,9 @@ TextId loadText(IStr path, Sz tag = 0) {
     }
 }
 
-/// Loads an image file (PNG) from the assets folder.
-/// Can handle both forward slashes and backslashes in file paths.
+/// Loads a texture file (PNG) from the assets folder.
+/// The resource must be manually freed.
+/// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadRawTexture(IStr path) {
     auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPopka();
@@ -982,6 +986,10 @@ Result!Texture loadRawTexture(IStr path) {
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
+/// Loads a texture file (PNG) from the assets folder.
+/// Optionally assigns a tag for resource management.
+/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// Supports both forward slashes and backslashes in file paths.
 TextureId loadTexture(IStr path, Sz tag = 0) {
     if (engineState.resources.textures.length == 0) {
         engineState.resources.textures.appendEmpty();
@@ -1002,7 +1010,8 @@ TextureId loadTexture(IStr path, Sz tag = 0) {
 }
 
 /// Loads a font file (TTF) from the assets folder.
-/// Can handle both forward slashes and backslashes in file paths.
+/// The resource must be manually freed.
+/// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
@@ -1015,6 +1024,10 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
+/// Loads a font file (TTF) from the assets folder.
+/// Optionally assigns a tag for resource management.
+/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// Supports both forward slashes and backslashes in file paths.
 FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes, Sz tag = 0) {
     if (engineState.resources.fonts.length == 0) {
         engineState.resources.fonts.appendEmpty();
@@ -1035,7 +1048,8 @@ FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 ru
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// Can handle both forward slashes and backslashes in file paths.
+/// The resource must be manually freed.
+/// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Sound loadRawSound(IStr path, float volume, float pitch) {
     auto value = Sound();
@@ -1049,6 +1063,10 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
+/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
+/// Optionally assigns a tag for resource management.
+/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// Supports both forward slashes and backslashes in file paths.
 SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
     if (engineState.resources.sounds.length == 0) {
         engineState.resources.sounds.appendEmpty();
@@ -1068,6 +1086,9 @@ SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
     }
 }
 
+/// Loads a viewport.
+/// The resource must be manually freed.
+/// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Viewport loadRawViewport(int width, int height) {
     auto value = rl.LoadRenderTexture(width, height).toPopka();
@@ -1076,16 +1097,17 @@ Result!Viewport loadRawViewport(int width, int height) {
 }
 
 /// Saves a text file to the assets folder.
-/// Can handle both forward slashes and backslashes in file paths.
+/// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
     return writeText(path.toAssetsPath(), text);
 }
 
+/// Frees all managed resources associated with the given tag, or all if no tag is specified.
 void freeResources(Sz tag = 0) {
     engineState.resources.free(tag);
 }
 
-/// Opens a window with the given size and title.
+/// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 @trusted
 void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
@@ -1105,8 +1127,8 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
     engineState.tempText.reserve(8192);
 }
 
-/// Updates the window every frame with the given loop function.
-/// This function will return when the loop function returns true.
+/// Updates the window every frame with the given function.
+/// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
 @trusted
 void updateWindow(bool function(float dt) updateFunc) {
@@ -1214,10 +1236,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 /// You should avoid calling this function manually.
 @trusted
 void closeWindow() {
-    if (!rl.IsWindowReady) {
-        return;
-    }
-    
+    if (!rl.IsWindowReady) return;
     engineState.free();
     rl.CloseAudioDevice();
     rl.CloseWindow();
@@ -1228,19 +1247,22 @@ bool isPixelPerfect() {
     return engineState.flags.isPixelPerfect;
 }
 
+/// Sets whether drawing should be done in a pixel-perfect way.
 void setIsPixelPerfect(bool value) {
     engineState.flags.isPixelPerfect = value;
 }
 
+/// Toggles the pixel-perfect drawing mode on or off.
 void toggleIsPixelPerfect() {
     setIsPixelPerfect(!isPixelPerfect);
 }
 
-/// Returns true if the system cursor is hidden.
+/// Returns true if the cursor is currently visible.
 bool isCursorVisible() {
     return engineState.flags.isCursorVisible;
 }
 
+/// Sets whether the cursor should be visible or hidden.
 @trusted
 void setIsCursorVisible(bool value) {
     engineState.flags.isCursorVisible = value;
@@ -1251,17 +1273,18 @@ void setIsCursorVisible(bool value) {
     }
 }
 
+/// Toggles the visibility of the cursor.
 void toggleIsCursorVisible() {
     setIsCursorVisible(!isCursorVisible);
 }
 
-/// Returns true if the window is in fullscreen mode.
+/// Returns true if the application is currently in fullscreen mode.
 @trusted
 bool isFullscreen() {
     return rl.IsWindowFullscreen();
 }
 
-/// Changes the state of the fullscreen mode of the window.
+/// Sets whether the application should be in fullscreen mode.
 @trusted
 void setIsFullscreen(bool value) {
     version(WebAssembly) {
@@ -1279,47 +1302,54 @@ void setIsFullscreen(bool value) {
     }
 }
 
+/// Toggles the fullscreen mode on or off.
 void toggleIsFullscreen() {
     setIsFullscreen(!isFullscreen);
 }
 
+/// Returns the current background color.
 Color backgroundColor() {
     return engineState.backgroundColor;
 }
 
-/// Sets the window background color to the given color.
+/// Sets the background color to the specified value.
 void setBackgroundColor(Color value) {
     engineState.backgroundColor = value;
 }
 
+/// Returns the default filter mode for textures.
 Filter defaultFilter() {
     return engineState.defaultFilter;
 }
 
+/// Sets the default filter mode for textures to the specified value.
 void setDefaultFilter(Filter value) {
     engineState.defaultFilter = value;
 }
 
+/// Sets the filter mode used by the engine viewport to the specified value.
 void setEngineViewportFilter(Filter value) {
     engineState.viewport.setFilter(value);
 }
 
+/// Returns the current master volume level.
 @trusted
 float masterVolume() {
     return rl.GetMasterVolume();
 }
 
+/// Sets the master volume level to the specified value.
 @trusted
 void setMasterVolume(float value) {
     rl.SetMasterVolume(value);
 }
 
-/// Returns true if the resolution is locked.
+/// Returns true if the resolution is locked and cannot be changed.
 bool isResolutionLocked() {
     return !engineState.viewport.isEmpty;
 }
 
-/// Locks the resolution to the given value.
+/// Locks the resolution to the specified width and height.
 @trusted
 void lockResolution(int width, int height) {
     engineState.viewport.startLocking(width, height);
@@ -1329,7 +1359,7 @@ void lockResolution(int width, int height) {
     }
 }
 
-/// Unlocks the resolution.
+/// Unlocks the resolution, allowing it to be changed.
 void unlockResolution() {
     engineState.viewport.startUnlocking();
     if (!engineState.flags.isUpdating) {
@@ -1337,6 +1367,7 @@ void unlockResolution() {
     }
 }
 
+/// Toggles between the current resolution and the specified width and height.
 void toggleResolution(int width, int height) {
     if (isResolutionLocked) {
         unlockResolution();
@@ -1345,30 +1376,36 @@ void toggleResolution(int width, int height) {
     }
 }
 
+/// Returns the current screen width.
 @trusted
 int screenWidth() {
     return rl.GetMonitorWidth(rl.GetCurrentMonitor());
 }
 
+/// Returns the current screen height.
 @trusted
 int screenHeight() {
     return rl.GetMonitorHeight(rl.GetCurrentMonitor());
 }
 
+/// Returns the current screen size.
 Vec2 screenSize() {
     return Vec2(screenWidth, screenHeight);
 }
 
+/// Returns the current window width.
 @trusted
 int windowWidth() {
     return rl.GetScreenWidth();
 }
 
+/// Returns the current window height.
 @trusted
 int windowHeight() {
     return rl.GetScreenHeight();
 }
 
+/// Returns the current window size.
 Vec2 windowSize() {
     if (isFullscreen) {
         return screenSize;
@@ -1377,6 +1414,7 @@ Vec2 windowSize() {
     }
 }
 
+/// Returns the current resolution width.
 int resolutionWidth() {
     if (isResolutionLocked) {
         return engineState.viewport.width;
@@ -1385,6 +1423,7 @@ int resolutionWidth() {
     }
 }
 
+/// Returns the current resolution height.
 int resolutionHeight() {
     if (isResolutionLocked) {
         return engineState.viewport.height;
@@ -1393,10 +1432,12 @@ int resolutionHeight() {
     }
 }
 
+/// Returns the current resolution size.
 Vec2 resolution() {
     return Vec2(resolutionWidth, resolutionHeight);
 }
 
+/// Returns the current position of the mouse on the screen.
 @trusted
 Vec2 mouseScreenPosition() {
     if (isResolutionLocked) {
@@ -1413,39 +1454,47 @@ Vec2 mouseScreenPosition() {
     }
 }
 
+/// Returns the current position of the mouse on the world, using the specified camera.
 Vec2 mouseWorldPosition(Camera camera) {
     return mouseScreenPosition.toWorldPosition(camera);
 }
 
-@trusted
-float mouseWheel() {
-    return rl.GetMouseWheelMove();
-}
-
+/// Returns the current frames per second (FPS).
 @trusted
 int fps() {
     return rl.GetFPS();
 }
 
+/// Returns the total elapsed time since the application started.
 @trusted
 double elapsedTime() {
     return rl.GetTime();
 }
 
+/// Returns the total number of ticks elapsed since the application started.
 long elapsedTickCount() {
     return engineState.tickCount;
 }
 
+/// Returns the time elapsed since the last frame.
 @trusted
 float deltaTime() {
     return rl.GetFrameTime();
 }
 
+/// Returns the change in mouse position since the last frame.
 @trusted
 Vec2 deltaMouse() {
     return toPopka(rl.GetMouseDelta());
 }
 
+/// Returns the change in mouse wheel position since the last frame.
+@trusted
+float deltaWheel() {
+    return rl.GetMouseWheelMove();
+}
+
+/// Measures the size of the specified text when rendered with the given font and draw options.
 @trusted
 Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
@@ -1494,70 +1543,85 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
     return result;
 }
 
+/// Measures the size of the specified text when rendered with the given font and draw options.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()) {
     return measureTextSize(font.getOr(), text, options);
 }
 
+/// Returns true if the specified key was pressed.
 @trusted
 bool isPressed(char key) {
     return rl.IsKeyPressed(toUpper(key));
 }
 
+/// Returns true if the specified key was pressed.
 @trusted
 bool isPressed(Keyboard key) {
     return rl.IsKeyPressed(key);
 }
 
+/// Returns true if the specified key was pressed.
 @trusted
 bool isPressed(Mouse key) {
     return rl.IsMouseButtonPressed(key);
 }
 
+/// Returns true if the specified key was pressed.
 @trusted
 bool isPressed(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonPressed(id, key);
 }
 
+/// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(char key) {
     return rl.IsKeyDown(toUpper(key));
 }
 
+/// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(Keyboard key) {
     return rl.IsKeyDown(key);
 }
 
+/// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(Mouse key) {
     return rl.IsMouseButtonDown(key);
 }
 
+/// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonDown(id, key);
 }
 
+/// Returns true if the specified key was released.
 @trusted
 bool isReleased(char key) {
     return rl.IsKeyReleased(toUpper(key));
 }
 
+/// Returns true if the specified key was released.
 @trusted
 bool isReleased(Keyboard key) {
     return rl.IsKeyReleased(key);
 }
 
+/// Returns true if the specified key was released.
 @trusted
 bool isReleased(Mouse key) {
     return rl.IsMouseButtonReleased(key);
 }
 
+/// Returns true if the specified key was released.
 @trusted
 bool isReleased(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonReleased(id, key);
 }
 
+/// Returns the directional input based on the WASD and arrow keys.
+/// The vector is not normalized.
 Vec2 wasd() {
     auto result = Vec2();
     if (Keyboard.a.isDown || Keyboard.left.isDown) result.x += -1.0f;
@@ -1567,6 +1631,7 @@ Vec2 wasd() {
     return result;
 }
 
+/// Plays the specified sound.
 @trusted
 void playSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1580,10 +1645,12 @@ void playSound(Sound sound) {
     }
 }
 
+/// Plays the specified sound.
 void playSound(SoundId sound) {
     playSound(sound.getOr());
 }
 
+/// Stops playback of the specified sound.
 @trusted
 void stopSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1597,10 +1664,12 @@ void stopSound(Sound sound) {
     }
 }
 
+/// Stops playback of the specified sound.
 void stopSound(SoundId sound) {
     stopSound(sound.getOr());
 }
 
+/// Pauses playback of the specified sound.
 @trusted
 void pauseSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1614,10 +1683,12 @@ void pauseSound(Sound sound) {
     }
 }
 
+/// Pauses playback of the specified sound.
 void pauseSound(SoundId sound) {
     pauseSound(sound.getOr());
 }
 
+/// Resumes playback of the specified paused sound.
 @trusted
 void resumeSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1631,10 +1702,12 @@ void resumeSound(Sound sound) {
     }
 }
 
+/// Resumes playback of the specified paused sound.
 void resumeSound(SoundId sound) {
     resumeSound(sound.getOr());
 }
 
+/// Updates the playback state of the specified sound.
 @trusted
 void updateSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1646,10 +1719,12 @@ void updateSound(Sound sound) {
     }
 }
 
+/// Updates the playback state of the specified sound.
 void updateSound(SoundId sound) {
     updateSound(sound.getOr());
 }
 
+/// Draws a rectangle with the specified area and color.
 @trusted
 void drawRect(Rect area, Color color = white) {
     if (isPixelPerfect) {
@@ -1659,10 +1734,12 @@ void drawRect(Rect area, Color color = white) {
     }
 }
 
+/// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, float size, Color color = white) {
     drawRect(Rect(point, size, size).centerArea, color);
 }
 
+/// Draws a circle with the specified area and color.
 @trusted
 void drawCirc(Circ area, Color color = white) {
     if (isPixelPerfect) {
@@ -1672,6 +1749,7 @@ void drawCirc(Circ area, Color color = white) {
     }
 }
 
+/// Draws a line with the specified area, thickness, and color.
 @trusted
 void drawLine(Line area, float size, Color color = white) {
     if (isPixelPerfect) {
@@ -1681,6 +1759,7 @@ void drawLine(Line area, float size, Color color = white) {
     }
 }
 
+/// Draws a portion of the specified texture at the given position with the specified draw options.
 @trusted
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
@@ -1727,18 +1806,22 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
     }
 }
 
+/// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(texture.getOr(), area, position, options);
 }
 
+/// Draws the texture at the given position with the specified draw options.
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(texture, Rect(texture.size), position, options);
 }
 
+/// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTexture(texture.getOr(), position, options);
 }
 
+/// Draws a single character from the specified font at the given position with the specified draw options.
 @trusted
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) {
@@ -1764,10 +1847,12 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     rl.rlPopMatrix();
 }
 
+/// Draws a single character from the specified font at the given position with the specified draw options.
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     drawRune(font.getOr(), rune, position, options);
 }
 
+/// Draws the specified text with the given font at the given position using the provided draw options.
 @trusted
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) {
@@ -1818,14 +1903,17 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     rl.rlPopMatrix();
 }
 
+/// Draws text with the given font at the given position using the provided draw options.
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     drawText(font.getOr(), text, position, options);
 }
 
+/// Draws debug text at the given position with the provided draw options.
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     drawText(engineFont, text, position, options);
 }
 
+/// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
 mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Popka") {
     version (D_BetterC) {
         extern(C)
