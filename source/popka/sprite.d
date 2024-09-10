@@ -31,7 +31,7 @@ struct SpriteAnimationGroup2 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -50,7 +50,7 @@ struct SpriteAnimationGroup4 {
         if (hackAngle == 135) return SpriteAnimation(frameRows[1], frameCount, frameSpeed);
         if (hackAngle == -135) return SpriteAnimation(frameRows[3], frameCount, frameSpeed);
 
-        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -64,7 +64,7 @@ struct SpriteAnimationGroup8 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -78,7 +78,7 @@ struct SpriteAnimationGroup16 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap!int(cast(int) round(my_temp_snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -128,14 +128,6 @@ struct Sprite {
         if (animation.frameCount <= 1) return;
         frameProgress = wrap(frameProgress + animation.frameSpeed * dt, 0.0f, animation.frameCount);
     }
-}
-
-// TODO: wrap!uint NOT WORKING BECUASE IT HAS AN OVERFLOW ERROR!!!
-// TODO: Add angle functin to Joka for vec2, ... and think about radians, degress, ...
-// TODO: Add this to Joka and also make it more generic.
-private
-float my_temp_snap(float x, float step) {
-    return round(x / step) * step;
 }
 
 void drawSprite(Texture texture, Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {

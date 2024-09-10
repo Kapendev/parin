@@ -193,12 +193,7 @@ struct Camera {
 
     /// Moves the camera to follow the target position with gradual slowdown.
     void followPositionWithSlowdown(Vec2 target, float slowdown) {
-        // TODO: Remove the if because joka should do this. Will change that when joka is fixed.
-        if (slowdown <= 0.0f) {
-            position = target;
-        } else {
-            position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
-        }
+        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
     }
 
     /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
@@ -208,11 +203,7 @@ struct Camera {
 
     /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
     void followScaleWithSlowdown(float target, float slowdown) {
-        if (slowdown <= 0.0f) {
-            scale = target;
-        } else {
-            scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
-        }
+        scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
     }
 
     /// Attaches the camera, making it active.
