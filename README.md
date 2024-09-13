@@ -86,6 +86,16 @@ It can be used with DUB by running the following command:
 dub run popka:web
 ```
 
+## Alternative Game Development Libraries
+
+While Popka provides a good game development experience in D, it might not fit everyone's needs.
+Here are some other notable alternatives to consider:
+
+* [raylib-d](https://github.com/schveiguy/raylib-d)
+* [HipremeEngine](https://github.com/MrcSnm/HipremeEngine)
+* [PixelPerfectEngine](https://github.com/ZILtoid1991/pixelperfectengine)
+* [Godot-DLang](https://github.com/godot-dlang/godot-dlang)
+
 ## Note
 
 I add things to Popka when I need them.
