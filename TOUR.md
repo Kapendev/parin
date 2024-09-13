@@ -182,3 +182,7 @@ They don’t need to be freed manually.
 Sprites and tile maps can be implemented in various ways.
 To avoid enforcing a specific approach, Popka provides optional modules for these features, allowing users to include or omit them as needed.
 Popka provides a sprite type inside the `popka.sprite` module and a tile map type inside the `popka.tilemap` module.
+
+## Scenes
+
+The `popka.scene` module provides a simple scene manager to organize game code by screens, such as the title screen or gameplay.

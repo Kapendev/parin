@@ -31,7 +31,7 @@ struct SpriteAnimationGroup2 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -50,7 +50,7 @@ struct SpriteAnimationGroup4 {
         if (hackAngle == 135) return SpriteAnimation(frameRows[1], frameCount, frameSpeed);
         if (hackAngle == -135) return SpriteAnimation(frameRows[3], frameCount, frameSpeed);
 
-        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -64,7 +64,7 @@ struct SpriteAnimationGroup8 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -78,7 +78,7 @@ struct SpriteAnimationGroup16 {
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
-        auto id = wrap(cast(int) round(snap(angle, angleStep) / angleStep), 0, frameRows.length);
+        auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
         return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
     }
 }
@@ -126,7 +126,7 @@ struct Sprite {
 
     void update(float dt) {
         if (animation.frameCount <= 1) return;
-        frameProgress = wrap(frameProgress + animation.frameSpeed * dt, 0.0f, animation.frameCount);
+        frameProgress = fmod(frameProgress + animation.frameSpeed * dt, cast(float) animation.frameCount);
     }
 }
 

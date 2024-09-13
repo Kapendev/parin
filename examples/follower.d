@@ -54,10 +54,9 @@ bool update(float dt) {
     }
 
     // Set the drawing options for the sprite.
-    auto options = DrawOptions();
-    options.scale = Vec2(2);
-    options.hook = Hook.center;
+    auto options = DrawOptions(Hook.center);
     options.flip = spriteFlip;
+    options.scale = Vec2(2);
 
     // Draw the sprite, the mouse position and some info.
     drawSprite(atlas, sprite, spritePosition, options);

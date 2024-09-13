@@ -11,7 +11,8 @@ struct Scene1 {
     float counter = 0;
 
     void ready() {
-        println("Entering scene 1.");
+        // The scene manager generates a unique tag for each scene.
+        printfln("Entering scene 1 with tag {}.", sceneManager.tag);
         setBackgroundColor(gray1);
     }
 
@@ -28,7 +29,10 @@ struct Scene1 {
     }
 
     void finish() {
-        println("Exiting scene 1.");
+        // The scene tag can be used to free all resources associated with the current scene.
+        // In this example, no resources will be freed as there are none to free.
+        printfln("Exiting scene 1 with tag {}.", sceneManager.tag);
+        freeResources(sceneManager.tag);
     }
 }
 
@@ -37,7 +41,8 @@ struct Scene2 {
     mixin extendScene;
 
     void ready() {
-        println("Entering scene 2.");
+        // The scene manager generates a unique tag for each scene.
+        printfln("Entering scene 2 with tag {}.", sceneManager.tag);
         setBackgroundColor(gray2);
     }
 
@@ -52,7 +57,10 @@ struct Scene2 {
     }
 
     void finish() {
-        println("Exiting scene 2.");
+        // The scene tag can be used to free all resources associated with the current scene.
+        // In this example, no resources will be freed as there are none to free.
+        printfln("Exiting scene 2 with tag {}.", sceneManager.tag);
+        freeResources(sceneManager.tag);
     }
 }
 

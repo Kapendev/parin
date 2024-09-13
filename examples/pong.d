@@ -77,9 +77,8 @@ bool update(float dt) {
     drawRect(paddle2.centerArea);
 
     // Draw the counter.
-    auto textOptions = DrawOptions();
+    auto textOptions = DrawOptions(Hook.center);
     textOptions.scale = Vec2(2);
-    textOptions.hook = Hook.center;
     drawDebugText("{}".format(gameCounter), Vec2(resolutionWidth * 0.5, 16), textOptions);
     return false;
 }

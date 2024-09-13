@@ -12,7 +12,8 @@
 module popka.scene;
 
 import stdc = joka.stdc;
-import popka.engine;
+import joka.traits;
+import joka.types;
 
 struct Scene {
     void delegate() ready;
@@ -23,6 +24,7 @@ struct Scene {
 struct SceneManager {
     Scene* scene;
     Scene* nextScene;
+    Sz tag;
 
     @trusted @nogc nothrow
     void enter(T)() {
@@ -41,6 +43,8 @@ struct SceneManager {
             }
             scene = nextScene;
             nextScene = null;
+            tag = (tag + 1) % Sz.max;
+            if (tag == 0) tag = 1;
             if (scene.ready) scene.ready();
             if (scene.update) return scene.update(dt);
             return true;
@@ -59,6 +63,7 @@ struct SceneManager {
             stdc.free(nextScene);
             nextScene = null;
         }
+        tag = 0;
     }
 }
 
@@ -67,6 +72,8 @@ mixin template extendScene() {
 
     @safe @nogc nothrow
     void prepare() {
+        import joka.traits;
+
         auto base = mixin("&", this.tupleof[0].stringof);
         static if (hasMember!(typeof(this), "ready")) {
             base.ready = &this.ready;

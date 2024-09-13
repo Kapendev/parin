@@ -8,7 +8,8 @@
 
 module popka;
 
-public import joka;
+public import joka.ascii;
+public import joka.io;
 public import popka.dialogue;
 public import popka.engine;
 public import popka.scene;
