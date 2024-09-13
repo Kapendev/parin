@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.21
+// Version: v0.0.22
 // ---
 
 /// The `rlgl` module provides access to the rlgl.h functions.

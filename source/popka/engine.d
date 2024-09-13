@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.21
+// Version: v0.0.22
 // ---
 
 // TODO: Test the resources code and the tag thing.
@@ -157,6 +157,33 @@ struct DrawOptions {
     Color color    = white;        /// The color of the drawn object.
     Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
     Flip flip      = Flip.none;    /// An value representing flipping orientations.
+
+    @safe @nogc nothrow:
+
+    /// Initializes the options with the given scale.
+    this(Vec2 scale) {
+        this.scale = scale;
+    }
+
+    /// Initializes the options with the given rotation.
+    this(float rotation) {
+        this.rotation = rotation;
+    }
+
+    /// Initializes the options with the given color.
+    this(Color color) {
+        this.color = color;
+    }
+
+    /// Initializes the options with the given hook.
+    this(Hook hook) {
+        this.hook = hook;
+    }
+
+    /// Initializes the options with the given flip.
+    this(Flip flip) {
+        this.flip = flip;
+    }
 }
 
 /// A structure representing a camera.

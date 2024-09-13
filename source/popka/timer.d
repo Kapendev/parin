@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/popka
-// Version: v0.0.21
+// Version: v0.0.22
 // ---
 
 // TODO: Update all the doc comments here.
@@ -11,7 +11,7 @@
 /// The `timer` module provides a simple and extensible timer.
 module popka.timer;
 
-import popka.engine;
+import joka.math;
 
 @safe @nogc nothrow:
 

@@ -34,3 +34,7 @@ This example shows how to create an animated character that follows the mouse.
 ## [Timer](timer.d)
 
 This example shows how to use the timer structure of Popka.
+
+## [Scene](scene.d)
+
+This example shows how to use the scene manager of Popka.
