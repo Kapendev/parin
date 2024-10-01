@@ -22,7 +22,7 @@ public import joka.faults;
 public import joka.math;
 public import joka.types;
 
-@safe @nogc nothrow:
+@safe:
 
 EngineState engineState;
 
@@ -158,7 +158,7 @@ struct DrawOptions {
     Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
     Flip flip      = Flip.none;    /// An value representing flipping orientations.
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Initializes the options with the given scale.
     this(Vec2 scale) {
@@ -194,7 +194,7 @@ struct Camera {
     bool isAttached;       /// Indicates whether the camera is currently in use.
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Initializes the camera with the given position and optional centering.
     this(float x, float y, bool isCentered = false) {
@@ -265,7 +265,7 @@ struct TextId {
     GenerationalIndex data;
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Returns the length of the text associated with the resource identifier.
     Sz length() {
@@ -302,7 +302,7 @@ struct TextId {
 struct Texture {
     rl.Texture2D data;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Checks if the texture is not loaded.
     bool isEmpty() {
@@ -347,7 +347,7 @@ struct TextureId {
     GenerationalIndex data;
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Returns the width of the texture associated with the resource identifier.
     int width() {
@@ -396,7 +396,7 @@ struct Font {
     int runeSpacing; /// The spacing between individual characters.
     int lineSpacing; /// The spacing between lines of text.
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Checks if the font is not loaded.
     bool isEmpty() {
@@ -431,7 +431,7 @@ struct FontId {
     GenerationalIndex data;
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Returns the spacing between individual characters of the font associated with the resource identifier.
     int runeSpacing() {
@@ -478,7 +478,7 @@ struct FontId {
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Checks if the sound is not loaded.
     bool isEmpty() {
@@ -561,7 +561,7 @@ struct SoundId {
     GenerationalIndex data;
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Returns the current playback time of the sound associated with the resource identifier.
     float time() {
@@ -603,7 +603,7 @@ struct SoundId {
 struct Viewport {
     rl.RenderTexture2D data;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Checks if the viewport is not loaded.
     bool isEmpty() {
@@ -660,7 +660,7 @@ struct EngineResourceGroup(T) {
     GenerationalList!LStr names;
     GenerationalList!Sz tags;
 
-    @safe @nogc nothrow:
+    @safe:
 
     Sz length() {
         return data.length;
@@ -723,7 +723,7 @@ struct EngineResources {
     EngineResourceGroup!Font fonts;
     EngineResourceGroup!Sound sounds;
 
-    @safe @nogc nothrow:
+    @safe:
 
     void free(Sz tag = 0) {
         texts.free(tag);
@@ -739,7 +739,7 @@ struct EngineViewport {
     int targetHeight;
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe:
 
     bool isLocking() {
         return (targetWidth != 0 && targetHeight != 0) && (data.width != targetWidth && data.height != targetHeight);
@@ -769,11 +769,12 @@ struct EngineState {
     LStr tempText;
     LStr assetsPath;
 
+    Color borderColor;
     Color backgroundColor;
     Filter defaultFilter;
     ulong tickCount;
 
-    @safe @nogc nothrow:
+    @safe:
 
     void free() {
         debug {
@@ -1138,6 +1139,7 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
     rl.InitAudioDevice();
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
+    engineState.borderColor = black;
     engineState.backgroundColor = gray2;
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
@@ -1150,9 +1152,8 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
 /// You should avoid calling this function manually.
 @trusted
 void updateWindow(bool function(float dt) updateFunc) {
-    static bool function(float _dt) @trusted @nogc nothrow _updateFunc;
+    static bool function(float _dt) @trusted _updateFunc;
 
-    @trusted @nogc nothrow
     static bool _updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
@@ -1171,16 +1172,21 @@ void updateWindow(bool function(float dt) updateFunc) {
         if (isResolutionLocked) {
             auto minSize = engineState.viewport.size;
             auto maxSize = windowSize;
-
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
+            if (isPixelPerfect) {
+                // TODO: Make an equals function in Joka that can change the epsilon value.
+                auto roundMinRatio = round(minRatio);
+                auto floorMinRation = floor(minRatio);
+                minRatio = (abs(minRatio - roundMinRatio) < 0.015f) ? roundMinRatio : floorMinRation;
+            }
 
             auto targetSize = minSize * Vec2(minRatio);
             auto targetPosition = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
 
             rl.EndTextureMode();
             rl.BeginDrawing();
-            rl.ClearBackground(rl.Color(0, 0, 0, 255));
+            rl.ClearBackground(engineState.borderColor.toRl());
             rl.DrawTexturePro(
                 engineState.viewport.toRl().texture,
                 rl.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
@@ -1229,7 +1235,7 @@ void updateWindow(bool function(float dt) updateFunc) {
     }
 
     // Maybe bad idea, but makes life of no-attribute people easier.
-    _updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
+    _updateFunc = cast(bool function(float _dt) @trusted) updateFunc;
     engineState.flags.isUpdating = true;
 
     version(WebAssembly) {
@@ -1328,6 +1334,10 @@ void toggleIsFullscreen() {
 /// Returns the current background color.
 Color backgroundColor() {
     return engineState.backgroundColor;
+}
+
+void setBorderColor(Color value) {
+    engineState.borderColor = value;
 }
 
 /// Sets the background color to the specified value.
@@ -1460,7 +1470,13 @@ Vec2 resolution() {
 Vec2 mouseScreenPosition() {
     if (isResolutionLocked) {
         auto window = windowSize;
-        auto minRatio = min(window.x / engineState.viewport.size.x, window.y / engineState.viewport.size.y);
+        auto minRatio = min(window.x / engineState.viewport.width, window.y / engineState.viewport.height);
+        if (isPixelPerfect) {
+            // TODO: Make an equals function in Joka that can change the epsilon value.
+            auto roundMinRatio = round(minRatio);
+            auto floorMinRation = floor(minRatio);
+            minRatio = (abs(minRatio - roundMinRatio) < 0.015f) ? roundMinRatio : floorMinRation;
+        }
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
         // We use touch because it works on desktop, web and mobile.
         return Vec2(

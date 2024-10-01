@@ -13,7 +13,7 @@ module popka.timer;
 
 import joka.math;
 
-@safe @nogc nothrow:
+@safe:
 
 struct Timer {
     float time = 1.0f;
@@ -22,7 +22,7 @@ struct Timer {
     bool isPaused;
     bool canRepeat;
 
-    @safe @nogc nothrow:
+    @safe:
 
     this(float duration, bool canRepeat = false) {
         this.time = duration;

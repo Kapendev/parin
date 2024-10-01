@@ -72,7 +72,7 @@ For a more detailed overview, check the [TOUR.md](TOUR.md) file.
 
 ## Attributes and BetterC Support
 
-This project offers support for some attributes (`@safe`, `@nogc`, `nothrow`) and aims for good compatibility with BetterC.
+This project offers support for the `@safe` attribute and aims for good compatibility with BetterC.
 If you encounter errors with BetterC, try using the `-i` flag.
 
 ## Web Support

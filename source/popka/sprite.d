@@ -14,7 +14,7 @@ module popka.sprite;
 
 import popka.engine;
 
-@safe @nogc nothrow:
+@safe:
 
 struct SpriteAnimation {
     ubyte frameRow;
@@ -28,7 +28,7 @@ struct SpriteAnimationGroup2 {
     ubyte frameSpeed = 6;
     enum angleStep = 180.0f;
 
-    @safe @nogc nothrow:
+    @safe:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -42,7 +42,7 @@ struct SpriteAnimationGroup4 {
     ubyte frameSpeed = 6;
     enum angleStep = 90.0f;
 
-    @safe @nogc nothrow:
+    @safe:
 
     SpriteAnimation pick(float angle) {
         // NOTE: This is a hack to make things look better in simple cases.
@@ -61,7 +61,7 @@ struct SpriteAnimationGroup8 {
     ubyte frameSpeed = 6;
     enum angleStep = 45.0f;
 
-    @safe @nogc nothrow:
+    @safe:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -75,7 +75,7 @@ struct SpriteAnimationGroup16 {
     ubyte frameSpeed = 6;
     enum angleStep = 22.5f;
 
-    @safe @nogc nothrow:
+    @safe:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -91,7 +91,7 @@ struct Sprite {
     float frameProgress = 0.0f;
     SpriteAnimation animation;
 
-    @safe @nogc nothrow:
+    @safe:
 
     this(int width, int height, ushort atlasLeft, ushort atlasTop, SpriteAnimation animation = SpriteAnimation()) {
         this.width = width;
@@ -107,6 +107,10 @@ struct Sprite {
 
     bool hasLastFrame() {
         return animation.frameCount != 0 ? (frame == animation.frameCount - 1) : true;
+    }
+
+    Vec2 size() {
+        return Vec2(width, height);
     }
 
     int frame() {

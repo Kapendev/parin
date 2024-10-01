@@ -19,7 +19,7 @@ public import joka.faults;
 public import joka.math;
 public import joka.types;
 
-@safe @nogc nothrow:
+@safe:
 
 struct Tile {
     int id;
@@ -33,7 +33,7 @@ struct TileMap {
     int tileHeight;
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe:
 
     /// Returns true if the tile map has not been loaded.
     bool isEmpty() {

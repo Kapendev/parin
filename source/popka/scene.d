@@ -12,13 +12,14 @@
 module popka.scene;
 
 import stdc = joka.stdc;
-import joka.traits;
 import joka.types;
 
+@safe:
+
 struct Scene {
-    void delegate() ready;
-    bool delegate(float dt) update;
-    void delegate() finish;
+    void delegate() @trusted ready;
+    bool delegate(float dt) @trusted update;
+    void delegate() @trusted finish;
 }
 
 struct SceneManager {
@@ -26,7 +27,8 @@ struct SceneManager {
     Scene* nextScene;
     Sz tag;
 
-    @trusted @nogc nothrow
+    @trusted:
+
     void enter(T)() {
         if (nextScene) return;
         auto temp = cast(T*) stdc.malloc(T.sizeof);
@@ -70,25 +72,11 @@ struct SceneManager {
 mixin template extendScene() {
     Scene base;
 
-    @safe @nogc nothrow
+    @trusted
     void prepare() {
-        import joka.traits;
-
         auto base = mixin("&", this.tupleof[0].stringof);
-        static if (hasMember!(typeof(this), "ready")) {
-            base.ready = &this.ready;
-        } else {
-            base.ready = null;
-        }
-        static if (hasMember!(typeof(this), "update")) {
-            base.update = &this.update;
-        } else {
-            base.update = null;
-        }
-        static if (hasMember!(typeof(this), "finish")) {
-            base.finish = &this.finish;
-        } else {
-            base.finish = null;
-        }
+        base.ready = cast(void delegate() @trusted) &this.ready;
+        base.update = cast(bool delegate(float dt) @trusted) &this.update;
+        base.finish = cast(void delegate() @trusted) &this.finish;
     }
 }

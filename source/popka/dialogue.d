@@ -18,7 +18,7 @@ public import joka.containers;
 public import joka.faults;
 public import joka.types;
 
-@safe @nogc nothrow:
+@safe:
 
 enum DialogueUnitKindChars = ".#*@>|^!+-$";
 
@@ -40,7 +40,7 @@ struct DialogueUnit {
     LStr text;
     DialogueUnitKind kind;
 
-    @safe @nogc nothrow:
+    @safe:
 
     void free() {
         text.free();
@@ -52,7 +52,7 @@ struct DialogueValue {
     LStr name;
     long value;
 
-    @safe @nogc nothrow:
+    @safe:
 
     void free() {
         name.free();
@@ -69,7 +69,7 @@ struct Dialogue {
     IStr actor;
     Sz unitIndex;
 
-    @safe @nogc nothrow:
+    @safe:
 
     bool isEmpty() {
         return units.length == 0;
