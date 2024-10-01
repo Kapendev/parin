@@ -30,6 +30,7 @@ mixin runGame!(ready, update, finish);
 
 ## Games Made With Popka
 
+* [Clean & Haunted](https://kapendev.itch.io/clean-haunted)
 * [Runani](https://kapendev.itch.io/runani)
 * [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
 
