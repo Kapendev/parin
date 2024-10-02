@@ -5,7 +5,7 @@
 To begin, open the main project file and copy-paste the following code:
 
 ```d
-import popka;
+import parin;
 
 void ready() {
     lockResolution(320, 180);
@@ -66,7 +66,7 @@ Here is a breakdown of how this code works:
 
     This line sets up a main function that will run the game.
 
-In essence, a Popka game typically relies on three key functions:
+In essence, a Parin game typically relies on three key functions:
 
 * A ready function.
 * An update function.
@@ -74,7 +74,7 @@ In essence, a Popka game typically relies on three key functions:
 
 ## Input
 
-Popka provides a set of input functions inside the `popka.engine` module.
+Parin provides a set of input functions inside the `parin.engine` module.
 
 ```d
 bool isPressed(char key);
@@ -97,7 +97,7 @@ Vec2 wasd();
 
 ## Sound
 
-Popka provides a set of sound functions inside the `popka.engine` module.
+Parin provides a set of sound functions inside the `parin.engine` module.
 
 ```d
 void playSound(Sound sound);
@@ -114,7 +114,7 @@ void updateSound(SoundId sound);
 
 ## Drawing
 
-Popka provides a set of drawing functions inside the `popka.engine` module.
+Parin provides a set of drawing functions inside the `parin.engine` module.
 While drawing is not pixel-perfect by default, it can be by calling the `setIsPixelPerfect` function.
 
 ```d
@@ -135,11 +135,11 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions());
 ```
 
-Additional drawing functions can be found in other modules, such as `popka.sprite`.
+Additional drawing functions can be found in other modules, such as `parin.sprite`.
 
 ## Loading and Saving Resources
 
-Popka provides a set of loading functions inside the `popka.engine` module.
+Parin provides a set of loading functions inside the `parin.engine` module.
 Functions that start with the word load/save will always try to read/write resources from/to the assets folder.
 These functions handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 
@@ -159,7 +159,7 @@ Result!IStr loadTempText(IStr path);
 Fault saveText(IStr path, IStr text);
 ```
 
-Additional loading functions can be found in other modules, such as `popka.tilemap`.
+Additional loading functions can be found in other modules, such as `parin.tilemap`.
 
 ### Managed Resources
 
@@ -180,9 +180,9 @@ They don’t need to be freed manually.
 ## Sprites and Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
-To avoid enforcing a specific approach, Popka provides optional modules for these features, allowing users to include or omit them as needed.
-Popka provides a sprite type inside the `popka.sprite` module and a tile map type inside the `popka.tilemap` module.
+To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
+Parin provides a sprite type inside the `parin.sprite` module and a tile map type inside the `parin.tilemap` module.
 
 ## Scenes
 
-The `popka.scene` module provides a simple scene manager to organize game code by screens, such as the title screen or gameplay.
+The `parin.scene` module provides a simple scene manager to organize game code by screens, such as the title screen or gameplay.

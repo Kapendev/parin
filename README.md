@@ -1,10 +1,10 @@
-# Popka
+# Parin
 
-Popka is a lightweight and beginner-friendly 2D game engine for the D programming language.
+Parin is a lightweight and beginner-friendly 2D game engine for the D programming language.
 It focuses on providing a simple foundation for building 2D games.
 
 ```d
-import popka;
+import parin;
 
 void ready() {
     lockResolution(320, 180);
@@ -28,7 +28,7 @@ mixin runGame!(ready, update, finish);
 * PC: Windows, Linux, macOS
 * Web
 
-## Games Made With Popka
+## Games Made With Parin
 
 * [Clean & Haunted](https://kapendev.itch.io/clean-haunted)
 * [Runani](https://kapendev.itch.io/runani)
@@ -36,10 +36,10 @@ mixin runGame!(ready, update, finish);
 
 ## Installation
 
-This guide shows how to install Popka and its dependencies using DUB.
-While DUB simplifies the process, Popka itself doesn't require DUB.
+This guide shows how to install Parin and its dependencies using DUB.
+While DUB simplifies the process, Parin itself doesn't require DUB.
 
-Popka has the following dependencies:
+Parin has the following dependencies:
 
 * [Joka](https://github.com/Kapendev/joka): A simple nogc utility library.
 * [raylib](https://github.com/raysan5/raylib): A simple graphics library.
@@ -50,10 +50,10 @@ Create a new folder and run inside the following commands:
 
 ```bash
 dub init -n
-dub run popka:setup
+dub run parin:setup
 ```
 
-The final line modifies the default app.d and dub.json files, downloads raylib, and creates the necessary folders for Popka to function properly. The following folders will be created:
+The final line modifies the default app.d and dub.json files, downloads raylib, and creates the necessary folders for Parin to function properly. The following folders will be created:
 
 * assets: This folder is used to store game assets.
 * web: This folder is used for exporting to the web.
@@ -84,12 +84,12 @@ The [web](web) folder contains a helper script to assist with the web export pro
 It can be used with DUB by running the following command:
 
 ```bash
-dub run popka:web
+dub run parin:web
 ```
 
 ## Alternative Game Development Libraries
 
-While Popka provides a good game development experience in D, it might not fit everyone's needs.
+While Parin provides a good game development experience in D, it might not fit everyone's needs.
 Here are some other notable alternatives to consider:
 
 * [raylib-d](https://github.com/schveiguy/raylib-d)
@@ -99,7 +99,7 @@ Here are some other notable alternatives to consider:
 
 ## Note
 
-I add things to Popka when I need them.
+I add things to Parin when I need them.
 
 ## License
 
