@@ -9,7 +9,9 @@ enum webDir = buildPath(".", "web");
 
 enum appFile = buildPath(".", "source", "app.d");
 enum dubFile = buildPath(".", "dub.json");
+enum dubCopyFile = buildPath(".", ".__dub_copy__.json");
 enum dubLockFile = buildPath(".", "dub.selections.json");
+enum dubLockCopyFile = buildPath(".", ".__dub_selections_copy__.json");
 enum gitignoreFile = buildPath(".", ".gitignore");
 
 enum appFileContent = `import parin;
@@ -108,15 +110,31 @@ int main(string[] args) {
     // Also raylib-d:install does not like it when you don't have one.
     if (isDubProject) {
         if (!exists(appFile)) std.file.write(appFile, appFileContent);
+        if (!isFirstRun) {
+            std.file.write(dubCopyFile, std.file.readText(dubFile));
+            if (exists(dubLockFile)) std.file.write(dubLockCopyFile, std.file.readText(dubLockFile));
+        }
     }
 
     // Use the raylib-d script to download the raylib library files.
     if (isDubProject) {
         writeln("Simply say \"yes\" to all prompts.\n");
         auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
-        if (dub1 != 0) return dub1;
+        if (dub1 != 0) {
+            if (!isFirstRun) {
+                std.file.remove(dubCopyFile);
+                if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
+            }
+            return dub1;
+        }
         auto dub2 = spawnProcess(["dub", "run", "raylib-d:install"]).wait();
-        if (dub2 != 0) return dub2;
+        if (dub2 != 0) {
+            if (!isFirstRun) {
+                std.file.remove(dubCopyFile);
+                if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
+            }
+            return dub2;
+        }
     }
 
     // Remove old files.
@@ -130,7 +148,14 @@ int main(string[] args) {
     // Create new files.
     if (isDubProject) {
         if (isFirstRun) std.file.write(appFile, appFileContent);
-        std.file.write(dubFile, dubFileContent);
+        if (exists(dubCopyFile)) {
+            std.file.write(dubFile, std.file.readText(dubCopyFile));
+            std.file.remove(dubCopyFile);
+            if (exists(dubLockCopyFile)) std.file.write(dubLockFile, std.file.readText(dubLockCopyFile));
+            if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
+        } else {
+            std.file.write(dubFile, dubFileContent);
+        }
     }
     if (isFirstRun) std.file.write(gitignoreFile, gitignoreFileContent);
 

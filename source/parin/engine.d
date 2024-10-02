@@ -6,7 +6,9 @@
 // Version: v0.0.23
 // ---
 
-// TODO: Test the resources code and the tag thing.
+// TODO: Test the resource loading code.
+// TODO: Make sounds loop based on a variable and not on the file type.
+// NOTE: The main problem with sound looping is the raylib API.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -215,7 +217,7 @@ struct Camera {
 
     /// Moves the camera to follow the target position at the specified speed.
     void followPosition(Vec2 target, float speed) {
-        position = position.moveTo(target, Vec2(speed * deltaTime));
+        position = position.moveTo(target, Vec2(speed));
     }
 
     /// Moves the camera to follow the target position with gradual slowdown.
@@ -225,7 +227,7 @@ struct Camera {
 
     /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
     void followScale(float target, float speed) {
-        scale = scale.moveTo(target, speed * deltaTime);
+        scale = scale.moveTo(target, speed);
     }
 
     /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
@@ -489,10 +491,19 @@ struct Sound {
         }
     }
 
+    /// Returns true if the sound is playing.
+    @trusted
+    bool isPlaying() {
+        if (data.isKind!(rl.Sound)) {
+            return rl.IsSoundPlaying(data.get!(rl.Sound)());
+        } else {
+            return rl.IsMusicStreamPlaying(data.get!(rl.Music)());
+        }
+    }
+
     /// Returns the current playback time of the sound.
     @trusted
     float time() {
-        if (isEmpty) return 0.0f;
         if (data.isKind!(rl.Sound)) {
             return 0.0f;
         } else {
@@ -503,12 +514,17 @@ struct Sound {
     /// Returns the total duration of the sound.
     @trusted
     float duration() {
-        if (isEmpty) return 0.0f;
         if (data.isKind!(rl.Sound)) {
             return 0.0f;
         } else {
             return rl.GetMusicTimeLength(data.get!(rl.Music)());
         }
+    }
+
+    /// Returns the progress of the sound.
+    float progress() {
+        if (duration == 0.0f) return 0.0f;
+        return time / duration;
     }
 
     /// Sets the volume level for the sound.
@@ -544,9 +560,7 @@ struct Sound {
     /// Frees the loaded sound.
     @trusted
     void free() {
-        if (isEmpty) {
-            return;
-        }
+        if (isEmpty) return;
         if (data.isKind!(rl.Sound)) {
             rl.UnloadSound(data.get!(rl.Sound)());
         } else {
@@ -571,6 +585,10 @@ struct SoundId {
     /// Returns the total duration of the sound associated with the resource identifier.
     float duration() {
         return getOr().duration;
+    }
+
+    float progress() {
+        return getOr().progress;
     }
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
@@ -772,7 +790,7 @@ struct EngineState {
     Color borderColor;
     Color backgroundColor;
     Filter defaultFilter;
-    ulong tickCount;
+    Sz tickCount;
 
     @safe:
 
@@ -1166,7 +1184,7 @@ void updateWindow(bool function(float dt) updateFunc) {
         // The main loop.
         auto dt = deltaTime;
         auto result = _updateFunc(dt);
-        engineState.tickCount = (engineState.tickCount + 1) % typeof(engineState.tickCount).max;
+        engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
 
         // End drawing.
         if (isResolutionLocked) {
@@ -1666,6 +1684,7 @@ Vec2 wasd() {
 }
 
 /// Plays the specified sound.
+/// The sound will loop automatically for certain file types (OGG, MP3).
 @trusted
 void playSound(Sound sound) {
     if (sound.isEmpty) {
@@ -1680,6 +1699,7 @@ void playSound(Sound sound) {
 }
 
 /// Plays the specified sound.
+/// The sound will loop automatically for certain file types (OGG, MP3).
 void playSound(SoundId sound) {
     playSound(sound.getOr());
 }
