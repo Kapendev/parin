@@ -1,5 +1,5 @@
-/// This example shows how to use the scene manager of Popka.
-import popka;
+/// This example shows how to use the scene manager of Parin.
+import parin;
 
 // The game variables.
 auto sceneManager = SceneManager();
@@ -23,7 +23,7 @@ struct Scene1 {
 
         counter += 5 * dt;
 
-        drawDebugText("Press enter to change scene.", resolution * Vec2(0.5), DrawOptions(Hook.center));
+        drawDebugText("Press space to change scene.", resolution * Vec2(0.5), DrawOptions(Hook.center));
         drawDebugText("Scene 1\nCounter: {}".format(cast(int) counter), Vec2(8));
         return false;
     }

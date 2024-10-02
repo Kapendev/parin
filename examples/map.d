@@ -1,5 +1,5 @@
-/// This example shows how to use the tile map structure of Popka.
-import popka;
+/// This example shows how to use the tile map structure of Parin.
+import parin;
 
 // The game variables.
 auto atlas = TextureId();

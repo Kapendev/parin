@@ -1,5 +1,5 @@
 /// This example shows how to create an animated character that follows the mouse.
-import popka;
+import parin;
 
 // The game variables.
 auto atlas = TextureId();

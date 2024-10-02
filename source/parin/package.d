@@ -2,17 +2,17 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
-module popka;
+module parin;
 
 public import joka.ascii;
 public import joka.io;
-public import popka.dialogue;
-public import popka.engine;
-public import popka.scene;
-public import popka.sprite;
-public import popka.tilemap;
-public import popka.timer;
+public import parin.dialogue;
+public import parin.engine;
+public import parin.scene;
+public import parin.sprite;
+public import parin.tilemap;
+public import parin.timer;

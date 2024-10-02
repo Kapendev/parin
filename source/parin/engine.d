@@ -2,20 +2,20 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
 // TODO: Test the resources code and the tag thing.
 
 /// The `engine` module functions as a lightweight 2D game engine.
-module popka.engine;
+module parin.engine;
 
-import rl = popka.rl;
+import rl = parin.rl;
 import joka.unions;
 import joka.ascii;
 import joka.io;
-import popka.timer;
+import parin.timer;
 public import joka.colors;
 public import joka.containers;
 public import joka.faults;
@@ -793,46 +793,46 @@ struct EngineState {
 }
 
 private
-Color toPopka(rl.Color from) {
+Color toParin(rl.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
 private
-Vec2 toPopka(rl.Vector2 from) {
+Vec2 toParin(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
 private
-Vec3 toPopka(rl.Vector3 from) {
+Vec3 toParin(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
 private
-Vec4 toPopka(rl.Vector4 from) {
+Vec4 toParin(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
 private
-Rect toPopka(rl.Rectangle from) {
+Rect toParin(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
 private
-Texture toPopka(rl.Texture2D from) {
+Texture toParin(rl.Texture2D from) {
     auto result = Texture();
     result.data = from;
     return result;
 }
 
 private
-Font toPopka(rl.Font from) {
+Font toParin(rl.Font from) {
     auto result = Font();
     result.data = from;
     return result;
 }
 
 private
-Viewport toPopka(rl.RenderTexture2D from) {
+Viewport toParin(rl.RenderTexture2D from) {
     auto result = Viewport();
     result.data = from;
     return result;
@@ -929,19 +929,19 @@ void randomize() {
 /// Converts a world position to a screen position based on the given camera.
 @trusted
 Vec2 toScreenPosition(Vec2 position, Camera camera) {
-    return toPopka(rl.GetWorldToScreen2D(position.toRl(), camera.toRl()));
+    return toParin(rl.GetWorldToScreen2D(position.toRl(), camera.toRl()));
 }
 
 /// Converts a screen position to a world position based on the given camera.
 @trusted
 Vec2 toWorldPosition(Vec2 position, Camera camera) {
-    return toPopka(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
+    return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
 }
 
-/// Returns the default Popka font. This font should not be freed.
+/// Returns the default Parin font. This font should not be freed.
 @trusted
 Font engineFont() {
-    auto result = rl.GetFontDefault().toPopka();
+    auto result = rl.GetFontDefault().toParin();
     result.runeSpacing = 1;
     result.lineSpacing = 14;
     return result;
@@ -1000,7 +1000,7 @@ TextId loadText(IStr path, Sz tag = 0) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadRawTexture(IStr path) {
-    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPopka();
+    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toParin();
     value.setFilter(engineState.defaultFilter);
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
@@ -1033,7 +1033,7 @@ TextureId loadTexture(IStr path, Sz tag = 0) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
-    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPopka();
+    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toParin();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
     }
@@ -1110,7 +1110,7 @@ SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Viewport loadRawViewport(int width, int height) {
-    auto value = rl.LoadRenderTexture(width, height).toPopka();
+    auto value = rl.LoadRenderTexture(width, height).toParin();
     value.setFilter(engineState.defaultFilter);
     return Result!Viewport(value, value.isEmpty.toFault());
 }
@@ -1129,7 +1129,7 @@ void freeResources(Sz tag = 0) {
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 @trusted
-void openWindow(int width, int height, IStr appPath, IStr title = "Popka") {
+void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     if (rl.IsWindowReady) {
         return;
     }
@@ -1519,7 +1519,7 @@ float deltaTime() {
 /// Returns the change in mouse position since the last frame.
 @trusted
 Vec2 deltaMouse() {
-    return toPopka(rl.GetMouseDelta());
+    return toParin(rl.GetMouseDelta());
 }
 
 /// Returns the change in mouse wheel position since the last frame.
@@ -1862,7 +1862,7 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
         return;
     }
 
-    auto rect = toPopka(rl.GetGlyphAtlasRec(font.data, rune));
+    auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
     if (isPixelPerfect) {
@@ -1948,7 +1948,7 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
-mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Popka") {
+mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {

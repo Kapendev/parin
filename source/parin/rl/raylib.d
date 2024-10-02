@@ -2,12 +2,12 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
 /// The `rayib` module provides access to the raylib.h functions.
-module popka.rl.raylib;
+module parin.rl.raylib;
 
 // import core.stdc.config;
 // import core.stdc.stdarg;

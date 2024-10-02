@@ -1,5 +1,5 @@
-/// This example shows how to use the timer structure of Popka.
-import popka;
+/// This example shows how to use the timer structure of Parin.
+import parin;
 
 // The game variables.
 auto counter = 0;

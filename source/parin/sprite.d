@@ -2,7 +2,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
@@ -10,9 +10,9 @@
 // TODO: Update all the doc comments here.
 
 /// The `sprite` module provides a simple and flexible sprite.
-module popka.sprite;
+module parin.sprite;
 
-import popka.engine;
+import parin.engine;
 
 @safe:
 

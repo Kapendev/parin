@@ -2,14 +2,14 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
 // TODO: Update all the doc comments here.
 
 /// The `scene` module provides a simple scene manager.
-module popka.scene;
+module parin.scene;
 
 import stdc = joka.stdc;
 import joka.types;

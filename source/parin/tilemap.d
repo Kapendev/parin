@@ -2,7 +2,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
@@ -10,10 +10,10 @@
 // TODO: Update all the doc comments here.
 
 /// The `tilemap` module provides a simple and fast tile map.
-module popka.tilemap;
+module parin.tilemap;
 
 import joka.ascii;
-import popka.engine;
+import parin.engine;
 public import joka.containers;
 public import joka.faults;
 public import joka.math;

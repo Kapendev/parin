@@ -1,5 +1,5 @@
-/// This example shows how to create a simple game with Popka.
-import popka;
+/// This example shows how to create a simple game with Parin.
+import parin;
 
 // The game variables.
 auto player = Rect(16, 16);

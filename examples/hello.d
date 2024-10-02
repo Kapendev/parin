@@ -1,5 +1,5 @@
-/// This example serves as a classic hello-world program, introducing the fundamental structure of a Popka program.
-import popka;
+/// This example serves as a classic hello-world program, introducing the fundamental structure of a Parin program.
+import parin;
 
 // The ready function. This is called once when the game starts.
 void ready() {

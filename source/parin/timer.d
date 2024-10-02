@@ -2,14 +2,14 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
 // TODO: Update all the doc comments here.
 
 /// The `timer` module provides a simple and extensible timer.
-module popka.timer;
+module parin.timer;
 
 import joka.math;
 

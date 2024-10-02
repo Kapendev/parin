@@ -2,7 +2,7 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
@@ -10,10 +10,10 @@
 // TODO: Update all the doc comments here.
 
 /// The `dialogue` module provides a simple and versatile dialogue system.
-module popka.dialogue;
+module parin.dialogue;
 
 import joka.ascii;
-import popka.engine;
+import parin.engine;
 public import joka.containers;
 public import joka.faults;
 public import joka.types;

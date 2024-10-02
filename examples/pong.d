@@ -1,5 +1,5 @@
-/// This example shows how to create a pong-like game with Popka.
-import popka;
+/// This example shows how to create a pong-like game with Parin.
+import parin;
 
 // The game variables.
 auto gameCounter = 0;

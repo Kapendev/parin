@@ -1,5 +1,5 @@
-/// This example shows how to use the camera structure of Popka.
-import popka;
+/// This example shows how to use the camera structure of Parin.
+import parin;
 
 // The game variables.
 auto camera = Camera(0, -14);

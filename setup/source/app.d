@@ -12,7 +12,7 @@ enum dubFile = buildPath(".", "dub.json");
 enum dubLockFile = buildPath(".", "dub.selections.json");
 enum gitignoreFile = buildPath(".", ".gitignore");
 
-enum appFileContent = `import popka;
+enum appFileContent = `import parin;
 
 void ready() {
     lockResolution(320, 180);
@@ -30,13 +30,13 @@ mixin runGame!(ready, update, finish);
 
 enum dubFileContent = `{
     "name" : "game",
-    "description" : "A game made with Popka.",
+    "description" : "A game made with Parin.",
     "authors" : ["Name"],
     "copyright" : "Copyright © 2024, Name",
     "license" : "proprietary",
     "dependencies": {
         "joka": "*",
-        "popka": "*"
+        "parin": "*"
     },
     "configurations": [
         {

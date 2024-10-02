@@ -2,15 +2,15 @@
 // Copyright 2024 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
-// Project: https://github.com/Kapendev/popka
+// Project: https://github.com/Kapendev/parin
 // Version: v0.0.23
 // ---
 
 /// The `rl` module provides access to the raylib library.
-module popka.rl;
+module parin.rl;
 
-public import popka.rl.raylib;
-public import popka.rl.rlgl;
+public import parin.rl.raylib;
+public import parin.rl.rlgl;
 
 version (WebAssembly) {
     @nogc nothrow extern(C):

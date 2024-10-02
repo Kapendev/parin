@@ -1,5 +1,5 @@
-/// This example shows how to use the Popka dialogue system.
-import popka;
+/// This example shows how to use the Parin dialogue system.
+import parin;
 
 // The game variables.
 auto dialogue = Dialogue();
