@@ -105,6 +105,7 @@ lib*
 int main(string[] args) {
     auto isDubProject = exists(dubFile);
     auto isFirstRun = !exists(assetsDir);
+    auto canDownloadLibs = true;
 
     // Sometimes I remove the app.d file and this makes a new one lol.
     // Also raylib-d:install does not like it when you don't have one.
@@ -116,9 +117,19 @@ int main(string[] args) {
         }
     }
 
-    // Use the raylib-d script to download the raylib library files.
+    // User input stuff.
     if (isDubProject) {
-        writeln("Simply say \"yes\" to all prompts.\n");
+        auto arg = (args.length == 2) ? args[1] : "";
+        if (arg.length == 0) {
+            write("Would you like to download the raylib libraries? [Y/n] ");
+            arg = readln().strip();
+        }
+        canDownloadLibs = arg != "N" && arg != "n";
+    }
+
+    // Use the raylib-d script to download the raylib library files.
+    if (isDubProject && canDownloadLibs) {
+        writeln("Say \"yes\" to all prompts.\n");
         auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
         if (dub1 != 0) {
             if (!isFirstRun) {
