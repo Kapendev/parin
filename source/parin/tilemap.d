@@ -7,6 +7,9 @@
 // ---
 
 // TODO: Think about gaps in an atlas texture.
+// TODO: Think about how to get the position of a tile.
+// TODO: Think about maybe adding a texture id to things like sprites and tile maps.
+// TODO: Add simple collision check in the tile map example.
 // TODO: Update all the doc comments here.
 
 /// The `tilemap` module provides a simple and fast tile map.
@@ -29,6 +32,8 @@ struct Tile {
 
 struct TileMap {
     Grid!short data;
+    Sz estimatedMaxRowCount;
+    Sz estimatedMaxColCount;
     int tileWidth;
     int tileHeight;
     alias data this;
@@ -46,11 +51,11 @@ struct TileMap {
     }
 
     int width() {
-        return cast(int) (colCount * tileWidth);
+        return cast(int) (estimatedMaxColCount * tileWidth);
     }
 
     int height() {
-        return cast(int) (rowCount * tileHeight);
+        return cast(int) (estimatedMaxRowCount * tileHeight);
     }
 
     /// Returns the size of the tile map.
@@ -59,44 +64,26 @@ struct TileMap {
     }
 
     Fault parse(IStr csv, int tileWidth, int tileHeight) {
-        data.clear();
-        this.tileWidth = 0;
-        this.tileHeight = 0;
-
-        if (csv.length == 0) {
-            return Fault.invalid;
-        }
-
-        auto view = csv;
-        auto newRowCount = 0;
-        auto newColCount = 0;
-        while (view.length != 0) {
-            auto line = view.skipLine();
-            newRowCount += 1;
-            newColCount = 0;
-            while (line.length != 0) {
-                auto value = line.skipValue(',');
-                newColCount += 1;
-            }
-        }
-        resize(newRowCount, newColCount);
-
-        view = csv;
-        foreach (row; 0 .. newRowCount) {
-            auto line = view.skipLine();
-            foreach (col; 0 .. newColCount) {
-                auto value = line.skipValue(',').toSigned();
-                if (value.isNone) {
-                    data.clear();
-                    this.tileWidth = 0;
-                    this.tileHeight = 0;
-                    return Fault.invalid;
-                }
-                data[row, col] = cast(short) value.get();
-            }
-        }
+        if (csv.length == 0) return Fault.invalid;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
+        this.estimatedMaxRowCount = 0;
+        this.estimatedMaxColCount = 0;
+        this.data.fill(-1);
+        auto view = csv;
+        while (view.length != 0) {
+            estimatedMaxRowCount += 1;
+            estimatedMaxColCount = 0;
+            if (estimatedMaxRowCount > maxRowCount) return Fault.invalid;
+            auto line = view.skipLine();
+            while (line.length != 0) {
+                estimatedMaxColCount += 1;
+                if (estimatedMaxColCount > maxColCount) return Fault.invalid;
+                auto tile = line.skipValue(',').toSigned();
+                if (tile.isNone) return Fault.invalid;
+                data[estimatedMaxRowCount - 1, estimatedMaxColCount - 1] = cast(short) tile.get();
+            }
+        }
         return Fault.none;
     }
 }
