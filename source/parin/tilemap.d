@@ -7,9 +7,8 @@
 // ---
 
 // TODO: Think about gaps in an atlas texture.
-// TODO: Think about how to get the position of a tile.
-// TODO: Think about maybe adding a texture id to things like sprites and tile maps.
 // TODO: Add simple collision check in the tile map example.
+// TODO: Think about the tile struct a bit.
 // TODO: Update all the doc comments here.
 
 /// The `tilemap` module provides a simple and fast tile map.
@@ -25,9 +24,23 @@ public import joka.types;
 @safe:
 
 struct Tile {
-    int id;
+    Sz id;
     int width;
     int height;
+
+    @safe @nogc nothrow:
+
+    Sz row(Sz colCount) {
+        return id / colCount;
+    }
+
+    Sz col(Sz colCount) {
+        return id % colCount;
+    }
+
+    Rect area(Sz colCount) {
+        return Rect(col(colCount) * width, row(colCount) * height, width, height);
+    }
 }
 
 struct TileMap {
@@ -38,16 +51,11 @@ struct TileMap {
     int tileHeight;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Returns true if the tile map has not been loaded.
     bool isEmpty() {
         return data.length == 0;
-    }
-
-    /// Returns the tile size of the tile map.
-    Vec2 tileSize() {
-        return Vec2(tileWidth, tileHeight);
     }
 
     int width() {
@@ -61,6 +69,11 @@ struct TileMap {
     /// Returns the size of the tile map.
     Vec2 size() {
         return Vec2(width, height);
+    }
+
+    /// Returns the tile size of the tile map.
+    Vec2 tileSize() {
+        return Vec2(tileWidth, tileHeight);
     }
 
     Fault parse(IStr csv, int tileWidth, int tileHeight) {
@@ -88,6 +101,10 @@ struct TileMap {
     }
 }
 
+Vec2 findTilePosition(TileMap map, Vec2 position, Sz row, Sz col, DrawOptions options = DrawOptions()) {
+    return Vec2(position.x + col * map.tileWidth * options.scale.x, position.y + row * map.tileHeight * options.scale.y);
+}
+
 Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
     auto value = TileMap();
     auto fault = value.parse(csv, tileWidth, tileHeight);
@@ -106,59 +123,37 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
 }
 
 void drawTile(Texture texture, Tile tile, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto gridWidth = texture.width / tile.width;
-    auto gridHeight = texture.height / tile.height;
-    if (gridWidth == 0 || gridHeight == 0) {
-        return;
-    }
-    auto row = tile.id / gridWidth;
-    auto col = tile.id % gridWidth;
-    auto area = Rect(col * tile.width, row * tile.height, tile.width, tile.height);
-    drawTextureArea(texture, area, position, options);
+    drawTextureArea(texture, tile.area(texture.width / tile.width), position, options);
 }
 
 void drawTile(TextureId texture, Tile tile, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTile(texture.getOr(), tile, position, options);
 }
 
-void drawTileMap(Texture texture, TileMap tileMap, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMap(Texture texture, TileMap map, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
     auto area = camera.area;
     auto topLeft = area.topLeftPoint;
     auto bottomRight = area.bottomRightPoint;
-    auto targetTileWidth = cast(int) (tileMap.tileWidth * options.scale.x);
-    auto targetTileHeight = cast(int) (tileMap.tileHeight * options.scale.y);
-    auto targetTileSize = Vec2(targetTileWidth, targetTileHeight);
 
-    auto row1 = 0;
-    auto col1 = 0;
-    auto row2 = 0;
-    auto col2 = 0;
-    if (camera.isAttached) {
-        row1 = cast(int) floor(clamp((topLeft.y - position.y) / targetTileHeight, 0, tileMap.rowCount));
-        col1 = cast(int) floor(clamp((topLeft.x - position.x) / targetTileWidth, 0, tileMap.colCount));
-        row2 = cast(int) floor(clamp((bottomRight.y - position.y) / targetTileHeight + 1, 0, tileMap.rowCount));
-        col2 = cast(int) floor(clamp((bottomRight.x - position.x) / targetTileWidth + 1, 0, tileMap.colCount));
-    } else {
-        row1 = cast(int) 0;
-        col1 = cast(int) 0;
-        row2 = cast(int) tileMap.rowCount;
-        col2 = cast(int) tileMap.colCount;
-    }
+    auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
+    auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
 
-    if (row1 == row2 || col1 == col2) {
-        return;
-    }
+    auto row1 = cast(int) floor(clamp((topLeft.y - position.y) / targetTileHeight, 0, map.rowCount));
+    auto col1 = cast(int) floor(clamp((topLeft.x - position.x) / targetTileWidth, 0, map.colCount));
+    auto row2 = cast(int) floor(clamp((bottomRight.y - position.y) / targetTileHeight + 1, 0, map.rowCount));
+    auto col2 = cast(int) floor(clamp((bottomRight.x - position.x) / targetTileWidth + 1, 0, map.colCount));
+    if (row1 == row2 || col1 == col2) return;
 
     foreach (row; row1 .. row2) {
         foreach (col; col1 .. col2) {
-            if (tileMap[row, col] == -1) continue;
-            auto tile = Tile(tileMap[row, col], tileMap.tileWidth, tileMap.tileHeight);
-            auto tilePosition = position + Vec2(col, row) * targetTileSize;
+            if (map[row, col] == -1) continue;
+            auto tile = Tile(map[row, col], map.tileWidth, map.tileHeight);
+            auto tilePosition = position + Vec2(col * targetTileWidth, row * targetTileHeight);
             drawTile(texture, tile, tilePosition, options);
         }
     }
 }
 
-void drawTileMap(TextureId texture, TileMap tileMap, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
-    drawTileMap(texture.getOr(), tileMap, position, camera, options);
+void drawTileMap(TextureId texture, TileMap map, Vec2 position, Camera camera, DrawOptions options = DrawOptions()) {
+    drawTileMap(texture.getOr(), map, position, camera, options);
 }

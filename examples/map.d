@@ -3,7 +3,10 @@ import parin;
 
 // The game variables.
 auto atlas = TextureId();
-auto tileMap = TileMap();
+auto map = TileMap();
+auto playerTile = Tile(145, 16, 16);
+auto playerPosition = Vec2();
+auto playerSpeed = Vec2(120);
 
 void ready() {
     lockResolution(320, 180);
@@ -11,12 +14,15 @@ void ready() {
     // Load the `atlas.png` file from the assets folder.
     atlas = loadTexture("atlas.png");
     // Parse the tile map CSV file.
-    tileMap.parse("145,0,65\n21,22,23\n37,38,39\n53,54,55", 16, 16);
+    map.parse("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55", 16, 16);
 }
 
 bool update(float dt) {
+    playerPosition += wasd * playerSpeed * Vec2(dt);
     // Draw the tile map.
-    drawTileMap(atlas, tileMap, Vec2(), Camera(), DrawOptions(Vec2(2)));
+    auto options = DrawOptions(Vec2(2));
+    drawTileMap(atlas, map, Vec2(), Camera(), options);
+    drawTile(atlas, playerTile, playerPosition, options);
     return false;
 }
 
