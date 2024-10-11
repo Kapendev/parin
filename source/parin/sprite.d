@@ -90,6 +90,7 @@ struct Sprite {
     ushort atlasTop;
     float frameProgress = 0.0f;
     SpriteAnimation animation;
+    Vec2 position;
 
     @safe:
 
@@ -132,9 +133,19 @@ struct Sprite {
         if (animation.frameCount <= 1) return;
         frameProgress = fmod(frameProgress + animation.frameSpeed * dt, cast(float) animation.frameCount);
     }
+
+    /// Moves the sprite to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float speed) {
+        position = position.moveTo(target, Vec2(speed));
+    }
+
+    /// Moves the sprite to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float slowdown) {
+        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
+    }
 }
 
-void drawSprite(Texture texture, Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     if (sprite.width == 0 || sprite.height == 0) return;
 
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
@@ -146,9 +157,9 @@ void drawSprite(Texture texture, Sprite sprite, Vec2 position, DrawOptions optio
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;
     auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
-    drawTextureArea(texture, area, position, options);
+    drawTextureArea(texture, area, sprite.position, options);
 }
 
-void drawSprite(TextureId texture, Sprite sprite, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawSprite(texture.getOr(), sprite, position, options);
+void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
+    drawSprite(texture.getOr(), sprite, options);
 }

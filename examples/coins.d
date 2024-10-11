@@ -3,7 +3,7 @@ import parin;
 
 // The game variables.
 auto player = Rect(16, 16);
-auto playerSpeed = Vec2(120);
+auto playerSpeed = 120;
 
 auto coins = SparseList!Rect();
 auto coinSize = Vec2(8);
@@ -33,7 +33,7 @@ bool update(float dt) {
     if (Keyboard.right.isDown || 'd'.isDown) playerDirection.x = 1;
     if (Keyboard.up.isDown || 'w'.isDown)  playerDirection.y = -1;
     if (Keyboard.down.isDown || 's'.isDown) playerDirection.y = 1;
-    player.position += playerDirection * playerSpeed * Vec2(dt);
+    player.position += playerDirection * Vec2(playerSpeed * dt);
 
     // Check if the player is touching some coins and remove those coins.
     foreach (id; coins.ids) {

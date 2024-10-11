@@ -4,7 +4,7 @@ import parin;
 // The game variables.
 auto camera = Camera(0, -14);
 auto cameraTarget = Vec2(0, -14);
-auto cameraSpeed = Vec2(120);
+auto cameraSpeed = 120;
 
 void ready() {
     lockResolution(320, 180);
@@ -12,7 +12,7 @@ void ready() {
 
 bool update(float dt) {
     // Move the camera.
-    cameraTarget += wasd * cameraSpeed * Vec2(dt);
+    cameraTarget += wasd * Vec2(cameraSpeed * dt);
     camera.followPositionWithSlowdown(cameraTarget, 0.15);
 
     // Draw the game world.

@@ -3,11 +3,8 @@ import parin;
 
 // The game variables.
 auto atlas = TextureId();
-
 auto sprite = Sprite(16, 16, 0, 128);
-auto spritePosition = Vec2();
 auto spriteFlip = Flip.none;
-
 auto idleAnimation = SpriteAnimation(0, 1, 6);
 auto walkAnimation = SpriteAnimation(0, 2, 6);
 
@@ -25,10 +22,10 @@ bool update(float dt) {
     sprite.update(dt);
 
     // Get some basic info about the mouse.
-    auto mouseDistance = spritePosition.distanceTo(mouseScreenPosition);
-    auto mouseDirection = spritePosition.directionTo(mouseScreenPosition);
+    auto mouseDistance = sprite.position.distanceTo(mouseScreenPosition);
+    auto mouseDirection = sprite.position.directionTo(mouseScreenPosition);
     // Move the sprite around in a smooth way.
-    spritePosition = spritePosition.moveToWithSlowdown(mouseScreenPosition, Vec2(dt), 0.2);
+    sprite.followPositionWithSlowdown(mouseScreenPosition, 0.2);
 
     // Play the right animation.
     auto isWaiting = mouseDistance < 0.2;
@@ -59,7 +56,7 @@ bool update(float dt) {
     options.scale = Vec2(2);
 
     // Draw the sprite, the mouse position and some info.
-    drawSprite(atlas, sprite, spritePosition, options);
+    drawSprite(atlas, sprite, options);
     drawVec2(mouseScreenPosition, 8, isWaiting ? blank : white.alpha(150));
     drawDebugText("Press 1, 2 or 3 to change the character.", Vec2(8));
     return false;

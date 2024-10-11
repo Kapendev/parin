@@ -4,12 +4,12 @@ import parin;
 // The game variables.
 auto gameCounter = 0;
 
-auto paddle1 = Rect(2, 30);
-auto paddle2 = Rect(2, 30);
+auto paddle1 = Rect(2, 25);
+auto paddle2 = Rect(2, 25);
 
 auto ball = Rect(5, 5);
-auto ballSpeed = Vec2(120);
 auto ballDirection = Vec2(1, 1);
+auto ballSpeed = 120;
 
 void ready() {
     lockResolution(320, 180);
@@ -28,7 +28,7 @@ bool update(float dt) {
     // A centered rectangle is used for collision checking and drawing.
 
     // Move the ball.
-    ball.position += ballDirection * ballSpeed * Vec2(dt);
+    ball.position += ballDirection * Vec2(ballSpeed * dt);
     // Check if the ball exited the screen from the left or right side.
     if (ball.centerArea.leftPoint.x < 0) {
         ball.position = resolution * Vec2(0.5);
@@ -51,13 +51,13 @@ bool update(float dt) {
     }
 
     // Move paddle1.
-    paddle1.position.y = clamp(paddle1.position.y + wasd.y * ballSpeed.y * dt, paddle1.size.y * 0.5f, resolutionHeight - paddle1.size.y * 0.5f);
+    paddle1.position.y = clamp(paddle1.position.y + wasd.y * ballSpeed * dt, paddle1.size.y * 0.5f, resolutionHeight - paddle1.size.y * 0.5f);
     // Move paddle2.
     auto paddle2Target = ball.position.y;
     if (ballDirection.x < 1) {
         paddle2Target = paddle2.position.y;
     }
-    paddle2.position.y = paddle2.position.y.moveTo(clamp(paddle2Target, paddle2.size.y * 0.5f, resolutionHeight - paddle2.size.y * 0.5f), ballSpeed.y * dt);
+    paddle2.position.y = paddle2.position.y.moveTo(clamp(paddle2Target, paddle2.size.y * 0.5f, resolutionHeight - paddle2.size.y * 0.5f), ballSpeed * dt);
 
     // Check for paddle and ball collisions.
     if (paddle1.centerArea.hasIntersection(ball.centerArea)) {
