@@ -19,17 +19,34 @@ void ready() {
 }
 
 bool update(float dt) {
-    tile.position += wasd * Vec2(tileSpeed * dt);
-    camera.followPosition(tile.position, tileSpeed);
-    if (wasd.x != 0) tileLookDirection = cast(int) wasd.normalize.round.x;
-
     // Make some options.
     auto mapOptions = DrawOptions(Hook.center);
     mapOptions.scale = Vec2(2);
     auto tileOptions = mapOptions;
     tileOptions.flip = tileLookDirection > 0 ? Flip.x : Flip.none;
 
-    // Draw the tile map.
+    // Move tile and camera.
+    tile.position += wasd * Vec2(tileSpeed * dt);
+    camera.followPosition(tile.position, tileSpeed);
+    if (wasd.x != 0) tileLookDirection = cast(int) wasd.normalize.round.x;
+    // Check for collisions.
+    auto colRow1 = map.firstMapPosition(camera.area.topLeftPoint, mapOptions);
+    auto colRow2 = map.lastMapPosition(camera.area.bottomRightPoint, mapOptions);
+    foreach (row; colRow1.y .. colRow2.y) {
+        foreach (col; colRow1.x .. colRow2.x) {
+            if (map[row, col] == -1) continue;
+            // TODO: Yeah, maybe change it to something better...
+            auto mapTileRect = Rect(map.worldPosition(row, col, mapOptions), Vec2(16) * mapOptions.scale);
+            auto myTileRect = Rect(tile.position, tile.size * mapOptions.scale).area(Hook.center);
+            if (mapTileRect.hasIntersection(myTileRect)) {
+                tile.position -= wasd * Vec2(tileSpeed * dt);
+                camera.followPosition(tile.position, tileSpeed);
+                break;
+            }
+        }
+    }
+
+    // Draw game.
     camera.attach();
     drawTileMap(atlas, map, camera, mapOptions);
     drawTile(atlas, tile, tileOptions);

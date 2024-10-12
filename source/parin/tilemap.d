@@ -31,6 +31,10 @@ struct Tile {
 
     @safe:
 
+    Vec2 size() {
+        return Vec2(width, height);
+    }
+
     Sz row(Sz colCount) {
         return id / colCount;
     }
@@ -129,10 +133,38 @@ struct TileMap {
     void followPositionWithSlowdown(Vec2 target, float slowdown) {
         position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
     }
-}
 
-Vec2 findTilePosition(TileMap map, Vec2 position, Sz row, Sz col, DrawOptions options = DrawOptions()) {
-    return Vec2(position.x + col * map.tileWidth * options.scale.x, position.y + row * map.tileHeight * options.scale.y);
+    /// Returns the top left world position of a tile.
+    Vec2 worldPosition(Sz row, Sz col, DrawOptions options = DrawOptions()) {
+        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
+        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
+        auto temp = Rect(
+            position.x + col * targetTileWidth,
+            position.y + row * targetTileHeight,
+            targetTileWidth,
+            targetTileHeight,
+        );
+        return temp.area(options.hook).position;
+    }
+
+    IVec2 firstMapPosition(Vec2 topLeftWorldPosition, DrawOptions options = DrawOptions()) {
+        auto result = IVec2();
+        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
+        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
+        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, estimatedMaxRowCount));
+        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, estimatedMaxColCount));
+        return result;
+    }
+
+    IVec2 lastMapPosition(Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
+        auto result = IVec2();
+        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
+        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
+        auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
+        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, estimatedMaxRowCount));
+        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, estimatedMaxColCount));
+        return result;
+    }
 }
 
 Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
@@ -161,21 +193,15 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 }
 
 void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-    auto area = camera.area;
-    auto topLeft = area.topLeftPoint;
-    auto bottomRight = area.bottomRightPoint;
-
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
+    auto cameraArea = camera.area;
+    auto colRow1 = map.firstMapPosition(cameraArea.topLeftPoint, options);
+    auto colRow2 = map.lastMapPosition(cameraArea.bottomRightPoint, options);
+    if (colRow1.x == colRow2.x || colRow1.y == colRow2.y) return;
 
-    auto row1 = cast(int) floor(clamp((topLeft.y - map.position.y) / targetTileHeight, 0, map.rowCount));
-    auto col1 = cast(int) floor(clamp((topLeft.x - map.position.x) / targetTileWidth, 0, map.colCount));
-    auto row2 = cast(int) floor(clamp((bottomRight.y - map.position.y) / targetTileHeight + 2, 0, map.rowCount));
-    auto col2 = cast(int) floor(clamp((bottomRight.x - map.position.x) / targetTileWidth + 2, 0, map.colCount));
-    if (row1 == row2 || col1 == col2) return;
-
-    foreach (row; row1 .. row2) {
-        foreach (col; col1 .. col2) {
+    foreach (row; colRow1.y .. colRow2.y) {
+        foreach (col; colRow1.x .. colRow2.x) {
             if (map[row, col] == -1) continue;
             auto tile = Tile(map[row, col], map.tileWidth, map.tileHeight);
             tile.position = map.position + Vec2(col * targetTileWidth, row * targetTileHeight);
