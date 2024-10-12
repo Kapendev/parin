@@ -1,5 +1,6 @@
 /// This example shows how to use the Parin dialogue system.
 import parin;
+import parin.dialogue;
 
 // The game variables.
 auto dialogue = Dialogue();

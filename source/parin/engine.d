@@ -24,7 +24,7 @@ public import joka.faults;
 public import joka.math;
 public import joka.types;
 
-@safe:
+@safe @nogc nothrow:
 
 EngineState engineState;
 
@@ -160,7 +160,7 @@ struct DrawOptions {
     Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
     Flip flip      = Flip.none;    /// An value representing flipping orientations.
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Initializes the options with the given scale.
     this(Vec2 scale) {
@@ -196,7 +196,7 @@ struct Camera {
     bool isAttached;       /// Indicates whether the camera is currently in use.
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Initializes the camera with the given position and optional centering.
     this(float x, float y, bool isCentered = false) {
@@ -210,9 +210,59 @@ struct Camera {
         return isCentered ? Hook.center : Hook.topLeft;
     }
 
+    /// Returns the origin of the camera.
+    Vec2 origin() {
+        return Rect(position, resolution).origin(hook);
+    }
+
     /// Returns the area covered by the camera.
     Rect area() {
         return Rect(position, resolution).area(hook);
+    }
+
+    /// Returns the top left point of the camera.
+    Vec2 topLeftPoint() {
+        return area.topLeftPoint;
+    }
+
+    /// Returns the top point of the camera.
+    Vec2 topPoint() {
+        return area.topPoint;
+    }
+
+    /// Returns the top right point of the camera.
+    Vec2 topRightPoint() {
+        return area.topRightPoint;
+    }
+
+    /// Returns the left point of the camera.
+    Vec2 leftPoint() {
+        return area.leftPoint;
+    }
+
+    /// Returns the center point of the camera.
+    Vec2 centerPoint() {
+        return area.centerPoint;
+    }
+
+    /// Returns the right point of the camera.
+    Vec2 rightPoint() {
+        return area.rightPoint;
+    }
+
+    /// Returns the bottom left point of the camera.
+    Vec2 bottomLeftPoint() {
+        return area.bottomLeftPoint;
+    }
+
+    /// Returns the bottom point of the camera.
+    Vec2 bottomPoint() {
+        return area.bottomPoint;
+    }
+
+    /// Returns the bottom right point of the camera.
+    Vec2 bottomRightPoint() {
+        return area.bottomRightPoint;
     }
 
     /// Moves the camera to follow the target position at the specified speed.
@@ -243,7 +293,7 @@ struct Camera {
         }
         isAttached = true;
         auto temp = this.toRl();
-        if (isPixelPerfect) {
+        if (isPixelSnapped || isPixelPerfect) {
             temp.target.x = floor(temp.target.x);
             temp.target.y = floor(temp.target.y);
             temp.offset.x = floor(temp.offset.x);
@@ -267,7 +317,7 @@ struct TextId {
     GenerationalIndex data;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Returns the length of the text associated with the resource identifier.
     Sz length() {
@@ -304,7 +354,7 @@ struct TextId {
 struct Texture {
     rl.Texture2D data;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Checks if the texture is not loaded.
     bool isEmpty() {
@@ -349,7 +399,7 @@ struct TextureId {
     GenerationalIndex data;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Returns the width of the texture associated with the resource identifier.
     int width() {
@@ -398,7 +448,7 @@ struct Font {
     int runeSpacing; /// The spacing between individual characters.
     int lineSpacing; /// The spacing between lines of text.
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Checks if the font is not loaded.
     bool isEmpty() {
@@ -433,7 +483,7 @@ struct FontId {
     GenerationalIndex data;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Returns the spacing between individual characters of the font associated with the resource identifier.
     int runeSpacing() {
@@ -480,7 +530,7 @@ struct FontId {
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Checks if the sound is not loaded.
     bool isEmpty() {
@@ -575,7 +625,7 @@ struct SoundId {
     GenerationalIndex data;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Returns the current playback time of the sound associated with the resource identifier.
     float time() {
@@ -621,7 +671,7 @@ struct SoundId {
 struct Viewport {
     rl.RenderTexture2D data;
 
-    @safe:
+    @safe @nogc nothrow:
 
     /// Checks if the viewport is not loaded.
     bool isEmpty() {
@@ -663,6 +713,7 @@ struct Viewport {
 
 struct EngineFlags {
     bool isUpdating;
+    bool isPixelSnapped;
     bool isPixelPerfect;
     bool isCursorVisible;
 }
@@ -678,7 +729,7 @@ struct EngineResourceGroup(T) {
     GenerationalList!LStr names;
     GenerationalList!Sz tags;
 
-    @safe:
+    @safe @nogc nothrow:
 
     Sz length() {
         return data.length;
@@ -741,7 +792,7 @@ struct EngineResources {
     EngineResourceGroup!Font fonts;
     EngineResourceGroup!Sound sounds;
 
-    @safe:
+    @safe @nogc nothrow:
 
     void free(Sz tag = 0) {
         texts.free(tag);
@@ -757,7 +808,7 @@ struct EngineViewport {
     int targetHeight;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     bool isLocking() {
         return (targetWidth != 0 && targetHeight != 0) && (data.width != targetWidth && data.height != targetHeight);
@@ -792,7 +843,7 @@ struct EngineState {
     Filter defaultFilter;
     Sz tickCount;
 
-    @safe:
+    @safe @nogc nothrow:
 
     void free() {
         debug {
@@ -1170,8 +1221,9 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
 /// You should avoid calling this function manually.
 @trusted
 void updateWindow(bool function(float dt) updateFunc) {
-    static bool function(float _dt) @trusted _updateFunc;
+    static bool function(float _dt) @trusted @nogc nothrow _updateFunc;
 
+    @trusted @nogc nothrow
     static bool _updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
@@ -1193,10 +1245,9 @@ void updateWindow(bool function(float dt) updateFunc) {
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
             if (isPixelPerfect) {
-                // TODO: Make an equals function in Joka that can change the epsilon value.
                 auto roundMinRatio = round(minRatio);
                 auto floorMinRation = floor(minRatio);
-                minRatio = (abs(minRatio - roundMinRatio) < 0.015f) ? roundMinRatio : floorMinRation;
+                minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
             }
 
             auto targetSize = minSize * Vec2(minRatio);
@@ -1253,7 +1304,7 @@ void updateWindow(bool function(float dt) updateFunc) {
     }
 
     // Maybe bad idea, but makes life of no-attribute people easier.
-    _updateFunc = cast(bool function(float _dt) @trusted) updateFunc;
+    _updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
     engineState.flags.isUpdating = true;
 
     version(WebAssembly) {
@@ -1282,6 +1333,21 @@ void closeWindow() {
     engineState.free();
     rl.CloseAudioDevice();
     rl.CloseWindow();
+}
+
+/// Returns true if the drawing is snapped to pixel coordinates.
+bool isPixelSnapped() {
+    return engineState.flags.isPixelSnapped;
+}
+
+/// Sets whether drawing should be snapped to pixel coordinates.
+void setIsPixelSnapped(bool value) {
+    engineState.flags.isPixelSnapped = value;
+}
+
+/// Toggles whether drawing is snapped to pixel coordinates on or off.
+void toggleIsPixelSnapped() {
+    setIsPixelSnapped(!isPixelSnapped);
 }
 
 /// Returns true if the drawing is done in a pixel perfect way.
@@ -1490,10 +1556,9 @@ Vec2 mouseScreenPosition() {
         auto window = windowSize;
         auto minRatio = min(window.x / engineState.viewport.width, window.y / engineState.viewport.height);
         if (isPixelPerfect) {
-            // TODO: Make an equals function in Joka that can change the epsilon value.
             auto roundMinRatio = round(minRatio);
             auto floorMinRation = floor(minRatio);
-            minRatio = (abs(minRatio - roundMinRatio) < 0.015f) ? roundMinRatio : floorMinRation;
+            minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
         }
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
         // We use touch because it works on desktop, web and mobile.
@@ -1781,7 +1846,7 @@ void updateSound(SoundId sound) {
 /// Draws a rectangle with the specified area and color.
 @trusted
 void drawRect(Rect area, Color color = white) {
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.DrawRectanglePro(area.floor().toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
     } else {
         rl.DrawRectanglePro(area.toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
@@ -1796,7 +1861,7 @@ void drawVec2(Vec2 point, float size, Color color = white) {
 /// Draws a circle with the specified area and color.
 @trusted
 void drawCirc(Circ area, Color color = white) {
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
     } else {
         rl.DrawCircleV(area.position.toRl(), area.radius, color.toRl());
@@ -1806,7 +1871,7 @@ void drawCirc(Circ area, Color color = white) {
 /// Draws a line with the specified area, thickness, and color.
 @trusted
 void drawLine(Line area, float size, Color color = white) {
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.DrawLineEx(area.a.floor().toRl(), area.b.floor().toRl(), size, color.toRl());
     } else {
         rl.DrawLineEx(area.a.toRl(), area.b.toRl(), size, color.toRl());
@@ -1839,7 +1904,7 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
     }
 
     auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.DrawTexturePro(
             texture.data,
             area.floor().toRl(),
@@ -1885,14 +1950,14 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
     } else {
         rl.rlTranslatef(position.x, position.y, 0.0f);
     }
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
     } else {
         rl.rlTranslatef(-origin.x, -origin.y, 0.0f);
@@ -1916,14 +1981,14 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     // TODO: Make it work with negative scale values.
     auto origin = Rect(measureTextSize(font, text)).origin(options.hook);
     rl.rlPushMatrix();
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
     } else {
         rl.rlTranslatef(position.x, position.y, 0.0f);
     }
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    if (isPixelPerfect) {
+    if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
     } else {
         rl.rlTranslatef(-origin.x, -origin.y, 0.0f);

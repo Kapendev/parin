@@ -40,7 +40,7 @@ struct DialogueUnit {
     LStr text;
     DialogueUnitKind kind;
 
-    @safe:
+    @safe @nogc nothrow:
 
     void free() {
         text.free();
@@ -52,7 +52,7 @@ struct DialogueValue {
     LStr name;
     long value;
 
-    @safe:
+    @safe @nogc nothrow:
 
     void free() {
         name.free();
@@ -60,7 +60,7 @@ struct DialogueValue {
     }
 }
 
-alias DialogueCommandRunner = void function(IStr[] args);
+alias DialogueCommandRunner = void function(IStr[] args) @trusted;
 
 struct Dialogue {
     List!DialogueUnit units;
@@ -69,7 +69,13 @@ struct Dialogue {
     IStr actor;
     Sz unitIndex;
 
-    @safe:
+    @trusted
+    void run(DialogueCommandRunner runner) {
+        runner(args);
+        update();
+    }
+
+    @safe @nogc nothrow:
 
     bool isEmpty() {
         return units.length == 0;
@@ -166,11 +172,6 @@ struct Dialogue {
 
     void pick(Sz i) {
         skip(i + 1);
-        update();
-    }
-
-    void run(DialogueCommandRunner runner) {
-        runner(args);
         update();
     }
 
@@ -330,6 +331,8 @@ struct Dialogue {
         reset();
     }
 }
+
+@safe @nogc nothrow:
 
 bool isValidDialogueUnitKind(char c) {
     foreach (kind; DialogueUnitKindChars) {

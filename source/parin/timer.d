@@ -13,7 +13,7 @@ module parin.timer;
 
 import joka.math;
 
-@safe:
+@safe @nogc nothrow:
 
 struct Timer {
     float time = 1.0f;
@@ -22,7 +22,7 @@ struct Timer {
     bool isPaused;
     bool canRepeat;
 
-    @safe:
+    @safe @nogc nothrow:
 
     this(float duration, bool canRepeat = false) {
         this.time = duration;

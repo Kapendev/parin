@@ -21,7 +21,7 @@ public import joka.faults;
 public import joka.math;
 public import joka.types;
 
-@safe:
+@safe @nogc nothrow:
 
 struct Tile {
     Sz id;
@@ -29,7 +29,7 @@ struct Tile {
     int height;
     Vec2 position;
 
-    @safe:
+    @safe @nogc nothrow:
 
     Vec2 size() {
         return Vec2(width, height);
@@ -67,13 +67,13 @@ struct TileMap {
     Vec2 position;
     alias data this;
 
-    @safe:
+    @safe @nogc nothrow:
 
     this(short value, int tileWidth, int tileHeight) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.estimatedMaxRowCount = data.maxRowCount;
-        this.estimatedMaxColCount = data.maxColCount;
+        this.estimatedMaxRowCount = maxRowCount;
+        this.estimatedMaxColCount = maxColCount;
         this.data.fill(value);
     }
 
@@ -134,7 +134,7 @@ struct TileMap {
         position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
     }
 
-    /// Returns the top left world position of a tile.
+    /// Returns the top left world position of a grid position.
     Vec2 worldPosition(Sz row, Sz col, DrawOptions options = DrawOptions()) {
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
@@ -147,7 +147,12 @@ struct TileMap {
         return temp.area(options.hook).position;
     }
 
-    IVec2 firstMapPosition(Vec2 topLeftWorldPosition, DrawOptions options = DrawOptions()) {
+    /// Returns the top left world position of a grid position.
+    Vec2 worldPosition(IVec2 gridPosition, DrawOptions options = DrawOptions()) {
+        return worldPosition(gridPosition.y, gridPosition.x, options);
+    }
+
+    IVec2 firstGridPosition(Vec2 topLeftWorldPosition, DrawOptions options = DrawOptions()) {
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
@@ -156,13 +161,44 @@ struct TileMap {
         return result;
     }
 
-    IVec2 lastMapPosition(Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
+    IVec2 lastGridPosition(Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
         auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
         result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, estimatedMaxRowCount));
         result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, estimatedMaxColCount));
+        return result;
+    }
+
+    auto gridPositions(Vec2 topLeftWorldPosition, Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
+        static struct Range {
+            IVec2 first;
+            IVec2 last;
+            IVec2 position;
+
+            bool empty() {
+                return position == last;
+            }
+            
+            IVec2 front() {
+                return position;
+            }
+            
+            void popFront() {
+                position.x += 1;
+                if (position.x >= TileMap.maxColCount) {
+                    position.x = first.x;
+                    position.y += 1;
+                }
+            }
+        }
+
+        auto result = Range(
+            firstGridPosition(topLeftWorldPosition, options),
+            lastGridPosition(bottomRightWorldPosition, options),
+        );
+        result.position = result.first;
         return result;
     }
 }
@@ -185,6 +221,7 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
 }
 
 void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
+    if (texture.isEmpty) return;
     drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
 }
 
@@ -195,9 +232,8 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
-    auto cameraArea = camera.area;
-    auto colRow1 = map.firstMapPosition(cameraArea.topLeftPoint, options);
-    auto colRow2 = map.lastMapPosition(cameraArea.bottomRightPoint, options);
+    auto colRow1 = map.firstGridPosition(camera.topLeftPoint, options);
+    auto colRow2 = map.lastGridPosition(camera.bottomRightPoint, options);
     if (colRow1.x == colRow2.x || colRow1.y == colRow2.y) return;
 
     foreach (row; colRow1.y .. colRow2.y) {

@@ -51,7 +51,7 @@ struct Scene2 {
             sceneManager.enter!Scene1();
         }
 
-        drawDebugText("Press enter to change scene.", resolution * Vec2(0.5), DrawOptions(Hook.center));
+        drawDebugText("Press space to change scene.", resolution * Vec2(0.5), DrawOptions(Hook.center));
         drawDebugText("Scene 2\nNo counter here.", Vec2(8));
         return false;
     }

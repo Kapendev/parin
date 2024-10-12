@@ -14,7 +14,7 @@ module parin.sprite;
 
 import parin.engine;
 
-@safe:
+@safe @nogc nothrow:
 
 struct SpriteAnimation {
     ubyte frameRow;
@@ -28,7 +28,7 @@ struct SpriteAnimationGroup2 {
     ubyte frameSpeed = 6;
     enum angleStep = 180.0f;
 
-    @safe:
+    @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -42,7 +42,7 @@ struct SpriteAnimationGroup4 {
     ubyte frameSpeed = 6;
     enum angleStep = 90.0f;
 
-    @safe:
+    @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         // NOTE: This is a hack to make things look better in simple cases.
@@ -61,7 +61,7 @@ struct SpriteAnimationGroup8 {
     ubyte frameSpeed = 6;
     enum angleStep = 45.0f;
 
-    @safe:
+    @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -75,7 +75,7 @@ struct SpriteAnimationGroup16 {
     ubyte frameSpeed = 6;
     enum angleStep = 22.5f;
 
-    @safe:
+    @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -92,7 +92,7 @@ struct Sprite {
     SpriteAnimation animation;
     Vec2 position;
 
-    @safe:
+    @safe @nogc nothrow:
 
     this(int width, int height, ushort atlasLeft, ushort atlasTop, SpriteAnimation animation = SpriteAnimation()) {
         this.width = width;

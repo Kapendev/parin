@@ -1258,7 +1258,6 @@ void OpenURL (const(char)* url); // Open URL with default system browser (if ava
 
 // NOTE: Following functions implemented in module [utils]
 //------------------------------------------------------------------
-void TraceLog (int logLevel, const(char)* text, ...); // Show trace log messages (LOG_DEBUG, LOG_INFO, LOG_WARNING, LOG_ERROR...)
 void SetTraceLogLevel (int logLevel); // Set the current threshold (minimum) log level
 void* MemAlloc (uint size); // Internal memory allocator
 void* MemRealloc (void* ptr, uint size); // Internal memory reallocator
@@ -1641,7 +1640,6 @@ const(char)* CodepointToUTF8 (int codepoint, int* utf8Size); // Encode one codep
 int TextCopy (char* dst, const(char)* src); // Copy one string to another, returns bytes copied
 bool TextIsEqual (const(char)* text1, const(char)* text2); // Check if two text string are equal
 uint TextLength (const(char)* text); // Get text length, checks for '\0' ending
-const(char)* TextFormat (const(char)* text, ...); // Text formatting with variables (sprintf() style)
 const(char)* TextSubtext (const(char)* text, int position, int length); // Get a piece of a text string
 char* TextReplace (char* text, const(char)* replace, const(char)* by); // Replace text string (WARNING: memory must be freed!)
 char* TextInsert (const(char)* text, const(char)* insert, int position); // Insert text in a position (WARNING: memory must be freed!)

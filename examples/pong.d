@@ -75,7 +75,6 @@ bool update(float dt) {
     drawRect(ball.centerArea);
     drawRect(paddle1.centerArea);
     drawRect(paddle2.centerArea);
-
     // Draw the counter.
     auto textOptions = DrawOptions(Hook.center);
     textOptions.scale = Vec2(2);

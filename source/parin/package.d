@@ -10,7 +10,6 @@ module parin;
 
 public import joka.ascii;
 public import joka.io;
-public import parin.dialogue;
 public import parin.engine;
 public import parin.scene;
 public import parin.sprite;

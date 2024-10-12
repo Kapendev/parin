@@ -4,7 +4,6 @@ import parin;
 // The game variables.
 auto player = Rect(16, 16);
 auto playerSpeed = 120;
-
 auto coins = SparseList!Rect();
 auto coinSize = Vec2(8);
 auto maxCoinCount = 8;

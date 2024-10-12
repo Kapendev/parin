@@ -19,38 +19,36 @@ void ready() {
 }
 
 bool update(float dt) {
-    // Make some options.
+    // Make the drawing options.
     auto mapOptions = DrawOptions(Hook.center);
     mapOptions.scale = Vec2(2);
     auto tileOptions = mapOptions;
     tileOptions.flip = tileLookDirection > 0 ? Flip.x : Flip.none;
 
-    // Move tile and camera.
+    // Move the tile and camera.
     tile.position += wasd * Vec2(tileSpeed * dt);
-    camera.followPosition(tile.position, tileSpeed);
+    camera.position = tile.position;
     if (wasd.x != 0) tileLookDirection = cast(int) wasd.normalize.round.x;
+
     // Check for collisions.
-    auto colRow1 = map.firstMapPosition(camera.area.topLeftPoint, mapOptions);
-    auto colRow2 = map.lastMapPosition(camera.area.bottomRightPoint, mapOptions);
-    foreach (row; colRow1.y .. colRow2.y) {
-        foreach (col; colRow1.x .. colRow2.x) {
-            if (map[row, col] == -1) continue;
-            // TODO: Yeah, maybe change it to something better...
-            auto mapTileRect = Rect(map.worldPosition(row, col, mapOptions), Vec2(16) * mapOptions.scale);
-            auto myTileRect = Rect(tile.position, tile.size * mapOptions.scale).area(Hook.center);
-            if (mapTileRect.hasIntersection(myTileRect)) {
-                tile.position -= wasd * Vec2(tileSpeed * dt);
-                camera.followPosition(tile.position, tileSpeed);
-                break;
-            }
+    auto collisionArea = Rect();
+    foreach (gridPosition; map.gridPositions(camera.topLeftPoint, camera.bottomRightPoint, mapOptions)) {
+        if (map[gridPosition] == -1) continue;
+        auto gridTileArea = Rect(map.worldPosition(gridPosition, mapOptions), Vec2(16) * mapOptions.scale);
+        while (gridTileArea.hasIntersection(Rect(tile.position, tile.size * mapOptions.scale).area(tileOptions.hook))) {
+            tile.position -= wasd * Vec2(dt);
+            camera.position = tile.position;
+            collisionArea = gridTileArea;
         }
     }
 
-    // Draw game.
+    // Draw the game.
     camera.attach();
     drawTileMap(atlas, map, camera, mapOptions);
     drawTile(atlas, tile, tileOptions);
+    drawRect(collisionArea, yellow.alpha(120));
     camera.detach();
+    drawDebugText("Move with arrow keys.", Vec2(8));
     return false;
 }
 
