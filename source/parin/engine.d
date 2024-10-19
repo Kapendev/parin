@@ -212,12 +212,12 @@ struct Camera {
 
     /// Returns the origin of the camera.
     Vec2 origin() {
-        return Rect(position, resolution).origin(hook);
+        return Rect(position, resolution / Vec2(scale)).origin(hook);
     }
 
     /// Returns the area covered by the camera.
     Rect area() {
-        return Rect(position, resolution).area(hook);
+        return Rect(position, resolution / Vec2(scale)).area(hook);
     }
 
     /// Returns the top left point of the camera.
@@ -1415,6 +1415,12 @@ void toggleIsFullscreen() {
     setIsFullscreen(!isFullscreen);
 }
 
+/// Returns true if the windows was resized.
+@trusted
+bool isWindowResized() {
+    return rl.IsWindowResized();
+}
+
 /// Returns the current background color.
 Color backgroundColor() {
     return engineState.backgroundColor;
@@ -1508,40 +1514,32 @@ Vec2 screenSize() {
 /// Returns the current window width.
 @trusted
 int windowWidth() {
-    return rl.GetScreenWidth();
+    if (isFullscreen) return screenWidth;
+    else return rl.GetScreenWidth();
 }
 
 /// Returns the current window height.
 @trusted
 int windowHeight() {
-    return rl.GetScreenHeight();
+    if (isFullscreen) return screenHeight;
+    else return rl.GetScreenHeight();
 }
 
 /// Returns the current window size.
 Vec2 windowSize() {
-    if (isFullscreen) {
-        return screenSize;
-    } else {
-        return Vec2(windowWidth, windowHeight);
-    }
+    return Vec2(windowWidth, windowHeight);
 }
 
 /// Returns the current resolution width.
 int resolutionWidth() {
-    if (isResolutionLocked) {
-        return engineState.viewport.width;
-    } else {
-        return windowWidth;
-    }
+    if (isResolutionLocked) return engineState.viewport.width;
+    else return windowWidth;
 }
 
 /// Returns the current resolution height.
 int resolutionHeight() {
-    if (isResolutionLocked) {
-        return engineState.viewport.height;
-    } else {
-        return windowHeight;
-    }
+    if (isResolutionLocked) return engineState.viewport.height;
+    else return windowHeight;
 }
 
 /// Returns the current resolution size.
@@ -1608,7 +1606,18 @@ Vec2 deltaMouse() {
 /// Returns the change in mouse wheel position since the last frame.
 @trusted
 float deltaWheel() {
-    return rl.GetMouseWheelMove();
+    auto result = 0.0f;
+    version (WebAssembly) {
+        result = -rl.GetMouseWheelMove();
+    } version (OSX) {
+        result = -rl.GetMouseWheelMove();
+    } else {
+        result = rl.GetMouseWheelMove();
+    }
+    if (result < 0.0f) result = -1.0f;
+    else if (result > 0.0f) result = 1.0f;
+    else result = 0.0f;
+    return result;
 }
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
