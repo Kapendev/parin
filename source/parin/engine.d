@@ -162,14 +162,14 @@ struct DrawOptions {
 
     @safe @nogc nothrow:
 
-    /// Initializes the options with the given scale.
-    this(Vec2 scale) {
-        this.scale = scale;
-    }
-
     /// Initializes the options with the given rotation.
     this(float rotation) {
         this.rotation = rotation;
+    }
+
+    /// Initializes the options with the given scale.
+    this(Vec2 scale) {
+        this.scale = scale;
     }
 
     /// Initializes the options with the given color.
@@ -551,6 +551,7 @@ struct Viewport {
 
     @safe @nogc nothrow:
 
+    /// Initializes the viewport with the given size and color.
     this(int width, int height, Color color = gray) {
         this.color = color;
         resize(width, height);
@@ -864,8 +865,9 @@ struct EngineState {
     EngineResources resources;
     EngineFullscreenState fullscreenState;
 
-    LStr tempText;
     LStr assetsPath;
+    LStr tempText;
+    Font debugFont;
 
     Color borderColor;
     Filter defaultFilter;
@@ -1035,15 +1037,6 @@ Vec2 toWorldPosition(Vec2 position, Camera camera) {
     return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
 }
 
-/// Returns the default Parin font. This font should not be freed.
-@trusted
-Font engineFont() {
-    auto result = rl.GetFontDefault().toParin();
-    result.runeSpacing = 1;
-    result.lineSpacing = 14;
-    return result;
-}
-
 /// Returns an absolute path to the assets folder.
 IStr assetsPath() {
     return engineState.assetsPath.items;
@@ -1129,8 +1122,8 @@ TextureId loadTexture(IStr path, Sz tag = 0) {
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
-    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toParin();
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
+    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
     }
@@ -1144,7 +1137,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
 /// Optionally assigns a tag for resource management.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes, Sz tag = 0) {
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "", Sz tag = 0) {
     if (engineState.resources.fonts.length == 0) {
         engineState.resources.fonts.appendEmpty();
     }
@@ -1230,6 +1223,7 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     engineState.viewport.color = gray;
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
+    engineState.debugFont = engineFont;
     engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
     engineState.tempText.reserve(8192);
 }
@@ -1443,13 +1437,33 @@ Color backgroundColor() {
     return engineState.viewport.color;
 }
 
+/// Sets the background color to the specified value.
+void setBackgroundColor(Color value) {
+    engineState.viewport.color = value;
+}
+
+/// Sets the border color to the specified value.
 void setBorderColor(Color value) {
     engineState.borderColor = value;
 }
 
-/// Sets the background color to the specified value.
-void setBackgroundColor(Color value) {
-    engineState.viewport.color = value;
+/// Returns the default engine font. This font should not be freed.
+@trusted
+Font engineFont() {
+    auto result = rl.GetFontDefault().toParin();
+    result.runeSpacing = 1;
+    result.lineSpacing = 14;
+    return result;
+}
+
+/// Returns the current debug font. This font should not be freed.
+Font debugFont() {
+    return engineState.debugFont;
+}
+
+/// Sets the debug font to the specified value.
+void setDebugFont(Font font) {
+    engineState.debugFont = font;
 }
 
 /// Returns the default filter mode for textures.
@@ -2093,7 +2107,7 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 
 /// Draws debug text at the given position with the provided draw options.
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawText(engineFont, text, position, options);
+    drawText(engineState.debugFont, text, position, options);
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.

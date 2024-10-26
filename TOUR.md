@@ -77,15 +77,15 @@ In essence, a Parin game typically relies on three key functions:
 Parin provides a set of input functions inside the `parin.engine` module.
 
 ```d
-bool isPressed(char key);
-bool isPressed(Keyboard key);
-bool isPressed(Mouse key);
-bool isPressed(Gamepad key, int id = 0);
-
 bool isDown(char key);
 bool isDown(Keyboard key);
 bool isDown(Mouse key);
 bool isDown(Gamepad key, int id = 0);
+
+bool isPressed(char key);
+bool isPressed(Keyboard key);
+bool isPressed(Mouse key);
+bool isPressed(Gamepad key, int id = 0);
 
 bool isReleased(char key);
 bool isReleased(Keyboard key);
@@ -126,21 +126,43 @@ void drawCirc(Circ area, Color color = white);
 void drawLine(Line area, float size, Color color = white);
 
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions());
-void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
-void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions());
-void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions());
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions());
 ```
 
+Some of these functions also accept managed resources.
 Additional drawing functions can be found in other modules, such as `parin.sprite`.
+
+### Draw Options
+
+Draw options are used for configuring drawing parameters. The data structure looks something like this:
+
+```d
+struct DrawOptions {
+    Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object.
+    Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
+    float rotation = 0.0f;         /// The rotation of the drawn object, in degrees.
+    Color color    = white;        /// The color of the drawn object.
+    Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
+    Flip flip      = Flip.none;    /// An value representing flipping orientations.
+}
+```
+
+Some of these parameters can also be configured via the constructors.
+
+```d
+this(float rotation);
+this(Vec2 scale);
+this(Color color);
+this(Hook hook);
+this(Flip flip);
+```
 
 ## Loading and Saving Resources
 
@@ -151,12 +173,12 @@ These functions handle both forward slashes and backslashes in file paths, ensur
 ```d
 TextId loadText(IStr path, Sz tag = 0);
 TextureId loadTexture(IStr path, Sz tag = 0);
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes, Sz tag = 0);
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "", Sz tag = 0);
 SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
 
 Result!LStr loadRawText(IStr path);
 Result!Texture loadRawTexture(IStr path);
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes);
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
 Result!Sound loadRawSound(IStr path, float volume, float pitch);
 
 Result!IStr loadTempText(IStr path);
