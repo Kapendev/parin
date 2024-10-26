@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.23
+// Version: v0.0.24
 // ---
 
 // TODO: Test the resource loading code.
@@ -185,130 +185,6 @@ struct DrawOptions {
     /// Initializes the options with the given flip.
     this(Flip flip) {
         this.flip = flip;
-    }
-}
-
-/// A structure representing a camera.
-struct Camera {
-    Vec2 position;         /// The position of the cammera.
-    float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
-    float scale = 1.0f;    /// The zoom level of the camera.
-    bool isAttached;       /// Indicates whether the camera is currently in use.
-    bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
-
-    @safe @nogc nothrow:
-
-    /// Initializes the camera with the given position and optional centering.
-    this(float x, float y, bool isCentered = false) {
-        this.position.x = x;
-        this.position.y = y;
-        this.isCentered = isCentered;
-    }
-
-    /// Returns the current hook associated with the camera.
-    Hook hook() {
-        return isCentered ? Hook.center : Hook.topLeft;
-    }
-
-    /// Returns the origin of the camera.
-    Vec2 origin() {
-        return Rect(position, resolution / Vec2(scale)).origin(hook);
-    }
-
-    /// Returns the area covered by the camera.
-    Rect area() {
-        return Rect(position, resolution / Vec2(scale)).area(hook);
-    }
-
-    /// Returns the top left point of the camera.
-    Vec2 topLeftPoint() {
-        return area.topLeftPoint;
-    }
-
-    /// Returns the top point of the camera.
-    Vec2 topPoint() {
-        return area.topPoint;
-    }
-
-    /// Returns the top right point of the camera.
-    Vec2 topRightPoint() {
-        return area.topRightPoint;
-    }
-
-    /// Returns the left point of the camera.
-    Vec2 leftPoint() {
-        return area.leftPoint;
-    }
-
-    /// Returns the center point of the camera.
-    Vec2 centerPoint() {
-        return area.centerPoint;
-    }
-
-    /// Returns the right point of the camera.
-    Vec2 rightPoint() {
-        return area.rightPoint;
-    }
-
-    /// Returns the bottom left point of the camera.
-    Vec2 bottomLeftPoint() {
-        return area.bottomLeftPoint;
-    }
-
-    /// Returns the bottom point of the camera.
-    Vec2 bottomPoint() {
-        return area.bottomPoint;
-    }
-
-    /// Returns the bottom right point of the camera.
-    Vec2 bottomRightPoint() {
-        return area.bottomRightPoint;
-    }
-
-    /// Moves the camera to follow the target position at the specified speed.
-    void followPosition(Vec2 target, float speed) {
-        position = position.moveTo(target, Vec2(speed));
-    }
-
-    /// Moves the camera to follow the target position with gradual slowdown.
-    void followPositionWithSlowdown(Vec2 target, float slowdown) {
-        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
-    }
-
-    /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
-    void followScale(float target, float speed) {
-        scale = scale.moveTo(target, speed);
-    }
-
-    /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
-    void followScaleWithSlowdown(float target, float slowdown) {
-        scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
-    }
-
-    /// Attaches the camera, making it active.
-    @trusted
-    void attach() {
-        if (isAttached) {
-            return;
-        }
-        isAttached = true;
-        auto temp = this.toRl();
-        if (isPixelSnapped || isPixelPerfect) {
-            temp.target.x = floor(temp.target.x);
-            temp.target.y = floor(temp.target.y);
-            temp.offset.x = floor(temp.offset.x);
-            temp.offset.y = floor(temp.offset.y);
-        }
-        rl.BeginMode2D(temp);
-    }
-
-    /// Detaches the camera, making it inactive.
-    @trusted
-    void detach() {
-        if (isAttached) {
-            isAttached = false;
-            rl.EndMode2D();
-        }
     }
 }
 
@@ -670,8 +546,15 @@ struct SoundId {
 /// Represents the viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
+    Color color;
+    bool isAttached;
 
     @safe @nogc nothrow:
+
+    this(int width, int height, Color color = gray) {
+        this.color = color;
+        resize(width, height);
+    }
 
     /// Checks if the viewport is not loaded.
     bool isEmpty() {
@@ -693,6 +576,32 @@ struct Viewport {
         return Vec2(width, height);
     }
 
+    /// Resizes the viewport to the given width and height.
+    /// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
+    @trusted
+    void resize(int width, int height) {
+        if (!isEmpty) rl.UnloadRenderTexture(data);
+        data = rl.LoadRenderTexture(width, height);
+        setFilter(engineState.defaultFilter);
+    }
+
+    /// Attaches the viewport, making it active.
+    @trusted
+    void attach() {
+        if (isAttached) return;
+        isAttached = true;
+        rl.BeginTextureMode(data);
+        rl.ClearBackground(color.toRl());
+    }
+
+    /// Detaches the viewport, making it inactive.
+    @trusted
+    void detach() {
+        if (!isAttached) return;
+        isAttached = false;
+        rl.EndTextureMode();
+    }
+
     /// Sets the filter mode of the viewport.
     @trusted
     void setFilter(Filter value) {
@@ -703,11 +612,130 @@ struct Viewport {
     /// Frees the loaded viewport.
     @trusted
     void free() {
-        if (isEmpty) {
-            return;
-        }
+        if (isEmpty) return;
         rl.UnloadRenderTexture(data);
         this = Viewport();
+    }
+}
+
+/// A structure representing a camera.
+struct Camera {
+    Vec2 position;         /// The position of the cammera.
+    float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
+    float scale = 1.0f;    /// The zoom level of the camera.
+    bool isAttached;       /// Indicates whether the camera is currently in use.
+    bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
+
+    @safe @nogc nothrow:
+
+    /// Initializes the camera with the given position and optional centering.
+    this(float x, float y, bool isCentered = false) {
+        this.position.x = x;
+        this.position.y = y;
+        this.isCentered = isCentered;
+    }
+
+    /// Returns the current hook associated with the camera.
+    Hook hook() {
+        return isCentered ? Hook.center : Hook.topLeft;
+    }
+
+    /// Returns the origin of the camera.
+    Vec2 origin() {
+        return Rect(position, resolution / Vec2(scale)).origin(hook);
+    }
+
+    /// Returns the area covered by the camera.
+    Rect area() {
+        return Rect(position, resolution / Vec2(scale)).area(hook);
+    }
+
+    /// Returns the top left point of the camera.
+    Vec2 topLeftPoint() {
+        return area.topLeftPoint;
+    }
+
+    /// Returns the top point of the camera.
+    Vec2 topPoint() {
+        return area.topPoint;
+    }
+
+    /// Returns the top right point of the camera.
+    Vec2 topRightPoint() {
+        return area.topRightPoint;
+    }
+
+    /// Returns the left point of the camera.
+    Vec2 leftPoint() {
+        return area.leftPoint;
+    }
+
+    /// Returns the center point of the camera.
+    Vec2 centerPoint() {
+        return area.centerPoint;
+    }
+
+    /// Returns the right point of the camera.
+    Vec2 rightPoint() {
+        return area.rightPoint;
+    }
+
+    /// Returns the bottom left point of the camera.
+    Vec2 bottomLeftPoint() {
+        return area.bottomLeftPoint;
+    }
+
+    /// Returns the bottom point of the camera.
+    Vec2 bottomPoint() {
+        return area.bottomPoint;
+    }
+
+    /// Returns the bottom right point of the camera.
+    Vec2 bottomRightPoint() {
+        return area.bottomRightPoint;
+    }
+
+    /// Moves the camera to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float speed) {
+        position = position.moveTo(target, Vec2(speed));
+    }
+
+    /// Moves the camera to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float slowdown) {
+        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
+    }
+
+    /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
+    void followScale(float target, float speed) {
+        scale = scale.moveTo(target, speed);
+    }
+
+    /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
+    void followScaleWithSlowdown(float target, float slowdown) {
+        scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
+    }
+
+    /// Attaches the camera, making it active.
+    @trusted
+    void attach() {
+        if (isAttached) return;
+        isAttached = true;
+        auto temp = this.toRl();
+        if (isPixelSnapped || isPixelPerfect) {
+            temp.target.x = floor(temp.target.x);
+            temp.target.y = floor(temp.target.y);
+            temp.offset.x = floor(temp.offset.x);
+            temp.offset.y = floor(temp.offset.y);
+        }
+        rl.BeginMode2D(temp);
+    }
+
+    /// Detaches the camera, making it inactive.
+    @trusted
+    void detach() {
+        if (!isAttached) return;
+        isAttached = false;
+        rl.EndMode2D();
     }
 }
 
@@ -802,6 +830,7 @@ struct EngineResources {
     }
 }
 
+// NOTE: Maybe look at the locking and unlocking code again. Works, but maybe could be more nice looking.
 struct EngineViewport {
     Viewport data;
     int targetWidth;
@@ -839,7 +868,6 @@ struct EngineState {
     LStr assetsPath;
 
     Color borderColor;
-    Color backgroundColor;
     Filter defaultFilter;
     Sz tickCount;
 
@@ -1174,16 +1202,6 @@ SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
     }
 }
 
-/// Loads a viewport.
-/// The resource must be manually freed.
-/// Supports both forward slashes and backslashes in file paths.
-@trusted
-Result!Viewport loadRawViewport(int width, int height) {
-    auto value = rl.LoadRenderTexture(width, height).toParin();
-    value.setFilter(engineState.defaultFilter);
-    return Result!Viewport(value, value.isEmpty.toFault());
-}
-
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
@@ -1209,7 +1227,7 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
     engineState.borderColor = black;
-    engineState.backgroundColor = gray2;
+    engineState.viewport.color = gray;
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
     engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
@@ -1231,7 +1249,7 @@ void updateWindow(bool function(float dt) updateFunc) {
         } else {
             rl.BeginDrawing();
         }
-        rl.ClearBackground(engineState.backgroundColor.toRl());
+        rl.ClearBackground(engineState.viewport.color.toRl());
 
         // The main loop.
         auto dt = deltaTime;
@@ -1276,8 +1294,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 
         // Main viewport code.
         if (engineState.viewport.isLocking) {
-            engineState.viewport.free();
-            engineState.viewport.data = loadRawViewport(engineState.viewport.targetWidth, engineState.viewport.targetHeight).getOr();
+            engineState.viewport.resize(engineState.viewport.targetWidth, engineState.viewport.targetHeight);
         } else if (engineState.viewport.isUnlocking) {
             engineState.viewport.free();
         }
@@ -1423,7 +1440,7 @@ bool isWindowResized() {
 
 /// Returns the current background color.
 Color backgroundColor() {
-    return engineState.backgroundColor;
+    return engineState.viewport.color;
 }
 
 void setBorderColor(Color value) {
@@ -1432,7 +1449,7 @@ void setBorderColor(Color value) {
 
 /// Sets the background color to the specified value.
 void setBackgroundColor(Color value) {
-    engineState.backgroundColor = value;
+    engineState.viewport.color = value;
 }
 
 /// Returns the default filter mode for textures.
@@ -1472,8 +1489,7 @@ bool isResolutionLocked() {
 void lockResolution(int width, int height) {
     engineState.viewport.startLocking(width, height);
     if (!engineState.flags.isUpdating) {
-        engineState.viewport.free();
-        engineState.viewport.data = loadRawViewport(width, height).get();
+        engineState.viewport.resize(width, height);
     }
 }
 
@@ -1746,14 +1762,36 @@ bool isReleased(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonReleased(id, key);
 }
 
-/// Returns the directional input based on the WASD and arrow keys.
+/// Returns the directional input based on the WASD and arrow keys when they are down.
 /// The vector is not normalized.
 Vec2 wasd() {
     auto result = Vec2();
-    if (Keyboard.a.isDown || Keyboard.left.isDown) result.x += -1.0f;
-    if (Keyboard.d.isDown || Keyboard.right.isDown) result.x += 1.0f;
-    if (Keyboard.w.isDown || Keyboard.up.isDown) result.y += -1.0f;
+    if (Keyboard.w.isDown || Keyboard.up.isDown) result.y -= 1.0f;
+    if (Keyboard.a.isDown || Keyboard.left.isDown) result.x -= 1.0f;
     if (Keyboard.s.isDown || Keyboard.down.isDown) result.y += 1.0f;
+    if (Keyboard.d.isDown || Keyboard.right.isDown) result.x += 1.0f;
+    return result;
+}
+
+/// Returns the directional input based on the WASD and arrow keys when they are pressed.
+/// The vector is not normalized.
+Vec2 wasdPressed() {
+    auto result = Vec2();
+    if (Keyboard.w.isPressed || Keyboard.up.isPressed) result.y -= 1.0f;
+    if (Keyboard.a.isPressed || Keyboard.left.isPressed) result.x -= 1.0f;
+    if (Keyboard.s.isPressed || Keyboard.down.isPressed) result.y += 1.0f;
+    if (Keyboard.d.isPressed || Keyboard.right.isPressed) result.x += 1.0f;
+    return result;
+}
+
+/// Returns the directional input based on the WASD and arrow keys when they are released.
+/// The vector is not normalized.
+Vec2 wasdReleased() {
+    auto result = Vec2();
+    if (Keyboard.w.isReleased || Keyboard.up.isReleased) result.y -= 1.0f;
+    if (Keyboard.a.isReleased || Keyboard.left.isReleased) result.x -= 1.0f;
+    if (Keyboard.s.isReleased || Keyboard.down.isReleased) result.y += 1.0f;
+    if (Keyboard.d.isReleased || Keyboard.right.isReleased) result.x += 1.0f;
     return result;
 }
 
@@ -1947,6 +1985,23 @@ void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptio
 /// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTexture(texture.getOr(), position, options);
+}
+
+/// Draws a portion of the specified viewport at the given position with the specified draw options.
+void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    // Some basic rules to make viewports noob friendly.
+    final switch (options.flip) {
+        case Flip.none: options.flip = Flip.y; break;
+        case Flip.x: options.flip = Flip.xy; break;
+        case Flip.y: options.flip = Flip.none; break;
+        case Flip.xy: options.flip = Flip.x; break;
+    }
+    drawTextureArea(viewport.data.texture.toParin(), area, position, options);
+}
+
+/// Draws the viewport at the given position with the specified draw options.
+void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawViewportArea(viewport, Rect(viewport.size), position, options);
 }
 
 /// Draws a single character from the specified font at the given position with the specified draw options.

@@ -93,6 +93,8 @@ bool isReleased(Mouse key);
 bool isReleased(Gamepad key, int id = 0);
 
 Vec2 wasd();
+Vec2 wasdPressed();
+Vec2 wasdReleased();
 ```
 
 ## Sound
@@ -127,6 +129,9 @@ void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptio
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+
+void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
+void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());

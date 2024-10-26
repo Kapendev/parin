@@ -11,7 +11,6 @@ auto walkAnimation = SpriteAnimation(0, 2, 6);
 void ready() {
     lockResolution(320, 180);
     setBackgroundColor(toRgb(0x0b0b0b));
-    setIsPixelPerfect(true);
     setIsCursorVisible(false);
     // Load the `atlas.png` file from the assets folder.
     atlas = loadTexture("atlas.png");
