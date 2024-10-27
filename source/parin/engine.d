@@ -592,6 +592,8 @@ struct Viewport {
         if (isAttached) return;
         isAttached = true;
         rl.BeginTextureMode(data);
+        // NOTE: Maybe change this in the future. It was used to fix an alpha problem.
+        rl.BeginBlendMode(rl.BLEND_ADDITIVE);
         rl.ClearBackground(color.toRl());
     }
 
@@ -600,6 +602,7 @@ struct Viewport {
     void detach() {
         if (!isAttached) return;
         isAttached = false;
+        rl.EndBlendMode();
         rl.EndTextureMode();
     }
 
@@ -1704,30 +1707,6 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     return measureTextSize(font.getOr(), text, options);
 }
 
-/// Returns true if the specified key was pressed.
-@trusted
-bool isPressed(char key) {
-    return rl.IsKeyPressed(toUpper(key));
-}
-
-/// Returns true if the specified key was pressed.
-@trusted
-bool isPressed(Keyboard key) {
-    return rl.IsKeyPressed(key);
-}
-
-/// Returns true if the specified key was pressed.
-@trusted
-bool isPressed(Mouse key) {
-    return rl.IsMouseButtonPressed(key);
-}
-
-/// Returns true if the specified key was pressed.
-@trusted
-bool isPressed(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonPressed(id, key);
-}
-
 /// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(char key) {
@@ -1750,6 +1729,30 @@ bool isDown(Mouse key) {
 @trusted
 bool isDown(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonDown(id, key);
+}
+
+/// Returns true if the specified key was pressed.
+@trusted
+bool isPressed(char key) {
+    return rl.IsKeyPressed(toUpper(key));
+}
+
+/// Returns true if the specified key was pressed.
+@trusted
+bool isPressed(Keyboard key) {
+    return rl.IsKeyPressed(key);
+}
+
+/// Returns true if the specified key was pressed.
+@trusted
+bool isPressed(Mouse key) {
+    return rl.IsMouseButtonPressed(key);
+}
+
+/// Returns true if the specified key was pressed.
+@trusted
+bool isPressed(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonPressed(id, key);
 }
 
 /// Returns true if the specified key was released.

@@ -62,8 +62,8 @@ struct TileMap {
     Grid!short data;
     Sz estimatedMaxRowCount;
     Sz estimatedMaxColCount;
-    int tileWidth;
-    int tileHeight;
+    int tileWidth = 16;
+    int tileHeight = 16;
     Vec2 position;
     alias data this;
 
@@ -220,6 +220,7 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
     return toTileMap(temp.get(), tileWidth, tileHeight);
 }
 
+// TODO: Change that so it's easier to use.
 void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) return;
     drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
@@ -230,18 +231,25 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 }
 
 void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+    auto textureColCount = texture.width / map.tileWidth;
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
     auto colRow1 = map.firstGridPosition(camera.topLeftPoint, options);
     auto colRow2 = map.lastGridPosition(camera.bottomRightPoint, options);
+
     if (colRow1.x == colRow2.x || colRow1.y == colRow2.y) return;
+    if (map.tileWidth == 0 || map.tileHeight == 0) return;
 
     foreach (row; colRow1.y .. colRow2.y) {
         foreach (col; colRow1.x .. colRow2.x) {
-            if (map[row, col] == -1) continue;
-            auto tile = Tile(map[row, col], map.tileWidth, map.tileHeight);
-            tile.position = map.position + Vec2(col * targetTileWidth, row * targetTileHeight);
-            drawTile(texture, tile, options);
+            auto id = map[row, col];
+            if (id == -1) continue;
+            drawTextureArea(
+                texture,
+                Rect((id % textureColCount) * map.tileWidth, (id / textureColCount) * map.tileHeight, map.tileWidth, map.tileHeight), 
+                map.position + Vec2(col * targetTileWidth, row * targetTileHeight),
+                options,
+            );
         }
     }
 }
