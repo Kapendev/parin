@@ -38,8 +38,17 @@ enum Flip : ubyte {
 
 /// A type representing texture filtering modes.
 enum Filter : ubyte {
-    nearest, /// Nearest neighbor filtering (blocky).
-    linear,  /// Bilinear filtering (smooth).
+    nearest = rl.TEXTURE_FILTER_POINT,   /// Nearest neighbor filtering (blocky).
+    linear = rl.TEXTURE_FILTER_BILINEAR, /// Bilinear filtering (smooth).
+}
+
+/// A type representing blending modes.
+enum Blend : ubyte {
+    alpha = rl.BLEND_ALPHA,           /// Standard alpha blending.
+    additive = rl.BLEND_ADDITIVE,     /// Adds colors for light effects.
+    multiplied = rl.BLEND_MULTIPLIED, /// Multiplies colors for shadows.
+    add = rl.BLEND_ADD_COLORS,        /// Simply adds colors.
+    sub = rl.BLEND_SUBTRACT_COLORS,   /// Simply subtracts colors.
 }
 
 /// A type representing a limited set of keyboard keys.
@@ -153,12 +162,12 @@ enum Gamepad {
 
 /// A structure containing options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object.
-    Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
-    float rotation = 0.0f;         /// The rotation of the drawn object, in degrees.
-    Color color    = white;        /// The color of the drawn object.
-    Hook hook      = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
-    Flip flip      = Flip.none;    /// An value representing flipping orientations.
+    Vec2 origin = Vec2(0.0f); /// The origin point of the drawn object.
+    Vec2 scale = Vec2(1.0f);  /// The scale of the drawn object.
+    float rotation = 0.0f;    /// The rotation of the drawn object, in degrees.
+    Color color = white;      /// The color of the drawn object.
+    Hook hook = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
+    Flip flip = Flip.none;    /// An value representing flipping orientations.
 
     @safe @nogc nothrow:
 
@@ -256,7 +265,7 @@ struct Texture {
     @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
-        rl.SetTextureFilter(data, value.toRl());
+        rl.SetTextureFilter(data, value);
     }
 
     /// Frees the loaded texture.
@@ -340,7 +349,7 @@ struct Font {
     @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
-        rl.SetTextureFilter(data.texture, value.toRl());
+        rl.SetTextureFilter(data.texture, value);
     }
 
     /// Frees the loaded font.
@@ -547,13 +556,15 @@ struct SoundId {
 struct Viewport {
     rl.RenderTexture2D data;
     Color color;
+    Blend blend;
     bool isAttached;
 
     @safe @nogc nothrow:
 
-    /// Initializes the viewport with the given size and color.
-    this(int width, int height, Color color = gray) {
+    /// Initializes the viewport with the given size, background color and blend mode.
+    this(int width, int height, Color color = gray, Blend blend = Blend.alpha) {
         this.color = color;
+        this.blend = blend;
         resize(width, height);
     }
 
@@ -587,30 +598,33 @@ struct Viewport {
     }
 
     /// Attaches the viewport, making it active.
+    // NOTE: The engine viewport should not use this function.
     @trusted
     void attach() {
-        if (isAttached) return;
+        if (isEmpty || isAttached) return;
+        if (isResolutionLocked) rl.EndTextureMode();
         isAttached = true;
         rl.BeginTextureMode(data);
-        // NOTE: Maybe change this in the future. It was used to fix an alpha problem.
-        rl.BeginBlendMode(rl.BLEND_ADDITIVE);
         rl.ClearBackground(color.toRl());
+        rl.BeginBlendMode(blend);
     }
 
     /// Detaches the viewport, making it inactive.
+    // NOTE: The engine viewport should not use this function.
     @trusted
     void detach() {
-        if (!isAttached) return;
+        if (isEmpty || !isAttached) return;
         isAttached = false;
         rl.EndBlendMode();
         rl.EndTextureMode();
+        if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.toRl());
     }
 
     /// Sets the filter mode of the viewport.
     @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
-        rl.SetTextureFilter(data.texture, value.toRl());
+        rl.SetTextureFilter(data.texture, value);
     }
 
     /// Frees the loaded viewport.
@@ -894,101 +908,98 @@ struct EngineState {
     }
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Color toParin(rl.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Vec2 toParin(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Vec3 toParin(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Vec4 toParin(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Rect toParin(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Texture toParin(rl.Texture2D from) {
     auto result = Texture();
     result.data = from;
     return result;
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Font toParin(rl.Font from) {
     auto result = Font();
     result.data = from;
     return result;
 }
 
-private
+/// Converts a raylib type to a Parin type.
 Viewport toParin(rl.RenderTexture2D from) {
     auto result = Viewport();
     result.data = from;
     return result;
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Color toRl(Color from) {
     return rl.Color(from.r, from.g, from.b, from.a);
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Vector2 toRl(Vec2 from) {
     return rl.Vector2(from.x, from.y);
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Vector3 toRl(Vec3 from) {
     return rl.Vector3(from.x, from.y, from.z);
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Vector4 toRl(Vec4 from) {
     return rl.Vector4(from.x, from.y, from.z, from.w);
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Rectangle toRl(Rect from) {
     return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Texture2D toRl(Texture from) {
     return from.data;
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Font toRl(Font from) {
     return from.data;
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.RenderTexture2D toRl(Viewport from) {
     return from.data;
 }
 
-private
+/// Converts a Parin type to a raylib type.
 int toRl(Filter filter) {
-    final switch (filter) {
-        case Filter.nearest: return rl.TEXTURE_FILTER_POINT;
-        case Filter.linear: return rl.TEXTURE_FILTER_BILINEAR;
-    }
+    return filter;
 }
 
-private
+/// Converts a Parin type to a raylib type.
 rl.Camera2D toRl(Camera camera) {
     return rl.Camera2D(
         Rect(resolution).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
@@ -1320,11 +1331,9 @@ void updateWindow(bool function(float dt) updateFunc) {
     // Maybe bad idea, but makes life of no-attribute people easier.
     _updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
     engineState.flags.isUpdating = true;
-
     version(WebAssembly) {
         static void _updateWindowWeb() {
             if (_updateWindow()) {
-                engineState.flags.isUpdating = false;
                 rl.emscripten_cancel_main_loop();
             }
         }
@@ -1332,11 +1341,11 @@ void updateWindow(bool function(float dt) updateFunc) {
     } else {
         while (true) {
             if (rl.WindowShouldClose() || _updateWindow()) {
-                engineState.flags.isUpdating = false;
                 break;
             }
         }
     }
+    engineState.flags.isUpdating = false;
 }
 
 /// Closes the window.
