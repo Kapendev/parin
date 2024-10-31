@@ -44,7 +44,7 @@ enum Filter : ubyte {
 
 /// A type representing blending modes.
 enum Blend : ubyte {
-    alpha = rl.BLEND_ALPHA,           /// Standard alpha blending.
+    alpha = rl.BLEND_CUSTOM_SEPARATE, /// Standard alpha blending.
     additive = rl.BLEND_ADDITIVE,     /// Adds colors for light effects.
     multiplied = rl.BLEND_MULTIPLIED, /// Multiplies colors for shadows.
     add = rl.BLEND_ADD_COLORS,        /// Simply adds colors.
@@ -555,7 +555,7 @@ struct SoundId {
 /// Represents the viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
-    Color color;
+    Color color = gray;
     Blend blend;
     bool isAttached;
 
@@ -1240,6 +1240,8 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     engineState.debugFont = engineFont;
     engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
     engineState.tempText.reserve(8192);
+    // NOTE: This line is used for fixing an alpha bug with render textures.
+    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
 }
 
 /// Updates the window every frame with the given function.
