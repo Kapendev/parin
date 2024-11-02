@@ -555,17 +555,16 @@ struct SoundId {
 /// Represents the viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
-    Color color = gray;
+    Color color;
     Blend blend;
     bool isAttached;
 
     @safe @nogc nothrow:
 
     /// Initializes the viewport with the given size, background color and blend mode.
-    this(int width, int height, Color color = gray, Blend blend = Blend.alpha) {
+    this(Color color, Blend blend = Blend.alpha) {
         this.color = color;
         this.blend = blend;
-        resize(width, height);
     }
 
     /// Checks if the viewport is not loaded.
@@ -1956,12 +1955,7 @@ void drawLine(Line area, float size, Color color = white) {
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 @trusted
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty) {
-        return;
-    } else if (area.size.x <= 0.0f || area.size.y <= 0.0f) {
-        return;
-    }
-
+    if (texture.isEmpty || area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     auto target = Rect(position, area.size * options.scale.abs());
     auto flip = options.flip;
     if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
@@ -2035,10 +2029,7 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 /// Draws a single character from the specified font at the given position with the specified draw options.
 @trusted
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (font.isEmpty) {
-        return;
-    }
-
+    if (font.isEmpty) return;
     auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
@@ -2066,10 +2057,7 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 /// Draws the specified text with the given font at the given position using the provided draw options.
 @trusted
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (font.isEmpty || text.length == 0) {
-        return;
-    }
-
+    if (font.isEmpty || text.length == 0) return;
     // TODO: Make it work with negative scale values.
     auto origin = Rect(measureTextSize(font, text)).origin(options.hook);
     rl.rlPushMatrix();

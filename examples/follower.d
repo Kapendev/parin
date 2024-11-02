@@ -19,7 +19,6 @@ void ready() {
 bool update(float dt) {
     // The sprite should be updated every frame, regardless of whether it is running.
     sprite.update(dt);
-
     // Get some basic info about the mouse.
     auto mouseDistance = sprite.position.distanceTo(mouseScreenPosition);
     auto mouseDirection = sprite.position.directionTo(mouseScreenPosition);

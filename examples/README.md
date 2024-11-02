@@ -35,6 +35,10 @@ This example shows how to create an animated character that follows the mouse.
 
 This example shows how to use the timer structure of Parin.
 
+## [Viewport](viewport.d)
+
+This example shows how to use the viewport structure of Parin.
+
 ## [Scene](scene.d)
 
 This example shows how to use the scene manager of Parin.

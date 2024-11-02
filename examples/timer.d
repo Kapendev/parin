@@ -15,10 +15,7 @@ bool update(float dt) {
     // The timer should be updated every frame, regardless of whether it is running.
     timer.update(dt);
     // Check if the timer has stopped and add 1 to the counter.
-    if (timer.hasStopped) {
-        counter += 1;
-    }
-
+    if (timer.hasStopped) counter += 1;
     drawDebugText("Counter: {}".format(counter), Vec2(8));
     drawDebugText("\nTimer: {}".format(timer.time), Vec2(8));
     return false;
