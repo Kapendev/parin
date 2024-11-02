@@ -5,7 +5,7 @@ import parin;
 auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true);
-auto tile = Tile(145, 16, 16);
+auto tile = Tile(16, 16, 145);
 auto tileSpeed = 120;
 auto tileLookDirection = -1;
 
@@ -32,7 +32,7 @@ bool update(float dt) {
 
     // Check for collisions.
     auto collisionArea = Rect();
-    foreach (gridPosition; map.gridPositions(camera.topLeftPoint, camera.bottomRightPoint, mapOptions)) {
+    foreach (gridPosition; map.gridPositions(camera.area, mapOptions)) {
         if (map[gridPosition] == -1) continue;
         auto gridTileArea = Rect(map.worldPosition(gridPosition, mapOptions), Vec2(16) * mapOptions.scale);
         while (gridTileArea.hasIntersection(Rect(tile.position, tile.size * mapOptions.scale).area(tileOptions.hook))) {

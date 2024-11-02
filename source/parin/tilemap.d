@@ -7,8 +7,6 @@
 // ---
 
 // TODO: Think about gaps in an atlas texture.
-// TODO: Add simple collision check in the tile map example.
-// TODO: Think about the tile struct a bit.
 // TODO: Update all the doc comments here.
 
 /// The `tilemap` module provides a simple and fast tile map.
@@ -24,12 +22,19 @@ public import joka.types;
 @safe @nogc nothrow:
 
 struct Tile {
-    Sz id;
     int width;
     int height;
+    Sz id;
     Vec2 position;
 
     @safe @nogc nothrow:
+
+    this(int width, int height, Sz id, Vec2 position = Vec2()) {
+        this.width = width;
+        this.height = height;
+        this.id = id;
+        this.position = position;
+    }
 
     Vec2 size() {
         return Vec2(width, height);
@@ -69,12 +74,13 @@ struct TileMap {
 
     @safe @nogc nothrow:
 
-    this(short value, int tileWidth, int tileHeight) {
+    this(int tileWidth, int tileHeight, Vec2 position = Vec2()) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
         this.estimatedMaxRowCount = maxRowCount;
         this.estimatedMaxColCount = maxColCount;
-        this.data.fill(value);
+        this.position = position;
+        this.data.fill(-1);
     }
 
     /// Returns true if the tile map has not been loaded.
@@ -201,6 +207,10 @@ struct TileMap {
         result.position = result.first;
         return result;
     }
+
+    auto gridPositions(Rect worldArea, DrawOptions options = DrawOptions()) {
+        return gridPositions(worldArea.topLeftPoint, worldArea.bottomRightPoint, options);
+    }
 }
 
 Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
@@ -220,9 +230,8 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
     return toTileMap(temp.get(), tileWidth, tileHeight);
 }
 
-// TODO: Change that so it's easier to use.
 void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty) return;
+    if (texture.isEmpty || tile.width == 0 || tile.height == 0) return;
     drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
 }
 
@@ -231,22 +240,25 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 }
 
 void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+    if (texture.isEmpty || map.tileWidth == 0 || map.tileHeight == 0) return;
+
     auto textureColCount = texture.width / map.tileWidth;
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
     auto colRow1 = map.firstGridPosition(camera.topLeftPoint, options);
     auto colRow2 = map.lastGridPosition(camera.bottomRightPoint, options);
-
     if (colRow1.x == colRow2.x || colRow1.y == colRow2.y) return;
-    if (map.tileWidth == 0 || map.tileHeight == 0) return;
 
+    auto textureArea = Rect(map.tileWidth, map.tileHeight);
     foreach (row; colRow1.y .. colRow2.y) {
         foreach (col; colRow1.x .. colRow2.x) {
             auto id = map[row, col];
             if (id == -1) continue;
+            textureArea.position.x = (id % textureColCount) * map.tileWidth;
+            textureArea.position.y = (id / textureColCount) * map.tileHeight;
             drawTextureArea(
                 texture,
-                Rect((id % textureColCount) * map.tileWidth, (id / textureColCount) * map.tileHeight, map.tileWidth, map.tileHeight), 
+                textureArea,
                 map.position + Vec2(col * targetTileWidth, row * targetTileHeight),
                 options,
             );

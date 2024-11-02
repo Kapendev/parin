@@ -94,12 +94,12 @@ struct Sprite {
 
     @safe @nogc nothrow:
 
-    this(int width, int height, ushort atlasLeft, ushort atlasTop, SpriteAnimation animation = SpriteAnimation()) {
+    this(int width, int height, ushort atlasLeft, ushort atlasTop, Vec2 position = Vec2()) {
         this.width = width;
         this.height = height;
         this.atlasLeft = atlasLeft;
         this.atlasTop = atlasTop;
-        this.animation = animation;
+        this.position = position;
     }
 
     bool hasFirstFrame() {
@@ -151,9 +151,8 @@ void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOption
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
     auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width;
     auto gridHeight = max(texture.height - top, 0) / sprite.height;
-    if (gridWidth == 0 || gridHeight == 0) {
-        return;
-    }
+    if (gridWidth == 0 || gridHeight == 0) return;
+
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;
     auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
