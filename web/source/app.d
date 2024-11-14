@@ -4,6 +4,8 @@
 
 import std;
 
+// TODO: Clean it! Well... Not right now, but do it.
+
 enum dflags = ["-betterC", "-i", "--release"];              // The compiler flags passed to ldc. Local dependencies can be added here.
 enum output = buildPath(".", "web", "index.html");          // The output file that can be run with emrun.
 

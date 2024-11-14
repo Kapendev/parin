@@ -65,8 +65,8 @@ struct Tile {
 
 struct TileMap {
     Grid!short data;
-    Sz estimatedMaxRowCount;
-    Sz estimatedMaxColCount;
+    Sz softMaxRowCount;
+    Sz softMaxColCount;
     int tileWidth = 16;
     int tileHeight = 16;
     Vec2 position;
@@ -77,8 +77,8 @@ struct TileMap {
     this(int tileWidth, int tileHeight, Vec2 position = Vec2()) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.estimatedMaxRowCount = maxRowCount;
-        this.estimatedMaxColCount = maxColCount;
+        this.softMaxRowCount = maxRowCount;
+        this.softMaxColCount = maxColCount;
         this.position = position;
         this.data.fill(-1);
     }
@@ -89,11 +89,11 @@ struct TileMap {
     }
 
     int width() {
-        return cast(int) (estimatedMaxColCount * tileWidth);
+        return cast(int) (softMaxColCount * tileWidth);
     }
 
     int height() {
-        return cast(int) (estimatedMaxRowCount * tileHeight);
+        return cast(int) (softMaxRowCount * tileHeight);
     }
 
     /// Returns the size of the tile map.
@@ -110,21 +110,21 @@ struct TileMap {
         if (csv.length == 0) return Fault.invalid;
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.estimatedMaxRowCount = 0;
-        this.estimatedMaxColCount = 0;
+        this.softMaxRowCount = 0;
+        this.softMaxColCount = 0;
         this.data.fill(-1);
         auto view = csv;
         while (view.length != 0) {
-            estimatedMaxRowCount += 1;
-            estimatedMaxColCount = 0;
-            if (estimatedMaxRowCount > maxRowCount) return Fault.invalid;
+            softMaxRowCount += 1;
+            softMaxColCount = 0;
+            if (softMaxRowCount > maxRowCount) return Fault.invalid;
             auto line = view.skipLine();
             while (line.length != 0) {
-                estimatedMaxColCount += 1;
-                if (estimatedMaxColCount > maxColCount) return Fault.invalid;
+                softMaxColCount += 1;
+                if (softMaxColCount > maxColCount) return Fault.invalid;
                 auto tile = line.skipValue(',').toSigned();
                 if (tile.isNone) return Fault.invalid;
-                data[estimatedMaxRowCount - 1, estimatedMaxColCount - 1] = cast(short) tile.get();
+                data[softMaxRowCount - 1, softMaxColCount - 1] = cast(short) tile.get();
             }
         }
         return Fault.none;
@@ -162,8 +162,8 @@ struct TileMap {
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, estimatedMaxRowCount));
-        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, estimatedMaxColCount));
+        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, softMaxRowCount));
+        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, softMaxColCount));
         return result;
     }
 
@@ -172,8 +172,8 @@ struct TileMap {
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
         auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, estimatedMaxRowCount));
-        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, estimatedMaxColCount));
+        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, softMaxRowCount));
+        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, softMaxColCount));
         return result;
     }
 

@@ -883,7 +883,6 @@ struct EngineState {
 
     LStr assetsPath;
     LStr tempText;
-    Font debugFont;
 
     Color borderColor;
     Filter defaultFilter;
@@ -1236,7 +1235,6 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     engineState.viewport.color = gray;
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
-    engineState.debugFont = engineFont;
     engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
     engineState.tempText.reserve(8192);
     // NOTE: This line is used for fixing an alpha bug with render textures.
@@ -1467,16 +1465,6 @@ Font engineFont() {
     result.runeSpacing = 1;
     result.lineSpacing = 14;
     return result;
-}
-
-/// Returns the current debug font. This font should not be freed.
-Font debugFont() {
-    return engineState.debugFont;
-}
-
-/// Sets the debug font to the specified value.
-void setDebugFont(Font font) {
-    engineState.debugFont = font;
 }
 
 /// Returns the default filter mode for textures.
@@ -2109,7 +2097,7 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 
 /// Draws debug text at the given position with the provided draw options.
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawText(engineState.debugFont, text, position, options);
+    drawText(engineFont, text, position, options);
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.

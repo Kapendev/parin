@@ -24,12 +24,10 @@ bool update(float dt) {
     mapOptions.scale = Vec2(2);
     auto tileOptions = mapOptions;
     tileOptions.flip = tileLookDirection > 0 ? Flip.x : Flip.none;
-
     // Move the tile and camera.
     tile.position += wasd * Vec2(tileSpeed * dt);
     camera.position = tile.position;
     if (wasd.x != 0) tileLookDirection = cast(int) wasd.normalize.round.x;
-
     // Check for collisions.
     auto collisionArea = Rect();
     foreach (gridPosition; map.gridPositions(camera.area, mapOptions)) {

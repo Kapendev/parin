@@ -4,15 +4,40 @@
 
 import std;
 
-enum assetsDir = buildPath(".", "assets");
-enum webDir = buildPath(".", "web");
+enum assetsDir       = buildPath(".", "assets");
+enum webDir          = buildPath(".", "web");
+enum readmeFile      = buildPath(".", "README.md");
+enum gitignoreFile   = buildPath(".", ".gitignore");
+enum dubFile         = buildPath(".", "dub.json");
+enum dubLockFile     = buildPath(".", "dub.selections.json");
 
-enum appFile = buildPath(".", "source", "app.d");
-enum dubFile = buildPath(".", "dub.json");
-enum dubCopyFile = buildPath(".", ".__dub_copy__.json");
-enum dubLockFile = buildPath(".", "dub.selections.json");
-enum dubLockCopyFile = buildPath(".", ".__dub_selections_copy__.json");
-enum gitignoreFile = buildPath(".", ".gitignore");
+enum readmeFileContent = "# Game Title
+
+This game was created using [Parin](https://github.com/Kapendev/parin).
+
+To compile the game, run:
+
+```sh
+command arg1 arg2 ...
+```
+";
+
+enum gitignoreFileContent = `.dub
+game
+lib*
+test*
+*.wasm
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+`;
 
 enum appFileContent = `import parin;
 
@@ -86,94 +111,99 @@ enum dubFileContent = `{
 }
 `;
 
-enum gitignoreFileContent = `.dub
-game
-web
-lib*
-*.so
-*.dylib
-*.dll
-*.a
-*.lib
-*.exe
-*.pdb
-*.o
-*.obj
-*.lst
-`;
+/// Creates the assets and web folders inside the current folder.
+void makeFolders() {
+    if (!exists(assetsDir)) std.file.mkdir(assetsDir);
+    if (!exists(webDir)) std.file.mkdir(webDir);
+    std.file.write(buildPath(assetsDir, ".gitkeep"), "");
+    std.file.write(buildPath(webDir, ".gitkeep"), "");
+}
 
-int main(string[] args) {
-    auto isDubProject = exists(dubFile);
-    auto isFirstRun = !exists(assetsDir);
-    auto canDownloadLibs = true;
+/// Creates the basic project setup of a parin project inside the current folder.
+void makeBasicSetup() {
+    makeFolders();
+    if (!exists(readmeFile)) std.file.write(readmeFile, readmeFileContent);
+    if (!exists(gitignoreFile)) std.file.write(gitignoreFile, gitignoreFileContent);
+}
 
-    // Sometimes I remove the app.d file and this makes a new one lol.
-    // Also raylib-d:install does not like it when you don't have one.
-    if (isDubProject) {
-        if (!exists(appFile)) std.file.write(appFile, appFileContent);
-        if (!isFirstRun) {
-            std.file.write(dubCopyFile, std.file.readText(dubFile));
-            if (exists(dubLockFile)) std.file.write(dubLockCopyFile, std.file.readText(dubLockFile));
-        }
-    }
+/// The setup code for simple standalone projects.
+int runSimpSetup(string[] args, bool isFirstRun) {
+    makeBasicSetup();
+    return 0;
+}
 
-    // User input stuff.
-    if (isDubProject) {
-        auto arg = (args.length == 2) ? args[1] : "";
-        if (arg.length == 0) {
-            write("Would you like to download the raylib libraries? [Y/n] ");
-            arg = readln().strip();
-        }
-        canDownloadLibs = arg != "N" && arg != "n";
-    }
-
-    // Use the raylib-d script to download the raylib library files.
-    if (isDubProject && canDownloadLibs) {
-        writeln("Say \"yes\" to all prompts.\n");
-        auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
-        if (dub1 != 0) {
-            if (!isFirstRun) {
-                std.file.remove(dubCopyFile);
-                if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
-            }
-            return dub1;
-        }
-        auto dub2 = spawnProcess(["dub", "run", "raylib-d:install"]).wait();
-        if (dub2 != 0) {
-            if (!isFirstRun) {
-                std.file.remove(dubCopyFile);
-                if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
-            }
-            return dub2;
-        }
-    }
-
-    // Remove old files.
-    if (isDubProject) {
-        if (isFirstRun && exists(appFile)) std.file.remove(appFile);
-        if (exists(dubFile)) std.file.remove(dubFile);
-        if (exists(dubLockFile)) std.file.remove(dubLockFile);
-    }
+/// The setup code for dub projects.
+int runDubSetup(string[] args, bool isFirstRun) {
+    // Create the backup copies.
+    auto dubCopyFile = buildPath(".", "._dub_copy");
+    auto dubLockCopyFile = buildPath(".", "._dub_lock_copy");
+    if (exists(dubFile)) std.file.write(dubCopyFile, std.file.readText(dubFile));
+    if (exists(dubLockFile)) std.file.write(dubLockCopyFile, std.file.readText(dubLockFile));
+    // Create the basic files and folders.
+    // NOTE: An empty dub project has a gitignore file and we don't want that file.
     if (isFirstRun && exists(gitignoreFile)) std.file.remove(gitignoreFile);
+    makeBasicSetup();
 
-    // Create new files.
-    if (isDubProject) {
+    // Find the app file.
+    auto appDir = buildPath(".", "src");
+    if (!exists(appDir)) appDir = buildPath(".", "source");
+    auto appFile = buildPath(appDir, "main.d");
+    if (!exists(appFile)) appFile = buildPath(appDir, "app.d");
+    // Replace the app file content if needed.
+    if (exists(appFile)) {
         if (isFirstRun) std.file.write(appFile, appFileContent);
+    } else {
+        std.file.write(appFile, appFileContent);
+    }
+
+    // Get a yes or no from the user and download the raylib libraries if the user said yes.
+    auto arg = (args.length != 0) ? args[0] : "?";
+    while (true) {
+        if (arg.length == 0) arg = "Y";
+        foreach (c; "YyNn") {
+            if (arg.length != 1) break;
+            if (arg[0] == c) goto whileExit;
+        }
+        write("Would you like to download the raylib libraries? [Y/n] ");
+        arg = readln().strip();
+    }
+    whileExit:
+    if (arg == "Y" || arg == "y") {
+        auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
+        auto dub2 = spawnProcess(["dub", "run", "raylib-d:install"]).wait();
+        // Remove the backup copies if something failed.
+        if (dub1 != 0 || dub2 != 0) {
+            if (exists(dubCopyFile)) std.file.remove(dubCopyFile);
+            if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
+            return 1;
+        }
+    }
+
+    // Replace the dub file content if needed.
+    if (isFirstRun) {
+        std.file.write(dubFile, dubFileContent);
+        std.file.remove(dubLockFile);
+        // Remove the backup copies.
+        if (exists(dubCopyFile)) std.file.remove(dubCopyFile);
+        if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
+    } else {
+        // Replace the "dirty" files with the backup copies.
+        // NOTE: raylib-d will change the content of the dub file and this is considered dirty.
         if (exists(dubCopyFile)) {
             std.file.write(dubFile, std.file.readText(dubCopyFile));
             std.file.remove(dubCopyFile);
-            if (exists(dubLockCopyFile)) std.file.write(dubLockFile, std.file.readText(dubLockCopyFile));
-            if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
-        } else {
-            std.file.write(dubFile, dubFileContent);
+        }
+        if (exists(dubLockCopyFile)) {
+            std.file.write(dubLockFile, std.file.readText(dubLockCopyFile));
+            std.file.remove(dubLockCopyFile);
         }
     }
-    if (isFirstRun) std.file.write(gitignoreFile, gitignoreFileContent);
-
-    // Create folders.
-    if (!exists(assetsDir)) std.file.mkdir(assetsDir);
-    if (!exists(webDir)) std.file.mkdir(webDir);
-
-    writeln("\nHappy hacking!");
     return 0;
+}
+
+int main(string[] args) {
+    auto isSimpProject = !exists(dubFile);
+    auto isFirstRun = !exists(assetsDir);
+    if (isSimpProject) return runSimpSetup(args[1 .. $], isFirstRun);
+    else return runDubSetup(args[1 .. $], isFirstRun);
 }

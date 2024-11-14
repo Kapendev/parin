@@ -14,13 +14,11 @@ bool update(float dt) {
     // Move the camera.
     cameraTarget += wasd * Vec2(cameraSpeed * dt);
     camera.followPositionWithSlowdown(cameraTarget, 0.15);
-
     // Draw the game world.
     camera.attach();
     drawDebugText("Move with arrow keys.", Vec2(8));
     drawRect(camera.area.subAll(3), Color(50, 50, 40, 130));
     camera.detach();
-
     // Draw the game UI.
     drawDebugText("I am UI!", Vec2(8));
     drawDebugText("+", resolution * Vec2(0.5));
