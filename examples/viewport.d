@@ -21,7 +21,7 @@ bool update(float dt) {
     viewport.detach();
     // Draw the viewport and other things inside the window.
     drawViewport(viewport, resolution * Vec2(0.5), DrawOptions(Hook.center));
-    drawDebugText("Move the mouse inside the black box.", Vec2(8), DrawOptions(Vec2(2)));
+    drawDebugText("Move the mouse inside the box and resize the window.", Vec2(12), DrawOptions(Vec2(2)));
     return false;
 }
 

@@ -48,7 +48,7 @@ Parin has the following dependencies:
 
 Create a new folder and run inside the following commands:
 
-```bash
+```sh
 dub init -n
 dub run parin:setup
 ```
@@ -60,11 +60,33 @@ The final line modifies the default app.d and dub.json files, downloads raylib, 
 
 Once the installation is complete, run the following command:
 
-```bash
+```sh
 dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
+
+### Required Libraries on Linux
+
+Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.
+
+**Ubuntu:**
+
+```sh
+sudo apt install libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
+```
+
+**Fedora:**
+
+```sh
+sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel libatomic
+```
+
+**Arch:**
+
+```sh
+sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
+```
 
 ## Documentation
 
@@ -83,7 +105,7 @@ The [web](web) folder contains a helper script to assist with the web export pro
 
 It can be used with DUB by running the following command:
 
-```bash
+```sh
 dub run parin:web
 ```
 
