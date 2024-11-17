@@ -557,7 +557,6 @@ struct Viewport {
     rl.RenderTexture2D data;
     Color color;
     Blend blend;
-    bool isAttached;
 
     @safe @nogc nothrow:
 
@@ -600,9 +599,12 @@ struct Viewport {
     // NOTE: The engine viewport should not use this function.
     @trusted
     void attach() {
-        if (isEmpty || isAttached) return;
+        if (isEmpty) return;
+        if (engineState.currentViewport != null) {
+            assert(0, "Cannot attach viewport because another viewport is already attached.");
+        }
+        engineState.currentViewport = &this;
         if (isResolutionLocked) rl.EndTextureMode();
-        isAttached = true;
         rl.BeginTextureMode(data);
         rl.ClearBackground(color.toRl());
         rl.BeginBlendMode(blend);
@@ -612,8 +614,11 @@ struct Viewport {
     // NOTE: The engine viewport should not use this function.
     @trusted
     void detach() {
-        if (isEmpty || !isAttached) return;
-        isAttached = false;
+        if (isEmpty) return;
+        if (engineState.currentViewport != &this) {
+            assert(0, "Cannot detach viewport because it is not the attached viewport.");
+        }
+        engineState.currentViewport = null;
         rl.EndBlendMode();
         rl.EndTextureMode();
         if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.toRl());
@@ -640,7 +645,6 @@ struct Camera {
     Vec2 position;         /// The position of the cammera.
     float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
     float scale = 1.0f;    /// The zoom level of the camera.
-    bool isAttached;       /// Indicates whether the camera is currently in use.
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
 
     @safe @nogc nothrow:
@@ -659,12 +663,20 @@ struct Camera {
 
     /// Returns the origin of the camera.
     Vec2 origin() {
-        return Rect(position, resolution / Vec2(scale)).origin(hook);
+        if (engineState.currentViewport == null || engineState.currentViewport.isEmpty) {
+            return Rect(resolution / Vec2(scale)).origin(hook);
+        } else {
+            return Rect(engineState.currentViewport.size / Vec2(scale)).origin(hook);
+        }
     }
 
     /// Returns the area covered by the camera.
     Rect area() {
-        return Rect(position, resolution / Vec2(scale)).area(hook);
+        if (engineState.currentViewport == null || engineState.currentViewport.isEmpty) {
+            return Rect(position, resolution / Vec2(scale)).area(hook);
+        } else {
+            return Rect(position, engineState.currentViewport.size / Vec2(scale)).area(hook);
+        }
     }
 
     /// Returns the top left point of the camera.
@@ -735,8 +747,10 @@ struct Camera {
     /// Attaches the camera, making it active.
     @trusted
     void attach() {
-        if (isAttached) return;
-        isAttached = true;
+        if (engineState.currentCamera != null) {
+            assert(0, "Cannot attach camera because another camera is already attached.");
+        }
+        engineState.currentCamera = &this;
         auto temp = this.toRl();
         if (isPixelSnapped || isPixelPerfect) {
             temp.target.x = floor(temp.target.x);
@@ -750,8 +764,10 @@ struct Camera {
     /// Detaches the camera, making it inactive.
     @trusted
     void detach() {
-        if (!isAttached) return;
-        isAttached = false;
+        if (engineState.currentCamera != &this) {
+            assert(0, "Cannot detach camera because it is not the attached camera.");
+        }
+        engineState.currentCamera = null;
         rl.EndMode2D();
     }
 }
@@ -884,6 +900,9 @@ struct EngineState {
     LStr assetsPath;
     LStr tempText;
 
+    Camera* currentCamera;
+    Viewport* currentViewport;
+
     Color borderColor;
     Filter defaultFilter;
     Sz tickCount;
@@ -999,8 +1018,9 @@ int toRl(Filter filter) {
 
 /// Converts a Parin type to a raylib type.
 rl.Camera2D toRl(Camera camera) {
+    auto area = Rect((engineState.currentViewport == null || engineState.currentViewport.isEmpty) ? resolution : engineState.currentViewport.size);
     return rl.Camera2D(
-        Rect(resolution).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
+        area.origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
         camera.position.toRl(),
         camera.rotation,
         camera.scale,
