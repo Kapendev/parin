@@ -555,8 +555,9 @@ struct SoundId {
 /// Represents the viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
-    Color color;
-    Blend blend;
+    Color color;             /// TOOO
+    Blend blend;             /// TOOO
+    bool isAttached;         /// Indicates whether the viewport is currently in use.
 
     @safe @nogc nothrow:
 
@@ -600,10 +601,11 @@ struct Viewport {
     @trusted
     void attach() {
         if (isEmpty) return;
-        if (engineState.currentViewport != null) {
+        if (engineState.currentViewport.isAttached) {
             assert(0, "Cannot attach viewport because another viewport is already attached.");
         }
-        engineState.currentViewport = &this;
+        isAttached = true;
+        engineState.currentViewport = this;
         if (isResolutionLocked) rl.EndTextureMode();
         rl.BeginTextureMode(data);
         rl.ClearBackground(color.toRl());
@@ -615,10 +617,11 @@ struct Viewport {
     @trusted
     void detach() {
         if (isEmpty) return;
-        if (engineState.currentViewport != &this) {
+        if (!isAttached) {
             assert(0, "Cannot detach viewport because it is not the attached viewport.");
         }
-        engineState.currentViewport = null;
+        isAttached = false;
+        engineState.currentViewport = Viewport();
         rl.EndBlendMode();
         rl.EndTextureMode();
         if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.toRl());
@@ -646,6 +649,7 @@ struct Camera {
     float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
     float scale = 1.0f;    /// The zoom level of the camera.
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
+    bool isAttached;       /// Indicates whether the camera is currently in use.
 
     @safe @nogc nothrow:
 
@@ -662,20 +666,20 @@ struct Camera {
     }
 
     /// Returns the origin of the camera.
-    Vec2 origin() {
-        if (engineState.currentViewport == null || engineState.currentViewport.isEmpty) {
+    Vec2 origin(Viewport viewport = Viewport()) {
+        if (viewport.isEmpty) {
             return Rect(resolution / Vec2(scale)).origin(hook);
         } else {
-            return Rect(engineState.currentViewport.size / Vec2(scale)).origin(hook);
+            return Rect(viewport.size / Vec2(scale)).origin(hook);
         }
     }
 
     /// Returns the area covered by the camera.
-    Rect area() {
-        if (engineState.currentViewport == null || engineState.currentViewport.isEmpty) {
+    Rect area(Viewport viewport = Viewport()) {
+        if (viewport.isEmpty) {
             return Rect(position, resolution / Vec2(scale)).area(hook);
         } else {
-            return Rect(position, engineState.currentViewport.size / Vec2(scale)).area(hook);
+            return Rect(position, viewport.size / Vec2(scale)).area(hook);
         }
     }
 
@@ -747,11 +751,12 @@ struct Camera {
     /// Attaches the camera, making it active.
     @trusted
     void attach() {
-        if (engineState.currentCamera != null) {
+        if (engineState.currentCamera.isAttached) {
             assert(0, "Cannot attach camera because another camera is already attached.");
         }
-        engineState.currentCamera = &this;
-        auto temp = this.toRl();
+        isAttached = true;
+        engineState.currentCamera = this;
+        auto temp = this.toRl(engineState.currentViewport);
         if (isPixelSnapped || isPixelPerfect) {
             temp.target.x = floor(temp.target.x);
             temp.target.y = floor(temp.target.y);
@@ -764,10 +769,11 @@ struct Camera {
     /// Detaches the camera, making it inactive.
     @trusted
     void detach() {
-        if (engineState.currentCamera != &this) {
+        if (!isAttached) {
             assert(0, "Cannot detach camera because it is not the attached camera.");
         }
-        engineState.currentCamera = null;
+        isAttached = false;
+        engineState.currentCamera = Camera();
         rl.EndMode2D();
     }
 }
@@ -900,8 +906,8 @@ struct EngineState {
     LStr assetsPath;
     LStr tempText;
 
-    Camera* currentCamera;
-    Viewport* currentViewport;
+    Camera currentCamera;
+    Viewport currentViewport;
 
     Color borderColor;
     Filter defaultFilter;
@@ -1017,8 +1023,8 @@ int toRl(Filter filter) {
 }
 
 /// Converts a Parin type to a raylib type.
-rl.Camera2D toRl(Camera camera) {
-    auto area = Rect((engineState.currentViewport == null || engineState.currentViewport.isEmpty) ? resolution : engineState.currentViewport.size);
+rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
+    auto area = Rect(viewport.isEmpty ? resolution : viewport.size);
     return rl.Camera2D(
         area.origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
         camera.position.toRl(),
@@ -1057,16 +1063,16 @@ void randomize() {
     randomize(randi);
 }
 
-/// Converts a world position to a screen position based on the given camera.
+/// Converts a world point to a screen point based on the given camera.
 @trusted
-Vec2 toScreenPosition(Vec2 position, Camera camera) {
-    return toParin(rl.GetWorldToScreen2D(position.toRl(), camera.toRl()));
+Vec2 toScreenPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
+    return toParin(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
 }
 
-/// Converts a screen position to a world position based on the given camera.
+/// Converts a screen point to a world point based on the given camera.
 @trusted
-Vec2 toWorldPosition(Vec2 position, Camera camera) {
-    return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
+Vec2 toWorldPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
+    return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Returns an absolute path to the assets folder.
@@ -1600,7 +1606,7 @@ Vec2 resolution() {
 
 /// Returns the current position of the mouse on the screen.
 @trusted
-Vec2 mouseScreenPosition() {
+Vec2 mouse() {
     if (isResolutionLocked) {
         auto window = windowSize;
         auto minRatio = min(window.x / engineState.viewport.width, window.y / engineState.viewport.height);
@@ -1618,11 +1624,6 @@ Vec2 mouseScreenPosition() {
     } else {
         return Vec2(rl.GetTouchX(), rl.GetTouchY());
     }
-}
-
-/// Returns the current position of the mouse on the world, using the specified camera.
-Vec2 mouseWorldPosition(Camera camera) {
-    return mouseScreenPosition.toWorldPosition(camera);
 }
 
 /// Returns the current frames per second (FPS).
