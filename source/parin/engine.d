@@ -166,8 +166,8 @@ struct DrawOptions {
     Vec2 scale = Vec2(1.0f);  /// The scale of the drawn object.
     float rotation = 0.0f;    /// The rotation of the drawn object, in degrees.
     Color color = white;      /// The color of the drawn object.
-    Hook hook = Hook.topLeft; /// An value representing the origin point of the drawn object when origin is set to zero.
-    Flip flip = Flip.none;    /// An value representing flipping orientations.
+    Hook hook = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is set to zero.
+    Flip flip = Flip.none;    /// A value representing flipping orientations.
 
     @safe @nogc nothrow:
 
@@ -555,9 +555,9 @@ struct SoundId {
 /// Represents the viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
-    Color color;             /// TOOO
-    Blend blend;             /// TOOO
-    bool isAttached;         /// Indicates whether the viewport is currently in use.
+    Color color;     /// The background color of the viewport.
+    Blend blend;     /// A value representing blending modes.
+    bool isAttached; /// Indicates whether the viewport is currently in use.
 
     @safe @nogc nothrow:
 
@@ -1652,7 +1652,7 @@ float deltaTime() {
 /// Returns the change in mouse position since the last frame.
 @trusted
 Vec2 deltaMouse() {
-    return toParin(rl.GetMouseDelta());
+    return rl.GetMouseDelta().toParin();
 }
 
 /// Returns the change in mouse wheel position since the last frame.
@@ -1675,9 +1675,8 @@ float deltaWheel() {
 /// Measures the size of the specified text when rendered with the given font and draw options.
 @trusted
 Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
-    if (font.isEmpty || text.length == 0) {
-        return Vec2();
-    }
+    if (font.isEmpty || text.length == 0) return Vec2();
+
     auto result = Vec2();
     auto tempByteCounter = 0; // Used to count longer text line num chars.
     auto byteCounter = 0;

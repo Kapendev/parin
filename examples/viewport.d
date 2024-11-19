@@ -14,7 +14,7 @@ bool update(float dt) {
     if (isWindowResized) viewport.resize(resolutionWidth / 2, resolutionHeight / 2);
     // Draw the mouse position inside the viewport.
     auto viewportCenter = viewport.size * Vec2(0.5);
-    auto viewportMousePosition = mouseScreenPosition - Rect(resolution * Vec2(0.5), viewport.size).centerArea.position;
+    auto viewportMousePosition = mouse - Rect(resolution * Vec2(0.5), viewport.size).centerArea.position;
     viewport.attach();
     drawVec2(viewportCenter, 20);
     drawVec2(viewportMousePosition, 20);

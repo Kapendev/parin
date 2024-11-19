@@ -20,10 +20,10 @@ bool update(float dt) {
     // The sprite should be updated every frame, regardless of whether it is running.
     sprite.update(dt);
     // Get some basic info about the mouse.
-    auto mouseDistance = sprite.position.distanceTo(mouseScreenPosition);
-    auto mouseDirection = sprite.position.directionTo(mouseScreenPosition);
+    auto mouseDistance = sprite.position.distanceTo(mouse);
+    auto mouseDirection = sprite.position.directionTo(mouse);
     // Move the sprite around in a smooth way.
-    sprite.followPositionWithSlowdown(mouseScreenPosition, 0.2);
+    sprite.followPositionWithSlowdown(mouse, 0.2);
 
     // Play the right animation.
     auto isWaiting = mouseDistance < 0.2;
@@ -55,7 +55,7 @@ bool update(float dt) {
 
     // Draw the sprite, the mouse position and some info.
     drawSprite(atlas, sprite, options);
-    drawVec2(mouseScreenPosition, 8, isWaiting ? blank : white.alpha(150));
+    drawVec2(mouse, 8, isWaiting ? blank : white.alpha(150));
     drawDebugText("Press 1, 2 or 3 to change the character.", Vec2(8));
     return false;
 }

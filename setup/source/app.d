@@ -169,8 +169,8 @@ int runDubSetup(string[] args, bool isFirstRun) {
     }
     whileExit:
     if (arg == "Y" || arg == "y") {
-        auto dub1 = spawnProcess(["dub", "add", "raylib-d"]).wait();
-        auto dub2 = spawnProcess(["dub", "run", "raylib-d:install"]).wait();
+        auto dub1 = spawnProcess(["dub", "add", "raylib-d", "--verror"]).wait();
+        auto dub2 = spawnProcess(["dub", "run", "raylib-d:install", "--verror", "--", "-q", "-u=no"]).wait();
         // Remove the backup copies if something failed.
         if (dub1 != 0 || dub2 != 0) {
             if (exists(dubCopyFile)) std.file.remove(dubCopyFile);
@@ -182,7 +182,7 @@ int runDubSetup(string[] args, bool isFirstRun) {
     // Replace the dub file content if needed.
     if (isFirstRun) {
         std.file.write(dubFile, dubFileContent);
-        std.file.remove(dubLockFile);
+        if (exists(dubLockFile)) std.file.remove(dubLockFile);
         // Remove the backup copies.
         if (exists(dubCopyFile)) std.file.remove(dubCopyFile);
         if (exists(dubLockCopyFile)) std.file.remove(dubLockCopyFile);
@@ -202,8 +202,14 @@ int runDubSetup(string[] args, bool isFirstRun) {
 }
 
 int main(string[] args) {
-    auto isSimpProject = !exists(dubFile);
+    auto result = 0;
     auto isFirstRun = !exists(assetsDir);
-    if (isSimpProject) return runSimpSetup(args[1 .. $], isFirstRun);
-    else return runDubSetup(args[1 .. $], isFirstRun);
+    auto isSimpProject = !exists(dubFile);
+    if (isSimpProject) {
+        result = runSimpSetup(args[1 .. $], isFirstRun);
+    } else {
+        result = runDubSetup(args[1 .. $], isFirstRun);
+    }
+    if (result == 0) writeln("Done!");
+    return result;
 }

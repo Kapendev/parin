@@ -95,6 +95,10 @@ bool isReleased(Gamepad key, int id = 0);
 Vec2 wasd();
 Vec2 wasdPressed();
 Vec2 wasdReleased();
+
+Vec2 mouse();
+Vec2 deltaMouse();
+float deltaWheel();
 ```
 
 ## Sound
@@ -103,15 +107,10 @@ Parin provides a set of sound functions inside the `parin.engine` module.
 
 ```d
 void playSound(Sound sound);
-void playSound(SoundId sound);
 void stopSound(Sound sound);
-void stopSound(SoundId sound);
 void pauseSound(Sound sound);
-void pauseSound(SoundId sound);
 void resumeSound(Sound sound);
-void resumeSound(SoundId sound);
 void updateSound(Sound sound);
-void updateSound(SoundId sound);
 ```
 
 ## Drawing
