@@ -98,7 +98,7 @@ enum dubFileContent = `{
             "dflags": ["-i"],
             "lflags": ["-L.", "-rpath", "@executable_path/"],
             "libs": [
-                "raylib.500"
+                "raylib"
             ]
         },
         {
