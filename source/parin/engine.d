@@ -42,6 +42,12 @@ enum Filter : ubyte {
     linear = rl.TEXTURE_FILTER_BILINEAR, /// Bilinear filtering (smooth).
 }
 
+/// A type representing texture wrapping modes.
+enum Wrap : ubyte {
+    repeat = rl.TEXTURE_WRAP_REPEAT, // Repeats texture.
+    clamp = rl.TEXTURE_WRAP_CLAMP,   // Clamps texture.
+}
+
 /// A type representing blending modes.
 enum Blend : ubyte {
     alpha = rl.BLEND_CUSTOM_SEPARATE, /// Standard alpha blending.
@@ -52,7 +58,7 @@ enum Blend : ubyte {
 }
 
 /// A type representing a limited set of keyboard keys.
-enum Keyboard {
+enum Keyboard : ushort {
     a = rl.KEY_A,                 /// The A key.
     b = rl.KEY_B,                 /// The B key.
     c = rl.KEY_C,                 /// The C key.
@@ -133,14 +139,14 @@ enum Keyboard {
 }
 
 /// A type representing a limited set of mouse keys.
-enum Mouse {
+enum Mouse : ubyte {
     left = rl.MOUSE_BUTTON_LEFT,     /// The left mouse button.
     right = rl.MOUSE_BUTTON_RIGHT,   /// The right mouse button.
     middle = rl.MOUSE_BUTTON_MIDDLE, /// The middle mouse button.
 }
 
 /// A type representing a limited set of gamepad buttons.
-enum Gamepad {
+enum Gamepad : ubyte {
     left = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
     right = rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
     up = rl.GAMEPAD_BUTTON_LEFT_FACE_UP,       /// The up button.
@@ -268,6 +274,13 @@ struct Texture {
         rl.SetTextureFilter(data, value);
     }
 
+    /// Sets the wrap mode of the texture.
+    @trusted
+    void setWrap(Wrap value) {
+        if (isEmpty) return;
+        rl.SetTextureWrap(data, value);
+    }
+
     /// Frees the loaded texture.
     @trusted
     void free() {
@@ -350,6 +363,13 @@ struct Font {
     void setFilter(Filter value) {
         if (isEmpty) return;
         rl.SetTextureFilter(data.texture, value);
+    }
+
+    /// Sets the wrap mode of the font.
+    @trusted
+    void setWrap(Wrap value) {
+        if (isEmpty) return;
+        rl.SetTextureWrap(data.texture, value);
     }
 
     /// Frees the loaded font.
@@ -594,6 +614,7 @@ struct Viewport {
         if (!isEmpty) rl.UnloadRenderTexture(data);
         data = rl.LoadRenderTexture(width, height);
         setFilter(engineState.defaultFilter);
+        setWrap(engineState.defaultWrap);
     }
 
     /// Attaches the viewport, making it active.
@@ -632,6 +653,13 @@ struct Viewport {
     void setFilter(Filter value) {
         if (isEmpty) return;
         rl.SetTextureFilter(data.texture, value);
+    }
+
+    /// Sets the wrap mode of the viewport.
+    @trusted
+    void setWrap(Wrap value) {
+        if (isEmpty) return;
+        rl.SetTextureWrap(data.texture, value);
     }
 
     /// Frees the loaded viewport.
@@ -911,6 +939,7 @@ struct EngineState {
 
     Color borderColor;
     Filter defaultFilter;
+    Wrap defaultWrap;
     Sz tickCount;
 
     @safe @nogc nothrow:
@@ -1130,6 +1159,7 @@ TextId loadText(IStr path, Sz tag = 0) {
 Result!Texture loadRawTexture(IStr path) {
     auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toParin();
     value.setFilter(engineState.defaultFilter);
+    value.setWrap(engineState.defaultWrap);
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -1168,6 +1198,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
     value.runeSpacing = runeSpacing;
     value.lineSpacing = lineSpacing;
     value.setFilter(engineState.defaultFilter);
+    value.setWrap(engineState.defaultWrap);
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -1498,14 +1529,29 @@ Filter defaultFilter() {
     return engineState.defaultFilter;
 }
 
+/// Returns the default wrap mode for textures.
+Wrap defaultWrap() {
+    return engineState.defaultWrap;
+}
+
 /// Sets the default filter mode for textures to the specified value.
 void setDefaultFilter(Filter value) {
     engineState.defaultFilter = value;
 }
 
+/// Sets the default wrap mode for textures to the specified value.
+void setDefaultWrap(Wrap value) {
+    engineState.defaultWrap = value;
+}
+
 /// Sets the filter mode used by the engine viewport to the specified value.
 void setEngineViewportFilter(Filter value) {
     engineState.viewport.setFilter(value);
+}
+
+/// Sets the wrap mode used by the engine viewport to the specified value.
+void setEngineViewportWrap(Wrap value) {
+    engineState.viewport.setWrap(value);
 }
 
 /// Returns the current master volume level.

@@ -22,14 +22,14 @@ public import joka.types;
 @safe @nogc nothrow:
 
 struct Tile {
-    int width;
-    int height;
-    Sz id;
+    int width = 16;
+    int height = 16;
+    short id;
     Vec2 position;
 
     @safe @nogc nothrow:
 
-    this(int width, int height, Sz id, Vec2 position = Vec2()) {
+    this(int width, int height, short id, Vec2 position = Vec2()) {
         this.width = width;
         this.height = height;
         this.id = id;
@@ -70,6 +70,7 @@ struct TileMap {
     int tileWidth = 16;
     int tileHeight = 16;
     Vec2 position;
+
     alias data this;
 
     @safe @nogc nothrow:
@@ -81,11 +82,6 @@ struct TileMap {
         this.softMaxColCount = maxColCount;
         this.position = position;
         this.data.fill(-1);
-    }
-
-    /// Returns true if the tile map has not been loaded.
-    bool isEmpty() {
-        return data.length == 0;
     }
 
     int width() {
@@ -231,7 +227,7 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
 }
 
 void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty || tile.width == 0 || tile.height == 0) return;
+    if (texture.isEmpty || tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
     drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
 }
 
@@ -240,7 +236,7 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 }
 
 void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty || map.tileWidth == 0 || map.tileHeight == 0) return;
+    if (texture.isEmpty || map.tileWidth <= 0 || map.tileHeight <= 0) return;
 
     auto textureColCount = texture.width / map.tileWidth;
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
@@ -253,7 +249,7 @@ void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions option
     foreach (row; colRow1.y .. colRow2.y) {
         foreach (col; colRow1.x .. colRow2.x) {
             auto id = map[row, col];
-            if (id == -1) continue;
+            if (id < 0) continue;
             textureArea.position.x = (id % textureColCount) * map.tileWidth;
             textureArea.position.y = (id / textureColCount) * map.tileHeight;
             drawTextureArea(
