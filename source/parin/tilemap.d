@@ -71,7 +71,9 @@ struct TileMap {
     int tileHeight = 16;
     Vec2 position;
 
-    alias data this;
+    enum maxRowCount = data.maxRowCount;
+    enum maxColCount = data.maxColCount;
+    enum maxCapacity = data.maxCapacity;
 
     @safe @nogc nothrow:
 
@@ -82,6 +84,79 @@ struct TileMap {
         this.softMaxColCount = maxColCount;
         this.position = position;
         this.data.fill(-1);
+    }
+
+    ref short opIndex(Sz row, Sz col) {
+        if (!has(row, col)) {
+            assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
+        }
+        return data[row, col];
+    }
+
+    ref short opIndex(IVec2 position) {
+        return opIndex(position.y, position.x);
+    }
+
+    void opIndexAssign(short rhs, Sz row, Sz col) {
+        if (!has(row, col)) {
+            assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
+        }
+        data[row, col] = rhs;
+    }
+
+    void opIndexAssign(short rhs, IVec2 position) {
+        return opIndexAssign(rhs, position.y, position.x);
+    }
+
+    void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
+        if (!has(row, col)) {
+            assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
+        }
+        mixin("tiles[colCount * row + col]", op, "= rhs;");
+    }
+
+    void opIndexOpAssign(IStr op)(T rhs, IVec2 position) {
+        return opIndexOpAssign!(op)(rhs, position.y, position.x);
+    }
+
+    Sz opDollar(Sz dim)() {
+        static if (dim == 0) {
+            return rowCount;
+        } else static if (dim == 1) {
+            return colCount;
+        } else {
+            assert(0, "WTF!");
+        }
+    }
+
+    Sz rowCount() {
+        return data.length == 0 ? 0 : softMaxRowCount;
+    }
+
+    Sz colCount() {
+        return data.length == 0 ? 0 : softMaxColCount;
+    }
+
+    bool isEmpty() {
+        return data.isEmpty;
+    }
+
+    bool has(Sz row, Sz col) {
+        return row < softMaxRowCount && col < softMaxColCount;
+    }
+
+    bool has(IVec2 position) {
+        return has(position.y, position.x);
+    }
+
+    @trusted
+    void fill(short value) {
+        data.fill(value);
+    }
+
+    @trusted
+    void free() {
+        data.free();
     }
 
     int width() {
@@ -189,7 +264,7 @@ struct TileMap {
             
             void popFront() {
                 position.x += 1;
-                if (position.x >= TileMap.maxColCount) {
+                if (position.x >= maxColCount) {
                     position.x = first.x;
                     position.y += 1;
                 }

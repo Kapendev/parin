@@ -206,6 +206,7 @@ struct DrawOptions {
 /// Represents an identifier for a managed resource.
 struct TextId {
     GenerationalIndex data;
+
     alias data this;
 
     @safe @nogc nothrow:
@@ -295,6 +296,7 @@ struct Texture {
 /// Represents an identifier for a managed resource.
 struct TextureId {
     GenerationalIndex data;
+
     alias data this;
 
     @safe @nogc nothrow:
@@ -386,6 +388,7 @@ struct Font {
 /// Represents an identifier for a managed resource.
 struct FontId {
     GenerationalIndex data;
+
     alias data this;
 
     @safe @nogc nothrow:
@@ -528,6 +531,7 @@ struct Sound {
 /// Represents an identifier for a managed resource.
 struct SoundId {
     GenerationalIndex data;
+
     alias data this;
 
     @safe @nogc nothrow:
@@ -811,6 +815,7 @@ struct EngineFlags {
     bool isPixelSnapped;
     bool isPixelPerfect;
     bool isCursorVisible;
+    bool canUseAssetsPath;
 }
 
 struct EngineFullscreenState {
@@ -902,6 +907,7 @@ struct EngineViewport {
     Viewport data;
     int targetWidth;
     int targetHeight;
+
     alias data this;
 
     @safe @nogc nothrow:
@@ -931,16 +937,16 @@ struct EngineState {
     EngineResources resources;
     EngineFullscreenState fullscreenState;
 
+    Color borderColor;
+    Sz tickCount;
     LStr assetsPath;
     LStr tempText;
 
     Camera currentCamera;
     Viewport currentViewport;
-
-    Color borderColor;
     Filter defaultFilter;
     Wrap defaultWrap;
-    Sz tickCount;
+    rl.FilePathList filePathListBuffer;
 
     @safe @nogc nothrow:
 
@@ -1114,11 +1120,30 @@ IStr toAssetsPath(IStr path) {
     return pathConcat(assetsPath, path).pathFormat();
 }
 
+bool canUseAssetsPath() {
+    return engineState.flags.canUseAssetsPath;
+}
+
+void setCanUseAssetsPath(bool value) {
+    engineState.flags.canUseAssetsPath = value;
+}
+
+@trusted
+IStr[] droppedFilePaths() {
+    static IStr[128] buffer;
+
+    foreach (i; 0 .. engineState.filePathListBuffer.count) {
+        buffer[i] = engineState.filePathListBuffer.paths[i].toStr();
+    }
+    return buffer[0 .. engineState.filePathListBuffer.count];
+}
+
 /// Loads a text file from the assets folder.
 /// The resource remains valid until this function is called again. 
 /// Supports both forward slashes and backslashes in file paths.
 Result!IStr loadTempText(IStr path) {
-    auto fault = readTextIntoBuffer(path.toAssetsPath(), engineState.tempText);
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto fault = readTextIntoBuffer(targetPath, engineState.tempText);
     return Result!IStr(engineState.tempText.items, fault);
 }
 
@@ -1126,7 +1151,8 @@ Result!IStr loadTempText(IStr path) {
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 Result!LStr loadRawText(IStr path) {
-    return readText(path.toAssetsPath());
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    return readText(targetPath);
 }
 
 /// Loads a text file from the assets folder.
@@ -1157,7 +1183,8 @@ TextId loadText(IStr path, Sz tag = 0) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadRawTexture(IStr path) {
-    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toParin();
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toParin();
     value.setFilter(engineState.defaultFilter);
     value.setWrap(engineState.defaultWrap);
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
@@ -1191,7 +1218,8 @@ TextureId loadTexture(IStr path, Sz tag = 0) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
-    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
     if (value.data.texture.id == engineFont.data.texture.id) {
         value = Font();
     }
@@ -1230,11 +1258,12 @@ FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 ru
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Sound loadRawSound(IStr path, float volume, float pitch) {
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
-        value.data = rl.LoadSound(path.toAssetsPath().toCStr().getOr());
+        value.data = rl.LoadSound(targetPath.toCStr().getOr());
     } else {
-        value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
+        value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
     }
     value.setVolume(volume);
     value.setPitch(pitch);
@@ -1267,7 +1296,8 @@ SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
-    return writeText(path.toAssetsPath(), text);
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    return writeText(targetPath, text);
 }
 
 /// Frees all managed resources associated with the given tag, or all if no tag is specified.
@@ -1292,6 +1322,7 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     engineState.viewport.color = gray;
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
+    engineState.flags.canUseAssetsPath = true;
     engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
     engineState.tempText.reserve(8192);
     // NOTE: This line is used for fixing an alpha bug with render textures.
@@ -1316,9 +1347,16 @@ void updateWindow(bool function(float dt) updateFunc) {
         rl.ClearBackground(engineState.viewport.color.toRl());
 
         // The main loop.
+        if (rl.IsFileDropped) {
+            engineState.filePathListBuffer = rl.LoadDroppedFiles();
+        }
         auto dt = deltaTime;
         auto result = _updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
+        if (rl.IsFileDropped) {
+            rl.UnloadDroppedFiles(engineState.filePathListBuffer);
+            engineState.filePathListBuffer = rl.FilePathList();
+        }
 
         // End drawing.
         if (isResolutionLocked) {
@@ -1780,7 +1818,15 @@ bool isDown(char key) {
 /// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(Keyboard key) {
-    return rl.IsKeyDown(key);
+    if (key == Keyboard.shift) {
+        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_SHIFT);
+    } else if (key == Keyboard.ctrl) {
+        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_CONTROL);
+    } else if (key == Keyboard.alt) {
+        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_ALT);
+    } else {
+        return rl.IsKeyDown(key);
+    }
 }
 
 /// Returns true if the specified key is currently pressed.
@@ -1804,7 +1850,15 @@ bool isPressed(char key) {
 /// Returns true if the specified key was pressed.
 @trusted
 bool isPressed(Keyboard key) {
-    return rl.IsKeyPressed(key);
+    if (key == Keyboard.shift) {
+        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_SHIFT);
+    } else if (key == Keyboard.ctrl) {
+        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_CONTROL);
+    } else if (key == Keyboard.alt) {
+        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_ALT);
+    } else {
+        return rl.IsKeyPressed(key);
+    }
 }
 
 /// Returns true if the specified key was pressed.
@@ -1828,7 +1882,15 @@ bool isReleased(char key) {
 /// Returns true if the specified key was released.
 @trusted
 bool isReleased(Keyboard key) {
-    return rl.IsKeyReleased(key);
+    if (key == Keyboard.shift) {
+        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_SHIFT);
+    } else if (key == Keyboard.ctrl) {
+        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_CONTROL);
+    } else if (key == Keyboard.alt) {
+        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_ALT);
+    } else {
+        return rl.IsKeyReleased(key);
+    }
 }
 
 /// Returns true if the specified key was released.
@@ -2094,11 +2156,7 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     }
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    if (isPixelSnapped || isPixelPerfect) {
-        rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
-    } else {
-        rl.rlTranslatef(-origin.x, -origin.y, 0.0f);
-    }
+    rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
     rl.DrawTextCodepoint(font.data, rune, rl.Vector2(0.0f, 0.0f), font.size, options.color.toRl());
     rl.rlPopMatrix();
 }
@@ -2122,11 +2180,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     }
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    if (isPixelSnapped || isPixelPerfect) {
-        rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
-    } else {
-        rl.rlTranslatef(-origin.x, -origin.y, 0.0f);
-    }
+    rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
     auto textOffsetY = 0.0f; // Offset between lines (on linebreak '\n').
     auto textOffsetX = 0.0f; // Offset X to next character to draw.
     auto i = 0;
