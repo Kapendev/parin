@@ -27,6 +27,8 @@ public import joka.types;
 @safe @nogc nothrow:
 
 EngineState engineState;
+IStr[64] engineEnvArgsBuffer;
+Sz engineEnvArgsBufferLength;
 
 /// A type representing flipping orientations.
 enum Flip : ubyte {
@@ -1071,8 +1073,13 @@ rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
 /// Returns the opposite flip value.
 /// The opposite of every flip value except none is none.
 /// The fallback value is returned if the flip value is none.
-Flip opposite(Flip flip, Flip fallback) {
+Flip oppositeFlip(Flip flip, Flip fallback) {
     return flip == fallback ? Flip.none : fallback;
+}
+
+/// Returns the arguments that this application was started with.
+IStr[] envArgs() {
+    return engineEnvArgsBuffer[0 .. engineEnvArgsBufferLength];
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
@@ -1120,14 +1127,17 @@ IStr toAssetsPath(IStr path) {
     return pathConcat(assetsPath, path).pathFormat();
 }
 
+/// Returns true if the assets path is currently in use when loading.
 bool canUseAssetsPath() {
     return engineState.flags.canUseAssetsPath;
 }
 
+/// Sets whether the assets path should be in use when loading.
 void setCanUseAssetsPath(bool value) {
     engineState.flags.canUseAssetsPath = value;
 }
 
+/// Returns the dropped file paths of the current frame.
 @trusted
 IStr[] droppedFilePaths() {
     static IStr[128] buffer;
@@ -1536,11 +1546,6 @@ void toggleIsFullscreen() {
 @trusted
 bool isWindowResized() {
     return rl.IsWindowResized();
-}
-
-/// Returns the current background color.
-Color backgroundColor() {
-    return engineState.viewport.color;
 }
 
 /// Sets the background color to the specified value.
@@ -2075,11 +2080,11 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
     auto target = Rect(position, area.size * options.scale.abs());
     auto flip = options.flip;
     if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
-        flip = opposite(flip, Flip.xy);
+        flip = oppositeFlip(flip, Flip.xy);
     } else if (options.scale.x < 0.0f) {
-        flip = opposite(flip, Flip.x);
+        flip = oppositeFlip(flip, Flip.x);
     } else if (options.scale.y < 0.0f) {
-        flip = opposite(flip, Flip.y);
+        flip = oppositeFlip(flip, Flip.y);
     }
     final switch (flip) {
         case Flip.none: break;
@@ -2225,6 +2230,10 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
+            engineEnvArgsBufferLength = argc;
+            foreach (i; 0 .. argc) {
+                engineEnvArgsBuffer[i] = argv[i].toStr();
+            }
             openWindow(width, height, argv[0].toStr(), title);
             readyFunc();
             updateWindow(&updateFunc);
@@ -2233,6 +2242,10 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
         }
     } else {
         void main(string[] args) {
+            engineEnvArgsBufferLength = args.length;
+            foreach (i, arg; args) {
+                engineEnvArgsBuffer[i] = arg;
+            }
             openWindow(width, height, args[0], title);
             readyFunc();
             updateWindow(&updateFunc);
