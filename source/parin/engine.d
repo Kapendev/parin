@@ -14,6 +14,7 @@
 module parin.engine;
 
 import rl = parin.rl;
+import stdc = joka.stdc;
 import joka.unions;
 import joka.ascii;
 import joka.io;
@@ -1070,6 +1071,38 @@ rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
     );
 }
 
+/// Converts an ASCII bitmap font texture into a font.
+/// The texture will be freed when the font is freed.
+@trusted
+Font toAsciiFont(Texture texture, int tileWidth, int tileHeight) {
+    if (texture.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
+
+    auto result = Font();
+    result.lineSpacing = tileHeight;
+
+    auto rowCount = texture.height / tileHeight;
+    auto colCount = texture.width / tileWidth;
+    auto maxCount = rowCount * colCount;
+
+    result.data.baseSize = tileHeight;
+    result.data.glyphCount = maxCount;
+    result.data.glyphPadding = 0;
+    result.data.texture = texture.data;
+    result.data.recs = cast(rl.Rectangle*) stdc.malloc(maxCount * rl.Rectangle.sizeof);
+    foreach (i; 0 .. maxCount) {
+        result.data.recs[i].x = (i % colCount) * tileWidth;
+        result.data.recs[i].y = (i / colCount) * tileHeight;
+        result.data.recs[i].width = tileWidth;
+        result.data.recs[i].height = tileHeight;
+    }
+    result.data.glyphs = cast(rl.GlyphInfo*) stdc.malloc(maxCount * rl.GlyphInfo.sizeof);
+    foreach (i; 0 .. maxCount) {
+        result.data.glyphs[i] = rl.GlyphInfo();
+        result.data.glyphs[i].value = i + 32;
+    }
+    return result;
+}
+
 /// Returns the opposite flip value.
 /// The opposite of every flip value except none is none.
 /// The fallback value is returned if the flip value is none.
@@ -1256,6 +1289,37 @@ FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 ru
     }
 
     auto result = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
+    if (result.isSome) {
+        return FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
+    } else {
+        return FontId();
+    }
+}
+
+/// Loads an ASCII bitmap font file (PNG) from the assets folder.
+/// The resource must be manually freed.
+/// Supports both forward slashes and backslashes in file paths.
+Result!Font loadRawAsciiFont(IStr path, int tileWidth, int tileHeight) {
+    auto value = loadRawTexture(path).getOr();
+    return Result!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads an ASCII bitmap font file (PNG) from the assets folder.
+/// Optionally assigns a tag for resource management.
+/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// Supports both forward slashes and backslashes in file paths.
+FontId loadAsciiFont(IStr path, int tileWidth, int tileHeight, Sz tag = 0) {
+    if (engineState.resources.fonts.length == 0) {
+        engineState.resources.fonts.appendEmpty();
+    }
+
+    foreach (id; engineState.resources.fonts.ids) {
+        if (engineState.resources.fonts.names[id] == path) {
+            return FontId(id);
+        }
+    }
+
+    auto result = loadRawAsciiFont(path, tileWidth, tileHeight);
     if (result.isSome) {
         return FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
     } else {
