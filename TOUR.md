@@ -173,13 +173,13 @@ These functions handle both forward slashes and backslashes in file paths, ensur
 TextId loadText(IStr path, Sz tag = 0);
 TextureId loadTexture(IStr path, Sz tag = 0);
 FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "", Sz tag = 0);
-FontId loadAsciiFont(IStr path, int tileWidth, int tileHeight, Sz tag = 0);
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight, Sz tag = 0);
 SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
 
 Result!LStr loadRawText(IStr path);
 Result!Texture loadRawTexture(IStr path);
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
-Result!Font loadRawAsciiFont(IStr path, int tileWidth, int tileHeight);
+Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight);
 Result!Sound loadRawSound(IStr path, float volume, float pitch);
 
 Result!IStr loadTempText(IStr path);

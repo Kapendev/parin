@@ -13,12 +13,14 @@
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
-import rl = parin.rl;
 import stdc = joka.stdc;
+import rl = parin.rl;
+
 import joka.unions;
 import joka.ascii;
 import joka.io;
 import parin.timer;
+
 public import joka.colors;
 public import joka.containers;
 public import joka.faults;
@@ -30,6 +32,8 @@ public import joka.types;
 EngineState engineState;
 IStr[64] engineEnvArgsBuffer;
 Sz engineEnvArgsBufferLength;
+IStr[64] engineDroppedFilePathsBuffer;
+rl.FilePathList engineDroppedFilePathsDataBuffer;
 
 /// A type representing flipping orientations.
 enum Flip : ubyte {
@@ -949,7 +953,6 @@ struct EngineState {
     Viewport currentViewport;
     Filter defaultFilter;
     Wrap defaultWrap;
-    rl.FilePathList filePathListBuffer;
 
     @safe @nogc nothrow:
 
@@ -1073,8 +1076,9 @@ rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
 
 /// Converts an ASCII bitmap font texture into a font.
 /// The texture will be freed when the font is freed.
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 @trusted
-Font toAsciiFont(Texture texture, int tileWidth, int tileHeight) {
+Font toFont(Texture texture, int tileWidth, int tileHeight) {
     if (texture.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
 
     auto result = Font();
@@ -1173,12 +1177,7 @@ void setCanUseAssetsPath(bool value) {
 /// Returns the dropped file paths of the current frame.
 @trusted
 IStr[] droppedFilePaths() {
-    static IStr[128] buffer;
-
-    foreach (i; 0 .. engineState.filePathListBuffer.count) {
-        buffer[i] = engineState.filePathListBuffer.paths[i].toStr();
-    }
-    return buffer[0 .. engineState.filePathListBuffer.count];
+    return engineDroppedFilePathsBuffer[0 .. engineDroppedFilePathsDataBuffer.count];
 }
 
 /// Loads a text file from the assets folder.
@@ -1299,16 +1298,18 @@ FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 ru
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
-Result!Font loadRawAsciiFont(IStr path, int tileWidth, int tileHeight) {
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
     auto value = loadRawTexture(path).getOr();
-    return Result!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+    return Result!Font(value.toFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
 /// Optionally assigns a tag for resource management.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
-FontId loadAsciiFont(IStr path, int tileWidth, int tileHeight, Sz tag = 0) {
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight, Sz tag = 0) {
     if (engineState.resources.fonts.length == 0) {
         engineState.resources.fonts.appendEmpty();
     }
@@ -1319,7 +1320,7 @@ FontId loadAsciiFont(IStr path, int tileWidth, int tileHeight, Sz tag = 0) {
         }
     }
 
-    auto result = loadRawAsciiFont(path, tileWidth, tileHeight);
+    auto result = loadRawFontFromTexture(path, tileWidth, tileHeight);
     if (result.isSome) {
         return FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
     } else {
@@ -1422,14 +1423,17 @@ void updateWindow(bool function(float dt) updateFunc) {
 
         // The main loop.
         if (rl.IsFileDropped) {
-            engineState.filePathListBuffer = rl.LoadDroppedFiles();
+            engineDroppedFilePathsDataBuffer = rl.LoadDroppedFiles();
+            foreach (i; 0 .. engineDroppedFilePathsDataBuffer.count) {
+                engineDroppedFilePathsBuffer[i] = engineDroppedFilePathsDataBuffer.paths[i].toStr();
+            }
         }
         auto dt = deltaTime;
         auto result = _updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
         if (rl.IsFileDropped) {
-            rl.UnloadDroppedFiles(engineState.filePathListBuffer);
-            engineState.filePathListBuffer = rl.FilePathList();
+            rl.UnloadDroppedFiles(engineDroppedFilePathsDataBuffer);
+            engineDroppedFilePathsDataBuffer = rl.FilePathList();
         }
 
         // End drawing.
