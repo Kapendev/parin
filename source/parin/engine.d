@@ -6,6 +6,10 @@
 // Version: v0.0.29
 // ---
 
+// TODO: Change the structure of examples. Add folders and stuff.
+// TODO: Fix engine viewport bug where it does not keep the viewport color when changing the resolution with toggleResolution.
+// TODO: I need to check alpha blending again because I noticed something when working on the ui system.
+// TODO: Test the ui code and think how to make it better.
 // TODO: Test the resource loading code.
 // TODO: Make sounds loop based on a variable and not on the file type.
 // NOTE: The main problem with sound looping is the raylib API.
@@ -34,6 +38,15 @@ IStr[64] engineEnvArgsBuffer;
 Sz engineEnvArgsBufferLength;
 IStr[64] engineDroppedFilePathsBuffer;
 rl.FilePathList engineDroppedFilePathsDataBuffer;
+UiState uiState;
+
+enum defaultUiAlpha = 200;
+
+/// A type representing layout orientations.
+enum Layout : ubyte {
+    v, /// Vertical layout.
+    h, /// Horizontal layout.
+}
 
 /// A type representing flipping orientations.
 enum Flip : ubyte {
@@ -817,6 +830,34 @@ struct Camera {
     }
 }
 
+struct UiButtonStyle {
+    Color disabledColor = gray1.alpha(defaultUiAlpha);
+    Color idleColor = gray2.alpha(defaultUiAlpha);
+    Color hotColor = gray3.alpha(defaultUiAlpha);
+    Color activeColor = gray4.alpha(defaultUiAlpha);
+}
+
+struct UiState {
+    Mouse mouseClickAction = Mouse.left;
+    Keyboard keyboardClickAction = Keyboard.space;
+    Gamepad gamepadClickAction = Gamepad.a;
+
+    Vec2 viewportPoint;
+    Vec2 viewportScale = Vec2(1);
+    Vec2 startPoint;
+    Vec2 startPointOffest;
+    int margin;
+    Layout layout;
+
+    Vec2 itemDragOffset;
+    Vec2 itemSize;
+    int itemId;
+    int hotItemId;
+    int activeItemId;
+    int draggedItemId;
+    int focusedItemId;
+}
+
 struct EngineFlags {
     bool isUpdating;
     bool isPixelSnapped;
@@ -1428,6 +1469,8 @@ void updateWindow(bool function(float dt) updateFunc) {
                 engineDroppedFilePathsBuffer[i] = engineDroppedFilePathsDataBuffer.paths[i].toStr();
             }
         }
+
+        prepareUi();
         auto dt = deltaTime;
         auto result = _updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
@@ -1525,6 +1568,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 @trusted
 void closeWindow() {
     if (!rl.IsWindowReady) return;
+    uiState = UiState();
     engineState.free();
     rl.CloseAudioDevice();
     rl.CloseWindow();
@@ -2321,4 +2365,216 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
             closeWindow();
         }
     }
+}
+
+void prepareUi() {
+    uiState.viewportPoint = Vec2();
+    uiState.viewportScale = Vec2(1);
+    uiState.startPoint = Vec2();
+    uiState.startPointOffest = Vec2();
+    uiState.margin = 0;
+    uiState.layout = Layout.v;
+    uiState.itemId = 0;
+    uiState.activeItemId = 0;
+    uiState.hotItemId = 0;
+}
+
+void setUiViewportState(Vec2 point, Vec2 scale) {
+    uiState.viewportPoint = point;
+    uiState.viewportScale = scale;
+}
+
+Vec2 uiMouse() {
+    return (mouse - uiState.viewportPoint) / uiState.viewportScale;
+}
+
+void setUiClickAction(Mouse value) {
+    uiState.mouseClickAction = value;
+}
+
+void setUiClickAction(Keyboard value) {
+    uiState.keyboardClickAction = value;
+}
+
+void setUiClickAction(Gamepad value) {
+    uiState.gamepadClickAction = value;
+}
+
+Vec2 uiStartPoint() {
+    return uiState.startPoint;
+}
+
+void setUiStartPoint(Vec2 value) {
+    uiState.itemSize = Vec2();
+    uiState.startPoint = value;
+    uiState.startPointOffest = Vec2();
+}
+
+int uiMargin() {
+    return uiState.margin;
+}
+
+void setUiMargin(int value) {
+    uiState.margin = value;
+}
+
+void useUiLayout(Layout value) {
+    if (uiState.startPointOffest) {
+        final switch (value) {
+            case Layout.v:
+                if (uiState.layout == value) uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin;
+                uiState.startPointOffest.y = 0;
+                break;
+            case Layout.h:
+                uiState.startPointOffest.x = 0;
+                if (uiState.layout == value) uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin;
+                break;
+        }
+    }
+    uiState.layout = value;
+}
+
+bool isUiItemHot() {
+    return uiState.itemId == uiState.hotItemId;
+}
+
+bool isUiHot() {
+    return uiState.hotItemId > 0;
+}
+
+bool isUiItemActive() {
+    return uiState.itemId == uiState.activeItemId;
+}
+
+bool isUiActive() {
+    return uiState.activeItemId > 0;
+}
+
+bool isUiItemDragged() {
+    return uiState.itemId == uiState.draggedItemId;
+}
+
+bool isUiDragged() {
+    return uiState.draggedItemId > 0;
+}
+
+Vec2 uiDragOffest() {
+    return uiState.itemDragOffset;
+}
+
+int uiFocus() {
+    return uiState.focusedItemId;
+}
+
+void setUiFocus(int id) {
+    uiState.focusedItemId = id;
+}
+
+void clampUiFocus(int step, Sz length) {
+    auto min = uiState.itemId + 1;
+    auto max = cast(int) length - 1 + min;
+    auto isOutside = uiState.focusedItemId < min || uiState.focusedItemId > max;
+    if (step == 0) {
+        uiState.focusedItemId = min;
+        return;
+    }
+    if (isOutside) {
+        if (step < 0) {
+            uiState.focusedItemId = max;
+            return;
+        } else {
+            uiState.focusedItemId = min;
+            return;
+        }
+    }
+    uiState.focusedItemId = clamp(uiState.focusedItemId + step, min, max);
+}
+
+void wrapUiFocus(int step, Sz length) {
+    auto min = uiState.itemId + 1;
+    auto max = cast(int) length - 1 + min;
+    auto isOutside = uiState.focusedItemId < min || uiState.focusedItemId > max;
+    if (step == 0) {
+        uiState.focusedItemId = min;
+        return;
+    }
+    if (isOutside) {
+        if (step < 0) {
+            uiState.focusedItemId = max;
+            return;
+        } else {
+            uiState.focusedItemId = min;
+            return;
+        }
+    }
+    uiState.focusedItemId = wrap(uiState.focusedItemId + step, min, max + 1);
+}
+
+bool uiButton(Vec2 size, Font font, IStr text, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
+    // Ready.
+    uiState.itemId += 1;
+    // Update button.
+    auto area = Rect(uiState.startPoint + uiState.startPointOffest, size);
+    auto isHot = area.hasPoint(uiMouse);
+    auto isActive = isHot && uiState.mouseClickAction.isDown;
+    auto isClicked = isHot && uiState.mouseClickAction.isReleased;
+    if (isDisabled) {
+        isHot = false;
+        isActive = false;
+        isClicked = false;
+    } else if (uiState.itemId == uiState.focusedItemId) {
+        isHot = true;
+        if (uiState.keyboardClickAction.isDown || uiState.gamepadClickAction.isDown) isActive = true;
+        if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
+    }
+    // Update state.
+    uiState.itemSize = size;
+    final switch (uiState.layout) {
+        case Layout.v: uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin; break;
+        case Layout.h: uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin; break;
+    }
+    if (isHot) uiState.hotItemId = uiState.itemId;
+    if (isActive) {
+        uiState.activeItemId = uiState.itemId;
+        uiState.focusedItemId = uiState.itemId;
+    }
+    if (uiState.draggedItemId) {
+        if (uiState.mouseClickAction.isReleased) uiState.draggedItemId = 0;
+    } else if (uiState.mouseClickAction.isPressed && uiState.itemId == uiState.activeItemId) {
+        uiState.itemDragOffset = area.position - uiMouse;
+        uiState.draggedItemId = uiState.itemId;
+    }
+    // Draw.
+    if (isDisabled) {
+        drawRect(area, style.disabledColor);
+    } else if (isActive) {
+        drawRect(area, style.activeColor);
+    } else if (isHot) {
+        drawRect(area, style.hotColor);
+    } else {
+        drawRect(area, style.idleColor);
+    }
+    if (isDisabled) {
+        auto tempOptions = DrawOptions(Hook.center);
+        tempOptions.color.a = defaultUiAlpha / 2;
+        drawText(font, text, area.centerPoint, tempOptions);
+    } else {
+        drawText(font, text, area.centerPoint, DrawOptions(Hook.center));
+    }
+    return isClicked;
+}
+
+bool uiButtonAt(Vec2 point, Vec2 size, Font font, IStr text, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
+    setUiStartPoint(point);
+    return uiButton(size, font, text, isDisabled, style);
+}
+
+bool uiDragBox(Vec2 size, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
+    uiButton(size, Font(), "", isDisabled, style);
+    return isUiItemDragged;
+}
+
+bool uiDragBoxAt(Vec2 point, Vec2 size, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
+    setUiStartPoint(point);
+    return uiDragBox(size, isDisabled, style);
 }
