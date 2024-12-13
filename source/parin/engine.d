@@ -6,11 +6,8 @@
 // Version: v0.0.29
 // ---
 
-// TODO: Change the structure of examples. Add folders and stuff.
-// TODO: Fix engine viewport bug where it does not keep the viewport color when changing the resolution with toggleResolution.
-// TODO: Test the ui code and think how to make it better.
+// TODO: Test the ui code and think how to make it better while working on real stuff.
 // TODO: Test the resource loading code.
-
 // TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
 // NOTE: The main problem with sound looping is the raylib API.
@@ -854,6 +851,7 @@ struct UiState {
     Mouse mouseClickAction = Mouse.left;
     Keyboard keyboardClickAction = Keyboard.space;
     Gamepad gamepadClickAction = Gamepad.a;
+    bool isActOnPress;
 
     Vec2 viewportPoint;
     Vec2 viewportSize;
@@ -868,6 +866,7 @@ struct UiState {
     int itemId;
     int hotItemId;
     int activeItemId;
+    int clickedItemId;
     int draggedItemId;
     int focusedItemId;
 }
@@ -1533,7 +1532,9 @@ void updateWindow(bool function(float dt) updateFunc) {
         if (engineState.viewport.isLocking) {
             engineState.viewport.resize(engineState.viewport.targetWidth, engineState.viewport.targetHeight);
         } else if (engineState.viewport.isUnlocking) {
+            auto oldColor = engineState.viewport.color;
             engineState.viewport.free();
+            engineState.viewport.color = oldColor;
         }
 
         // Fullscreen code to fix a bug on Linux.
@@ -1753,7 +1754,9 @@ void lockResolution(int width, int height) {
 void unlockResolution() {
     engineState.viewport.startUnlocking();
     if (!engineState.flags.isUpdating) {
+        auto oldColor = engineState.viewport.color;
         engineState.viewport.free();
+        engineState.viewport.color = oldColor;
     }
 }
 
@@ -2390,14 +2393,9 @@ void prepareUi() {
     uiState.margin = 0;
     uiState.layout = Layout.v;
     uiState.itemId = 0;
-    uiState.activeItemId = 0;
     uiState.hotItemId = 0;
-}
-
-void setUiViewportState(Vec2 point, Vec2 size, Vec2 scale) {
-    uiState.viewportPoint = point;
-    uiState.viewportSize = size;
-    uiState.viewportScale = scale;
+    uiState.activeItemId = 0;
+    uiState.clickedItemId = 0;
 }
 
 Vec2 uiMouse() {
@@ -2417,6 +2415,20 @@ void setUiClickAction(Keyboard value) {
 
 void setUiClickAction(Gamepad value) {
     uiState.gamepadClickAction = value;
+}
+
+bool isUiActOnPress() {
+    return uiState.isActOnPress;
+}
+
+void setIsUiActOnPress(bool value) {
+    uiState.isActOnPress = value;
+}
+
+void setUiViewportState(Vec2 point, Vec2 size, Vec2 scale) {
+    uiState.viewportPoint = point;
+    uiState.viewportSize = size;
+    uiState.viewportScale = scale;
 }
 
 Vec2 uiStartPoint() {
@@ -2467,6 +2479,14 @@ bool isUiItemActive() {
 
 bool isUiActive() {
     return uiState.activeItemId > 0;
+}
+
+bool isUiItemClicked() {
+    return uiState.itemId == uiState.clickedItemId;
+}
+
+bool isUiClicked() {
+    return uiState.clickedItemId > 0;
 }
 
 bool isUiItemDragged() {
@@ -2537,7 +2557,7 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
     auto area = Rect(uiState.startPoint + uiState.startPointOffest, size);
     auto isHot = area.hasPoint(uiMouse);
     auto isActive = isHot && uiState.mouseClickAction.isDown;
-    auto isClicked = isHot && uiState.mouseClickAction.isReleased;
+    auto isClicked = isHot && (uiState.isActOnPress ? uiState.mouseClickAction.isPressed : uiState.mouseClickAction.isReleased);
     if (options.isDisabled) {
         isHot = false;
         isActive = false;
@@ -2545,7 +2565,11 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
     } else if (uiState.itemId == uiState.focusedItemId) {
         isHot = true;
         if (uiState.keyboardClickAction.isDown || uiState.gamepadClickAction.isDown) isActive = true;
-        if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
+        if (uiState.isActOnPress) {
+            if (uiState.keyboardClickAction.isPressed || uiState.gamepadClickAction.isPressed) isClicked = true;
+        } else {
+            if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
+        }
     }
     // Update state.
     uiState.itemSize = size;
@@ -2558,6 +2582,7 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
         uiState.activeItemId = uiState.itemId;
         uiState.focusedItemId = uiState.itemId;
     }
+    if (isClicked) uiState.clickedItemId = uiState.itemId;
     if (uiState.draggedItemId) {
         if (uiState.mouseClickAction.isReleased) uiState.draggedItemId = 0;
     } else if (uiState.mouseClickAction.isPressed && uiState.itemId == uiState.activeItemId) {

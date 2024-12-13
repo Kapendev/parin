@@ -12,8 +12,9 @@ void ready() {
 }
 
 bool update(float dt) {
-    viewport.attach();
+    // Set the viewport state for subsequent UI items.
     setUiViewportState(viewportPosition, viewport.size, viewportScale);
+    viewport.attach();
 
     setUiMargin(2);
     setUiStartPoint(Vec2(8));

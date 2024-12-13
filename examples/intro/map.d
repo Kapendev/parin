@@ -1,7 +1,7 @@
 /// This example shows how to use the tile map structure of Parin.
+
 import parin;
 
-// The game variables.
 auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true);

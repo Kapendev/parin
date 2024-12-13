@@ -1,7 +1,7 @@
 /// This example shows how to use the scene manager of Parin.
+
 import parin;
 
-// The game variables.
 auto sceneManager = SceneManager();
 
 // The first scene.

@@ -1,7 +1,8 @@
-/// This example shows how to create an animated character that follows the mouse.
+/// This example shows how to use the sprite structure of Parin.
+/// It will create an animated character that follows the mouse.
+
 import parin;
 
-// The game variables.
 auto atlas = TextureId();
 auto sprite = Sprite(16, 16, 0, 128);
 auto spriteFlip = Flip.none;

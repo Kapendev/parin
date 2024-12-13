@@ -1,7 +1,7 @@
 /// This example shows how to use the viewport structure of Parin.
+
 import parin;
 
-// The game variables.
 auto viewport = Viewport(black);
 
 void ready() {

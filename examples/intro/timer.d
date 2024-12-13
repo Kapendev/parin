@@ -1,7 +1,7 @@
 /// This example shows how to use the timer structure of Parin.
+
 import parin;
 
-// The game variables.
 auto counter = 0;
 auto timer = Timer(1, true);
 
