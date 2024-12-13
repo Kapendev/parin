@@ -8,9 +8,10 @@
 
 // TODO: Change the structure of examples. Add folders and stuff.
 // TODO: Fix engine viewport bug where it does not keep the viewport color when changing the resolution with toggleResolution.
-// TODO: I need to check alpha blending again because I noticed something when working on the ui system.
 // TODO: Test the ui code and think how to make it better.
 // TODO: Test the resource loading code.
+
+// TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
 // NOTE: The main problem with sound looping is the raylib API.
 
@@ -40,7 +41,11 @@ IStr[64] engineDroppedFilePathsBuffer;
 rl.FilePathList engineDroppedFilePathsDataBuffer;
 UiState uiState;
 
-enum defaultUiAlpha = 200;
+enum defaultUiAlpha = 230;
+enum defaultUiDisabledColor = 0x202020.toRgb().alpha(defaultUiAlpha);
+enum defaultUiIdleColor = 0x414141.toRgb().alpha(defaultUiAlpha);
+enum defaultUiHotColor = 0x818181.toRgb().alpha(defaultUiAlpha);
+enum defaultUiActiveColor = 0xBABABA.toRgb().alpha(defaultUiAlpha);
 
 /// A type representing layout orientations.
 enum Layout : ubyte {
@@ -830,11 +835,19 @@ struct Camera {
     }
 }
 
-struct UiButtonStyle {
-    Color disabledColor = gray1.alpha(defaultUiAlpha);
-    Color idleColor = gray2.alpha(defaultUiAlpha);
-    Color hotColor = gray3.alpha(defaultUiAlpha);
-    Color activeColor = gray4.alpha(defaultUiAlpha);
+struct UiButtonOptions {
+    Color disabledColor = defaultUiDisabledColor;
+    Color idleColor = defaultUiIdleColor;
+    Color hotColor = defaultUiHotColor;
+    Color activeColor = defaultUiActiveColor;
+    Font font;
+    bool isDisabled;
+
+    @safe @nogc nothrow:
+
+    this(bool isDisabled) {
+        this.isDisabled = isDisabled;
+    }
 }
 
 struct UiState {
@@ -843,6 +856,7 @@ struct UiState {
     Gamepad gamepadClickAction = Gamepad.a;
 
     Vec2 viewportPoint;
+    Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1);
     Vec2 startPoint;
     Vec2 startPointOffest;
@@ -2369,7 +2383,8 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
 
 void prepareUi() {
     uiState.viewportPoint = Vec2();
-    uiState.viewportScale = Vec2(1);
+    uiState.viewportSize = resolution;
+    uiState.viewportScale = Vec2(1.0f);
     uiState.startPoint = Vec2();
     uiState.startPointOffest = Vec2();
     uiState.margin = 0;
@@ -2379,13 +2394,17 @@ void prepareUi() {
     uiState.hotItemId = 0;
 }
 
-void setUiViewportState(Vec2 point, Vec2 scale) {
+void setUiViewportState(Vec2 point, Vec2 size, Vec2 scale) {
     uiState.viewportPoint = point;
+    uiState.viewportSize = size;
     uiState.viewportScale = scale;
 }
 
 Vec2 uiMouse() {
-    return (mouse - uiState.viewportPoint) / uiState.viewportScale;
+    auto result = (mouse - uiState.viewportPoint) / uiState.viewportScale;
+    auto area = Rect(uiState.viewportSize);
+    if (!area.hasPoint(result)) result = Vec2(-100_000.0f);
+    return result;
 }
 
 void setUiClickAction(Mouse value) {
@@ -2510,15 +2529,16 @@ void wrapUiFocus(int step, Sz length) {
     uiState.focusedItemId = wrap(uiState.focusedItemId + step, min, max + 1);
 }
 
-bool uiButton(Vec2 size, Font font, IStr text, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
+bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     // Ready.
     uiState.itemId += 1;
+    if (options.font.isEmpty) options.font = engineFont;
     // Update button.
     auto area = Rect(uiState.startPoint + uiState.startPointOffest, size);
     auto isHot = area.hasPoint(uiMouse);
     auto isActive = isHot && uiState.mouseClickAction.isDown;
     auto isClicked = isHot && uiState.mouseClickAction.isReleased;
-    if (isDisabled) {
+    if (options.isDisabled) {
         isHot = false;
         isActive = false;
         isClicked = false;
@@ -2545,36 +2565,26 @@ bool uiButton(Vec2 size, Font font, IStr text, bool isDisabled = false, UiButton
         uiState.draggedItemId = uiState.itemId;
     }
     // Draw.
-    if (isDisabled) {
-        drawRect(area, style.disabledColor);
+    if (options.isDisabled) {
+        drawRect(area, options.disabledColor);
     } else if (isActive) {
-        drawRect(area, style.activeColor);
+        drawRect(area, options.activeColor);
     } else if (isHot) {
-        drawRect(area, style.hotColor);
+        drawRect(area, options.hotColor);
     } else {
-        drawRect(area, style.idleColor);
+        drawRect(area, options.idleColor);
     }
-    if (isDisabled) {
+    if (options.isDisabled) {
         auto tempOptions = DrawOptions(Hook.center);
         tempOptions.color.a = defaultUiAlpha / 2;
-        drawText(font, text, area.centerPoint, tempOptions);
+        drawText(options.font, text, area.centerPoint, tempOptions);
     } else {
-        drawText(font, text, area.centerPoint, DrawOptions(Hook.center));
+        drawText(options.font, text, area.centerPoint, DrawOptions(Hook.center));
     }
     return isClicked;
 }
 
-bool uiButtonAt(Vec2 point, Vec2 size, Font font, IStr text, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
-    setUiStartPoint(point);
-    return uiButton(size, font, text, isDisabled, style);
-}
-
-bool uiDragBox(Vec2 size, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
-    uiButton(size, Font(), "", isDisabled, style);
+bool uiDragBox(Vec2 size, UiButtonOptions options = UiButtonOptions()) {
+    uiButton(size, "", options);
     return isUiItemDragged;
-}
-
-bool uiDragBoxAt(Vec2 point, Vec2 size, bool isDisabled = false, UiButtonStyle style = UiButtonStyle()) {
-    setUiStartPoint(point);
-    return uiDragBox(size, isDisabled, style);
 }

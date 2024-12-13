@@ -3,7 +3,7 @@
 import parin;
 
 auto viewport = Viewport(black);
-auto viewportPosition = Vec2(100, 30);
+auto viewportPosition = Vec2(32);
 auto viewportScale = Vec2(2);
 
 void ready() {
@@ -12,13 +12,15 @@ void ready() {
 }
 
 bool update(float dt) {
-    auto size = Vec2(30);
     viewport.attach();
-    setUiViewportState(viewportPosition, viewportScale);
-    if (uiButtonAt(Vec2(8), size, engineFont, "UwU")) {
-        println("UwU");
+    setUiViewportState(viewportPosition, viewport.size, viewportScale);
+
+    setUiMargin(2);
+    setUiStartPoint(Vec2(8));
+    foreach (i; 0 .. 4) {
+        if (uiButton(Vec2(14), i.toStr())) println(i);
     }
-    drawVec2(uiMouse, 4);
+
     viewport.detach();
     drawViewport(viewport, viewportPosition, DrawOptions(viewportScale));
     return false;

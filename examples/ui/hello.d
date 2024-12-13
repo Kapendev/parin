@@ -2,14 +2,16 @@
 
 import parin;
 
+auto buttonText = "Hello world!";
+
 void ready() {
     lockResolution(320, 180);
 }
 
 bool update(float dt) {
-    auto text = "Hello world!";
-    if (uiButtonAt(Vec2(8), Vec2(80, 30), engineFont, text)) {
-        println(text);
+    setUiStartPoint(Vec2(8));
+    if (uiButton(Vec2(80, 30), buttonText)) {
+        println(buttonText);
     }
     return false;
 }
