@@ -638,6 +638,10 @@ struct Viewport {
     @trusted
     void resize(int width, int height) {
         if (!isEmpty) rl.UnloadRenderTexture(data);
+        if (width <= 0 || height <= 0) {
+            data = rl.RenderTexture2D();
+            return;
+        }
         data = rl.LoadRenderTexture(width, height);
         setFilter(engineState.defaultFilter);
         setWrap(engineState.defaultWrap);
@@ -2400,8 +2404,10 @@ void prepareUi() {
 
 Vec2 uiMouse() {
     auto result = (mouse - uiState.viewportPoint) / uiState.viewportScale;
-    auto area = Rect(uiState.viewportSize);
-    if (!area.hasPoint(result)) result = Vec2(-100_000.0f);
+    if (result.x < 0) result.x = -100_000.0f;
+    else if (result.x > uiState.viewportSize.x) result.x = 100_000.0f;
+    if (result.y < 0) result.y = -100_000.0f;
+    else if (result.y > uiState.viewportSize.y) result.y = 100_000.0f;
     return result;
 }
 
@@ -2490,14 +2496,14 @@ bool isUiClicked() {
 }
 
 bool isUiItemDragged() {
-    return uiState.itemId == uiState.draggedItemId;
+    return uiState.itemId == uiState.draggedItemId && deltaMouse;
 }
 
 bool isUiDragged() {
-    return uiState.draggedItemId > 0;
+    return uiState.draggedItemId > 0 && deltaMouse;
 }
 
-Vec2 uiDragOffest() {
+Vec2 uiDragOffset() {
     return uiState.itemDragOffset;
 }
 
