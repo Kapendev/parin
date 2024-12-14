@@ -67,8 +67,8 @@ enum Filter : ubyte {
 
 /// A type representing texture wrapping modes.
 enum Wrap : ubyte {
-    repeat = rl.TEXTURE_WRAP_REPEAT, // Repeats texture.
     clamp = rl.TEXTURE_WRAP_CLAMP,   // Clamps texture.
+    repeat = rl.TEXTURE_WRAP_REPEAT, // Repeats texture.
 }
 
 /// A type representing blending modes.
@@ -1715,7 +1715,7 @@ void setBorderColor(Color value) {
 Font engineFont() {
     auto result = rl.GetFontDefault().toParin();
     result.runeSpacing = 1;
-    result.lineSpacing = 14;
+    result.lineSpacing = 10;
     return result;
 }
 
@@ -2578,9 +2578,32 @@ void wrapUiFocus(short step, Sz length) {
     uiState.focusedItemId = wrap(cast(short) (uiState.focusedItemId + step), min, cast(short) (max + 1));
 }
 
+void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, bool isClicked) {
+    uiPreviousState = uiState;
+    uiState.itemPoint = itemPoint;
+    uiState.itemSize = itemSize;
+    uiState.itemId += 1;
+    final switch (uiState.layout) {
+        case Layout.v: uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin; break;
+        case Layout.h: uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin; break;
+    }
+    if (isHot) uiState.hotItemId = uiState.itemId;
+    if (isActive) {
+        uiState.activeItemId = uiState.itemId;
+        uiState.focusedItemId = uiState.itemId;
+    }
+    if (isClicked) uiState.clickedItemId = uiState.itemId;
+    if (uiState.draggedItemId) {
+        if (uiState.mouseClickAction.isReleased) uiState.draggedItemId = 0;
+    } else if (uiState.mouseClickAction.isPressed && uiState.itemId == uiState.activeItemId) {
+        auto m = uiMouse;
+        uiState.itemDragOffset = uiState.itemPoint - m;
+        uiState.draggedItemId = uiState.itemId;
+    }
+}
+
 bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-    // Update button.
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
     auto area = Rect(uiState.startPoint + uiState.startPointOffest, size);
@@ -2601,27 +2624,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
             if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
         }
     }
-    // Update state.
-    uiPreviousState = uiState;
-    uiState.itemPoint = area.position;
-    uiState.itemSize = size;
-    uiState.itemId += 1;
-    final switch (uiState.layout) {
-        case Layout.v: uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin; break;
-        case Layout.h: uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin; break;
-    }
-    if (isHot) uiState.hotItemId = uiState.itemId;
-    if (isActive) {
-        uiState.activeItemId = uiState.itemId;
-        uiState.focusedItemId = uiState.itemId;
-    }
-    if (isClicked) uiState.clickedItemId = uiState.itemId;
-    if (uiState.draggedItemId) {
-        if (uiState.mouseClickAction.isReleased) uiState.draggedItemId = 0;
-    } else if (uiState.mouseClickAction.isPressed && uiState.itemId == uiState.activeItemId) {
-        uiState.itemDragOffset = area.position - m;
-        uiState.draggedItemId = uiState.itemId;
-    }
+    updateUiState(area.position, size, isHot, isActive, isClicked);
     return isClicked;
 }
 
@@ -2702,4 +2705,22 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
         drawUiButton(size, "", options);
         return false;
     }
+}
+
+void uiTexture(Texture texture, UiButtonOptions options = UiButtonOptions()) {
+    auto point = uiState.startPoint + uiState.startPointOffest;
+    drawTexture(texture, point);
+    updateUiState(point, texture.size, false, false, false);
+}
+
+void uiTexture(TextureId texture, UiButtonOptions options = UiButtonOptions()) {
+    uiTexture(texture.get(), options);
+}
+
+void uiText(IStr text, UiButtonOptions options = UiButtonOptions()) {
+    if (options.font.isEmpty) options.font = engineFont;
+    auto point = uiState.startPoint + uiState.startPointOffest;
+    auto size = measureTextSize(options.font, text);
+    drawText(options.font, text, point);
+    updateUiState(point, size, false, false, false);
 }
