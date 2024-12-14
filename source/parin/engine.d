@@ -36,6 +36,7 @@ IStr[64] engineEnvArgsBuffer;
 Sz engineEnvArgsBufferLength;
 IStr[64] engineDroppedFilePathsBuffer;
 rl.FilePathList engineDroppedFilePathsDataBuffer;
+UiState uiPreviousState;
 UiState uiState;
 
 enum defaultUiAlpha = 230;
@@ -836,18 +837,37 @@ struct Camera {
     }
 }
 
+/// A type representing the constraints on drag movement.
+enum UiDragLimit: ubyte {
+    none,         /// No limits.
+    viewport,     /// Limited to the viewport.
+    viewportAndX, /// Limited to the viewport and on the X-axis.
+    viewportAndY, /// Limited to the viewport and on the Y-axis.
+    custom,       /// Limited to custom limits.
+    customAndX,   /// Limited to custom limits and on the X-axis.
+    customAndY,   /// Limited to custom limits and on the Y-axis.
+}
+
 struct UiButtonOptions {
     Color disabledColor = defaultUiDisabledColor;
     Color idleColor = defaultUiIdleColor;
     Color hotColor = defaultUiHotColor;
     Color activeColor = defaultUiActiveColor;
     Font font;
+
     bool isDisabled;
+    UiDragLimit dragLimit;
+    Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
+    Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
 
     @safe @nogc nothrow:
 
     this(bool isDisabled) {
         this.isDisabled = isDisabled;
+    }
+
+    this(UiDragLimit dragLimit) {
+        this.dragLimit = dragLimit;
     }
 }
 
@@ -862,17 +882,18 @@ struct UiState {
     Vec2 viewportScale = Vec2(1);
     Vec2 startPoint;
     Vec2 startPointOffest;
-    int margin;
+    short margin;
     Layout layout;
 
     Vec2 itemDragOffset;
+    Vec2 itemPoint;
     Vec2 itemSize;
-    int itemId;
-    int hotItemId;
-    int activeItemId;
-    int clickedItemId;
-    int draggedItemId;
-    int focusedItemId;
+    short itemId;
+    short hotItemId;
+    short activeItemId;
+    short clickedItemId;
+    short draggedItemId;
+    short focusedItemId;
 }
 
 struct EngineFlags {
@@ -2396,6 +2417,8 @@ void prepareUi() {
     uiState.startPointOffest = Vec2();
     uiState.margin = 0;
     uiState.layout = Layout.v;
+    uiState.itemPoint = Vec2();
+    uiState.itemSize = Vec2();
     uiState.itemId = 0;
     uiState.hotItemId = 0;
     uiState.activeItemId = 0;
@@ -2404,10 +2427,10 @@ void prepareUi() {
 
 Vec2 uiMouse() {
     auto result = (mouse - uiState.viewportPoint) / uiState.viewportScale;
-    if (result.x < 0) result.x = -100_000.0f;
-    else if (result.x > uiState.viewportSize.x) result.x = 100_000.0f;
-    if (result.y < 0) result.y = -100_000.0f;
-    else if (result.y > uiState.viewportSize.y) result.y = 100_000.0f;
+    if (result.x < 0) result.x = -100000.0f;
+    else if (result.x > uiState.viewportSize.x) result.x = 100000.0f;
+    if (result.y < 0) result.y = -100000.0f;
+    else if (result.y > uiState.viewportSize.y) result.y = 100000.0f;
     return result;
 }
 
@@ -2447,11 +2470,11 @@ void setUiStartPoint(Vec2 value) {
     uiState.startPointOffest = Vec2();
 }
 
-int uiMargin() {
+short uiMargin() {
     return uiState.margin;
 }
 
-void setUiMargin(int value) {
+void setUiMargin(short value) {
     uiState.margin = value;
 }
 
@@ -2511,13 +2534,13 @@ int uiFocus() {
     return uiState.focusedItemId;
 }
 
-void setUiFocus(int id) {
+void setUiFocus(short id) {
     uiState.focusedItemId = id;
 }
 
-void clampUiFocus(int step, Sz length) {
-    auto min = uiState.itemId + 1;
-    auto max = cast(int) length - 1 + min;
+void clampUiFocus(short step, Sz length) {
+    auto min = cast(short) (uiState.itemId + 1);
+    auto max = cast(short) (length - 1 + min);
     auto isOutside = uiState.focusedItemId < min || uiState.focusedItemId > max;
     if (step == 0) {
         uiState.focusedItemId = min;
@@ -2532,12 +2555,12 @@ void clampUiFocus(int step, Sz length) {
             return;
         }
     }
-    uiState.focusedItemId = clamp(uiState.focusedItemId + step, min, max);
+    uiState.focusedItemId = clamp(cast(short) (uiState.focusedItemId + step), min, max);
 }
 
-void wrapUiFocus(int step, Sz length) {
-    auto min = uiState.itemId + 1;
-    auto max = cast(int) length - 1 + min;
+void wrapUiFocus(short step, Sz length) {
+    auto min = cast(short) (uiState.itemId + 1);
+    auto max = cast(short) (length - 1 + min);
     auto isOutside = uiState.focusedItemId < min || uiState.focusedItemId > max;
     if (step == 0) {
         uiState.focusedItemId = min;
@@ -2552,23 +2575,24 @@ void wrapUiFocus(int step, Sz length) {
             return;
         }
     }
-    uiState.focusedItemId = wrap(uiState.focusedItemId + step, min, max + 1);
+    uiState.focusedItemId = wrap(cast(short) (uiState.focusedItemId + step), min, cast(short) (max + 1));
 }
 
-bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
-    // Ready.
-    uiState.itemId += 1;
+bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
     // Update button.
+    auto m = uiMouse;
+    auto id = uiState.itemId + 1;
     auto area = Rect(uiState.startPoint + uiState.startPointOffest, size);
-    auto isHot = area.hasPoint(uiMouse);
+    // auto isHot = area.hasPoint(uiMouse)
+    auto isHot = m.x >= area.position.x && m.x < area.position.x + area.size.x && m.y >= area.position.y && m.y < area.position.y + area.size.y;
     auto isActive = isHot && uiState.mouseClickAction.isDown;
     auto isClicked = isHot && (uiState.isActOnPress ? uiState.mouseClickAction.isPressed : uiState.mouseClickAction.isReleased);
     if (options.isDisabled) {
         isHot = false;
         isActive = false;
         isClicked = false;
-    } else if (uiState.itemId == uiState.focusedItemId) {
+    } else if (id == uiState.focusedItemId) {
         isHot = true;
         if (uiState.keyboardClickAction.isDown || uiState.gamepadClickAction.isDown) isActive = true;
         if (uiState.isActOnPress) {
@@ -2578,7 +2602,10 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
         }
     }
     // Update state.
+    uiPreviousState = uiState;
+    uiState.itemPoint = area.position;
     uiState.itemSize = size;
+    uiState.itemId += 1;
     final switch (uiState.layout) {
         case Layout.v: uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin; break;
         case Layout.h: uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin; break;
@@ -2592,15 +2619,20 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
     if (uiState.draggedItemId) {
         if (uiState.mouseClickAction.isReleased) uiState.draggedItemId = 0;
     } else if (uiState.mouseClickAction.isPressed && uiState.itemId == uiState.activeItemId) {
-        uiState.itemDragOffset = area.position - uiMouse;
+        uiState.itemDragOffset = area.position - m;
         uiState.draggedItemId = uiState.itemId;
     }
-    // Draw.
+    return isClicked;
+}
+
+void drawUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
+    if (options.font.isEmpty) options.font = engineFont;
+    auto area = Rect(uiState.itemPoint, size);
     if (options.isDisabled) {
         drawRect(area, options.disabledColor);
-    } else if (isActive) {
+    } else if (isUiItemActive) {
         drawRect(area, options.activeColor);
-    } else if (isHot) {
+    } else if (isUiItemHot) {
         drawRect(area, options.hotColor);
     } else {
         drawRect(area, options.idleColor);
@@ -2612,10 +2644,62 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
     } else {
         drawText(options.font, text, area.centerPoint, DrawOptions(Hook.center));
     }
-    return isClicked;
 }
 
-bool uiDragBox(Vec2 size, UiButtonOptions options = UiButtonOptions()) {
-    uiButton(size, "", options);
-    return isUiItemDragged;
+bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
+    auto result = updateUiButton(size, text, options);
+    drawUiButton(size, text, options);
+    return result;
+}
+
+bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
+    auto dragLimitX = Vec2(-100000.0f, 100000.0f);
+    auto dragLimitY = Vec2(-100000.0f, 100000.0f);
+    final switch (options.dragLimit) {
+        case UiDragLimit.none: break;
+        case UiDragLimit.viewport:
+            dragLimitX = Vec2(0.0f, uiState.viewportSize.x);
+            dragLimitY = Vec2(0.0f, uiState.viewportSize.y);
+            break;
+        case UiDragLimit.viewportAndX:
+            dragLimitX = Vec2(0.0f, uiState.viewportSize.x);
+            dragLimitY = Vec2(point.y, point.y + size.y);
+            break;
+        case UiDragLimit.viewportAndY:
+            dragLimitX = Vec2(point.x, point.x + size.x);
+            dragLimitY = Vec2(0.0f, uiState.viewportSize.y);
+            break;
+        case UiDragLimit.custom:
+            dragLimitX = options.dragLimitX;
+            dragLimitY = options.dragLimitY;
+            break;
+        case UiDragLimit.customAndX:
+            dragLimitX = options.dragLimitX;
+            dragLimitY = Vec2(point.y, point.y + size.y);
+            break;
+        case UiDragLimit.customAndY:
+            dragLimitX = Vec2(point.x, point.x + size.x);
+            dragLimitY = options.dragLimitY;
+            break;
+    }
+
+    size.x = clamp(size.x, 0.0f, dragLimitX.y - dragLimitX.x);
+    size.y = clamp(size.y, 0.0f, dragLimitY.y - dragLimitY.x);
+    point.x = clamp(point.x, dragLimitX.x, dragLimitX.y - size.x);
+    point.y = clamp(point.y, dragLimitY.x, dragLimitY.y - size.y);
+    setUiStartPoint(point);
+    updateUiButton(size, "", options);
+    if (isUiItemDragged) {
+        auto m = (mouse - uiState.viewportPoint) / uiState.viewportScale; // NOTE: Maybe this should be a function?
+        point.y = clamp(m.y + uiDragOffset.y, dragLimitY.x, dragLimitY.y - size.y);
+        point.x = clamp(m.x + uiDragOffset.x, dragLimitX.x, dragLimitX.y - size.x);
+        uiState = uiPreviousState;  
+        setUiStartPoint(point);
+        updateUiButton(size, "", options);
+        drawUiButton(size, "", options);
+        return true;
+    } else {
+        drawUiButton(size, "", options);
+        return false;
+    }
 }
