@@ -6,6 +6,8 @@
 // Version: v0.0.29
 // ---
 
+// TODO: Try to fix the ui item overlaping bug maybe.
+// TODO: Add way to get item point for some stuff. This is nice when making lists.
 // TODO: Test the ui code and think how to make it better while working on real stuff.
 // TODO: Test the resource loading code.
 // TODO: Think about the sound API.
@@ -877,13 +879,16 @@ struct UiState {
     Gamepad gamepadClickAction = Gamepad.a;
     bool isActOnPress;
 
+    Vec2 mousePressedPoint;
     Vec2 viewportPoint;
     Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1);
     Vec2 startPoint;
-    Vec2 startPointOffest;
     short margin;
     Layout layout;
+    Vec2 layoutStartPoint;
+    Vec2 layoutStartPointOffest;
+    Vec2 layoutMaxItemSize;
 
     Vec2 itemDragOffset;
     Vec2 itemPoint;
@@ -2414,15 +2419,21 @@ void prepareUi() {
     uiState.viewportSize = resolution;
     uiState.viewportScale = Vec2(1.0f);
     uiState.startPoint = Vec2();
-    uiState.startPointOffest = Vec2();
     uiState.margin = 0;
     uiState.layout = Layout.v;
+    uiState.layoutStartPoint = Vec2();
+    uiState.layoutStartPointOffest = Vec2();
+    uiState.layoutMaxItemSize = Vec2();
     uiState.itemPoint = Vec2();
     uiState.itemSize = Vec2();
     uiState.itemId = 0;
     uiState.hotItemId = 0;
     uiState.activeItemId = 0;
     uiState.clickedItemId = 0;
+
+    if (uiState.mouseClickAction.isPressed) {
+        uiState.mousePressedPoint = uiMouse;
+    }
 }
 
 Vec2 uiMouse() {
@@ -2467,7 +2478,9 @@ Vec2 uiStartPoint() {
 void setUiStartPoint(Vec2 value) {
     uiState.itemSize = Vec2();
     uiState.startPoint = value;
-    uiState.startPointOffest = Vec2();
+    uiState.layoutStartPoint = value;
+    uiState.layoutStartPointOffest = Vec2();
+    uiState.layoutMaxItemSize = Vec2();
 }
 
 short uiMargin() {
@@ -2479,15 +2492,26 @@ void setUiMargin(short value) {
 }
 
 void useUiLayout(Layout value) {
-    if (uiState.startPointOffest) {
+    if (uiState.layoutStartPointOffest) {
         final switch (value) {
             case Layout.v:
-                if (uiState.layout == value) uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin;
-                uiState.startPointOffest.y = 0;
+                if (uiState.layoutStartPointOffest.x > uiState.layoutMaxItemSize.x) {
+                    uiState.layoutStartPoint.x = uiState.layoutStartPoint.x + uiState.layoutStartPointOffest.x + uiState.margin;
+                } else {
+                    uiState.layoutStartPoint.x += uiState.layoutMaxItemSize.x + uiState.margin;
+                }
+                uiState.layoutStartPointOffest = Vec2();
+                uiState.layoutMaxItemSize.x = 0.0f;
                 break;
             case Layout.h:
-                uiState.startPointOffest.x = 0;
-                if (uiState.layout == value) uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin;
+                uiState.layoutStartPoint.x = uiState.startPoint.x;
+                if (uiState.layoutStartPointOffest.y > uiState.layoutMaxItemSize.y) {
+                    uiState.layoutStartPoint.y = uiState.layoutStartPoint.y + uiState.layoutStartPointOffest.y + uiState.margin;
+                } else {
+                    uiState.layoutStartPoint.y += uiState.layoutMaxItemSize.y + uiState.margin;
+                }
+                uiState.layoutStartPointOffest = Vec2();
+                uiState.layoutMaxItemSize.y = 0.0f;
                 break;
         }
     }
@@ -2583,9 +2607,11 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
     uiState.itemPoint = itemPoint;
     uiState.itemSize = itemSize;
     uiState.itemId += 1;
+    if (itemSize.x > uiState.layoutMaxItemSize.x) uiState.layoutMaxItemSize.x = itemSize.x;
+    if (itemSize.y > uiState.layoutMaxItemSize.y) uiState.layoutMaxItemSize.y = itemSize.y;
     final switch (uiState.layout) {
-        case Layout.v: uiState.startPointOffest.y += uiState.itemSize.y + uiState.margin; break;
-        case Layout.h: uiState.startPointOffest.x += uiState.itemSize.x + uiState.margin; break;
+        case Layout.v: uiState.layoutStartPointOffest.y += uiState.itemSize.y + uiState.margin; break;
+        case Layout.h: uiState.layoutStartPointOffest.x += uiState.itemSize.x + uiState.margin; break;
     }
     if (isHot) uiState.hotItemId = uiState.itemId;
     if (isActive) {
@@ -2606,11 +2632,22 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     if (options.font.isEmpty) options.font = engineFont;
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
-    auto area = Rect(uiState.startPoint + uiState.startPointOffest, size);
+    auto area = Rect(uiState.layoutStartPoint + uiState.layoutStartPointOffest, size);
     // auto isHot = area.hasPoint(uiMouse)
     auto isHot = m.x >= area.position.x && m.x < area.position.x + area.size.x && m.y >= area.position.y && m.y < area.position.y + area.size.y;
     auto isActive = isHot && uiState.mouseClickAction.isDown;
-    auto isClicked = isHot && (uiState.isActOnPress ? uiState.mouseClickAction.isPressed : uiState.mouseClickAction.isReleased);
+    auto isClicked = isHot;
+    if (uiState.isActOnPress) {
+        isClicked = isClicked && uiState.mouseClickAction.isPressed;
+    } else {
+        auto isHotFromMousePressedPoint =
+            uiState.mousePressedPoint.x >= area.position.x &&
+            uiState.mousePressedPoint.x < area.position.x + area.size.x &&
+            uiState.mousePressedPoint.y >= area.position.y &&
+            uiState.mousePressedPoint.y < area.position.y + area.size.y;
+        isClicked = isClicked && isHotFromMousePressedPoint && uiState.mouseClickAction.isReleased;
+    }
+
     if (options.isDisabled) {
         isHot = false;
         isActive = false;
@@ -2658,6 +2695,7 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
 bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
     auto dragLimitX = Vec2(-100000.0f, 100000.0f);
     auto dragLimitY = Vec2(-100000.0f, 100000.0f);
+    // NOTE: There is a potential bug here when size is bigger than the limit/viewport. I will ignore it for now.
     final switch (options.dragLimit) {
         case UiDragLimit.none: break;
         case UiDragLimit.viewport:
@@ -2665,10 +2703,12 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
             dragLimitY = Vec2(0.0f, uiState.viewportSize.y);
             break;
         case UiDragLimit.viewportAndX:
+            point.y = clamp(point.y, 0.0f, uiState.viewportSize.y - size.y);
             dragLimitX = Vec2(0.0f, uiState.viewportSize.x);
             dragLimitY = Vec2(point.y, point.y + size.y);
             break;
         case UiDragLimit.viewportAndY:
+            point.x = clamp(point.x, 0.0f, uiState.viewportSize.x - size.x);
             dragLimitX = Vec2(point.x, point.x + size.x);
             dragLimitY = Vec2(0.0f, uiState.viewportSize.y);
             break;
@@ -2677,10 +2717,12 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
             dragLimitY = options.dragLimitY;
             break;
         case UiDragLimit.customAndX:
+            point.y = clamp(point.y, 0.0f, options.dragLimitY.y - size.y);
             dragLimitX = options.dragLimitX;
             dragLimitY = Vec2(point.y, point.y + size.y);
             break;
         case UiDragLimit.customAndY:
+            point.x = clamp(point.x, 0.0f, options.dragLimitX.y - size.x);
             dragLimitX = Vec2(point.x, point.x + size.x);
             dragLimitY = options.dragLimitY;
             break;
@@ -2708,7 +2750,8 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
 }
 
 void uiTexture(Texture texture, UiButtonOptions options = UiButtonOptions()) {
-    auto point = uiState.startPoint + uiState.startPointOffest;
+    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+    drawRect(Rect(point, texture.size), black);
     drawTexture(texture, point);
     updateUiState(point, texture.size, false, false, false);
 }
@@ -2719,7 +2762,7 @@ void uiTexture(TextureId texture, UiButtonOptions options = UiButtonOptions()) {
 
 void uiText(IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-    auto point = uiState.startPoint + uiState.startPointOffest;
+    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
     auto size = measureTextSize(options.font, text);
     drawText(options.font, text, point);
     updateUiState(point, size, false, false, false);

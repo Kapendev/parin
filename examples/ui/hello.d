@@ -11,7 +11,7 @@ void ready() {
 bool update(float dt) {
     // Set the starting point for subsequent UI items.
     setUiStartPoint(Vec2(8));
-    // Create a button and return true if it is clicked.
+    // Create a button and print if it is clicked.
     if (uiButton(Vec2(80, 30), buttonText)) {
         println(buttonText);
     }

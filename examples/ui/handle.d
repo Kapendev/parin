@@ -1,7 +1,5 @@
 /// This example shows how to use the drag handle.
 
-// TODO: There is a small bug with overlapping UI items. Fix it.
-
 import parin;
 
 auto handlePosition = Vec2(120, 60);
@@ -18,7 +16,7 @@ bool update(float dt) {
         if (handleOptions.dragLimit) handleOptions.dragLimit = UiDragLimit.none;
         else handleOptions.dragLimit = UiDragLimit.viewport;
     }
-    // Create the drag handle and return true if it is dragged.
+    // Create the drag handle and print if it is dragged.
     if (uiDragHandle(Vec2(60), handlePosition, handleOptions)) {
         println(handlePosition);
     }
