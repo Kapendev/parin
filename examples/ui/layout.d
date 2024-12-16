@@ -9,6 +9,7 @@ void ready() {
 }
 
 bool update(float dt) {
+    prepareUi();
     // Set the margin between subsequent UI items.
     setUiMargin(2);
     setUiStartPoint(Vec2(8));

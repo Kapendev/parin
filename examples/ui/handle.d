@@ -10,6 +10,7 @@ void ready() {
 }
 
 bool update(float dt) {
+    prepareUi();
     setUiStartPoint(Vec2(8));
     // Toggle the limit of the drag handle.
     if (uiButton(Vec2(80, 30), "Limit: {}".format(handleOptions.dragLimit))) {

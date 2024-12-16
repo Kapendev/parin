@@ -1,6 +1,7 @@
 /// This example shows how to use the scene manager of Parin.
 
 import parin;
+import parin.scene;
 
 auto sceneManager = SceneManager();
 

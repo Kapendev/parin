@@ -6,6 +6,7 @@
 // Version: v0.0.29
 // ---
 
+// NOTE(Kapendev): I am not a fan of this module and I would remove it, but maybe someone is using it.
 // TODO: Update all the doc comments here.
 
 /// The `scene` module provides a simple scene manager.

@@ -14,9 +14,6 @@ module parin.dialogue;
 
 import joka.ascii;
 import parin.engine;
-public import joka.containers;
-public import joka.faults;
-public import joka.types;
 
 @safe:
 

@@ -9,15 +9,11 @@
 // TODO: Think about gaps in an atlas texture.
 // TODO: Update all the doc comments here.
 
-/// The `tilemap` module provides a simple and fast tile map.
-module parin.tilemap;
+/// The `map` module provides a simple and fast tile map.
+module parin.map;
 
 import joka.ascii;
 import parin.engine;
-public import joka.containers;
-public import joka.faults;
-public import joka.math;
-public import joka.types;
 
 @safe @nogc nothrow:
 
@@ -130,11 +126,11 @@ struct TileMap {
     }
 
     Sz rowCount() {
-        return data.length == 0 ? 0 : softMaxRowCount;
+        return data.length ? softMaxRowCount : 0;
     }
 
     Sz colCount() {
-        return data.length == 0 ? 0 : softMaxColCount;
+        return data.length ? softMaxColCount : 0;
     }
 
     bool isEmpty() {
@@ -142,7 +138,7 @@ struct TileMap {
     }
 
     bool has(Sz row, Sz col) {
-        return row < softMaxRowCount && col < softMaxColCount;
+        return row < rowCount && col < colCount;
     }
 
     bool has(IVec2 position) {
@@ -160,11 +156,11 @@ struct TileMap {
     }
 
     int width() {
-        return cast(int) (softMaxColCount * tileWidth);
+        return cast(int) (colCount * tileWidth);
     }
 
     int height() {
-        return cast(int) (softMaxRowCount * tileHeight);
+        return cast(int) (rowCount * tileHeight);
     }
 
     /// Returns the size of the tile map.
@@ -230,32 +226,35 @@ struct TileMap {
     }
 
     IVec2 firstGridPosition(Vec2 topLeftWorldPosition, DrawOptions options = DrawOptions()) {
+        if (rowCount == 0 || colCount == 0) return IVec2();
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, softMaxRowCount));
-        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, softMaxColCount));
+        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, rowCount - 1));
+        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, colCount - 1));
         return result;
     }
 
     IVec2 lastGridPosition(Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
+        if (rowCount == 0 || colCount == 0) return IVec2();
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
         auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, softMaxRowCount));
-        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, softMaxColCount));
+        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, rowCount - 1));
+        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, colCount - 1));
         return result;
     }
 
     auto gridPositions(Vec2 topLeftWorldPosition, Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
         static struct Range {
+            Sz colCount;
             IVec2 first;
             IVec2 last;
             IVec2 position;
 
             bool empty() {
-                return position == last;
+                return position.x > last.x || position.y > last.y;
             }
             
             IVec2 front() {
@@ -264,7 +263,7 @@ struct TileMap {
             
             void popFront() {
                 position.x += 1;
-                if (position.x >= maxColCount) {
+                if (position.x >= colCount) {
                     position.x = first.x;
                     position.y += 1;
                 }
@@ -272,6 +271,7 @@ struct TileMap {
         }
 
         auto result = Range(
+            colCount,
             firstGridPosition(topLeftWorldPosition, options),
             lastGridPosition(bottomRightWorldPosition, options),
         );
@@ -321,8 +321,8 @@ void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions option
     if (colRow1.x == colRow2.x || colRow1.y == colRow2.y) return;
 
     auto textureArea = Rect(map.tileWidth, map.tileHeight);
-    foreach (row; colRow1.y .. colRow2.y) {
-        foreach (col; colRow1.x .. colRow2.x) {
+    foreach (row; colRow1.y .. colRow2.y + 1) {
+        foreach (col; colRow1.x .. colRow2.x + 1) {
             auto id = map[row, col];
             if (id < 0) continue;
             textureArea.position.x = (id % textureColCount) * map.tileWidth;

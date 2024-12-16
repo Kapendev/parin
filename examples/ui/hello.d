@@ -9,6 +9,8 @@ void ready() {
 }
 
 bool update(float dt) {
+    // Prepare the UI for this frame. This call is required for the UI to function as expected.
+    prepareUi();
     // Set the starting point for subsequent UI items.
     setUiStartPoint(Vec2(8));
     // Create a button and print if it is clicked.

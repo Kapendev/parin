@@ -187,7 +187,7 @@ Result!IStr loadTempText(IStr path);
 Fault saveText(IStr path, IStr text);
 ```
 
-Additional loading functions can be found in other modules, such as `parin.tilemap`.
+Additional loading functions can be found in other modules, such as `parin.map`.
 
 ### Managed Resources
 
@@ -209,8 +209,4 @@ They don’t need to be freed manually.
 
 Sprites and tile maps can be implemented in various ways.
 To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
-Parin provides a sprite type inside the `parin.sprite` module and a tile map type inside the `parin.tilemap` module.
-
-## Scenes
-
-The `parin.scene` module provides a simple scene manager to organize game code by screens, such as the title screen or gameplay.
+Parin provides a sprite type inside the `parin.sprite` module and a tile map type inside the `parin.map` module.
