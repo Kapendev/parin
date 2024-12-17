@@ -6,7 +6,6 @@ auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true);
 auto tile = Tile(16, 16, 145);
-auto tileSpeed = 120;
 auto tileFlip = Flip.none;
 
 void ready() {
@@ -26,7 +25,7 @@ bool update(float dt) {
     else if (wasd.x < 0) tileFlip = Flip.none;
 
     // Move the tile and the camera.
-    tile.position += wasd * Vec2(tileSpeed * dt);
+    tile.position += wasd * Vec2(120 * dt);
     camera.position = tile.position;
     // Check for collisions between the tile and the map and resolve the collision.
     foreach (position; map.gridPositions(camera.area, mapOptions)) {

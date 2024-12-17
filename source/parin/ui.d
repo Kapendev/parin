@@ -13,7 +13,7 @@
 // TODO: Look at the API again.
 // TODO: Test the ui code and think how to make it better while working on real stuff.
 
-/// The `ui` module functions as a immediate mode UI toolkit.
+/// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
 
 import parin.engine;

@@ -116,7 +116,7 @@ void updateSound(Sound sound);
 ## Drawing
 
 Parin provides a set of drawing functions inside the `parin.engine` module.
-While drawing is not pixel-perfect by default, it can be by calling the `setIsPixelPerfect` or `setIsPixelSnapped` function.
+While drawing is not pixel-perfect by default, it can be by calling the `setIsPixelPerfect` or `setIsPixelSnapped` functions.
 
 ```d
 void drawRect(Rect area, Color color = white);

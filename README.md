@@ -20,19 +20,14 @@ void finish() { }
 mixin runGame!(ready, update, finish);
 ```
 
-> [!WARNING]  
-> This is alpha software. Use it only if you are very cool.
-
 ## Supported Platforms
 
 * PC: Windows, Linux, macOS
 * Web
 
-## Games Made With Parin
+## Projects Made With Parin
 
-* [Clean & Haunted](https://kapendev.itch.io/clean-haunted)
-* [Runani](https://kapendev.itch.io/runani)
-* [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
+A list of projects made with Parin is available in the [PROJECTS.md](PROJECTS.md) file.
 
 ## Installation
 
@@ -55,7 +50,7 @@ dub run parin:setup
 
 The final line modifies the default app.d and dub.json files, downloads raylib, and creates the necessary folders for Parin to function properly. The following folders will be created:
 
-* assets: This folder is used to store game assets.
+* assets: This folder is used to store assets.
 * web: This folder is used for exporting to the web.
 
 Once the installation is complete, run the following command:
@@ -93,17 +88,10 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 For an initial understanding, the [examples](examples) folder can be a good starting point.
 For a more detailed overview, check the [TOUR.md](TOUR.md) file.
 
-## Attributes and BetterC Support
-
-This project offers support for the `@safe` attribute and aims for good compatibility with BetterC.
-If you encounter errors with BetterC, try using the `-i` flag.
-
 ## Web Support
 
-To export a game to the web, the game must be compatible with BetterC.
-The [web](web) folder contains a helper script to assist with the web export process.
-
-It can be used with DUB by running the following command:
+To export to the web, the project must be compatible with BetterC.
+The [web](web) folder contains a helper script to assist with the web export process and it can be used with DUB by running the following command:
 
 ```sh
 dub run parin:web
