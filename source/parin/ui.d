@@ -7,6 +7,7 @@
 // ---
 
 // TODO: Clean maybe the UiState struct and prepareUi func.
+// TODO: Think about overlapping UI items.
 // TODO: Add way to get item point for some stuff. This is nice when making lists.
 // TODO: Add focus style.
 // TODO: Add way to align text in buttons.
@@ -67,7 +68,6 @@ struct UiState {
     Gamepad gamepadClickAction = Gamepad.a;
     bool isActOnPress;
 
-    Vec2 mousePressedPoint;
     Vec2 viewportPoint;
     Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1);
@@ -78,6 +78,7 @@ struct UiState {
     Vec2 layoutStartPointOffest;
     Vec2 layoutMaxItemSize;
 
+    Vec2 mousePressedPoint;
     Vec2 itemDragOffset;
     Vec2 itemPoint;
     Vec2 itemSize;

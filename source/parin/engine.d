@@ -6,7 +6,6 @@
 // Version: v0.0.29
 // ---
 
-// TODO: Add way to align text. I neeed this for the UI.
 // TODO: Test the resource loading code.
 // TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
@@ -44,7 +43,7 @@ enum Layout : ubyte {
 }
 
 /// A type representing alignment orientations.
-enum Align : ubyte {
+enum Alignment : ubyte {
     left,   /// Align to the left.
     center, /// Align to the center.
     right,  /// Align to the right.
@@ -190,12 +189,13 @@ enum Gamepad : ubyte {
 
 /// A structure containing options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f); /// The origin point of the drawn object.
-    Vec2 scale = Vec2(1.0f);  /// The scale of the drawn object.
-    float rotation = 0.0f;    /// The rotation of the drawn object, in degrees.
-    Color color = white;      /// The color of the drawn object.
-    Hook hook = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is set to zero.
-    Flip flip = Flip.none;    /// A value representing flipping orientations.
+    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object.
+    Vec2 scale = Vec2(1.0f);              /// The scale of the drawn object.
+    float rotation = 0.0f;                /// The rotation of the drawn object, in degrees.
+    Color color = white;                  /// The color of the drawn object.
+    Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is set to zero.
+    Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
+    Flip flip = Flip.none;                /// A value representing flipping orientations.
 
     @safe @nogc nothrow:
 
@@ -217,6 +217,11 @@ struct DrawOptions {
     /// Initializes the options with the given hook.
     this(Hook hook) {
         this.hook = hook;
+    }
+
+    /// Initializes the options with the given alignment.
+    this(Alignment alignment) {
+        this.alignment = alignment;
     }
 
     /// Initializes the options with the given flip.
@@ -976,13 +981,13 @@ struct EngineState {
     @safe @nogc nothrow:
 
     void free() {
-        debug {
-            println("Resources that will be freed automatically:");
-            println("  Text count: ", resources.texts.length != 0 ? resources.texts.length - 1 : 0);
-            println("  Texture count: ", resources.textures.length != 0 ? resources.textures.length - 1 : 0);
-            println("  Font count: ", resources.fonts.length != 0 ? resources.fonts.length - 1 : 0);
-            println("  Sound count: ", resources.sounds.length != 0 ? resources.sounds.length - 1 : 0);
-        }
+        // debug {
+        //     println("Resources that will be freed automatically:");
+        //     println("  Text count: ", resources.texts.length != 0 ? resources.texts.length - 1 : 0);
+        //     println("  Texture count: ", resources.textures.length != 0 ? resources.textures.length - 1 : 0);
+        //     println("  Font count: ", resources.fonts.length != 0 ? resources.fonts.length - 1 : 0);
+        //     println("  Sound count: ", resources.sounds.length != 0 ? resources.sounds.length - 1 : 0);
+        // }
         viewport.free();
         resources.free();
         tempText.free();
@@ -1858,6 +1863,8 @@ float deltaWheel() {
 Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
+    // NOTE: No idea what is happening here. Maybe I should try to make it look more like the drawText function.
+
     auto result = Vec2();
     auto tempByteCounter = 0; // Used to count longer text line num chars.
     auto byteCounter = 0;
@@ -2266,9 +2273,29 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 /// Draws the specified text with the given font at the given position using the provided draw options.
 @trusted
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
+    static linesBuffer = FixedList!(IStr, 128)();
+    static linesWidthBuffer = FixedList!(short, 128)();
+
     if (font.isEmpty || text.length == 0) return;
-    // TODO: Make it work with negative scale values.
-    auto origin = Rect(measureTextSize(font, text)).origin(options.hook);
+
+    // Get some info about the text.
+    linesBuffer.clear();
+    linesWidthBuffer.clear();
+    auto maxLineWidth = 0;
+    auto lineStartIndex = 0;
+    foreach (i, c; text) {
+        if (c == '\n' || i == text.length - 1) {
+            linesBuffer.append(text[lineStartIndex .. i + (c != '\n')]);
+            linesWidthBuffer.append(cast(short) measureTextSize(font, linesBuffer[$ - 1]).x);
+            if (maxLineWidth < linesWidthBuffer[$ - 1]) maxLineWidth = linesWidthBuffer[$ - 1]; 
+            lineStartIndex = cast(int) i + 1;
+        }
+    }
+    lineStartIndex = 0;
+
+    // Prepare the the text for drawing.
+    auto textSize = measureTextSize(font, text);
+    auto origin = Rect(textSize).origin(options.hook);
     rl.rlPushMatrix();
     if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
@@ -2278,31 +2305,35 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
-    auto textOffsetY = 0.0f; // Offset between lines (on linebreak '\n').
-    auto textOffsetX = 0.0f; // Offset X to next character to draw.
-    auto i = 0;
-    while (i < text.length) {
-        // Get next codepoint from byte string and glyph index in font.
-        auto codepointByteCount = 0;
-        auto codepoint = rl.GetCodepointNext(&text[i], &codepointByteCount);
-        auto index = rl.GetGlyphIndex(font.data, codepoint);
-        if (codepoint == '\n') {
-            textOffsetY += font.lineSpacing;
-            textOffsetX = 0.0f;
-        } else {
+    // Draw the text.
+    auto textOffsetY = 0; // Offset between lines (on linebreak '\n').
+    foreach (i, line; linesBuffer) {
+        auto textOffsetX = 0; // Offset X to next character to draw.
+        if (options.alignment == Alignment.center) {
+            textOffsetX = maxLineWidth / 2 - linesWidthBuffer[i] / 2;
+        } else if (options.alignment == Alignment.right) {
+            textOffsetX = maxLineWidth - linesWidthBuffer[i];
+        }
+        auto codepointIndex = 0;
+        while (codepointIndex < line.length) {
+            // Get next codepoint from byte string and glyph index in font.
+            auto codepointByteCount = 0;
+            auto codepoint = rl.GetCodepointNext(&line[codepointIndex], &codepointByteCount);
+            auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
             if (codepoint != ' ' && codepoint != '\t') {
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
-                drawRune(font, codepoint, Vec2(textOffsetX, textOffsetY), runeOptions);
+                rl.DrawTextCodepoint(font.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), font.size, options.color.toRl());
             }
-            if (font.data.glyphs[index].advanceX == 0) {
-                textOffsetX += font.data.recs[index].width + font.runeSpacing;
+            if (font.data.glyphs[glyphIndex].advanceX) {
+                textOffsetX += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
             } else {
-                textOffsetX += font.data.glyphs[index].advanceX + font.runeSpacing;
+                textOffsetX += cast(int) (font.data.recs[glyphIndex].width) + font.runeSpacing;
             }
+            // Move text bytes counter to next codepoint.
+            codepointIndex += codepointByteCount;
         }
-        // Move text bytes counter to next codepoint.
-        i += codepointByteCount;
+        textOffsetY += font.lineSpacing;
     }
     rl.rlPopMatrix();
 }
