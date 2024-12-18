@@ -7,7 +7,7 @@
 // ---
 
 // TODO: Think about overlapping UI items.
-// TODO: Look at the text alignment code again. Maybe add a clamp so text gets all the button always and stuff.
+// TODO: Fix the ui text! Also maybe we should not base things on the text size?
 // TODO: Add way to get item point for some stuff. This is nice when making lists.
 
 /// The `ui` module functions as a immediate mode UI library.
@@ -47,7 +47,7 @@ struct UiButtonOptions {
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
     Alignment textAlignment = Alignment.center;
-    short textAlignmentMargin = 4;
+    short textAlignmentMargin = 0;
 
     @safe @nogc nothrow:
 
@@ -306,6 +306,33 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
     }
 }
 
+void updateUiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
+    if (options.font.isEmpty) options.font = engineFont;
+    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+    auto maxSize = measureTextSize(options.font, text);
+    if (maxSize.x < size.x) maxSize.x = size.x;
+    if (maxSize.y < size.y) maxSize.y = size.y;
+    updateUiState(point, maxSize, false, false, false);
+}
+
+void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiButtonOptions()) {
+    if (options.font.isEmpty) options.font = engineFont;
+
+    auto area = Rect(point, size);
+    auto textPoint = area.centerPoint;
+    if (options.textAlignment == Alignment.left) textPoint.x += options.textAlignmentMargin;
+    else if (options.textAlignment == Alignment.right) textPoint.x -= options.textAlignmentMargin;
+
+    auto textOptions = DrawOptions(options.textAlignment, cast(int) (size.x));
+    textOptions.hook = Hook.center;
+    drawText(options.font, text, textPoint, textOptions);
+}
+
+void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
+    updateUiText(size, text, options);
+    drawUiText(uiState.itemSize, text, uiState.itemPoint, options);
+}
+
 bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
     auto m = uiMouse;
@@ -431,19 +458,4 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
         drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
         return false;
     }
-}
-
-void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
-    if (options.font.isEmpty) options.font = engineFont;
-    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
-    
-    auto area = Rect(point, size);
-    auto textPoint = area.centerPoint;
-    if (options.textAlignment == Alignment.left) textPoint.x += options.textAlignmentMargin;
-    else if (options.textAlignment == Alignment.right) textPoint.x -= options.textAlignmentMargin;
-
-    auto textOptions = DrawOptions(options.textAlignment, cast(int) (size.x));
-    textOptions.hook = Hook.center;
-    drawText(options.font, text, textPoint, textOptions);
-    updateUiState(point, size, false, false, false);
 }

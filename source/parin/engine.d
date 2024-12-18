@@ -1880,9 +1880,9 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
         auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
         if (codepoint != '\n') {
             if (font.data.glyphs[glyphIndex].advanceX) {
-                textWidth += font.data.glyphs[glyphIndex].advanceX;
+                textWidth += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
             } else {
-                textWidth += cast(int) (font.data.recs[glyphIndex].width + font.data.glyphs[glyphIndex].offsetX);
+                textWidth += cast(int) (font.data.recs[glyphIndex].width + font.data.glyphs[glyphIndex].offsetX + font.runeSpacing);
             }
         } else {
             if (maxTextWidth < textWidth) maxTextWidth = textWidth;
@@ -1895,10 +1895,7 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
     }
     if (maxTextWidth < textWidth) maxTextWidth = textWidth;
     if (maxTextWidth < options.alignmentWidth) maxTextWidth = options.alignmentWidth;
-    return Vec2(
-        floor(maxTextWidth * options.scale.x + ((maxLineCodepointCount - 1) * font.runeSpacing * options.scale.x)),
-        floor(textHeight * options.scale.y),
-    );
+    return Vec2(maxTextWidth * options.scale.x, textHeight * options.scale.y).floor();
 }
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
@@ -2330,7 +2327,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             if (font.data.glyphs[glyphIndex].advanceX) {
                 textOffsetX += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
             } else {
-                textOffsetX += cast(int) (font.data.recs[glyphIndex].width) + font.runeSpacing;
+                textOffsetX += cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
             }
             lineCodepointIndex += codepointByteCount;
             codepointIndex += codepointByteCount;
