@@ -11,6 +11,8 @@ void ready() {
 bool update(float dt) {
     // Prepare the UI for this frame. This call is required for the UI to function as expected.
     prepareUi();
+    // Disable the UI focus for this frame. Focus is only needed for UIs that support keyboard controls.
+    setUiFocus(0);
     // Set the starting point for subsequent UI items.
     setUiStartPoint(Vec2(8));
     // Create a button and print if it is clicked.

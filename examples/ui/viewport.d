@@ -13,6 +13,7 @@ void ready() {
 
 bool update(float dt) {
     prepareUi();
+    setUiFocus(0);
     // Set the viewport state for subsequent UI items.
     setUiViewportState(viewportPosition, viewport.size, viewportScale);
     viewport.attach();

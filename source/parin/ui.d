@@ -7,7 +7,6 @@
 // ---
 
 // TODO: Think about overlapping UI items.
-// TODO: Fix the ui text! Also maybe we should not base things on the text size?
 // TODO: Add way to get item point for some stuff. This is nice when making lists.
 
 /// The `ui` module functions as a immediate mode UI library.
@@ -47,7 +46,7 @@ struct UiButtonOptions {
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
     Alignment textAlignment = Alignment.center;
-    short textAlignmentMargin = 0;
+    short textAlignmentMargin = 4;
 
     @safe @nogc nothrow:
 
@@ -317,14 +316,11 @@ void updateUiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOption
 
 void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-
-    auto area = Rect(point, size);
-    auto textPoint = area.centerPoint;
-    if (options.textAlignment == Alignment.left) textPoint.x += options.textAlignmentMargin;
-    else if (options.textAlignment == Alignment.right) textPoint.x -= options.textAlignmentMargin;
-
-    auto textOptions = DrawOptions(options.textAlignment, cast(int) (size.x));
+    auto area = Rect(point, size).subAll(options.textAlignmentMargin);
+    auto textPoint = area.centerPoint.round();
+    auto textOptions = DrawOptions(options.textAlignment, cast(int) (area.size.x));
     textOptions.hook = Hook.center;
+    if (options.isDisabled) textOptions.color.a = defaultUiAlpha / 2;
     drawText(options.font, text, textPoint, textOptions);
 }
 
@@ -337,19 +333,26 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     if (options.font.isEmpty) options.font = engineFont;
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
-    auto area = Rect(uiState.layoutStartPoint + uiState.layoutStartPointOffest, size);
+    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+    auto maxSize = measureTextSize(options.font, text);
+    if (maxSize.x < size.x) maxSize.x = size.x;
+    if (maxSize.y < size.y) maxSize.y = size.y;
     // auto isHot = area.hasPoint(uiMouse)
-    auto isHot = m.x >= area.position.x && m.x < area.position.x + area.size.x && m.y >= area.position.y && m.y < area.position.y + area.size.y;
+    auto isHot =
+        m.x >= point.x &&
+        m.x < point.x + maxSize.x &&
+        m.y >= point.y &&
+        m.y < point.y + maxSize.y;
     auto isActive = isHot && uiState.mouseClickAction.isDown;
     auto isClicked = isHot;
     if (uiState.isActOnPress) {
         isClicked = isClicked && uiState.mouseClickAction.isPressed;
     } else {
         auto isHotFromMousePressedPoint =
-            uiState.mousePressedPoint.x >= area.position.x &&
-            uiState.mousePressedPoint.x < area.position.x + area.size.x &&
-            uiState.mousePressedPoint.y >= area.position.y &&
-            uiState.mousePressedPoint.y < area.position.y + area.size.y;
+            uiState.mousePressedPoint.x >= point.x &&
+            uiState.mousePressedPoint.x < point.x + maxSize.x &&
+            uiState.mousePressedPoint.y >= point.y &&
+            uiState.mousePressedPoint.y < point.y + maxSize.y;
         isClicked = isClicked && isHotFromMousePressedPoint && uiState.mouseClickAction.isReleased;
     }
 
@@ -366,40 +369,23 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
             if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
         }
     }
-    updateUiState(area.position, size, isHot, isActive, isClicked);
+    updateUiState(point, maxSize, isHot, isActive, isClicked);
     return isClicked;
 }
 
 void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
     auto area = Rect(point, size);
-    if (options.isDisabled) {
-        drawRect(area, options.disabledColor);
-    } else if (isActive) {
-        drawRect(area, options.activeColor);
-    } else if (isHot) {
-        drawRect(area, options.hotColor);
-    } else {
-        drawRect(area, options.idleColor);
-    }
-
-    auto textPoint = area.centerPoint;
-    if (options.textAlignment == Alignment.left) textPoint.x += options.textAlignmentMargin;
-    else if (options.textAlignment == Alignment.right) textPoint.x -= options.textAlignmentMargin;
-
-    auto textOptions = DrawOptions(options.textAlignment, cast(int) (size.x));
-    textOptions.hook = Hook.center;
-    if (options.isDisabled) {
-        textOptions.color.a = defaultUiAlpha / 2;
-        drawText(options.font, text, textPoint, textOptions);
-    } else {
-        drawText(options.font, text, textPoint, textOptions);
-    }
+    if (options.isDisabled) drawRect(area, options.disabledColor);
+    else if (isActive) drawRect(area, options.activeColor);
+    else if (isHot) drawRect(area, options.hotColor);
+    else drawRect(area, options.idleColor);
+    drawUiText(size, text, point, options);
 }
 
 bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     auto result = updateUiButton(size, text, options);
-    drawUiButton(size, text, uiState.itemPoint, isUiItemHot, isUiItemActive, options);
+    drawUiButton(uiState.itemSize, text, uiState.itemPoint, isUiItemHot, isUiItemActive, options);
     return result;
 }
 
