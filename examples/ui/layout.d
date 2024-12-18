@@ -2,7 +2,7 @@
 
 import parin;
 
-auto buttonSize = Vec2(32);
+auto buttonSize = Vec2(20);
 
 void ready() {
     lockResolution(320, 180);
@@ -15,12 +15,12 @@ bool update(float dt) {
     setUiStartPoint(Vec2(8));
     // Create a layout for arranging subsequent UI items.
     useUiLayout(Layout.h);
-    if (uiButton(buttonSize, "1")) println(1);
-    if (uiButton(buttonSize, "2")) println(2);
+    uiText(Vec2(70, buttonSize.y), "Button 1", UiButtonOptions(Alignment.left));
+    if (uiButton(buttonSize, "")) println(1);
     // Create a new layout under the previous layout.
     useUiLayout(Layout.h);
-    if (uiButton(buttonSize, "3")) println(3);
-    if (uiButton(buttonSize, "4")) println(4);
+    uiText(Vec2(70, buttonSize.y), "Button 22", UiButtonOptions(Alignment.left));
+    if (uiButton(buttonSize, "")) println(22);
     return false;
 }
 

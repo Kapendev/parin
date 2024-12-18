@@ -6,13 +6,9 @@
 // Version: v0.0.29
 // ---
 
-// TODO: Clean maybe the UiState struct and prepareUi func.
 // TODO: Think about overlapping UI items.
+// TODO: Look at the text alignment code again. Maybe add a clamp so text gets all the button always and stuff.
 // TODO: Add way to get item point for some stuff. This is nice when making lists.
-// TODO: Add focus style.
-// TODO: Add way to align text in buttons.
-// TODO: Look at the API again.
-// TODO: Test the ui code and think how to make it better while working on real stuff.
 
 /// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
@@ -50,6 +46,8 @@ struct UiButtonOptions {
     UiDragLimit dragLimit;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
+    Alignment textAlignment = Alignment.center;
+    short textAlignmentMargin = 4;
 
     @safe @nogc nothrow:
 
@@ -59,6 +57,11 @@ struct UiButtonOptions {
 
     this(UiDragLimit dragLimit) {
         this.dragLimit = dragLimit;
+    }
+
+    this(Alignment textAlignment, short textAlignmentMargin = 4) {
+        this.textAlignment = textAlignment;
+        this.textAlignmentMargin = textAlignmentMargin;
     }
 }
 
@@ -70,7 +73,7 @@ struct UiState {
 
     Vec2 viewportPoint;
     Vec2 viewportSize;
-    Vec2 viewportScale = Vec2(1);
+    Vec2 viewportScale = Vec2(1.0f);
     Vec2 startPoint;
     short margin;
     Layout layout;
@@ -352,12 +355,18 @@ void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, U
     } else {
         drawRect(area, options.idleColor);
     }
+
+    auto textPoint = area.centerPoint;
+    if (options.textAlignment == Alignment.left) textPoint.x += options.textAlignmentMargin;
+    else if (options.textAlignment == Alignment.right) textPoint.x -= options.textAlignmentMargin;
+
+    auto textOptions = DrawOptions(options.textAlignment, cast(int) (size.x));
+    textOptions.hook = Hook.center;
     if (options.isDisabled) {
-        auto tempOptions = DrawOptions(Hook.center);
-        tempOptions.color.a = defaultUiAlpha / 2;
-        drawText(options.font, text, area.centerPoint, tempOptions);
+        textOptions.color.a = defaultUiAlpha / 2;
+        drawText(options.font, text, textPoint, textOptions);
     } else {
-        drawText(options.font, text, area.centerPoint, DrawOptions(Hook.center));
+        drawText(options.font, text, textPoint, textOptions);
     }
 }
 
@@ -424,21 +433,17 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
     }
 }
 
-void uiTexture(Texture texture, UiButtonOptions options = UiButtonOptions()) {
-    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
-    drawRect(Rect(point, texture.size), black);
-    drawTexture(texture, point);
-    updateUiState(point, texture.size, false, false, false);
-}
-
-void uiTexture(TextureId texture, UiButtonOptions options = UiButtonOptions()) {
-    uiTexture(texture.get(), options);
-}
-
-void uiText(IStr text, UiButtonOptions options = UiButtonOptions()) {
+void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
     auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
-    auto size = measureTextSize(options.font, text);
-    drawText(options.font, text, point);
+    
+    auto area = Rect(point, size);
+    auto textPoint = area.centerPoint;
+    if (options.textAlignment == Alignment.left) textPoint.x += options.textAlignmentMargin;
+    else if (options.textAlignment == Alignment.right) textPoint.x -= options.textAlignmentMargin;
+
+    auto textOptions = DrawOptions(options.textAlignment, cast(int) (size.x));
+    textOptions.hook = Hook.center;
+    drawText(options.font, text, textPoint, textOptions);
     updateUiState(point, size, false, false, false);
 }

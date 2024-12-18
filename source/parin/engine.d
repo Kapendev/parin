@@ -36,10 +36,12 @@ Sz engineEnvArgsBufferLength;
 IStr[64] engineDroppedFilePathsBuffer;
 rl.FilePathList engineDroppedFilePathsDataBuffer;
 
-/// A type representing layout orientations.
-enum Layout : ubyte {
-    v, /// Vertical layout.
-    h, /// Horizontal layout.
+/// A type representing flipping orientations.
+enum Flip : ubyte {
+    none, /// No flipping.
+    x,    /// Flipped along the X-axis.
+    y,    /// Flipped along the Y-axis.
+    xy,   /// Flipped along both X and Y axes.
 }
 
 /// A type representing alignment orientations.
@@ -49,12 +51,10 @@ enum Alignment : ubyte {
     right,  /// Align to the right.
 }
 
-/// A type representing flipping orientations.
-enum Flip : ubyte {
-    none, /// No flipping.
-    x,    /// Flipped along the X-axis.
-    y,    /// Flipped along the Y-axis.
-    xy,   /// Flipped along both X and Y axes.
+/// A type representing layout orientations.
+enum Layout : ubyte {
+    v, /// Vertical layout.
+    h, /// Horizontal layout.
 }
 
 /// A type representing texture filtering modes.
@@ -194,8 +194,10 @@ struct DrawOptions {
     float rotation = 0.0f;                /// The rotation of the drawn object, in degrees.
     Color color = white;                  /// The color of the drawn object.
     Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is set to zero.
-    Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
     Flip flip = Flip.none;                /// A value representing flipping orientations.
+    Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
+    int alignmentWidth = 0;               /// The width of the aligned object. Used as a hint and it is not enforced. Mostly used for text drawing.
+    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the object, where 0.0 means fully hidden and 1.0 means fully visible. Mostly used for text drawing.
 
     @safe @nogc nothrow:
 
@@ -219,14 +221,15 @@ struct DrawOptions {
         this.hook = hook;
     }
 
-    /// Initializes the options with the given alignment.
-    this(Alignment alignment) {
-        this.alignment = alignment;
-    }
-
     /// Initializes the options with the given flip.
     this(Flip flip) {
         this.flip = flip;
+    }
+
+    /// Initializes the options with the given alignment.
+    this(Alignment alignment, int alignmentWidth = 0) {
+        this.alignment = alignment;
+        this.alignmentWidth = alignmentWidth;
     }
 }
 
@@ -1863,49 +1866,39 @@ float deltaWheel() {
 Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
-    // NOTE: No idea what is happening here. Maybe I should try to make it look more like the drawText function.
-
-    auto result = Vec2();
-    auto tempByteCounter = 0; // Used to count longer text line num chars.
-    auto byteCounter = 0;
-    auto textWidth = 0.0f;
-    auto tempTextWidth = 0.0f; // Used to count longer text line width.
+    auto lineCodepointCount = 0;
+    auto maxLineCodepointCount = 0;
+    auto textWidth = 0;
+    auto maxTextWidth = 0;
     auto textHeight = font.size;
 
-    auto letter = 0; // Current character.
-    auto index = 0; // Index position in texture font.
-    auto i = 0;
-    while (i < text.length) {
-        byteCounter += 1;
-
-        auto next = 0;
-        letter = rl.GetCodepointNext(&text[i], &next);
-        index = rl.GetGlyphIndex(font.data, letter);
-        i += next;
-        if (letter != '\n') {
-            if (font.data.glyphs[index].advanceX != 0) {
-                textWidth += font.data.glyphs[index].advanceX;
+    auto codepointIndex = 0;
+    while (codepointIndex < text.length) {
+        lineCodepointCount += 1;
+        auto codepointByteCount = 0;
+        auto codepoint = rl.GetCodepointNext(&text[codepointIndex], &codepointByteCount);
+        auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+        if (codepoint != '\n') {
+            if (font.data.glyphs[glyphIndex].advanceX) {
+                textWidth += font.data.glyphs[glyphIndex].advanceX;
             } else {
-                textWidth += font.data.recs[index].width + font.data.glyphs[index].offsetX;
+                textWidth += cast(int) (font.data.recs[glyphIndex].width + font.data.glyphs[glyphIndex].offsetX);
             }
         } else {
-            if (tempTextWidth < textWidth) {
-                tempTextWidth = textWidth;
-            }
-            byteCounter = 0;
+            if (maxTextWidth < textWidth) maxTextWidth = textWidth;
+            lineCodepointCount = 0;
             textWidth = 0;
             textHeight += font.lineSpacing;
         }
-        if (tempByteCounter < byteCounter) {
-            tempByteCounter = byteCounter;
-        }
+        if (maxLineCodepointCount < lineCodepointCount) maxLineCodepointCount = lineCodepointCount;
+        codepointIndex += codepointByteCount;
     }
-    if (tempTextWidth < textWidth) {
-        tempTextWidth = textWidth;
-    }
-    result.x = floor(tempTextWidth * options.scale.x + ((tempByteCounter - 1) * font.runeSpacing * options.scale.x));
-    result.y = floor(textHeight * options.scale.y);
-    return result;
+    if (maxTextWidth < textWidth) maxTextWidth = textWidth;
+    if (maxTextWidth < options.alignmentWidth) maxTextWidth = options.alignmentWidth;
+    return Vec2(
+        floor(maxTextWidth * options.scale.x + ((maxLineCodepointCount - 1) * font.runeSpacing * options.scale.x)),
+        floor(textHeight * options.scale.y),
+    );
 }
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
@@ -2281,21 +2274,28 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     // Get some info about the text.
     linesBuffer.clear();
     linesWidthBuffer.clear();
+    auto textHeight = font.size;
     auto maxLineWidth = 0;
     auto lineStartIndex = 0;
-    foreach (i, c; text) {
-        if (c == '\n' || i == text.length - 1) {
-            linesBuffer.append(text[lineStartIndex .. i + (c != '\n')]);
-            linesWidthBuffer.append(cast(short) measureTextSize(font, linesBuffer[$ - 1]).x);
+    auto codepointCount = 0;
+    auto codepointIndex = 0;
+    while (codepointIndex < text.length) {
+        codepointCount += 1;
+        auto codepointByteCount = 0;
+        auto codepoint = rl.GetCodepointNext(&text[codepointIndex], &codepointByteCount);
+        if (codepoint == '\n' || codepointIndex == text.length - codepointByteCount) {
+            linesBuffer.append(text[lineStartIndex .. codepointIndex + (codepoint != '\n')]);
+            linesWidthBuffer.append(cast(short) (measureTextSize(font, linesBuffer[$ - 1]).x));
             if (maxLineWidth < linesWidthBuffer[$ - 1]) maxLineWidth = linesWidthBuffer[$ - 1]; 
-            lineStartIndex = cast(int) i + 1;
+            lineStartIndex = cast(int) (codepointIndex + 1);
+            if (codepoint == '\n') textHeight += font.lineSpacing;
         }
+        codepointIndex += codepointByteCount;
     }
-    lineStartIndex = 0;
+    if (maxLineWidth < options.alignmentWidth) maxLineWidth = options.alignmentWidth;
 
     // Prepare the the text for drawing.
-    auto textSize = measureTextSize(font, text);
-    auto origin = Rect(textSize).origin(options.hook);
+    auto origin = Rect(maxLineWidth, textHeight).origin(options.hook);
     rl.rlPushMatrix();
     if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
@@ -2306,19 +2306,21 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
     // Draw the text.
-    auto textOffsetY = 0; // Offset between lines (on linebreak '\n').
+    codepointIndex = 0;
+    auto maxCodepointCount = cast(int) (codepointCount * clamp(options.visibilityRatio, 0.0f, 1.0f));
+    auto textOffsetY = 0; // Offset between lines.
     foreach (i, line; linesBuffer) {
-        auto textOffsetX = 0; // Offset X to next character to draw.
+        auto textOffsetX = 0; // Offset betweem characters.
         if (options.alignment == Alignment.center) {
             textOffsetX = maxLineWidth / 2 - linesWidthBuffer[i] / 2;
         } else if (options.alignment == Alignment.right) {
             textOffsetX = maxLineWidth - linesWidthBuffer[i];
         }
-        auto codepointIndex = 0;
-        while (codepointIndex < line.length) {
-            // Get next codepoint from byte string and glyph index in font.
+        auto lineCodepointIndex = 0;
+        while (lineCodepointIndex < line.length) {
+            if (codepointIndex >= maxCodepointCount) break; // This does break the codepoint index, but who cares.
             auto codepointByteCount = 0;
-            auto codepoint = rl.GetCodepointNext(&line[codepointIndex], &codepointByteCount);
+            auto codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointByteCount);
             auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
             if (codepoint != ' ' && codepoint != '\t') {
                 auto runeOptions = DrawOptions();
@@ -2330,11 +2332,13 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             } else {
                 textOffsetX += cast(int) (font.data.recs[glyphIndex].width) + font.runeSpacing;
             }
-            // Move text bytes counter to next codepoint.
+            lineCodepointIndex += codepointByteCount;
             codepointIndex += codepointByteCount;
         }
         textOffsetY += font.lineSpacing;
+        codepointIndex += 1; // Adding the new line.
     }
+    codepointIndex -= text[$ - 1] != '\n'; // Removing one extra new line.
     rl.rlPopMatrix();
 }
 
