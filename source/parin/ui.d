@@ -6,8 +6,7 @@
 // Version: v0.0.29
 // ---
 
-// TODO: Think about overlapping UI items.
-// TODO: Add way to get item point for some stuff. This is nice when making lists.
+// TODO: Think about theming and other ui item types.
 
 /// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
@@ -73,8 +72,10 @@ struct UiState {
     Vec2 viewportPoint;
     Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1.0f);
+
     Vec2 startPoint;
     short margin;
+
     Layout layout;
     Vec2 layoutStartPoint;
     Vec2 layoutStartPointOffest;
@@ -90,22 +91,27 @@ struct UiState {
     short clickedItemId;
     short draggedItemId;
     short focusedItemId;
+    short previousMaxHotItemId;
+    short previousMaxHotItemIdBuffer;
 }
 
 void prepareUi() {
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     uiState.startPoint = Vec2();
     uiState.margin = 0;
+
     uiState.layout = Layout.v;
     uiState.layoutStartPoint = Vec2();
     uiState.layoutStartPointOffest = Vec2();
     uiState.layoutMaxItemSize = Vec2();
+
     uiState.itemPoint = Vec2();
     uiState.itemSize = Vec2();
     uiState.itemId = 0;
     uiState.hotItemId = 0;
     uiState.activeItemId = 0;
     uiState.clickedItemId = 0;
+    uiState.previousMaxHotItemId = uiState.previousMaxHotItemIdBuffer;
 }
 
 Vec2 uiMouse() {
@@ -141,7 +147,6 @@ void setUiViewportState(Vec2 point, Vec2 size, Vec2 scale) {
     uiState.viewportPoint = point;
     uiState.viewportSize = size;
     uiState.viewportScale = scale;
-
     if (uiState.mouseClickAction.isPressed) {
         uiState.mousePressedPoint = uiMouse;
     }
@@ -152,8 +157,8 @@ Vec2 uiStartPoint() {
 }
 
 void setUiStartPoint(Vec2 value) {
-    uiState.itemSize = Vec2();
     uiState.startPoint = value;
+    uiState.itemSize = Vec2();
     uiState.layoutStartPoint = value;
     uiState.layoutStartPointOffest = Vec2();
     uiState.layoutMaxItemSize = Vec2();
@@ -194,6 +199,14 @@ void useUiLayout(Layout value) {
     uiState.layout = value;
 }
 
+Vec2 uiLayoutStartPoint() {
+    return uiState.layoutStartPoint;
+}
+
+Vec2 uiLayoutPoint() {
+    return uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+}
+
 bool isUiItemHot() {
     return uiState.itemId == uiState.hotItemId;
 }
@@ -230,7 +243,15 @@ Vec2 uiDragOffset() {
     return uiState.itemDragOffset;
 }
 
-int uiFocus() {
+bool isUiItemFocused() {
+    return uiState.itemId == uiState.focusedItemId;
+}
+
+bool isUiFocused() {
+    return uiState.focusedItemId > 0;
+}
+
+short uiFocus() {
     return uiState.focusedItemId;
 }
 
@@ -289,7 +310,9 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
         case Layout.v: uiState.layoutStartPointOffest.y += uiState.itemSize.y + uiState.margin; break;
         case Layout.h: uiState.layoutStartPointOffest.x += uiState.itemSize.x + uiState.margin; break;
     }
-    if (isHot) uiState.hotItemId = uiState.itemId;
+    if (isHot) {
+        uiState.hotItemId = uiState.itemId;
+    }
     if (isActive) {
         uiState.activeItemId = uiState.itemId;
         uiState.focusedItemId = uiState.itemId;
@@ -307,7 +330,7 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
 
 void updateUiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+    auto point = uiLayoutPoint;
     auto maxSize = measureTextSize(options.font, text);
     if (maxSize.x < size.x) maxSize.x = size.x;
     if (maxSize.y < size.y) maxSize.y = size.y;
@@ -333,7 +356,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     if (options.font.isEmpty) options.font = engineFont;
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
-    auto point = uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+    auto point = uiLayoutPoint;
     auto maxSize = measureTextSize(options.font, text);
     if (maxSize.x < size.x) maxSize.x = size.x;
     if (maxSize.y < size.y) maxSize.y = size.y;
@@ -343,6 +366,12 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
         m.x < point.x + maxSize.x &&
         m.y >= point.y &&
         m.y < point.y + maxSize.y;
+    if (isHot) {
+        uiState.previousMaxHotItemIdBuffer = cast(short) id;
+    }
+    if (uiState.previousMaxHotItemId) {
+        isHot = isHot && id == uiState.previousMaxHotItemId;
+    }
     auto isActive = isHot && uiState.mouseClickAction.isDown;
     auto isClicked = isHot;
     if (uiState.isActOnPress) {
@@ -435,7 +464,7 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
         auto m = (mouse - uiState.viewportPoint) / uiState.viewportScale; // NOTE: Maybe this should be a function?
         point.y = clamp(m.y + uiDragOffset.y, dragLimitY.x, dragLimitY.y - size.y);
         point.x = clamp(m.x + uiDragOffset.x, dragLimitX.x, dragLimitX.y - size.x);
-        uiState = uiPreviousState;  
+        uiState = uiPreviousState;
         setUiStartPoint(point);
         updateUiButton(size, "", options);
         drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);

@@ -2335,7 +2335,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
         textOffsetY += font.lineSpacing;
         codepointIndex += 1; // Adding the new line.
     }
-    codepointIndex -= text[$ - 1] != '\n'; // Removing one extra new line.
+    // codepointIndex -= text[$ - 1] != '\n'; // Removing one extra new line.
     rl.rlPopMatrix();
 }
 
