@@ -110,6 +110,7 @@ Here are some other notable alternatives to consider:
 ## Note
 
 I add things to Parin when I need them.
+For an overview of what I like and don't like, check the [PREFERENCES.md](PREFERENCES.md) file.
 
 ## License
 

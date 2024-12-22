@@ -6,6 +6,7 @@
 // Version: v0.0.29
 // ---
 
+// TODO: Was working on the text, so it is broken now. Fix it.
 // TODO: There is some stupid bug with the layout. There was something when doing a custom button.
 // TODO: Think about theming and other ui item types.
 
@@ -42,11 +43,11 @@ struct UiButtonOptions {
     Font font;
 
     bool isDisabled;
-    UiDragLimit dragLimit;
+    Alignment alignment = Alignment.center;
+    short alignmentMargin = 0;
+    UiDragLimit dragLimit = UiDragLimit.none;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
-    Alignment textAlignment = Alignment.center;
-    short textAlignmentMargin = 4;
 
     @safe @nogc nothrow:
 
@@ -54,13 +55,13 @@ struct UiButtonOptions {
         this.isDisabled = isDisabled;
     }
 
-    this(UiDragLimit dragLimit) {
-        this.dragLimit = dragLimit;
+    this(Alignment alignment, short alignmentMargin = 4) {
+        this.alignment = alignment;
+        this.alignmentMargin = alignmentMargin;
     }
 
-    this(Alignment textAlignment, short textAlignmentMargin = 4) {
-        this.textAlignment = textAlignment;
-        this.textAlignmentMargin = textAlignmentMargin;
+    this(UiDragLimit dragLimit) {
+        this.dragLimit = dragLimit;
     }
 }
 
@@ -308,6 +309,11 @@ void wrapUiFocus(short step, Sz length) {
     uiState.focusedItemId = wrap(cast(short) (uiState.focusedItemId + step), min, cast(short) (max + 1));
 }
 
+void drawDebugUiItemArea(Color color = white) {
+    auto area = Rect(uiItemPoint, uiItemSize);
+    drawRect(area, color);
+}
+
 void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, bool isClicked) {
     uiPreviousState = uiState;
     uiState.itemPoint = itemPoint;
@@ -340,20 +346,12 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
 void updateUiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
     auto point = uiLayoutPoint;
-    auto maxSize = measureTextSize(options.font, text);
-    if (maxSize.x < size.x) maxSize.x = size.x;
-    if (maxSize.y < size.y) maxSize.y = size.y;
-    updateUiState(point, maxSize, false, false, false);
+    updateUiState(point, size, false, false, false);
 }
 
 void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-    auto area = Rect(point, size).subAll(options.textAlignmentMargin);
-    auto textPoint = area.centerPoint.round();
-    auto textOptions = DrawOptions(options.textAlignment, cast(int) (area.size.x));
-    textOptions.hook = Hook.center;
-    if (options.isDisabled) textOptions.color.a = defaultUiAlpha / 2;
-    drawText(options.font, text, textPoint, textOptions);
+    drawText(options.font, text, point);
 }
 
 void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
@@ -366,7 +364,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
     auto point = uiLayoutPoint;
-    auto maxSize = measureTextSize(options.font, text); // TODO: + Vec2(options.textAlignmentMargin, 0.0f);
+    auto maxSize = measureTextSize(options.font, text); // TODO: + Vec2(options.alignmentMargin, 0.0f);
     if (maxSize.x < size.x) maxSize.x = size.x;
     if (maxSize.y < size.y) maxSize.y = size.y;
     // auto isHot = area.hasPoint(uiMouse)
