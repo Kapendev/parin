@@ -151,6 +151,7 @@ struct DrawOptions {
     Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
     int alignmentWidth = 0;               /// The width of the aligned object. Used as a hint and it is not enforced. Mostly used for text drawing.
     float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the object, where 0.0 means fully hidden and 1.0 means fully visible. Mostly used for text drawing.
+    bool isRightToLeft = false;           /// Indicates whether the content of the object flows in a right-to-left direction, such as for Arabic or Hebrew text. Usually used for text drawing.
 }
 ```
 

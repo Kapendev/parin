@@ -196,8 +196,9 @@ struct DrawOptions {
     Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is set to zero.
     Flip flip = Flip.none;                /// A value representing flipping orientations.
     Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
-    int alignmentWidth = 0;               /// The width of the aligned object. Used as a hint and it is not enforced. Mostly used for text drawing.
-    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the object, where 0.0 means fully hidden and 1.0 means fully visible. Mostly used for text drawing.
+    int alignmentWidth = 0;               /// The width of the aligned object. It is used as a hint and is not enforced. Usually used for text drawing.
+    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the object, where 0.0 means fully hidden and 1.0 means fully visible. Usually used for text drawing.
+    bool isRightToLeft = false;           /// Indicates whether the content of the object flows in a right-to-left direction, such as for Arabic or Hebrew text. Usually used for text drawing.
 
     @safe @nogc nothrow:
 
@@ -2260,6 +2261,8 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
     drawRune(font.getOr(), rune, position, options);
 }
 
+// TODO: Bro this was written like in a stupid way just to make it work. Look at it and see what you have done Dexter Morgan!
+// NOTE: Works tho.
 /// Draws the specified text with the given font at the given position using the provided draw options.
 @trusted
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
@@ -2283,7 +2286,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
         if (codepoint == '\n' || codepointIndex == text.length - codepointByteCount) {
             linesBuffer.append(text[lineStartIndex .. codepointIndex + (codepoint != '\n')]);
             linesWidthBuffer.append(cast(short) (measureTextSize(font, linesBuffer[$ - 1]).x));
-            if (maxLineWidth < linesWidthBuffer[$ - 1]) maxLineWidth = linesWidthBuffer[$ - 1]; 
+            if (maxLineWidth < linesWidthBuffer[$ - 1]) maxLineWidth = linesWidthBuffer[$ - 1];
             lineStartIndex = cast(int) (codepointIndex + 1);
             if (codepoint == '\n') textHeight += font.lineSpacing;
         }
@@ -2302,40 +2305,102 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
+
     // Draw the text.
-    codepointIndex = 0;
+    auto codepointCounter = 0;
     auto maxCodepointCount = cast(int) (codepointCount * clamp(options.visibilityRatio, 0.0f, 1.0f));
-    auto textOffsetY = 0; // Offset between lines.
+    auto textOffsetY = 0;
     foreach (i, line; linesBuffer) {
-        auto textOffsetX = 0; // Offset betweem characters.
-        if (options.alignment == Alignment.center) {
-            textOffsetX = maxLineWidth / 2 - linesWidthBuffer[i] / 2;
-        } else if (options.alignment == Alignment.right) {
-            textOffsetX = maxLineWidth - linesWidthBuffer[i];
+        auto textOffsetX = 0;
+        if (options.isRightToLeft) {
+            if (options.alignment == Alignment.left) {
+                textOffsetX = linesWidthBuffer[i];
+            } else if (options.alignment == Alignment.center) {
+                textOffsetX = maxLineWidth / 2 + linesWidthBuffer[i] / 2;
+            } else if (options.alignment == Alignment.right) {
+                textOffsetX = maxLineWidth;
+            }
+        } else {
+            if (options.alignment == Alignment.center) {
+                textOffsetX = maxLineWidth / 2 - linesWidthBuffer[i] / 2;
+            } else if (options.alignment == Alignment.right) {
+                textOffsetX = maxLineWidth - linesWidthBuffer[i];
+            }
         }
         auto lineCodepointIndex = 0;
-        while (lineCodepointIndex < line.length) {
-            if (codepointIndex >= maxCodepointCount) break; // This does break the codepoint index, but who cares.
+        if (options.isRightToLeft) lineCodepointIndex = cast(int) (line.length - 1);
+
+        auto isDoneWithFirstCodepointHackWhenDoingRightToLeft = false;
+        while (options.isRightToLeft ? (lineCodepointIndex > 0 || !isDoneWithFirstCodepointHackWhenDoingRightToLeft) : (lineCodepointIndex < line.length)) {
+            if (codepointCounter >= maxCodepointCount) break;
             auto codepointByteCount = 0;
-            auto codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointByteCount);
-            auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+            auto codepoint = 0;
+            auto glyphIndex = 0;
+            auto nextRightToLeftCodepoint = 0;
+            auto nextRightToLeftGlyphIndex = 0;
+
+            if (options.isRightToLeft) {
+                codepoint = rl.GetCodepointPrevious(&line[lineCodepointIndex], &codepointByteCount);
+                if (!isDoneWithFirstCodepointHackWhenDoingRightToLeft) {
+                    codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointByteCount);
+                }
+                glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+                auto temp = 0;
+                nextRightToLeftCodepoint = rl.GetCodepointPrevious(&line[lineCodepointIndex], &temp);
+                nextRightToLeftGlyphIndex = rl.GetGlyphIndex(font.data, nextRightToLeftCodepoint);
+                if (!isDoneWithFirstCodepointHackWhenDoingRightToLeft) {
+                    if (font.data.glyphs[glyphIndex].advanceX) {
+                        textOffsetX -= font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
+                    } else {
+                        textOffsetX -= cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
+                    }
+                } else {
+                   if (font.data.glyphs[nextRightToLeftGlyphIndex].advanceX) {
+                        textOffsetX -= font.data.glyphs[nextRightToLeftGlyphIndex].advanceX + font.runeSpacing;
+                    } else {
+                        textOffsetX -= cast(int) (font.data.recs[nextRightToLeftGlyphIndex].width + font.runeSpacing);
+                    }
+                }
+            } else {
+                codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointByteCount);
+                glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+            }
+
             if (codepoint != ' ' && codepoint != '\t') {
                 auto runeOptions = DrawOptions();
                 runeOptions.color = options.color;
                 rl.DrawTextCodepoint(font.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), font.size, options.color.toRl());
             }
-            if (font.data.glyphs[glyphIndex].advanceX) {
-                textOffsetX += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
-            } else {
-                textOffsetX += cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
+            if (!options.isRightToLeft) {
+                if (font.data.glyphs[glyphIndex].advanceX) {
+                    if (options.isRightToLeft) {
+                        textOffsetX -= font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
+                    } else {
+                        textOffsetX += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
+                    }
+                } else {
+                    if (options.isRightToLeft) {
+                        textOffsetX -= cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
+                    } else {
+                        textOffsetX += cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
+                    }
+                }
             }
-            lineCodepointIndex += codepointByteCount;
-            codepointIndex += codepointByteCount;
+
+            if (options.isRightToLeft) {
+                if (!isDoneWithFirstCodepointHackWhenDoingRightToLeft) {
+                    isDoneWithFirstCodepointHackWhenDoingRightToLeft = true;
+                } else {
+                    lineCodepointIndex -= codepointByteCount;
+                }
+            } else {
+                lineCodepointIndex += codepointByteCount;
+            }
+            codepointCounter += codepointByteCount;
         }
         textOffsetY += font.lineSpacing;
-        codepointIndex += 1; // Adding the new line.
+        codepointCounter += 1; // Adding the new line.
     }
-    // codepointIndex -= text[$ - 1] != '\n'; // Removing one extra new line.
     rl.rlPopMatrix();
 }
 

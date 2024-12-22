@@ -6,6 +6,7 @@
 // Version: v0.0.29
 // ---
 
+// TODO: There is some stupid bug with the layout. There was something when doing a custom button.
 // TODO: Think about theming and other ui item types.
 
 /// The `ui` module functions as a immediate mode UI library.
@@ -207,6 +208,14 @@ Vec2 uiLayoutPoint() {
     return uiState.layoutStartPoint + uiState.layoutStartPointOffest;
 }
 
+Vec2 uiItemPoint() {
+    return uiState.itemPoint;
+}
+
+Vec2 uiItemSize() {
+    return uiState.itemSize;
+}
+
 bool isUiItemHot() {
     return uiState.itemId == uiState.hotItemId;
 }
@@ -357,7 +366,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
     auto point = uiLayoutPoint;
-    auto maxSize = measureTextSize(options.font, text);
+    auto maxSize = measureTextSize(options.font, text); // TODO: + Vec2(options.textAlignmentMargin, 0.0f);
     if (maxSize.x < size.x) maxSize.x = size.x;
     if (maxSize.y < size.y) maxSize.y = size.y;
     // auto isHot = area.hasPoint(uiMouse)
