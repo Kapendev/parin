@@ -112,6 +112,8 @@ Here are some other notable alternatives to consider:
 I add things to Parin when I need them.
 For an overview of what I like and don't like, check the [PREFERENCES.md](PREFERENCES.md) file.
 
+Also, developers using Parin are called Parinists (a name suggested by AI).
+
 ## License
 
 The project is released under the terms of the MIT License.
