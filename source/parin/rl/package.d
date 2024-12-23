@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.29
+// Version: v0.0.30
 // ---
 
 /// The `rl` module provides access to the raylib library.
