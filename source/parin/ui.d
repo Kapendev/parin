@@ -6,10 +6,6 @@
 // Version: v0.0.29
 // ---
 
-// TODO: Was working on the text, so it is broken now. Fix it.
-// TODO: There is some stupid bug with the layout. There was something when doing a custom button.
-// TODO: Think about theming and other ui item types.
-
 /// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
 
@@ -44,7 +40,7 @@ struct UiButtonOptions {
 
     bool isDisabled;
     Alignment alignment = Alignment.center;
-    short alignmentMargin = 0;
+    short alignmentOffset = 0;
     UiDragLimit dragLimit = UiDragLimit.none;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
@@ -55,9 +51,9 @@ struct UiButtonOptions {
         this.isDisabled = isDisabled;
     }
 
-    this(Alignment alignment, short alignmentMargin = 4) {
+    this(Alignment alignment, short alignmentOffset = 0) {
         this.alignment = alignment;
-        this.alignmentMargin = alignmentMargin;
+        this.alignmentOffset = alignmentOffset;
     }
 
     this(UiDragLimit dragLimit) {
@@ -95,6 +91,15 @@ struct UiState {
     short focusedItemId;
     short previousMaxHotItemId;
     short previousMaxHotItemIdBuffer;
+}
+
+bool uiRectHasPoint(Rect area, Vec2 point) {
+    return (
+        point.x >= area.position.x &&
+        point.x < area.position.x + area.size.x &&
+        point.y >= area.position.y &&
+        point.y < area.position.y + area.size.y
+    );
 }
 
 void prepareUi() {
@@ -309,11 +314,6 @@ void wrapUiFocus(short step, Sz length) {
     uiState.focusedItemId = wrap(cast(short) (uiState.focusedItemId + step), min, cast(short) (max + 1));
 }
 
-void drawDebugUiItemArea(Color color = white) {
-    auto area = Rect(uiItemPoint, uiItemSize);
-    drawRect(area, color);
-}
-
 void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, bool isClicked) {
     uiPreviousState = uiState;
     uiState.itemPoint = itemPoint;
@@ -345,13 +345,21 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
 
 void updateUiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-    auto point = uiLayoutPoint;
-    updateUiState(point, size, false, false, false);
+    updateUiState(uiLayoutPoint, size, false, false, false);
 }
 
 void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiButtonOptions()) {
     if (options.font.isEmpty) options.font = engineFont;
-    drawText(options.font, text, point);
+    auto area = Rect(point, size);
+    auto textPoint = area.centerPoint;
+    final switch (options.alignment) {
+        case Alignment.left: textPoint.x += options.alignmentOffset; break;
+        case Alignment.center: break;
+        case Alignment.right: textPoint.x -= options.alignmentOffset; break;
+    }
+    auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
+    textOptions.hook = Hook.center;
+    drawText(options.font, text, textPoint.round(), textOptions);
 }
 
 void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
@@ -364,15 +372,8 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
     auto point = uiLayoutPoint;
-    auto maxSize = measureTextSize(options.font, text); // TODO: + Vec2(options.alignmentMargin, 0.0f);
-    if (maxSize.x < size.x) maxSize.x = size.x;
-    if (maxSize.y < size.y) maxSize.y = size.y;
-    // auto isHot = area.hasPoint(uiMouse)
-    auto isHot =
-        m.x >= point.x &&
-        m.x < point.x + maxSize.x &&
-        m.y >= point.y &&
-        m.y < point.y + maxSize.y;
+    auto area = Rect(point, size);
+    auto isHot = area.uiRectHasPoint(m);
     if (isHot) {
         uiState.previousMaxHotItemIdBuffer = cast(short) id;
     }
@@ -384,11 +385,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     if (uiState.isActOnPress) {
         isClicked = isClicked && uiState.mouseClickAction.isPressed;
     } else {
-        auto isHotFromMousePressedPoint =
-            uiState.mousePressedPoint.x >= point.x &&
-            uiState.mousePressedPoint.x < point.x + maxSize.x &&
-            uiState.mousePressedPoint.y >= point.y &&
-            uiState.mousePressedPoint.y < point.y + maxSize.y;
+        auto isHotFromMousePressedPoint = area.uiRectHasPoint(uiState.mousePressedPoint);
         isClicked = isClicked && isHotFromMousePressedPoint && uiState.mouseClickAction.isReleased;
     }
 
@@ -405,7 +402,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
             if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
         }
     }
-    updateUiState(point, maxSize, isHot, isActive, isClicked);
+    updateUiState(point, size, isHot, isActive, isClicked);
     return isClicked;
 }
 
@@ -425,7 +422,7 @@ bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions())
     return result;
 }
 
-bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
+bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
     auto dragLimitX = Vec2(-100000.0f, 100000.0f);
     auto dragLimitY = Vec2(-100000.0f, 100000.0f);
     // NOTE: There is a potential bug here when size is bigger than the limit/viewport. I will ignore it for now.
@@ -474,10 +471,19 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
         uiState = uiPreviousState;
         setUiStartPoint(point);
         updateUiButton(size, "", options);
-        drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
         return true;
     } else {
-        drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
         return false;
     }
+}
+
+void drawUiDragHandle(Vec2 size, ref Vec2 point, bool isDragged, UiButtonOptions options = UiButtonOptions()) {
+    if (isDragged) drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
+    else drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
+}
+
+bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
+    auto result = updateUiDragHandle(size, point, options);
+    drawUiDragHandle(size, point, isUiItemDragged, options);
+    return result;
 }
