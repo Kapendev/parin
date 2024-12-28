@@ -2137,6 +2137,15 @@ void drawRect(Rect area, Color color = white) {
     }
 }
 
+@trusted
+void drawHollowRect(Rect area, float thickness, Color color = white) {
+    if (isPixelSnapped || isPixelPerfect) {
+        rl.DrawRectangleLinesEx(area.floor().toRl(), thickness, color.toRl());
+    } else {
+        rl.DrawRectangleLinesEx(area.toRl(), thickness, color.toRl());
+    }
+}
+
 /// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, float size, Color color = white) {
     drawRect(Rect(point, size, size).centerArea, color);
@@ -2149,6 +2158,15 @@ void drawCirc(Circ area, Color color = white) {
         rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
     } else {
         rl.DrawCircleV(area.position.toRl(), area.radius, color.toRl());
+    }
+}
+
+@trusted
+void drawHollowCirc(Circ area, float thickness, Color color = white) {
+    if (isPixelSnapped || isPixelPerfect) {
+        rl.DrawRing(area.position.floor().toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
+    } else {
+        rl.DrawRing(area.position.toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
     }
 }
 
