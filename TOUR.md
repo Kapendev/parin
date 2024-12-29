@@ -92,6 +92,9 @@ bool isReleased(Keyboard key);
 bool isReleased(Mouse key);
 bool isReleased(Gamepad key, int id = 0);
 
+Keyboard dequeuePressedKey();
+dchar dequeuePressedRune();
+
 Vec2 wasd();
 Vec2 wasdPressed();
 Vec2 wasdReleased();
@@ -120,13 +123,14 @@ While drawing is not pixel-perfect by default, it can be by calling the `setIsPi
 
 ```d
 void drawRect(Rect area, Color color = white);
-void drawVec2(Vec2 point, float size, Color color = white);
+void drawHollowRect(Rect area, float thickness, Color color = white);
 void drawCirc(Circ area, Color color = white);
+void drawHollowCirc(Circ area, float thickness, Color color = white);
+void drawVec2(Vec2 point, float size, Color color = white);
 void drawLine(Line area, float size, Color color = white);
 
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 

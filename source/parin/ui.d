@@ -477,13 +477,12 @@ bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiB
     }
 }
 
-void drawUiDragHandle(Vec2 size, ref Vec2 point, bool isDragged, UiButtonOptions options = UiButtonOptions()) {
-    if (isDragged) drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
-    else drawUiButton(size, "", uiState.itemPoint, isUiItemHot, isUiItemActive, options);
+void drawUiDragHandle(Vec2 size, Vec2 point, bool isHot, bool isActive, UiButtonOptions options = UiButtonOptions()) {
+    drawUiButton(size, "", point, isHot, isActive, options);
 }
 
 bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
     auto result = updateUiDragHandle(size, point, options);
-    drawUiDragHandle(size, point, isUiItemDragged, options);
+    drawUiDragHandle(size, uiItemPoint, isUiItemHot, isUiItemActive, options);
     return result;
 }

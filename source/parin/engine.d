@@ -80,6 +80,7 @@ enum Blend : ubyte {
 
 /// A type representing a limited set of keyboard keys.
 enum Keyboard : ushort {
+    none = rl.KEY_NULL,           /// Not a key.
     a = rl.KEY_A,                 /// The A key.
     b = rl.KEY_B,                 /// The B key.
     c = rl.KEY_C,                 /// The C key.
@@ -1997,6 +1998,22 @@ bool isReleased(Mouse key) {
 @trusted
 bool isReleased(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonReleased(id, key);
+}
+
+/// Returns the recently pressed keyboard key.
+/// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
+/// A none key is returned when the queue is empty.
+@trusted
+Keyboard dequeuePressedKey() {
+    return cast(Keyboard) rl.GetKeyPressed();
+}
+
+/// Returns the recently pressed character.
+/// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
+/// A none character is returned when the queue is empty.
+@trusted
+dchar dequeuePressedRune() {
+    return rl.GetCharPressed();
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are down.
