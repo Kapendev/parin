@@ -9,12 +9,14 @@
 /// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
 
+import rl = parin.rl;
+import joka.ascii;
 import parin.engine;
 
 UiState uiState;
 UiState uiPreviousState;
 
-enum defaultUiAlpha = 230;
+enum defaultUiAlpha = 220;
 enum defaultUiDisabledColor = 0x202020.toRgb().alpha(defaultUiAlpha);
 enum defaultUiIdleColor = 0x414141.toRgb().alpha(defaultUiAlpha);
 enum defaultUiHotColor = 0x818181.toRgb().alpha(defaultUiAlpha);
@@ -63,7 +65,7 @@ struct UiButtonOptions {
 
 struct UiState {
     Mouse mouseClickAction = Mouse.left;
-    Keyboard keyboardClickAction = Keyboard.space;
+    Keyboard keyboardClickAction = Keyboard.enter;
     Gamepad gamepadClickAction = Gamepad.a;
     bool isActOnPress;
 
@@ -100,6 +102,20 @@ bool uiRectHasPoint(Rect area, Vec2 point) {
         point.y >= area.position.y &&
         point.y < area.position.y + area.size.y
     );
+}
+
+bool isSpaceInTextField(char c) {
+    return c == ' ' || c == '_' || c == '.';
+}
+
+int findSpaceInTextField(IStr text) {
+    auto result = text.findEnd(' ');
+    auto temp = -1;
+    temp = text.findEnd('_');
+    if (temp > result) result = temp;
+    temp = text.findEnd('.');
+    if (temp > result) result = temp;
+    return result;
 }
 
 void prepareUi() {
@@ -359,12 +375,13 @@ void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiBu
     }
     auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
     textOptions.hook = Hook.center;
+    if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
     drawText(options.font, text, textPoint.round(), textOptions);
 }
 
 void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
     updateUiText(size, text, options);
-    drawUiText(uiState.itemSize, text, uiState.itemPoint, options);
+    drawUiText(uiItemSize, text, uiItemPoint, options);
 }
 
 bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
@@ -485,4 +502,109 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonO
     auto result = updateUiDragHandle(size, point, options);
     drawUiDragHandle(size, uiItemPoint, isUiItemHot, isUiItemActive, options);
     return result;
+}
+
+// NOTE: Works, but drawing for right-to-left text might not be right.
+// Keys:
+//  backspace            : Remove character.
+//  ctrl|alt + backsapce : Remove word.
+//  ctrl|alt + x         : Remove everything.
+bool uiTextField(Vec2 size, ref Str text, Str textBuffer, UiButtonOptions options = UiButtonOptions()) {
+    if (options.font.isEmpty) options.font = engineFont;
+    // TODO: Make a function for text stuff.
+    auto point = uiLayoutPoint;
+
+    if (options.isDisabled) {
+        // Look, I am funny.
+    } else if (Keyboard.x.isPressed && (Keyboard.ctrl.isDown || Keyboard.alt.isDown)) {
+        text = text[0 .. 0];
+    } else if (Keyboard.backspace.isPressed && text.length > 0) {
+        if (Keyboard.ctrl.isDown || Keyboard.alt.isDown) {
+            auto spaceIndex = findSpaceInTextField(text);
+            while (spaceIndex == text.length - 1) {
+                text = text[0 .. $ - 1];
+                spaceIndex = findSpaceInTextField(text);
+            }
+            if (spaceIndex != -1) {
+                auto rightIndex = spaceIndex + 1;
+                if (rightIndex < text.length && !isSpaceInTextField(text[rightIndex])) {
+                    text = textBuffer[0 .. spaceIndex + 1];
+                }
+            } else {
+                text = text[0 .. 0];
+            }
+        } else {
+            auto codepointSize = 0;
+            auto codepoint = rl.GetCodepointPrevious(&text.ptr[text.length], &codepointSize);
+            text = text[0 .. $ - codepointSize];
+        }
+    } else {
+        // NOTE: Doing codepoint to bytes conversion here. Maybe add something like that to joka one day.
+        auto rune = dequeuePressedRune();
+        auto newLength = text.length;
+        if (rune <= 0x7F) {
+            newLength += 1;
+        } else if (rune <= 0x7FF) {
+            newLength += 2;
+        } else if (rune <= 0xFFFF) {
+            newLength += 3;
+        } else if (rune <= 0x10FFFF) {
+            newLength += 4;
+        } else {
+            assert(0, "WTF!");
+        }
+        while (rune && newLength <= textBuffer.length) {
+            text = textBuffer[0 .. newLength];
+            if (rune <= 0x7F) {
+                text[$ - 1] = cast(char) rune;
+            } else if (rune <= 0x7FF) {
+                text[$ - 2] = cast(char) (0xC0 | (rune >> 6));
+                text[$ - 1] = cast(char) (0x80 | (rune & 0x3F));
+            } else if (rune <= 0xFFFF) {
+                text[$ - 3] = cast(char) (0xE0 | (rune >> 12));
+                text[$ - 2] = cast(char) (0x80 | ((rune >> 6) & 0x3F));
+                text[$ - 1] = cast(char) (0x80 | (rune & 0x3F));
+            } else if (rune <= 0x10FFFF) {
+                text[$ - 4] = cast(char) (0xF0 | (rune >> 18));
+                text[$ - 3] = cast(char) (0x80 | ((rune >> 12) & 0x3F));
+                text[$ - 2] = cast(char) (0x80 | ((rune >> 6) & 0x3F));
+                text[$ - 1] = cast(char) (0x80 | (rune & 0x3F));
+            } else {
+                assert(0, "WTF!");
+            }
+            rune = dequeuePressedRune();
+            newLength = text.length;
+            if (rune <= 0x7F) {
+                newLength += 1;
+            } else if (rune <= 0x7FF) {
+                newLength += 2;
+            } else if (rune <= 0xFFFF) {
+                newLength += 3;
+            } else if (rune <= 0x10FFFF) {
+                newLength += 4;
+            } else {
+                assert(0, "WTF!");
+            }
+        }
+    }
+
+    uiText(size, text, options);
+    // TODO: Make that text thing a function doood.
+    // TODO: This does not support right-to-left text.
+    auto area = Rect(point, size);
+    auto textPoint = area.centerPoint;
+    auto textSize = measureTextSize(options.font, text);
+    final switch (options.alignment) {
+        case Alignment.left: textPoint.x = point.x + options.alignmentOffset; break;
+        case Alignment.center: textSize.x *= 0.5f; break;
+        case Alignment.right: textPoint.x = point.x + size.x - options.alignmentOffset; textSize.x = 0.0f; break;
+    }
+    if (!options.isDisabled) {
+        auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, options.font.size * 0.05f, options.font.size).area(Hook.center);
+        rect.subTopBottom(rect.size.y * 0.1f);
+        rect = rect.round();
+        if (rect.size.x == 0.0f) rect.size.x = 1.0f;
+        drawRect(rect, options.disabledColor);
+    }
+    return uiState.keyboardClickAction.isPressed;
 }
