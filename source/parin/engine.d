@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.30
+// Version: v0.0.31
 // ---
 
 // TODO: Test the resource loading code.
