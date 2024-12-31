@@ -131,6 +131,8 @@ void drawLine(Line area, float size, Color color = white);
 
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions());
+
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 

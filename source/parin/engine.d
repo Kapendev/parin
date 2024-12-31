@@ -2254,6 +2254,96 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
     drawTexture(texture.getOr(), position, options);
 }
 
+/// Draws a 9-patch texture from the specified texture area at the given target area.
+void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
+    auto tileSize = (area.size / Vec2(3.0f)).floor();
+    auto hOptions = options;
+    auto vOptions = options;
+    auto cOptions = options;
+    auto cleanScaleX = (target.size.x - 2.0f * tileSize.x) / tileSize.x;
+    auto cleanScaleY = (target.size.y - 2.0f * tileSize.y) / tileSize.y;
+    hOptions.scale.x *= cleanScaleX;
+    vOptions.scale.y *= cleanScaleY;
+    cOptions.scale = Vec2(hOptions.scale.x, vOptions.scale.y);
+    // 1
+    auto partPosition = target.position;
+    auto partArea = Rect(area.position, tileSize);
+    drawTextureArea(texture, partArea, partPosition, options);
+    // 2
+    partPosition.x += tileSize.x * options.scale.x;
+    partArea.position.x += tileSize.x;
+    if (isTiled) {
+        foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
+            auto tempPartPosition = partPosition;
+            tempPartPosition.x += i * tileSize.x * options.scale.x;
+            drawTextureArea(texture, partArea, tempPartPosition, options);
+        }
+    } else {
+        drawTextureArea(texture, partArea, partPosition, hOptions);
+    }
+    // 3
+    partPosition.x += tileSize.x * hOptions.scale.x;
+    partArea.position.x += tileSize.x;
+    drawTextureArea(texture, partArea, partPosition, options);
+    // 4
+    partPosition.x = target.position.x;
+    partPosition.y += tileSize.y * options.scale.y;
+    partArea.position.x = area.position.x;
+    partArea.position.y += tileSize.y;
+    if (isTiled) {
+        foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
+            auto tempPartPosition = partPosition;
+            tempPartPosition.y += i * tileSize.y * options.scale.y;
+            drawTextureArea(texture, partArea, tempPartPosition, options);
+        }
+    } else {
+        drawTextureArea(texture, partArea, partPosition, vOptions);
+    }
+    // 5
+    partPosition.x += tileSize.x * options.scale.x;
+    partArea.position.x += tileSize.x;
+    drawTextureArea(texture, partArea, partPosition, cOptions);
+    // 6
+    partPosition.x += tileSize.x * hOptions.scale.x;
+    partArea.position.x += tileSize.x;
+    if (isTiled) {
+        foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
+            auto tempPartPosition = partPosition;
+            tempPartPosition.y += i * tileSize.y * options.scale.y;
+            drawTextureArea(texture, partArea, tempPartPosition, options);
+        }
+    } else {
+        drawTextureArea(texture, partArea, partPosition, vOptions);
+    }
+    // 7
+    partPosition.x = target.position.x;
+    partPosition.y += tileSize.y * vOptions.scale.y;
+    partArea.position.x = area.position.x;
+    partArea.position.y += tileSize.y;
+    drawTextureArea(texture, partArea, partPosition, options);
+    // 8
+    partPosition.x += tileSize.x * options.scale.x;
+    partArea.position.x += tileSize.x;
+    if (isTiled) {
+        foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
+            auto tempPartPosition = partPosition;
+            tempPartPosition.x += i * tileSize.x * options.scale.x;
+            drawTextureArea(texture, partArea, tempPartPosition, options);
+        }
+    } else {
+        drawTextureArea(texture, partArea, partPosition, hOptions);
+    }
+    // 9
+    partPosition.x += tileSize.x * hOptions.scale.x;
+    partArea.position.x += tileSize.x;
+    drawTextureArea(texture, partArea, partPosition, options);
+}
+
+/// Draws a 9-patch texture from the specified texture area at the given target area.
+void drawTexturePatch(TextureId texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
+    drawTexturePatch(texture.getOr(), area, target, isTiled, options);
+}
+
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     // Some basic rules to make viewports noob friendly.
