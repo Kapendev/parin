@@ -17,11 +17,11 @@ bool update(float dt) {
     setUiStartPoint(Vec2(8));
     // Create a horizontal layout for arranging subsequent UI items.
     useUiLayout(Layout.h);
-    uiText(textSize, "Cool Button", UiButtonOptions(Alignment.left));
+    uiText(textSize, "Cool Button", UiOptions(Alignment.left));
     if (uiButton(buttonSize, "")) println("Cool");
     // Create a new horizontal layout under the previous layout.
     useUiLayout(Layout.h);
-    uiText(textSize, "Super Button", UiButtonOptions(Alignment.left));
+    uiText(textSize, "Super Button", UiOptions(Alignment.left));
     if (uiButton(buttonSize, "")) println("Super");
     return false;
 }

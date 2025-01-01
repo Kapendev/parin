@@ -15,7 +15,7 @@ bool myButton(IStr text) {
     } else {
         drawTextureArea(atlas, Rect(uiItemSize), uiItemPoint, DrawOptions(gray1));
     }
-    drawUiText(uiItemSize, text, uiItemPoint, UiButtonOptions(Alignment.left, 6));
+    drawUiText(uiItemSize, text, uiItemPoint, UiOptions(Alignment.left, 6));
     return result;
 }
 

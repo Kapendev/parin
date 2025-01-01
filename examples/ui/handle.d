@@ -3,7 +3,7 @@
 import parin;
 
 auto handlePosition = Vec2(120, 60);
-auto handleOptions = UiButtonOptions();
+auto handleOptions = UiOptions();
 
 void ready() {
     lockResolution(320, 180);

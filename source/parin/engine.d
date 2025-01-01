@@ -190,7 +190,7 @@ enum Gamepad : ubyte {
 
 /// A structure containing options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object.
+    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object. This value can be used to force a specific value when needed and is not used if it is set to zero.
     Vec2 scale = Vec2(1.0f);              /// The scale of the drawn object.
     float rotation = 0.0f;                /// The rotation of the drawn object, in degrees.
     Color color = white;                  /// The color of the drawn object.

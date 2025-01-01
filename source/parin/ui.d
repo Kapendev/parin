@@ -33,19 +33,14 @@ enum UiDragLimit: ubyte {
     customAndY,   /// Limited to custom limits and on the Y-axis.
 }
 
-struct UiButtonOptions {
-    Color disabledColor = defaultUiDisabledColor;
-    Color idleColor = defaultUiIdleColor;
-    Color hotColor = defaultUiHotColor;
-    Color activeColor = defaultUiActiveColor;
-    Font font;
-
-    bool isDisabled;
+struct UiOptions {
+    FontId font;
     Alignment alignment = Alignment.center;
     short alignmentOffset = 0;
     UiDragLimit dragLimit = UiDragLimit.none;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
+    bool isDisabled;
 
     @safe @nogc nothrow:
 
@@ -93,15 +88,6 @@ struct UiState {
     short focusedItemId;
     short previousMaxHotItemId;
     short previousMaxHotItemIdBuffer;
-}
-
-bool uiRectHasPoint(Rect area, Vec2 point) {
-    return (
-        point.x >= area.position.x &&
-        point.x < area.position.x + area.size.x &&
-        point.y >= area.position.y &&
-        point.y < area.position.y + area.size.y
-    );
 }
 
 bool isSpaceInTextField(char c) {
@@ -359,13 +345,12 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
     }
 }
 
-void updateUiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
-    if (options.font.isEmpty) options.font = engineFont;
+void updateUiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
     updateUiState(uiLayoutPoint, size, false, false, false);
 }
 
-void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiButtonOptions()) {
-    if (options.font.isEmpty) options.font = engineFont;
+void drawUiText(Vec2 size, IStr text, Vec2 point, UiOptions options = UiOptions()) {
+    auto font = options.font.isValid ? options.font.get() : engineFont;
     auto area = Rect(point, size);
     auto textPoint = area.centerPoint;
     final switch (options.alignment) {
@@ -376,21 +361,21 @@ void drawUiText(Vec2 size, IStr text, Vec2 point, UiButtonOptions options = UiBu
     auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
     textOptions.hook = Hook.center;
     if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
-    drawText(options.font, text, textPoint.round(), textOptions);
+    drawText(font, text, textPoint.round(), textOptions);
 }
 
-void uiText(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
+void uiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
     updateUiText(size, text, options);
     drawUiText(uiItemSize, text, uiItemPoint, options);
 }
 
-bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
-    if (options.font.isEmpty) options.font = engineFont;
+bool updateUiButton(Vec2 size, IStr text, UiOptions options = UiOptions()) {
+    auto font = options.font.isValid ? options.font.get() : engineFont;
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
     auto point = uiLayoutPoint;
     auto area = Rect(point, size);
-    auto isHot = area.uiRectHasPoint(m);
+    auto isHot = area.hasPointInclusive(m);
     if (isHot) {
         uiState.previousMaxHotItemIdBuffer = cast(short) id;
     }
@@ -402,7 +387,7 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     if (uiState.isActOnPress) {
         isClicked = isClicked && uiState.mouseClickAction.isPressed;
     } else {
-        auto isHotFromMousePressedPoint = area.uiRectHasPoint(uiState.mousePressedPoint);
+        auto isHotFromMousePressedPoint = area.hasPointInclusive(uiState.mousePressedPoint);
         isClicked = isClicked && isHotFromMousePressedPoint && uiState.mouseClickAction.isReleased;
     }
 
@@ -413,33 +398,29 @@ bool updateUiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOpti
     } else if (id == uiState.focusedItemId) {
         isHot = true;
         if (uiState.keyboardClickAction.isDown || uiState.gamepadClickAction.isDown) isActive = true;
-        if (uiState.isActOnPress) {
-            if (uiState.keyboardClickAction.isPressed || uiState.gamepadClickAction.isPressed) isClicked = true;
-        } else {
-            if (uiState.keyboardClickAction.isReleased || uiState.gamepadClickAction.isReleased) isClicked = true;
-        }
+        if (uiState.keyboardClickAction.isPressed || uiState.gamepadClickAction.isPressed) isClicked = true;
     }
     updateUiState(point, size, isHot, isActive, isClicked);
     return isClicked;
 }
 
-void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, UiButtonOptions options = UiButtonOptions()) {
-    if (options.font.isEmpty) options.font = engineFont;
+void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, UiOptions options = UiOptions()) {
+    auto font = options.font.isValid ? options.font.get() : engineFont;
     auto area = Rect(point, size);
-    if (options.isDisabled) drawRect(area, options.disabledColor);
-    else if (isActive) drawRect(area, options.activeColor);
-    else if (isHot) drawRect(area, options.hotColor);
-    else drawRect(area, options.idleColor);
+    if (options.isDisabled) drawRect(area, defaultUiDisabledColor);
+    else if (isActive) drawRect(area, defaultUiActiveColor);
+    else if (isHot) drawRect(area, defaultUiHotColor);
+    else drawRect(area, defaultUiIdleColor);
     drawUiText(size, text, point, options);
 }
 
-bool uiButton(Vec2 size, IStr text, UiButtonOptions options = UiButtonOptions()) {
+bool uiButton(Vec2 size, IStr text, UiOptions options = UiOptions()) {
     auto result = updateUiButton(size, text, options);
-    drawUiButton(uiState.itemSize, text, uiState.itemPoint, isUiItemHot, isUiItemActive, options);
+    drawUiButton(uiItemSize, text, uiItemPoint, isUiItemHot, isUiItemActive, options);
     return result;
 }
 
-bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
+bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
     auto dragLimitX = Vec2(-100000.0f, 100000.0f);
     auto dragLimitY = Vec2(-100000.0f, 100000.0f);
     // NOTE: There is a potential bug here when size is bigger than the limit/viewport. I will ignore it for now.
@@ -494,26 +475,19 @@ bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiB
     }
 }
 
-void drawUiDragHandle(Vec2 size, Vec2 point, bool isHot, bool isActive, UiButtonOptions options = UiButtonOptions()) {
+void drawUiDragHandle(Vec2 size, Vec2 point, bool isHot, bool isActive, UiOptions options = UiOptions()) {
     drawUiButton(size, "", point, isHot, isActive, options);
 }
 
-bool uiDragHandle(Vec2 size, ref Vec2 point, UiButtonOptions options = UiButtonOptions()) {
+bool uiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
     auto result = updateUiDragHandle(size, point, options);
-    drawUiDragHandle(size, uiItemPoint, isUiItemHot, isUiItemActive, options);
+    drawUiDragHandle(uiItemSize, uiItemPoint, isUiItemHot, isUiItemActive, options);
     return result;
 }
 
-// NOTE: Works, but drawing for right-to-left text might not be right.
-// Keys:
-//  backspace            : Remove character.
-//  ctrl|alt + backsapce : Remove word.
-//  ctrl|alt + x         : Remove everything.
-bool uiTextField(Vec2 size, ref Str text, Str textBuffer, UiButtonOptions options = UiButtonOptions()) {
-    if (options.font.isEmpty) options.font = engineFont;
-    // TODO: Make a function for text stuff.
+// TODO: Add support for right-to-left text.
+bool updateUiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
     auto point = uiLayoutPoint;
-
     if (options.isDisabled) {
         // Look, I am funny.
     } else if (Keyboard.x.isPressed && (Keyboard.ctrl.isDown || Keyboard.alt.isDown)) {
@@ -587,24 +561,37 @@ bool uiTextField(Vec2 size, ref Str text, Str textBuffer, UiButtonOptions option
             }
         }
     }
+    updateUiState(point, size, false, false, false);
+    return uiState.keyboardClickAction.isPressed;
+}
 
-    uiText(size, text, options);
+// TODO: Add support for right-to-left text.
+void drawUiTextField(Vec2 size, Str text, Vec2 point, UiOptions options = UiOptions()) {
+    auto font = options.font.isValid ? options.font.get() : engineFont;
+    drawUiText(size, text, point, options);
     // TODO: Make that text thing a function doood.
-    // TODO: This does not support right-to-left text.
     auto area = Rect(point, size);
     auto textPoint = area.centerPoint;
-    auto textSize = measureTextSize(options.font, text);
+    auto textSize = measureTextSize(font, text);
     final switch (options.alignment) {
         case Alignment.left: textPoint.x = point.x + options.alignmentOffset; break;
         case Alignment.center: textSize.x *= 0.5f; break;
         case Alignment.right: textPoint.x = point.x + size.x - options.alignmentOffset; textSize.x = 0.0f; break;
     }
     if (!options.isDisabled) {
-        auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, options.font.size * 0.05f, options.font.size).area(Hook.center);
+        auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, font.size * 0.05f, font.size).area(Hook.center);
         rect.subTopBottom(rect.size.y * 0.1f);
         rect = rect.round();
         if (rect.size.x == 0.0f) rect.size.x = 1.0f;
-        drawRect(rect, options.disabledColor);
+        drawRect(rect, defaultUiDisabledColor);
     }
-    return uiState.keyboardClickAction.isPressed;
+}
+
+// Combos:
+//  ctrl|alt + backsapce : Remove word.
+//  ctrl|alt + x         : Remove everything.
+bool uiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
+    auto result = updateUiTextField(size, text, textBuffer, options);
+    drawUiTextField(uiItemSize, text, uiItemPoint, options);
+    return result;
 }
