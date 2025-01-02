@@ -1411,7 +1411,7 @@ void freeResources(Sz tag = 0) {
 
 /// Opens a URL in the default web browser (if available).
 @trusted
-void openURL(IStr url = "https://github.com/Kapendev/parin") {
+void openURL(IStr url = "https://example.com/") {
     rl.OpenURL(url.toCStr().getOr());
 }
 
