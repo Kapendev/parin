@@ -1409,6 +1409,12 @@ void freeResources(Sz tag = 0) {
     engineState.resources.free(tag);
 }
 
+/// Opens a URL in the default web browser (if available).
+@trusted
+void openURL(IStr url = "https://example.com/") {
+    rl.OpenURL(url.toCStr().getOr());
+}
+
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 @trusted
