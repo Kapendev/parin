@@ -34,13 +34,13 @@ enum UiDragLimit: ubyte {
 }
 
 struct UiOptions {
-    FontId font;
+    FontId font = FontId();
     Alignment alignment = Alignment.center;
     short alignmentOffset = 0;
     UiDragLimit dragLimit = UiDragLimit.none;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
-    bool isDisabled;
+    bool isDisabled = false;
 
     @safe @nogc nothrow:
 
@@ -358,10 +358,10 @@ void drawUiText(Vec2 size, IStr text, Vec2 point, UiOptions options = UiOptions(
         case Alignment.center: break;
         case Alignment.right: textPoint.x -= options.alignmentOffset; break;
     }
-    auto textOptions = DrawOptions(options.alignment, cast(int) size.x.floor());
+    auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
     textOptions.hook = Hook.center;
     if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
-    drawText(font, text, textPoint.floor(), textOptions);
+    drawText(font, text, textPoint.round(), textOptions);
 }
 
 void uiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
@@ -579,9 +579,9 @@ void drawUiTextField(Vec2 size, Str text, Vec2 point, UiOptions options = UiOpti
         case Alignment.right: textPoint.x = point.x + size.x - options.alignmentOffset; textSize.x = 0.0f; break;
     }
     if (!options.isDisabled) {
-        auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, font.size * 0.05f, font.size).area(Hook.center);
+        auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, font.size * 0.08f, font.size).area(Hook.center);
         rect.subTopBottom(rect.size.y * 0.1f);
-        rect = rect.floor();
+        rect = rect.round();
         if (rect.size.x == 0.0f) rect.size.x = 1.0f;
         drawRect(rect, defaultUiDisabledColor);
     }
