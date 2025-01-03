@@ -9,6 +9,9 @@
 	"dependencies": {
 		"joka": "*"
 	},
+	"stringImportPaths": [
+		"assets"
+	],
 	"subPackages" : [
 		"setup",
 		"web"

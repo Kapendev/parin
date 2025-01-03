@@ -169,6 +169,7 @@ enum Mouse : ubyte {
 
 /// A type representing a limited set of gamepad buttons.
 enum Gamepad : ubyte {
+    none = rl.GAMEPAD_BUTTON_UNKNOWN,          /// Not a button.
     left = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
     right = rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
     up = rl.GAMEPAD_BUTTON_LEFT_FACE_UP,       /// The up button.
@@ -973,6 +974,7 @@ struct EngineState {
     EngineResources resources;
     EngineFullscreenState fullscreenState;
 
+    Font font;
     Color borderColor;
     Sz tickCount;
     LStr assetsPath;
@@ -995,6 +997,7 @@ struct EngineState {
         // }
         viewport.free();
         resources.free();
+        font.free();
         tempText.free();
         assetsPath.free();
         this = EngineState();
@@ -1106,17 +1109,16 @@ rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
 /// Converts an ASCII bitmap font texture into a font.
 /// The texture will be freed when the font is freed.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+// NOTE: This function assumes that raylib uses malloc.
 @trusted
 Font toFont(Texture texture, int tileWidth, int tileHeight) {
     if (texture.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
 
     auto result = Font();
     result.lineSpacing = tileHeight;
-
     auto rowCount = texture.height / tileHeight;
     auto colCount = texture.width / tileWidth;
     auto maxCount = rowCount * colCount;
-
     result.data.baseSize = tileHeight;
     result.data.glyphCount = maxCount;
     result.data.glyphPadding = 0;
@@ -1291,7 +1293,7 @@ TextureId loadTexture(IStr path, Sz tag = 0) {
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
     auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
-    if (value.data.texture.id == engineFont.data.texture.id) {
+    if (value.data.texture.id == rl.GetFontDefault().texture.id) {
         value = Font();
     }
     value.runeSpacing = runeSpacing;
@@ -1420,9 +1422,7 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 /// You should avoid calling this function manually.
 @trusted
 void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
-    if (rl.IsWindowReady) {
-        return;
-    }
+    if (rl.IsWindowReady) return;
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
     rl.InitWindow(width, height, title.toCStr().getOr());
@@ -1438,6 +1438,12 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     engineState.tempText.reserve(8192);
     // NOTE: This line is used for fixing an alpha bug with render textures.
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+    // Load default engine assets.
+    auto monogramData = cast(const(ubyte)[]) import("monogram.png");
+    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
+    auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
+    engineState.font = monogramTexture.toParin().toFont(6, 12);
+    rl.UnloadImage(monogramImage);
 }
 
 /// Updates the window every frame with the given function.
@@ -1668,10 +1674,7 @@ void setBorderColor(Color value) {
 /// Returns the default engine font. This font should not be freed.
 @trusted
 Font engineFont() {
-    auto result = rl.GetFontDefault().toParin();
-    result.runeSpacing = 1;
-    result.lineSpacing = 10;
-    return result;
+    return engineState.font;
 }
 
 /// Returns the default filter mode for textures.

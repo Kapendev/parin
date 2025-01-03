@@ -358,10 +358,10 @@ void drawUiText(Vec2 size, IStr text, Vec2 point, UiOptions options = UiOptions(
         case Alignment.center: break;
         case Alignment.right: textPoint.x -= options.alignmentOffset; break;
     }
-    auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
+    auto textOptions = DrawOptions(options.alignment, cast(int) size.x.floor());
     textOptions.hook = Hook.center;
     if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
-    drawText(font, text, textPoint.round(), textOptions);
+    drawText(font, text, textPoint.floor(), textOptions);
 }
 
 void uiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
@@ -581,7 +581,7 @@ void drawUiTextField(Vec2 size, Str text, Vec2 point, UiOptions options = UiOpti
     if (!options.isDisabled) {
         auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, font.size * 0.05f, font.size).area(Hook.center);
         rect.subTopBottom(rect.size.y * 0.1f);
-        rect = rect.round();
+        rect = rect.floor();
         if (rect.size.x == 0.0f) rect.size.x = 1.0f;
         drawRect(rect, defaultUiDisabledColor);
     }

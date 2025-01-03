@@ -14,7 +14,7 @@ bool update(float dt) {
     setUiFocus(0);
     setUiStartPoint(Vec2(8));
     // Toggle the limit of the drag handle.
-    if (uiButton(Vec2(80, 30), "Limit: {}".format(handleOptions.dragLimit))) {
+    if (uiButton(Vec2(100, 30), "Limit: {}".format(handleOptions.dragLimit))) {
         if (handleOptions.dragLimit) handleOptions.dragLimit = UiDragLimit.none;
         else handleOptions.dragLimit = UiDragLimit.viewport;
     }

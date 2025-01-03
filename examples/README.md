@@ -4,7 +4,7 @@ This folder provides example projects to help you get started.
 
 > [!NOTE]
 > If an example uses textures,
-> be sure to download the [atlas.png](atlas.png) file and place it in the project's assets folder.
+> be sure to download the [atlas.png](../assets/atlas.png) file and place it in the project's assets folder.
 
 ## Categories
 
