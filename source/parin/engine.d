@@ -1410,8 +1410,9 @@ void freeResources(Sz tag = 0) {
 }
 
 /// Opens a URL in the default web browser (if available).
+/// Redirect to Parin's Github when no URL (string) is provided.
 @trusted
-void openURL(IStr url = "https://example.com/") {
+void openUrl(IStr url = "https://github.com/Kapendev/parin") {
     rl.OpenURL(url.toCStr().getOr());
 }
 
