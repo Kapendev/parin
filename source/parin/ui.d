@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.31
+// Version: v0.0.32
 // ---
 
 /// The `ui` module functions as a immediate mode UI library.
@@ -13,12 +13,14 @@ import rl = parin.rl;
 import joka.ascii;
 import parin.engine;
 
+@safe @nogc nothrow:
+
 UiState uiState;
 UiState uiPreviousState;
 
 enum defaultUiAlpha = 220;
-enum defaultUiBorderThickness = 1;
 enum defaultUiMargin = 1;
+enum defaultUiBorderThickness = 1;
 enum defaultUiDisabledColor = 0x202020.toRgb();
 enum defaultUiIdleColor = 0x414141.toRgb();
 enum defaultUiHotColor = 0x818181.toRgb();
@@ -217,7 +219,11 @@ Vec2 uiLayoutStartPoint() {
 }
 
 Vec2 uiLayoutPoint() {
-    return (uiState.layoutStartPoint + uiState.layoutStartPointOffest);
+    return uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+}
+
+short uiItemId() {
+    return uiState.itemId;
 }
 
 Vec2 uiItemPoint() {
@@ -416,7 +422,7 @@ void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, U
     else if (isActive) drawRect(area, defaultUiActiveColor);
     else if (isHot) drawRect(area, defaultUiHotColor);
     else drawRect(area, defaultUiIdleColor);
-    if (!options.isDisabled) drawHollowRect(area, defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
+    drawHollowRect(area, defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
     drawUiText(size, text, point, options);
 }
 
@@ -483,9 +489,7 @@ bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions
 
 void drawUiDragHandle(Vec2 size, Vec2 point, bool isHot, bool isActive, UiOptions options = UiOptions()) {
     drawUiButton(size, "", point, isHot, isActive, options);
-    if (!options.isDisabled) {
-        drawHollowRect(Rect(point, size), defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
-    }
+    drawHollowRect(Rect(point, size), defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
 }
 
 bool uiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
@@ -495,6 +499,7 @@ bool uiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
 }
 
 // TODO: Add support for right-to-left text.
+@trusted
 bool updateUiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
     auto point = uiLayoutPoint;
     if (options.isDisabled) {

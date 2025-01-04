@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.31
+// Version: v0.0.32
 // ---
 
 // TODO: The DialogueCommandRunner should work with gc functions too. Think about how to do it.
