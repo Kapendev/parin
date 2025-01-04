@@ -2,7 +2,7 @@
 
 import parin;
 
-auto textSize = Vec2(80, 20);
+auto textSize = Vec2(90, 24);
 auto buttonSize = Vec2(20);
 
 void ready() {
@@ -12,8 +12,6 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    // Set the margin between subsequent UI items.
-    setUiMargin(2);
     setUiStartPoint(Vec2(8));
     // Create a horizontal layout for arranging subsequent UI items.
     useUiLayout(Layout.h);

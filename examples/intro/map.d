@@ -17,8 +17,7 @@ void ready() {
 
 bool update(float dt) {
     // Create the drawing options for the map and tile.
-    auto mapOptions = DrawOptions(Hook.center);
-    mapOptions.scale = Vec2(2);
+    auto mapOptions = DrawOptions(Vec2(2));
     auto tileOptions = mapOptions;
     tileOptions.flip = tileFlip;
     if (wasd.x > 0) tileFlip = Flip.x;
@@ -26,14 +25,14 @@ bool update(float dt) {
 
     // Move the tile and the camera.
     tile.position += wasd * Vec2(120 * dt);
-    camera.position = tile.position;
+    camera.position = tile.position + tile.size * Vec2(0.5f);
     // Check for collisions between the tile and the map and resolve the collision.
     foreach (position; map.gridPositions(camera.area, mapOptions)) {
         if (map[position] < 0) continue;
         auto area = Rect(map.worldPosition(position, mapOptions), map.tileSize * mapOptions.scale);
-        while (area.hasIntersection(Rect(tile.position, tile.size * mapOptions.scale).area(mapOptions.hook))) {
+        while (area.hasIntersection(Rect(tile.position, tile.size * mapOptions.scale))) {
             tile.position -= wasd * Vec2(dt);
-            camera.position = tile.position;
+            camera.position = tile.position + tile.size * Vec2(0.5f);
         }
     }
 

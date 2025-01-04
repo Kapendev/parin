@@ -17,13 +17,10 @@ bool update(float dt) {
     // Set the viewport state for subsequent UI items.
     setUiViewportState(viewportPosition, viewport.size, viewportScale);
     viewport.attach();
-
-    setUiMargin(2);
     setUiStartPoint(Vec2(8));
-    foreach (i; 0 .. 4) {
-        if (uiButton(Vec2(14), i.toStr())) println(i);
+    foreach (i; 0 .. 3) {
+        if (uiButton(Vec2(19), i.toStr())) println(i);
     }
-
     viewport.detach();
     drawViewport(viewport, viewportPosition, DrawOptions(viewportScale));
     return false;

@@ -17,10 +17,12 @@ UiState uiState;
 UiState uiPreviousState;
 
 enum defaultUiAlpha = 220;
-enum defaultUiDisabledColor = 0x202020.toRgb().alpha(defaultUiAlpha);
-enum defaultUiIdleColor = 0x414141.toRgb().alpha(defaultUiAlpha);
-enum defaultUiHotColor = 0x818181.toRgb().alpha(defaultUiAlpha);
-enum defaultUiActiveColor = 0xBABABA.toRgb().alpha(defaultUiAlpha);
+enum defaultUiBorderThickness = 1;
+enum defaultUiMargin = 1;
+enum defaultUiDisabledColor = 0x202020.toRgb();
+enum defaultUiIdleColor = 0x414141.toRgb();
+enum defaultUiHotColor = 0x818181.toRgb();
+enum defaultUiActiveColor = 0xBABABA.toRgb();
 
 /// A type representing the constraints on drag movement.
 enum UiDragLimit: ubyte {
@@ -36,8 +38,8 @@ enum UiDragLimit: ubyte {
 struct UiOptions {
     FontId font = FontId();
     Alignment alignment = Alignment.center;
-    short alignmentOffset = 0;
-    UiDragLimit dragLimit = UiDragLimit.none;
+    short alignmentOffset = defaultUiBorderThickness;
+    UiDragLimit dragLimit = UiDragLimit.viewport;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
     bool isDisabled = false;
@@ -48,7 +50,7 @@ struct UiOptions {
         this.isDisabled = isDisabled;
     }
 
-    this(Alignment alignment, short alignmentOffset = 0) {
+    this(Alignment alignment, short alignmentOffset = defaultUiBorderThickness) {
         this.alignment = alignment;
         this.alignmentOffset = alignmentOffset;
     }
@@ -69,7 +71,7 @@ struct UiState {
     Vec2 viewportScale = Vec2(1.0f);
 
     Vec2 startPoint;
-    short margin;
+    short margin = defaultUiMargin;
 
     Layout layout;
     Vec2 layoutStartPoint;
@@ -107,7 +109,7 @@ int findSpaceInTextField(IStr text) {
 void prepareUi() {
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     uiState.startPoint = Vec2();
-    uiState.margin = 0;
+    uiState.margin = defaultUiMargin;
 
     uiState.layout = Layout.v;
     uiState.layoutStartPoint = Vec2();
@@ -181,6 +183,8 @@ void setUiMargin(short value) {
     uiState.margin = value;
 }
 
+// TODO: THERE IS A WEIRD BUG WITH SPACING IF YOU DON"T PUT USE AT THE START OF EVERY GROUP. FIX IT.
+// TODO: MAYBE ALSO MAKE THIS POOOOOOP MORE SIMPLE.
 void useUiLayout(Layout value) {
     if (uiState.layoutStartPointOffest) {
         final switch (value) {
@@ -213,7 +217,7 @@ Vec2 uiLayoutStartPoint() {
 }
 
 Vec2 uiLayoutPoint() {
-    return uiState.layoutStartPoint + uiState.layoutStartPointOffest;
+    return (uiState.layoutStartPoint + uiState.layoutStartPointOffest);
 }
 
 Vec2 uiItemPoint() {
@@ -358,10 +362,11 @@ void drawUiText(Vec2 size, IStr text, Vec2 point, UiOptions options = UiOptions(
         case Alignment.center: break;
         case Alignment.right: textPoint.x -= options.alignmentOffset; break;
     }
+    textPoint = textPoint.round();
     auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
     textOptions.hook = Hook.center;
     if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
-    drawText(font, text, textPoint.round(), textOptions);
+    drawText(font, text, textPoint, textOptions);
 }
 
 void uiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
@@ -400,7 +405,7 @@ bool updateUiButton(Vec2 size, IStr text, UiOptions options = UiOptions()) {
         if (uiState.keyboardClickAction.isDown || uiState.gamepadClickAction.isDown) isActive = true;
         if (uiState.keyboardClickAction.isPressed || uiState.gamepadClickAction.isPressed) isClicked = true;
     }
-    updateUiState(point, size, isHot, isActive, isClicked);
+    updateUiState(area.position, area.size, isHot, isActive, isClicked);
     return isClicked;
 }
 
@@ -411,6 +416,7 @@ void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, U
     else if (isActive) drawRect(area, defaultUiActiveColor);
     else if (isHot) drawRect(area, defaultUiHotColor);
     else drawRect(area, defaultUiIdleColor);
+    if (!options.isDisabled) drawHollowRect(area, defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
     drawUiText(size, text, point, options);
 }
 
@@ -477,6 +483,9 @@ bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions
 
 void drawUiDragHandle(Vec2 size, Vec2 point, bool isHot, bool isActive, UiOptions options = UiOptions()) {
     drawUiButton(size, "", point, isHot, isActive, options);
+    if (!options.isDisabled) {
+        drawHollowRect(Rect(point, size), defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
+    }
 }
 
 bool uiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
@@ -495,7 +504,7 @@ bool updateUiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions option
     } else if (Keyboard.backspace.isPressed && text.length > 0) {
         if (Keyboard.ctrl.isDown || Keyboard.alt.isDown) {
             auto spaceIndex = findSpaceInTextField(text);
-            while (spaceIndex == text.length - 1) {
+            while (text.length > 0 && spaceIndex == text.length - 1) {
                 text = text[0 .. $ - 1];
                 spaceIndex = findSpaceInTextField(text);
             }
@@ -579,11 +588,13 @@ void drawUiTextField(Vec2 size, Str text, Vec2 point, UiOptions options = UiOpti
         case Alignment.right: textPoint.x = point.x + size.x - options.alignmentOffset; textSize.x = 0.0f; break;
     }
     if (!options.isDisabled) {
-        auto rect = Rect(textPoint.x + textSize.x + 1.0f, textPoint.y, font.size * 0.08f, font.size).area(Hook.center);
-        rect.subTopBottom(rect.size.y * 0.1f);
-        rect = rect.round();
-        if (rect.size.x == 0.0f) rect.size.x = 1.0f;
-        drawRect(rect, defaultUiDisabledColor);
+        auto rect = Rect(
+            round(textPoint.x + textSize.x + 2.0f),
+            round(textPoint.y),
+            font.size * 0.08f, font.size).area(Hook.center,
+        );
+        if (rect.size.x <= 1.0f) rect.size.x = 1.0f;
+        drawRect(rect, defaultUiDisabledColor.alpha(defaultUiAlpha));
     }
 }
 

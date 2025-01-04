@@ -2,7 +2,7 @@
 
 import parin;
 
-auto buttonSize = Vec2(60, 20);
+auto buttonSize = Vec2(70, 24);
 auto activeMenu = 0;
 
 IStr[4] mainMenu = [
@@ -31,7 +31,6 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    setUiMargin(2);
     // Get the current menu.
     auto menu = mainMenu[];
     if (activeMenu == 1) menu = continueMenu[];

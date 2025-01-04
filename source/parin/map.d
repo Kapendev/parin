@@ -256,11 +256,11 @@ struct TileMap {
             bool empty() {
                 return position.x > last.x || position.y > last.y;
             }
-            
+
             IVec2 front() {
                 return position;
             }
-            
+
             void popFront() {
                 position.x += 1;
                 if (position.x >= colCount) {

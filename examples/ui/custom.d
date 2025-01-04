@@ -27,7 +27,6 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    setUiMargin(2);
     setUiStartPoint(Vec2(8));
     if (myButton("My Button 1")) println("Boom 1!");
     if (myButton("My Button 2")) println("Boom 2!");
