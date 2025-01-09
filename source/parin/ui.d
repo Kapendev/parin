@@ -270,6 +270,7 @@ void updateUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
 }
 
 void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
+    area = area.round();
     auto font = options.font.isValid ? options.font.get() : engineFont;
     auto textPoint = area.centerPoint;
     final switch (options.alignment) {
@@ -323,6 +324,7 @@ bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
 }
 
 void drawUiButton(Rect area, IStr text, bool isHot, bool isActive, UiOptions options = UiOptions()) {
+    area = area.round();
     auto font = options.font.isValid ? options.font.get() : engineFont;
     if (options.isDisabled) drawRect(area, options.disabledColor);
     else if (isActive) drawRect(area, options.activeColor);
@@ -480,6 +482,7 @@ bool updateUiTextField(Rect area, ref Str text, Str textBuffer, UiOptions option
 
 // TODO: Add support for right-to-left text.
 void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
+    area = area.round();
     auto font = options.font.isValid ? options.font.get() : engineFont;
     drawUiText(area, text, options);
     // TODO: Make that text thing a function doood.
