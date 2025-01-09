@@ -18,9 +18,7 @@ import parin.engine;
 UiState uiState;
 UiState uiPreviousState;
 
-enum defaultUiAlpha = 220;
-enum defaultUiMargin = 1;
-enum defaultUiBorderThickness = 1;
+enum defaultUiAlpha = 200;
 enum defaultUiDisabledColor = 0x202020.toRgb();
 enum defaultUiIdleColor = 0x414141.toRgb();
 enum defaultUiHotColor = 0x818181.toRgb();
@@ -39,8 +37,13 @@ enum UiDragLimit: ubyte {
 
 struct UiOptions {
     FontId font = FontId();
+    Color disabledColor = defaultUiDisabledColor;
+    Color idleColor = defaultUiIdleColor;
+    Color hotColor = defaultUiHotColor;
+    Color activeColor = defaultUiActiveColor;
+
     Alignment alignment = Alignment.center;
-    short alignmentOffset = defaultUiBorderThickness;
+    short alignmentOffset = 0;
     UiDragLimit dragLimit = UiDragLimit.viewport;
     Vec2 dragLimitX = Vec2(-100000.0f, 100000.0f);
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
@@ -52,7 +55,7 @@ struct UiOptions {
         this.isDisabled = isDisabled;
     }
 
-    this(Alignment alignment, short alignmentOffset = defaultUiBorderThickness) {
+    this(Alignment alignment, short alignmentOffset = 0) {
         this.alignment = alignment;
         this.alignmentOffset = alignmentOffset;
     }
@@ -72,18 +75,8 @@ struct UiState {
     Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1.0f);
 
-    Vec2 startPoint;
-    short margin = defaultUiMargin;
-
-    Layout layout;
-    Vec2 layoutStartPoint;
-    Vec2 layoutStartPointOffest;
-    Vec2 layoutMaxItemSize;
-
     Vec2 mousePressedPoint;
     Vec2 itemDragOffset;
-    Vec2 itemPoint;
-    Vec2 itemSize;
     short itemId;
     short hotItemId;
     short activeItemId;
@@ -110,16 +103,6 @@ int findSpaceInTextField(IStr text) {
 
 void prepareUi() {
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
-    uiState.startPoint = Vec2();
-    uiState.margin = defaultUiMargin;
-
-    uiState.layout = Layout.v;
-    uiState.layoutStartPoint = Vec2();
-    uiState.layoutStartPointOffest = Vec2();
-    uiState.layoutMaxItemSize = Vec2();
-
-    uiState.itemPoint = Vec2();
-    uiState.itemSize = Vec2();
     uiState.itemId = 0;
     uiState.hotItemId = 0;
     uiState.activeItemId = 0;
@@ -165,73 +148,8 @@ void setUiViewportState(Vec2 point, Vec2 size, Vec2 scale) {
     }
 }
 
-Vec2 uiStartPoint() {
-    return uiState.startPoint;
-}
-
-void setUiStartPoint(Vec2 value) {
-    uiState.startPoint = value;
-    uiState.itemSize = Vec2();
-    uiState.layoutStartPoint = value;
-    uiState.layoutStartPointOffest = Vec2();
-    uiState.layoutMaxItemSize = Vec2();
-}
-
-short uiMargin() {
-    return uiState.margin;
-}
-
-void setUiMargin(short value) {
-    uiState.margin = value;
-}
-
-// TODO: THERE IS A WEIRD BUG WITH SPACING IF YOU DON"T PUT USE AT THE START OF EVERY GROUP. FIX IT.
-// TODO: MAYBE ALSO MAKE THIS POOOOOOP MORE SIMPLE.
-void useUiLayout(Layout value) {
-    if (uiState.layoutStartPointOffest) {
-        final switch (value) {
-            case Layout.v:
-                if (uiState.layoutStartPointOffest.x > uiState.layoutMaxItemSize.x) {
-                    uiState.layoutStartPoint.x = uiState.layoutStartPoint.x + uiState.layoutStartPointOffest.x + uiState.margin;
-                } else {
-                    uiState.layoutStartPoint.x += uiState.layoutMaxItemSize.x + uiState.margin;
-                }
-                uiState.layoutStartPointOffest = Vec2();
-                uiState.layoutMaxItemSize.x = 0.0f;
-                break;
-            case Layout.h:
-                uiState.layoutStartPoint.x = uiState.startPoint.x;
-                if (uiState.layoutStartPointOffest.y > uiState.layoutMaxItemSize.y) {
-                    uiState.layoutStartPoint.y = uiState.layoutStartPoint.y + uiState.layoutStartPointOffest.y + uiState.margin;
-                } else {
-                    uiState.layoutStartPoint.y += uiState.layoutMaxItemSize.y + uiState.margin;
-                }
-                uiState.layoutStartPointOffest = Vec2();
-                uiState.layoutMaxItemSize.y = 0.0f;
-                break;
-        }
-    }
-    uiState.layout = value;
-}
-
-Vec2 uiLayoutStartPoint() {
-    return uiState.layoutStartPoint;
-}
-
-Vec2 uiLayoutPoint() {
-    return uiState.layoutStartPoint + uiState.layoutStartPointOffest;
-}
-
 short uiItemId() {
     return uiState.itemId;
-}
-
-Vec2 uiItemPoint() {
-    return uiState.itemPoint;
-}
-
-Vec2 uiItemSize() {
-    return uiState.itemSize;
 }
 
 bool isUiItemHot() {
@@ -326,17 +244,9 @@ void wrapUiFocus(short step, Sz length) {
     uiState.focusedItemId = wrap(cast(short) (uiState.focusedItemId + step), min, cast(short) (max + 1));
 }
 
-void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, bool isClicked) {
+void updateUiState(Rect area, bool isHot, bool isActive, bool isClicked) {
     uiPreviousState = uiState;
-    uiState.itemPoint = itemPoint;
-    uiState.itemSize = itemSize;
     uiState.itemId += 1;
-    if (itemSize.x > uiState.layoutMaxItemSize.x) uiState.layoutMaxItemSize.x = itemSize.x;
-    if (itemSize.y > uiState.layoutMaxItemSize.y) uiState.layoutMaxItemSize.y = itemSize.y;
-    final switch (uiState.layout) {
-        case Layout.v: uiState.layoutStartPointOffest.y += uiState.itemSize.y + uiState.margin; break;
-        case Layout.h: uiState.layoutStartPointOffest.x += uiState.itemSize.x + uiState.margin; break;
-    }
     if (isHot) {
         uiState.hotItemId = uiState.itemId;
     }
@@ -347,7 +257,7 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
     if (isClicked) uiState.clickedItemId = uiState.itemId;
     if (uiState.mouseClickAction.isPressed && uiState.itemId == uiState.activeItemId) {
         auto m = uiMouse;
-        uiState.itemDragOffset = uiState.itemPoint - m;
+        uiState.itemDragOffset = area.position - m;
         uiState.draggedItemId = uiState.itemId;
     }
     if (uiState.draggedItemId) {
@@ -355,13 +265,12 @@ void updateUiState(Vec2 itemPoint, Vec2 itemSize, bool isHot, bool isActive, boo
     }
 }
 
-void updateUiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
-    updateUiState(uiLayoutPoint, size, false, false, false);
+void updateUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
+    updateUiState(area, false, false, false);
 }
 
-void drawUiText(Vec2 size, IStr text, Vec2 point, UiOptions options = UiOptions()) {
+void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
-    auto area = Rect(point, size);
     auto textPoint = area.centerPoint;
     final switch (options.alignment) {
         case Alignment.left: textPoint.x += options.alignmentOffset; break;
@@ -369,23 +278,21 @@ void drawUiText(Vec2 size, IStr text, Vec2 point, UiOptions options = UiOptions(
         case Alignment.right: textPoint.x -= options.alignmentOffset; break;
     }
     textPoint = textPoint.round();
-    auto textOptions = DrawOptions(options.alignment, cast(int) size.x.round());
+    auto textOptions = DrawOptions(options.alignment, cast(int) area.size.x.round());
     textOptions.hook = Hook.center;
     if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
     drawText(font, text, textPoint, textOptions);
 }
 
-void uiText(Vec2 size, IStr text, UiOptions options = UiOptions()) {
-    updateUiText(size, text, options);
-    drawUiText(uiItemSize, text, uiItemPoint, options);
+void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
+    updateUiText(area, text, options);
+    drawUiText(area, text, options);
 }
 
-bool updateUiButton(Vec2 size, IStr text, UiOptions options = UiOptions()) {
+bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
-    auto point = uiLayoutPoint;
-    auto area = Rect(point, size);
     auto isHot = area.hasPointInclusive(m);
     if (isHot) {
         uiState.previousMaxHotItemIdBuffer = cast(short) id;
@@ -411,28 +318,26 @@ bool updateUiButton(Vec2 size, IStr text, UiOptions options = UiOptions()) {
         if (uiState.keyboardClickAction.isDown || uiState.gamepadClickAction.isDown) isActive = true;
         if (uiState.keyboardClickAction.isPressed || uiState.gamepadClickAction.isPressed) isClicked = true;
     }
-    updateUiState(area.position, area.size, isHot, isActive, isClicked);
+    updateUiState(area, isHot, isActive, isClicked);
     return isClicked;
 }
 
-void drawUiButton(Vec2 size, IStr text, Vec2 point, bool isHot, bool isActive, UiOptions options = UiOptions()) {
+void drawUiButton(Rect area, IStr text, bool isHot, bool isActive, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
-    auto area = Rect(point, size);
-    if (options.isDisabled) drawRect(area, defaultUiDisabledColor);
-    else if (isActive) drawRect(area, defaultUiActiveColor);
-    else if (isHot) drawRect(area, defaultUiHotColor);
-    else drawRect(area, defaultUiIdleColor);
-    drawHollowRect(area, defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
-    drawUiText(size, text, point, options);
+    if (options.isDisabled) drawRect(area, options.disabledColor);
+    else if (isActive) drawRect(area, options.activeColor);
+    else if (isHot) drawRect(area, options.hotColor);
+    else drawRect(area, options.idleColor);
+    drawUiText(area, text, options);
 }
 
-bool uiButton(Vec2 size, IStr text, UiOptions options = UiOptions()) {
-    auto result = updateUiButton(size, text, options);
-    drawUiButton(uiItemSize, text, uiItemPoint, isUiItemHot, isUiItemActive, options);
+bool uiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
+    auto result = updateUiButton(area, text, options);
+    drawUiButton(area, text, isUiItemHot, isUiItemActive, options);
     return result;
 }
 
-bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
+bool updateUiDragHandle(ref Rect area, UiOptions options = UiOptions()) {
     auto dragLimitX = Vec2(-100000.0f, 100000.0f);
     auto dragLimitY = Vec2(-100000.0f, 100000.0f);
     // NOTE: There is a potential bug here when size is bigger than the limit/viewport. I will ignore it for now.
@@ -443,13 +348,13 @@ bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions
             dragLimitY = Vec2(0.0f, uiState.viewportSize.y);
             break;
         case UiDragLimit.viewportAndX:
-            point.y = clamp(point.y, 0.0f, uiState.viewportSize.y - size.y);
+            area.position.y = clamp(area.position.y, 0.0f, uiState.viewportSize.y - area.size.y);
             dragLimitX = Vec2(0.0f, uiState.viewportSize.x);
-            dragLimitY = Vec2(point.y, point.y + size.y);
+            dragLimitY = Vec2(area.position.y, area.position.y + area.size.y);
             break;
         case UiDragLimit.viewportAndY:
-            point.x = clamp(point.x, 0.0f, uiState.viewportSize.x - size.x);
-            dragLimitX = Vec2(point.x, point.x + size.x);
+            area.position.x = clamp(area.position.x, 0.0f, uiState.viewportSize.x - area.size.x);
+            dragLimitX = Vec2(area.position.x, area.position.x + area.size.x);
             dragLimitY = Vec2(0.0f, uiState.viewportSize.y);
             break;
         case UiDragLimit.custom:
@@ -457,51 +362,45 @@ bool updateUiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions
             dragLimitY = options.dragLimitY;
             break;
         case UiDragLimit.customAndX:
-            point.y = clamp(point.y, 0.0f, options.dragLimitY.y - size.y);
+            area.position.y = clamp(area.position.y, 0.0f, options.dragLimitY.y - area.size.y);
             dragLimitX = options.dragLimitX;
-            dragLimitY = Vec2(point.y, point.y + size.y);
+            dragLimitY = Vec2(area.position.y, area.position.y + area.size.y);
             break;
         case UiDragLimit.customAndY:
-            point.x = clamp(point.x, 0.0f, options.dragLimitX.y - size.x);
-            dragLimitX = Vec2(point.x, point.x + size.x);
+            area.position.x = clamp(area.position.x, 0.0f, options.dragLimitX.y - area.size.x);
+            dragLimitX = Vec2(area.position.x, area.position.x + area.size.x);
             dragLimitY = options.dragLimitY;
             break;
     }
 
-    size.x = clamp(size.x, 0.0f, dragLimitX.y - dragLimitX.x);
-    size.y = clamp(size.y, 0.0f, dragLimitY.y - dragLimitY.x);
-    point.x = clamp(point.x, dragLimitX.x, dragLimitX.y - size.x);
-    point.y = clamp(point.y, dragLimitY.x, dragLimitY.y - size.y);
-    setUiStartPoint(point);
-    updateUiButton(size, "", options);
+    area.position.x = clamp(area.position.x, dragLimitX.x, dragLimitX.y - area.size.x);
+    area.position.y = clamp(area.position.y, dragLimitY.x, dragLimitY.y - area.size.y);
+    updateUiButton(area, "", options);
     if (isUiItemDragged) {
         auto m = (mouse - uiState.viewportPoint) / uiState.viewportScale; // NOTE: Maybe this should be a function?
-        point.y = clamp(m.y + uiDragOffset.y, dragLimitY.x, dragLimitY.y - size.y);
-        point.x = clamp(m.x + uiDragOffset.x, dragLimitX.x, dragLimitX.y - size.x);
+        area.position.y = clamp(m.y + uiDragOffset.y, dragLimitY.x, dragLimitY.y - area.size.y);
+        area.position.x = clamp(m.x + uiDragOffset.x, dragLimitX.x, dragLimitX.y - area.size.x);
         uiState = uiPreviousState;
-        setUiStartPoint(point);
-        updateUiButton(size, "", options);
+        updateUiButton(area, "", options);
         return true;
     } else {
         return false;
     }
 }
 
-void drawUiDragHandle(Vec2 size, Vec2 point, bool isHot, bool isActive, UiOptions options = UiOptions()) {
-    drawUiButton(size, "", point, isHot, isActive, options);
-    drawHollowRect(Rect(point, size), defaultUiBorderThickness, defaultUiDisabledColor.alpha(defaultUiAlpha));
+void drawUiDragHandle(Rect area, bool isHot, bool isActive, UiOptions options = UiOptions()) {
+    drawUiButton(area, "", isHot, isActive, options);
 }
 
-bool uiDragHandle(Vec2 size, ref Vec2 point, UiOptions options = UiOptions()) {
-    auto result = updateUiDragHandle(size, point, options);
-    drawUiDragHandle(uiItemSize, uiItemPoint, isUiItemHot, isUiItemActive, options);
+bool uiDragHandle(ref Rect area, UiOptions options = UiOptions()) {
+    auto result = updateUiDragHandle(area, options);
+    drawUiDragHandle(area, isUiItemHot, isUiItemActive, options);
     return result;
 }
 
 // TODO: Add support for right-to-left text.
 @trusted
-bool updateUiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
-    auto point = uiLayoutPoint;
+bool updateUiTextField(Rect area, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
     if (options.isDisabled) {
         // Look, I am funny.
     } else if (Keyboard.x.isPressed && (Keyboard.ctrl.isDown || Keyboard.alt.isDown)) {
@@ -575,22 +474,21 @@ bool updateUiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions option
             }
         }
     }
-    updateUiState(point, size, false, false, false);
+    updateUiState(area, false, false, false);
     return uiState.keyboardClickAction.isPressed;
 }
 
 // TODO: Add support for right-to-left text.
-void drawUiTextField(Vec2 size, Str text, Vec2 point, UiOptions options = UiOptions()) {
+void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
-    drawUiText(size, text, point, options);
+    drawUiText(area, text, options);
     // TODO: Make that text thing a function doood.
-    auto area = Rect(point, size);
     auto textPoint = area.centerPoint;
     auto textSize = measureTextSize(font, text);
     final switch (options.alignment) {
-        case Alignment.left: textPoint.x = point.x + options.alignmentOffset; break;
+        case Alignment.left: textPoint.x = area.position.x + options.alignmentOffset; break;
         case Alignment.center: textSize.x *= 0.5f; break;
-        case Alignment.right: textPoint.x = point.x + size.x - options.alignmentOffset; textSize.x = 0.0f; break;
+        case Alignment.right: textPoint.x = area.position.x + area.size.x - options.alignmentOffset; textSize.x = 0.0f; break;
     }
     if (!options.isDisabled) {
         auto rect = Rect(
@@ -599,15 +497,15 @@ void drawUiTextField(Vec2 size, Str text, Vec2 point, UiOptions options = UiOpti
             font.size * 0.08f, font.size).area(Hook.center,
         );
         if (rect.size.x <= 1.0f) rect.size.x = 1.0f;
-        drawRect(rect, defaultUiDisabledColor.alpha(defaultUiAlpha));
+        drawRect(rect, options.disabledColor.alpha(defaultUiAlpha));
     }
 }
 
 // Combos:
 //  ctrl|alt + backsapce : Remove word.
 //  ctrl|alt + x         : Remove everything.
-bool uiTextField(Vec2 size, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
-    auto result = updateUiTextField(size, text, textBuffer, options);
-    drawUiTextField(uiItemSize, text, uiItemPoint, options);
+bool uiTextField(Rect area, ref Str text, Str textBuffer, UiOptions options = UiOptions()) {
+    auto result = updateUiTextField(area, text, textBuffer, options);
+    drawUiTextField(area, text, options);
     return result;
 }

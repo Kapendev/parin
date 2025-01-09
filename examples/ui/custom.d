@@ -1,21 +1,21 @@
-/// This example shows how to create custom UI items.
+/// This example shows how to create a custom UI button.
 
 import parin;
 
 auto atlas = TextureId();
 
-bool myButton(IStr text) {
+bool myButton(Rect area, IStr text) {
     // Create a button without drawing anything.
-    auto result = updateUiButton(Vec2(80, 30), text);
+    auto result = updateUiButton(area, text);
     // Draw the button above.
     if (isUiItemActive) {
-        drawTextureArea(atlas, Rect(uiItemSize), uiItemPoint, DrawOptions(gray3));
+        drawTextureArea(atlas, Rect(area.size), area.position, DrawOptions(gray3));
     } else if (isUiItemHot) {
-        drawTextureArea(atlas, Rect(uiItemSize), uiItemPoint, DrawOptions(gray2));
+        drawTextureArea(atlas, Rect(area.size), area.position, DrawOptions(gray2));
     } else {
-        drawTextureArea(atlas, Rect(uiItemSize), uiItemPoint, DrawOptions(gray1));
+        drawTextureArea(atlas, Rect(area.size), area.position, DrawOptions(gray1));
     }
-    drawUiText(uiItemSize, text, uiItemPoint, UiOptions(Alignment.left, 6));
+    drawUiText(area, text, UiOptions(Alignment.left, 4));
     return result;
 }
 
@@ -27,9 +27,7 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    setUiStartPoint(Vec2(8));
-    if (myButton("My Button 1")) println("Boom 1!");
-    if (myButton("My Button 2")) println("Boom 2!");
+    if (myButton(Rect(8, 8, 100, 25), "My Button")) println("Boom!");
     return false;
 }
 

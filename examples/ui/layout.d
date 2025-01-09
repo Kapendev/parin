@@ -2,8 +2,10 @@
 
 import parin;
 
-auto textSize = Vec2(90, 24);
-auto buttonSize = Vec2(20);
+auto groupHeight = 20;
+auto groupMargin = 2;
+auto buttonWidth = 20;
+auto textWidth = 90;
 
 void ready() {
     lockResolution(320, 180);
@@ -12,15 +14,19 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    setUiStartPoint(Vec2(8));
-    // Create a horizontal layout for arranging subsequent UI items.
-    useUiLayout(Layout.h);
-    uiText(textSize, "Cool Button", UiOptions(Alignment.left));
-    if (uiButton(buttonSize, "")) println("Cool");
-    // Create a new horizontal layout under the previous layout.
-    useUiLayout(Layout.h);
-    uiText(textSize, "Super Button", UiOptions(Alignment.left));
-    if (uiButton(buttonSize, "")) println("Super");
+    // Create an area for arranging UI items.
+    auto area = Rect(Vec2(8), resolution - Vec2(8));
+    auto group = Rect();
+    // Group 1.
+    group = area.subTop(groupHeight);
+    uiText(group.subLeft(textWidth), "Cool Button", UiOptions(Alignment.left));
+    if (uiButton(group.subLeft(buttonWidth), "")) println("Cool");
+    // Margin.
+    area.subTop(groupMargin);
+    // Group 2.
+    group = area.subTop(groupHeight);
+    uiText(group.subLeft(textWidth), "Super Button", UiOptions(Alignment.left));
+    if (uiButton(group.subLeft(buttonWidth), "")) println("Super");
     return false;
 }
 

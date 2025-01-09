@@ -2,8 +2,6 @@
 
 import parin;
 
-auto buttonText = "Hello world!";
-
 void ready() {
     lockResolution(320, 180);
 }
@@ -13,12 +11,8 @@ bool update(float dt) {
     prepareUi();
     // Disable the UI focus for this frame. Focus is only needed for UIs that support keyboard controls.
     setUiFocus(0);
-    // Set the starting point for subsequent UI items.
-    setUiStartPoint(Vec2(8));
     // Create a button and print if it is clicked.
-    if (uiButton(Vec2(80, 30), buttonText)) {
-        println(buttonText);
-    }
+    if (uiButton(Rect(8, 8, 100, 25), "Hello world!")) println("World: Hi!");
     return false;
 }
 

@@ -2,7 +2,7 @@
 
 import parin;
 
-auto handlePosition = Vec2(120, 60);
+auto handleArea = Rect(40, 60, 60, 60);
 auto handleOptions = UiOptions();
 
 void ready() {
@@ -12,15 +12,13 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    setUiStartPoint(Vec2(8));
     // Toggle the limit of the drag handle.
-    if (uiButton(Vec2(120, 24), "Limit: {}".format(handleOptions.dragLimit))) {
-        if (handleOptions.dragLimit) handleOptions.dragLimit = UiDragLimit.none;
-        else handleOptions.dragLimit = UiDragLimit.viewport;
+    if (uiButton(Rect(8, 8, 120, 25), handleOptions.dragLimit.toStr())) {
+        handleOptions.dragLimit = handleOptions.dragLimit ? UiDragLimit.none : UiDragLimit.viewport;
     }
     // Create the drag handle and print if it is dragged.
-    if (uiDragHandle(Vec2(60), handlePosition, handleOptions)) {
-        println(handlePosition);
+    if (uiDragHandle(handleArea, handleOptions)) {
+        println(handleArea.position);
     }
     return false;
 }

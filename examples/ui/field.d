@@ -2,8 +2,8 @@
 
 import parin;
 
-char[32] textBuffer;
 Str text;
+char[32] textBuffer;
 
 void ready() {
     lockResolution(320, 180);
@@ -12,12 +12,8 @@ void ready() {
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
-    setUiStartPoint(Vec2());
-    // Create the text field and print if enter is pressed.
-    // Text field combos: ctrl+backspace, ctrl+x
-    if (uiTextField(resolution, text, textBuffer)) {
-        println(text);
-    }
+    // Create the text field and print if enter is pressed. Combos: ctrl+backspace, ctrl+x
+    if (uiTextField(Rect(resolution), text, textBuffer)) println(text);
     return false;
 }
 

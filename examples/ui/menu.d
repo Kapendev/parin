@@ -2,8 +2,10 @@
 
 import parin;
 
-auto buttonSize = Vec2(70, 24);
 auto activeMenu = 0;
+auto buttonWidth = 70;
+auto buttonHeight = 25;
+auto buttonMargin = 2;
 
 IStr[4] mainMenu = [
     "Start",
@@ -12,9 +14,8 @@ IStr[4] mainMenu = [
     "Quit",
 ];
 
-IStr[3] continueMenu = [
+IStr[2] continueMenu = [
     "Save 1",
-    "Save 2",
     "Back",
 ];
 
@@ -36,18 +37,20 @@ bool update(float dt) {
     if (activeMenu == 1) menu = continueMenu[];
     else if (activeMenu == 2) menu = settingsMenu[];
     // Draw the menu.
-    auto menuPoint = resolution * Vec2(0.5);
-    menuPoint.x -= buttonSize.x * 0.5;
-    menuPoint.y -= (buttonSize.y * menu.length + uiMargin * (menu.length - 1)) * 0.5;
-    setUiStartPoint(menuPoint);
+    auto area = Rect(
+        resolution * Vec2(0.5),
+        buttonWidth,
+        buttonHeight * menu.length + buttonMargin * (menu.length - 1),
+    ).area(Hook.center);
     foreach (item; menu) {
-        if (uiButton(buttonSize, item)) {
+        if (uiButton(area.subTop(buttonHeight), item)) {
             println(item);
             if (activeMenu == 0 && item == "Continue") activeMenu = 1;
             if (activeMenu == 0 && item == "Settings") activeMenu = 2;
             if (item == "Back") activeMenu = 0;
             if (item == "Quit") return true;
         }
+        area.subTop(buttonMargin);
     }
     return false;
 }
