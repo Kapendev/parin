@@ -9,99 +9,46 @@
 /// The `rayib` module provides access to the raylib.h functions.
 module parin.rl.raylib;
 
-// import core.stdc.config;
-// import core.stdc.stdarg;
-// import core.stdc.stdlib;
+import joka.traits;
+import joka.types;
 
 @nogc nothrow extern(C):
-
-// Required for: va_list - Only used by TraceLogCallback
 
 enum RAYLIB_VERSION_MAJOR = 5;
 enum RAYLIB_VERSION_MINOR = 0;
 enum RAYLIB_VERSION_PATCH = 0;
 enum RAYLIB_VERSION = "5.0";
 
-// Function specifiers in case library is build/used as a shared library (Windows)
-// NOTE: Microsoft specifiers to tell compiler that symbols are imported/exported from a .dll
-
-// We are building the library as a Win32 shared library (.dll)
-
-// We are using the library as a Win32 shared library (.dll) // Functions defined as 'extern' by default (implicit specifiers)
-
-//----------------------------------------------------------------------------------
-// Some basic Defines
-//----------------------------------------------------------------------------------
-
 enum PI = 3.14159265358979323846f;
-
 enum DEG2RAD = PI / 180.0f;
-
 enum RAD2DEG = 180.0f / PI;
 
-// Allow custom memory allocators
-// NOTE: Require recompiling raylib sources
-
-// alias RL_MALLOC = malloc;
-
-// alias RL_CALLOC = calloc;
-
-// alias RL_REALLOC = realloc;
-
-// alias RL_FREE = free;
-
-// NOTE: MSVC C++ compiler does not support compound literals (C99 feature)
-// Plain structures in C++ (without constructors) can be initialized with { }
-// This is called aggregate initialization (C++11 feature)
-
-// extern (D) auto CLITERAL(T)(auto ref T type)
-// {
-//     return type;
-// }
-
-// Some compilers (mostly macos clang) default to C++98,
-// where aggregate initialization can't be used
-// So, give a more clear error stating how to fix this
-
-// NOTE: We set some defines with some data types declared by raylib
-// Other modules (raymath, rlgl) also require some of those types, so,
-// to be able to use those other modules as standalone (not depending on raylib)
-// this defines are very useful for internal check and avoid type (re)definitions
-
-// Some Basic Colors
-// NOTE: Custom raylib color palette for amazing visuals on WHITE background // Light Gray // Gray // Dark Gray // Yellow // Gold // Orange // Pink // Red // Maroon // Green // Lime // Dark Green // Sky Blue // Blue // Dark Blue // Purple // Violet // Dark Purple // Beige // Brown // Dark Brown // White // Black // Blank (Transparent) // Magenta // My own White (raylib logo)
-enum LIGHTGRAY =  Color( 200, 200, 200, 255 );   // Light Gray
-enum GRAY =       Color( 130, 130, 130, 255 );   // Gray
-enum DARKGRAY =   Color( 80, 80, 80, 255 );      // Dark Gray
-enum YELLOW =     Color( 253, 249, 0, 255 );     // Yellow
-enum GOLD =       Color( 255, 203, 0, 255 );     // Gold
-enum ORANGE =     Color( 255, 161, 0, 255 );     // Orange
-enum PINK =       Color( 255, 109, 194, 255 );   // Pink
-enum RED =        Color( 230, 41, 55, 255 );     // Red
-enum MAROON =     Color( 190, 33, 55, 255 );     // Maroon
-enum GREEN =      Color( 0, 228, 48, 255 );      // Green
-enum LIME =       Color( 0, 158, 47, 255 );      // Lime
-enum DARKGREEN =  Color( 0, 117, 44, 255 );      // Dark Green
-enum SKYBLUE =    Color( 102, 191, 255, 255 );   // Sky Blue
-enum BLUE =       Color( 0, 121, 241, 255 );     // Blue
-enum DARKBLUE =   Color( 0, 82, 172, 255 );      // Dark Blue
-enum PURPLE =     Color( 200, 122, 255, 255 );   // Purple
-enum VIOLET =     Color( 135, 60, 190, 255 );    // Violet
-enum DARKPURPLE = Color( 112, 31, 126, 255 );    // Dark Purple
-enum BEIGE =      Color( 211, 176, 131, 255 );   // Beige
-enum BROWN =      Color( 127, 106, 79, 255 );    // Brown
-enum DARKBROWN =  Color( 76, 63, 47, 255 );      // Dark Brown
-
-enum WHITE =      Color( 255, 255, 255, 255 );   // White
-enum BLACK =      Color( 0, 0, 0, 255 );         // Black
-enum BLANK =      Color( 0, 0, 0, 0 );           // Blank (Transparent)
-enum MAGENTA =    Color( 255, 0, 255, 255 );     // Magenta
-enum RAYWHITE =   Color( 245, 245, 245, 255 );   // My own White (raylib logo)
-
-//----------------------------------------------------------------------------------
-// Structures Definition
-//----------------------------------------------------------------------------------
-// Boolean type
+enum LIGHTGRAY = Color(200, 200, 200, 255);
+enum GRAY = Color(130, 130, 130, 255);
+enum DARKGRAY = Color(80, 80, 80, 255);
+enum YELLOW = Color(253, 249, 0, 255);
+enum GOLD = Color(255, 203, 0, 255);
+enum ORANGE = Color(255, 161, 0, 255);
+enum PINK = Color(255, 109, 194, 255);
+enum RED = Color(230, 41, 55, 255);
+enum MAROON = Color(190, 33, 55, 255);
+enum GREEN = Color(0, 228, 48, 255);
+enum LIME = Color(0, 158, 47, 255);
+enum DARKGREEN = Color(0, 117, 44, 255);
+enum SKYBLUE = Color(102, 191, 255, 255);
+enum BLUE = Color(0, 121, 241, 255);
+enum DARKBLUE = Color(0, 82, 172, 255);
+enum PURPLE = Color(200, 122, 255, 255);
+enum VIOLET = Color(135, 60, 190, 255);
+enum DARKPURPLE = Color(112, 31, 126, 255);
+enum BEIGE = Color(211, 176, 131, 255);
+enum BROWN = Color(127, 106, 79, 255);
+enum DARKBROWN = Color(76, 63, 47, 255);
+enum WHITE = Color(255, 255, 255, 255);
+enum BLACK = Color(0, 0, 0, 255);
+enum BLANK = Color(0, 0, 0, 0);
+enum MAGENTA = Color(255, 0, 255, 255);
+enum RAYWHITE = Color(245, 245, 245, 255);
 
 // Vector2, 2 components
 struct Vector2
@@ -109,43 +56,7 @@ struct Vector2
     float x = 0.0f; // Vector x component
     float y = 0.0f; // Vector y component
 
-    enum zero = Vector2(0.0f, 0.0f);
-    enum one = Vector2(1.0f, 1.0f);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(float x, float y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    pragma(inline, true)
-    this(float x) {
-        this(x, x);
-    }
-
-    pragma(inline, true)
-    Vector2 opUnary(const(char)[] op)() {
-        return Vector2(
-            mixin(op, "x"),
-            mixin(op, "y"),
-        );
-    }
-
-    pragma(inline, true)
-    Vector2 opBinary(const(char)[] op)(Vector2 rhs) {
-        return Vector2(
-            mixin("x", op, "rhs.x"),
-            mixin("y", op, "rhs.y"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Vector2 rhs) {
-        mixin("x", op, "=rhs.x;");
-        mixin("y", op, "=rhs.y;");
-    }
+    mixin addXyzwOps!(float, 2);
 }
 
 // Vector3, 3 components
@@ -155,47 +66,7 @@ struct Vector3
     float y = 0.0f; // Vector y component
     float z = 0.0f; // Vector z component
 
-    enum zero = Vector3(0.0f, 0.0f, 0.0f);
-    enum one = Vector3(1.0f, 1.0f, 1.0f);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(float x, float y, float z) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-    }
-
-    pragma(inline, true)
-    this(float x) {
-        this(x, x, x);
-    }
-
-    pragma(inline, true)
-    Vector3 opUnary(const(char)[] op)() {
-        return Vector3(
-            mixin(op, "x"),
-            mixin(op, "y"),
-            mixin(op, "z"),
-        );
-    }
-
-    pragma(inline, true)
-    Vector3 opBinary(const(char)[] op)(Vector3 rhs) {
-        return Vector3(
-            mixin("x", op, "rhs.x"),
-            mixin("y", op, "rhs.y"),
-            mixin("z", op, "rhs.z"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Vector3 rhs) {
-        mixin("x", op, "=rhs.x;");
-        mixin("y", op, "=rhs.y;");
-        mixin("z", op, "=rhs.z;");
-    }
+    mixin addXyzwOps!(float, 3);
 }
 
 // Vector4, 4 components
@@ -206,51 +77,7 @@ struct Vector4
     float z = 0.0f; // Vector z component
     float w = 0.0f; // Vector w component
 
-    enum zero = Vector4(0.0f, 0.0f, 0.0f, 0.0f);
-    enum one = Vector4(1.0f, 1.0f, 1.0f, 1.0f);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(float x, float y, float z, float w) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.w = w;
-    }
-
-    pragma(inline, true)
-    this(float x) {
-        this(x, x, x, x);
-    }
-
-    pragma(inline, true)
-    Vector4 opUnary(const(char)[] op)() {
-        return Vector4(
-            mixin(op, "x"),
-            mixin(op, "y"),
-            mixin(op, "z"),
-            mixin(op, "w"),
-        );
-    }
-
-    pragma(inline, true)
-    Vector4 opBinary(const(char)[] op)(Vector4 rhs) {
-        return Vector4(
-            mixin("x", op, "rhs.x"),
-            mixin("y", op, "rhs.y"),
-            mixin("z", op, "rhs.z"),
-            mixin("w", op, "rhs.w"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Vector4 rhs) {
-        mixin("x", op, "=rhs.x;");
-        mixin("y", op, "=rhs.y;");
-        mixin("z", op, "=rhs.z;");
-        mixin("w", op, "=rhs.w;");
-    }
+    mixin addXyzwOps!(float, 4);
 }
 
 // Quaternion, 4 components (Vector4 alias)
@@ -284,52 +111,6 @@ struct Color
     ubyte g; // Color green value
     ubyte b; // Color blue value
     ubyte a; // Color alpha value
-
-    enum zero = Color(0, 0, 0, 0);
-    enum one = Color(1, 1, 1, 1);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-    }
-
-    pragma(inline, true)
-    this(ubyte r) {
-        this(r, r, r, 255);
-    }
-
-    pragma(inline, true)
-    Color opUnary(const(char)[] op)() {
-        return Color(
-            mixin(op, "r"),
-            mixin(op, "g"),
-            mixin(op, "b"),
-            mixin(op, "a"),
-        );
-    }
-
-    pragma(inline, true)
-    Color opBinary(const(char)[] op)(Color rhs) {
-        return Color(
-            mixin("r", op, "rhs.r"),
-            mixin("g", op, "rhs.g"),
-            mixin("b", op, "rhs.b"),
-            mixin("a", op, "rhs.a"),
-        );
-    }
-
-    pragma(inline, true)
-    void opOpAssign(const(char)[] op)(Color rhs) {
-        mixin("r", op, "=rhs.r;");
-        mixin("g", op, "=rhs.g;");
-        mixin("b", op, "=rhs.b;");
-        mixin("a", op, "=rhs.a;");
-    }
 }
 
 // Rectangle, 4 components
@@ -339,44 +120,6 @@ struct Rectangle
     float y = 0.0f; // Rectangle top-left corner position y
     float width = 0.0f; // Rectangle width
     float height = 0.0f; // Rectangle height
-
-    enum zero = Rectangle(0.0f, 0.0f, 0.0f, 0.0f);
-    enum one = Rectangle(1.0f, 1.0f, 1.0f, 1.0f);
-
-    @safe @nogc nothrow:
-
-    pragma(inline, true)
-    this(float x, float y, float width, float height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
-
-    pragma(inline, true)
-    this(float width, float height) {
-        this(0.0f, 0.0f, width, height);
-    }
-
-    pragma(inline, true)
-    this(Vector2 position, Vector2 size) {
-        this(position.x, position.y, size.x, size.y);
-    }
-
-    pragma(inline, true)
-    this(Vector2 size) {
-        this(0.0f, 0.0f, size.x, size.y);
-    }
-
-    pragma(inline, true)
-    this(float x, float y, Vector2 size) {
-        this(x, y, size.x, size.y);
-    }
-
-    pragma(inline, true)
-    this(Vector2 position, float width, float height) {
-        this(position.x, position.y, width, height);
-    }
 }
 
 // Image, pixel data stored in CPU memory (RAM)

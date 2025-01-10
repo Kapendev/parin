@@ -13,73 +13,19 @@ module parin.rl.rlgl;
 
 enum RLGL_VERSION = "4.5";
 
-// Function specifiers in case library is build/used as a shared library (Windows)
-// NOTE: Microsoft specifiers to tell compiler that symbols are imported/exported from a .dll
-
-// We are building the library as a Win32 shared library (.dll)
-
-// We are using the library as a Win32 shared library (.dll)
-
-// Function specifiers definition // Functions defined as 'extern' by default (implicit specifiers)
-
-// Support TRACELOG macros
-
-// Allow custom memory allocators
-
-// alias RL_MALLOC = malloc;
-
-// alias RL_CALLOC = calloc;
-
-// alias RL_REALLOC = realloc;
-
-// alias RL_FREE = free;
-
-// Security check in case no GRAPHICS_API_OPENGL_* defined
-
-// Security check in case multiple GRAPHICS_API_OPENGL_* defined
-
-// OpenGL 2.1 uses most of OpenGL 3.3 Core functionality
-// WARNING: Specific parts are checked with #if defines
-
-// OpenGL 4.3 uses OpenGL 3.3 Core functionality
-
-// OpenGL ES 3.0 uses OpenGL ES 2.0 functionality (and more)
-
-// Support framebuffer objects by default
-// NOTE: Some driver implementation do not support it, despite they should
-
-//----------------------------------------------------------------------------------
-// Defines and Macros
-//----------------------------------------------------------------------------------
-
-// Default internal render batch elements limits
-
-// This is the maximum amount of elements (quads) per batch
-// NOTE: Be careful with text, every letter maps to a quad
 enum RL_DEFAULT_BATCH_BUFFER_ELEMENTS = 8192;
-
-// We reduce memory sizes for embedded systems (RPI and HTML5)
-// NOTE: On HTML5 (emscripten) this is allocated on heap,
-// by default it's only 16MB!...just take care...
-
 enum RL_DEFAULT_BATCH_BUFFERS = 1; // Default number of batch buffers (multi-buffering)
-
 enum RL_DEFAULT_BATCH_DRAWCALLS = 256; // Default number of batch draw calls (by state changes: mode, texture)
-
 enum RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS = 4; // Maximum number of textures units that can be activated on batch drawing (SetShaderValueTexture())
 
 // Internal Matrix stack
-
 enum RL_MAX_MATRIX_STACK_SIZE = 32; // Maximum size of Matrix stack
 
 // Shader limits
-
 enum RL_MAX_SHADER_LOCATIONS = 32; // Maximum number of shader locations supported
 
 // Projection matrix culling
-
 enum RL_CULL_DISTANCE_NEAR = 0.01; // Default near cull distance
-
 enum RL_CULL_DISTANCE_FAR = 1000.0; // Default far cull distance
 
 // Texture parameters (equivalent to OpenGL defines)
