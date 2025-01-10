@@ -14,7 +14,6 @@
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
-import stdc = joka.stdc;
 import rl = parin.rl;
 
 import joka.ascii;
@@ -1108,8 +1107,8 @@ rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
 
 /// Converts an ASCII bitmap font texture into a font.
 /// The texture will be freed when the font is freed.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-// NOTE: This function assumes that raylib uses malloc.
+// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
+// NOTE: It uses the raylib allocator.
 @trusted
 Font toFont(Texture texture, int tileWidth, int tileHeight) {
     if (texture.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
@@ -1123,14 +1122,14 @@ Font toFont(Texture texture, int tileWidth, int tileHeight) {
     result.data.glyphCount = maxCount;
     result.data.glyphPadding = 0;
     result.data.texture = texture.data;
-    result.data.recs = cast(rl.Rectangle*) stdc.malloc(maxCount * rl.Rectangle.sizeof);
+    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
     foreach (i; 0 .. maxCount) {
         result.data.recs[i].x = (i % colCount) * tileWidth;
         result.data.recs[i].y = (i / colCount) * tileHeight;
         result.data.recs[i].width = tileWidth;
         result.data.recs[i].height = tileHeight;
     }
-    result.data.glyphs = cast(rl.GlyphInfo*) stdc.malloc(maxCount * rl.GlyphInfo.sizeof);
+    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
     foreach (i; 0 .. maxCount) {
         result.data.glyphs[i] = rl.GlyphInfo();
         result.data.glyphs[i].value = i + 32;
@@ -1808,6 +1807,8 @@ Vec2 resolution() {
 /// Returns the current position of the mouse on the screen.
 @trusted
 Vec2 mouse() {
+    // Touch works on desktop, web and mobile.
+    auto rlMouse = rl.GetTouchPosition(0);
     if (isResolutionLocked) {
         auto window = windowSize;
         auto minRatio = min(window.x / engineState.viewport.width, window.y / engineState.viewport.height);
@@ -1817,13 +1818,12 @@ Vec2 mouse() {
             minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
         }
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
-        // We use touch because it works on desktop, web and mobile.
         return Vec2(
-            (rl.GetTouchX() - (window.x - targetSize.x) * 0.5f) / minRatio,
-            (rl.GetTouchY() - (window.y - targetSize.y) * 0.5f) / minRatio,
+            (rlMouse.x - (window.x - targetSize.x) * 0.5f) / minRatio,
+            (rlMouse.y - (window.y - targetSize.y) * 0.5f) / minRatio,
         );
     } else {
-        return Vec2(rl.GetTouchX(), rl.GetTouchY());
+        return rlMouse.toParin();
     }
 }
 

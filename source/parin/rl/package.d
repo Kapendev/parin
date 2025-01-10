@@ -12,11 +12,6 @@ module parin.rl;
 public import parin.rl.raylib;
 public import parin.rl.rlgl;
 
-// alias RL_MALLOC = malloc;
-// alias RL_CALLOC = calloc;
-// alias RL_REALLOC = realloc;
-// alias RL_FREE = free;
-
 version (WebAssembly) {
     @nogc nothrow extern(C):
 

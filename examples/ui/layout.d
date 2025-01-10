@@ -1,4 +1,6 @@
 /// This example shows how to place UI items relative to each other.
+/// It uses a technique called RectCut.
+/// Learn more about RectCut here: https://halt.software/p/rectcut-for-dead-simple-ui-layouts
 
 import parin;
 
@@ -15,7 +17,7 @@ bool update(float dt) {
     prepareUi();
     setUiFocus(0);
     // Create an area for arranging UI items.
-    auto area = Rect(Vec2(8), resolution - Vec2(8));
+    auto area = Rect(Vec2(8), resolution);
     auto group = Rect();
     // Group 1.
     group = area.subTop(groupHeight);
