@@ -20,6 +20,15 @@ void finish() { }
 mixin runGame!(ready, update, finish);
 ```
 
+## Features
+
+* Minimal dependencies
+* Fast compile times
+* Immediate mode UI library
+* Sprite animation support
+* Tile map support
+* Dialogue system
+
 ## Supported Platforms
 
 * PC: Windows, Linux, macOS
