@@ -37,6 +37,8 @@ enum UiDragLimit: ubyte {
 
 struct UiOptions {
     FontId font = FontId();
+    ubyte fontScale = 1;
+
     Color disabledColor = defaultUiDisabledColor;
     Color idleColor = defaultUiIdleColor;
     Color hotColor = defaultUiHotColor;
@@ -51,8 +53,8 @@ struct UiOptions {
 
     @safe @nogc nothrow:
 
-    this(bool isDisabled) {
-        this.isDisabled = isDisabled;
+    this(ubyte fontScale) {
+        this.fontScale = fontScale;
     }
 
     this(Alignment alignment, short alignmentOffset = 0) {
@@ -281,6 +283,7 @@ void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     textPoint = textPoint.round();
     auto textOptions = DrawOptions(options.alignment, cast(int) area.size.x.round());
     textOptions.hook = Hook.center;
+    textOptions.scale = Vec2(options.fontScale);
     if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
     drawText(font, text, textPoint, textOptions);
 }
