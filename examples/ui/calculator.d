@@ -5,7 +5,6 @@ import parin;
 void ready() { }
 
 bool update(float dt) {
-    if ('q'.isPressed) return true;
     prepareUi();
     setUiFocus(0);
 

@@ -18,11 +18,12 @@ import parin.engine;
 UiState uiState;
 UiState uiPreviousState;
 
-enum defaultUiAlpha = 200;
 enum defaultUiDisabledColor = 0x202020.toRgb();
 enum defaultUiIdleColor = 0x414141.toRgb();
 enum defaultUiHotColor = 0x818181.toRgb();
 enum defaultUiActiveColor = 0xBABABA.toRgb();
+enum defaultUiDisabledTextAlphaOffset = 50;
+enum defaultUiDisabledTextFieldCursorAlpha = 175;
 
 /// A type representing the constraints on drag movement.
 enum UiDragLimit: ubyte {
@@ -37,6 +38,7 @@ enum UiDragLimit: ubyte {
 
 struct UiOptions {
     FontId font = FontId();
+    Color fontColor = white;
     ubyte fontScale = 1;
 
     Color disabledColor = defaultUiDisabledColor;
@@ -272,7 +274,6 @@ void updateUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
 }
 
 void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
-    area = area.round();
     auto font = options.font.isValid ? options.font.get() : engineFont;
     auto textPoint = area.centerPoint;
     final switch (options.alignment) {
@@ -283,8 +284,11 @@ void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     textPoint = textPoint.round();
     auto textOptions = DrawOptions(options.alignment, cast(int) area.size.x.round());
     textOptions.hook = Hook.center;
+    textOptions.color = options.fontColor;
     textOptions.scale = Vec2(options.fontScale);
-    if (options.isDisabled) textOptions.color.a = defaultUiAlpha;
+    if (options.isDisabled && textOptions.color.a >= defaultUiDisabledTextAlphaOffset) {
+        textOptions.color.a -= defaultUiDisabledTextAlphaOffset;
+    }
     drawText(font, text, textPoint, textOptions);
 }
 
@@ -327,7 +331,6 @@ bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
 }
 
 void drawUiButton(Rect area, IStr text, bool isHot, bool isActive, UiOptions options = UiOptions()) {
-    area = area.round();
     auto font = options.font.isValid ? options.font.get() : engineFont;
     if (options.isDisabled) drawRect(area, options.disabledColor);
     else if (isActive) drawRect(area, options.activeColor);
@@ -485,7 +488,6 @@ bool updateUiTextField(Rect area, ref Str text, Str textBuffer, UiOptions option
 
 // TODO: Add support for right-to-left text.
 void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
-    area = area.round();
     auto font = options.font.isValid ? options.font.get() : engineFont;
     drawUiText(area, text, options);
     // TODO: Make that text thing a function doood.
@@ -498,12 +500,12 @@ void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     }
     if (!options.isDisabled) {
         auto rect = Rect(
-            round(textPoint.x + textSize.x + 2.0f),
-            round(textPoint.y),
-            font.size * 0.08f, font.size).area(Hook.center,
-        );
+            textPoint.x + textSize.x + 2.0f,
+            textPoint.y,
+            font.size * 0.08f, font.size
+        ).area(Hook.center);
         if (rect.size.x <= 1.0f) rect.size.x = 1.0f;
-        drawRect(rect, options.disabledColor.alpha(defaultUiAlpha));
+        drawRect(rect, options.disabledColor.alpha(defaultUiDisabledTextFieldCursorAlpha));
     }
 }
 
