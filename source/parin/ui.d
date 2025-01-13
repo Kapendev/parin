@@ -22,8 +22,9 @@ enum defaultUiDisabledColor = 0x202020.toRgb();
 enum defaultUiIdleColor = 0x414141.toRgb();
 enum defaultUiHotColor = 0x818181.toRgb();
 enum defaultUiActiveColor = 0xBABABA.toRgb();
-enum defaultUiDisabledTextAlphaOffset = 50;
-enum defaultUiDisabledTextFieldCursorAlpha = 175;
+enum defaultUiFontAlphaOffset = 50;
+enum defaultUiTextFieldCursorDisabledAlpha = 175;
+enum defaultUiTextFieldCursorOffset = 2;
 
 /// A type representing the constraints on drag movement.
 enum UiDragLimit: ubyte {
@@ -40,6 +41,7 @@ struct UiOptions {
     FontId font = FontId();
     Color fontColor = white;
     ubyte fontScale = 1;
+    ubyte fontAlphaOffset = defaultUiFontAlphaOffset;
 
     Color disabledColor = defaultUiDisabledColor;
     Color idleColor = defaultUiIdleColor;
@@ -75,11 +77,11 @@ struct UiState {
     Gamepad gamepadClickAction = Gamepad.a;
     bool isActOnPress;
 
-    Vec2 viewportPoint;
+    Vec2 viewportPosition;
     Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1.0f);
 
-    Vec2 mousePressedPoint;
+    Vec2 mousePressedPosition;
     Vec2 itemDragOffset;
     short itemId;
     short hotItemId;
@@ -115,7 +117,7 @@ void prepareUi() {
 }
 
 Vec2 uiMouse() {
-    auto result = (mouse - uiState.viewportPoint) / uiState.viewportScale;
+    auto result = (mouse - uiState.viewportPosition) / uiState.viewportScale;
     if (result.x < 0) result.x = -100000.0f;
     else if (result.x > uiState.viewportSize.x) result.x = 100000.0f;
     if (result.y < 0) result.y = -100000.0f;
@@ -143,12 +145,12 @@ void setIsUiActOnPress(bool value) {
     uiState.isActOnPress = value;
 }
 
-void setUiViewportState(Vec2 point, Vec2 size, Vec2 scale) {
-    uiState.viewportPoint = point;
+void setUiViewportState(Vec2 position, Vec2 size, Vec2 scale) {
+    uiState.viewportPosition = position;
     uiState.viewportSize = size;
     uiState.viewportScale = scale;
     if (uiState.mouseClickAction.isPressed) {
-        uiState.mousePressedPoint = uiMouse;
+        uiState.mousePressedPosition = uiMouse;
     }
 }
 
@@ -273,23 +275,29 @@ void updateUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     updateUiState(area, false, false, false);
 }
 
+// TODO SOME ALIGNEMENT SHIT WITH SCALING>>>>
 void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
-    auto textPoint = area.centerPoint;
-    final switch (options.alignment) {
-        case Alignment.left: textPoint.x += options.alignmentOffset; break;
-        case Alignment.center: break;
-        case Alignment.right: textPoint.x -= options.alignmentOffset; break;
-    }
-    textPoint = textPoint.round();
-    auto textOptions = DrawOptions(options.alignment, cast(int) area.size.x.round());
-    textOptions.hook = Hook.center;
+    auto textOptions = DrawOptions(options.alignment, cast(int) (area.size.x / options.fontScale));
     textOptions.color = options.fontColor;
     textOptions.scale = Vec2(options.fontScale);
-    if (options.isDisabled && textOptions.color.a >= defaultUiDisabledTextAlphaOffset) {
-        textOptions.color.a -= defaultUiDisabledTextAlphaOffset;
+    auto textPosition = area.centerPoint;
+    final switch (options.alignment) {
+        case Alignment.left:
+            textOptions.hook = Hook.left;
+            textPosition.x = area.position.x + options.alignmentOffset; break;
+        case Alignment.center:
+            textOptions.hook = Hook.center;
+            break;
+        case Alignment.right:
+            textOptions.hook = Hook.right;
+            textPosition.x = area.position.x + area.size.x - options.alignmentOffset; break;
     }
-    drawText(font, text, textPoint, textOptions);
+    textPosition = textPosition.round();
+    if (options.isDisabled && textOptions.color.a >= options.fontAlphaOffset) {
+        textOptions.color.a -= options.fontAlphaOffset;
+    }
+    drawText(font, text, textPosition, textOptions);
 }
 
 void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
@@ -313,8 +321,8 @@ bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
     if (uiState.isActOnPress) {
         isClicked = isClicked && uiState.mouseClickAction.isPressed;
     } else {
-        auto isHotFromMousePressedPoint = area.hasPointInclusive(uiState.mousePressedPoint);
-        isClicked = isClicked && isHotFromMousePressedPoint && uiState.mouseClickAction.isReleased;
+        auto isHotFromMousePressedPosition = area.hasPointInclusive(uiState.mousePressedPosition);
+        isClicked = isClicked && isHotFromMousePressedPosition && uiState.mouseClickAction.isReleased;
     }
 
     if (options.isDisabled) {
@@ -385,7 +393,7 @@ bool updateUiDragHandle(ref Rect area, UiOptions options = UiOptions()) {
     area.position.y = clamp(area.position.y, dragLimitY.x, dragLimitY.y - area.size.y);
     updateUiButton(area, "", options);
     if (isUiItemDragged) {
-        auto m = (mouse - uiState.viewportPoint) / uiState.viewportScale; // NOTE: Maybe this should be a function?
+        auto m = (mouse - uiState.viewportPosition) / uiState.viewportScale; // NOTE: Maybe this should be a function?
         area.position.y = clamp(m.y + uiDragOffset.y, dragLimitY.x, dragLimitY.y - area.size.y);
         area.position.x = clamp(m.x + uiDragOffset.x, dragLimitX.x, dragLimitX.y - area.size.x);
         uiState = uiPreviousState;
@@ -490,22 +498,38 @@ bool updateUiTextField(Rect area, ref Str text, Str textBuffer, UiOptions option
 void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
     drawUiText(area, text, options);
-    // TODO: Make that text thing a function doood.
-    auto textPoint = area.centerPoint;
-    auto textSize = measureTextSize(font, text);
+    // TODO: Make that text position thing a function bro!!!
+    // ---
+    auto textOptions = DrawOptions(options.alignment, cast(int) (area.size.x / options.fontScale));
+    auto textPosition = area.centerPoint;
     final switch (options.alignment) {
-        case Alignment.left: textPoint.x = area.position.x + options.alignmentOffset; break;
-        case Alignment.center: textSize.x *= 0.5f; break;
-        case Alignment.right: textPoint.x = area.position.x + area.size.x - options.alignmentOffset; textSize.x = 0.0f; break;
+        case Alignment.left:
+            textOptions.hook = Hook.left;
+            textPosition.x = area.position.x + options.alignmentOffset; break;
+        case Alignment.center:
+            textOptions.hook = Hook.center;
+            break;
+        case Alignment.right:
+            textOptions.hook = Hook.right;
+            textPosition.x = area.position.x + area.size.x - options.alignmentOffset; break;
+    }
+    textPosition = textPosition.round();
+    // ---
+    auto textSize = measureTextSize(font, text);
+    auto cursorPosition = textPosition;
+    final switch (options.alignment) {
+        case Alignment.left: cursorPosition.x += textSize.x * options.fontScale + defaultUiTextFieldCursorOffset; break;
+        case Alignment.center: cursorPosition.x += textSize.x * options.fontScale * 0.5f + defaultUiTextFieldCursorOffset; break;
+        case Alignment.right: cursorPosition.x += defaultUiTextFieldCursorOffset; break;
     }
     if (!options.isDisabled) {
         auto rect = Rect(
-            textPoint.x + textSize.x + 2.0f,
-            textPoint.y,
-            font.size * 0.08f, font.size
+            cursorPosition,
+            font.size * options.fontScale * 0.08f,
+            font.size * options.fontScale,
         ).area(Hook.center);
         if (rect.size.x <= 1.0f) rect.size.x = 1.0f;
-        drawRect(rect, options.disabledColor.alpha(defaultUiDisabledTextFieldCursorAlpha));
+        drawRect(rect, options.disabledColor.alpha(defaultUiTextFieldCursorDisabledAlpha));
     }
 }
 

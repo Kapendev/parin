@@ -826,10 +826,10 @@ struct Camera {
         engineState.currentCamera = this;
         auto temp = this.toRl(engineState.currentViewport);
         if (isPixelSnapped || isPixelPerfect) {
-            temp.target.x = floor(temp.target.x);
-            temp.target.y = floor(temp.target.y);
-            temp.offset.x = floor(temp.offset.x);
-            temp.offset.y = floor(temp.offset.y);
+            temp.target.x = temp.target.x.floor();
+            temp.target.y = temp.target.y.floor();
+            temp.offset.x = temp.offset.x.floor();
+            temp.offset.y = temp.offset.y.floor();
         }
         rl.BeginMode2D(temp);
     }
@@ -1485,8 +1485,8 @@ void updateWindow(bool function(float dt) updateFunc) {
             auto ratio = maxSize / minSize;
             auto minRatio = min(ratio.x, ratio.y);
             if (isPixelPerfect) {
-                auto roundMinRatio = round(minRatio);
-                auto floorMinRation = floor(minRatio);
+                auto roundMinRatio = minRatio.round();
+                auto floorMinRation = minRatio.floor();
                 minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
             }
 
@@ -1813,8 +1813,8 @@ Vec2 mouse() {
         auto window = windowSize;
         auto minRatio = min(window.x / engineState.viewport.width, window.y / engineState.viewport.height);
         if (isPixelPerfect) {
-            auto roundMinRatio = round(minRatio);
-            auto floorMinRation = floor(minRatio);
+            auto roundMinRatio = minRatio.round();
+            auto floorMinRation = minRatio.floor();
             minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
         }
         auto targetSize = engineState.viewport.size * Vec2(minRatio);
@@ -2399,8 +2399,8 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 @trusted
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    static linesBuffer = FixedList!(IStr, 128)();
-    static linesWidthBuffer = FixedList!(short, 128)();
+    static linesBuffer = FixedList!(IStr, 256)();
+    static linesWidthBuffer = FixedList!(int, 256)();
 
     if (font.isEmpty || text.length == 0) return;
     linesBuffer.clear();
@@ -2418,7 +2418,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.append(cast(short) (measureTextSize(font, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.append(cast(int) (measureTextSize(font, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
                 if (codepoint == '\n') textHeight += font.lineSpacing;
                 lineCodepointIndex = cast(int) (textCodepointIndex + 1);
@@ -2432,13 +2432,13 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     auto origin = Rect(textMaxLineWidth, textHeight).origin(options.hook);
     rl.rlPushMatrix();
     if (isPixelSnapped || isPixelPerfect) {
-        rl.rlTranslatef(floor(position.x), floor(position.y), 0.0f);
+        rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
     } else {
         rl.rlTranslatef(position.x, position.y, 0.0f);
     }
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    rl.rlTranslatef(floor(-origin.x), floor(-origin.y), 0.0f);
+    rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
 
     // Draw the text.
     auto drawMaxCodepointCount = cast(int) (textCodepointCount * clamp(options.visibilityRatio, 0.0f, 1.0f));
