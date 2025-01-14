@@ -1,8 +1,12 @@
-#!/bin/env rdmd
+#!/bin/env -S dmd -run
 
 /// A helper script to assist with the web export process.
 
-import std;
+import std.path;
+import std.stdio;
+import std.file;
+import std.process;
+import std.string;
 
 // TODO: Clean it! Well... Not right now, but do it.
 

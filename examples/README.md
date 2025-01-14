@@ -1,10 +1,11 @@
 # Examples
 
-This folder provides example projects to help you get started. 
+This folder provides example projects to help you get started.
 
 > [!NOTE]
-> If an example uses textures,
-> be sure to download the [atlas.png](../assets/atlas.png) file and place it in the project's assets folder.
+> If an example uses textures, fonts, or other assets,
+> make sure to download the [assets](../assets/) folder in this repository
+> and replace the project's assets folder with it.
 
 ## Categories
 

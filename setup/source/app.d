@@ -1,8 +1,12 @@
-#!/bin/env rdmd
+#!/bin/env -S dmd -run
 
 /// A helper script that automates the project setup.
 
-import std;
+import std.file;
+import std.path;
+import std.stdio;
+import std.string;
+import std.process;
 
 enum assetsDir       = buildPath(".", "assets");
 enum webDir          = buildPath(".", "web");

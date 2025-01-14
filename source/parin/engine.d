@@ -10,6 +10,7 @@
 // TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
 // NOTE: The main problem with sound looping is the raylib API.
+// NOTE: Leaking memory is normal for raylib, but Parin does it too. Not sure why, needs testing. One test shows 80~ extra bytes.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -965,22 +966,23 @@ struct EngineViewport {
 
 struct EngineState {
     EngineFlags flags;
-    EngineViewport viewport;
-    EngineResources resources;
     EngineFullscreenState fullscreenState;
-    FixedList!(IStr, 128) envArgsBuffer;
-    FixedList!(IStr, 128) droppedFilePathsBuffer;
 
     Font font;
+    EngineViewport viewport;
+    EngineResources resources;
+    List!IStr envArgsBuffer;
+    List!IStr droppedFilePathsBuffer;
+    LStr loadTextBuffer;
+    LStr saveTextBuffer;
+    LStr assetsPath;
+
     Color borderColor;
     Sz tickCount;
-    LStr assetsPath;
-    LStr tempText;
-
-    Camera currentCamera;
-    Viewport currentViewport;
     Filter defaultFilter;
     Wrap defaultWrap;
+    Viewport currentViewport;
+    Camera currentCamera;
 }
 
 /// Converts a raylib type to a Parin type.
@@ -1190,13 +1192,20 @@ IStr[] droppedFilePaths() {
     return engineState.droppedFilePathsBuffer[];
 }
 
+/// Returns a reference to a cleared temporary text container.
+/// The resource remains valid until this function is called again.
+ref LStr prepareTempText() {
+    engineState.saveTextBuffer.clear();
+    return engineState.saveTextBuffer;
+}
+
 /// Loads a text file from the assets folder.
-/// The resource remains valid until this function is called again. 
+/// The resource remains valid until this function is called again.
 /// Supports both forward slashes and backslashes in file paths.
 Result!IStr loadTempText(IStr path) {
     auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
-    auto fault = readTextIntoBuffer(targetPath, engineState.tempText);
-    return Result!IStr(engineState.tempText.items, fault);
+    auto fault = readTextIntoBuffer(targetPath, engineState.loadTextBuffer);
+    return Result!IStr(engineState.loadTextBuffer.items, fault);
 }
 
 /// Loads a text file from the assets folder.
@@ -1404,7 +1413,6 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     if (rl.IsWindowReady) return;
     engineState.envArgsBuffer.clear();
     foreach (arg; args) {
-        if (engineState.envArgsBuffer.length == engineState.envArgsBuffer.capacity) break;
         engineState.envArgsBuffer.append(arg);
     }
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
@@ -1418,7 +1426,9 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
     engineState.flags.canUseAssetsPath = true;
-    engineState.tempText.reserve(8192);
+    engineState.droppedFilePathsBuffer.reserve(64);
+    engineState.loadTextBuffer.reserve(8192);
+    engineState.saveTextBuffer.reserve(8192);
     if (args.length != 0) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
     // NOTE: This line is used for fixing an alpha bug with render textures.
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
@@ -1435,10 +1445,10 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
 /// You should avoid calling this function manually.
 @trusted
 void updateWindow(bool function(float dt) updateFunc) {
-    static bool function(float _dt) @trusted @nogc nothrow _updateFunc;
+    static bool function(float _dt) @trusted @nogc nothrow __updateFunc;
 
     @trusted @nogc nothrow
-    static bool _updateWindow() {
+    static bool __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
             rl.BeginTextureMode(engineState.viewport.toRl());
@@ -1451,12 +1461,11 @@ void updateWindow(bool function(float dt) updateFunc) {
         if (rl.IsFileDropped) {
             auto list = rl.LoadDroppedFiles();
             foreach (i; 0 .. list.count) {
-                if (engineState.droppedFilePathsBuffer.length == engineState.droppedFilePathsBuffer.capacity) break;
                 engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
             }
         }
         auto dt = deltaTime;
-        auto result = _updateFunc(dt);
+        auto result = __updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
         if (rl.IsFileDropped) {
             // NOTE: LoadDroppedFiles just returns a global variable.
@@ -1531,18 +1540,18 @@ void updateWindow(bool function(float dt) updateFunc) {
     }
 
     // Maybe bad idea, but makes life of no-attribute people easier.
-    _updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
+    __updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
     engineState.flags.isUpdating = true;
     version(WebAssembly) {
-        static void _updateWindowWeb() {
-            if (_updateWindow()) {
+        static void __updateWindowWeb() {
+            if (__updateWindow()) {
                 rl.emscripten_cancel_main_loop();
             }
         }
-        rl.emscripten_set_main_loop(&_updateWindowWeb, 0, 1);
+        rl.emscripten_set_main_loop(&__updateWindowWeb, 0, 1);
     } else {
         while (true) {
-            if (rl.WindowShouldClose() || _updateWindow()) {
+            if (rl.WindowShouldClose() || __updateWindow()) {
                 break;
             }
         }
@@ -1558,11 +1567,15 @@ void closeWindow() {
     // This block frees memory.
     // We skip it in release builds since the OS will free the memory for us.
     debug {
+        engineState.font.free();
         engineState.viewport.free();
         engineState.resources.free();
-        engineState.font.free();
-        engineState.tempText.free();
+        engineState.envArgsBuffer.free();
+        engineState.droppedFilePathsBuffer.free();
+        engineState.loadTextBuffer.free();
+        engineState.saveTextBuffer.free();
         engineState.assetsPath.free();
+
         rl.CloseAudioDevice();
         rl.CloseWindow();
     }
@@ -2523,12 +2536,17 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
 mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
     version (D_BetterC) {
-        extern(C)
-        void main(int argc, immutable(char)** argv) {
+        // I love C... This is unsafe, so avoid reserving memory for envArgsBuffer.
+        @trusted @nogc nothrow
+        void __mainArgcArgvThing(int argc, immutable(char)** argv) {
             foreach (i; 0 .. argc) {
-                if (engineState.envArgsBuffer.length == engineState.envArgsBuffer.capacity) break;
                 engineState.envArgsBuffer.append(argv[i].toStr());
             }
+        }
+
+        extern(C)
+        void main(int argc, immutable(char)** argv) {
+            __mainArgcArgvThing(argc, argv);
             openWindow(width, height, engineState.envArgsBuffer[], title);
             readyFunc();
             updateWindow(&updateFunc);

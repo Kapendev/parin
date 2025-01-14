@@ -301,6 +301,18 @@ Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
     return toTileMap(temp.get(), tileWidth, tileHeight);
 }
 
+Fault saveTileMap(IStr path, TileMap map) {
+    auto csv = prepareTempText();
+    foreach (row; 0 .. map.rowCount) {
+        foreach (col; 0 .. map.colCount) {
+            csv.append(map[row, col].toStr());
+            if (col != map.colCount - 1) csv.append(',');
+        }
+        csv.append('\n');
+    }
+    return saveText(path, csv.items);
+}
+
 void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
     drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
