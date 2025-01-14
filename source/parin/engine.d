@@ -30,10 +30,6 @@ public import joka.types;
 @safe @nogc nothrow:
 
 EngineState engineState;
-IStr[64] engineEnvArgsBuffer;
-Sz engineEnvArgsBufferLength;
-IStr[64] engineDroppedFilePathsBuffer;
-rl.FilePathList engineDroppedFilePathsDataBuffer;
 
 /// A type representing flipping orientations.
 enum Flip : ubyte {
@@ -43,17 +39,17 @@ enum Flip : ubyte {
     xy,   /// Flipped along both X and Y axes.
 }
 
+/// A type representing layout orientations.
+enum Layout : ubyte {
+    v, /// Vertical layout.
+    h, /// Horizontal layout.
+}
+
 /// A type representing alignment orientations.
 enum Alignment : ubyte {
     left,   /// Align to the left.
     center, /// Align to the center.
     right,  /// Align to the right.
-}
-
-/// A type representing layout orientations.
-enum Layout : ubyte {
-    v, /// Vertical layout.
-    h, /// Horizontal layout.
 }
 
 /// A type representing texture filtering modes.
@@ -972,6 +968,8 @@ struct EngineState {
     EngineViewport viewport;
     EngineResources resources;
     EngineFullscreenState fullscreenState;
+    FixedList!(IStr, 128) envArgsBuffer;
+    FixedList!(IStr, 128) droppedFilePathsBuffer;
 
     Font font;
     Color borderColor;
@@ -983,24 +981,6 @@ struct EngineState {
     Viewport currentViewport;
     Filter defaultFilter;
     Wrap defaultWrap;
-
-    @safe @nogc nothrow:
-
-    void free() {
-        // debug {
-        //     println("Resources that will be freed automatically:");
-        //     println("  Text count: ", resources.texts.length != 0 ? resources.texts.length - 1 : 0);
-        //     println("  Texture count: ", resources.textures.length != 0 ? resources.textures.length - 1 : 0);
-        //     println("  Font count: ", resources.fonts.length != 0 ? resources.fonts.length - 1 : 0);
-        //     println("  Sound count: ", resources.sounds.length != 0 ? resources.sounds.length - 1 : 0);
-        // }
-        viewport.free();
-        resources.free();
-        font.free();
-        tempText.free();
-        assetsPath.free();
-        this = EngineState();
-    }
 }
 
 /// Converts a raylib type to a Parin type.
@@ -1146,7 +1126,7 @@ Flip oppositeFlip(Flip flip, Flip fallback) {
 
 /// Returns the arguments that this application was started with.
 IStr[] envArgs() {
-    return engineEnvArgsBuffer[0 .. engineEnvArgsBufferLength];
+    return engineState.envArgsBuffer[];
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
@@ -1207,7 +1187,7 @@ void setCanUseAssetsPath(bool value) {
 /// Returns the dropped file paths of the current frame.
 @trusted
 IStr[] droppedFilePaths() {
-    return engineDroppedFilePathsBuffer[0 .. engineDroppedFilePathsDataBuffer.count];
+    return engineState.droppedFilePathsBuffer[];
 }
 
 /// Loads a text file from the assets folder.
@@ -1420,8 +1400,13 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 @trusted
-void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
+void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
+    engineState.envArgsBuffer.clear();
+    foreach (arg; args) {
+        if (engineState.envArgsBuffer.length == engineState.envArgsBuffer.capacity) break;
+        engineState.envArgsBuffer.append(arg);
+    }
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
     rl.InitWindow(width, height, title.toCStr().getOr());
@@ -1433,8 +1418,8 @@ void openWindow(int width, int height, IStr appPath, IStr title = "Parin") {
     engineState.fullscreenState.lastWindowWidth = width;
     engineState.fullscreenState.lastWindowHeight = height;
     engineState.flags.canUseAssetsPath = true;
-    engineState.assetsPath.append(pathConcat(appPath.pathDir, "assets"));
     engineState.tempText.reserve(8192);
+    if (args.length != 0) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
     // NOTE: This line is used for fixing an alpha bug with render textures.
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
     // Load default engine assets.
@@ -1464,18 +1449,19 @@ void updateWindow(bool function(float dt) updateFunc) {
 
         // The main loop.
         if (rl.IsFileDropped) {
-            engineDroppedFilePathsDataBuffer = rl.LoadDroppedFiles();
-            foreach (i; 0 .. engineDroppedFilePathsDataBuffer.count) {
-                engineDroppedFilePathsBuffer[i] = engineDroppedFilePathsDataBuffer.paths[i].toStr();
+            auto list = rl.LoadDroppedFiles();
+            foreach (i; 0 .. list.count) {
+                if (engineState.droppedFilePathsBuffer.length == engineState.droppedFilePathsBuffer.capacity) break;
+                engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
             }
         }
-
         auto dt = deltaTime;
         auto result = _updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
         if (rl.IsFileDropped) {
-            rl.UnloadDroppedFiles(engineDroppedFilePathsDataBuffer);
-            engineDroppedFilePathsDataBuffer = rl.FilePathList();
+            // NOTE: LoadDroppedFiles just returns a global variable.
+            rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
+            engineState.droppedFilePathsBuffer.clear();
         }
 
         // End drawing.
@@ -1568,10 +1554,18 @@ void updateWindow(bool function(float dt) updateFunc) {
 /// You should avoid calling this function manually.
 @trusted
 void closeWindow() {
-    if (!rl.IsWindowReady) return;
-    engineState.free();
-    rl.CloseAudioDevice();
-    rl.CloseWindow();
+    if (!rl.IsWindowReady()) return;
+    // This block frees memory.
+    // We skip it in release builds since the OS will free the memory for us.
+    debug {
+        engineState.viewport.free();
+        engineState.resources.free();
+        engineState.font.free();
+        engineState.tempText.free();
+        engineState.assetsPath.free();
+        rl.CloseAudioDevice();
+        rl.CloseWindow();
+    }
 }
 
 /// Returns true if the drawing is snapped to pixel coordinates.
@@ -2531,11 +2525,11 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            engineEnvArgsBufferLength = argc;
             foreach (i; 0 .. argc) {
-                engineEnvArgsBuffer[i] = argv[i].toStr();
+                if (engineState.envArgsBuffer.length == engineState.envArgsBuffer.capacity) break;
+                engineState.envArgsBuffer.append(argv[i].toStr());
             }
-            openWindow(width, height, argv[0].toStr(), title);
+            openWindow(width, height, engineState.envArgsBuffer[], title);
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();
@@ -2543,11 +2537,7 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
         }
     } else {
         void main(string[] args) {
-            engineEnvArgsBufferLength = args.length;
-            foreach (i, arg; args) {
-                engineEnvArgsBuffer[i] = arg;
-            }
-            openWindow(width, height, args[0], title);
+            openWindow(width, height, args, title);
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();

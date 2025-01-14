@@ -22,7 +22,6 @@ mixin runGame!(ready, update, finish);
 
 ## Features
 
-* Fast compile times
 * Immediate mode UI library
 * Sprite animation support
 * Tile map support

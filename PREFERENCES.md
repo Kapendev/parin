@@ -13,7 +13,7 @@ The ideas here are just for Parin and nothing else.
 ## Things I Dislike
 
 * Godot 3+: Error handling, file system, resources, signals, tile maps, sprite animations... The list is too long.
-* Scripting Languages: You already have a good programming language.
+* Scripting Languages: No. You already have a good programming language.
 * OOP/SOLID/DOD/DAD: Just focus on the data, the procedures and the goal. Everything else is bureaucracy or someone trying to sell you something.
 * Safe Code: Most people have a different idea about what it means, so it's usually not worth thinking about it.
 * RAII: One of the solutions to make code "safe". Not my style.
