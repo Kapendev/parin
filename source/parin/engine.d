@@ -157,14 +157,15 @@ enum Keyboard : ushort {
 }
 
 /// A type representing a limited set of mouse keys.
-enum Mouse : ubyte {
-    left = rl.MOUSE_BUTTON_LEFT,     /// The left mouse button.
-    right = rl.MOUSE_BUTTON_RIGHT,   /// The right mouse button.
-    middle = rl.MOUSE_BUTTON_MIDDLE, /// The middle mouse button.
+enum Mouse : ushort {
+    none = 0,                            /// Not a button.
+    left = rl.MOUSE_BUTTON_LEFT + 1,     /// The left mouse button.
+    right = rl.MOUSE_BUTTON_RIGHT + 1,   /// The right mouse button.
+    middle = rl.MOUSE_BUTTON_MIDDLE + 1, /// The middle mouse button.
 }
 
 /// A type representing a limited set of gamepad buttons.
-enum Gamepad : ubyte {
+enum Gamepad : ushort {
     none = rl.GAMEPAD_BUTTON_UNKNOWN,          /// Not a button.
     left = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
     right = rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
@@ -1074,12 +1075,6 @@ rl.Font toRl(Font from) {
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true);
-int toRl(Filter filter) {
-    return filter;
-}
-
-/// Converts a Parin type to a raylib type.
-pragma(inline, true);
 rl.RenderTexture2D toRl(Viewport from) {
     return from.data;
 }
@@ -1957,7 +1952,8 @@ bool isDown(Keyboard key) {
 /// Returns true if the specified key is currently pressed.
 @trusted
 bool isDown(Mouse key) {
-    return rl.IsMouseButtonDown(key);
+    if (key) return rl.IsMouseButtonDown(key - 1);
+    else return false;
 }
 
 /// Returns true if the specified key is currently pressed.
@@ -1989,7 +1985,8 @@ bool isPressed(Keyboard key) {
 /// Returns true if the specified key was pressed.
 @trusted
 bool isPressed(Mouse key) {
-    return rl.IsMouseButtonPressed(key);
+    if (key) return rl.IsMouseButtonPressed(key - 1);
+    else return false;
 }
 
 /// Returns true if the specified key was pressed.
@@ -2021,7 +2018,8 @@ bool isReleased(Keyboard key) {
 /// Returns true if the specified key was released.
 @trusted
 bool isReleased(Mouse key) {
-    return rl.IsMouseButtonReleased(key);
+    if (key) return rl.IsMouseButtonReleased(key - 1);
+    else return false;
 }
 
 /// Returns true if the specified key was released.
