@@ -9,8 +9,9 @@
 // TODO: Test the resource loading code.
 // TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
+// TODO: I feel like there is a way to reduce the code for resource ids. Look at that some day.
+// TODO: Convert engine flags to bit flags.
 // NOTE: The main problem with sound looping is the raylib API.
-// NOTE: Leaking memory is normal for raylib, but Parin does it too. Not sure why, needs testing. One test shows 80~ extra bytes.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -20,7 +21,6 @@ import rl = parin.rl;
 import joka.ascii;
 import joka.io;
 import joka.unions;
-import parin.timer;
 
 public import joka.colors;
 public import joka.containers;
@@ -852,9 +852,12 @@ struct EngineFlags {
 }
 
 struct EngineFullscreenState {
-    int lastWindowWidth;
-    int lastWindowHeight;
-    Timer toggleTimer = Timer(0.1f);
+    int previousWindowWidth;
+    int previousWindowHeight;
+    float changeTime = 0.0f;
+    bool isChanging;
+
+    enum changeDuration = 0.025f;
 }
 
 struct EngineResourceGroup(T) {
@@ -986,101 +989,106 @@ struct EngineState {
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Color toParin(rl.Color from) {
     return Color(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Vec2 toParin(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Vec3 toParin(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Vec4 toParin(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Rect toParin(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Texture toParin(rl.Texture2D from) {
-    auto result = Texture();
-    result.data = from;
-    return result;
+    return Texture(from);
 }
 
 /// Converts a raylib type to a Parin type.
+pragma(inline, true);
 Font toParin(rl.Font from) {
-    auto result = Font();
-    result.data = from;
-    return result;
-}
-
-/// Converts a raylib type to a Parin type.
-Viewport toParin(rl.RenderTexture2D from) {
-    auto result = Viewport();
-    result.data = from;
-    return result;
+    return Font(from);
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Color toRl(Color from) {
     return rl.Color(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Vector2 toRl(Vec2 from) {
     return rl.Vector2(from.x, from.y);
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Vector3 toRl(Vec3 from) {
     return rl.Vector3(from.x, from.y, from.z);
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Vector4 toRl(Vec4 from) {
     return rl.Vector4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Rectangle toRl(Rect from) {
     return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Texture2D toRl(Texture from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Font toRl(Font from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
-rl.RenderTexture2D toRl(Viewport from) {
-    return from.data;
-}
-
-/// Converts a Parin type to a raylib type.
+pragma(inline, true);
 int toRl(Filter filter) {
     return filter;
 }
 
 /// Converts a Parin type to a raylib type.
+pragma(inline, true);
+rl.RenderTexture2D toRl(Viewport from) {
+    return from.data;
+}
+
+/// Converts a Parin type to a raylib type.
+pragma(inline, true);
 rl.Camera2D toRl(Camera camera, Viewport viewport = Viewport()) {
-    auto area = Rect(viewport.isEmpty ? resolution : viewport.size);
     return rl.Camera2D(
-        area.origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
+        Rect(viewport.isEmpty ? resolution : viewport.size).origin(camera.isCentered ? Hook.center : Hook.topLeft).toRl(),
         camera.position.toRl(),
         camera.rotation,
         camera.scale,
@@ -1423,8 +1431,8 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.SetTargetFPS(60);
     engineState.borderColor = black;
     engineState.viewport.color = gray;
-    engineState.fullscreenState.lastWindowWidth = width;
-    engineState.fullscreenState.lastWindowHeight = height;
+    engineState.fullscreenState.previousWindowWidth = width;
+    engineState.fullscreenState.previousWindowHeight = height;
     engineState.flags.canUseAssetsPath = true;
     engineState.droppedFilePathsBuffer.reserve(64);
     engineState.loadTextBuffer.reserve(8192);
@@ -1519,20 +1527,24 @@ void updateWindow(bool function(float dt) updateFunc) {
         }
 
         // Fullscreen code to fix a bug on Linux.
-        engineState.fullscreenState.toggleTimer.update(dt);
-        if (engineState.fullscreenState.toggleTimer.hasStopped) {
-            if (isFullscreen) {
-                rl.ToggleFullscreen();
-                rl.SetWindowSize(
-                    engineState.fullscreenState.lastWindowWidth,
-                    engineState.fullscreenState.lastWindowHeight,
-                );
-                rl.SetWindowPosition(
-                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.lastWindowWidth * 0.5f),
-                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.lastWindowHeight * 0.5f),
-                );
-            } else {
-                rl.ToggleFullscreen();
+        if (engineState.fullscreenState.isChanging) {
+            engineState.fullscreenState.changeTime += dt;
+            if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
+                if (isFullscreen) {
+                    rl.ToggleFullscreen();
+                    // Size is first because raylib likes that. I will make raylib happy.
+                    rl.SetWindowSize(
+                        engineState.fullscreenState.previousWindowWidth,
+                        engineState.fullscreenState.previousWindowHeight,
+                    );
+                    rl.SetWindowPosition(
+                        cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
+                        cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
+                    );
+                } else {
+                    rl.ToggleFullscreen();
+                }
+                engineState.fullscreenState.isChanging = false;
             }
         }
 
@@ -1575,10 +1587,10 @@ void closeWindow() {
         engineState.loadTextBuffer.free();
         engineState.saveTextBuffer.free();
         engineState.assetsPath.free();
-
-        rl.CloseAudioDevice();
-        rl.CloseWindow();
     }
+    // This is outside because who knows, maybe raylib needs that.
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
 }
 
 /// Returns true if the drawing is snapped to pixel coordinates.
@@ -1639,20 +1651,21 @@ bool isFullscreen() {
 }
 
 /// Sets whether the application should be in fullscreen mode.
+// NOTE: This function introduces a slight delay to prevent some bugs observed on Linux.
 @trusted
 void setIsFullscreen(bool value) {
+    if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
     version(WebAssembly) {
 
     } else {
-        if (value && !isFullscreen) {
-            engineState.fullscreenState.lastWindowWidth = windowWidth;
-            engineState.fullscreenState.lastWindowHeight = windowHeight;
+        if (value) {
+            engineState.fullscreenState.previousWindowWidth = windowWidth;
+            engineState.fullscreenState.previousWindowHeight = windowHeight;
             rl.SetWindowPosition(0, 0);
             rl.SetWindowSize(screenWidth, screenHeight);
-            engineState.fullscreenState.toggleTimer.start();
-        } else if (!value && isFullscreen) {
-            engineState.fullscreenState.toggleTimer.start();
         }
+        engineState.fullscreenState.changeTime = 0.0f;
+        engineState.fullscreenState.isChanging = true;
     }
 }
 
