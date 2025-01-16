@@ -181,18 +181,19 @@ Functions that start with the word load/save will always try to read/write resou
 These functions handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
 
 ```d
-TextId loadText(IStr path, Sz tag = 0);
-TextureId loadTexture(IStr path, Sz tag = 0);
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "", Sz tag = 0);
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight, Sz tag = 0);
-SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0);
-
-Result!LStr loadRawText(IStr path);
+TextureId loadTexture(IStr path);
 Result!Texture loadRawTexture(IStr path);
+
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
 Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight);
+
+SoundId loadSound(IStr path, float volume, float pitch);
 Result!Sound loadRawSound(IStr path, float volume, float pitch);
 
+Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
+Result!LStr loadRawText(IStr path);
 Result!IStr loadTempText(IStr path);
 
 Fault saveText(IStr path, IStr text);
@@ -202,7 +203,7 @@ Additional loading functions can be found in other modules, such as `parin.map`.
 
 ### Managed Resources
 
-Managed resources are cached by their path and grouped based on the tag they were loaded with.
+Managed resources are cached by their path they were loaded with.
 To free these resources, use the `freeResources` function or the `free` method on the resource identifier.
 The resource identifier is automatically invalidated when the resource is freed.
 

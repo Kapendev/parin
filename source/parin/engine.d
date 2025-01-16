@@ -6,11 +6,10 @@
 // Version: v0.0.33
 // ---
 
-// TODO: Test the resource loading code.
 // TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
-// TODO: I feel like there is a way to reduce the code for resource ids. Look at that some day.
-// TODO: Convert engine flags to bit flags.
+// TODO: Convert engine flags to bit flags in the future.
+// TODO: Look at the locking and unlocking code again. Works, but could maybe be nicer.
 // NOTE: The main problem with sound looping is the raylib API.
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -38,12 +37,6 @@ enum Flip : ubyte {
     x,    /// Flipped along the X-axis.
     y,    /// Flipped along the Y-axis.
     xy,   /// Flipped along both X and Y axes.
-}
-
-/// A type representing layout orientations.
-enum Layout : ubyte {
-    v, /// Vertical layout.
-    h, /// Horizontal layout.
 }
 
 /// A type representing alignment orientations.
@@ -233,45 +226,6 @@ struct DrawOptions {
     }
 }
 
-/// Represents an identifier for a managed resource.
-struct TextId {
-    GenerationalIndex data;
-
-    alias data this;
-
-    @safe @nogc nothrow:
-
-    /// Returns the length of the text associated with the resource identifier.
-    Sz length() {
-        return getOr().length;
-    }
-
-    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
-    bool isValid() {
-        return data.value != 0 && engineState.resources.texts.has(data);
-    }
-
-    /// Retrieves the text associated with the resource identifier.
-    ref LStr get() {
-        if (!isValid) {
-            assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        }
-        return engineState.resources.texts.data[data];
-    }
-
-    /// Retrieves the text associated with the resource identifier or returns a default value if invalid.
-    LStr getOr() {
-        return isValid ? get() : LStr();
-    }
-
-    /// Frees the resource associated with the identifier.
-    void free() {
-        if (engineState.resources.texts.has(data)) {
-            engineState.resources.texts.remove(data);
-        }
-    }
-}
-
 /// Represents a texture resource.
 struct Texture {
     rl.Texture2D data;
@@ -323,7 +277,7 @@ struct Texture {
     }
 }
 
-/// Represents an identifier for a managed resource.
+/// Represents an identifier for a managed engine resource.
 struct TextureId {
     GenerationalIndex data;
 
@@ -348,27 +302,23 @@ struct TextureId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value != 0 && engineState.resources.textures.has(data);
+        return data && engineState.textures.has(data);
     }
 
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
-        if (!isValid) {
-            assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        }
-        return engineState.resources.textures.data[data];
+        if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+        return engineState.textures.data[data];
     }
 
     /// Retrieves the texture associated with the resource identifier or returns a default value if invalid.
     Texture getOr() {
-        return isValid ? get() : Texture();
+        return isValid ? engineState.textures.data[data] : Texture();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (engineState.resources.textures.has(data)) {
-            engineState.resources.textures.remove(data);
-        }
+        if (isValid) engineState.textures.remove(data);
     }
 }
 
@@ -415,7 +365,7 @@ struct Font {
     }
 }
 
-/// Represents an identifier for a managed resource.
+/// Represents an identifier for a managed engine resource.
 struct FontId {
     GenerationalIndex data;
 
@@ -440,27 +390,23 @@ struct FontId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value != 0 && engineState.resources.fonts.has(data);
+        return data && engineState.fonts.has(data);
     }
 
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
-        if (!isValid) {
-            assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        }
-        return engineState.resources.fonts.data[data];
+        if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+        return engineState.fonts.data[data];
     }
 
     /// Retrieves the font associated with the resource identifier or returns a default value if invalid.
     Font getOr() {
-        return isValid ? get() : Font();
+        return isValid ? engineState.fonts.data[data] : Font();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (engineState.resources.fonts.has(data)) {
-            engineState.resources.fonts.remove(data);
-        }
+        if (isValid) engineState.fonts.remove(data);
     }
 }
 
@@ -558,7 +504,7 @@ struct Sound {
     }
 }
 
-/// Represents an identifier for a managed resource.
+/// Represents an identifier for a managed engine resource.
 struct SoundId {
     GenerationalIndex data;
 
@@ -582,27 +528,23 @@ struct SoundId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value != 0 && engineState.resources.sounds.has(data);
+        return data && engineState.sounds.has(data);
     }
 
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
-        if (!isValid) {
-            assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        }
-        return engineState.resources.sounds.data[data];
+        if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+        return engineState.sounds.data[data];
     }
 
     /// Retrieves the sound associated with the resource identifier or returns a default value if invalid.
     Sound getOr() {
-        return isValid ? get() : Sound();
+        return isValid ? engineState.sounds.data[data] : Sound();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (engineState.resources.sounds.has(data)) {
-            engineState.resources.sounds.remove(data);
-        }
+        if (isValid) engineState.sounds.remove(data);
     }
 }
 
@@ -864,7 +806,6 @@ struct EngineFullscreenState {
 struct EngineResourceGroup(T) {
     GenerationalList!T data;
     GenerationalList!LStr names;
-    GenerationalList!Sz tags;
 
     @safe @nogc nothrow:
 
@@ -876,14 +817,20 @@ struct EngineResourceGroup(T) {
         return data.has(i);
     }
 
-    GenerationalIndex append(T arg, IStr name, Sz tag) {
+    Result!GenerationalIndex find(IStr name) {
+        foreach (id; engineState.textures.ids) {
+            if (engineState.textures.names[id] == name) return Result!GenerationalIndex(id);
+        }
+        return Result!GenerationalIndex();
+    }
+
+    GenerationalIndex append(T arg, IStr name) {
         data.append(arg);
-        names.append(LStr(name));
-        return tags.append(tag);
+        return names.append(LStr(name));
     }
 
     GenerationalIndex appendEmpty() {
-        return append(T(), "", 0);
+        return append(T(), "");
     }
 
     void remove(GenerationalIndex i) {
@@ -891,27 +838,22 @@ struct EngineResourceGroup(T) {
         data.remove(i);
         names[i].free();
         names.remove(i);
-        tags.remove(i);
     }
 
-    void free(Sz tag = 0) {
-        if (tag == 0) {
-            foreach (ref item; data.items) {
-                item.free();
-            }
-            data.free();
-            foreach (ref item; names.items) {
-                item.free();
-            }
-            names.free();
-            tags.free();
-        } else {
-            foreach (id; data.ids) {
-                if (tag == tags[id]) {
-                    remove(id);
-                }
-            }
+    void reserve(Sz capacity) {
+        data.reserve(capacity);
+        names.reserve(capacity);
+    }
+
+    void free() {
+        foreach (ref item; data.items) {
+            item.free();
         }
+        data.free();
+        foreach (ref item; names.items) {
+            item.free();
+        }
+        names.free();
     }
 
     auto items() {
@@ -923,23 +865,6 @@ struct EngineResourceGroup(T) {
     }
 }
 
-struct EngineResources {
-    EngineResourceGroup!LStr texts;
-    EngineResourceGroup!Texture textures;
-    EngineResourceGroup!Font fonts;
-    EngineResourceGroup!Sound sounds;
-
-    @safe @nogc nothrow:
-
-    void free(Sz tag = 0) {
-        texts.free(tag);
-        textures.free(tag);
-        fonts.free(tag);
-        sounds.free(tag);
-    }
-}
-
-// NOTE: Maybe look at the locking and unlocking code again. Works, but maybe could be more nice looking.
 struct EngineViewport {
     Viewport data;
     int targetWidth;
@@ -971,22 +896,23 @@ struct EngineViewport {
 struct EngineState {
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
+    Sz tickCount;
+    Color borderColor;
+    Filter defaultFilter;
+    Wrap defaultWrap;
+    Camera currentCamera;
+    Viewport currentViewport;
 
-    Font font;
+    EngineResourceGroup!Texture textures;
+    EngineResourceGroup!Font fonts;
+    EngineResourceGroup!Sound sounds;
     EngineViewport viewport;
-    EngineResources resources;
+    Font debugFont;
     List!IStr envArgsBuffer;
     List!IStr droppedFilePathsBuffer;
     LStr loadTextBuffer;
     LStr saveTextBuffer;
     LStr assetsPath;
-
-    Color borderColor;
-    Sz tickCount;
-    Filter defaultFilter;
-    Wrap defaultWrap;
-    Viewport currentViewport;
-    Camera currentCamera;
 }
 
 /// Converts a raylib type to a Parin type.
@@ -1202,13 +1128,12 @@ ref LStr prepareTempText() {
     return engineState.saveTextBuffer;
 }
 
-/// Loads a text file from the assets folder.
-/// The resource remains valid until this function is called again.
+/// Loads a text file from the assets folder and saves the content into the given buffer.
+/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
-Result!IStr loadTempText(IStr path) {
+Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
     auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
-    auto fault = readTextIntoBuffer(targetPath, engineState.loadTextBuffer);
-    return Result!IStr(engineState.loadTextBuffer.items, fault);
+    return readTextIntoBuffer(targetPath, buffer);
 }
 
 /// Loads a text file from the assets folder.
@@ -1220,26 +1145,11 @@ Result!LStr loadRawText(IStr path) {
 }
 
 /// Loads a text file from the assets folder.
-/// Optionally assigns a tag for resource management.
-/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// The resource remains valid until this function is called again.
 /// Supports both forward slashes and backslashes in file paths.
-TextId loadText(IStr path, Sz tag = 0) {
-    if (engineState.resources.texts.length == 0) {
-        engineState.resources.texts.appendEmpty();
-    }
-
-    foreach (id; engineState.resources.texts.ids) {
-        if (engineState.resources.texts.names[id] == path) {
-            return TextId(id);
-        }
-    }
-
-    auto result = loadRawText(path);
-    if (result.isSome) {
-        return TextId(engineState.resources.texts.append(result.get(), path, tag));
-    } else {
-        return TextId();
-    }
+Result!IStr loadTempText(IStr path) {
+    auto fault = loadRawTextIntoBuffer(path, engineState.loadTextBuffer);
+    return Result!IStr(engineState.loadTextBuffer.items, fault);
 }
 
 /// Loads a texture file (PNG) from the assets folder.
@@ -1255,26 +1165,12 @@ Result!Texture loadRawTexture(IStr path) {
 }
 
 /// Loads a texture file (PNG) from the assets folder.
-/// Optionally assigns a tag for resource management.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
-TextureId loadTexture(IStr path, Sz tag = 0) {
-    if (engineState.resources.textures.length == 0) {
-        engineState.resources.textures.appendEmpty();
-    }
-
-    foreach (id; engineState.resources.textures.ids) {
-        if (engineState.resources.textures.names[id] == path) {
-            return TextureId(id);
-        }
-    }
-
-    auto result = loadRawTexture(path);
-    if (result.isSome) {
-        return TextureId(engineState.resources.textures.append(result.get(), path, tag));
-    } else {
-        return TextureId();
-    }
+TextureId loadTexture(IStr path) {
+    if (auto id = engineState.textures.find(path)) return TextureId(id.get());
+    if (auto resource = loadRawTexture(path)) return TextureId(engineState.textures.append(resource.get(), path));
+    return TextureId();
 }
 
 /// Loads a font file (TTF) from the assets folder.
@@ -1295,26 +1191,12 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
 }
 
 /// Loads a font file (TTF) from the assets folder.
-/// Optionally assigns a tag for resource management.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "", Sz tag = 0) {
-    if (engineState.resources.fonts.length == 0) {
-        engineState.resources.fonts.appendEmpty();
-    }
-
-    foreach (id; engineState.resources.fonts.ids) {
-        if (engineState.resources.fonts.names[id] == path) {
-            return FontId(id);
-        }
-    }
-
-    auto result = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
-    if (result.isSome) {
-        return FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
-    } else {
-        return FontId();
-    }
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
+    if (auto id = engineState.fonts.find(path)) return FontId(id.get());
+    if (auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes)) return FontId(engineState.fonts.append(resource.get(), path));
+    return FontId();
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
@@ -1327,27 +1209,13 @@ Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// Optionally assigns a tag for resource management.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight, Sz tag = 0) {
-    if (engineState.resources.fonts.length == 0) {
-        engineState.resources.fonts.appendEmpty();
-    }
-
-    foreach (id; engineState.resources.fonts.ids) {
-        if (engineState.resources.fonts.names[id] == path) {
-            return FontId(id);
-        }
-    }
-
-    auto result = loadRawFontFromTexture(path, tileWidth, tileHeight);
-    if (result.isSome) {
-        return FontId(FontId(engineState.resources.fonts.append(result.get(), path, tag)));
-    } else {
-        return FontId();
-    }
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
+    if (auto id = engineState.fonts.find(path)) return FontId(id.get());
+    if (auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight)) return FontId(engineState.fonts.append(resource.get(), path));
+    return FontId();
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
@@ -1368,26 +1236,12 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// Optionally assigns a tag for resource management.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
-SoundId loadSound(IStr path, float volume, float pitch, Sz tag = 0) {
-    if (engineState.resources.sounds.length == 0) {
-        engineState.resources.sounds.appendEmpty();
-    }
-
-    foreach (id; engineState.resources.sounds.ids) {
-        if (engineState.resources.sounds.names[id] == path) {
-            return SoundId(id);
-        }
-    }
-
-    auto result = loadRawSound(path, volume, pitch);
-    if (result.isSome) {
-        return SoundId(engineState.resources.sounds.append(result.get(), path, tag));
-    } else {
-        return SoundId();
-    }
+SoundId loadSound(IStr path, float volume, float pitch) {
+    if (auto id = engineState.sounds.find(path)) return SoundId(id.get());
+    if (auto resource = loadRawSound(path, volume, pitch)) return SoundId(engineState.sounds.append(resource.get(), path));
+    return SoundId();
 }
 
 /// Saves a text file to the assets folder.
@@ -1397,9 +1251,11 @@ Fault saveText(IStr path, IStr text) {
     return writeText(targetPath, text);
 }
 
-/// Frees all managed resources associated with the given tag, or all if no tag is specified.
-void freeResources(Sz tag = 0) {
-    engineState.resources.free(tag);
+/// Frees all managed engine resources.
+void freeResources() {
+    engineState.textures.free();
+    engineState.fonts.free();
+    engineState.sounds.free();
 }
 
 /// Opens a URL in the default web browser (if available).
@@ -1415,31 +1271,38 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
     engineState.envArgsBuffer.clear();
-    foreach (arg; args) {
-        engineState.envArgsBuffer.append(arg);
-    }
+    foreach (arg; args) engineState.envArgsBuffer.append(arg);
+    // Set raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
     rl.InitWindow(width, height, title.toCStr().getOr());
     rl.InitAudioDevice();
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
-    engineState.borderColor = black;
-    engineState.viewport.color = gray;
+    rl.SetWindowMinSize(240, 135);
+    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+    // Set engine stuff.
+    engineState.flags.canUseAssetsPath = true;
     engineState.fullscreenState.previousWindowWidth = width;
     engineState.fullscreenState.previousWindowHeight = height;
-    engineState.flags.canUseAssetsPath = true;
-    engineState.droppedFilePathsBuffer.reserve(64);
+    engineState.borderColor = black;
+    // Ready resources.
+    engineState.textures.reserve(256);
+    engineState.textures.appendEmpty();
+    engineState.fonts.reserve(64);
+    engineState.fonts.appendEmpty();
+    engineState.sounds.reserve(128);
+    engineState.sounds.appendEmpty();
+    engineState.viewport.color = gray;
+    engineState.droppedFilePathsBuffer.reserve(128);
     engineState.loadTextBuffer.reserve(8192);
     engineState.saveTextBuffer.reserve(8192);
-    if (args.length != 0) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
-    // NOTE: This line is used for fixing an alpha bug with render textures.
-    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-    // Load default engine assets.
+    if (args.length) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
+    // Load debug font.
     auto monogramData = cast(const(ubyte)[]) import("monogram.png");
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
-    engineState.font = monogramTexture.toParin().toFont(6, 12);
+    engineState.debugFont = monogramTexture.toParin().toFont(6, 12);
     rl.UnloadImage(monogramImage);
 }
 
@@ -1568,15 +1431,14 @@ void updateWindow(bool function(float dt) updateFunc) {
 
 /// Closes the window.
 /// You should avoid calling this function manually.
+// NOTE: We skip some stuff in release builds since the OS will free the memory for us.
 @trusted
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
-    // This block frees memory.
-    // We skip it in release builds since the OS will free the memory for us.
     debug {
-        engineState.font.free();
+        freeResources();
         engineState.viewport.free();
-        engineState.resources.free();
+        engineState.debugFont.free();
         engineState.envArgsBuffer.free();
         engineState.droppedFilePathsBuffer.free();
         engineState.loadTextBuffer.free();
@@ -1688,7 +1550,7 @@ void setBorderColor(Color value) {
 /// Returns the default engine font. This font should not be freed.
 @trusted
 Font engineFont() {
-    return engineState.font;
+    return engineState.debugFont;
 }
 
 /// Returns the default filter mode for textures.
@@ -2547,12 +2409,10 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
 mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
     version (D_BetterC) {
-        // I love C... This is unsafe, so avoid reserving memory for envArgsBuffer.
+        // NOTE: This is unsafe, so avoid reserving memory for envArgsBuffer.
         @trusted @nogc nothrow
         void __mainArgcArgvThing(int argc, immutable(char)** argv) {
-            foreach (i; 0 .. argc) {
-                engineState.envArgsBuffer.append(argv[i].toStr());
-            }
+            foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].toStr());
         }
 
         extern(C)
