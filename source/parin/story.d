@@ -36,8 +36,9 @@ enum StoryOp : ubyte {
     CLEAR,
     SWAP,
     COPY,
+    IF,
+    ELSE,
     THEN,
-    NEXT,
     END,
     ECHO,
     LEAK,
@@ -49,6 +50,7 @@ enum StoryOp : ubyte {
     DROP,
     INC,
     DEC,
+    TOG,
     MENU,
     SKIP,
     JUMP,
@@ -97,12 +99,21 @@ struct StoryVariable {
 
 struct Story {
     LStr script;
-    List!uint startPoints;
-    List!StoryVariable variables;
+    List!uint scriptStartEndPairs;
     int previousMenuResult;
+    List!StoryVariable variables;
 
     void prepare() {
-        // TODO: Add stuff like points.
+        scriptStartEndPairs.clear();
+        previousMenuResult = 0;
+        if (script.isEmpty) return;
+        scriptStartEndPairs.append(0);
+        foreach (i, c; script) {
+            if (c == '\n') {
+                scriptStartEndPairs.append(cast(uint) i);
+                scriptStartEndPairs.append(cast(uint) i + 1);
+            }
+        }
     }
 
     Fault evaluate(IStr expression) {
@@ -115,7 +126,8 @@ struct Story {
             auto token = expression.skipValue(' ');
             if (token.length == 0) continue;
             if (ifCounter > 0) {
-                if (token == NEXT.toStr()) ifCounter -= 1;
+                if (token == IF.toStr()) ifCounter += 1;
+                if (token == ELSE.toStr() || token == THEN.toStr()) ifCounter -= 1;
                 continue;
             }
             if (token.isMaybeStoryOp) {
@@ -178,13 +190,16 @@ struct Story {
                         if (stack.length < 1) return Fault.invalid;
                         stack.append(stack[$ - 1]);
                         break;
-                    case THEN:
+                    case IF:
                         if (stack.length < 1) return Fault.invalid;
                         auto da = stack.pop();
                         if (!da.isType!long) return Fault.invalid;
                         if (!da.get!long) ifCounter += 1;
                         break;
-                    case NEXT:
+                    case ELSE:
+                        ifCounter += 1;
+                        break;
+                    case THEN:
                         break;
                     case END:
                         return Fault.none;
@@ -280,6 +295,7 @@ struct Story {
                         foreach (ref variable; variables) {
                             if (b == variable.name) {
                                 variable.value = da;
+                                isNotThere = false;
                                 break;
                             }
                         }
@@ -326,6 +342,27 @@ struct Story {
                             if (b == variable.name) {
                                 if (variable.value.isType!StoryNumber) {
                                     variable.value.get!StoryNumber() += a * (op == INC ? 1 : -1);
+                                    stack.append(variable.value);
+                                } else {
+                                    return Fault.invalid;
+                                }
+                                isNotThere = false;
+                                break;
+                            }
+                        }
+                        if (isNotThere) return Fault.invalid;
+                        break;
+                    case TOG:
+                        if (stack.length < 1) return Fault.invalid;
+                        auto da = stack.pop();
+                        if (!da.isType!StoryWord) return Fault.invalid;
+                        auto a = da.get!StoryWord();
+                        auto isNotThere = true;
+                        foreach (ref variable; variables) {
+                            if (a == variable.name) {
+                                if (variable.value.isType!StoryNumber) {
+                                    variable.value.get!StoryNumber() = !variable.value.get!StoryNumber();
+                                    stack.append(variable.value);
                                 } else {
                                     return Fault.invalid;
                                 }
