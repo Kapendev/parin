@@ -418,7 +418,7 @@ struct Sound {
 
     /// Checks if the sound is not loaded.
     bool isEmpty() {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             return data.get!(rl.Sound)().stream.sampleRate == 0;
         } else {
             return data.get!(rl.Music)().stream.sampleRate == 0;
@@ -428,7 +428,7 @@ struct Sound {
     /// Returns true if the sound is playing.
     @trusted
     bool isPlaying() {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             return rl.IsSoundPlaying(data.get!(rl.Sound)());
         } else {
             return rl.IsMusicStreamPlaying(data.get!(rl.Music)());
@@ -438,7 +438,7 @@ struct Sound {
     /// Returns the current playback time of the sound.
     @trusted
     float time() {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             return 0.0f;
         } else {
             return rl.GetMusicTimePlayed(data.get!(rl.Music)());
@@ -448,7 +448,7 @@ struct Sound {
     /// Returns the total duration of the sound.
     @trusted
     float duration() {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             return 0.0f;
         } else {
             return rl.GetMusicTimeLength(data.get!(rl.Music)());
@@ -464,7 +464,7 @@ struct Sound {
     /// Sets the volume level for the sound.
     @trusted
     void setVolume(float value) {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             rl.SetSoundVolume(data.get!(rl.Sound)(), value);
         } else {
             rl.SetMusicVolume(data.get!(rl.Music)(), value);
@@ -474,7 +474,7 @@ struct Sound {
     /// Sets the pitch of the sound.
     @trusted
     void setPitch(float value) {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             rl.SetSoundPitch(data.get!(rl.Sound)(), value);
         } else {
             rl.SetMusicPitch(data.get!(rl.Music)(), value);
@@ -484,7 +484,7 @@ struct Sound {
     /// Sets the stereo panning of the sound.
     @trusted
     void setPan(float value) {
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             rl.SetSoundPan(data.get!(rl.Sound)(), value);
         } else {
             rl.SetMusicPan(data.get!(rl.Music)(), value);
@@ -495,7 +495,7 @@ struct Sound {
     @trusted
     void free() {
         if (isEmpty) return;
-        if (data.isKind!(rl.Sound)) {
+        if (data.isType!(rl.Sound)) {
             rl.UnloadSound(data.get!(rl.Sound)());
         } else {
             rl.UnloadMusicStream(data.get!(rl.Music)());
@@ -1947,7 +1947,7 @@ void playSound(Sound sound) {
         return;
     }
 
-    if (sound.data.isKind!(rl.Sound)) {
+    if (sound.data.isType!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
         rl.PlayMusicStream(sound.data.get!(rl.Music)());
@@ -1967,7 +1967,7 @@ void stopSound(Sound sound) {
         return;
     }
 
-    if (sound.data.isKind!(rl.Sound)) {
+    if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
     } else {
         rl.StopMusicStream(sound.data.get!(rl.Music)());
@@ -1986,7 +1986,7 @@ void pauseSound(Sound sound) {
         return;
     }
 
-    if (sound.data.isKind!(rl.Sound)) {
+    if (sound.data.isType!(rl.Sound)) {
         rl.PauseSound(sound.data.get!(rl.Sound)());
     } else {
         rl.PauseMusicStream(sound.data.get!(rl.Music)());
@@ -2005,7 +2005,7 @@ void resumeSound(Sound sound) {
         return;
     }
 
-    if (sound.data.isKind!(rl.Sound)) {
+    if (sound.data.isType!(rl.Sound)) {
         rl.ResumeSound(sound.data.get!(rl.Sound)());
     } else {
         rl.ResumeMusicStream(sound.data.get!(rl.Music)());
@@ -2024,7 +2024,7 @@ void updateSound(Sound sound) {
         return;
     }
 
-    if (sound.data.isKind!(rl.Music)) {
+    if (sound.data.isType!(rl.Music)) {
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }
