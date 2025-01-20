@@ -1279,8 +1279,8 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.InitAudioDevice();
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
-    rl.SetWindowMinSize(240, 135);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+    setWindowMinSize(240, 135);
     // Set engine stuff.
     engineState.flags.canUseAssetsPath = true;
     engineState.fullscreenState.previousWindowWidth = width;
@@ -1545,6 +1545,30 @@ void setBackgroundColor(Color value) {
 /// Sets the border color to the specified value.
 void setBorderColor(Color value) {
     engineState.borderColor = value;
+}
+
+@trusted
+/// Sets the minimum size of the window to the specified value.
+void setWindowMinSize(int width, int height) {
+    rl.SetWindowMinSize(width, height);
+}
+
+@trusted
+/// Sets the maximum size of the window to the specified value.
+void setWindowMaxSize(int width, int height) {
+    rl.SetWindowMaxSize(width, height);
+}
+
+/// Sets the window icon to the specified image that will be loaded from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+@trusted
+Fault setWindowIconFromFiles(IStr path) {
+    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto image = rl.LoadImage(targetPath.toCStr().getOr());
+    if (image.data == null) return Fault.cantFind;
+    rl.SetWindowIcon(image);
+    rl.UnloadImage(image);
+    return Fault.none;
 }
 
 /// Returns the default engine font. This font should not be freed.

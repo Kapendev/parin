@@ -1,7 +1,10 @@
 // TODO: skipValue might need some work. Not clear how splitting works.
 // TODO: toStr char arrays might need some work. It has bad error messages for them.
+// TODO: concat and others might need a "intoBuffer" vesion.
+// TODO: Look at CAT case and think about how to make it better with joka.
 // NOTE: Was about to add the dialogue stuff like jumping skipping...
 // NOTE: Remember to update both joka and parin at the same time because there was a evil change.
+// NOTE: The point it to get something working. Clean later.
 
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
@@ -12,13 +15,7 @@ import joka.ascii;
 import joka.io;
 import joka.unions;
 
-//Story Syntax:
-//    #      Comment
-//    *      Point
-//    |      Line
-//    >      Jump
-//    ^      Menu
-//    $      Expression
+enum defaultStoryWord = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 enum StoryOp : ubyte {
     ADD = '+',
@@ -39,6 +36,9 @@ enum StoryOp : ubyte {
     IF,
     ELSE,
     THEN,
+    CAT,
+    WORD,
+    NUM,
     END,
     ECHO,
     LEAK,
@@ -57,8 +57,8 @@ enum StoryOp : ubyte {
     CALL,
 }
 
-alias StoryWord = char[16];
-alias StoryNumber = long;
+alias StoryWord = char[24];
+alias StoryNumber = int;
 alias StoryValueData = Variant!(StoryWord, StoryNumber);
 
 struct StoryValue {
@@ -76,10 +76,10 @@ struct StoryValue {
         static char[64] buffer = void;
 
         auto result = buffer[];
-        if (data.isType!long) {
-            result.copy(data.get!long().toStr());
+        if (data.isType!StoryNumber) {
+            result.copy(data.get!StoryNumber().toStr());
         } else {
-            auto temp = data.get!(char[16])()[];
+            auto temp = data.get!(StoryWord)()[];
             foreach (i, c; temp) {
                 if (temp[i] == 0) {
                     temp = temp[0 .. i];
@@ -97,21 +97,28 @@ struct StoryVariable {
     StoryValue value;
 }
 
+struct StoryStartEndPair {
+    uint a;
+    uint b;
+}
+
 struct Story {
     LStr script;
-    List!uint scriptStartEndPairs;
+    List!StoryStartEndPair startEndPairs;
     int previousMenuResult;
     List!StoryVariable variables;
 
     void prepare() {
-        scriptStartEndPairs.clear();
+        startEndPairs.clear();
         previousMenuResult = 0;
         if (script.isEmpty) return;
-        scriptStartEndPairs.append(0);
+        auto start = 0;
         foreach (i, c; script) {
             if (c == '\n') {
-                scriptStartEndPairs.append(cast(uint) i);
-                scriptStartEndPairs.append(cast(uint) i + 1);
+                auto pair = StoryStartEndPair(cast(uint) start, cast(uint) i);
+                if (pair.a == pair.b) continue; // Might not work with windows. (\n or \r\n)
+                startEndPairs.append(pair);
+                start = pair.b + 1;
             }
         }
     }
@@ -148,10 +155,10 @@ struct Story {
                         if (stack.length < 2) return Fault.invalid;
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!db.isType!long || !da.isType!long) return Fault.invalid;
-                        auto a = da.get!long;
-                        auto b = db.get!long;
-                        auto c = 0L;
+                        if (!db.isType!StoryNumber || !da.isType!StoryNumber) return Fault.invalid;
+                        auto a = da.get!StoryNumber;
+                        auto b = db.get!StoryNumber;
+                        auto c = StoryNumber.init;
                         switch (op) {
                             case ADD: c = b + a; break;
                             case SUB: c = b - a; break;
@@ -170,8 +177,8 @@ struct Story {
                     case NOT:
                         if (stack.length < 1) return Fault.invalid;
                         auto da = stack.pop();
-                        if (!da.isType!long) return Fault.invalid;
-                        stack.append(StoryValue(!da.get!long));
+                        if (!da.isType!StoryNumber) return Fault.invalid;
+                        stack.append(StoryValue(!da.get!StoryNumber));
                         break;
                     case POP:
                         stack.pop();
@@ -193,13 +200,35 @@ struct Story {
                     case IF:
                         if (stack.length < 1) return Fault.invalid;
                         auto da = stack.pop();
-                        if (!da.isType!long) return Fault.invalid;
-                        if (!da.get!long) ifCounter += 1;
+                        if (!da.isType!StoryNumber) return Fault.invalid;
+                        if (!da.get!StoryNumber) ifCounter += 1;
                         break;
                     case ELSE:
                         ifCounter += 1;
                         break;
                     case THEN:
+                        break;
+                    case CAT:
+                        if (stack.length < 2) return Fault.invalid;
+                        auto db = stack.pop();
+                        auto da = stack.pop();
+                        if (!db.isType!StoryWord || !da.isType!StoryWord) return Fault.invalid;
+                        StoryWord word = defaultStoryWord;
+                        auto data = concat(concat(db.toStr()), da.toStr());
+                        if (data.length > word.length) return Fault.overflow;
+                        auto tempWordRef = word[];
+                        tempWordRef.copy(data);
+                        stack.append(StoryValue(word));
+                        break;
+                    case WORD:
+                        if (stack.length < 1) return Fault.invalid;
+                        auto da = stack.pop();
+                        stack.append(StoryValue(da.isType!StoryWord));
+                        break;
+                    case NUM:
+                        if (stack.length < 1) return Fault.invalid;
+                        auto da = stack.pop();
+                        stack.append(StoryValue(da.isType!StoryNumber));
                         break;
                     case END:
                         return Fault.none;
@@ -384,10 +413,10 @@ struct Story {
             } else if (token.isMaybeStoryNumber) {
                 auto tempResult = token.toSigned();
                 if (tempResult.isNone) return tempResult.fault;
-                stack.append(StoryValue(tempResult.value));
+                stack.append(StoryValue(cast(StoryNumber) tempResult.value));
             } else if (token.isMaybeStoryWord) {
                 if (token.length > 16) return Fault.overflow;
-                char[16] temp = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                StoryWord temp = defaultStoryWord;
                 foreach (i, c; token) temp[i] = c;
                 stack.append(StoryValue(temp));
             } else {
