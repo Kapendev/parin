@@ -1259,7 +1259,7 @@ void freeResources() {
 }
 
 /// Opens a URL in the default web browser (if available).
-/// Redirect to Parin's Github when no URL (string) is provided.
+/// Redirect to Parin's GitHub when no URL is provided.
 @trusted
 void openUrl(IStr url = "https://github.com/Kapendev/parin") {
     rl.OpenURL(url.toCStr().getOr());
@@ -1547,14 +1547,14 @@ void setBorderColor(Color value) {
     engineState.borderColor = value;
 }
 
-@trusted
 /// Sets the minimum size of the window to the specified value.
+@trusted
 void setWindowMinSize(int width, int height) {
     rl.SetWindowMinSize(width, height);
 }
 
-@trusted
 /// Sets the maximum size of the window to the specified value.
+@trusted
 void setWindowMaxSize(int width, int height) {
     rl.SetWindowMaxSize(width, height);
 }

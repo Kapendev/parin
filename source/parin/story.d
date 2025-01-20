@@ -2,9 +2,10 @@
 // TODO: toStr char arrays might need some work. It has bad error messages for them.
 // TODO: concat and others might need a "intoBuffer" vesion.
 // TODO: Look at CAT case and think about how to make it better with joka.
-// NOTE: Was about to add the dialogue stuff like jumping skipping...
+// TODO: Change the name of length function for CStr type in ascii module.
 // NOTE: Remember to update both joka and parin at the same time because there was a evil change.
 // NOTE: The point it to get something working. Clean later.
+// NOTE: Was working on update function.
 
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
@@ -15,7 +16,14 @@ import joka.ascii;
 import joka.io;
 import joka.unions;
 
-enum defaultStoryWord = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+enum StoryLine : ubyte {
+    comment = '#',
+    label = '*',
+    text = '|',
+    pause = '.',
+    menu = '^',
+    expression = '$',
+}
 
 enum StoryOp : ubyte {
     ADD = '+',
@@ -81,7 +89,7 @@ struct StoryValue {
         } else {
             auto temp = data.get!(StoryWord)()[];
             foreach (i, c; temp) {
-                if (temp[i] == 0) {
+                if (temp[i] == char.init) {
                     temp = temp[0 .. i];
                     break;
                 }
@@ -104,31 +112,80 @@ struct StoryStartEndPair {
 
 struct Story {
     LStr script;
-    List!StoryStartEndPair startEndPairs;
-    int previousMenuResult;
+    List!StoryStartEndPair pairs;
     List!StoryVariable variables;
+    Sz lineIndex;
+    StoryNumber previousMenuResult;
 
-    void prepare() {
-        startEndPairs.clear();
+    IStr opIndex(Sz i) {
+        if (i >= lineCount) {
+            assert(0, "Index `{}` does not exist.".format(i));
+        }
+        auto pair = pairs[i];
+        return script[pair.a .. pair.b];
+    }
+
+    Sz lineCount() {
+        return pairs.length;
+    }
+
+    bool hasPause() {
+        return lineIndex < lineCount && opIndex(lineIndex)[0] == StoryLine.pause;
+    }
+
+    bool hasMenu() {
+        return lineIndex < lineCount && opIndex(lineIndex)[0] == StoryLine.menu;
+    }
+
+    bool hasText() {
+        return lineIndex < lineCount && opIndex(lineIndex)[0] == StoryLine.text;
+    }
+
+    IStr text() {
+        if (hasText) return opIndex(lineIndex)[1 .. $].trimStart();
+        else return "";
+    }
+
+    Fault prepare() {
+        lineIndex = 0;
         previousMenuResult = 0;
-        if (script.isEmpty) return;
-        auto start = 0;
+        pairs.clear();
+        if (script.isEmpty) return Fault.none;
+        auto start = 0LU;
         foreach (i, c; script) {
             if (c == '\n') {
                 auto pair = StoryStartEndPair(cast(uint) start, cast(uint) i);
-                if (pair.a == pair.b) continue; // Might not work with windows. (\n or \r\n)
-                startEndPairs.append(pair);
-                start = pair.b + 1;
+                auto line = script[pair.a .. pair.b];
+                auto trimmedLine = line.trim();
+                if (trimmedLine.length == 0) continue;
+                pair.a += line.length - line.trimStart().length;
+                pair.b -= line.length - line.trimEnd().length;
+                if (pair.a == pair.b) continue;
+                if (script[pair.a].toStoryLine().isNone) {
+                    pairs.clear();
+                    return Fault.invalid;
+                }
+                pairs.append(pair);
+                start = i + 1;
             }
         }
+        lineIndex = lineCount - 1;
+        return Fault.none;
     }
 
-    Fault evaluate(IStr expression) {
+    void parse(IStr text) {
+        script.clear();
+        script.append(text);
+        prepare();
+    }
+
+    Fault execute(IStr expression) {
         static FixedList!(StoryValue, 16) stack;
 
         stack.clear();
         auto ifCounter = 0;
         while (true) with (StoryOp) {
+            if (stack.length == stack.capacity) return Fault.overflow;
             if (expression.length == 0) break;
             auto token = expression.skipValue(' ');
             if (token.length == 0) continue;
@@ -213,7 +270,7 @@ struct Story {
                         auto db = stack.pop();
                         auto da = stack.pop();
                         if (!db.isType!StoryWord || !da.isType!StoryWord) return Fault.invalid;
-                        StoryWord word = defaultStoryWord;
+                        StoryWord word;
                         auto data = concat(concat(db.toStr()), da.toStr());
                         if (data.length > word.length) return Fault.overflow;
                         auto tempWordRef = word[];
@@ -415,13 +472,27 @@ struct Story {
                 if (tempResult.isNone) return tempResult.fault;
                 stack.append(StoryValue(cast(StoryNumber) tempResult.value));
             } else if (token.isMaybeStoryWord) {
-                if (token.length > 16) return Fault.overflow;
-                StoryWord temp = defaultStoryWord;
+                if (token.length > StoryWord.length) return Fault.overflow;
+                StoryWord temp;
                 foreach (i, c; token) temp[i] = c;
                 stack.append(StoryValue(temp));
             } else {
                 return Fault.cantParse;
             }
+        }
+        return Fault.none;
+    }
+
+    Fault update() {
+        if (lineCount == 0) return Fault.none;
+        lineIndex = (lineIndex + 1) % lineCount;
+        while (!hasPause && !hasMenu && !hasText) {
+            auto line = opIndex(lineIndex);
+            if (line[0] == StoryLine.expression) {
+                auto fault = execute(line[1 .. $].trimStart());
+                if (fault) return fault;
+            }
+            lineIndex = (lineIndex + 1) % lineCount;
         }
         return Fault.none;
     }
@@ -453,6 +524,18 @@ bool isMaybeStoryWord(IStr value) {
     if (value.length == 0) return false;
     auto c = value[0];
     return c == '_' || (!c.isUpper && !c.isSymbol);
+}
+
+Result!StoryLine toStoryLine(char value) {
+    switch (value) with (StoryLine) {
+        case '#': return Result!StoryLine(comment);
+        case '*': return Result!StoryLine(label);
+        case '|': return Result!StoryLine(text);
+        case '.': return Result!StoryLine(pause);
+        case '^': return Result!StoryLine(menu);
+        case '$': return Result!StoryLine(expression);
+        default: return Result!StoryLine(Fault.invalid);
+    }
 }
 
 Result!StoryOp toStoryOp(IStr value) {
