@@ -1,6 +1,6 @@
 # Parin
 
-Parin is a lightweight and beginner-friendly 2D game engine for the D programming language.
+A lightweight and beginner-friendly 2D game engine for the D programming language.
 It focuses on providing a simple foundation for building 2D games.
 
 ```d
@@ -22,10 +22,10 @@ mixin runGame!(ready, update, finish);
 
 ## Features
 
-* Immediate mode UI library
-* Sprite animation support
-* Tile map support
-* Dialogue system
+* Immediate Mode UI Library: Build UIs quickly.
+* Dialogue System: Create interactive stories using a simple stack-oriented scripting language.
+* Sprite Animation Support: Manage animations for characters and objects.
+* Tile Map Support: Create and draw tile-based maps.
 
 ## Supported Platforms
 

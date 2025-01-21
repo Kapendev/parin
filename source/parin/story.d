@@ -292,7 +292,7 @@ struct Story {
                         if (stack.length < 2) return Fault.invalid;
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!db.isType!StoryWord || !da.isType!StoryWord) return Fault.invalid;
+                        if (!db.isType!StoryWord) return Fault.invalid;
                         StoryWord word;
                         auto data = concat(concat(db.toStr()), da.toStr());
                         if (data.length > word.length) return Fault.overflow;
