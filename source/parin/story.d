@@ -2,10 +2,10 @@
 // TODO: toStr char arrays might need some work. It has bad error messages for them.
 // TODO: concat and others might need a "intoBuffer" vesion.
 // TODO: Look at CAT case and think about how to make it better with joka.
-// TODO: Change the name of length function for CStr type in ascii module.
+// TODO: Make command line tool for checking a script and for simple one-line expressions.
+// TODO: Change the name of StoryLine.
 // NOTE: Remember to update both joka and parin at the same time because there was a evil change.
-// NOTE: The point it to get something working. Clean later.
-// NOTE: Was working on update function.
+// NOTE: Call needs to be added and then I can start cleanning.
 
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
@@ -113,8 +113,11 @@ struct StoryStartEndPair {
 struct Story {
     LStr script;
     List!StoryStartEndPair pairs;
+    List!StoryVariable labels;
+    List!StoryValue stack;
     List!StoryVariable variables;
     Sz lineIndex;
+    Sz nextLabelIndex;
     StoryNumber previousMenuResult;
 
     IStr opIndex(Sz i) {
@@ -130,7 +133,7 @@ struct Story {
     }
 
     bool hasPause() {
-        return lineIndex < lineCount && opIndex(lineIndex)[0] == StoryLine.pause;
+        return lineIndex == lineCount || (lineIndex < lineCount && opIndex(lineIndex)[0] == StoryLine.pause);
     }
 
     bool hasMenu() {
@@ -146,10 +149,23 @@ struct Story {
         else return "";
     }
 
+    IStr[] menu() {
+        static FixedList!(IStr, 16) buffer;
+
+        buffer.clear();
+        auto view = hasMenu ? opIndex(lineIndex)[1 .. $].trimStart() : "";
+        while (view.length) {
+            if (buffer.length == buffer.capacity) return buffer[];
+            buffer.append(view.skipValue(StoryLine.menu).trim());
+        }
+        return buffer[];
+    }
+
     Fault prepare() {
         lineIndex = 0;
         previousMenuResult = 0;
         pairs.clear();
+        labels.clear();
         if (script.isEmpty) return Fault.none;
         auto start = 0LU;
         foreach (i, c; script) {
@@ -161,15 +177,25 @@ struct Story {
                 pair.a += line.length - line.trimStart().length;
                 pair.b -= line.length - line.trimEnd().length;
                 if (pair.a == pair.b) continue;
-                if (script[pair.a].toStoryLine().isNone) {
+                auto lineResult = script[pair.a].toStoryLine();
+                if (lineResult.isNone) {
                     pairs.clear();
                     return Fault.invalid;
+                }
+                auto kind = lineResult.value;
+                if (kind == StoryLine.label) {
+                    // TODO: Make words easier to use doooood.
+                    auto name = trimmedLine[1 .. $].trimStart();
+                    auto temp = StoryWord.init;
+                    auto tempRef = temp[];
+                    tempRef.copyChars(name); // TODO: Should maybe return a fault if it can't.
+                    labels.append(StoryVariable(temp, StoryValue(cast(StoryNumber) pairs.length)));
                 }
                 pairs.append(pair);
                 start = i + 1;
             }
         }
-        lineIndex = lineCount - 1;
+        lineIndex = lineCount;
         return Fault.none;
     }
 
@@ -180,12 +206,9 @@ struct Story {
     }
 
     Fault execute(IStr expression) {
-        static FixedList!(StoryValue, 16) stack;
-
         stack.clear();
         auto ifCounter = 0;
         while (true) with (StoryOp) {
-            if (stack.length == stack.capacity) return Fault.overflow;
             if (expression.length == 0) break;
             auto token = expression.skipValue(' ');
             if (token.length == 0) continue;
@@ -462,10 +485,34 @@ struct Story {
                         stack.append(StoryValue(previousMenuResult));
                         break;
                     case SKIP:
+                        if (stack.length < 1) return Fault.invalid;
+                        auto da = stack.pop();
+                        if (!da.isType!StoryNumber) return Fault.invalid;
+                        auto a = da.get!StoryNumber();
+                        lineIndex = labels[nextLabelIndex + a - 1].value.get!StoryNumber();
+                        nextLabelIndex = (nextLabelIndex + a) % (labels.length);
+                        break;
                     case JUMP:
+                        // TODO: Write a find function like a normal person.
+                        // TODO: Might need some error check for -1.
+                        if (stack.length < 1) return Fault.invalid;
+                        auto da = stack.pop();
+                        if (!da.isType!StoryWord) return Fault.invalid;
+                        auto a = da.get!StoryWord();
+                        auto isNotThere = true;
+                        foreach (i, ref label; labels) {
+                            if (a == label.name) {
+                                lineIndex = label.value.get!StoryNumber();
+                                nextLabelIndex = (i + 1) % (labels.length);
+                                isNotThere = false;
+                                break;
+                            }
+                        }
+                        if (isNotThere) return Fault.invalid;
+                        break;
                     case CALL:
                         println("TODO: ", op);
-                        break;
+                        return Fault.none;
                 }
             } else if (token.isMaybeStoryNumber) {
                 auto tempResult = token.toSigned();
@@ -485,16 +532,23 @@ struct Story {
 
     Fault update() {
         if (lineCount == 0) return Fault.none;
-        lineIndex = (lineIndex + 1) % lineCount;
-        while (!hasPause && !hasMenu && !hasText) {
+        lineIndex = (lineIndex + 1) % (lineCount + 1);
+        while (lineIndex < lineCount && !hasPause && !hasMenu && !hasText) {
             auto line = opIndex(lineIndex);
             if (line[0] == StoryLine.expression) {
                 auto fault = execute(line[1 .. $].trimStart());
                 if (fault) return fault;
+            } else if (line[0] == StoryLine.label) {
+                nextLabelIndex = (nextLabelIndex + 1) % (labels.length);
             }
-            lineIndex = (lineIndex + 1) % lineCount;
+            lineIndex = (lineIndex + 1) % (lineCount + 1);
         }
         return Fault.none;
+    }
+
+    Fault select(Sz i) {
+        previousMenuResult = cast(StoryNumber) (i + 1);
+        return update();
     }
 }
 
