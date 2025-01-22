@@ -49,7 +49,7 @@ $ 3 i SET
 $ on GET i GET col_count GET 7 * + x CAT SET
 $ 4 3 i INC RANGE IF LOOP THEN
 
-## Draw the board.
+# Draw the board.
 $ i INIT
 *
 $ i GET x CAT item SET
@@ -57,3 +57,6 @@ $ col_count GET i GET % 1 col_count GET - = is_last SET
 $ item GET GET is_last GET IF ECHO ELSE ECHON THEN
 $ off GET i GET x CAT SET
 $ count GET i INC < IF LOOP THEN
+
+*
+$ DEBUG IF ECHO

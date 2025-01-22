@@ -13,5 +13,6 @@ public import joka.io;
 public import parin.engine;
 public import parin.map;
 public import parin.sprite;
+public import parin.story;
 public import parin.timer;
 public import parin.ui;
