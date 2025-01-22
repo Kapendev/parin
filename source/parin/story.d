@@ -4,8 +4,9 @@
 // TODO: Look at CAT case and think about how to make it better with joka.
 // TODO: Make command line tool for checking a script and for simple one-line expressions.
 // TODO: Change the name of StoryLine.
+// TODO: Add better error info like line, reason, ...
 // NOTE: Remember to update both joka and parin at the same time because there was a evil change.
-// NOTE: Call needs to be added and then I can start cleanning.
+// NOTE: I will start cleanning and then will add CALL.
 
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
@@ -41,6 +42,7 @@ enum StoryOp : ubyte {
     CLEAR,
     SWAP,
     COPY,
+    RANGE,
     IF,
     ELSE,
     THEN,
@@ -49,6 +51,7 @@ enum StoryOp : ubyte {
     NUM,
     END,
     ECHO,
+    ECHON,
     LEAK,
     LOOK,
     HERE,
@@ -56,10 +59,14 @@ enum StoryOp : ubyte {
     SET,
     INIT,
     DROP,
+    DROPN,
     INC,
     DEC,
+    INCN,
+    DECN,
     TOG,
     MENU,
+    LOOP,
     SKIP,
     JUMP,
     CALL,
@@ -116,8 +123,8 @@ struct Story {
     List!StoryVariable labels;
     List!StoryValue stack;
     List!StoryVariable variables;
-    Sz lineIndex;
-    Sz nextLabelIndex;
+    StoryNumber lineIndex;
+    StoryNumber nextLabelIndex;
     StoryNumber previousMenuResult;
 
     IStr opIndex(Sz i) {
@@ -128,8 +135,8 @@ struct Story {
         return script[pair.a .. pair.b];
     }
 
-    Sz lineCount() {
-        return pairs.length;
+    StoryNumber lineCount() {
+        return cast(StoryNumber) pairs.length;
     }
 
     bool hasPause() {
@@ -277,6 +284,17 @@ struct Story {
                         if (stack.length < 1) return Fault.invalid;
                         stack.append(stack[$ - 1]);
                         break;
+                    case RANGE:
+                        if (stack.length < 3) return Fault.invalid;
+                        auto dc = stack.pop();
+                        auto db = stack.pop();
+                        auto da = stack.pop();
+                        if (!dc.isType!StoryNumber || !db.isType!StoryNumber || !da.isType!StoryNumber) return Fault.invalid;
+                        auto a = da.get!StoryNumber();
+                        auto b = db.get!StoryNumber();
+                        auto c = dc.get!StoryNumber();
+                        stack.append(StoryValue(c >= b && c <= a));
+                        break;
                     case IF:
                         if (stack.length < 1) return Fault.invalid;
                         auto da = stack.pop();
@@ -315,6 +333,10 @@ struct Story {
                     case ECHO:
                         if (stack.length) println(stack[$ - 1]);
                         else println();
+                        break;
+                    case ECHON:
+                        if (stack.length) print(stack[$ - 1], " ");
+                        else print(" ");
                         break;
                     case LEAK:
                         print("Stack: [");
@@ -438,8 +460,32 @@ struct Story {
                             }
                         }
                         break;
+                    case DROPN:
+                        variables.clear();
+                        break;
                     case INC:
                     case DEC:
+                        if (stack.length < 1) return Fault.invalid;
+                        auto da = stack.pop();
+                        if (!da.isType!StoryWord) return Fault.invalid;
+                        auto a = da.get!StoryWord();
+                        auto isNotThere = true;
+                        foreach (ref variable; variables) {
+                            if (a == variable.name) {
+                                if (variable.value.isType!StoryNumber) {
+                                    variable.value.get!StoryNumber() += (op == INC ? 1 : -1);
+                                    stack.append(variable.value);
+                                } else {
+                                    return Fault.invalid;
+                                }
+                                isNotThere = false;
+                                break;
+                            }
+                        }
+                        if (isNotThere) return Fault.invalid;
+                        break;
+                    case INCN:
+                    case DECN:
                         if (stack.length < 2) return Fault.invalid;
                         auto db = stack.pop();
                         auto da = stack.pop();
@@ -450,7 +496,7 @@ struct Story {
                         foreach (ref variable; variables) {
                             if (b == variable.name) {
                                 if (variable.value.isType!StoryNumber) {
-                                    variable.value.get!StoryNumber() += a * (op == INC ? 1 : -1);
+                                    variable.value.get!StoryNumber() += a * (op == INCN ? 1 : -1);
                                     stack.append(variable.value);
                                 } else {
                                     return Fault.invalid;
@@ -484,13 +530,30 @@ struct Story {
                     case MENU:
                         stack.append(StoryValue(previousMenuResult));
                         break;
+                    case LOOP:
+                        auto target = nextLabelIndex - 1;
+                        if (target < 0 || target >= labels.length || labels.length == 0) {
+                            lineIndex = lineCount;
+                            nextLabelIndex = 0;
+                        } else {
+                            lineIndex = labels[target].value.get!StoryNumber();
+                            nextLabelIndex = cast(StoryNumber) ((target + 1) % (labels.length + 1));
+                        }
+                        break;
                     case SKIP:
                         if (stack.length < 1) return Fault.invalid;
                         auto da = stack.pop();
                         if (!da.isType!StoryNumber) return Fault.invalid;
                         auto a = da.get!StoryNumber();
-                        lineIndex = labels[nextLabelIndex + a - 1].value.get!StoryNumber();
-                        nextLabelIndex = (nextLabelIndex + a) % (labels.length);
+                        if (a == 0) break;
+                        auto target = nextLabelIndex + (a > 0 ? a - 1 : a);
+                        if (target < 0 || target >= labels.length || labels.length == 0) {
+                            lineIndex = lineCount;
+                            nextLabelIndex = 0;
+                        } else {
+                            lineIndex = labels[target].value.get!StoryNumber();
+                            nextLabelIndex = cast(StoryNumber) ((target + 1) % (labels.length + 1));
+                        }
                         break;
                     case JUMP:
                         // TODO: Write a find function like a normal person.
@@ -503,7 +566,7 @@ struct Story {
                         foreach (i, ref label; labels) {
                             if (a == label.name) {
                                 lineIndex = label.value.get!StoryNumber();
-                                nextLabelIndex = (i + 1) % (labels.length);
+                                nextLabelIndex = cast(StoryNumber) ((i + 1) % (labels.length + 1));
                                 isNotThere = false;
                                 break;
                             }
@@ -539,7 +602,7 @@ struct Story {
                 auto fault = execute(line[1 .. $].trimStart());
                 if (fault) return fault;
             } else if (line[0] == StoryLine.label) {
-                nextLabelIndex = (nextLabelIndex + 1) % (labels.length);
+                nextLabelIndex = cast(StoryNumber) ((nextLabelIndex + 1) % (labels.length + 1));
             }
             lineIndex = (lineIndex + 1) % (lineCount + 1);
         }

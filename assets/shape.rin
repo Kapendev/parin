@@ -1,0 +1,59 @@
+## A script that draws a shape on the terminal.
+
+# Create the constants.
+$ 8 row_count SET
+$ 8 col_count SET
+$ row_count GET col_count GET * count SET
+$ 0 on SET
+$ _ off SET
+
+# Create the board.
+$ i INIT
+*
+$ off GET i GET x CAT SET
+$ count GET i INC < IF LOOP THEN
+
+# Add the shape on the board.
+$ on GET 1 col_count GET 1 * + x CAT SET
+$ on GET 2 col_count GET 1 * + x CAT SET
+$ on GET 5 col_count GET 1 * + x CAT SET
+$ on GET 6 col_count GET 1 * + x CAT SET
+
+$ 0 i SET
+*
+$ on GET i GET col_count GET 2 * + x CAT SET
+$ 7 0 i INC RANGE IF LOOP THEN
+
+$ 0 i SET
+*
+$ on GET i GET col_count GET 3 * + x CAT SET
+$ 7 0 i INC RANGE IF LOOP THEN
+
+$ 0 i SET
+*
+$ on GET i GET col_count GET 4 * + x CAT SET
+$ 7 0 i INC RANGE IF LOOP THEN
+
+$ 1 i SET
+*
+$ on GET i GET col_count GET 5 * + x CAT SET
+$ 6 1 i INC RANGE IF LOOP THEN
+
+$ 2 i SET
+*
+$ on GET i GET col_count GET 6 * + x CAT SET
+$ 5 2 i INC RANGE IF LOOP THEN
+
+$ 3 i SET
+*
+$ on GET i GET col_count GET 7 * + x CAT SET
+$ 4 3 i INC RANGE IF LOOP THEN
+
+## Draw the board.
+$ i INIT
+*
+$ i GET x CAT item SET
+$ col_count GET i GET % 1 col_count GET - = is_last SET
+$ item GET GET is_last GET IF ECHO ELSE ECHON THEN
+$ off GET i GET x CAT SET
+$ count GET i INC < IF LOOP THEN
