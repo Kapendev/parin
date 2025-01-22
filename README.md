@@ -22,7 +22,7 @@ mixin runGame!(ready, update, finish);
 
 ## Features
 
-* Immediate Mode UI Library: Build UIs quickly.
+* Immediate Mode UI: Build UIs quickly.
 * Dialogue System: Create interactive stories using a simple stack-oriented scripting language.
 * Sprite Animation Support: Manage animations for characters and objects.
 * Tile Map Support: Create and draw tile-based maps.

@@ -1,62 +1,60 @@
 ## A script that draws a shape on the terminal.
 
 # Create the constants.
-$ 8 row_count SET
-$ 8 col_count SET
-$ row_count GET col_count GET * count SET
-$ 0 on SET
-$ _ off SET
+$ row_count 8 SET
+$ col_count 8 SET
+$ on 0 SET
+$ off _ SET
+$ count row_count col_count GETN * SET
 
 # Create the board.
 $ i INIT
 *
-$ off GET i GET x CAT SET
-$ count GET i INC < IF LOOP THEN
+$ x i GET CAT off GET SET
+$ i INC count GET < IF LOOP THEN
 
 # Add the shape on the board.
-$ on GET 1 col_count GET 1 * + x CAT SET
-$ on GET 2 col_count GET 1 * + x CAT SET
-$ on GET 5 col_count GET 1 * + x CAT SET
-$ on GET 6 col_count GET 1 * + x CAT SET
+$ x 1 col_count GET 1 * + CAT on GET SET
+$ x 2 col_count GET 1 * + CAT on GET SET
+$ x 5 col_count GET 1 * + CAT on GET SET
+$ x 6 col_count GET 1 * + CAT on GET SET
 
-$ 0 i SET
+$ i 0 SET
 *
-$ on GET i GET col_count GET 2 * + x CAT SET
-$ 7 0 i INC RANGE IF LOOP THEN
+$ x i col_count GETN 2 * + CAT on GET SET
+$ i INC 0 7 RANGE IF LOOP THEN
 
-$ 0 i SET
+$ i 0 SET
 *
-$ on GET i GET col_count GET 3 * + x CAT SET
-$ 7 0 i INC RANGE IF LOOP THEN
+$ x i col_count GETN 3 * + CAT on GET SET
+$ i INC 0 7 RANGE IF LOOP THEN
 
-$ 0 i SET
+$ i 0 SET
 *
-$ on GET i GET col_count GET 4 * + x CAT SET
-$ 7 0 i INC RANGE IF LOOP THEN
+$ x i col_count GETN 4 * + CAT on GET SET
+$ i INC 0 7 RANGE IF LOOP THEN
 
-$ 1 i SET
+$ i 1 SET
 *
-$ on GET i GET col_count GET 5 * + x CAT SET
-$ 6 1 i INC RANGE IF LOOP THEN
+$ x i col_count GETN 5 * + CAT on GET SET
+$ i INC 1 6 RANGE IF LOOP THEN
 
-$ 2 i SET
+$ i 2 SET
 *
-$ on GET i GET col_count GET 6 * + x CAT SET
-$ 5 2 i INC RANGE IF LOOP THEN
+$ x i col_count GETN 6 * + CAT on GET SET
+$ i INC 2 5 RANGE IF LOOP THEN
 
-$ 3 i SET
+$ i 3 SET
 *
-$ on GET i GET col_count GET 7 * + x CAT SET
-$ 4 3 i INC RANGE IF LOOP THEN
+$ x i col_count GETN 7 * + CAT on GET SET
+$ i INC 3 4 RANGE IF LOOP THEN
 
 # Draw the board.
 $ i INIT
 *
-$ i GET x CAT item SET
-$ col_count GET i GET % 1 col_count GET - = is_last SET
-$ item GET GET is_last GET IF ECHO ELSE ECHON THEN
-$ off GET i GET x CAT SET
-$ count GET i INC < IF LOOP THEN
+$ is_last i col_count GETN % col_count GET 1 - = SET
+$ x i GET CAT is_last GETN IF ECHO ELSE ECHON THEN
+$ i INC count GET < IF LOOP THEN
 
 *
-$ DEBUG IF ECHO
+$ LINEAR IF ECHO

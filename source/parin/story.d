@@ -40,21 +40,27 @@ enum StoryOp : ubyte {
     CLEAR,
     SWAP,
     COPY,
+    COPYN,
     RANGE,
     IF,
     ELSE,
     THEN,
     CAT,
+    SAME,
     WORD,
-    NUM,
+    NUMBER,
+    LINE,
     DEBUG,
+    LINEAR,
     END,
     ECHO,
     ECHON,
+    ECHOC,
     LEAK,
-    LOOK,
+    LEAKN,
     HERE,
     GET,
+    GETN,
     SET,
     INIT,
     DROP,
@@ -128,6 +134,7 @@ struct Story {
     StoryNumber faultPrepareIndex;
     StoryOp faultOp;
     bool debugMode;
+    bool linearMode;
 
     IStr opIndex(Sz i) {
         if (i >= lineCount) {
@@ -257,21 +264,21 @@ struct Story {
                         if (stack.length < 2) return throwOpFault(op);
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!db.isType!StoryNumber || !da.isType!StoryNumber) return throwOpFault(op);
+                        if (!da.isType!StoryNumber || !db.isType!StoryNumber) return throwOpFault(op);
                         auto a = da.get!StoryNumber;
                         auto b = db.get!StoryNumber;
                         auto c = StoryNumber.init;
                         switch (op) {
-                            case ADD: c = b + a; break;
-                            case SUB: c = b - a; break;
-                            case MUL: c = b * a; break;
-                            case DIV: c = b / a; break;
-                            case MOD: c = b % a; break;
-                            case AND: c = b && a; break;
-                            case OR: c = b || a; break;
-                            case LESS: c = b < a; break;
-                            case GREATER: c = b > a; break;
-                            case EQUAL: c = b == a; break;
+                            case ADD: c = a + b; break;
+                            case SUB: c = a - b; break;
+                            case MUL: c = a * b; break;
+                            case DIV: c = (b != 0) ? (a / b) : 0; break;
+                            case MOD: c = (b != 0) ? (a % b) : 0; break;
+                            case AND: c = a && b; break;
+                            case OR: c = a || b; break;
+                            case LESS: c = a < b; break;
+                            case GREATER: c = a > b; break;
+                            case EQUAL: c = a == b; break;
                             default: assert(0, "TODO: {}".format(op));
                         }
                         stack.append(StoryValue(c));
@@ -299,16 +306,21 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op);
                         stack.append(stack[$ - 1]);
                         break;
+                    case COPYN:
+                        if (stack.length < 2) return throwOpFault(op);
+                        stack.append(stack[$ - 2]);
+                        stack.append(stack[$ - 2]);
+                        break;
                     case RANGE:
                         if (stack.length < 3) return throwOpFault(op);
                         auto dc = stack.pop();
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!dc.isType!StoryNumber || !db.isType!StoryNumber || !da.isType!StoryNumber) return throwOpFault(op);
+                        if (!da.isType!StoryNumber || !db.isType!StoryNumber || !dc.isType!StoryNumber) return throwOpFault(op);
                         auto a = da.get!StoryNumber();
                         auto b = db.get!StoryNumber();
                         auto c = dc.get!StoryNumber();
-                        stack.append(StoryValue(c >= b && c <= a));
+                        stack.append(StoryValue(a >= b && a <= c));
                         break;
                     case IF:
                         if (stack.length < 1) return throwOpFault(op);
@@ -325,38 +337,54 @@ struct Story {
                         if (stack.length < 2) return throwOpFault(op);
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!db.isType!StoryWord) return throwOpFault(op);
+                        if (!da.isType!StoryWord) return throwOpFault(op);
                         StoryWord word;
-                        auto data = concat(concat(db.toStr()), da.toStr());
+                        auto data = concat(concat(da.toStr()), db.toStr());
                         if (data.length > word.length) return Fault.overflow;
                         auto tempWordRef = word[];
                         tempWordRef.copy(data);
                         stack.append(StoryValue(word));
+                        break;
+                    case SAME:
+                        if (stack.length < 2) return throwOpFault(op);
+                        auto db = stack.pop();
+                        auto da = stack.pop();
+                        auto a = da.get!StoryWord;
+                        auto b = db.get!StoryWord;
+                        stack.append(StoryValue(a == b));
                         break;
                     case WORD:
                         if (stack.length < 1) return throwOpFault(op);
                         auto da = stack.pop();
                         stack.append(StoryValue(da.isType!StoryWord));
                         break;
-                    case NUM:
+                    case NUMBER:
                         if (stack.length < 1) return throwOpFault(op);
                         auto da = stack.pop();
                         stack.append(StoryValue(da.isType!StoryNumber));
                         break;
+                    case LINE:
+                        stack.append(StoryValue(lineIndex + 1));
+                        break;
                     case DEBUG:
                         stack.append(StoryValue(debugMode));
+                        break;
+                    case LINEAR:
+                        stack.append(StoryValue(linearMode));
                         break;
                     case END:
                         return Fault.none;
                     case ECHO:
-                        if (stack.length) println(stack[$ - 1]);
-                        else println();
-                        break;
                     case ECHON:
-                        if (stack.length) print(stack[$ - 1], " ");
-                        else print(" ");
+                    case ECHOC:
+                        auto space = "\n";
+                        if (op == ECHON) space = " ";
+                        if (op == ECHOC) space = ",";
+                        if (stack.length) print(stack.pop(), space);
+                        else print(space);
                         break;
                     case LEAK:
+                    case LEAKN:
                         print("Stack: [");
                         foreach (i, item; stack) {
                             auto space = " ";
@@ -368,41 +396,18 @@ struct Story {
                             print(item, separator, space);
                         }
                         println("]");
-                        print("Variables: [");
-                        foreach (i, item; variables) {
-                            auto space = " ";
-                            auto separator = ",";
-                            if (i == variables.length - 1) {
-                                space = "";
-                                separator = "";
-                            }
-                            print(StoryValue(item.name), ": ", item.value, separator, space);
-                        }
-                        println("]");
-                        break;
-                    case LOOK:
-                        if (stack.length) {
-                            auto da = stack[$ - 1];
-                            if (!da.isType!StoryWord) {
-                                println();
-                                break;
-                            }
-                            auto a = da.get!StoryWord();
-                            auto isNotThere = true;
-                            foreach (variable; variables) {
-                                if (a == variable.name) {
-                                    isNotThere = false;
-                                    println(variable.value);
-                                    break;
+                        if (op == LEAKN) {
+                            print("Variables: [");
+                            foreach (i, item; variables) {
+                                auto space = " ";
+                                auto separator = ",";
+                                if (i == variables.length - 1) {
+                                    space = "";
+                                    separator = "";
                                 }
+                                print(StoryValue(item.name), ": ", item.value, separator, space);
                             }
-                            if (isNotThere) {
-                                println();
-                                break;
-                            }
-                        } else {
-                            println();
-                            break;
+                            println("]");
                         }
                         break;
                     case HERE:
@@ -434,21 +439,47 @@ struct Story {
                         }
                         if (isNotThere) return throwOpFault(op);
                         break;
-                    case SET:
+                    case GETN:
                         if (stack.length < 2) return throwOpFault(op);
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!db.isType!StoryWord) return throwOpFault(op);
+                        if (!da.isType!StoryWord || !db.isType!StoryWord) return throwOpFault(op);
+                        auto a = da.get!StoryWord();
                         auto b = db.get!StoryWord();
                         auto isNotThere = true;
-                        foreach (ref variable; variables) {
-                            if (b == variable.name) {
-                                variable.value = da;
+                        foreach (variable; variables) {
+                            if (a == variable.name) {
+                                stack.append(variable.value);
                                 isNotThere = false;
                                 break;
                             }
                         }
-                        if (isNotThere) variables.append(StoryVariable(b, da));
+                        if (isNotThere) return throwOpFault(op);
+                        isNotThere = true;
+                        foreach (variable; variables) {
+                            if (b == variable.name) {
+                                stack.append(variable.value);
+                                isNotThere = false;
+                                break;
+                            }
+                        }
+                        if (isNotThere) return throwOpFault(op);
+                        break;
+                    case SET:
+                        if (stack.length < 2) return throwOpFault(op);
+                        auto db = stack.pop();
+                        auto da = stack.pop();
+                        if (!da.isType!StoryWord) return throwOpFault(op);
+                        auto a = da.get!StoryWord();
+                        auto isNotThere = true;
+                        foreach (ref variable; variables) {
+                            if (a == variable.name) {
+                                variable.value = db;
+                                isNotThere = false;
+                                break;
+                            }
+                        }
+                        if (isNotThere) variables.append(StoryVariable(a, db));
                         break;
                     case INIT:
                         if (stack.length < 1) return throwOpFault(op);
@@ -507,14 +538,14 @@ struct Story {
                         if (stack.length < 2) return throwOpFault(op);
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        if (!db.isType!StoryWord || !da.isType!StoryNumber) return throwOpFault(op);
-                        auto b = db.get!StoryWord();
-                        auto a = da.get!StoryNumber();
+                        if (!da.isType!StoryWord || !db.isType!StoryNumber) return throwOpFault(op);
+                        auto a = da.get!StoryWord();
+                        auto b = db.get!StoryNumber();
                         auto isNotThere = true;
                         foreach (ref variable; variables) {
-                            if (b == variable.name) {
+                            if (a == variable.name) {
                                 if (variable.value.isType!StoryNumber) {
-                                    variable.value.get!StoryNumber() += a * (op == INCN ? 1 : -1);
+                                    variable.value.get!StoryNumber() += b * (op == INCN ? 1 : -1);
                                     stack.append(variable.value);
                                 } else {
                                     return throwOpFault(op);
@@ -549,7 +580,7 @@ struct Story {
                         stack.append(StoryValue(previousMenuResult));
                         break;
                     case LOOP:
-                        if (debugMode) break;
+                        if (linearMode) break;
                         auto target = nextLabelIndex - 1;
                         if (target < 0 || target >= labels.length || labels.length == 0) {
                             lineIndex = lineCount;
@@ -565,7 +596,7 @@ struct Story {
                         if (!da.isType!StoryNumber) return throwOpFault(op);
                         auto a = da.get!StoryNumber();
                         if (a == 0) break;
-                        if (debugMode) break;
+                        if (linearMode) break;
                         auto target = nextLabelIndex + (a > 0 ? a - 1 : a);
                         if (target < 0 || target >= labels.length || labels.length == 0) {
                             lineIndex = lineCount;
@@ -586,7 +617,7 @@ struct Story {
                         foreach (i, ref label; labels) {
                             if (a == label.name) {
                                 isNotThere = false;
-                                if (debugMode) break;
+                                if (linearMode) break;
                                 lineIndex = label.value.get!StoryNumber();
                                 nextLabelIndex = cast(StoryNumber) ((i + 1) % (labels.length + 1));
                                 break;

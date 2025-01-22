@@ -7,7 +7,7 @@ IStr path;
 Story story;
 
 void printError(Sz index, IStr text) {
-    printfln("{}({}): {}", path, index, text);
+    printfln("\n{}({}): {}", path, index, text);
 }
 
 Fault prepareStory() {
@@ -37,11 +37,12 @@ Fault updateStory() {
 int main(string[] args) {
     if (args.length == 1) {
         println("Usage: rin [options] script");
-        println("Options: -debug");
+        println("Options: -debug -linear");
         return 0;
     }
     foreach (arg; args[1 .. $ - 1]) {
         if (arg == "-debug") story.debugMode = true;
+        if (arg == "-linear") story.linearMode = true;
     }
     path = args[$ - 1];
     if (auto fault = readTextIntoBuffer(path, story.script)) {
