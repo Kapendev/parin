@@ -1,0 +1,59 @@
+## A script that tests if things work correctly.
+
+# Operator test.
+$ 10 6 + 16 = ASSERT
+$ 10 6 -  4 = ASSERT
+$ 6 10 - -4 = ASSERT
+$ 10 6 * 60 = ASSERT
+$ 10 6 /  1 = ASSERT
+$ 6 10 /  0 = ASSERT
+$ 6  0 /  0 = ASSERT
+$ 10 6 %  4 = ASSERT
+$ 6 10 %  6 = ASSERT
+$ 6  0 %  0 = ASSERT
+$ 0  0 &  0 = ASSERT
+$ 0  1 &  0 = ASSERT
+$ 1  0 &  0 = ASSERT
+$ 1  1 &  1 = ASSERT
+$ 0  0 |  0 = ASSERT
+$ 0  1 |  1 = ASSERT
+$ 1  0 |  1 = ASSERT
+$ 1  1 |  1 = ASSERT
+$ 6 10 <  1 = ASSERT
+$ 6 10 >  0 = ASSERT
+$ 6 10 =  0 = ASSERT
+$ 6 10 !  0 = ASSERT
+$ 6  0 !  1 = ASSERT
+$ 6  0 ~  6 = ASSERT
+$ 6 10 SWAP 6 = ASSERT
+$ 6 10 COPY 10 = ASSERT
+$ 6 10 COPYN 10 = IF 6 = IF END THEN THEN ASSERT
+$ 5 6 10 RANGE NOT ASSERT
+$ 6 6 10 RANGE ASSERT
+$ 10 6 10 RANGE ASSERT
+$ 11 6 10 RANGE NOT ASSERT
+$ x 1 CAT x1 SAME ASSERT
+$ x x CAT xx SAME ASSERT
+$ 0 WORD NOT ASSERT
+$ x WORD ASSERT
+$ 0 NUMBER ASSERT
+$ x NUMBER NOT ASSERT
+$ _x HERE NOT ASSERT
+$ _x INIT _x HERE ASSERT
+$ _x GET 0 = ASSERT
+$ _x _x GETN 0 = IF 0 = IF END THEN THEN ASSERT
+$ _x 6 SET _x GET 6 = ASSERT
+$ _x DROP _x HERE NOT ASSERT
+$ _x INIT _x INC 1 = _x INIT ASSERT
+$ _x INIT _x DEC -1 = _x INIT ASSERT
+$ _x 2 INCN 2 = _x INIT ASSERT
+$ _x 2 DECN -2 = _x INIT ASSERT
+$ _x TOG 1 = _x INIT ASSERT
+
+# Loop test.
+$ _x INIT
+*
+$ _x INC 10 < IF LOOP THEN
+$ _x GET 10 = _x INIT ASSERT
+
+| Done!
