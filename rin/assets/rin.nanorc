@@ -7,7 +7,7 @@ comment "#"
 # Operators
 color brightblue "\<(ADD|SUB|MUL|DIV|MOD|AND|OR|LESS|GREATER|EQUAL|NOT|POP|CLEAR|SWAP|COPY|COPYN|RANGE|IF|ELSE|THEN|CAT|SAME|WORD|NUMBER|LINE|DEBUG|LINEAR|ASSERT|END|ECHO|ECHON|LEAK|LEAKN|HERE|GET|GETN|SET|INIT|DROP|DROPN|INC|DEC|INCN|DECN|TOG|MENU|LOOP|SKIP|JUMP|CALL)\>"
 # Lines
-color cyan "^[ \t]*\*" "^[ \t]*\|" "^[ \t]*\." "^[ \t]*\^" "^[ \t]*\$"
+color cyan "^[ \t]*\*" "^[ \t]*\|" "^[ \t]*\." "^[ \t]*\^" "^[ \t]*\$" "^[ \t]*\!"
 # Comments
 color green "^[ \t]*#.*"
 # Trailing Whitespace

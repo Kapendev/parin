@@ -56,8 +56,8 @@ int rinMain(string[] args) {
     rinState.scriptPath = args[$ - 1];
     if (auto fault = readTextIntoBuffer(rinState.scriptPath, rinState.story.script)) {
         switch (fault) {
-            case Fault.cantOpen: println("Can't find file `{}`.".format(rinState.scriptPath)); break;
-            case Fault.cantRead: println("Can't read file `{}`.".format(rinState.scriptPath)); break;
+            case Fault.cantOpen: println("Can't open `{}`.".format(rinState.scriptPath)); break;
+            case Fault.cantRead: println("Can't read `{}`.".format(rinState.scriptPath)); break;
             default: break;
         }
         return 1;

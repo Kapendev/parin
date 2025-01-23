@@ -7,7 +7,7 @@
 	"license": "MIT",
 	"name": "rin",
 	"dependencies": {
-		"joka": "~main",
+		"joka": "*",
 		"parin": {"path": ".."}
 	},
 }

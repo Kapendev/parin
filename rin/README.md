@@ -1,7 +1,7 @@
 # Rin
 
 A script interpreter for Rin.
-It helps with error checking and debugging, making it easier to work with Parin scripts.
+It helps with error checking and debugging, making it easier to work with Rin scripts.
 
 ## Usage
 

@@ -7,18 +7,19 @@
 // ---
 
 // TODO: Update all the doc comments here.
-// TODO: Think about lineIndex and nextLineIndex updating.
 
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
 
-import joka.types;
-import joka.containers;
 import joka.ascii;
+import joka.containers;
 import joka.io;
+import joka.types;
 import joka.unions;
 
 @safe @nogc nothrow:
+
+enum defaultStoryFixedListCapacity = 16;
 
 enum StoryLineKind : ubyte {
     empty = ' ',
@@ -28,6 +29,7 @@ enum StoryLineKind : ubyte {
     pause = '.',
     menu = '^',
     expression = '$',
+    procedure = '!',
 }
 
 enum StoryOp : ubyte {
@@ -80,7 +82,6 @@ enum StoryOp : ubyte {
     LOOP,
     SKIP,
     JUMP,
-    CALL,
 }
 
 alias StoryWord = char[24];
@@ -101,22 +102,12 @@ struct StoryValue {
     }
 
     IStr toStr() {
-        static char[64] buffer = void;
-
-        auto result = buffer[];
         if (data.isType!StoryNumber) {
-            result.copyStr(data.get!StoryNumber().toStr());
+            return format("{}", data.get!StoryNumber());
         } else {
             auto temp = data.get!(StoryWord)()[];
-            foreach (i, c; temp) {
-                if (temp[i] == char.init) {
-                    temp = temp[0 .. i];
-                    break;
-                }
-            }
-            result.copyStr(temp);
+            return format("{}", temp[0 .. temp.findStart(char.init)]);
         }
-        return result;
     }
 }
 
@@ -134,7 +125,6 @@ struct Story {
     LStr script;
     List!StoryStartEndPair pairs;
     List!StoryVariable labels;
-    List!StoryValue stack;
     List!StoryVariable variables;
     StoryNumber lineIndex;
     StoryNumber nextLabelIndex;
@@ -155,38 +145,55 @@ struct Story {
         return cast(StoryNumber) pairs.length;
     }
 
+    bool hasKind(StoryLineKind kind) {
+        if (lineIndex >= lineCount) return false;
+        auto line = opIndex(lineIndex);
+        return line.length && line[0] == kind;
+    }
+
     bool hasEnd() {
         return lineIndex == lineCount;
     }
 
     bool hasPause() {
         if (hasEnd) return true;
-        if (lineIndex >= lineCount) return false;
-        auto line = opIndex(lineIndex);
-        return line.length && line[0] == StoryLineKind.pause;
+        return hasKind(StoryLineKind.pause);
+    }
+
+    bool hasProcedure() {
+        return hasKind(StoryLineKind.procedure);
     }
 
     bool hasMenu() {
-        if (lineIndex >= lineCount) return false;
-        auto line = opIndex(lineIndex);
-        return line.length && line[0] == StoryLineKind.menu;
+        return hasKind(StoryLineKind.menu);
     }
 
     bool hasText() {
-        if (lineIndex >= lineCount) return false;
-        auto line = opIndex(lineIndex);
-        return line.length && line[0] == StoryLineKind.text;
+        return hasKind(StoryLineKind.text);
+    }
+
+    IStr[] procedure() {
+        static FixedList!(IStr, defaultStoryFixedListCapacity) buffer;
+
+        buffer.clear();
+        if (!hasProcedure) return [];
+        auto view = opIndex(lineIndex)[1 .. $].trimStart();
+        while (view.length) {
+            buffer.append(view.skipValue(' ').trimEnd());
+            view = view.trimStart();
+        }
+        return buffer[];
     }
 
     IStr[] menu() {
-        static FixedList!(IStr, 32) buffer;
+        static FixedList!(IStr, defaultStoryFixedListCapacity) buffer;
 
         buffer.clear();
         if (!hasMenu) return [];
         auto view = opIndex(lineIndex)[1 .. $].trimStart();
         while (view.length) {
-            if (buffer.length == buffer.capacity) return buffer[];
-            buffer.append(view.skipValue(StoryLineKind.menu).trim());
+            buffer.append(view.skipValue(StoryLineKind.menu).trimEnd());
+            view = view.trimStart();
         }
         return buffer[];
     }
@@ -215,21 +222,29 @@ struct Story {
         return -1;
     }
 
+    void setNextLabelIndex(StoryNumber value) {
+        nextLabelIndex = cast(StoryNumber) (value % (labels.length + 1));
+    }
+
+    void setLineIndex(StoryNumber value) {
+        lineIndex = (value) % (lineCount + 1);
+    }
+
     void resetLineIndex() {
         lineIndex = lineCount;
         nextLabelIndex = 0;
     }
 
-    void clear() {
-        previousMenuResult = 0;
-        pairs.clear();
-        labels.clear();
-        variables.clear();
+    void jumpLineIndex(StoryNumber labelIndex) {
+        lineIndex = labels[labelIndex].value.get!StoryNumber();
+        setNextLabelIndex(labelIndex + 1);
     }
 
     Fault prepare() {
+        previousMenuResult = 0;
         resetLineIndex();
-        clear();
+        pairs.clear();
+        labels.clear();
         if (script.isEmpty) return Fault.none;
         auto startIndex = StoryNumber.init;
         auto prepareIndex = StoryNumber.init;
@@ -242,7 +257,8 @@ struct Story {
                 pair.b -= line.length - line.trimEnd().length;
                 auto kind = toStoryLineKind(trimmedLine.length ? script[pair.a] : StoryLineKind.empty);
                 if (kind.isNone) {
-                    clear();
+                    pairs.clear();
+                    labels.clear();
                     faultPrepareIndex = prepareIndex;
                     return kind.fault;
                 }
@@ -251,7 +267,8 @@ struct Story {
                     auto word = StoryWord.init;
                     auto wordRef = word[];
                     if (auto fault = wordRef.copyChars(name)) {
-                        clear();
+                        pairs.clear();
+                        labels.clear();
                         faultPrepareIndex = prepareIndex;
                         return fault;
                     }
@@ -273,6 +290,8 @@ struct Story {
     }
 
     Fault execute(IStr expression) {
+        static FixedList!(StoryValue, defaultStoryFixedListCapacity) stack;
+
         stack.clear();
         auto ifCounter = 0;
         while (true) with (StoryOp) {
@@ -378,7 +397,7 @@ struct Story {
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op);
                         StoryWord word;
-                        auto data = concat(concat(da.toStr()), db.toStr());
+                        auto data = concat(da.toStr(), db.toStr());
                         auto tempWordRef = word[];
                         if (auto fault = tempWordRef.copyChars(data)) return fault;
                         stack.append(StoryValue(word));
@@ -591,8 +610,7 @@ struct Story {
                         if (target < 0 || target >= labels.length || labels.length == 0) {
                             resetLineIndex();
                         } else {
-                            lineIndex = labels[target].value.get!StoryNumber();
-                            nextLabelIndex = cast(StoryNumber) ((target + 1) % (labels.length + 1));
+                            jumpLineIndex(target);
                         }
                         break;
                     case SKIP:
@@ -606,8 +624,7 @@ struct Story {
                         if (target < 0 || target >= labels.length || labels.length == 0) {
                             resetLineIndex();
                         } else {
-                            lineIndex = labels[target].value.get!StoryNumber();
-                            nextLabelIndex = cast(StoryNumber) ((target + 1) % (labels.length + 1));
+                            jumpLineIndex(target);
                         }
                         break;
                     case JUMP:
@@ -618,15 +635,11 @@ struct Story {
                         auto aIndex = findLabel(a);
                         if (aIndex != -1) {
                             if (linearMode) break;
-                            lineIndex = labels[aIndex].value.get!StoryNumber();
-                            nextLabelIndex = cast(StoryNumber) ((aIndex + 1) % (labels.length + 1));
+                            jumpLineIndex(aIndex);
                         } else {
                             return throwOpFault(op);
                         }
                         break;
-                    case CALL:
-                        println("TODO: ", op);
-                        return Fault.none;
                 }
             } else if (token.isMaybeStoryNumber) {
                 auto number = token.toSigned();
@@ -646,18 +659,18 @@ struct Story {
 
     Fault update() {
         if (lineCount == 0) return Fault.none;
-        lineIndex = (lineIndex + 1) % (lineCount + 1);
-        while (lineIndex < lineCount && !hasPause && !hasMenu && !hasText) {
+        setLineIndex(lineIndex + 1);
+        while (lineIndex < lineCount && !hasPause && !hasProcedure && !hasMenu && !hasText) {
             auto line = opIndex(lineIndex);
             if (line.length) {
                 if (line[0] == StoryLineKind.expression) {
                     auto fault = execute(line[1 .. $].trimStart());
                     if (fault) return fault;
                 } else if (line[0] == StoryLineKind.label) {
-                    nextLabelIndex = cast(StoryNumber) ((nextLabelIndex + 1) % (labels.length + 1));
+                    setNextLabelIndex(nextLabelIndex + 1);
                 }
             }
-            lineIndex = (lineIndex + 1) % (lineCount + 1);
+            setLineIndex(lineIndex + 1);
         }
         if (hasPause && lineIndex == lineCount) resetLineIndex();
         return Fault.none;
@@ -666,6 +679,20 @@ struct Story {
     Fault select(Sz i) {
         previousMenuResult = cast(StoryNumber) (i + 1);
         return update();
+    }
+
+    void reserve(Sz capacity) {
+        script.reserve(capacity);
+        pairs.reserve(capacity);
+        labels.reserve(capacity);
+        variables.reserve(capacity);
+    }
+
+    void free() {
+        script.free();
+        pairs.free();
+        labels.free();
+        variables.free();
     }
 }
 
@@ -706,6 +733,7 @@ Result!StoryLineKind toStoryLineKind(char value) {
         case '.': return Result!StoryLineKind(pause);
         case '^': return Result!StoryLineKind(menu);
         case '$': return Result!StoryLineKind(expression);
+        case '!': return Result!StoryLineKind(procedure);
         default: return Result!StoryLineKind(Fault.cantParse);
     }
 }
