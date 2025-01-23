@@ -23,7 +23,7 @@ mixin runGame!(ready, update, finish);
 ## Features
 
 * Immediate Mode UI: Build UIs quickly.
-* Dialogue System: Create interactive stories using a simple stack-oriented scripting language.
+* Dialogue System: Create interactive stories using a stack-oriented scripting language.
 * Sprite Animation Support: Manage animations for characters and objects.
 * Tile Map Support: Create and draw tile-based maps.
 
@@ -38,7 +38,7 @@ A list of projects made with Parin is available in the [PROJECTS.md](PROJECTS.md
 
 ## Installation
 
-This guide shows how to install Parin and its dependencies using DUB.
+This guide shows how to install Parin and its dependencies using [DUB](https://dub.pm/).
 While DUB simplifies the process, Parin itself doesn't require DUB.
 
 Parin has the following dependencies:

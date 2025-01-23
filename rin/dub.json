@@ -3,7 +3,7 @@
 		"Alexandros F. G. Kapretsos"
 	],
 	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
-	"description": "A Parin script interpreter.",
+	"description": "A script interpreter for Rin.",
 	"license": "MIT",
 	"name": "rin",
 	"dependencies": {

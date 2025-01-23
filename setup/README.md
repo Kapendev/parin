@@ -1,7 +1,7 @@
 # Setup
 
 A helper script that automates the project setup.
-It creates some files in the current folder and works both with and without DUB.
+It creates files in the current folder and supports both DUB and non-DUB projects.
 
 ## Usage
 

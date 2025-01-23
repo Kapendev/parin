@@ -1,8 +1,7 @@
 # Web
 
 A helper script to assist with the web export process.
-Download the latest version of Emscripten before using this script.
-It works both with and without DUB.
+It supports both DUB and non-DUB projects and requires Emscripten.
 
 ## Usage
 

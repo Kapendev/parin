@@ -1,16 +1,14 @@
 /// This example shows how to use the Parin dialogue system.
 
 import parin;
-import parin.story;
 
 auto story = Story();
 auto script = "
     # A comment.
     * label
     | Hello world!
-    | This is a text line.
-    | The next line will be a menu line.
-    ^ Option number 1 ^ Option number 2 ^ Go to end
+    | This is a text line and the next is a menu line.
+    ^ Option 1 ^ Option 2 ^ Option 3
     $ MENU SKIP
 
     *
@@ -22,11 +20,9 @@ auto script = "
     $ end JUMP
 
     * end
-    | Expression lines are used to go to labels.
     | JUMP goes to the label with the given name.
     | SKIP skips ahead N labels.
     | MENU returns the selected option.
-    | That's it. I Hope this helps.
 ";
 
 void ready() {
