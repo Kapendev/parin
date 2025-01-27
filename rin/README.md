@@ -6,7 +6,7 @@ It helps with error checking and debugging, making it easier to work with Rin sc
 ## Usage
 
 * With DUB: `dub run parin:rin`
-* Without DUB: `dmd -run -Ijoka_path -Iparin_path source/app.d`
+* Without DUB: `dmd -Ijoka_path -Iparin_path -i -run source/app.d`
 
 ## Options
 

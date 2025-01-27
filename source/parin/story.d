@@ -137,8 +137,8 @@ struct Story {
     @safe @nogc nothrow:
 
     IStr opIndex(Sz i) {
-        if (i >= lineCount) assert(0, "Index `{}` does not exist.".format(i));
-        return script[pairs[i].a .. pairs[i].b];
+        if (i >= lineCount) assert(0, "Index `[{}]` does not exist.".format(i));
+        return script[pairs[i].a .. pairs[i].b + 1];
     }
 
     StoryNumber lineCount() {
@@ -251,11 +251,16 @@ struct Story {
         foreach (i, c; script) {
             if (c == '\n') {
                 auto pair = StoryStartEndPair(cast(uint) startIndex, cast(uint) i);
-                auto line = script[pair.a .. pair.b];
-                auto trimmedLine = line.trim();
+                auto line = script[pair.a .. pair.b + 1];
                 pair.a += line.length - line.trimStart().length;
-                pair.b -= line.length - line.trimEnd().length;
-                auto kind = toStoryLineKind(trimmedLine.length ? script[pair.a] : StoryLineKind.empty);
+                if (pair.a > pair.b) {
+                    pair.a = pair.b;
+                    line = script[pair.a .. pair.b];
+                } else {
+                    pair.b -= line.length - line.trimEnd().length;
+                    line = script[pair.a .. pair.b + 1];
+                }
+                auto kind = toStoryLineKind(line.length ? script[pair.a] : StoryLineKind.empty);
                 if (kind.isNone) {
                     pairs.clear();
                     labels.clear();
@@ -263,7 +268,7 @@ struct Story {
                     return kind.fault;
                 }
                 if (kind.value == StoryLineKind.label) {
-                    auto name = trimmedLine[1 .. $].trimStart();
+                    auto name = line[1 .. $].trimStart();
                     auto word = StoryWord.init;
                     auto wordRef = word[];
                     if (auto fault = wordRef.copyChars(name)) {
@@ -337,7 +342,7 @@ struct Story {
                             case LESS: c = a < b; break;
                             case GREATER: c = a > b; break;
                             case EQUAL: c = a == b; break;
-                            default: assert(0, "TODO: {}".format(op));
+                            default: assert(0, "WTF!");
                         }
                         stack.append(StoryValue(c));
                         break;
@@ -432,9 +437,9 @@ struct Story {
                     case ASSERT:
                         if (stack.length) {
                             auto da = stack.pop();
-                            if (da.isType!StoryWord || (da.isType!StoryNumber && !da.get!StoryNumber())) return Fault.some;
+                            if (da.isType!StoryWord || (da.isType!StoryNumber && !da.get!StoryNumber())) return Fault.assertion;
                         } else {
-                            return Fault.some;
+                            return Fault.assertion;
                         }
                         break;
                     case END:

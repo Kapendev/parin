@@ -10,6 +10,14 @@ import std.string;
 
 // TODO: Clean it! Well... Not right now, but do it.
 
+version (Windows) {
+    enum emrunName = "emrun.bat";
+    enum emccName = "emcc.bat";
+} else {
+    enum emrunName = "emrun";
+    enum emccName = "emcc";
+}
+
 enum dflags = ["-betterC", "-i", "--release"];              // The compiler flags passed to ldc. Local dependencies can be added here.
 enum output = buildPath(".", "web", "index.html");          // The output file that can be run with emrun.
 
@@ -33,7 +41,7 @@ enum shellFileContent = `<!doctype html>
     <style>
         body { margin: 0px; overflow: hidden; }
         canvas.emscripten { border: 0px none; background-color: black; }
-        
+
         loading {
             position: absolute;
             top: 0;
@@ -186,7 +194,7 @@ int main(string[] args) {
         }
         // Compile project.
         if (isAssetsDirEmpty) {
-            auto emcc = spawnProcess(["emcc", "-o", output, dubLibraryFile, "-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile]).wait();
+            auto emcc = spawnProcess([emccName, "-o", output, dubLibraryFile, "-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile]).wait();
             if (emcc != 0) {
                 // Cleanup.
                 std.file.remove(dubLibraryFile);
@@ -195,7 +203,7 @@ int main(string[] args) {
                 return emcc;
             }
         } else {
-            auto emcc = spawnProcess(["emcc", "-o", output, dubLibraryFile, "-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile, "--preload-file", assetsDir]).wait();
+            auto emcc = spawnProcess([emccName, "-o", output, dubLibraryFile, "-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile, "--preload-file", assetsDir]).wait();
             if (emcc != 0) {
                 // Cleanup.
                 std.file.remove(dubLibraryFile);
@@ -209,7 +217,7 @@ int main(string[] args) {
     } else {
         // Compile project.
         if (isAssetsDirEmpty) {
-            auto emcc = spawnProcess(["emcc", "-o", output] ~ objectFiles ~ ["-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile]).wait();
+            auto emcc = spawnProcess([emccName, "-o", output] ~ objectFiles ~ ["-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile]).wait();
             if (emcc != 0) {
                 // Cleanup.
                 std.file.remove(shellFile);
@@ -217,7 +225,7 @@ int main(string[] args) {
                 return emcc;
             }
         } else {
-            auto emcc = spawnProcess(["emcc", "-o", output] ~ objectFiles ~ ["-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile, "--preload-file", assetsDir]).wait();
+            auto emcc = spawnProcess([emccName, "-o", output] ~ objectFiles ~ ["-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile, "--preload-file", assetsDir]).wait();
             if (emcc != 0) {
                 // Cleanup.
                 std.file.remove(shellFile);
@@ -231,5 +239,5 @@ int main(string[] args) {
     deleteObjectFiles();
 
     // Run the web app.
-    return spawnProcess(["emrun", output]).wait();
+    return spawnProcess([emrunName, output]).wait();
 }

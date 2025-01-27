@@ -32,7 +32,7 @@ Fault updateStory() {
     if (auto fault = rinState.story.update()) {
         auto index = rinState.story.lineIndex + 1;
         switch (fault) with (Fault) {
-            case some: printError(index, "Assertion failed."); break;
+            case assertion: printError(index, "Assertion failed."); break;
             case invalid: printError(index, "Invalid arguments passed to the `{}` operator.".format(rinState.story.faultOp)); break;
             case overflow: printError(index, "A word or number is too long."); break;
             case cantParse: printError(index, "A word, number, or operator contains invalid characters."); break;
