@@ -8,6 +8,7 @@ RinState rinState;
 struct RinState {
     IStr scriptPath;
     Story story;
+    bool executeMode;
 }
 
 void printError(Sz index, IStr text) {
@@ -45,27 +46,55 @@ Fault updateStory() {
 
 int rinMain(string[] args) {
     if (args.length == 1) {
-        println("Usage: rin [options] script");
-        println("Options: -debug -linear");
+        println("Usage:");
+        println(" rin [options] script");
+        println(" rin [options] -execute expression");
+        println("Options:");
+        println(" -debug    Executes in debug mode.");
+        println(" -linear   Executes in linear mode.");
+        println(" -execute  Executes a single expression.");
         return 0;
     }
-    foreach (arg; args[1 .. $ - 1]) {
-        if (arg == "-debug") rinState.story.debugMode = true;
-        if (arg == "-linear") rinState.story.linearMode = true;
-    }
-    rinState.scriptPath = args[$ - 1];
-    if (auto fault = readTextIntoBuffer(rinState.scriptPath, rinState.story.script)) {
-        switch (fault) {
-            case Fault.cantOpen: println("Can't open `{}`.".format(rinState.scriptPath)); break;
-            case Fault.cantRead: println("Can't read `{}`.".format(rinState.scriptPath)); break;
+    auto executeIndex = 0LU;
+    foreach (i, arg; args) {
+        switch (arg) {
+            case "-debug": rinState.story.debugMode = true; break;
+            case "-linear": rinState.story.linearMode = true; break;
+            case "-execute": rinState.executeMode = true; executeIndex = i; break;
             default: break;
         }
-        return 1;
     }
-    if (prepareStory()) return 1;
-    if (updateStory()) return 1;
-    while (rinState.story.lineIndex != rinState.story.lineCount) {
+    if (rinState.executeMode) {
+        List!char expression;
+        foreach (arg; args[executeIndex + 1 .. $]) {
+            expression.append(arg);
+            expression.append(' ');
+        }
+        if (auto fault = rinState.story.execute(expression[])) {
+            switch (fault) with (Fault) {
+                case assertion: println("Assertion failed."); break;
+                case invalid: println("Invalid arguments passed to the `{}` operator.".format(rinState.story.faultOp)); break;
+                case overflow: println("A word or number is too long."); break;
+                case cantParse: println("A word, number, or operator contains invalid characters."); break;
+                default: break;
+            }
+            return 1;
+        }
+    } else {
+        rinState.scriptPath = args[$ - 1];
+        if (auto fault = readTextIntoBuffer(rinState.scriptPath, rinState.story.script)) {
+            switch (fault) {
+                case Fault.cantOpen: println("Can't open `{}`.".format(rinState.scriptPath)); break;
+                case Fault.cantRead: println("Can't read `{}`.".format(rinState.scriptPath)); break;
+                default: break;
+            }
+            return 1;
+        }
+        if (prepareStory()) return 1;
         if (updateStory()) return 1;
+        while (rinState.story.lineIndex != rinState.story.lineCount) {
+            if (updateStory()) return 1;
+        }
     }
     return 0;
 }
