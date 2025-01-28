@@ -22,15 +22,24 @@ mixin runGame!(ready, update, finish);
 
 ## Batteries Included
 
+Parin is packed with powerful features to get you started quickly:
+
 * Intuitive immediate mode UI
 * Flexible dialogue system with a stack-oriented scripting language
 * Atlas-based animation library
 * ...and more!
 
-## Supported Platforms
+## Cross-Platform
+
+Parin lets you to build games for multiple platforms with ease:
 
 * PC: Windows, Linux, Mac
 * WebAssembly
+* ...and more in the future!
+
+## Open-Source
+
+Parin is MIT-licensed and free to use forever.
 
 ## Projects Made With Parin
 
@@ -73,5 +82,5 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 
 ## Documentation
 
-Start with the [examples](https://github.com/Kapendev/parin/tree/main/examples) folder for a quick overview.
+Start with the [examples](./examples/) folder for a quick overview.
 For more details, check the [tour](https://kapendev.github.io/parin-website/pages/tour.html) page.
