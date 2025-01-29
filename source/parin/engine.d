@@ -54,8 +54,8 @@ enum Filter : ubyte {
 
 /// A type representing texture wrapping modes.
 enum Wrap : ubyte {
-    clamp = rl.TEXTURE_WRAP_CLAMP,   // Clamps texture.
-    repeat = rl.TEXTURE_WRAP_REPEAT, // Repeats texture.
+    clamp = rl.TEXTURE_WRAP_CLAMP,   /// Clamps texture.
+    repeat = rl.TEXTURE_WRAP_REPEAT, /// Repeats texture.
 }
 
 /// A type representing blending modes.
@@ -865,6 +865,15 @@ struct EngineResourceGroup(T) {
     }
 }
 
+/// A structure with information about the engine viewport, including its area.
+struct EngineViewportInfo {
+    Rect area;             /// The area covered by the viewport.
+    Vec2 minSize;          /// The minimum size that the viewport can be.
+    Vec2 maxSize;          /// The maximum size that the viewport can be.
+    Vec2 ratio;            /// The ratio between minSize and maxSize.
+    float minRatio = 0.0f; /// The minimum ratio between minSize and maxSize.
+}
+
 struct EngineViewport {
     Viewport data;
     int targetWidth;
@@ -1341,31 +1350,14 @@ void updateWindow(bool function(float dt) updateFunc) {
 
         // End drawing.
         if (isResolutionLocked) {
-            auto minSize = engineState.viewport.size;
-            auto maxSize = windowSize;
-            auto ratio = maxSize / minSize;
-            auto minRatio = min(ratio.x, ratio.y);
-            if (isPixelPerfect) {
-                auto roundMinRatio = minRatio.round();
-                auto floorMinRation = minRatio.floor();
-                minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
-            }
-
-            auto targetSize = minSize * Vec2(minRatio);
-            auto targetPosition = maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-
+            auto info = engineViewportInfo;
             rl.EndTextureMode();
             rl.BeginDrawing();
             rl.ClearBackground(engineState.borderColor.toRl());
             rl.DrawTexturePro(
                 engineState.viewport.toRl().texture,
-                rl.Rectangle(0.0f, 0.0f, minSize.x, -minSize.y),
-                rl.Rectangle(
-                    floor(targetPosition.x),
-                    floor(targetPosition.y),
-                    ratio.x == minRatio ? targetSize.x : floor(targetSize.x),
-                    ratio.y == minRatio ? targetSize.y : floor(targetSize.y),
-                ),
+                rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
+                info.area.toRl(),
                 rl.Vector2(0.0f, 0.0f),
                 0.0f,
                 rl.Color(255, 255, 255, 255),
@@ -1571,6 +1563,28 @@ Fault setWindowIconFromFiles(IStr path) {
     return Fault.none;
 }
 
+/// Returns information about the engine viewport, including its area.
+EngineViewportInfo engineViewportInfo() {
+    auto result = EngineViewportInfo();
+    result.minSize = engineState.viewport.size;
+    result.maxSize = windowSize;
+    auto ratio = result.maxSize / result.minSize;
+    result.minRatio = min(ratio.x, ratio.y);
+    if (isPixelPerfect) {
+        auto roundMinRatio = result.minRatio.round();
+        auto floorMinRation = result.minRatio.floor();
+        result.minRatio = result.minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
+    }
+    auto targetSize = result.minSize * Vec2(result.minRatio);
+    auto targetPosition = result.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+    result.area = Rect(
+        targetPosition.floor(),
+        ratio.x == result.minRatio ? targetSize.x : floor(targetSize.x),
+        ratio.y == result.minRatio ? targetSize.y : floor(targetSize.y),
+    );
+    return result;
+}
+
 /// Returns the default engine font. This font should not be freed.
 @trusted
 Font engineFont() {
@@ -1711,17 +1725,10 @@ Vec2 mouse() {
     // Touch works on desktop, web and mobile.
     auto rlMouse = rl.GetTouchPosition(0);
     if (isResolutionLocked) {
-        auto window = windowSize;
-        auto minRatio = min(window.x / engineState.viewport.width, window.y / engineState.viewport.height);
-        if (isPixelPerfect) {
-            auto roundMinRatio = minRatio.round();
-            auto floorMinRation = minRatio.floor();
-            minRatio = minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
-        }
-        auto targetSize = engineState.viewport.size * Vec2(minRatio);
+        auto info = engineViewportInfo;
         return Vec2(
-            (rlMouse.x - (window.x - targetSize.x) * 0.5f) / minRatio,
-            (rlMouse.y - (window.y - targetSize.y) * 0.5f) / minRatio,
+            (rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio,
+            (rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio,
         );
     } else {
         return rlMouse.toParin();
