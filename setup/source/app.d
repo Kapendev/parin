@@ -17,7 +17,7 @@ enum dubLockFile     = buildPath(".", "dub.selections.json");
 
 enum readmeFileContent = "# Game Title
 
-This game was created using [Parin](https://github.com/Kapendev/parin).
+This game was created with [Parin](https://github.com/Kapendev/parin).
 
 To compile the game, run:
 
@@ -173,6 +173,7 @@ int runDubSetup(string[] args, bool isFirstRun) {
     }
     whileExit:
     if (arg == "Y" || arg == "y") {
+        writeln("Downloading...");
         auto dub1 = spawnProcess(["dub", "add", "raylib-d", "--verror"]).wait();
         auto dub2 = spawnProcess(["dub", "run", "raylib-d:install", "--verror", "--", "-q", "-u=no"]).wait();
         // Remove the backup copies if something failed.
