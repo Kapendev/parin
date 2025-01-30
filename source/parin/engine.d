@@ -8,8 +8,6 @@
 
 // TODO: Think about the sound API.
 // TODO: Make sounds loop based on a variable and not on the file type.
-// TODO: Convert engine flags to bit flags in the future.
-// TODO: Look at the locking and unlocking code again. Works, but could maybe be nicer.
 // NOTE: The main problem with sound looping is the raylib API.
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -602,11 +600,11 @@ struct Viewport {
     @trusted
     void attach() {
         if (isEmpty) return;
-        if (engineState.currentViewport.isAttached) {
+        if (engineState.userViewport.isAttached) {
             assert(0, "Cannot attach viewport because another viewport is already attached.");
         }
         isAttached = true;
-        engineState.currentViewport = this;
+        engineState.userViewport = this;
         if (isResolutionLocked) rl.EndTextureMode();
         rl.BeginTextureMode(data);
         rl.ClearBackground(color.toRl());
@@ -622,7 +620,7 @@ struct Viewport {
             assert(0, "Cannot detach viewport because it is not the attached viewport.");
         }
         isAttached = false;
-        engineState.currentViewport = Viewport();
+        engineState.userViewport = Viewport();
         rl.EndBlendMode();
         rl.EndTextureMode();
         if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.toRl());
@@ -759,12 +757,12 @@ struct Camera {
     /// Attaches the camera, making it active.
     @trusted
     void attach() {
-        if (engineState.currentCamera.isAttached) {
+        if (engineState.userCamera.isAttached) {
             assert(0, "Cannot attach camera because another camera is already attached.");
         }
         isAttached = true;
-        engineState.currentCamera = this;
-        auto temp = this.toRl(engineState.currentViewport);
+        engineState.userCamera = this;
+        auto temp = this.toRl(engineState.userViewport);
         if (isPixelSnapped || isPixelPerfect) {
             temp.target.x = temp.target.x.floor();
             temp.target.y = temp.target.y.floor();
@@ -781,26 +779,9 @@ struct Camera {
             assert(0, "Cannot detach camera because it is not the attached camera.");
         }
         isAttached = false;
-        engineState.currentCamera = Camera();
+        engineState.userCamera = Camera();
         rl.EndMode2D();
     }
-}
-
-struct EngineFlags {
-    bool isUpdating;
-    bool isPixelSnapped;
-    bool isPixelPerfect;
-    bool isCursorVisible;
-    bool canUseAssetsPath;
-}
-
-struct EngineFullscreenState {
-    int previousWindowWidth;
-    int previousWindowHeight;
-    float changeTime = 0.0f;
-    bool isChanging;
-
-    enum changeDuration = 0.025f;
 }
 
 struct EngineResourceGroup(T) {
@@ -865,6 +846,24 @@ struct EngineResourceGroup(T) {
     }
 }
 
+struct EngineFlags {
+    bool isUpdating;
+    bool isPixelSnapped;
+    bool isPixelPerfect;
+    bool isCursorVisible;
+    bool canUseAssetsPath;
+}
+
+/// The engine fullscreen state.
+struct EngineFullscreenState {
+    int previousWindowWidth;  /// The previous window with before entering fullscreen mode.
+    int previousWindowHeight; /// The previous window height before entering fullscreen mode.
+    float changeTime = 0.0f;  /// The current change time.
+    bool isChanging;          /// The flag that triggers the fullscreen state.
+
+    enum changeDuration = 0.03f;
+}
+
 /// A structure with information about the engine viewport, including its area.
 struct EngineViewportInfo {
     Rect area;             /// The area covered by the viewport.
@@ -874,34 +873,17 @@ struct EngineViewportInfo {
     float minRatio = 0.0f; /// The minimum ratio between minSize and maxSize.
 }
 
+/// The engine viewport.
 struct EngineViewport {
-    Viewport data;
-    int targetWidth;
-    int targetHeight;
+    Viewport data;   /// The viewport data.
+    int lockWidth;   /// The target lock width.
+    int lockHeight;  /// The target lock height.
+    bool isChanging; /// The flag that triggers the lock state.
 
     alias data this;
-
-    @safe @nogc nothrow:
-
-    bool isLocking() {
-        return (targetWidth != 0 && targetHeight != 0) && (data.width != targetWidth && data.height != targetHeight);
-    }
-
-    bool isUnlocking() {
-        return (targetWidth == 0 && targetHeight == 0) && (!data.isEmpty);
-    }
-
-    void startLocking(int width, int height) {
-        targetWidth = width;
-        targetHeight = height;
-    }
-
-    void startUnlocking() {
-        targetWidth = 0;
-        targetHeight = 0;
-    }
 }
 
+/// The engine state.
 struct EngineState {
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
@@ -909,8 +891,8 @@ struct EngineState {
     Color borderColor;
     Filter defaultFilter;
     Wrap defaultWrap;
-    Camera currentCamera;
-    Viewport currentViewport;
+    Camera userCamera;
+    Viewport userViewport;
 
     EngineResourceGroup!Texture textures;
     EngineResourceGroup!Font fonts;
@@ -1276,6 +1258,7 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
+// NOTE: This function frees memory and we skip some stuff in release builds since the OS will free the memory for us.
 @trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
@@ -1312,7 +1295,9 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
     engineState.debugFont = monogramTexture.toParin().toFont(6, 12);
-    rl.UnloadImage(monogramImage);
+    debug {
+        rl.UnloadImage(monogramImage);
+    }
 }
 
 /// Updates the window every frame with the given function.
@@ -1367,16 +1352,18 @@ void updateWindow(bool function(float dt) updateFunc) {
             rl.EndDrawing();
         }
 
-        // Main viewport code.
-        if (engineState.viewport.isLocking) {
-            engineState.viewport.resize(engineState.viewport.targetWidth, engineState.viewport.targetHeight);
-        } else if (engineState.viewport.isUnlocking) {
-            auto oldColor = engineState.viewport.color;
-            engineState.viewport.free();
-            engineState.viewport.color = oldColor;
+        // Viewport code.
+        if (engineState.viewport.isChanging) {
+            if (isResolutionLocked) {
+                auto temp = engineState.viewport.color;
+                engineState.viewport.free();
+                engineState.viewport.color = temp;
+            } else {
+                engineState.viewport.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+            }
+            engineState.viewport.isChanging = false;
         }
-
-        // Fullscreen code to fix a bug on Linux.
+        // Fullscreen code.
         if (engineState.fullscreenState.isChanging) {
             engineState.fullscreenState.changeTime += dt;
             if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
@@ -1397,7 +1384,6 @@ void updateWindow(bool function(float dt) updateFunc) {
                 engineState.fullscreenState.isChanging = false;
             }
         }
-
         return result;
     }
 
@@ -1423,7 +1409,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 
 /// Closes the window.
 /// You should avoid calling this function manually.
-// NOTE: We skip some stuff in release builds since the OS will free the memory for us.
+// NOTE: This function frees memory and we skip some stuff in release builds since the OS will free the memory for us.
 @trusted
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
@@ -1616,11 +1602,6 @@ void setEngineViewportFilter(Filter value) {
     engineState.viewport.setFilter(value);
 }
 
-/// Sets the wrap mode used by the engine viewport to the specified value.
-void setEngineViewportWrap(Wrap value) {
-    engineState.viewport.setWrap(value);
-}
-
 /// Returns the current master volume level.
 @trusted
 float masterVolume() {
@@ -1641,29 +1622,30 @@ bool isResolutionLocked() {
 /// Locks the resolution to the specified width and height.
 @trusted
 void lockResolution(int width, int height) {
-    engineState.viewport.startLocking(width, height);
-    if (!engineState.flags.isUpdating) {
+    engineState.viewport.lockWidth = width;
+    engineState.viewport.lockHeight = height;
+    if (engineState.flags.isUpdating) {
+        engineState.viewport.isChanging = true;
+    } else {
         engineState.viewport.resize(width, height);
     }
 }
 
 /// Unlocks the resolution, allowing it to be changed.
 void unlockResolution() {
-    engineState.viewport.startUnlocking();
-    if (!engineState.flags.isUpdating) {
-        auto oldColor = engineState.viewport.color;
+    if (engineState.flags.isUpdating) {
+        engineState.viewport.isChanging = true;
+    } else {
+        auto temp = engineState.viewport.color;
         engineState.viewport.free();
-        engineState.viewport.color = oldColor;
+        engineState.viewport.color = temp;
     }
 }
 
 /// Toggles between the current resolution and the specified width and height.
 void toggleResolution(int width, int height) {
-    if (isResolutionLocked) {
-        unlockResolution();
-    } else {
-        lockResolution(width, height);
-    }
+    if (isResolutionLocked) unlockResolution();
+    else lockResolution(width, height);
 }
 
 /// Returns the current screen width.

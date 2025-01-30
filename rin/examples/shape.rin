@@ -1,3 +1,5 @@
+#!/bin/env rin
+
 ## A script that draws a shape on the terminal.
 
 # Create the constants.

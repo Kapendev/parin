@@ -1,3 +1,5 @@
+#!/bin/env rin
+
 ## A script that serves as a classic hello-world program, introducing the structure of a Parin script.
 
 # A comment.

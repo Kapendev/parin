@@ -1,3 +1,5 @@
+#!/bin/env rin
+
 ## A script that tests if things work correctly.
 
 # Operator test.
