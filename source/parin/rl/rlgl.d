@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.36
+// Version: v0.0.37
 // ---
 
 /// The `rlgl` module provides access to the rlgl.h functions.
