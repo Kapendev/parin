@@ -878,7 +878,6 @@ struct EngineViewportInfo {
     Rect area;             /// The area covered by the viewport.
     Vec2 minSize;          /// The minimum size that the viewport can be.
     Vec2 maxSize;          /// The maximum size that the viewport can be.
-    Vec2 ratio;            /// The ratio between minSize and maxSize.
     float minRatio = 0.0f; /// The minimum ratio between minSize and maxSize.
 }
 
