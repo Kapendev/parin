@@ -276,6 +276,9 @@ struct Texture {
 }
 
 /// Represents an identifier for a managed engine resource.
+/// Managed resources are cached by the path they were loaded from and can be safely shared throughout the code.
+/// To free these resources, use the `freeResources` function or the `free` method on the identifier.
+/// The identifier is automatically invalidated when the resource is freed.
 struct TextureId {
     GenerationalIndex data;
 
@@ -364,6 +367,9 @@ struct Font {
 }
 
 /// Represents an identifier for a managed engine resource.
+/// Managed resources are cached by the path they were loaded from and can be safely shared throughout the code.
+/// To free these resources, use the `freeResources` function or the `free` method on the identifier.
+/// The identifier is automatically invalidated when the resource is freed.
 struct FontId {
     GenerationalIndex data;
 
@@ -503,6 +509,9 @@ struct Sound {
 }
 
 /// Represents an identifier for a managed engine resource.
+/// Managed resources are cached by the path they were loaded from and can be safely shared throughout the code.
+/// To free these resources, use the `freeResources` function or the `free` method on the identifier.
+/// The identifier is automatically invalidated when the resource is freed.
 struct SoundId {
     GenerationalIndex data;
 
@@ -1552,22 +1561,29 @@ Fault setWindowIconFromFiles(IStr path) {
 /// Returns information about the engine viewport, including its area.
 EngineViewportInfo engineViewportInfo() {
     auto result = EngineViewportInfo();
-    result.minSize = engineState.viewport.size;
-    result.maxSize = windowSize;
-    auto ratio = result.maxSize / result.minSize;
-    result.minRatio = min(ratio.x, ratio.y);
-    if (isPixelPerfect) {
-        auto roundMinRatio = result.minRatio.round();
-        auto floorMinRation = result.minRatio.floor();
-        result.minRatio = result.minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
+    if (isResolutionLocked) {
+        result.minSize = resolution;
+        result.maxSize = windowSize;
+        auto ratio = result.maxSize / result.minSize;
+        result.minRatio = min(ratio.x, ratio.y);
+        if (isPixelPerfect) {
+            auto roundMinRatio = result.minRatio.round();
+            auto floorMinRation = result.minRatio.floor();
+            result.minRatio = result.minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
+        }
+        auto targetSize = result.minSize * Vec2(result.minRatio);
+        auto targetPosition = result.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+        result.area = Rect(
+            targetPosition.floor(),
+            ratio.x == result.minRatio ? targetSize.x : floor(targetSize.x),
+            ratio.y == result.minRatio ? targetSize.y : floor(targetSize.y),
+        );
+    } else {
+        result.minSize = windowSize;
+        result.maxSize = result.minSize;
+        result.minRatio = 1.0f;
+        result.area = Rect(result.minSize);
     }
-    auto targetSize = result.minSize * Vec2(result.minRatio);
-    auto targetPosition = result.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-    result.area = Rect(
-        targetPosition.floor(),
-        ratio.x == result.minRatio ? targetSize.x : floor(targetSize.x),
-        ratio.y == result.minRatio ? targetSize.y : floor(targetSize.y),
-    );
     return result;
 }
 
