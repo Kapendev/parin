@@ -284,23 +284,6 @@ struct TileMap {
     }
 }
 
-Result!TileMap toTileMap(IStr csv, int tileWidth, int tileHeight) {
-    auto value = TileMap();
-    auto fault = value.parse(csv, tileWidth, tileHeight);
-    if (fault) {
-        value.free();
-    }
-    return Result!TileMap(value, fault);
-}
-
-Result!TileMap loadRawTileMap(IStr path, int tileWidth, int tileHeight) {
-    auto temp = loadTempText(path);
-    if (temp.isNone) {
-        return Result!TileMap(temp.fault);
-    }
-    return toTileMap(temp.get(), tileWidth, tileHeight);
-}
-
 Fault saveTileMap(IStr path, TileMap map) {
     auto csv = prepareTempText();
     foreach (row; 0 .. map.rowCount) {

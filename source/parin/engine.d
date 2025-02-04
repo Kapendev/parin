@@ -301,6 +301,16 @@ struct TextureId {
         return getOr().size;
     }
 
+    /// Sets the filter mode of the texture associated with the resource identifier.
+    void setFilter(Filter value) {
+        getOr().setFilter(value);
+    }
+
+    /// Sets the wrap mode of the texture associated with the resource identifier.
+    void setWrap(Wrap value) {
+        getOr().setWrap(value);
+    }
+
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
         return data && engineState.textures.has(data);
@@ -390,6 +400,16 @@ struct FontId {
     /// Returns the size of the font associated with the resource identifier.
     int size() {
         return getOr().size;
+    }
+
+    /// Sets the filter mode of the font associated with the resource identifier.
+    void setFilter(Filter value) {
+        getOr().setFilter(value);
+    }
+
+    /// Sets the wrap mode of the font associated with the resource identifier.
+    void setWrap(Wrap value) {
+        getOr().setWrap(value);
     }
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
@@ -519,6 +539,11 @@ struct SoundId {
 
     @safe @nogc nothrow:
 
+    /// Returns true if the sound associated with the resource identifier is playing.
+    bool isPlaying() {
+        return getOr().isPlaying;
+    }
+
     /// Returns the current playback time of the sound associated with the resource identifier.
     float time() {
         return getOr().time;
@@ -531,6 +556,21 @@ struct SoundId {
 
     float progress() {
         return getOr().progress;
+    }
+
+    /// Sets the volume level for the sound associated with the resource identifier.
+    void setVolume(float value) {
+        getOr().setVolume(value);
+    }
+
+    /// Sets the pitch for the sound associated with the resource identifier.
+    void setPitch(float value) {
+        getOr().setPitch(value);
+    }
+
+    /// Sets the stereo panning for the sound associated with the resource identifier.
+    void setPan(float value) {
+        getOr().setPan(value);
     }
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
@@ -1299,7 +1339,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.saveTextBuffer.reserve(8192);
     if (args.length) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
     // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import("monogram.png");
+    auto monogramData = cast(const(ubyte)[]) import("parin_monogram.png");
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
     engineState.debugFont = monogramTexture.toParin().toFont(6, 12);

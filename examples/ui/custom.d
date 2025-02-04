@@ -21,7 +21,7 @@ bool myButton(Rect area, IStr text) {
 
 void ready() {
     lockResolution(320, 180);
-    atlas = loadTexture("atlas.png");
+    atlas = loadTexture("parin_atlas.png");
 }
 
 bool update(float dt) {

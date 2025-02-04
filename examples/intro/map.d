@@ -10,7 +10,7 @@ auto tileFlip = Flip.none;
 
 void ready() {
     lockResolution(320, 180);
-    atlas = loadTexture("atlas.png");
+    atlas = loadTexture("parin_atlas.png");
     // Parse a CSV string representing a tile map, where each tile is 16x16 pixels in size.
     map.parse("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55", 16, 16);
 }

@@ -11,7 +11,7 @@ auto walkAnimation = SpriteAnimation(0, 2, 6);
 
 void ready() {
     lockResolution(320, 180);
-    atlas = loadTexture("atlas.png");
+    atlas = loadTexture("parin_atlas.png");
 }
 
 bool update(float dt) {

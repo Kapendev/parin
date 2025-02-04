@@ -7,7 +7,7 @@ auto patchAtlasArea = Rect(5 * 16, 1 * 16, Vec2(16 * 3));
 
 void ready() {
     lockResolution(320, 180);
-    atlas = loadTexture("atlas.png");
+    atlas = loadTexture("parin_atlas.png");
 }
 
 bool update(float dt) {
