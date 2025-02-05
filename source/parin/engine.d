@@ -6,10 +6,6 @@
 // Version: v0.0.37
 // ---
 
-// TODO: Think about the sound API.
-// TODO: Make sounds loop based on a variable and not on the file type.
-// NOTE: The main problem with sound looping is the raylib API.
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -437,6 +433,7 @@ struct FontId {
 /// Represents a sound resource.
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
+    bool isPaused;
 
     @safe @nogc nothrow:
 
@@ -1212,7 +1209,7 @@ TextureId loadTexture(IStr path) {
     return TextureId();
 }
 
-/// Loads a font file (TTF) from the assets folder.
+/// Loads a font file (TTF, OTF) from the assets folder.
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
@@ -1229,7 +1226,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
-/// Loads a font file (TTF) from the assets folder.
+/// Loads a font file (TTF, OTF) from the assets folder.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
@@ -2010,11 +2007,8 @@ Vec2 wasdReleased() {
 /// Plays the specified sound.
 /// The sound will loop automatically for certain file types (OGG, MP3).
 @trusted
-void playSound(Sound sound) {
-    if (sound.isEmpty) {
-        return;
-    }
-
+void playSound(ref Sound sound) {
+    if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
@@ -2025,16 +2019,13 @@ void playSound(Sound sound) {
 /// Plays the specified sound.
 /// The sound will loop automatically for certain file types (OGG, MP3).
 void playSound(SoundId sound) {
-    playSound(sound.getOr());
+    if (sound.isValid) playSound(sound.get());
 }
 
 /// Stops playback of the specified sound.
 @trusted
-void stopSound(Sound sound) {
-    if (sound.isEmpty) {
-        return;
-    }
-
+void stopSound(ref Sound sound) {
+    if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2044,16 +2035,14 @@ void stopSound(Sound sound) {
 
 /// Stops playback of the specified sound.
 void stopSound(SoundId sound) {
-    stopSound(sound.getOr());
+    if (sound.isValid) stopSound(sound.get());
 }
 
 /// Pauses playback of the specified sound.
 @trusted
-void pauseSound(Sound sound) {
-    if (sound.isEmpty) {
-        return;
-    }
-
+void pauseSound(ref Sound sound) {
+    if (sound.isEmpty) return;
+    sound.isPaused = true;
     if (sound.data.isType!(rl.Sound)) {
         rl.PauseSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2063,16 +2052,14 @@ void pauseSound(Sound sound) {
 
 /// Pauses playback of the specified sound.
 void pauseSound(SoundId sound) {
-    pauseSound(sound.getOr());
+    if (sound.isValid) pauseSound(sound.get());
 }
 
 /// Resumes playback of the specified paused sound.
 @trusted
-void resumeSound(Sound sound) {
-    if (sound.isEmpty) {
-        return;
-    }
-
+void resumeSound(ref Sound sound) {
+    if (sound.isEmpty) return;
+    sound.isPaused = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.ResumeSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2082,16 +2069,13 @@ void resumeSound(Sound sound) {
 
 /// Resumes playback of the specified paused sound.
 void resumeSound(SoundId sound) {
-    resumeSound(sound.getOr());
+    if (sound.isValid) resumeSound(sound.get());
 }
 
 /// Updates the playback state of the specified sound.
 @trusted
-void updateSound(Sound sound) {
-    if (sound.isEmpty) {
-        return;
-    }
-
+void updateSound(ref Sound sound) {
+    if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Music)) {
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
@@ -2099,7 +2083,7 @@ void updateSound(Sound sound) {
 
 /// Updates the playback state of the specified sound.
 void updateSound(SoundId sound) {
-    updateSound(sound.getOr());
+    if (sound.isValid) updateSound(sound.get());
 }
 
 /// Draws a rectangle with the specified area and color.
