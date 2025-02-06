@@ -278,8 +278,6 @@ struct Texture {
 struct TextureId {
     GenerationalIndex data;
 
-    alias data this;
-
     @safe @nogc nothrow:
 
     /// Returns the width of the texture associated with the resource identifier.
@@ -378,8 +376,6 @@ struct Font {
 /// The identifier is automatically invalidated when the resource is freed.
 struct FontId {
     GenerationalIndex data;
-
-    alias data this;
 
     @safe @nogc nothrow:
 
@@ -531,8 +527,6 @@ struct Sound {
 /// The identifier is automatically invalidated when the resource is freed.
 struct SoundId {
     GenerationalIndex data;
-
-    alias data this;
 
     @safe @nogc nothrow:
 

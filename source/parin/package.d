@@ -12,6 +12,7 @@ public import joka.ascii;
 public import joka.io;
 public import parin.engine;
 public import parin.map;
+public import parin.platformer;
 public import parin.sprite;
 public import parin.story;
 public import parin.timer;
