@@ -27,6 +27,7 @@ Parin is packed with powerful features to get you started quickly:
 * Intuitive immediate mode UI
 * Flexible dialogue system with a stack-oriented scripting language
 * Atlas-based animation library
+* Pixel-perfect physics engine
 * ...and more!
 
 ## Cross-Platform

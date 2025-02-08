@@ -8,7 +8,7 @@
 
 // TODO: Update all the doc comments here.
 
-/// The `platformer` module provides a simple physics engine.
+/// The `platformer` module provides a pixel-perfect physics engine.
 module parin.platformer;
 
 import joka.containers;
@@ -28,13 +28,84 @@ enum RideSide : ubyte {
     bottom,
 }
 
+struct BoxMover {
+    Vec2 direction;
+    Vec2 velocity;
+    float speed = 1.0f;
+    float jump = 1.0f;
+    float gravity = 0.0f;
+    float gravityFallFactor = 0.7f;
+    float acceleration = 1.0f;
+    float decelerationFactor = 0.3f;
+
+    @safe @nogc nothrow:
+
+    this(float speed, float jump, float gravity) {
+        this.speed = speed;
+        this.jump = jump;
+        this.gravity = gravity;
+    }
+
+    bool isSmooth() {
+        return acceleration != 0.0f;
+    }
+
+    bool isTopDown() {
+        return gravity == 0.0f;
+    }
+
+    Vec2 move(float dt, bool isUnnormalized = false) {
+        if (isTopDown) {
+            auto tempDirection = isUnnormalized ? direction : direction.normalize();
+            if (isSmooth) {
+                if (direction.x > 0.0f) {
+                    velocity.x = min(velocity.x + tempDirection.x * acceleration * dt, tempDirection.x * speed);
+                } else if (direction.x < 0.0f) {
+                    velocity.x = max(velocity.x + tempDirection.x * acceleration * dt, tempDirection.x * speed);
+                }
+                if (velocity.x != tempDirection.x * speed) {
+                   velocity.x = lerp(velocity.x, 0.0f, decelerationFactor);
+                }
+                if (direction.y > 0.0f) {
+                    velocity.y = min(velocity.y + tempDirection.y * acceleration * dt, tempDirection.y * speed);
+                } else if (direction.y < 0.0f) {
+                    velocity.y = max(velocity.y + tempDirection.y * acceleration * dt, tempDirection.y * speed);
+                }
+                if (velocity.y != tempDirection.y * speed) {
+                   velocity.y = lerp(velocity.y, 0.0f, decelerationFactor);
+                }
+            } else {
+                velocity.x = tempDirection.x * speed;
+                velocity.y = tempDirection.y * speed;
+            }
+            velocity.x = velocity.x * dt;
+            velocity.y = velocity.y * dt;
+        } else {
+            if (isSmooth) {
+                if (direction.x > 0.0f) {
+                    velocity.x = min(velocity.x + acceleration * dt, speed);
+                } else if (direction.x < 0.0f) {
+                    velocity.x = max(velocity.x - acceleration * dt, -speed);
+                }
+                if (velocity.x != direction.x * speed) {
+                   velocity.x = lerp(velocity.x, 0.0f, decelerationFactor);
+                }
+            } else {
+                velocity.x = direction.x * speed;
+            }
+            velocity.x = velocity.x * dt;
+
+            if (velocity.y > 0.0f) velocity.y += gravity * dt;
+            else velocity.y += gravity * gravityFallFactor * dt;
+            if (direction.y < 0.0f) velocity.y = -jump;
+        }
+        return velocity;
+    }
+}
+
 struct Box {
     IVec2 position;
     IVec2 size;
-    Vec2 remainder;
-    RideSide rideSide;
-    bool isPassable;
-    bool isRiding;
 
     @safe @nogc nothrow:
 
@@ -78,9 +149,22 @@ struct Box {
     }
 }
 
+struct WallBoxProperties {
+    Vec2 remainder;
+    bool isPassable;
+}
+
+struct ActorBoxProperties {
+    Vec2 remainder;
+    RideSide rideSide;
+    bool isRiding;
+}
+
 struct BoxWorld {
     List!Box walls;
     List!Box actors;
+    List!WallBoxProperties wallsProperties;
+    List!ActorBoxProperties actorsProperties;
     List!ActorId squishedIdsBuffer;
 
     @safe @nogc nothrow:
@@ -93,44 +177,54 @@ struct BoxWorld {
         return actors[id - 1];
     }
 
+    ref WallBoxProperties getWallProperties(WallId id) {
+        return wallsProperties[id - 1];
+    }
+
+    ref ActorBoxProperties getActorProperties(ActorId id) {
+        return actorsProperties[id - 1];
+    }
+
     WallId appendWall(Box box) {
         walls.append(box);
+        wallsProperties.append(WallBoxProperties());
         return walls.length;
     }
 
     ActorId appendActor(Box box, RideSide rideSide = RideSide.none) {
-        if (rideSide) box.rideSide = rideSide;
         actors.append(box);
+        actorsProperties.append(ActorBoxProperties());
+        actorsProperties[$ - 1].rideSide = rideSide;
         return actors.length;
     }
 
     WallId hasWallCollision(Box box) {
         foreach (i, wall; walls) {
-            if (!wall.isPassable && wall.hasIntersection(box)) return i + 1;
+            if (wall.hasIntersection(box) && !wallsProperties[i].isPassable) return i + 1;
         }
         return 0;
     }
 
     ActorId hasActorCollision(Box box) {
         foreach (i, actor; actors) {
-            if (!actor.isPassable && actor.hasIntersection(box)) return i + 1;
+            if (actor.hasIntersection(box)) return i + 1;
         }
         return 0;
     }
 
     WallId moveActorX(ActorId id, float amount) {
         auto actor = &actors[id - 1];
-        actor.remainder.x += amount;
+        auto properties = &actorsProperties[id - 1];
+        properties.remainder.x += amount;
 
-        auto move = cast(int) actor.remainder.x.round();
+        auto move = cast(int) properties.remainder.x.round();
         if (move == 0) return false;
 
         int moveSign = move.sign();
-        actor.remainder.x -= move;
+        properties.remainder.x -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(moveSign, 0), actor.size);
-            auto wallId = hasWallCollision(tempBox);
-            if (!actor.isPassable && wallId) {
+            if (auto wallId = hasWallCollision(tempBox)) {
                 return wallId;
             } else {
                 actor.position.x += moveSign;
@@ -142,17 +236,17 @@ struct BoxWorld {
 
     WallId moveActorY(ActorId id, float amount) {
         auto actor = &actors[id - 1];
-        actor.remainder.y += amount;
+        auto properties = &actorsProperties[id - 1];
+        properties.remainder.y += amount;
 
-        auto move = cast(int) actor.remainder.y.round();
+        auto move = cast(int) properties.remainder.y.round();
         if (move == 0) return false;
 
         int moveSign = move.sign();
-        actor.remainder.y -= move;
+        properties.remainder.y -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(0, moveSign), actor.size);
-            auto wallId = hasWallCollision(tempBox);
-            if (!actor.isPassable && wallId) {
+            if (auto wallId = hasWallCollision(tempBox)) {
                 return wallId;
             } else {
                 actor.position.y += moveSign;
@@ -179,31 +273,31 @@ struct BoxWorld {
 
     ActorId[] moveWall(WallId id, Vec2 amount) {
         auto wall = &walls[id - 1];
-        wall.remainder += amount;
+        auto properties = &wallsProperties[id - 1];
+        properties.remainder += amount;
 
         squishedIdsBuffer.clear();
-        auto move = wall.remainder.round().toIVec();
+        auto move = properties.remainder.round().toIVec();
         if (move.x != 0 || move.y != 0) {
-            foreach (ref actor; actors) {
-                actor.isRiding = false;
-                if (!actor.rideSide || actor.isPassable) continue;
-                auto rideBox = actor;
-                final switch (actor.rideSide) with (RideSide) {
+            foreach (i, ref actorProperties; actorsProperties) {
+                actorProperties.isRiding = false;
+                if (!actorProperties.rideSide) continue;
+                auto rideBox = actors[i];
+                final switch (actorProperties.rideSide) with (RideSide) {
                     case none: break;
                     case top: rideBox.position.y += 1; break;
                     case left: rideBox.position.x += 1; break;
                     case right: rideBox.position.x -= 1; break;
                     case bottom: rideBox.position.y -= 1; break;
                 }
-                actor.isRiding = wall.hasIntersection(rideBox);
+                actorProperties.isRiding = wall.hasIntersection(rideBox);
             }
         }
         if (move.x != 0) {
-            wall.isPassable = true;
-            wall.remainder.x -= move.x;
+            properties.isPassable = true;
+            properties.remainder.x -= move.x;
             wall.position.x += move.x;
             foreach (i, ref actor; actors) {
-                if (actor.isPassable) continue;
                 if (wall.hasIntersection(actor)) {
                     // Push actor.
                     auto wallLeft = wall.position.x;
@@ -215,19 +309,18 @@ struct BoxWorld {
                         // Squish actor.
                         squishedIdsBuffer.append(i + 1);
                     }
-                } else if (actor.isRiding) {
+                } else if (actorsProperties[i].isRiding) {
                     // Carry actor.
                     moveActorX(i + 1, move.x);
                 }
             }
-            wall.isPassable = false;
+            properties.isPassable = false;
         }
         if (move.y != 0) {
-            wall.isPassable = true;
-            wall.remainder.y -= move.y;
+            properties.isPassable = true;
+            properties.remainder.y -= move.y;
             wall.position.y += move.y;
             foreach (i, ref actor; actors) {
-                if (actor.isPassable) continue;
                 if (wall.hasIntersection(actor)) {
                     // Push actor.
                     auto wallTop = wall.position.y;
@@ -239,25 +332,37 @@ struct BoxWorld {
                         // Squish actor.
                         squishedIdsBuffer.append(i + 1);
                     }
-                } else if (actor.isRiding) {
+                } else if (actorsProperties[i].isRiding) {
                     // Carry actor.
                     moveActorY(i + 1, move.y);
                 }
             }
-            wall.isPassable = false;
+            properties.isPassable = false;
         }
         return squishedIdsBuffer[];
+    }
+
+    void clear() {
+        walls.clear();
+        actors.clear();
+        wallsProperties.clear();
+        actorsProperties.clear();
+        squishedIdsBuffer.clear();
     }
 
     void reserve(Sz capacity) {
         walls.reserve(capacity);
         actors.reserve(capacity);
+        wallsProperties.reserve(capacity);
+        actorsProperties.reserve(capacity);
         squishedIdsBuffer.reserve(capacity);
     }
 
     void free() {
         walls.free();
         actors.free();
+        wallsProperties.free();
+        actorsProperties.free();
         squishedIdsBuffer.free();
         this = BoxWorld();
     }
