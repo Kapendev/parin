@@ -25,6 +25,9 @@ public import joka.types;
 
 EngineState engineState;
 
+enum defaultEngineFontsCapacity = 64;
+enum defaultEngineResourcesCapacity = 256;
+
 /// A type representing flipping orientations.
 enum Flip : ubyte {
     none, /// No flipping.
@@ -1318,14 +1321,14 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.fullscreenState.previousWindowHeight = height;
     engineState.borderColor = black;
     // Ready resources.
-    engineState.textures.reserve(256);
+    engineState.droppedFilePathsBuffer.reserve(defaultEngineResourcesCapacity);
+    engineState.textures.reserve(defaultEngineResourcesCapacity);
+    engineState.sounds.reserve(defaultEngineResourcesCapacity);
+    engineState.fonts.reserve(defaultEngineFontsCapacity);
     engineState.textures.appendEmpty();
-    engineState.fonts.reserve(64);
-    engineState.fonts.appendEmpty();
-    engineState.sounds.reserve(128);
     engineState.sounds.appendEmpty();
+    engineState.fonts.appendEmpty();
     engineState.viewport.color = gray;
-    engineState.droppedFilePathsBuffer.reserve(128);
     engineState.loadTextBuffer.reserve(8192);
     engineState.saveTextBuffer.reserve(8192);
     if (args.length) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
