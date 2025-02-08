@@ -85,33 +85,41 @@ struct BoxWorld {
 
     @safe @nogc nothrow:
 
+    ref Box getWall(WallId id) {
+        return walls[id - 1];
+    }
+
+    ref Box getActor(ActorId id) {
+        return actors[id - 1];
+    }
+
     WallId appendWall(Box box) {
         walls.append(box);
-        return walls.length - 1;
+        return walls.length;
     }
 
     ActorId appendActor(Box box, RideSide rideSide = RideSide.none) {
         if (rideSide) box.rideSide = rideSide;
         actors.append(box);
-        return actors.length - 1;
+        return actors.length;
     }
 
-    bool hasWallCollision(Box box) {
-        foreach (wall; walls) {
-            if (!wall.isPassable && wall.hasIntersection(box)) return true;
+    WallId hasWallCollision(Box box) {
+        foreach (i, wall; walls) {
+            if (!wall.isPassable && wall.hasIntersection(box)) return i + 1;
         }
-        return false;
+        return 0;
     }
 
-    bool hasActorCollision(Box box) {
-        foreach (actor; actors) {
-            if (!actor.isPassable && actor.hasIntersection(box)) return true;
+    ActorId hasActorCollision(Box box) {
+        foreach (i, actor; actors) {
+            if (!actor.isPassable && actor.hasIntersection(box)) return i + 1;
         }
-        return false;
+        return 0;
     }
 
-    bool moveActorX(ActorId id, float amount) {
-        auto actor = &actors[id];
+    WallId moveActorX(ActorId id, float amount) {
+        auto actor = &actors[id - 1];
         actor.remainder.x += amount;
 
         auto move = cast(int) actor.remainder.x.round();
@@ -121,18 +129,19 @@ struct BoxWorld {
         actor.remainder.x -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(moveSign, 0), actor.size);
-            if (hasWallCollision(tempBox)) {
-                return true;
+            auto wallId = hasWallCollision(tempBox);
+            if (!actor.isPassable && wallId) {
+                return wallId;
             } else {
                 actor.position.x += moveSign;
                 move -= moveSign;
             }
         }
-        return false;
+        return 0;
     }
 
-    bool moveActorY(ActorId id, float amount) {
-        auto actor = &actors[id];
+    WallId moveActorY(ActorId id, float amount) {
+        auto actor = &actors[id - 1];
         actor.remainder.y += amount;
 
         auto move = cast(int) actor.remainder.y.round();
@@ -142,20 +151,21 @@ struct BoxWorld {
         actor.remainder.y -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(0, moveSign), actor.size);
-            if (hasWallCollision(tempBox)) {
-                return true;
+            auto wallId = hasWallCollision(tempBox);
+            if (!actor.isPassable && wallId) {
+                return wallId;
             } else {
                 actor.position.y += moveSign;
                 move -= moveSign;
             }
         }
-        return false;
+        return 0;
     }
 
     IVec2 moveActor(ActorId id, Vec2 amount) {
         auto result = IVec2();
-        result.x = moveActorX(id, amount.x);
-        result.y = moveActorY(id, amount.y);
+        result.x = cast(int) moveActorX(id, amount.x);
+        result.y = cast(int) moveActorY(id, amount.y);
         return result;
     }
 
@@ -168,15 +178,15 @@ struct BoxWorld {
     }
 
     ActorId[] moveWall(WallId id, Vec2 amount) {
-        auto wall = &walls[id];
+        auto wall = &walls[id - 1];
         wall.remainder += amount;
 
         squishedIdsBuffer.clear();
         auto move = wall.remainder.round().toIVec();
         if (move.x != 0 || move.y != 0) {
-            foreach (i, ref actor; actors) {
+            foreach (ref actor; actors) {
                 actor.isRiding = false;
-                if (!actor.rideSide) continue;
+                if (!actor.rideSide || actor.isPassable) continue;
                 auto rideBox = actor;
                 final switch (actor.rideSide) with (RideSide) {
                     case none: break;
@@ -193,6 +203,7 @@ struct BoxWorld {
             wall.remainder.x -= move.x;
             wall.position.x += move.x;
             foreach (i, ref actor; actors) {
+                if (actor.isPassable) continue;
                 if (wall.hasIntersection(actor)) {
                     // Push actor.
                     auto wallLeft = wall.position.x;
@@ -200,13 +211,13 @@ struct BoxWorld {
                     auto actorLeft = actor.position.x;
                     auto actorRight = actor.position.x + actor.size.x;
                     auto actorPushAmount = (move.x > 0) ? (wallRight - actorLeft) : (wallLeft - actorRight);
-                    if (moveActorX(i, actorPushAmount)) {
+                    if (moveActorX(i + 1, actorPushAmount)) {
                         // Squish actor.
-                        squishedIdsBuffer.append(i);
+                        squishedIdsBuffer.append(i + 1);
                     }
                 } else if (actor.isRiding) {
                     // Carry actor.
-                    moveActorX(i, move.x);
+                    moveActorX(i + 1, move.x);
                 }
             }
             wall.isPassable = false;
@@ -216,6 +227,7 @@ struct BoxWorld {
             wall.remainder.y -= move.y;
             wall.position.y += move.y;
             foreach (i, ref actor; actors) {
+                if (actor.isPassable) continue;
                 if (wall.hasIntersection(actor)) {
                     // Push actor.
                     auto wallTop = wall.position.y;
@@ -223,13 +235,13 @@ struct BoxWorld {
                     auto actorTop = actor.position.y;
                     auto actorBottom = actor.position.y + actor.size.y;
                     auto actorPushAmount = (move.y > 0) ? (wallBottom - actorTop) : (wallTop - actorBottom);
-                    if (moveActorY(i, actorPushAmount)) {
+                    if (moveActorY(i + 1, actorPushAmount)) {
                         // Squish actor.
-                        squishedIdsBuffer.append(i);
+                        squishedIdsBuffer.append(i + 1);
                     }
                 } else if (actor.isRiding) {
                     // Carry actor.
-                    moveActorY(i, move.y);
+                    moveActorY(i + 1, move.y);
                 }
             }
             wall.isPassable = false;
