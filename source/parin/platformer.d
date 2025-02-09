@@ -39,13 +39,15 @@ struct BoxMover {
     float gravityFallFactor = 0.7f;
     float acceleration = 0.0f;
     float decelerationFactor = 0.3f;
+    bool isUnnormalized;
 
     @safe @nogc nothrow:
 
-    this(float speed, float jump, float gravity) {
+    this(float speed, float jump, float gravity, float acceleration) {
         this.speed = speed;
         this.jump = jump;
         this.gravity = gravity;
+        this.acceleration = acceleration;
     }
 
     bool isSmooth() {
@@ -56,22 +58,22 @@ struct BoxMover {
         return gravity == 0.0f;
     }
 
-    Vec2 move(float dt, bool isUnnormalized = false) {
+    Vec2 move() {
         if (isTopDown) {
             auto tempDirection = isUnnormalized ? direction : direction.normalize();
             if (isSmooth) {
                 if (direction.x > 0.0f) {
-                    velocity.x = min(velocity.x + tempDirection.x * acceleration * dt, tempDirection.x * speed);
+                    velocity.x = min(velocity.x + tempDirection.x * acceleration, tempDirection.x * speed);
                 } else if (direction.x < 0.0f) {
-                    velocity.x = max(velocity.x + tempDirection.x * acceleration * dt, tempDirection.x * speed);
+                    velocity.x = max(velocity.x + tempDirection.x * acceleration, tempDirection.x * speed);
                 }
                 if (velocity.x != tempDirection.x * speed) {
                    velocity.x = lerp(velocity.x, 0.0f, decelerationFactor);
                 }
                 if (direction.y > 0.0f) {
-                    velocity.y = min(velocity.y + tempDirection.y * acceleration * dt, tempDirection.y * speed);
+                    velocity.y = min(velocity.y + tempDirection.y * acceleration, tempDirection.y * speed);
                 } else if (direction.y < 0.0f) {
-                    velocity.y = max(velocity.y + tempDirection.y * acceleration * dt, tempDirection.y * speed);
+                    velocity.y = max(velocity.y + tempDirection.y * acceleration, tempDirection.y * speed);
                 }
                 if (velocity.y != tempDirection.y * speed) {
                    velocity.y = lerp(velocity.y, 0.0f, decelerationFactor);
@@ -80,14 +82,14 @@ struct BoxMover {
                 velocity.x = tempDirection.x * speed;
                 velocity.y = tempDirection.y * speed;
             }
-            velocity.x = velocity.x * dt;
-            velocity.y = velocity.y * dt;
+            velocity.x = velocity.x;
+            velocity.y = velocity.y;
         } else {
             if (isSmooth) {
                 if (direction.x > 0.0f) {
-                    velocity.x = min(velocity.x + acceleration * dt, speed);
+                    velocity.x = min(velocity.x + acceleration, speed);
                 } else if (direction.x < 0.0f) {
-                    velocity.x = max(velocity.x - acceleration * dt, -speed);
+                    velocity.x = max(velocity.x - acceleration, -speed);
                 }
                 if (velocity.x != direction.x * speed) {
                    velocity.x = lerp(velocity.x, 0.0f, decelerationFactor);
@@ -95,10 +97,10 @@ struct BoxMover {
             } else {
                 velocity.x = direction.x * speed;
             }
-            velocity.x = velocity.x * dt;
+            velocity.x = velocity.x;
 
-            if (velocity.y > 0.0f) velocity.y += gravity * dt;
-            else velocity.y += gravity * gravityFallFactor * dt;
+            if (velocity.y > 0.0f) velocity.y += gravity;
+            else velocity.y += gravity * gravityFallFactor;
             if (direction.y < 0.0f) velocity.y = -jump;
         }
         return velocity;
@@ -130,6 +132,11 @@ struct Box {
     pragma(inline, true)
     this(int x, int y, IVec2 size) {
         this(IVec2(x, y), size);
+    }
+
+    pragma(inline, true)
+    Rect toRect() {
+        return Rect(position.toVec(), size.toVec());
     }
 
     bool hasPoint(IVec2 point) {

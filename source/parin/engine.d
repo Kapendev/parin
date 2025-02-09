@@ -275,7 +275,7 @@ struct Texture {
 }
 
 /// Represents an identifier for a managed engine resource.
-/// Managed resources are cached by the path they were loaded from and can be safely shared throughout the code.
+/// Managed resources can be safely shared throughout the code.
 /// To free these resources, use the `freeResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct TextureId {
@@ -310,18 +310,18 @@ struct TextureId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data && engineState.textures.has(data);
+        return data && engineState.textures.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        return engineState.textures.data[data];
+        return engineState.textures[GenerationalIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the texture associated with the resource identifier or returns a default value if invalid.
     Texture getOr() {
-        return isValid ? engineState.textures.data[data] : Texture();
+        return isValid ? engineState.textures[GenerationalIndex(data.value - 1, data.generation)] : Texture();
     }
 
     /// Frees the resource associated with the identifier.
@@ -374,7 +374,7 @@ struct Font {
 }
 
 /// Represents an identifier for a managed engine resource.
-/// Managed resources are cached by the path they were loaded from and can be safely shared throughout the code.
+/// Managed resources can be safely shared throughout the code.
 /// To free these resources, use the `freeResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct FontId {
@@ -409,18 +409,18 @@ struct FontId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data && engineState.fonts.has(data);
+        return data && engineState.fonts.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        return engineState.fonts.data[data];
+        return engineState.fonts[GenerationalIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the font associated with the resource identifier or returns a default value if invalid.
     Font getOr() {
-        return isValid ? engineState.fonts.data[data] : Font();
+        return isValid ? engineState.fonts[GenerationalIndex(data.value - 1, data.generation)] : Font();
     }
 
     /// Frees the resource associated with the identifier.
@@ -525,7 +525,7 @@ struct Sound {
 }
 
 /// Represents an identifier for a managed engine resource.
-/// Managed resources are cached by the path they were loaded from and can be safely shared throughout the code.
+/// Managed resources can be safely shared throughout the code.
 /// To free these resources, use the `freeResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct SoundId {
@@ -569,18 +569,18 @@ struct SoundId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data && engineState.sounds.has(data);
+        return data && engineState.sounds.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-        return engineState.sounds.data[data];
+        return engineState.sounds[GenerationalIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the sound associated with the resource identifier or returns a default value if invalid.
     Sound getOr() {
-        return isValid ? engineState.sounds.data[data] : Sound();
+        return isValid ? engineState.sounds[GenerationalIndex(data.value - 1, data.generation)] : Sound();
     }
 
     /// Frees the resource associated with the identifier.
@@ -827,68 +827,7 @@ struct Camera {
     }
 }
 
-struct EngineResourceGroup(T) {
-    GenerationalList!T data;
-    GenerationalList!LStr names;
-
-    @safe @nogc nothrow:
-
-    Sz length() {
-        return data.length;
-    }
-
-    bool has(GenerationalIndex i) {
-        return data.has(i);
-    }
-
-    Result!GenerationalIndex find(IStr name) {
-        foreach (id; engineState.textures.ids) {
-            if (engineState.textures.names[id] == name) return Result!GenerationalIndex(id);
-        }
-        return Result!GenerationalIndex();
-    }
-
-    GenerationalIndex append(T arg, IStr name) {
-        data.append(arg);
-        return names.append(LStr(name));
-    }
-
-    GenerationalIndex appendEmpty() {
-        return append(T(), "");
-    }
-
-    void remove(GenerationalIndex i) {
-        data[i].free();
-        data.remove(i);
-        names[i].free();
-        names.remove(i);
-    }
-
-    void reserve(Sz capacity) {
-        data.reserve(capacity);
-        names.reserve(capacity);
-    }
-
-    void free() {
-        foreach (ref item; data.items) {
-            item.free();
-        }
-        data.free();
-        foreach (ref item; names.items) {
-            item.free();
-        }
-        names.free();
-    }
-
-    auto items() {
-        return data.items;
-    }
-
-    auto ids() {
-        return data.ids;
-    }
-}
-
+/// The engine flags.
 struct EngineFlags {
     bool isUpdating;
     bool isPixelSnapped;
@@ -936,9 +875,9 @@ struct EngineState {
     Camera userCamera;
     Viewport userViewport;
 
-    EngineResourceGroup!Texture textures;
-    EngineResourceGroup!Font fonts;
-    EngineResourceGroup!Sound sounds;
+    GenerationalList!Texture textures;
+    GenerationalList!Font fonts;
+    GenerationalList!Sound sounds;
     EngineViewport viewport;
     Font debugFont;
     List!IStr envArgsBuffer;
@@ -1201,8 +1140,11 @@ Result!Texture loadRawTexture(IStr path) {
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 TextureId loadTexture(IStr path) {
-    if (auto id = engineState.textures.find(path)) return TextureId(id.get());
-    if (auto resource = loadRawTexture(path)) return TextureId(engineState.textures.append(resource.get(), path));
+    if (auto resource = loadRawTexture(path)) {
+        auto id = TextureId(engineState.textures.append(resource.get()));
+        id.data.value += 1;
+        return id;
+    }
     return TextureId();
 }
 
@@ -1227,8 +1169,11 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
-    if (auto id = engineState.fonts.find(path)) return FontId(id.get());
-    if (auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes)) return FontId(engineState.fonts.append(resource.get(), path));
+    if (auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes)) {
+        auto id = FontId(engineState.fonts.append(resource.get()));
+        id.data.value += 1;
+        return id;
+    }
     return FontId();
 }
 
@@ -1246,8 +1191,11 @@ Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    if (auto id = engineState.fonts.find(path)) return FontId(id.get());
-    if (auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight)) return FontId(engineState.fonts.append(resource.get(), path));
+    if (auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight)) {
+        auto id = FontId(engineState.fonts.append(resource.get()));
+        id.data.value += 1;
+        return id;
+    }
     return FontId();
 }
 
@@ -1272,8 +1220,11 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 SoundId loadSound(IStr path, float volume, float pitch) {
-    if (auto id = engineState.sounds.find(path)) return SoundId(id.get());
-    if (auto resource = loadRawSound(path, volume, pitch)) return SoundId(engineState.sounds.append(resource.get(), path));
+    if (auto resource = loadRawSound(path, volume, pitch)) {
+        auto id = SoundId(engineState.sounds.append(resource.get()));
+        id.data.value += 1;
+        return id;
+    }
     return SoundId();
 }
 
@@ -1325,9 +1276,6 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.textures.reserve(defaultEngineResourcesCapacity);
     engineState.sounds.reserve(defaultEngineResourcesCapacity);
     engineState.fonts.reserve(defaultEngineFontsCapacity);
-    engineState.textures.appendEmpty();
-    engineState.sounds.appendEmpty();
-    engineState.fonts.appendEmpty();
     engineState.viewport.color = gray;
     engineState.loadTextBuffer.reserve(8192);
     engineState.saveTextBuffer.reserve(8192);
@@ -2093,6 +2041,7 @@ void drawRect(Rect area, Color color = white) {
     }
 }
 
+/// Draws a hollow rectangle with the specified area and color.
 @trusted
 void drawHollowRect(Rect area, float thickness, Color color = white) {
     if (isPixelSnapped || isPixelPerfect) {
@@ -2117,6 +2066,7 @@ void drawCirc(Circ area, Color color = white) {
     }
 }
 
+/// Draws a hollow circle with the specified area and color.
 @trusted
 void drawHollowCirc(Circ area, float thickness, Color color = white) {
     if (isPixelSnapped || isPixelPerfect) {
