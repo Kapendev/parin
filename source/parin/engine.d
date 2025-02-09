@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.37
+// Version: v0.0.38
 // ---
 
 /// The `engine` module functions as a lightweight 2D game engine.

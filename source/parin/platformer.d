@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.37
+// Version: v0.0.38
 // ---
 
 // TODO: Update all the doc comments here.
@@ -418,6 +418,7 @@ struct BoxWorld {
         clearWalls();
         clearActors();
         squishedIdsBuffer.clear();
+        collisionIdsBuffer.clear();
     }
 
     void reserve(Sz capacity) {
@@ -426,6 +427,7 @@ struct BoxWorld {
         wallsProperties.reserve(capacity);
         actorsProperties.reserve(capacity);
         squishedIdsBuffer.reserve(capacity);
+        collisionIdsBuffer.reserve(capacity);
     }
 
     void free() {
@@ -434,6 +436,7 @@ struct BoxWorld {
         wallsProperties.free();
         actorsProperties.free();
         squishedIdsBuffer.free();
+        collisionIdsBuffer.free();
         this = BoxWorld();
     }
 }
