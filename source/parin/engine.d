@@ -315,7 +315,13 @@ struct TextureId {
 
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
-        if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+        if (!isValid) {
+            if (data) {
+                assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            } else {
+                assert(0, "ID `0` is always invalid and represents a resource that was never created.");
+            }
+        }
         return engineState.textures[GenerationalIndex(data.value - 1, data.generation)];
     }
 
@@ -326,7 +332,7 @@ struct TextureId {
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.textures.remove(data);
+        if (isValid) engineState.textures.remove(GenerationalIndex(data.value - 1, data.generation));
     }
 }
 
@@ -414,7 +420,13 @@ struct FontId {
 
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
-        if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+        if (!isValid) {
+            if (data) {
+                assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            } else {
+                assert(0, "ID `0` is always invalid and represents a resource that was never created.");
+            }
+        }
         return engineState.fonts[GenerationalIndex(data.value - 1, data.generation)];
     }
 
@@ -425,7 +437,7 @@ struct FontId {
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.fonts.remove(data);
+        if (isValid) engineState.fonts.remove(GenerationalIndex(data.value - 1, data.generation));
     }
 }
 
@@ -574,7 +586,13 @@ struct SoundId {
 
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
-        if (!isValid) assert(0, "Index `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+        if (!isValid) {
+            if (data) {
+                assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            } else {
+                assert(0, "ID `0` is always invalid and represents a resource that was never created.");
+            }
+        }
         return engineState.sounds[GenerationalIndex(data.value - 1, data.generation)];
     }
 
@@ -585,7 +603,7 @@ struct SoundId {
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.sounds.remove(data);
+        if (isValid) engineState.sounds.remove(GenerationalIndex(data.value - 1, data.generation));
     }
 }
 

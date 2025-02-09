@@ -13,14 +13,16 @@
 /// The `platformer` module provides a pixel-perfect physics engine.
 module parin.platformer;
 
+import joka.ascii;
 import joka.containers;
 import joka.math;
 import joka.types;
 
 @safe @nogc nothrow:
 
-alias ActorId = Sz;
-alias WallId = Sz;
+alias BaseBoxId = int;
+alias ActorBoxId = BaseBoxId;
+alias WallBoxId = BaseBoxId;
 
 enum RideSide : ubyte {
     none,
@@ -156,6 +158,11 @@ struct Box {
             position.y < area.position.y + area.size.y
         );
     }
+
+    /// Returns a string representation with a limited lifetime.
+    IStr toStr() {
+        return "({}, {}, {}, {})".format(position.x, position.y, size.x, size.y);
+    }
 }
 
 struct WallBoxProperties {
@@ -175,56 +182,93 @@ struct BoxWorld {
     List!Box actors;
     List!WallBoxProperties wallsProperties;
     List!ActorBoxProperties actorsProperties;
-    List!ActorId squishedIdsBuffer;
+    List!ActorBoxId squishedIdsBuffer;
+    List!BaseBoxId collisionIdsBuffer;
 
     @safe @nogc nothrow:
 
-    ref Box getWall(WallId id) {
+    ref Box getWall(WallBoxId id) {
+        if (id <= 0) {
+            assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        } else if (id > walls.length) {
+            assert(0, "ID `{}` does not exist.".format(id));
+        }
         return walls[id - 1];
     }
 
-    ref Box getActor(ActorId id) {
+    ref Box getActor(ActorBoxId id) {
+        if (id <= 0) {
+            assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        } else if (id > actors.length) {
+            assert(0, "ID `{}` does not exist.".format(id));
+        }
         return actors[id - 1];
     }
 
-    ref WallBoxProperties getWallProperties(WallId id) {
+    ref WallBoxProperties getWallProperties(WallBoxId id) {
+        if (id <= 0) {
+            assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        } else if (id > wallsProperties.length) {
+            assert(0, "ID `{}` does not exist.".format(id));
+        }
         return wallsProperties[id - 1];
     }
 
-    ref ActorBoxProperties getActorProperties(ActorId id) {
+    ref ActorBoxProperties getActorProperties(ActorBoxId id) {
+        if (id <= 0) {
+            assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        } else if (id > actorsProperties.length) {
+            assert(0, "ID `{}` does not exist.".format(id));
+        }
         return actorsProperties[id - 1];
     }
 
-    WallId appendWall(Box box) {
+    WallBoxId appendWall(Box box) {
         walls.append(box);
         wallsProperties.append(WallBoxProperties());
-        return walls.length;
+        return cast(BaseBoxId) walls.length;
     }
 
-    ActorId appendActor(Box box, RideSide rideSide = RideSide.none) {
+    ActorBoxId appendActor(Box box, RideSide rideSide = RideSide.none) {
         actors.append(box);
         actorsProperties.append(ActorBoxProperties());
         actorsProperties[$ - 1].rideSide = rideSide;
-        return actors.length;
+        return cast(BaseBoxId) actors.length;
     }
 
-    WallId hasWallCollision(Box box) {
+    WallBoxId hasWallCollision(Box box) {
         foreach (i, wall; walls) {
-            if (wall.hasIntersection(box) && !wallsProperties[i].isPassable) return i + 1;
+            if (wall.hasIntersection(box) && !wallsProperties[i].isPassable) return cast(BaseBoxId) (i + 1);
         }
         return 0;
     }
 
-    ActorId hasActorCollision(Box box) {
+    ActorBoxId hasActorCollision(Box box) {
         foreach (i, actor; actors) {
-            if (actor.hasIntersection(box) && !actorsProperties[i].isPassable) return i + 1;
+            if (actor.hasIntersection(box) && !actorsProperties[i].isPassable) return cast(BaseBoxId) (i + 1);
         }
         return 0;
     }
 
-    WallId moveActorX(ActorId id, float amount) {
-        auto actor = &actors[id - 1];
-        auto properties = &actorsProperties[id - 1];
+    WallBoxId[] getWallCollisions(Box box) {
+        collisionIdsBuffer.clear();
+        foreach (i, wall; walls) {
+            if (wall.hasIntersection(box) && !wallsProperties[i].isPassable) collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+        }
+        return collisionIdsBuffer[];
+    }
+
+    ActorBoxId[] getActorCollisions(Box box) {
+        collisionIdsBuffer.clear();
+        foreach (i, actor; actors) {
+            if (actor.hasIntersection(box) && !actorsProperties[i].isPassable) collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+        }
+        return collisionIdsBuffer[];
+    }
+
+    WallBoxId moveActorX(ActorBoxId id, float amount) {
+        auto actor = &getActor(id);
+        auto properties = &getActorProperties(id);
         properties.remainder.x += amount;
 
         auto move = cast(int) properties.remainder.x.round();
@@ -245,9 +289,9 @@ struct BoxWorld {
         return 0;
     }
 
-    WallId moveActorY(ActorId id, float amount) {
-        auto actor = &actors[id - 1];
-        auto properties = &actorsProperties[id - 1];
+    WallBoxId moveActorY(ActorBoxId id, float amount) {
+        auto actor = &getActor(id);
+        auto properties = &getActorProperties(id);
         properties.remainder.y += amount;
 
         auto move = cast(int) properties.remainder.y.round();
@@ -268,24 +312,24 @@ struct BoxWorld {
         return 0;
     }
 
-    IVec2 moveActor(ActorId id, Vec2 amount) {
+    IVec2 moveActor(ActorBoxId id, Vec2 amount) {
         auto result = IVec2();
         result.x = cast(int) moveActorX(id, amount.x);
         result.y = cast(int) moveActorY(id, amount.y);
         return result;
     }
 
-    ActorId[] moveWallX(WallId id, float amount) {
+    ActorBoxId[] moveWallX(WallBoxId id, float amount) {
         return moveWall(id, Vec2(amount, 0.0f));
     }
 
-    ActorId[] moveWallY(WallId id, float amount) {
+    ActorBoxId[] moveWallY(WallBoxId id, float amount) {
         return moveWall(id, Vec2(0.0f, amount));
     }
 
-    ActorId[] moveWall(WallId id, Vec2 amount) {
-        auto wall = &walls[id - 1];
-        auto properties = &wallsProperties[id - 1];
+    ActorBoxId[] moveWall(WallBoxId id, Vec2 amount) {
+        auto wall = &getWall(id);
+        auto properties = &getWallProperties(id);
         properties.remainder += amount;
 
         squishedIdsBuffer.clear();
@@ -319,13 +363,13 @@ struct BoxWorld {
                         auto actorLeft = actor.position.x;
                         auto actorRight = actor.position.x + actor.size.x;
                         auto actorPushAmount = (move.x > 0) ? (wallRight - actorLeft) : (wallLeft - actorRight);
-                        if (moveActorX(i + 1, actorPushAmount)) {
+                        if (moveActorX(cast(BaseBoxId) (i + 1), actorPushAmount)) {
                             // Squish actor.
-                            squishedIdsBuffer.append(i + 1);
+                            squishedIdsBuffer.append(cast(BaseBoxId) (i + 1));
                         }
                     } else if (actorsProperties[i].isRiding) {
                         // Carry actor.
-                        moveActorX(i + 1, move.x);
+                        moveActorX(cast(BaseBoxId) (i + 1), move.x);
                     }
                 }
                 properties.isPassable = false;
@@ -345,13 +389,13 @@ struct BoxWorld {
                         auto actorTop = actor.position.y;
                         auto actorBottom = actor.position.y + actor.size.y;
                         auto actorPushAmount = (move.y > 0) ? (wallBottom - actorTop) : (wallTop - actorBottom);
-                        if (moveActorY(i + 1, actorPushAmount)) {
+                        if (moveActorY(cast(BaseBoxId) (i + 1), actorPushAmount)) {
                             // Squish actor.
-                            squishedIdsBuffer.append(i + 1);
+                            squishedIdsBuffer.append(cast(BaseBoxId) (i + 1));
                         }
                     } else if (actorsProperties[i].isRiding) {
                         // Carry actor.
-                        moveActorY(i + 1, move.y);
+                        moveActorY(cast(BaseBoxId) (i + 1), move.y);
                     }
                 }
                 properties.isPassable = false;

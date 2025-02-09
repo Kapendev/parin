@@ -3,9 +3,9 @@
 import parin;
 
 auto world = BoxWorld();
-auto platformBoxId = WallId();
-auto groundBoxId = WallId();
-auto playerBoxId = ActorId();
+auto platformBoxId = WallBoxId();
+auto groundBoxId = WallBoxId();
+auto playerBoxId = ActorBoxId();
 auto playerMover = BoxMover(2, 4, 0.3, 1);
 auto groundY = 140;
 
