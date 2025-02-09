@@ -7,6 +7,8 @@
 // ---
 
 // TODO: Update all the doc comments here.
+// TODO: Add spatial partitioning after testing this in a game.
+// NOTE: Maybe a world pixel size value could be useful.
 
 /// The `platformer` module provides a pixel-perfect physics engine.
 module parin.platformer;
@@ -32,10 +34,10 @@ struct BoxMover {
     Vec2 direction;
     Vec2 velocity;
     float speed = 1.0f;
-    float jump = 1.0f;
+    float jump = 0.0f;
     float gravity = 0.0f;
     float gravityFallFactor = 0.7f;
-    float acceleration = 1.0f;
+    float acceleration = 0.0f;
     float decelerationFactor = 0.3f;
 
     @safe @nogc nothrow:
@@ -158,6 +160,7 @@ struct ActorBoxProperties {
     Vec2 remainder;
     RideSide rideSide;
     bool isRiding;
+    bool isPassable;
 }
 
 struct BoxWorld {
@@ -207,7 +210,7 @@ struct BoxWorld {
 
     ActorId hasActorCollision(Box box) {
         foreach (i, actor; actors) {
-            if (actor.hasIntersection(box)) return i + 1;
+            if (actor.hasIntersection(box) && !actorsProperties[i].isPassable) return i + 1;
         }
         return 0;
     }
@@ -224,7 +227,8 @@ struct BoxWorld {
         properties.remainder.x -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(moveSign, 0), actor.size);
-            if (auto wallId = hasWallCollision(tempBox)) {
+            auto wallId = hasWallCollision(tempBox);
+            if (!properties.isPassable && wallId) {
                 return wallId;
             } else {
                 actor.position.x += moveSign;
@@ -246,7 +250,8 @@ struct BoxWorld {
         properties.remainder.y -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(0, moveSign), actor.size);
-            if (auto wallId = hasWallCollision(tempBox)) {
+            auto wallId = hasWallCollision(tempBox);
+            if (!properties.isPassable && wallId) {
                 return wallId;
             } else {
                 actor.position.y += moveSign;
@@ -281,7 +286,7 @@ struct BoxWorld {
         if (move.x != 0 || move.y != 0) {
             foreach (i, ref actorProperties; actorsProperties) {
                 actorProperties.isRiding = false;
-                if (!actorProperties.rideSide) continue;
+                if (!actorProperties.rideSide || actorProperties.isPassable) continue;
                 auto rideBox = actors[i];
                 final switch (actorProperties.rideSide) with (RideSide) {
                     case none: break;
@@ -294,59 +299,73 @@ struct BoxWorld {
             }
         }
         if (move.x != 0) {
-            properties.isPassable = true;
-            properties.remainder.x -= move.x;
             wall.position.x += move.x;
-            foreach (i, ref actor; actors) {
-                if (wall.hasIntersection(actor)) {
-                    // Push actor.
-                    auto wallLeft = wall.position.x;
-                    auto wallRight = wall.position.x + wall.size.x;
-                    auto actorLeft = actor.position.x;
-                    auto actorRight = actor.position.x + actor.size.x;
-                    auto actorPushAmount = (move.x > 0) ? (wallRight - actorLeft) : (wallLeft - actorRight);
-                    if (moveActorX(i + 1, actorPushAmount)) {
-                        // Squish actor.
-                        squishedIdsBuffer.append(i + 1);
+            properties.remainder.x -= move.x;
+            if (!properties.isPassable) {
+                properties.isPassable = true;
+                foreach (i, ref actor; actors) {
+                    if (actorsProperties[i].isPassable) continue;
+                    if (wall.hasIntersection(actor)) {
+                        // Push actor.
+                        auto wallLeft = wall.position.x;
+                        auto wallRight = wall.position.x + wall.size.x;
+                        auto actorLeft = actor.position.x;
+                        auto actorRight = actor.position.x + actor.size.x;
+                        auto actorPushAmount = (move.x > 0) ? (wallRight - actorLeft) : (wallLeft - actorRight);
+                        if (moveActorX(i + 1, actorPushAmount)) {
+                            // Squish actor.
+                            squishedIdsBuffer.append(i + 1);
+                        }
+                    } else if (actorsProperties[i].isRiding) {
+                        // Carry actor.
+                        moveActorX(i + 1, move.x);
                     }
-                } else if (actorsProperties[i].isRiding) {
-                    // Carry actor.
-                    moveActorX(i + 1, move.x);
                 }
+                properties.isPassable = false;
             }
-            properties.isPassable = false;
         }
         if (move.y != 0) {
-            properties.isPassable = true;
-            properties.remainder.y -= move.y;
             wall.position.y += move.y;
-            foreach (i, ref actor; actors) {
-                if (wall.hasIntersection(actor)) {
-                    // Push actor.
-                    auto wallTop = wall.position.y;
-                    auto wallBottom = wall.position.y + wall.size.y;
-                    auto actorTop = actor.position.y;
-                    auto actorBottom = actor.position.y + actor.size.y;
-                    auto actorPushAmount = (move.y > 0) ? (wallBottom - actorTop) : (wallTop - actorBottom);
-                    if (moveActorY(i + 1, actorPushAmount)) {
-                        // Squish actor.
-                        squishedIdsBuffer.append(i + 1);
+            properties.remainder.y -= move.y;
+            if (!properties.isPassable) {
+                properties.isPassable = true;
+                foreach (i, ref actor; actors) {
+                    if (actorsProperties[i].isPassable) continue;
+                    if (wall.hasIntersection(actor)) {
+                        // Push actor.
+                        auto wallTop = wall.position.y;
+                        auto wallBottom = wall.position.y + wall.size.y;
+                        auto actorTop = actor.position.y;
+                        auto actorBottom = actor.position.y + actor.size.y;
+                        auto actorPushAmount = (move.y > 0) ? (wallBottom - actorTop) : (wallTop - actorBottom);
+                        if (moveActorY(i + 1, actorPushAmount)) {
+                            // Squish actor.
+                            squishedIdsBuffer.append(i + 1);
+                        }
+                    } else if (actorsProperties[i].isRiding) {
+                        // Carry actor.
+                        moveActorY(i + 1, move.y);
                     }
-                } else if (actorsProperties[i].isRiding) {
-                    // Carry actor.
-                    moveActorY(i + 1, move.y);
                 }
+                properties.isPassable = false;
             }
-            properties.isPassable = false;
         }
         return squishedIdsBuffer[];
     }
 
-    void clear() {
+    void clearWalls() {
         walls.clear();
-        actors.clear();
         wallsProperties.clear();
+    }
+
+    void clearActors() {
+        actors.clear();
         actorsProperties.clear();
+    }
+
+    void clear() {
+        clearWalls();
+        clearActors();
         squishedIdsBuffer.clear();
     }
 
