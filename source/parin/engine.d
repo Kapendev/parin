@@ -545,6 +545,11 @@ struct SoundId {
 
     @safe @nogc nothrow:
 
+    /// Returns true if the sound associated with the resource identifier is paused.
+    bool isPaused() {
+        return getOr().isPaused;
+    }
+
     /// Returns true if the sound associated with the resource identifier is playing.
     bool isPlaying() {
         return getOr().isPlaying;
