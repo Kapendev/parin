@@ -101,6 +101,7 @@ struct StoryValue {
         }
     }
 
+    @trusted
     IStr toStr() {
         if (data.isType!StoryNumber) {
             return format("{}", data.get!StoryNumber());
@@ -240,6 +241,7 @@ struct Story {
         setNextLabelIndex(labelIndex + 1);
     }
 
+    @trusted
     Fault prepare() {
         previousMenuResult = 0;
         resetLineIndex();
@@ -294,6 +296,7 @@ struct Story {
         return prepare();
     }
 
+    @trusted
     Fault execute(IStr expression) {
         static FixedList!(StoryValue, defaultStoryFixedListCapacity) stack;
 

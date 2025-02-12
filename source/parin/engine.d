@@ -266,9 +266,7 @@ struct Texture {
     /// Frees the loaded texture.
     @trusted
     void free() {
-        if (isEmpty) {
-            return;
-        }
+        if (isEmpty) return;
         rl.UnloadTexture(data);
         this = Texture();
     }
@@ -371,9 +369,7 @@ struct Font {
     /// Frees the loaded font.
     @trusted
     void free() {
-        if (isEmpty) {
-            return;
-        }
+        if (isEmpty) return;
         rl.UnloadFont(data);
         this = Font();
     }
