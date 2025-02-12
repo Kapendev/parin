@@ -8,6 +8,7 @@
 
 // TODO: Update all the doc comments here.
 // TODO: Add spatial partitioning after testing this in a game.
+// TODO: Add simple jump-through walls. No idea how, so this will have to wait.
 // NOTE: Maybe a world pixel size value could be useful.
 
 /// The `platformer` module provides a pixel-perfect physics engine.
@@ -289,6 +290,18 @@ struct BoxWorld {
         return 0;
     }
 
+    WallBoxId moveActorXTo(ActorBoxId id, float to, float amount) {
+        auto actor = &getActor(id);
+        auto target = moveTo(cast(float) actor.position.x, to.floor(), amount);
+        return moveActorX(id, target - actor.position.x);
+    }
+
+    WallBoxId moveActorXToWithSlowdown(ActorBoxId id, float to, float amount, float slowdown) {
+        auto actor = &getActor(id);
+        auto target = moveToWithSlowdown(cast(float) actor.position.x, to.floor(), amount, slowdown);
+        return moveActorX(id, target - actor.position.x);
+    }
+
     WallBoxId moveActorY(ActorBoxId id, float amount) {
         auto actor = &getActor(id);
         auto properties = &getActorProperties(id);
@@ -312,6 +325,18 @@ struct BoxWorld {
         return 0;
     }
 
+    WallBoxId moveActorYTo(ActorBoxId id, float to, float amount) {
+        auto actor = &getActor(id);
+        auto target = moveTo(cast(float) actor.position.y, to.floor(), amount);
+        return moveActorY(id, target - actor.position.y);
+    }
+
+    WallBoxId moveActorYToWithSlowdown(ActorBoxId id, float to, float amount, float slowdown) {
+        auto actor = &getActor(id);
+        auto target = moveToWithSlowdown(cast(float) actor.position.y, to.floor(), amount, slowdown);
+        return moveActorY(id, target - actor.position.y);
+    }
+
     IVec2 moveActor(ActorBoxId id, Vec2 amount) {
         auto result = IVec2();
         result.x = cast(int) moveActorX(id, amount.x);
@@ -319,12 +344,48 @@ struct BoxWorld {
         return result;
     }
 
+    IVec2 moveActorTo(ActorBoxId id, Vec2 to, Vec2 amount) {
+        auto actor = &getActor(id);
+        auto target = moveTo(actor.position.toVec(), to.floor(), amount);
+        return moveActor(id, target - actor.position.toVec());
+    }
+
+    IVec2 moveActorToWithSlowdown(ActorBoxId id, Vec2 to, Vec2 amount, float slowdown) {
+        auto actor = &getActor(id);
+        auto target = moveToWithSlowdown(actor.position.toVec(), to.floor(), amount, slowdown);
+        return moveActor(id, target - actor.position.toVec());
+    }
+
     ActorBoxId[] moveWallX(WallBoxId id, float amount) {
         return moveWall(id, Vec2(amount, 0.0f));
     }
 
+    ActorBoxId[] moveWallXTo(WallBoxId id, float to, float amount) {
+        auto wall = &getWall(id);
+        auto target = moveTo(cast(float) wall.position.x, to.floor(), amount);
+        return moveWallX(id, target - wall.position.x);
+    }
+
+    ActorBoxId[] moveWallXToWithSlowdown(WallBoxId id, float to, float amount, float slowdown) {
+        auto wall = &getWall(id);
+        auto target = moveToWithSlowdown(cast(float) wall.position.x, to.floor(), amount, slowdown);
+        return moveWallX(id, target - wall.position.x);
+    }
+
     ActorBoxId[] moveWallY(WallBoxId id, float amount) {
         return moveWall(id, Vec2(0.0f, amount));
+    }
+
+    ActorBoxId[] moveWallYTo(WallBoxId id, float to, float amount) {
+        auto wall = &getWall(id);
+        auto target = moveTo(cast(float) wall.position.y, to.floor(), amount);
+        return moveWallY(id, target - wall.position.y);
+    }
+
+    ActorBoxId[] moveWallYToWithSlowdown(WallBoxId id, float to, float amount, float slowdown) {
+        auto wall = &getWall(id);
+        auto target = moveToWithSlowdown(cast(float) wall.position.y, to.floor(), amount, slowdown);
+        return moveWallY(id, target - wall.position.y);
     }
 
     ActorBoxId[] moveWall(WallBoxId id, Vec2 amount) {
@@ -402,6 +463,18 @@ struct BoxWorld {
             }
         }
         return squishedIdsBuffer[];
+    }
+
+    ActorBoxId[] moveWallTo(WallBoxId id, Vec2 to, Vec2 amount) {
+        auto wall = &getWall(id);
+        auto target = moveTo(wall.position.toVec(), to.floor(), amount);
+        return moveWall(id, target - wall.position.toVec());
+    }
+
+    ActorBoxId[] moveWallToWithSlowdown(WallBoxId id, Vec2 to, Vec2 amount, float slowdown) {
+        auto wall = &getWall(id);
+        auto target = moveToWithSlowdown(wall.position.toVec(), to.floor(), amount, slowdown);
+        return moveWall(id, target - wall.position.toVec());
     }
 
     void clearWalls() {
