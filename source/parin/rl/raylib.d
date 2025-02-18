@@ -9,9 +9,6 @@
 /// The `rayib` module provides access to the raylib.h functions.
 module parin.rl.raylib;
 
-import joka.traits;
-import joka.types;
-
 @nogc nothrow extern(C):
 
 enum RAYLIB_VERSION_MAJOR = 5;
@@ -55,8 +52,6 @@ struct Vector2
 {
     float x = 0.0f; // Vector x component
     float y = 0.0f; // Vector y component
-
-    mixin addXyzwOps!(float, 2);
 }
 
 // Vector3, 3 components
@@ -65,8 +60,6 @@ struct Vector3
     float x = 0.0f; // Vector x component
     float y = 0.0f; // Vector y component
     float z = 0.0f; // Vector z component
-
-    mixin addXyzwOps!(float, 3);
 }
 
 // Vector4, 4 components
@@ -76,8 +69,6 @@ struct Vector4
     float y = 0.0f; // Vector y component
     float z = 0.0f; // Vector z component
     float w = 0.0f; // Vector w component
-
-    mixin addXyzwOps!(float, 4);
 }
 
 // Quaternion, 4 components (Vector4 alias)

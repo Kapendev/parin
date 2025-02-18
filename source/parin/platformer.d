@@ -8,7 +8,7 @@
 
 // TODO: Update all the doc comments here.
 // TODO: Add spatial partitioning after testing this in a game.
-// TODO: Add simple jump-through walls. No idea how, so this will have to wait.
+// TODO: Add one-way collision support for moving walls.
 // NOTE: Maybe a world pixel size value could be useful.
 
 /// The `platformer` module provides a pixel-perfect physics engine.
@@ -24,6 +24,7 @@ import joka.types;
 alias BaseBoxId = int;
 alias ActorBoxId = BaseBoxId;
 alias WallBoxId = BaseBoxId;
+alias OneWaySide = RideSide;
 
 enum RideSide : ubyte {
     none,
@@ -168,6 +169,7 @@ struct Box {
 
 struct WallBoxProperties {
     Vec2 remainder;
+    OneWaySide oneWaySide;
     bool isPassable;
 }
 
@@ -224,9 +226,10 @@ struct BoxWorld {
         return actorsProperties[id - 1];
     }
 
-    WallBoxId appendWall(Box box) {
+    WallBoxId appendWall(Box box, OneWaySide oneWaySide = OneWaySide.none) {
         walls.append(box);
         wallsProperties.append(WallBoxProperties());
+        wallsProperties[$ - 1].oneWaySide = oneWaySide;
         return cast(BaseBoxId) walls.length;
     }
 
@@ -280,6 +283,25 @@ struct BoxWorld {
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(moveSign, 0), actor.size);
             auto wallId = hasWallCollision(tempBox);
+            if (wallId) {
+                // One way stuff.
+                auto wall = &getWall(wallId);
+                auto wallProperties = &getWallProperties(wallId);
+                final switch (wallProperties.oneWaySide) with (OneWaySide) {
+                    case none:
+                        break;
+                    case top:
+                    case bottom:
+                        wallId = 0;
+                        break;
+                    case left:
+                        if (wall.position.x < actor.position.x || wall.hasIntersection(*actor)) wallId = 0;
+                        break;
+                    case right:
+                        if (wall.position.x > actor.position.x || wall.hasIntersection(*actor)) wallId = 0;
+                        break;
+                }
+            }
             if (!properties.isPassable && wallId) {
                 return wallId;
             } else {
@@ -315,6 +337,25 @@ struct BoxWorld {
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(0, moveSign), actor.size);
             auto wallId = hasWallCollision(tempBox);
+            if (wallId) {
+                // One way stuff.
+                auto wall = &getWall(wallId);
+                auto wallProperties = &getWallProperties(wallId);
+                final switch (wallProperties.oneWaySide) with (OneWaySide) {
+                    case none:
+                        break;
+                    case left:
+                    case right:
+                        wallId = 0;
+                        break;
+                    case top:
+                        if (wall.position.y < actor.position.y || wall.hasIntersection(*actor)) wallId = 0;
+                        break;
+                    case bottom:
+                        if (wall.position.y > actor.position.y || wall.hasIntersection(*actor)) wallId = 0;
+                        break;
+                }
+            }
             if (!properties.isPassable && wallId) {
                 return wallId;
             } else {
@@ -392,6 +433,11 @@ struct BoxWorld {
         auto wall = &getWall(id);
         auto properties = &getWallProperties(id);
         properties.remainder += amount;
+
+        // NOTE: Will be removed when I want to work on that...
+        if (properties.oneWaySide) {
+            assert(0, "One-way collisions are not yet supported for moving walls.");
+        }
 
         squishedIdsBuffer.clear();
         auto move = properties.remainder.round().toIVec();
