@@ -14,8 +14,6 @@ import rl = parin.rl;
 import joka.ascii;
 import joka.io;
 import joka.unions;
-
-public import joka.colors;
 public import joka.containers;
 public import joka.faults;
 public import joka.math;
