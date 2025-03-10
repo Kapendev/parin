@@ -15,7 +15,6 @@ import joka.ascii;
 import joka.containers;
 import joka.io;
 import joka.types;
-import joka.unions;
 
 @safe @nogc nothrow:
 

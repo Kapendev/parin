@@ -59,27 +59,26 @@ struct Tile {
     }
 }
 
+// TODO: Look at it again now with the Grid changes. It works, I know that :)
+// NOTE: Things like changing the grid row count might be interesting.
 struct TileMap {
     Grid!short data;
-    Sz softMaxRowCount;
-    Sz softMaxColCount;
+    Sz softRowCount;
+    Sz softColCount;
     int tileWidth = 16;
     int tileHeight = 16;
     Vec2 position;
 
-    enum maxRowCount = data.maxRowCount;
-    enum maxColCount = data.maxColCount;
-    enum maxCapacity = data.maxCapacity;
-
     @safe @nogc nothrow:
 
-    this(int tileWidth, int tileHeight, Vec2 position = Vec2()) {
+    this(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        this.softMaxRowCount = maxRowCount;
-        this.softMaxColCount = maxColCount;
-        this.position = position;
-        this.data.fill(-1);
+        resizeHard(rowCount, colCount);
+    }
+
+    this(int tileWidth, int tileHeight) {
+        this(defaultGridRowCount, defaultGridColCount, tileWidth, tileHeight);
     }
 
     ref short opIndex(Sz row, Sz col) {
@@ -116,21 +115,7 @@ struct TileMap {
     }
 
     Sz opDollar(Sz dim)() {
-        static if (dim == 0) {
-            return rowCount;
-        } else static if (dim == 1) {
-            return colCount;
-        } else {
-            assert(0, "WTF!");
-        }
-    }
-
-    Sz rowCount() {
-        return data.length ? softMaxRowCount : 0;
-    }
-
-    Sz colCount() {
-        return data.length ? softMaxColCount : 0;
+        return data.opDollar!dim();
     }
 
     bool isEmpty() {
@@ -138,29 +123,50 @@ struct TileMap {
     }
 
     bool has(Sz row, Sz col) {
-        return row < rowCount && col < colCount;
+        return row < softRowCount && col < softColCount;
     }
 
     bool has(IVec2 position) {
         return has(position.y, position.x);
     }
 
-    @trusted
+    Sz hardRowCount() {
+        return data.rowCount;
+    }
+
+    Sz hardColCount() {
+        return data.colCount;
+    }
+
+    void resizeHard(Sz newHardRowCount, Sz newHardColCount) {
+        data.resizeBlank(newHardRowCount, newHardColCount);
+        data.fill(-1);
+        softRowCount = newHardRowCount;
+        softColCount = newHardColCount;
+    }
+
+    void resizeSoft(Sz newSoftRowCount, Sz newSoftColCount) {
+        if (newSoftRowCount > hardRowCount || newSoftColCount > hardColCount) {
+            assert(0, "Soft count must be smaller than hard count.");
+        }
+        softRowCount = newSoftRowCount;
+        softColCount = newSoftColCount;
+    }
+
     void fill(short value) {
         data.fill(value);
     }
 
-    @trusted
     void free() {
         data.free();
     }
 
     int width() {
-        return cast(int) (colCount * tileWidth);
+        return cast(int) (softColCount * tileWidth);
     }
 
     int height() {
-        return cast(int) (rowCount * tileHeight);
+        return cast(int) (softRowCount * tileHeight);
     }
 
     /// Returns the size of the tile map.
@@ -173,25 +179,27 @@ struct TileMap {
         return Vec2(tileWidth, tileHeight);
     }
 
-    Fault parse(IStr csv, int tileWidth, int tileHeight) {
+    Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
         if (csv.length == 0) return Fault.invalid;
-        this.tileWidth = tileWidth;
-        this.tileHeight = tileHeight;
-        this.softMaxRowCount = 0;
-        this.softMaxColCount = 0;
-        this.data.fill(-1);
+        if (data.isEmpty) {
+            data.resizeBlank(defaultGridRowCount, defaultGridColCount);
+        }
+        tileWidth = newTileWidth;
+        tileHeight = newTileHeight;
+        softRowCount = 0;
+        softColCount = 0;
         auto view = csv;
         while (view.length != 0) {
-            softMaxRowCount += 1;
-            softMaxColCount = 0;
-            if (softMaxRowCount > maxRowCount) return Fault.invalid;
+            softRowCount += 1;
+            softColCount = 0;
+            if (softRowCount > data.rowCount) return Fault.invalid;
             auto line = view.skipLine();
             while (line.length != 0) {
-                softMaxColCount += 1;
-                if (softMaxColCount > maxColCount) return Fault.invalid;
+                softColCount += 1;
+                if (softColCount > data.colCount) return Fault.invalid;
                 auto tile = line.skipValue(',').toSigned();
                 if (tile.isNone) return Fault.invalid;
-                data[softMaxRowCount - 1, softMaxColCount - 1] = cast(short) tile.get();
+                data[softRowCount - 1, softColCount - 1] = cast(short) tile.get();
             }
         }
         return Fault.none;
@@ -226,23 +234,23 @@ struct TileMap {
     }
 
     IVec2 firstGridPosition(Vec2 topLeftWorldPosition, DrawOptions options = DrawOptions()) {
-        if (rowCount == 0 || colCount == 0) return IVec2();
+        if (softRowCount == 0 || softColCount == 0) return IVec2();
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, rowCount - 1));
-        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, colCount - 1));
+        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, softRowCount - 1));
+        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, softColCount - 1));
         return result;
     }
 
     IVec2 lastGridPosition(Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
-        if (rowCount == 0 || colCount == 0) return IVec2();
+        if (softRowCount == 0 || softColCount == 0) return IVec2();
         auto result = IVec2();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
         auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, rowCount - 1));
-        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, colCount - 1));
+        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, softRowCount - 1));
+        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, softColCount - 1));
         return result;
     }
 
@@ -271,7 +279,7 @@ struct TileMap {
         }
 
         auto result = Range(
-            colCount,
+            softColCount,
             firstGridPosition(topLeftWorldPosition, options),
             lastGridPosition(bottomRightWorldPosition, options),
         );
@@ -286,10 +294,10 @@ struct TileMap {
 
 Fault saveTileMap(IStr path, TileMap map) {
     auto csv = prepareTempText();
-    foreach (row; 0 .. map.rowCount) {
-        foreach (col; 0 .. map.colCount) {
+    foreach (row; 0 .. map.softRowCount) {
+        foreach (col; 0 .. map.softColCount) {
             csv.append(map[row, col].toStr());
-            if (col != map.colCount - 1) csv.append(',');
+            if (col != map.softColCount - 1) csv.append(',');
         }
         csv.append('\n');
     }

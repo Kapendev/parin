@@ -10,18 +10,16 @@
 module parin.engine;
 
 import rl = parin.rl;
-
+import stdc = joka.stdc;
 import joka.ascii;
 import joka.io;
-import joka.unions;
 public import joka.containers;
-public import joka.faults;
 public import joka.math;
 public import joka.types;
 
 @safe @nogc nothrow:
 
-EngineState engineState;
+EngineState* engineState;
 
 enum defaultEngineFontsCapacity = 64;
 enum defaultEngineResourcesCapacity = 256;
@@ -1272,6 +1270,7 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 @trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
+    engineState = cast(EngineState*) stdc.malloc(EngineState.sizeof);
     engineState.envArgsBuffer.clear();
     foreach (arg; args) engineState.envArgsBuffer.append(arg);
     // Set raylib stuff.
@@ -1429,6 +1428,8 @@ void closeWindow() {
         engineState.loadTextBuffer.free();
         engineState.saveTextBuffer.free();
         engineState.assetsPath.free();
+        stdc.free(engineState);
+        engineState = null;
     }
     // This is outside because who knows, maybe raylib needs that.
     rl.CloseAudioDevice();
