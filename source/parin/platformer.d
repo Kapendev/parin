@@ -21,15 +21,18 @@ import joka.types;
 
 @safe @nogc nothrow:
 
-alias BaseBoxId      = int;
-alias BaseBoxIdGroup = FixedList!(BaseBoxId, 510);
+alias BaseBoxId            = uint;
+alias BaseBoxFlags         = ubyte;
+alias WallBoxId            = BaseBoxId;
+alias WallBoxFlags         = BaseBoxFlags;
+alias ActorBoxId           = BaseBoxId;
+alias ActorBoxFlags        = BaseBoxFlags;
+alias TaggedBaseBoxId      = BaseBoxId;
+alias TaggedBaseBoxIdGroup = FixedList!(TaggedBaseBoxId, 510);
+alias OneWaySide           = RideSide;
 
-alias ActorBoxId     = BaseBoxId;
-alias ActorBoxFlags  = ubyte;
-alias WallBoxId      = BaseBoxId;
-alias WallBoxFlags   = ubyte;
-alias OneWaySide     = RideSide;
-
+enum wallBoxTag      = 0;
+enum actorBoxTag     = 1;
 enum boxPassableFlag = 0x1;
 enum boxRidingFlag   = 0x2;
 
@@ -141,7 +144,7 @@ struct BoxWorld {
     List!ActorBoxProperties actorsProperties;
     List!ActorBoxId squishedIdsBuffer;
     List!BaseBoxId collisionIdsBuffer;
-    Grid!BaseBoxIdGroup grid;
+    Grid!TaggedBaseBoxIdGroup grid;
     int gridTileWidth;
     int gridTileHeight;
 
@@ -150,17 +153,25 @@ struct BoxWorld {
     void enableSpatialGrid(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
         gridTileWidth = tileWidth;
         gridTileHeight = tileHeight;
+        grid.resizeBlank(rowCount, colCount);
+        foreach (ref group; grid) {
+            group.length = 0;
+        }
         foreach (i, ref properties; wallsProperties) {
             properties.gridX = walls[i].position.x / gridTileWidth - (walls[i].position.x < 0);
             properties.gridY = walls[i].position.y / gridTileHeight - (walls[i].position.y < 0);
+            // TODO: There are two problems to think about. Negative values and boxes touching more than one group.
+            auto id = cast(TaggedBaseBoxId) (i + 1);
+            id &= ~(1 << 31);
+            grid[properties.gridY, properties.gridX].append(id);
         }
         foreach (i, ref properties; actorsProperties) {
             properties.gridX = actors[i].position.x / gridTileWidth - (actors[i].position.x < 0);
             properties.gridY = actors[i].position.y / gridTileHeight - (actors[i].position.y < 0);
-        }
-        grid.resizeBlank(rowCount, colCount);
-        foreach (ref group; grid) {
-            group.length = 0;
+            // TODO: There are two problems to think about. Negative values and boxes touching more than one group.
+            auto id = cast(TaggedBaseBoxId) (i + 1);
+            id |= (1 << 31);
+            grid[properties.gridY, properties.gridX].append(id);
         }
     }
 
@@ -171,7 +182,7 @@ struct BoxWorld {
     }
 
     ref IRect getWall(WallBoxId id) {
-        if (id <= 0) {
+        if (id == 0) {
             assert(0, "ID `0` is always invalid and represents a box that was never created.");
         } else if (id > walls.length) {
             assert(0, "ID `{}` does not exist.".format(id));
@@ -180,7 +191,7 @@ struct BoxWorld {
     }
 
     ref IRect getActor(ActorBoxId id) {
-        if (id <= 0) {
+        if (id == 0) {
             assert(0, "ID `0` is always invalid and represents a box that was never created.");
         } else if (id > actors.length) {
             assert(0, "ID `{}` does not exist.".format(id));
@@ -189,7 +200,7 @@ struct BoxWorld {
     }
 
     ref WallBoxProperties getWallProperties(WallBoxId id) {
-        if (id <= 0) {
+        if (id == 0) {
             assert(0, "ID `0` is always invalid and represents a box that was never created.");
         } else if (id > wallsProperties.length) {
             assert(0, "ID `{}` does not exist.".format(id));
@@ -198,7 +209,7 @@ struct BoxWorld {
     }
 
     ref ActorBoxProperties getActorProperties(ActorBoxId id) {
-        if (id <= 0) {
+        if (id == 0) {
             assert(0, "ID `0` is always invalid and represents a box that was never created.");
         } else if (id > actorsProperties.length) {
             assert(0, "ID `{}` does not exist.".format(id));

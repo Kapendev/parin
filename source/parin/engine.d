@@ -881,6 +881,7 @@ struct EngineViewport {
 
 /// The engine state.
 struct EngineState {
+    // LABEL
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
     Sz tickCount;
@@ -1271,9 +1272,11 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
     engineState = cast(EngineState*) stdc.malloc(EngineState.sizeof);
+    stdc.memset(engineState, 0, EngineState.sizeof);
+    // This part is a hack for the `runGame` mixin.
     engineState.envArgsBuffer.clear();
     foreach (arg; args) engineState.envArgsBuffer.append(arg);
-    // Set raylib stuff.
+    // Raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
     rl.InitWindow(width, height, title.toCStr().getOr());
@@ -1282,7 +1285,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.SetTargetFPS(60);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
     setWindowMinSize(240, 135);
-    // Set engine stuff.
+    // Engine stuff.
     engineState.flags.canUseAssetsPath = true;
     engineState.fullscreenState.previousWindowWidth = width;
     engineState.fullscreenState.previousWindowHeight = height;

@@ -18,7 +18,7 @@ bool update(float dt) {
     }
     // Create the drag handle and print if it is dragged.
     if (uiDragHandle(handleArea, handleOptions)) {
-        println(handleArea.position);
+        printfln("({}, {})", handleArea.position.x, handleArea.position.y);
     }
     return false;
 }

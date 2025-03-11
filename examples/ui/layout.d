@@ -21,14 +21,14 @@ bool update(float dt) {
     auto group = Rect();
     // Group 1.
     group = area.subTop(groupHeight);
-    uiText(group.subLeft(textWidth), "Cool Button", UiOptions(Alignment.left));
-    if (uiButton(group.subLeft(buttonWidth), "")) println("Cool");
+    uiText(group.subLeft(textWidth), "SUPER Button", UiOptions(Alignment.left));
+    if (uiButton(group.subLeft(buttonWidth), "")) println("SUPER");
     // Margin.
     area.subTop(groupMargin);
     // Group 2.
     group = area.subTop(groupHeight);
-    uiText(group.subLeft(textWidth), "Super Button", UiOptions(Alignment.left));
-    if (uiButton(group.subLeft(buttonWidth), "")) println("Super");
+    uiText(group.subLeft(textWidth), "HOT Button", UiOptions(Alignment.left));
+    if (uiButton(group.subLeft(buttonWidth), "")) println("HOT");
     return false;
 }
 

@@ -10,13 +10,14 @@
 module parin.ui;
 
 import rl = parin.rl;
+import stdc = joka.stdc;
 import joka.ascii;
 import parin.engine;
 
 @safe @nogc nothrow:
 
-UiState uiState;
-UiState uiPreviousState;
+UiState* uiState;
+UiState* uiPreviousState;
 
 enum defaultUiDisabledColor = 0x202020.toRgb();
 enum defaultUiIdleColor = 0x414141.toRgb();
@@ -107,7 +108,22 @@ int findSpaceInTextField(IStr text) {
     return result;
 }
 
+@trusted
 void prepareUi() {
+    if (uiState == null) {
+        // NOTE: This will leak, but who cares.
+        uiState = cast(UiState*) stdc.malloc(UiState.sizeof);
+        uiPreviousState = cast(UiState*) stdc.malloc(UiState.sizeof);
+        stdc.memset(uiState, 0, UiState.sizeof);
+        stdc.memset(uiPreviousState, 0, UiState.sizeof);
+        // TODO: Should be changed to something better looking.
+        uiState.mouseClickAction = Mouse.left;
+        uiState.keyboardClickAction = Keyboard.enter;
+        uiState.gamepadClickAction = Gamepad.a;
+        uiPreviousState.mouseClickAction = Mouse.left;
+        uiPreviousState.keyboardClickAction = Keyboard.enter;
+        uiPreviousState.gamepadClickAction = Gamepad.a;
+    }
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     uiState.itemId = 0;
     uiState.hotItemId = 0;
@@ -251,7 +267,7 @@ void wrapUiFocus(short step, Sz length) {
 }
 
 void updateUiState(Rect area, bool isHot, bool isActive, bool isClicked) {
-    uiPreviousState = uiState;
+    *uiPreviousState = *uiState;
     uiState.itemId += 1;
     if (isHot) {
         uiState.hotItemId = uiState.itemId;
@@ -396,7 +412,7 @@ bool updateUiDragHandle(ref Rect area, UiOptions options = UiOptions()) {
         auto m = (mouse - uiState.viewportPosition) / uiState.viewportScale; // NOTE: Maybe this should be a function?
         area.position.y = clamp(m.y + uiDragOffset.y, dragLimitY.x, dragLimitY.y - area.size.y);
         area.position.x = clamp(m.x + uiDragOffset.x, dragLimitX.x, dragLimitX.y - area.size.x);
-        uiState = uiPreviousState;
+        *uiState = *uiPreviousState;
         updateUiButton(area, "", options);
         return true;
     } else {
