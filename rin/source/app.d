@@ -6,10 +6,10 @@ import parin.story;
 RinState rinState;
 
 enum helpMsg = `
-Usage:
+Usage
  rin [options] script
  rin [options] -e expression
-Options:
+Options
  -d  Executes in debug mode.
  -l  Executes in linear mode.
  -e  Executes a single expression.
@@ -32,15 +32,15 @@ IStr prepareErrorMsg(Fault fault) {
 IStr updateErrorMsg(Fault fault) {
     switch (fault) with (Fault) {
         case assertion: return "Assertion failed.";
-        case invalid: return "Invalid arguments passed to the `{}` operator.".format(rinState.story.faultOp);
-        case overflow: return "A word or number is too long.";
-        case cantParse: return "A word, number, or operator contains invalid characters.";
+        case invalid: return "Invalid values passed to `{}` at token position `{}`.".format(rinState.story.faultOp, rinState.story.faultTokenPosition);
+        case overflow: return "A value is too long at token position `{}`.".format(rinState.story.faultTokenPosition);
+        case cantParse: return "A value or operator contains invalid characters at token position `{}`.".format(rinState.story.faultTokenPosition);
         default: return "WTF!";
     }
 }
 
 void printScriptError(Sz index, IStr text) {
-    printfln("\n{}({}): {}", rinState.scriptPath, index, text);
+    printfln("{}:{}\n {}", rinState.scriptPath, index, text);
 }
 
 Fault prepareStory() {

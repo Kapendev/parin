@@ -881,7 +881,6 @@ struct EngineViewport {
 
 /// The engine state.
 struct EngineState {
-    // LABEL
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
     Sz tickCount;
@@ -2429,15 +2428,9 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
 mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
     version (D_BetterC) {
-        // NOTE: This is unsafe, so avoid reserving memory for envArgsBuffer.
-        @trusted @nogc nothrow
-        void __mainArgcArgvThing(int argc, immutable(char)** argv) {
-            foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].toStr());
-        }
-
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            __mainArgcArgvThing(argc, argv);
+            foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].toStr());
             openWindow(width, height, engineState.envArgsBuffer[], title);
             readyFunc();
             updateWindow(&updateFunc);
@@ -2445,7 +2438,7 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
             closeWindow();
         }
     } else {
-        void main(string[] args) {
+        void main(immutable(char)[][] args) {
             openWindow(width, height, args, title);
             readyFunc();
             updateWindow(&updateFunc);

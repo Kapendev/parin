@@ -1,0 +1,6 @@
+#!/bin/env rin
+
+## A script that exists to show how errors look.
+
+$ 1 2 + +
+$ bababababababbabababab bababababababababba CAT
