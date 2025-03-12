@@ -317,7 +317,10 @@ struct Story {
             }
             if (token.isMaybeStoryOp) {
                 auto tempOp = token.toStoryOp();
-                if (tempOp.isNone) return tempOp.fault;
+                if (tempOp.isNone) {
+                    faultTokenPosition = tokenCount;
+                    return tempOp.fault;
+                }
                 auto op = tempOp.value;
                 final switch (op) {
                     case ADD:

@@ -21,8 +21,9 @@ public import joka.types;
 
 EngineState* engineState;
 
+enum defaultEngineTexturesCapacity = 256;
+enum defaultEngineSoundsCapacity = 128;
 enum defaultEngineFontsCapacity = 64;
-enum defaultEngineResourcesCapacity = 256;
 
 /// A type representing flipping orientations.
 enum Flip : ubyte {
@@ -1266,15 +1267,11 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
-// NOTE: This function frees memory and we skip some stuff in release builds since the OS will free the memory for us.
 @trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
     engineState = cast(EngineState*) stdc.malloc(EngineState.sizeof);
     stdc.memset(engineState, 0, EngineState.sizeof);
-    // This part is a hack for the `runGame` mixin.
-    engineState.envArgsBuffer.clear();
-    foreach (arg; args) engineState.envArgsBuffer.append(arg);
     // Raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
@@ -1285,14 +1282,15 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
     setWindowMinSize(240, 135);
     // Engine stuff.
+    foreach (arg; args) engineState.envArgsBuffer.append(arg);
     engineState.flags.canUseAssetsPath = true;
     engineState.fullscreenState.previousWindowWidth = width;
     engineState.fullscreenState.previousWindowHeight = height;
     engineState.borderColor = black;
     // Ready resources.
-    engineState.droppedFilePathsBuffer.reserve(defaultEngineResourcesCapacity);
-    engineState.textures.reserve(defaultEngineResourcesCapacity);
-    engineState.sounds.reserve(defaultEngineResourcesCapacity);
+    engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
+    engineState.textures.reserve(defaultEngineTexturesCapacity);
+    engineState.sounds.reserve(defaultEngineSoundsCapacity);
     engineState.fonts.reserve(defaultEngineFontsCapacity);
     engineState.viewport.color = gray;
     engineState.loadTextBuffer.reserve(8192);
@@ -1303,9 +1301,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
     engineState.debugFont = monogramTexture.toParin().toFont(6, 12);
-    debug {
-        rl.UnloadImage(monogramImage);
-    }
+    rl.UnloadImage(monogramImage);
 }
 
 /// Updates the window every frame with the given function.
@@ -1417,23 +1413,19 @@ void updateWindow(bool function(float dt) updateFunc) {
 
 /// Closes the window.
 /// You should avoid calling this function manually.
-// NOTE: This function frees memory and we skip some stuff in release builds since the OS will free the memory for us.
 @trusted
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
-    debug {
-        freeResources();
-        engineState.viewport.free();
-        engineState.debugFont.free();
-        engineState.envArgsBuffer.free();
-        engineState.droppedFilePathsBuffer.free();
-        engineState.loadTextBuffer.free();
-        engineState.saveTextBuffer.free();
-        engineState.assetsPath.free();
-        stdc.free(engineState);
-        engineState = null;
-    }
-    // This is outside because who knows, maybe raylib needs that.
+    freeResources();
+    engineState.viewport.free();
+    engineState.debugFont.free();
+    engineState.envArgsBuffer.free();
+    engineState.droppedFilePathsBuffer.free();
+    engineState.loadTextBuffer.free();
+    engineState.saveTextBuffer.free();
+    engineState.assetsPath.free();
+    stdc.free(engineState);
+    engineState = null;
     rl.CloseAudioDevice();
     rl.CloseWindow();
 }
@@ -2430,8 +2422,8 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
+            openWindow(width, height, [], title);
             foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].toStr());
-            openWindow(width, height, engineState.envArgsBuffer[], title);
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();

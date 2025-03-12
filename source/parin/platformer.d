@@ -125,16 +125,12 @@ struct WallBoxProperties {
     Vec2 remainder;
     OneWaySide oneWaySide;
     WallBoxFlags flags;
-    byte gridX;
-    byte gridY;
 }
 
 struct ActorBoxProperties {
     Vec2 remainder;
     RideSide rideSide;
     ActorBoxFlags flags;
-    byte gridX;
-    byte gridY;
 }
 
 struct BoxWorld {
@@ -158,20 +154,22 @@ struct BoxWorld {
             group.length = 0;
         }
         foreach (i, ref properties; wallsProperties) {
-            properties.gridX = walls[i].position.x / gridTileWidth - (walls[i].position.x < 0);
-            properties.gridY = walls[i].position.y / gridTileHeight - (walls[i].position.y < 0);
-            // TODO: There are two problems to think about. Negative values and boxes touching more than one group.
-            auto id = cast(TaggedBaseBoxId) (i + 1);
-            id &= ~(1 << 31);
-            grid[properties.gridY, properties.gridX].append(id);
+            auto id = cast(BaseBoxId) (i + 1);
+            auto tagged = id & ~(1 << 31);
+            auto positions = getWallGridPositions(id);
+            grid[positions[0].y, positions[0].x].append(tagged);
+            if (positions[0] != positions[1]) {
+                grid[positions[1].y, positions[1].x].append(tagged);
+            }
         }
         foreach (i, ref properties; actorsProperties) {
-            properties.gridX = actors[i].position.x / gridTileWidth - (actors[i].position.x < 0);
-            properties.gridY = actors[i].position.y / gridTileHeight - (actors[i].position.y < 0);
-            // TODO: There are two problems to think about. Negative values and boxes touching more than one group.
-            auto id = cast(TaggedBaseBoxId) (i + 1);
-            id |= (1 << 31);
-            grid[properties.gridY, properties.gridX].append(id);
+            auto id = cast(BaseBoxId) (i + 1);
+            auto tagged = id | (1 << 31);
+            auto positions = getWallGridPositions(id);
+            grid[positions[0].y, positions[0].x].append(tagged);
+            if (positions[0] != positions[1]) {
+                grid[positions[1].y, positions[1].x].append(tagged);
+            }
         }
     }
 
@@ -190,15 +188,6 @@ struct BoxWorld {
         return walls[id - 1];
     }
 
-    ref IRect getActor(ActorBoxId id) {
-        if (id == 0) {
-            assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        } else if (id > actors.length) {
-            assert(0, "ID `{}` does not exist.".format(id));
-        }
-        return actors[id - 1];
-    }
-
     ref WallBoxProperties getWallProperties(WallBoxId id) {
         if (id == 0) {
             assert(0, "ID `0` is always invalid and represents a box that was never created.");
@@ -206,6 +195,26 @@ struct BoxWorld {
             assert(0, "ID `{}` does not exist.".format(id));
         }
         return wallsProperties[id - 1];
+    }
+
+    @trusted
+    IVec2[2] getWallGridPositions(WallBoxId id) {
+        IVec2[2] result = void;
+        auto i = id - 1;
+        result[0].x = walls[i].position.x / gridTileWidth - (walls[i].position.x < 0);
+        result[0].y = walls[i].position.y / gridTileHeight - (walls[i].position.y < 0);
+        result[1].x = (walls[i].position.x + walls[i].size.x) - ((walls[i].position.x + walls[i].size.x) < 0);
+        result[1].y = (walls[i].position.y + walls[i].size.y) - ((walls[i].position.y + walls[i].size.y) < 0);
+        return result;
+    }
+
+    ref IRect getActor(ActorBoxId id) {
+        if (id == 0) {
+            assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        } else if (id > actors.length) {
+            assert(0, "ID `{}` does not exist.".format(id));
+        }
+        return actors[id - 1];
     }
 
     ref ActorBoxProperties getActorProperties(ActorBoxId id) {
@@ -217,14 +226,21 @@ struct BoxWorld {
         return actorsProperties[id - 1];
     }
 
+    @trusted
+    IVec2[2] getActorGridPositions(WallBoxId id) {
+        IVec2[2] result = void;
+        auto i = id - 1;
+        result[0].x = actors[i].position.x / gridTileWidth - (actors[i].position.x < 0);
+        result[0].y = actors[i].position.y / gridTileHeight - (actors[i].position.y < 0);
+        result[1].x = (actors[i].position.x + actors[i].size.x) - ((actors[i].position.x + actors[i].size.x) < 0);
+        result[1].y = (actors[i].position.y + actors[i].size.y) - ((actors[i].position.y + actors[i].size.y) < 0);
+        return result;
+    }
+
     WallBoxId appendWall(IRect box, OneWaySide oneWaySide = OneWaySide.none) {
         walls.append(box);
         wallsProperties.append(WallBoxProperties());
         wallsProperties[$ - 1].oneWaySide = oneWaySide;
-        if (gridTileWidth != 0 || gridTileHeight != 0) {
-            wallsProperties[$ - 1].gridX = box.position.x / gridTileWidth - (box.position.x < 0);
-            wallsProperties[$ - 1].gridY = box.position.y / gridTileHeight - (box.position.y < 0);
-        }
         return cast(BaseBoxId) walls.length;
     }
 
@@ -232,10 +248,6 @@ struct BoxWorld {
         actors.append(box);
         actorsProperties.append(ActorBoxProperties());
         actorsProperties[$ - 1].rideSide = rideSide;
-        if (gridTileWidth != 0 || gridTileHeight != 0) {
-            actorsProperties[$ - 1].gridX = box.position.x / gridTileWidth - (box.position.x < 0);
-            actorsProperties[$ - 1].gridY = box.position.y / gridTileHeight - (box.position.y < 0);
-        }
         return cast(BaseBoxId) actors.length;
     }
 
@@ -306,7 +318,6 @@ struct BoxWorld {
             } else {
                 actor.position.x += moveSign;
                 move -= moveSign;
-                properties.gridX = actor.position.x / gridTileWidth - (actor.position.x < 0);
             }
         }
         return 0;
@@ -361,7 +372,6 @@ struct BoxWorld {
             } else {
                 actor.position.y += moveSign;
                 move -= moveSign;
-                properties.gridY = actor.position.y / gridTileHeight - (actor.position.y < 0);
             }
         }
         return 0;
@@ -460,7 +470,6 @@ struct BoxWorld {
         if (move.x != 0) {
             wall.position.x += move.x;
             properties.remainder.x -= move.x;
-            properties.gridX = wall.position.x / gridTileWidth - (wall.position.x < 0);
             if (~properties.flags & boxPassableFlag) {
                 properties.flags |= boxPassableFlag;
                 foreach (i, ref actor; actors) {
@@ -487,7 +496,6 @@ struct BoxWorld {
         if (move.y != 0) {
             wall.position.y += move.y;
             properties.remainder.y -= move.y;
-            properties.gridY = wall.position.y / gridTileHeight - (wall.position.y < 0);
             if (~properties.flags & boxPassableFlag) {
                 properties.flags |= boxPassableFlag;
                 foreach (i, ref actor; actors) {

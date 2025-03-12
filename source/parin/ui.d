@@ -111,7 +111,7 @@ int findSpaceInTextField(IStr text) {
 @trusted
 void prepareUi() {
     if (uiState == null) {
-        // NOTE: This will leak, but who cares.
+        // NOTE: This leaks. THIS IS SO BAD WHERE IS `Box::leak` IN THIS CODEBASE???
         uiState = cast(UiState*) stdc.malloc(UiState.sizeof);
         uiPreviousState = cast(UiState*) stdc.malloc(UiState.sizeof);
         stdc.memset(uiState, 0, UiState.sizeof);
