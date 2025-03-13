@@ -305,13 +305,13 @@ struct TextureId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data && engineState.textures.has(GenerationalIndex(data.value - 1, data.generation));
+        return data.value && engineState.textures.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) {
-            if (data) {
+            if (data.value) {
                 assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
             } else {
                 assert(0, "ID `0` is always invalid and represents a resource that was never created.");
@@ -408,13 +408,13 @@ struct FontId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data && engineState.fonts.has(GenerationalIndex(data.value - 1, data.generation));
+        return data.value && engineState.fonts.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) {
-            if (data) {
+            if (data.value) {
                 assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
             } else {
                 assert(0, "ID `0` is always invalid and represents a resource that was never created.");
@@ -579,13 +579,13 @@ struct SoundId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data && engineState.sounds.has(GenerationalIndex(data.value - 1, data.generation));
+        return data.value && engineState.sounds.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) {
-            if (data) {
+            if (data.value) {
                 assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
             } else {
                 assert(0, "ID `0` is always invalid and represents a resource that was never created.");
@@ -1156,12 +1156,11 @@ Result!Texture loadRawTexture(IStr path) {
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 TextureId loadTexture(IStr path) {
-    if (auto resource = loadRawTexture(path)) {
-        auto id = TextureId(engineState.textures.append(resource.get()));
-        id.data.value += 1;
-        return id;
-    }
-    return TextureId();
+    auto resource = loadRawTexture(path);
+    if (resource.isNone) return TextureId();
+    auto id = TextureId(engineState.textures.append(resource.get()));
+    id.data.value += 1;
+    return id;
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
@@ -1185,12 +1184,11 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
-    if (auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes)) {
-        auto id = FontId(engineState.fonts.append(resource.get()));
-        id.data.value += 1;
-        return id;
-    }
-    return FontId();
+    auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
+    if (resource.isNone) return FontId();
+    auto id = FontId(engineState.fonts.append(resource.get()));
+    id.data.value += 1;
+    return id;
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
@@ -1207,12 +1205,11 @@ Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    if (auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight)) {
-        auto id = FontId(engineState.fonts.append(resource.get()));
-        id.data.value += 1;
-        return id;
-    }
-    return FontId();
+    auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight);
+    if (resource.isNone) return FontId();
+    auto id = FontId(engineState.fonts.append(resource.get()));
+    id.data.value += 1;
+    return id;
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
@@ -1236,12 +1233,11 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
 SoundId loadSound(IStr path, float volume, float pitch) {
-    if (auto resource = loadRawSound(path, volume, pitch)) {
-        auto id = SoundId(engineState.sounds.append(resource.get()));
-        id.data.value += 1;
-        return id;
-    }
-    return SoundId();
+    auto resource = loadRawSound(path, volume, pitch);
+    if (resource.isNone) return SoundId();
+    auto id = SoundId(engineState.sounds.append(resource.get()));
+    id.data.value += 1;
+    return id;
 }
 
 /// Saves a text file to the assets folder.
@@ -2290,8 +2286,8 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 @trusted
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    static linesBuffer = FixedList!(IStr, 256)();
-    static linesWidthBuffer = FixedList!(int, 256)();
+    static FixedList!(IStr, 128) linesBuffer = void;
+    static FixedList!(short, 128) linesWidthBuffer = void;
 
     if (font.isEmpty || text.length == 0) return;
     linesBuffer.clear();
@@ -2309,10 +2305,10 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.append(cast(int) (measureTextSize(font, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.append(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
                 if (codepoint == '\n') textHeight += font.lineSpacing;
-                lineCodepointIndex = cast(int) (textCodepointIndex + 1);
+                lineCodepointIndex = cast(ushort) (textCodepointIndex + 1);
             }
             textCodepointIndex += codepointSize;
         }
@@ -2423,7 +2419,14 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
         extern(C)
         void main(int argc, immutable(char)** argv) {
             openWindow(width, height, [], title);
-            foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].toStr());
+            // Yeah... I love writing code again and again and again.
+            foreach (i; 0 .. argc) {
+                Sz length = 0;
+                while (argv[i][length] != '\0') {
+                    length += 1;
+                }
+                engineState.envArgsBuffer.append(argv[i][0 .. length]);
+            }
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();

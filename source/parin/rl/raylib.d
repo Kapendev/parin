@@ -845,7 +845,6 @@ enum
 
 // Callbacks to hook some internal functions
 // WARNING: These callbacks are intended for advance users
-// alias TraceLogCallback = void function (int logLevel, const(char)* text, va_list args); // Logging: Redirect trace log messages
 alias LoadFileDataCallback = ubyte* function (const(char)* fileName, int* dataSize); // FileIO: Load binary data
 alias SaveFileDataCallback = bool function (const(char)* fileName, void* data, int dataSize); // FileIO: Save binary data
 alias LoadFileTextCallback = char* function (const(char)* fileName); // FileIO: Load text data
@@ -999,7 +998,6 @@ void MemFree (void* ptr); // Internal memory free
 
 // Set custom callbacks
 // WARNING: Callbacks setup is intended for advance users
-// void SetTraceLogCallback (TraceLogCallback callback); // Set custom trace log
 void SetLoadFileDataCallback (LoadFileDataCallback callback); // Set custom file binary data loader
 void SetSaveFileDataCallback (SaveFileDataCallback callback); // Set custom file binary data saver
 void SetLoadFileTextCallback (LoadFileTextCallback callback); // Set custom file text data loader
@@ -1035,7 +1033,6 @@ void UnloadDirectoryFiles (FilePathList files); // Unload filepaths
 bool IsFileDropped (); // Check if a file has been dropped into window
 FilePathList LoadDroppedFiles (); // Load dropped filepaths
 void UnloadDroppedFiles (FilePathList files); // Unload dropped filepaths
-// c_long GetFileModTime (const(char)* fileName); // Get file modification time (last write time)
 
 // Compression/Encoding functionality
 ubyte* CompressData (const(ubyte)* data, int dataSize, int* compDataSize); // Compress data (DEFLATE algorithm), memory must be MemFree()

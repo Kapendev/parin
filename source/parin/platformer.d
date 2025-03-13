@@ -146,6 +146,30 @@ struct BoxWorld {
 
     @safe @nogc nothrow:
 
+    @trusted
+    void appendWallIdToSpatialGrid(WallBoxId id) {
+        FixedList!(IVec2, 4) vecSet = void;
+//        vecSet.clear();
+//        auto taggedId = id & ~(1 << 31);
+//        foreach (position; getWallSpatialGridPositions) {
+//            auto canAppend = true;
+//            foreach (vec; vecSet) {
+//                if (vec == position) {
+//                    canAppend = false;
+//                    break;
+//                }
+//            }
+//            if (canAppend) {
+//                grid[vec.y, vec.x].append(taggedId);
+//                vecSet.append(vec);
+//            }
+//        }
+    }
+
+    void removeWallIdFromSpatialGrid(WallBoxId id) {
+
+    }
+
     void enableSpatialGrid(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
         gridTileWidth = tileWidth;
         gridTileHeight = tileHeight;
@@ -156,20 +180,20 @@ struct BoxWorld {
         foreach (i, ref properties; wallsProperties) {
             auto id = cast(BaseBoxId) (i + 1);
             auto tagged = id & ~(1 << 31);
-            auto positions = getWallGridPositions(id);
-            grid[positions[0].y, positions[0].x].append(tagged);
-            if (positions[0] != positions[1]) {
-                grid[positions[1].y, positions[1].x].append(tagged);
-            }
+            auto positions = getWallSpatialGridPositions(id);
+//            grid[positions[0].y, positions[0].x].append(tagged);
+//            if (positions[0] != positions[1]) {
+//                grid[positions[1].y, positions[1].x].append(tagged);
+//            }
         }
         foreach (i, ref properties; actorsProperties) {
             auto id = cast(BaseBoxId) (i + 1);
             auto tagged = id | (1 << 31);
-            auto positions = getWallGridPositions(id);
-            grid[positions[0].y, positions[0].x].append(tagged);
-            if (positions[0] != positions[1]) {
-                grid[positions[1].y, positions[1].x].append(tagged);
-            }
+            auto positions = getActorSpatialGridPositions(id);
+//            grid[positions[0].y, positions[0].x].append(tagged);
+//            if (positions[0] != positions[1]) {
+//                grid[positions[1].y, positions[1].x].append(tagged);
+//            }
         }
     }
 
@@ -198,13 +222,17 @@ struct BoxWorld {
     }
 
     @trusted
-    IVec2[2] getWallGridPositions(WallBoxId id) {
-        IVec2[2] result = void;
+    IVec2[4] getWallSpatialGridPositions(WallBoxId id) {
+        IVec2[4] result = void;
         auto i = id - 1;
         result[0].x = walls[i].position.x / gridTileWidth - (walls[i].position.x < 0);
         result[0].y = walls[i].position.y / gridTileHeight - (walls[i].position.y < 0);
-        result[1].x = (walls[i].position.x + walls[i].size.x) - ((walls[i].position.x + walls[i].size.x) < 0);
-        result[1].y = (walls[i].position.y + walls[i].size.y) - ((walls[i].position.y + walls[i].size.y) < 0);
+        result[3].x = (walls[i].position.x + walls[i].size.x) - ((walls[i].position.x + walls[i].size.x) < 0);
+        result[3].y = (walls[i].position.y + walls[i].size.y) - ((walls[i].position.y + walls[i].size.y) < 0);
+        result[1].x = result[3].x;
+        result[1].y = result[0].y;
+        result[2].x = result[0].x;
+        result[2].y = result[3].y;
         return result;
     }
 
@@ -227,13 +255,17 @@ struct BoxWorld {
     }
 
     @trusted
-    IVec2[2] getActorGridPositions(WallBoxId id) {
-        IVec2[2] result = void;
+    IVec2[4] getActorSpatialGridPositions(WallBoxId id) {
+        IVec2[4] result = void;
         auto i = id - 1;
         result[0].x = actors[i].position.x / gridTileWidth - (actors[i].position.x < 0);
         result[0].y = actors[i].position.y / gridTileHeight - (actors[i].position.y < 0);
         result[1].x = (actors[i].position.x + actors[i].size.x) - ((actors[i].position.x + actors[i].size.x) < 0);
         result[1].y = (actors[i].position.y + actors[i].size.y) - ((actors[i].position.y + actors[i].size.y) < 0);
+        result[1].x = result[3].x;
+        result[1].y = result[0].y;
+        result[2].x = result[0].x;
+        result[2].y = result[3].y;
         return result;
     }
 

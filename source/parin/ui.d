@@ -199,11 +199,11 @@ bool isUiClicked() {
 }
 
 bool isUiItemDragged() {
-    return uiState.itemId == uiState.draggedItemId && deltaMouse;
+    return uiState.itemId == uiState.draggedItemId && !deltaMouse.isZero;
 }
 
 bool isUiDragged() {
-    return uiState.draggedItemId > 0 && deltaMouse;
+    return uiState.draggedItemId > 0 && !deltaMouse.isZero;
 }
 
 Vec2 uiDragOffset() {
