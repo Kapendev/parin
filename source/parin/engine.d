@@ -311,11 +311,8 @@ struct TextureId {
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) {
-            if (data.value) {
-                assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-            } else {
-                assert(0, "ID `0` is always invalid and represents a resource that was never created.");
-            }
+            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
         }
         return engineState.textures[GenerationalIndex(data.value - 1, data.generation)];
     }
@@ -414,11 +411,8 @@ struct FontId {
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) {
-            if (data.value) {
-                assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-            } else {
-                assert(0, "ID `0` is always invalid and represents a resource that was never created.");
-            }
+            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
         }
         return engineState.fonts[GenerationalIndex(data.value - 1, data.generation)];
     }
@@ -585,11 +579,8 @@ struct SoundId {
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) {
-            if (data.value) {
-                assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
-            } else {
-                assert(0, "ID `0` is always invalid and represents a resource that was never created.");
-            }
+            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
         }
         return engineState.sounds[GenerationalIndex(data.value - 1, data.generation)];
     }
@@ -2099,6 +2090,7 @@ void drawLine(Line area, float size, Color color = white) {
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     auto target = Rect(position, area.size * options.scale.abs());
+    auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
     auto flip = options.flip;
     if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
         flip = oppositeFlip(flip, Flip.xy);
@@ -2113,8 +2105,6 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
         case Flip.y: area.size.y *= -1.0f; break;
         case Flip.xy: area.size *= Vec2(-1.0f); break;
     }
-
-    auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
     if (isPixelSnapped || isPixelPerfect) {
         rl.DrawTexturePro(
             texture.data,
@@ -2419,12 +2409,9 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
         extern(C)
         void main(int argc, immutable(char)** argv) {
             openWindow(width, height, [], title);
-            // Yeah... I love writing code again and again and again.
             foreach (i; 0 .. argc) {
                 Sz length = 0;
-                while (argv[i][length] != '\0') {
-                    length += 1;
-                }
+                while (argv[i][length] != '\0') length += 1;
                 engineState.envArgsBuffer.append(argv[i][0 .. length]);
             }
             readyFunc();

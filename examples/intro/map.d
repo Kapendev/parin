@@ -9,39 +9,31 @@ auto tile = Tile(16, 16, 145);
 auto tileFlip = Flip.none;
 
 void ready() {
-    lockResolution(320, 180);
+    lockResolution(160, 90);
     atlas = loadTexture("parin_atlas.png");
-    // Parse a CSV string representing a tile map, where each tile is 16x16 pixels in size.
+    // Parse a CSV representing a tile map, where each tile is 16x16 pixels in size.
     map.parse("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55", 16, 16);
 }
 
 bool update(float dt) {
-    // Create the drawing options for the map and tile.
-    auto mapOptions = DrawOptions(Vec2(2));
-    auto tileOptions = mapOptions;
-    tileOptions.flip = tileFlip;
-    if (wasd.x > 0) tileFlip = Flip.x;
-    else if (wasd.x < 0) tileFlip = Flip.none;
-
-    // Move the tile and the camera.
+    // Move and update the game objects.
+    tileFlip = wasd.x ? (wasd.x > 0 ? Flip.x : Flip.none) : tileFlip;
     tile.position += wasd * Vec2(120 * dt);
     camera.position = tile.position + tile.size * Vec2(0.5f);
-    // Check for collisions between the tile and the map and resolve the collision.
-    foreach (position; map.gridPositions(camera.area, mapOptions)) {
-        if (map[position] < 0) continue;
-        auto area = Rect(map.worldPosition(position, mapOptions), map.tileSize * mapOptions.scale);
-        while (area.hasIntersection(Rect(tile.position, tile.size * mapOptions.scale))) {
+    // Check for collisions with the map and resolve them.
+    foreach (point; map.gridPoints(camera.area)) {
+        if (map[point] < 0) continue;
+        auto area = Rect(map.toWorldPoint(point), map.tileSize);
+        while (area.hasIntersection(tile.area)) {
             tile.position -= wasd * Vec2(dt);
             camera.position = tile.position + tile.size * Vec2(0.5f);
         }
     }
-
-    // Draw the tile and the map.
+    // Draw the world.
     camera.attach();
-    drawTile(atlas, tile, tileOptions);
-    drawTileMap(atlas, map, camera, mapOptions);
+    drawTile(atlas, tile, DrawOptions(tileFlip));
+    drawTileMap(atlas, map, camera);
     camera.detach();
-    drawDebugText("Move with arrow keys.", Vec2(8));
     return false;
 }
 

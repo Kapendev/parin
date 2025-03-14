@@ -8,7 +8,7 @@
 
 // TODO: Update all the doc comments here.
 // TODO: Add one-way collision support for moving walls.
-// TODO: Add spatial partitioning.
+// TODO: Add spatial partitioning. Just check the cell a box is in and the cells that are near it.
 // NOTE: Was working on spatial partitioning. The grid is done, just need to add values in it.
 
 /// The `platformer` module provides a pixel-perfect physics engine.
@@ -146,127 +146,65 @@ struct BoxWorld {
 
     @safe @nogc nothrow:
 
-    @trusted
-    void appendWallIdToSpatialGrid(WallBoxId id) {
-        FixedList!(IVec2, 4) vecSet = void;
-//        vecSet.clear();
-//        auto taggedId = id & ~(1 << 31);
-//        foreach (position; getWallSpatialGridPositions) {
-//            auto canAppend = true;
-//            foreach (vec; vecSet) {
-//                if (vec == position) {
-//                    canAppend = false;
-//                    break;
-//                }
-//            }
-//            if (canAppend) {
-//                grid[vec.y, vec.x].append(taggedId);
-//                vecSet.append(vec);
-//            }
-//        }
-    }
-
-    void removeWallIdFromSpatialGrid(WallBoxId id) {
-
-    }
-
-    void enableSpatialGrid(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
+    void enableGrid(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
         gridTileWidth = tileWidth;
         gridTileHeight = tileHeight;
         grid.resizeBlank(rowCount, colCount);
-        foreach (ref group; grid) {
-            group.length = 0;
-        }
+        foreach (ref group; grid) group.clear();
         foreach (i, ref properties; wallsProperties) {
             auto id = cast(BaseBoxId) (i + 1);
-            auto tagged = id & ~(1 << 31);
-            auto positions = getWallSpatialGridPositions(id);
-//            grid[positions[0].y, positions[0].x].append(tagged);
-//            if (positions[0] != positions[1]) {
-//                grid[positions[1].y, positions[1].x].append(tagged);
-//            }
+            auto point = getWallGridPoint(id);
+            grid[point.y, point.x].append(id & ~(1 << 31));
         }
         foreach (i, ref properties; actorsProperties) {
             auto id = cast(BaseBoxId) (i + 1);
-            auto tagged = id | (1 << 31);
-            auto positions = getActorSpatialGridPositions(id);
-//            grid[positions[0].y, positions[0].x].append(tagged);
-//            if (positions[0] != positions[1]) {
-//                grid[positions[1].y, positions[1].x].append(tagged);
-//            }
+            auto point = getActorGridPoint(id);
+            grid[point.y, point.x].append(id | (1 << 31));
         }
     }
 
-    void disableSpatialGrid() {
+    void disableGrid() {
         gridTileWidth = 0;
         gridTileHeight = 0;
         grid.clear();
     }
 
     ref IRect getWall(WallBoxId id) {
-        if (id == 0) {
-            assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        } else if (id > walls.length) {
-            assert(0, "ID `{}` does not exist.".format(id));
-        }
+        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         return walls[id - 1];
     }
 
     ref WallBoxProperties getWallProperties(WallBoxId id) {
-        if (id == 0) {
-            assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        } else if (id > wallsProperties.length) {
-            assert(0, "ID `{}` does not exist.".format(id));
-        }
+        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         return wallsProperties[id - 1];
     }
 
-    @trusted
-    IVec2[4] getWallSpatialGridPositions(WallBoxId id) {
-        IVec2[4] result = void;
+    IVec2 getWallGridPoint(WallBoxId id) {
+        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         auto i = id - 1;
-        result[0].x = walls[i].position.x / gridTileWidth - (walls[i].position.x < 0);
-        result[0].y = walls[i].position.y / gridTileHeight - (walls[i].position.y < 0);
-        result[3].x = (walls[i].position.x + walls[i].size.x) - ((walls[i].position.x + walls[i].size.x) < 0);
-        result[3].y = (walls[i].position.y + walls[i].size.y) - ((walls[i].position.y + walls[i].size.y) < 0);
-        result[1].x = result[3].x;
-        result[1].y = result[0].y;
-        result[2].x = result[0].x;
-        result[2].y = result[3].y;
-        return result;
+        return IVec2(
+            walls[i].position.x / gridTileWidth - (walls[i].position.x < 0),
+            walls[i].position.y / gridTileHeight - (walls[i].position.y < 0),
+        );
     }
 
     ref IRect getActor(ActorBoxId id) {
-        if (id == 0) {
-            assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        } else if (id > actors.length) {
-            assert(0, "ID `{}` does not exist.".format(id));
-        }
+        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         return actors[id - 1];
     }
 
     ref ActorBoxProperties getActorProperties(ActorBoxId id) {
-        if (id == 0) {
-            assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        } else if (id > actorsProperties.length) {
-            assert(0, "ID `{}` does not exist.".format(id));
-        }
+        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         return actorsProperties[id - 1];
     }
 
-    @trusted
-    IVec2[4] getActorSpatialGridPositions(WallBoxId id) {
-        IVec2[4] result = void;
+    IVec2 getActorGridPoint(ActorBoxId id) {
+        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         auto i = id - 1;
-        result[0].x = actors[i].position.x / gridTileWidth - (actors[i].position.x < 0);
-        result[0].y = actors[i].position.y / gridTileHeight - (actors[i].position.y < 0);
-        result[1].x = (actors[i].position.x + actors[i].size.x) - ((actors[i].position.x + actors[i].size.x) < 0);
-        result[1].y = (actors[i].position.y + actors[i].size.y) - ((actors[i].position.y + actors[i].size.y) < 0);
-        result[1].x = result[3].x;
-        result[1].y = result[0].y;
-        result[2].x = result[0].x;
-        result[2].y = result[3].y;
-        return result;
+        return IVec2(
+            actors[i].position.x / gridTileWidth - (actors[i].position.x < 0),
+            actors[i].position.y / gridTileHeight - (actors[i].position.y < 0),
+        );
     }
 
     WallBoxId appendWall(IRect box, OneWaySide oneWaySide = OneWaySide.none) {

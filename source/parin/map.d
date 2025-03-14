@@ -36,6 +36,10 @@ struct Tile {
         return Vec2(width, height);
     }
 
+    Rect area() {
+        return Rect(position, size);
+    }
+
     Sz row(Sz colCount) {
         return id / colCount;
     }
@@ -179,32 +183,6 @@ struct TileMap {
         return Vec2(tileWidth, tileHeight);
     }
 
-    Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
-        if (csv.length == 0) return Fault.invalid;
-        if (data.isEmpty) {
-            data.resizeBlank(defaultGridRowCount, defaultGridColCount);
-        }
-        tileWidth = newTileWidth;
-        tileHeight = newTileHeight;
-        softRowCount = 0;
-        softColCount = 0;
-        auto view = csv;
-        while (view.length != 0) {
-            softRowCount += 1;
-            softColCount = 0;
-            if (softRowCount > data.rowCount) return Fault.invalid;
-            auto line = view.skipLine();
-            while (line.length != 0) {
-                softColCount += 1;
-                if (softColCount > data.colCount) return Fault.invalid;
-                auto tile = line.skipValue(',').toSigned();
-                if (tile.isNone) return Fault.invalid;
-                data[softRowCount - 1, softColCount - 1] = cast(short) tile.get();
-            }
-        }
-        return Fault.none;
-    }
-
     /// Moves the tile map to follow the target position at the specified speed.
     void followPosition(Vec2 target, float speed) {
         position = position.moveTo(target, Vec2(speed));
@@ -216,7 +194,7 @@ struct TileMap {
     }
 
     /// Returns the top left world position of a grid position.
-    Vec2 worldPosition(Sz row, Sz col, DrawOptions options = DrawOptions()) {
+    Vec2 toWorldPoint(Sz row, Sz col, DrawOptions options = DrawOptions()) {
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
         auto temp = Rect(
@@ -229,32 +207,11 @@ struct TileMap {
     }
 
     /// Returns the top left world position of a grid position.
-    Vec2 worldPosition(IVec2 gridPosition, DrawOptions options = DrawOptions()) {
-        return worldPosition(gridPosition.y, gridPosition.x, options);
+    Vec2 toWorldPoint(IVec2 gridPosition, DrawOptions options = DrawOptions()) {
+        return toWorldPoint(gridPosition.y, gridPosition.x, options);
     }
 
-    IVec2 firstGridPosition(Vec2 topLeftWorldPosition, DrawOptions options = DrawOptions()) {
-        if (softRowCount == 0 || softColCount == 0) return IVec2();
-        auto result = IVec2();
-        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
-        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        result.y = cast(int) floor(clamp((topLeftWorldPosition.y - position.y) / targetTileHeight, 0, softRowCount - 1));
-        result.x = cast(int) floor(clamp((topLeftWorldPosition.x - position.x) / targetTileWidth, 0, softColCount - 1));
-        return result;
-    }
-
-    IVec2 lastGridPosition(Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
-        if (softRowCount == 0 || softColCount == 0) return IVec2();
-        auto result = IVec2();
-        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
-        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-        result.y = cast(int) floor(clamp((bottomRightWorldPosition.y - position.y) / targetTileHeight + extraTileCount, 0, softRowCount - 1));
-        result.x = cast(int) floor(clamp((bottomRightWorldPosition.x - position.x) / targetTileWidth + extraTileCount, 0, softColCount - 1));
-        return result;
-    }
-
-    auto gridPositions(Vec2 topLeftWorldPosition, Vec2 bottomRightWorldPosition, DrawOptions options = DrawOptions()) {
+    auto gridPoints(Vec2 topLeftWorldPoint, Vec2 bottomRightWorldPoint, DrawOptions options = DrawOptions()) {
         static struct Range {
             Sz colCount;
             IVec2 first;
@@ -278,17 +235,52 @@ struct TileMap {
             }
         }
 
-        auto result = Range(
-            softColCount,
-            firstGridPosition(topLeftWorldPosition, options),
-            lastGridPosition(bottomRightWorldPosition, options),
+        if (softRowCount == 0 || softColCount == 0) return Range();
+        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
+        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
+        auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
+        auto firstGridPoint = IVec2(
+            cast(int) clamp((topLeftWorldPoint.x - position.x) / targetTileWidth, 0, softColCount - 1),
+            cast(int) clamp((topLeftWorldPoint.y - position.y) / targetTileHeight, 0, softRowCount - 1),
         );
-        result.position = result.first;
-        return result;
+        auto lastGridPoint = IVec2(
+            cast(int) clamp((bottomRightWorldPoint.x - position.x) / targetTileWidth + extraTileCount, 0, softColCount - 1),
+            cast(int) clamp((bottomRightWorldPoint.y - position.y) / targetTileHeight + extraTileCount, 0, softRowCount - 1),
+        );
+        return Range(
+            softColCount,
+            firstGridPoint,
+            lastGridPoint,
+            firstGridPoint,
+        );
     }
 
-    auto gridPositions(Rect worldArea, DrawOptions options = DrawOptions()) {
-        return gridPositions(worldArea.topLeftPoint, worldArea.bottomRightPoint, options);
+    auto gridPoints(Rect worldArea, DrawOptions options = DrawOptions()) {
+        return gridPoints(worldArea.topLeftPoint, worldArea.bottomRightPoint, options);
+    }
+
+    Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
+        if (csv.length == 0) return Fault.invalid;
+        if (data.isEmpty) data.resizeBlank(defaultGridRowCount, defaultGridColCount);
+        tileWidth = newTileWidth;
+        tileHeight = newTileHeight;
+        softRowCount = 0;
+        softColCount = 0;
+        auto view = csv;
+        while (view.length != 0) {
+            softRowCount += 1;
+            softColCount = 0;
+            if (softRowCount > data.rowCount) return Fault.invalid;
+            auto line = view.skipLine();
+            while (line.length != 0) {
+                softColCount += 1;
+                if (softColCount > data.colCount) return Fault.invalid;
+                auto tile = line.skipValue(',').toSigned();
+                if (tile.isNone) return Fault.invalid;
+                data[softRowCount - 1, softColCount - 1] = cast(short) tile.get();
+            }
+        }
+        return Fault.none;
     }
 }
 
@@ -314,15 +306,21 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 }
 
 void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty || map.tileWidth <= 0 || map.tileHeight <= 0) return;
-
+    if (texture.isEmpty || map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
+    auto topLeftWorldPoint = camera.topLeftPoint;
+    auto bottomRightWorldPoint = camera.bottomRightPoint;
     auto textureColCount = texture.width / map.tileWidth;
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
-    auto colRow1 = map.firstGridPosition(camera.topLeftPoint, options);
-    auto colRow2 = map.lastGridPosition(camera.bottomRightPoint, options);
-    if (colRow1.x == colRow2.x || colRow1.y == colRow2.y) return;
-
+    auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
+    auto colRow1 = IVec2(
+        cast(int) clamp((topLeftWorldPoint.x - map.position.x) / targetTileWidth, 0, map.softColCount - 1),
+        cast(int) clamp((topLeftWorldPoint.y - map.position.y) / targetTileHeight, 0, map.softRowCount - 1),
+    );
+    auto colRow2 = IVec2(
+        cast(int) clamp((bottomRightWorldPoint.x - map.position.x) / targetTileWidth + extraTileCount, 0, map.softColCount - 1),
+        cast(int) clamp((bottomRightWorldPoint.y - map.position.y) / targetTileHeight + extraTileCount, 0, map.softRowCount - 1),
+    );
     auto textureArea = Rect(map.tileWidth, map.tileHeight);
     foreach (row; colRow1.y .. colRow2.y + 1) {
         foreach (col; colRow1.x .. colRow2.x + 1) {
