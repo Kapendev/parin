@@ -2090,7 +2090,7 @@ void drawLine(Line area, float size, Color color = white) {
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     auto target = Rect(position, area.size * options.scale.abs());
-    auto origin = options.origin == Vec2() ? target.origin(options.hook) : options.origin;
+    auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
     auto flip = options.flip;
     if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
         flip = oppositeFlip(flip, Flip.xy);
@@ -2253,7 +2253,7 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) return;
     auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
-    auto origin = options.origin == Vec2() ? rect.origin(options.hook) : options.origin;
+    auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
     if (isPixelSnapped || isPixelPerfect) {
         rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);

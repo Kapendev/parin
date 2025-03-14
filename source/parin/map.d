@@ -111,7 +111,7 @@ struct TileMap {
         if (!has(row, col)) {
             assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
         }
-        mixin("tiles[colCount * row + col]", op, "= rhs;");
+        mixin("data[colCount * row + col]", op, "= rhs;");
     }
 
     void opIndexOpAssign(IStr op)(T rhs, IVec2 position) {
@@ -120,6 +120,18 @@ struct TileMap {
 
     Sz opDollar(Sz dim)() {
         return data.opDollar!dim();
+    }
+
+    Sz length() {
+        return data.length;
+    }
+
+    short* ptr() {
+        return data.ptr;
+    }
+
+    Sz capacity() {
+        return data.capacity;
     }
 
     bool isEmpty() {
