@@ -155,12 +155,12 @@ struct BoxWorld {
         foreach (i, ref properties; wallsProperties) {
             auto id = cast(BaseBoxId) (i + 1);
             auto point = getWallGridPoint(id);
-            grid[point.y, point.x].append(id & ~taggedBoxTagBit);
+            if (hasGridPoint(point)) grid[point.y, point.x].append(id & ~taggedBoxTagBit);
         }
         foreach (i, ref properties; actorsProperties) {
             auto id = cast(BaseBoxId) (i + 1);
             auto point = getActorGridPoint(id);
-            grid[point.y, point.x].append(id | taggedBoxTagBit);
+            if (hasGridPoint(point)) grid[point.y, point.x].append(id | taggedBoxTagBit);
         }
     }
 
@@ -171,6 +171,7 @@ struct BoxWorld {
     }
 
     IVec2 getGridPoint(IRect box) {
+        if (!grid.length) assert(0, "Can't get a grid point from a disabled grid.");
         return IVec2(
             box.position.x / gridTileWidth - (box.position.x < 0),
             box.position.y / gridTileHeight - (box.position.y < 0),
@@ -207,6 +208,10 @@ struct BoxWorld {
         return getGridPoint(actors[id - 1]);
     }
 
+    bool hasGridPoint(IVec2 point) {
+        return point.x >= 0 && point.y >= 0 && grid.has(point.y, point.x);
+    }
+
     WallBoxId appendWall(IRect box, OneWaySide oneWaySide = OneWaySide.none) {
         walls.append(box);
         wallsProperties.append(WallBoxProperties());
@@ -214,8 +219,7 @@ struct BoxWorld {
         auto id = cast(BaseBoxId) walls.length;
         if (grid.length) {
             auto point = getGridPoint(box);
-            if (box.position.x < 0 || box.position.y < 0 || !grid.has(point.y, point.x)) return id;
-            grid[point.y, point.x].append(id & ~taggedBoxTagBit);
+            if (hasGridPoint(point)) grid[point.y, point.x].append(id & ~taggedBoxTagBit);
         }
         return id;
     }
@@ -227,65 +231,76 @@ struct BoxWorld {
         auto id = cast(BaseBoxId) actors.length;
         if (grid.length) {
             auto point = getGridPoint(box);
-            if (box.position.x < 0 || box.position.y < 0 || !grid.has(point.y, point.x)) return id;
-            grid[point.y, point.x].append(id | taggedBoxTagBit);
+            if (hasGridPoint(point)) grid[point.y, point.x].append(id | taggedBoxTagBit);
         }
         return id;
     }
 
-    WallBoxId[] getWallCollisions(IRect box) {
+    WallBoxId[] getWallCollisions(IRect box, bool canStopAtFirst = false) {
         collisionIdsBuffer.clear();
         // TODO: Try not going over every neighboring cell please...
         if (grid.length) {
             auto point = getGridPoint(box);
             foreach (y; -1 .. 2) { foreach (x; -1 .. 2) {
                 auto otherPoint = IVec2(point.x + x, point.y + y);
-                if (otherPoint.x < 0 || otherPoint.y < 0 || !grid.has(otherPoint.y, otherPoint.x)) continue;
-                foreach (taggedId; grid[point.y + y, point.x + x]) {
+                if (!hasGridPoint(otherPoint)) continue;
+                foreach (taggedId; grid[otherPoint.y, otherPoint.x]) {
                     auto i = (taggedId & ~taggedBoxTagBit) - 1;
                     auto isActor = taggedId & taggedBoxTagBit;
                     if (isActor) continue;
-                    if (walls[i].hasIntersection(box) && ~wallsProperties[i].flags & boxPassableFlag) collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                    if (walls[i].hasIntersection(box) && ~wallsProperties[i].flags & boxPassableFlag) {
+                        collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                        if (canStopAtFirst) return collisionIdsBuffer[];
+                    }
                 }
             }}
         } else {
             foreach (i, wall; walls) {
-                if (wall.hasIntersection(box) && ~wallsProperties[i].flags & boxPassableFlag) collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                if (wall.hasIntersection(box) && ~wallsProperties[i].flags & boxPassableFlag) {
+                    collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                    if (canStopAtFirst) return collisionIdsBuffer[];
+                }
             }
         }
         return collisionIdsBuffer[];
     }
 
-    ActorBoxId[] getActorCollisions(IRect box) {
+    ActorBoxId[] getActorCollisions(IRect box, bool canStopAtFirst = false) {
         collisionIdsBuffer.clear();
         // TODO: Try not going over every neighboring cell please...
         if (grid.length) {
             auto point = getGridPoint(box);
             foreach (y; -1 .. 2) { foreach (x; -1 .. 2) {
                 auto otherPoint = IVec2(point.x + x, point.y + y);
-                if (otherPoint.x < 0 || otherPoint.y < 0 || !grid.has(otherPoint.y, otherPoint.x)) continue;
-                foreach (taggedId; grid[point.y + y, point.x + x]) {
+                if (!hasGridPoint(otherPoint)) continue;
+                foreach (taggedId; grid[otherPoint.y, otherPoint.x]) {
                     auto i = (taggedId & ~taggedBoxTagBit) - 1;
                     auto isWall = !(taggedId & taggedBoxTagBit);
                     if (isWall) continue;
-                    if (actors[i].hasIntersection(box) && ~actorsProperties[i].flags & boxPassableFlag) collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                    if (actors[i].hasIntersection(box) && ~actorsProperties[i].flags & boxPassableFlag) {
+                        collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                        if (canStopAtFirst) return collisionIdsBuffer[];
+                    }
                 }
             }}
         } else {
             foreach (i, actor; actors) {
-                if (actor.hasIntersection(box) && ~actorsProperties[i].flags & boxPassableFlag) collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                if (actor.hasIntersection(box) && ~actorsProperties[i].flags & boxPassableFlag) {
+                    collisionIdsBuffer.append(cast(BaseBoxId) (i + 1));
+                    if (canStopAtFirst) return collisionIdsBuffer[];
+                }
             }
         }
         return collisionIdsBuffer[];
     }
 
     WallBoxId hasWallCollision(IRect box) {
-        auto boxes = getWallCollisions(box);
+        auto boxes = getWallCollisions(box, true);
         return boxes.length ? boxes[0] : 0;
     }
 
     ActorBoxId hasActorCollision(IRect box) {
-        auto boxes = getActorCollisions(box);
+        auto boxes = getActorCollisions(box, true);
         return boxes.length ? boxes[0] : 0;
     }
 
@@ -323,8 +338,31 @@ struct BoxWorld {
             if (~properties.flags & boxPassableFlag && wallId) {
                 return wallId;
             } else {
-                actor.position.x += moveSign;
-                move -= moveSign;
+                if (grid.length) {
+                    auto oldPoint = getGridPoint(*actor);
+                    actor.position.x += moveSign;
+                    move -= moveSign;
+                    auto newPoint = getGridPoint(*actor);
+                    // TODO: Maybe think of how not to write this again. ...
+                    if (oldPoint != newPoint) {
+                        if (hasGridPoint(oldPoint)) {
+                            foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
+                                auto i = (taggedId & ~taggedBoxTagBit) - 1;
+                                auto isActor = taggedId & taggedBoxTagBit;
+                                if (isActor && (i + 1 == id)) {
+                                    grid[oldPoint.y, oldPoint.x].remove(j);
+                                    break;
+                                }
+                            }
+                        }
+                        if (hasGridPoint(newPoint)) {
+                            grid[newPoint.y, newPoint.x].append(id | taggedBoxTagBit);
+                        }
+                    }
+                } else {
+                    actor.position.x += moveSign;
+                    move -= moveSign;
+                }
             }
         }
         return 0;

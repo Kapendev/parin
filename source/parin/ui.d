@@ -10,8 +10,8 @@
 module parin.ui;
 
 import rl = parin.rl;
-import stdc = joka.stdc;
 import joka.ascii;
+import joka.memory;
 import parin.engine;
 
 @safe @nogc nothrow:
@@ -112,10 +112,10 @@ int findSpaceInTextField(IStr text) {
 void prepareUi() {
     if (uiState == null) {
         // NOTE: This leaks. THIS IS SO BAD WHERE IS `Box::leak` IN THIS CODEBASE???
-        uiState = cast(UiState*) stdc.malloc(UiState.sizeof);
-        uiPreviousState = cast(UiState*) stdc.malloc(UiState.sizeof);
-        stdc.memset(uiState, 0, UiState.sizeof);
-        stdc.memset(uiPreviousState, 0, UiState.sizeof);
+        uiState = cast(UiState*) jokaMalloc(UiState.sizeof);
+        uiPreviousState = cast(UiState*) jokaMalloc(UiState.sizeof);
+        jokaMemset(uiState, 0, UiState.sizeof);
+        jokaMemset(uiPreviousState, 0, UiState.sizeof);
         // TODO: Should be changed to something better looking.
         uiState.mouseClickAction = Mouse.left;
         uiState.keyboardClickAction = Keyboard.enter;

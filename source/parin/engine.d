@@ -10,9 +10,9 @@
 module parin.engine;
 
 import rl = parin.rl;
-import stdc = joka.stdc;
 import joka.ascii;
 import joka.io;
+import joka.memory;
 public import joka.containers;
 public import joka.math;
 public import joka.types;
@@ -1257,8 +1257,8 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 @trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
-    engineState = cast(EngineState*) stdc.malloc(EngineState.sizeof);
-    stdc.memset(engineState, 0, EngineState.sizeof);
+    engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
+    jokaMemset(engineState, 0, EngineState.sizeof);
     // Raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
@@ -1411,7 +1411,7 @@ void closeWindow() {
     engineState.loadTextBuffer.free();
     engineState.saveTextBuffer.free();
     engineState.assetsPath.free();
-    stdc.free(engineState);
+    jokaFree(engineState);
     engineState = null;
     rl.CloseAudioDevice();
     rl.CloseWindow();
@@ -1918,34 +1918,28 @@ dchar dequeuePressedRune() {
 /// Returns the directional input based on the WASD and arrow keys when they are down.
 /// The vector is not normalized.
 Vec2 wasd() {
-    auto result = Vec2();
-    if (Keyboard.w.isDown || Keyboard.up.isDown) result.y -= 1.0f;
-    if (Keyboard.a.isDown || Keyboard.left.isDown) result.x -= 1.0f;
-    if (Keyboard.s.isDown || Keyboard.down.isDown) result.y += 1.0f;
-    if (Keyboard.d.isDown || Keyboard.right.isDown) result.x += 1.0f;
-    return result;
+    with (Keyboard) return Vec2(
+        (d.isDown || right.isDown) - (a.isDown || left.isDown),
+        (s.isDown || down.isDown) - (w.isDown || up.isDown),
+    );
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are pressed.
 /// The vector is not normalized.
 Vec2 wasdPressed() {
-    auto result = Vec2();
-    if (Keyboard.w.isPressed || Keyboard.up.isPressed) result.y -= 1.0f;
-    if (Keyboard.a.isPressed || Keyboard.left.isPressed) result.x -= 1.0f;
-    if (Keyboard.s.isPressed || Keyboard.down.isPressed) result.y += 1.0f;
-    if (Keyboard.d.isPressed || Keyboard.right.isPressed) result.x += 1.0f;
-    return result;
+    with (Keyboard) return Vec2(
+        (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
+        (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+    );
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are released.
 /// The vector is not normalized.
 Vec2 wasdReleased() {
-    auto result = Vec2();
-    if (Keyboard.w.isReleased || Keyboard.up.isReleased) result.y -= 1.0f;
-    if (Keyboard.a.isReleased || Keyboard.left.isReleased) result.x -= 1.0f;
-    if (Keyboard.s.isReleased || Keyboard.down.isReleased) result.y += 1.0f;
-    if (Keyboard.d.isReleased || Keyboard.right.isReleased) result.x += 1.0f;
-    return result;
+    with (Keyboard) return Vec2(
+        (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
+        (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+    );
 }
 
 /// Plays the specified sound.
