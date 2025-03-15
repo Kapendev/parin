@@ -84,16 +84,3 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 
 Start with the [examples](./examples/) folder or the [cheatsheet](https://kapendev.github.io/parin-website/pages/cheatsheet.html) for a quick overview.
 For more details, check the [tour](https://kapendev.github.io/parin-website/pages/tour.html) page.
-
-## Building Without DUB
-
-Parin has the following dependencies:
-
-* [Joka](https://github.com/Kapendev/joka)
-* [raylib](https://github.com/raysan5/raylib)
-
-To create a simple one-file game, run something like:
-
-```cmd
-dmd -i -Ijoka/source -Iparin/source -Jparin/assets -L-L. -L-lraylib app.d
-```
