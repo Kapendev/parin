@@ -875,6 +875,7 @@ struct EngineViewport {
 struct EngineState {
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
+
     Sz tickCount;
     Color borderColor;
     Filter defaultFilter;
@@ -1257,8 +1258,6 @@ void openUrl(IStr url = "https://github.com/Kapendev/parin") {
 @trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
-    engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
-    jokaMemset(engineState, 0, EngineState.sizeof);
     // Raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
     rl.SetTraceLogLevel(rl.LOG_ERROR);
@@ -1266,23 +1265,30 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.InitAudioDevice();
     rl.SetExitKey(rl.KEY_NULL);
     rl.SetTargetFPS(60);
+    rl.SetWindowMinSize(240, 135);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-    setWindowMinSize(240, 135);
     // Engine stuff.
-    foreach (arg; args) engineState.envArgsBuffer.append(arg);
+    engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
+    jokaMemset(engineState, 0, EngineState.sizeof);
     engineState.flags.canUseAssetsPath = true;
+    engineState.borderColor = black;
+    engineState.defaultFilter = Filter.init;
+    engineState.defaultWrap = Wrap.init;
     engineState.fullscreenState.previousWindowWidth = width;
     engineState.fullscreenState.previousWindowHeight = height;
-    engineState.borderColor = black;
+    engineState.viewport.color = gray;
+    engineState.viewport.blend = Blend.init;
     // Ready resources.
+    if (args.length) {
+        foreach (arg; args) engineState.envArgsBuffer.append(arg);
+        engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
+    }
+    engineState.loadTextBuffer.reserve(8192);
+    engineState.saveTextBuffer.reserve(8192);
     engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
     engineState.textures.reserve(defaultEngineTexturesCapacity);
     engineState.sounds.reserve(defaultEngineSoundsCapacity);
     engineState.fonts.reserve(defaultEngineFontsCapacity);
-    engineState.viewport.color = gray;
-    engineState.loadTextBuffer.reserve(8192);
-    engineState.saveTextBuffer.reserve(8192);
-    if (args.length) engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
     // Load debug font.
     auto monogramData = cast(const(ubyte)[]) import("parin_monogram.png");
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
@@ -1573,29 +1579,24 @@ Font engineFont() {
     return engineState.debugFont;
 }
 
-/// Returns the default filter mode for textures.
+/// Returns the default filter mode.
 Filter defaultFilter() {
     return engineState.defaultFilter;
 }
 
-/// Returns the default wrap mode for textures.
+/// Returns the default wrap mode.
 Wrap defaultWrap() {
     return engineState.defaultWrap;
 }
 
-/// Sets the default filter mode for textures to the specified value.
+/// Sets the default filter mode to the specified value.
 void setDefaultFilter(Filter value) {
     engineState.defaultFilter = value;
 }
 
-/// Sets the default wrap mode for textures to the specified value.
+/// Sets the default wrap mode to the specified value.
 void setDefaultWrap(Wrap value) {
     engineState.defaultWrap = value;
-}
-
-/// Sets the filter mode used by the engine viewport to the specified value.
-void setEngineViewportFilter(Filter value) {
-    engineState.viewport.setFilter(value);
 }
 
 /// Returns the current master volume level.
@@ -2407,7 +2408,9 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
                 Sz length = 0;
                 while (argv[i][length] != '\0') length += 1;
                 engineState.envArgsBuffer.append(argv[i][0 .. length]);
+
             }
+            engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDir, "assets"));
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();
