@@ -8,8 +8,7 @@
 
 // TODO: Update all the doc comments here.
 // TODO: Add one-way collision support for moving walls.
-// TODO: Add spatial partitioning. Just check the cell a box is in and the cells that are near it.
-// NOTE: Was working on spatial partitioning. I need to update the ids in the grid and then everything should work?
+// NOTE: The code works, but it's  super experimental and will change in the future!
 
 /// The `platformer` module provides a pixel-perfect physics engine.
 module parin.platformer;
@@ -147,20 +146,44 @@ struct BoxWorld {
 
     @safe @nogc nothrow:
 
+    WallBoxId appendWall(IRect box, OneWaySide oneWaySide = OneWaySide.none) {
+        walls.append(box);
+        wallsProperties.append(WallBoxProperties());
+        wallsProperties[$ - 1].oneWaySide = oneWaySide;
+        auto id = cast(BaseBoxId) walls.length;
+        if (grid.length) {
+            auto point = getGridPoint(box);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~taggedBoxTagBit);
+        }
+        return id;
+    }
+
+    ActorBoxId appendActor(IRect box, RideSide rideSide = RideSide.none) {
+        actors.append(box);
+        actorsProperties.append(ActorBoxProperties());
+        actorsProperties[$ - 1].rideSide = rideSide;
+        auto id = cast(BaseBoxId) actors.length;
+        if (grid.length) {
+            auto point = getGridPoint(box);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id | taggedBoxTagBit);
+        }
+        return id;
+    }
+
     void enableGrid(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
         gridTileWidth = tileWidth;
         gridTileHeight = tileHeight;
         grid.resizeBlank(rowCount, colCount);
         foreach (ref group; grid) group.clear();
-        foreach (i, ref properties; wallsProperties) {
+        foreach (i, wall; walls) {
             auto id = cast(BaseBoxId) (i + 1);
-            auto point = getWallGridPoint(id);
-            if (hasGridPoint(point)) grid[point.y, point.x].append(id & ~taggedBoxTagBit);
+            auto point = getGridPoint(wall);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~taggedBoxTagBit);
         }
-        foreach (i, ref properties; actorsProperties) {
+        foreach (i, actor; actors) {
             auto id = cast(BaseBoxId) (i + 1);
-            auto point = getActorGridPoint(id);
-            if (hasGridPoint(point)) grid[point.y, point.x].append(id | taggedBoxTagBit);
+            auto point = getGridPoint(actor);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id | taggedBoxTagBit);
         }
     }
 
@@ -168,6 +191,10 @@ struct BoxWorld {
         gridTileWidth = 0;
         gridTileHeight = 0;
         grid.clear();
+    }
+
+    bool isGridPointValid(IVec2 point) {
+        return point.x >= 0 && point.y >= 0 && grid.has(point.y, point.x);
     }
 
     IVec2 getGridPoint(IRect box) {
@@ -188,11 +215,6 @@ struct BoxWorld {
         return wallsProperties[id - 1];
     }
 
-    IVec2 getWallGridPoint(WallBoxId id) {
-        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        return getGridPoint(walls[id - 1]);
-    }
-
     ref IRect getActor(ActorBoxId id) {
         if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
         return actors[id - 1];
@@ -203,47 +225,13 @@ struct BoxWorld {
         return actorsProperties[id - 1];
     }
 
-    IVec2 getActorGridPoint(ActorBoxId id) {
-        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
-        return getGridPoint(actors[id - 1]);
-    }
-
-    bool hasGridPoint(IVec2 point) {
-        return point.x >= 0 && point.y >= 0 && grid.has(point.y, point.x);
-    }
-
-    WallBoxId appendWall(IRect box, OneWaySide oneWaySide = OneWaySide.none) {
-        walls.append(box);
-        wallsProperties.append(WallBoxProperties());
-        wallsProperties[$ - 1].oneWaySide = oneWaySide;
-        auto id = cast(BaseBoxId) walls.length;
-        if (grid.length) {
-            auto point = getGridPoint(box);
-            if (hasGridPoint(point)) grid[point.y, point.x].append(id & ~taggedBoxTagBit);
-        }
-        return id;
-    }
-
-    ActorBoxId appendActor(IRect box, RideSide rideSide = RideSide.none) {
-        actors.append(box);
-        actorsProperties.append(ActorBoxProperties());
-        actorsProperties[$ - 1].rideSide = rideSide;
-        auto id = cast(BaseBoxId) actors.length;
-        if (grid.length) {
-            auto point = getGridPoint(box);
-            if (hasGridPoint(point)) grid[point.y, point.x].append(id | taggedBoxTagBit);
-        }
-        return id;
-    }
-
     WallBoxId[] getWallCollisions(IRect box, bool canStopAtFirst = false) {
         collisionIdsBuffer.clear();
-        // TODO: Try not going over every neighboring cell please...
         if (grid.length) {
             auto point = getGridPoint(box);
             foreach (y; -1 .. 2) { foreach (x; -1 .. 2) {
                 auto otherPoint = IVec2(point.x + x, point.y + y);
-                if (!hasGridPoint(otherPoint)) continue;
+                if (!isGridPointValid(otherPoint)) continue;
                 foreach (taggedId; grid[otherPoint.y, otherPoint.x]) {
                     auto i = (taggedId & ~taggedBoxTagBit) - 1;
                     auto isActor = taggedId & taggedBoxTagBit;
@@ -267,12 +255,11 @@ struct BoxWorld {
 
     ActorBoxId[] getActorCollisions(IRect box, bool canStopAtFirst = false) {
         collisionIdsBuffer.clear();
-        // TODO: Try not going over every neighboring cell please...
         if (grid.length) {
             auto point = getGridPoint(box);
             foreach (y; -1 .. 2) { foreach (x; -1 .. 2) {
                 auto otherPoint = IVec2(point.x + x, point.y + y);
-                if (!hasGridPoint(otherPoint)) continue;
+                if (!isGridPointValid(otherPoint)) continue;
                 foreach (taggedId; grid[otherPoint.y, otherPoint.x]) {
                     auto i = (taggedId & ~taggedBoxTagBit) - 1;
                     auto isWall = !(taggedId & taggedBoxTagBit);
@@ -338,14 +325,14 @@ struct BoxWorld {
             if (~properties.flags & boxPassableFlag && wallId) {
                 return wallId;
             } else {
+                // Move.
                 if (grid.length) {
                     auto oldPoint = getGridPoint(*actor);
                     actor.position.x += moveSign;
                     move -= moveSign;
                     auto newPoint = getGridPoint(*actor);
-                    // TODO: Maybe think of how not to write this again. ...
                     if (oldPoint != newPoint) {
-                        if (hasGridPoint(oldPoint)) {
+                        if (isGridPointValid(oldPoint)) {
                             foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
                                 auto i = (taggedId & ~taggedBoxTagBit) - 1;
                                 auto isActor = taggedId & taggedBoxTagBit;
@@ -355,7 +342,7 @@ struct BoxWorld {
                                 }
                             }
                         }
-                        if (hasGridPoint(newPoint)) {
+                        if (isGridPointValid(newPoint)) {
                             grid[newPoint.y, newPoint.x].append(id | taggedBoxTagBit);
                         }
                     }
@@ -414,8 +401,31 @@ struct BoxWorld {
             if (~properties.flags & boxPassableFlag && wallId) {
                 return wallId;
             } else {
-                actor.position.y += moveSign;
-                move -= moveSign;
+                // Move.
+                if (grid.length) {
+                    auto oldPoint = getGridPoint(*actor);
+                    actor.position.y += moveSign;
+                    move -= moveSign;
+                    auto newPoint = getGridPoint(*actor);
+                    if (oldPoint != newPoint) {
+                        if (isGridPointValid(oldPoint)) {
+                            foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
+                                auto i = (taggedId & ~taggedBoxTagBit) - 1;
+                                auto isActor = taggedId & taggedBoxTagBit;
+                                if (isActor && (i + 1 == id)) {
+                                    grid[oldPoint.y, oldPoint.x].remove(j);
+                                    break;
+                                }
+                            }
+                        }
+                        if (isGridPointValid(newPoint)) {
+                            grid[newPoint.y, newPoint.x].append(id | taggedBoxTagBit);
+                        }
+                    }
+                } else {
+                    actor.position.y += moveSign;
+                    move -= moveSign;
+                }
             }
         }
         return 0;
@@ -509,8 +519,30 @@ struct BoxWorld {
         }
 
         if (move.x != 0) {
-            wall.position.x += move.x;
             properties.remainder.x -= move.x;
+            // Move.
+            if (grid.length) {
+                auto oldPoint = getGridPoint(*wall);
+                wall.position.x += move.x;
+                auto newPoint = getGridPoint(*wall);
+                if (oldPoint != newPoint) {
+                    if (isGridPointValid(oldPoint)) {
+                        foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
+                            auto i = (taggedId & ~taggedBoxTagBit) - 1;
+                            auto isWall = !(taggedId & taggedBoxTagBit);
+                            if (isWall && (i + 1 == id)) {
+                                grid[oldPoint.y, oldPoint.x].remove(j);
+                                break;
+                            }
+                        }
+                    }
+                    if (isGridPointValid(newPoint)) {
+                        grid[newPoint.y, newPoint.x].append(id & ~taggedBoxTagBit);
+                    }
+                }
+            } else {
+                wall.position.x += move.x;
+            }
             if (~properties.flags & boxPassableFlag) {
                 properties.flags |= boxPassableFlag;
                 foreach (i, ref actor; actors) {
@@ -535,8 +567,30 @@ struct BoxWorld {
             }
         }
         if (move.y != 0) {
-            wall.position.y += move.y;
             properties.remainder.y -= move.y;
+            // Move.
+            if (grid.length) {
+                auto oldPoint = getGridPoint(*wall);
+                wall.position.y += move.y;
+                auto newPoint = getGridPoint(*wall);
+                if (oldPoint != newPoint) {
+                    if (isGridPointValid(oldPoint)) {
+                        foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
+                            auto i = (taggedId & ~taggedBoxTagBit) - 1;
+                            auto isWall = !(taggedId & taggedBoxTagBit);
+                            if (isWall && (i + 1 == id)) {
+                                grid[oldPoint.y, oldPoint.x].remove(j);
+                                break;
+                            }
+                        }
+                    }
+                    if (isGridPointValid(newPoint)) {
+                        grid[newPoint.y, newPoint.x].append(id & ~taggedBoxTagBit);
+                    }
+                }
+            } else {
+                wall.position.y += move.y;
+            }
             if (~properties.flags & boxPassableFlag) {
                 properties.flags |= boxPassableFlag;
                 foreach (i, ref actor; actors) {
@@ -575,21 +629,12 @@ struct BoxWorld {
         return moveWall(id, target - wall.position.toVec());
     }
 
-    void clearWalls() {
+    void clear() {
         walls.clear();
         wallsProperties.clear();
-    }
-
-    void clearActors() {
         actors.clear();
         actorsProperties.clear();
-    }
-
-    void clear() {
-        clearWalls();
-        clearActors();
-        squishedIdsBuffer.clear();
-        collisionIdsBuffer.clear();
+        foreach (ref group; grid) group.clear();
     }
 
     void reserve(Sz capacity) {
@@ -597,8 +642,6 @@ struct BoxWorld {
         actors.reserve(capacity);
         wallsProperties.reserve(capacity);
         actorsProperties.reserve(capacity);
-        squishedIdsBuffer.reserve(capacity);
-        collisionIdsBuffer.reserve(capacity);
     }
 
     void free() {
@@ -608,6 +651,7 @@ struct BoxWorld {
         actorsProperties.free();
         squishedIdsBuffer.free();
         collisionIdsBuffer.free();
+        grid.free();
         this = BoxWorld();
     }
 }

@@ -813,7 +813,7 @@ struct Camera {
         isAttached = true;
         engineState.userCamera = this;
         auto temp = this.toRl(engineState.userViewport);
-        if (isPixelSnapped || isPixelPerfect) {
+        if (isPixelSnapped) {
             temp.target.x = temp.target.x.floor();
             temp.target.y = temp.target.y.floor();
             temp.offset.x = temp.offset.x.floor();
@@ -2027,7 +2027,7 @@ void updateSound(SoundId sound) {
 /// Draws a rectangle with the specified area and color.
 @trusted
 void drawRect(Rect area, Color color = white) {
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.DrawRectanglePro(area.floor().toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
     } else {
         rl.DrawRectanglePro(area.toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
@@ -2037,7 +2037,7 @@ void drawRect(Rect area, Color color = white) {
 /// Draws a hollow rectangle with the specified area and color.
 @trusted
 void drawHollowRect(Rect area, float thickness, Color color = white) {
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.DrawRectangleLinesEx(area.floor().toRl(), thickness, color.toRl());
     } else {
         rl.DrawRectangleLinesEx(area.toRl(), thickness, color.toRl());
@@ -2052,7 +2052,7 @@ void drawVec2(Vec2 point, float size, Color color = white) {
 /// Draws a circle with the specified area and color.
 @trusted
 void drawCirc(Circ area, Color color = white) {
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
     } else {
         rl.DrawCircleV(area.position.toRl(), area.radius, color.toRl());
@@ -2062,7 +2062,7 @@ void drawCirc(Circ area, Color color = white) {
 /// Draws a hollow circle with the specified area and color.
 @trusted
 void drawHollowCirc(Circ area, float thickness, Color color = white) {
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.DrawRing(area.position.floor().toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
     } else {
         rl.DrawRing(area.position.toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
@@ -2072,7 +2072,7 @@ void drawHollowCirc(Circ area, float thickness, Color color = white) {
 /// Draws a line with the specified area, thickness, and color.
 @trusted
 void drawLine(Line area, float size, Color color = white) {
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.DrawLineEx(area.a.floor().toRl(), area.b.floor().toRl(), size, color.toRl());
     } else {
         rl.DrawLineEx(area.a.toRl(), area.b.toRl(), size, color.toRl());
@@ -2099,7 +2099,7 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
         case Flip.y: area.size.y *= -1.0f; break;
         case Flip.xy: area.size *= Vec2(-1.0f); break;
     }
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.DrawTexturePro(
             texture.data,
             area.floor().toRl(),
@@ -2249,7 +2249,7 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
     } else {
         rl.rlTranslatef(position.x, position.y, 0.0f);
@@ -2302,7 +2302,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     // Prepare the the text for drawing.
     auto origin = Rect(textMaxLineWidth, textHeight).origin(options.hook);
     rl.rlPushMatrix();
-    if (isPixelSnapped || isPixelPerfect) {
+    if (isPixelSnapped) {
         rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
     } else {
         rl.rlTranslatef(position.x, position.y, 0.0f);

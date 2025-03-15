@@ -12,9 +12,9 @@ auto groundY = 140;
 void ready() {
     lockResolution(320, 180);
     // Add boxes to the world.
-    platformBoxId = world.appendWall(Box(140, groundY - 20, 64, 16));
-    groundBoxId = world.appendWall(Box(0, groundY, resolutionWidth, resolutionHeight - groundY));
-    playerBoxId = world.appendActor(Box(80, groundY - 16, 16, 16), RideSide.top);
+    platformBoxId = world.appendWall(IRect(140, groundY - 20, 64, 16));
+    groundBoxId = world.appendWall(IRect(0, groundY, resolutionWidth, resolutionHeight - groundY));
+    playerBoxId = world.appendActor(IRect(80, groundY - 16, 16, 16), RideSide.top);
 }
 
 bool update(float dt) {
