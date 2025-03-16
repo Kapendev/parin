@@ -25,6 +25,18 @@ enum defaultEngineTexturesCapacity = 256;
 enum defaultEngineSoundsCapacity = 128;
 enum defaultEngineFontsCapacity = 64;
 
+alias EngineFlags = ushort;
+
+enum EngineFlag : EngineFlags {
+    none              = 0x0000,
+    isUpdating        = 0x0001,
+    isUsingAssetsPath = 0x0002,
+    isPixelSnapped    = 0x0004,
+    isPixelPerfect    = 0x0008,
+    isFullscreen      = 0x0010,
+    isCursorVisible   = 0x0020,
+}
+
 /// A type representing flipping orientations.
 enum Flip : ubyte {
     none, /// No flipping.
@@ -673,7 +685,7 @@ struct Viewport {
         engineState.userViewport = Viewport();
         rl.EndBlendMode();
         rl.EndTextureMode();
-        if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.toRl());
+        if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.data.toRl());
     }
 
     /// Sets the filter mode of the viewport.
@@ -834,25 +846,6 @@ struct Camera {
     }
 }
 
-/// The engine flags.
-struct EngineFlags {
-    bool isUpdating;
-    bool isPixelSnapped;
-    bool isPixelPerfect;
-    bool isCursorVisible;
-    bool canUseAssetsPath;
-}
-
-/// The engine fullscreen state.
-struct EngineFullscreenState {
-    int previousWindowWidth;  /// The previous window with before entering fullscreen mode.
-    int previousWindowHeight; /// The previous window height before entering fullscreen mode.
-    float changeTime = 0.0f;  /// The current change time.
-    bool isChanging;          /// The flag that triggers the fullscreen state.
-
-    enum changeDuration = 0.03f;
-}
-
 /// A structure with information about the engine viewport, including its area.
 struct EngineViewportInfo {
     Rect area;             /// The area covered by the viewport.
@@ -867,8 +860,16 @@ struct EngineViewport {
     int lockWidth;   /// The target lock width.
     int lockHeight;  /// The target lock height.
     bool isChanging; /// The flag that triggers the lock state.
+}
 
-    alias data this;
+/// The engine fullscreen state.
+struct EngineFullscreenState {
+    int previousWindowWidth;  /// The previous window with before entering fullscreen mode.
+    int previousWindowHeight; /// The previous window height before entering fullscreen mode.
+    float changeTime = 0.0f;  /// The current change time.
+    bool isChanging;          /// The flag that triggers the fullscreen state.
+
+    enum changeDuration = 0.03f;
 }
 
 /// The engine state.
@@ -883,10 +884,10 @@ struct EngineState {
     Camera userCamera;
     Viewport userViewport;
 
-    GenerationalList!Texture textures;
-    GenerationalList!Font fonts;
-    GenerationalList!Sound sounds;
     EngineViewport viewport;
+    GenerationalList!Texture textures;
+    GenerationalList!Sound sounds;
+    GenerationalList!Font fonts;
     Font debugFont;
     List!IStr envArgsBuffer;
     List!IStr droppedFilePathsBuffer;
@@ -1085,16 +1086,6 @@ IStr toAssetsPath(IStr path) {
     return pathConcat(assetsPath, path).pathFormat();
 }
 
-/// Returns true if the assets path is currently in use when loading.
-bool canUseAssetsPath() {
-    return engineState.flags.canUseAssetsPath;
-}
-
-/// Sets whether the assets path should be in use when loading.
-void setCanUseAssetsPath(bool value) {
-    engineState.flags.canUseAssetsPath = value;
-}
-
 /// Returns the dropped file paths of the current frame.
 @trusted
 IStr[] droppedFilePaths() {
@@ -1112,7 +1103,7 @@ ref LStr prepareTempText() {
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     return readTextIntoBuffer(targetPath, buffer);
 }
 
@@ -1120,7 +1111,7 @@ Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 Result!LStr loadRawText(IStr path) {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     return readText(targetPath);
 }
 
@@ -1137,7 +1128,7 @@ Result!IStr loadTempText(IStr path) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadRawTexture(IStr path) {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toParin();
     value.setFilter(engineState.defaultFilter);
     value.setWrap(engineState.defaultWrap);
@@ -1160,7 +1151,7 @@ TextureId loadTexture(IStr path) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
     if (value.data.texture.id == rl.GetFontDefault().texture.id) {
         value = Font();
@@ -1209,7 +1200,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Sound loadRawSound(IStr path, float volume, float pitch) {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
         value.data = rl.LoadSound(targetPath.toCStr().getOr());
@@ -1235,7 +1226,7 @@ SoundId loadSound(IStr path, float volume, float pitch) {
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     return writeText(targetPath, text);
 }
 
@@ -1270,14 +1261,14 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     // Engine stuff.
     engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
     jokaMemset(engineState, 0, EngineState.sizeof);
-    engineState.flags.canUseAssetsPath = true;
+    engineState.flags |= EngineFlag.isUsingAssetsPath;
     engineState.borderColor = black;
     engineState.defaultFilter = Filter.init;
     engineState.defaultWrap = Wrap.init;
     engineState.fullscreenState.previousWindowWidth = width;
     engineState.fullscreenState.previousWindowHeight = height;
-    engineState.viewport.color = gray;
-    engineState.viewport.blend = Blend.init;
+    engineState.viewport.data.color = gray;
+    engineState.viewport.data.blend = Blend.init;
     // Ready resources.
     if (args.length) {
         foreach (arg; args) engineState.envArgsBuffer.append(arg);
@@ -1308,11 +1299,11 @@ void updateWindow(bool function(float dt) updateFunc) {
     static bool __updateWindow() {
         // Begin drawing.
         if (isResolutionLocked) {
-            rl.BeginTextureMode(engineState.viewport.toRl());
+            rl.BeginTextureMode(engineState.viewport.data.toRl());
         } else {
             rl.BeginDrawing();
         }
-        rl.ClearBackground(engineState.viewport.color.toRl());
+        rl.ClearBackground(engineState.viewport.data.color.toRl());
 
         // The main loop.
         if (rl.IsFileDropped) {
@@ -1337,7 +1328,7 @@ void updateWindow(bool function(float dt) updateFunc) {
             rl.BeginDrawing();
             rl.ClearBackground(engineState.borderColor.toRl());
             rl.DrawTexturePro(
-                engineState.viewport.toRl().texture,
+                engineState.viewport.data.toRl().texture,
                 rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
                 info.area.toRl(),
                 rl.Vector2(0.0f, 0.0f),
@@ -1352,11 +1343,11 @@ void updateWindow(bool function(float dt) updateFunc) {
         // Viewport code.
         if (engineState.viewport.isChanging) {
             if (isResolutionLocked) {
-                auto temp = engineState.viewport.color;
-                engineState.viewport.free();
-                engineState.viewport.color = temp;
+                auto temp = engineState.viewport.data.color;
+                engineState.viewport.data.free();
+                engineState.viewport.data.color = temp;
             } else {
-                engineState.viewport.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+                engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
             }
             engineState.viewport.isChanging = false;
         }
@@ -1364,7 +1355,7 @@ void updateWindow(bool function(float dt) updateFunc) {
         if (engineState.fullscreenState.isChanging) {
             engineState.fullscreenState.changeTime += dt;
             if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
-                if (isFullscreen) {
+                if (rl.IsWindowFullscreen()) {
                     rl.ToggleFullscreen();
                     // Size is first because raylib likes that. I will make raylib happy.
                     rl.SetWindowSize(
@@ -1386,7 +1377,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 
     // Maybe bad idea, but makes life of no-attribute people easier.
     __updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
-    engineState.flags.isUpdating = true;
+    engineState.flags |= EngineFlag.isUpdating;
     version(WebAssembly) {
         static void __updateWindowWeb() {
             if (__updateWindow()) {
@@ -1401,7 +1392,7 @@ void updateWindow(bool function(float dt) updateFunc) {
             }
         }
     }
-    engineState.flags.isUpdating = false;
+    engineState.flags &= ~EngineFlag.isUpdating;
 }
 
 /// Closes the window.
@@ -1410,7 +1401,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
     freeResources();
-    engineState.viewport.free();
+    engineState.viewport.data.free();
     engineState.debugFont.free();
     engineState.envArgsBuffer.free();
     engineState.droppedFilePathsBuffer.free();
@@ -1423,74 +1414,63 @@ void closeWindow() {
     rl.CloseWindow();
 }
 
+/// Returns true if the assets path is currently in use when loading.
+bool isUsingAssetsPath() {
+    return cast(bool) (engineState.flags & EngineFlag.isUsingAssetsPath);
+}
+
+/// Sets whether the assets path should be in use when loading.
+void setIsUsingAssetsPath(bool value) {
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isUsingAssetsPath
+        : engineState.flags & ~EngineFlag.isUsingAssetsPath;
+}
+
 /// Returns true if the drawing is snapped to pixel coordinates.
 bool isPixelSnapped() {
-    return engineState.flags.isPixelSnapped;
+    return cast(bool) (engineState.flags & EngineFlag.isPixelSnapped);
 }
 
 /// Sets whether drawing should be snapped to pixel coordinates.
 void setIsPixelSnapped(bool value) {
-    engineState.flags.isPixelSnapped = value;
-}
-
-/// Toggles whether drawing is snapped to pixel coordinates on or off.
-void toggleIsPixelSnapped() {
-    setIsPixelSnapped(!isPixelSnapped);
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isPixelSnapped
+        : engineState.flags & ~EngineFlag.isPixelSnapped;
 }
 
 /// Returns true if the drawing is done in a pixel perfect way.
 bool isPixelPerfect() {
-    return engineState.flags.isPixelPerfect;
+    return cast(bool) (engineState.flags & EngineFlag.isPixelPerfect);
 }
 
 /// Sets whether drawing should be done in a pixel-perfect way.
 void setIsPixelPerfect(bool value) {
-    engineState.flags.isPixelPerfect = value;
-}
-
-/// Toggles the pixel-perfect drawing mode on or off.
-void toggleIsPixelPerfect() {
-    setIsPixelPerfect(!isPixelPerfect);
-}
-
-/// Returns true if the cursor is currently visible.
-bool isCursorVisible() {
-    return engineState.flags.isCursorVisible;
-}
-
-/// Sets whether the cursor should be visible or hidden.
-@trusted
-void setIsCursorVisible(bool value) {
-    engineState.flags.isCursorVisible = value;
-    if (value) {
-        rl.ShowCursor();
-    } else {
-        rl.HideCursor();
-    }
-}
-
-/// Toggles the visibility of the cursor.
-void toggleIsCursorVisible() {
-    setIsCursorVisible(!isCursorVisible);
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isPixelPerfect
+        : engineState.flags & ~EngineFlag.isPixelPerfect;
 }
 
 /// Returns true if the application is currently in fullscreen mode.
+// NOTE: There is a conflict between the flag and real-window-state, which could potentially cause issues for some users.
 @trusted
 bool isFullscreen() {
-    return rl.IsWindowFullscreen();
+    return cast(bool) (engineState.flags & EngineFlag.isFullscreen);
 }
 
 /// Sets whether the application should be in fullscreen mode.
-// NOTE: This function introduces a slight delay to prevent some bugs observed on Linux.
+// NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
 @trusted
 void setIsFullscreen(bool value) {
     if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isFullscreen
+        : engineState.flags & ~EngineFlag.isFullscreen;
     version(WebAssembly) {
 
     } else {
         if (value) {
-            engineState.fullscreenState.previousWindowWidth = windowWidth;
-            engineState.fullscreenState.previousWindowHeight = windowHeight;
+            engineState.fullscreenState.previousWindowWidth = rl.GetScreenWidth();
+            engineState.fullscreenState.previousWindowHeight = rl.GetScreenHeight();
             rl.SetWindowPosition(0, 0);
             rl.SetWindowSize(screenWidth, screenHeight);
         }
@@ -1504,6 +1484,26 @@ void toggleIsFullscreen() {
     setIsFullscreen(!isFullscreen);
 }
 
+/// Returns true if the cursor is currently visible.
+bool isCursorVisible() {
+    return cast(bool) (engineState.flags & EngineFlag.isCursorVisible);
+}
+
+/// Sets whether the cursor should be visible or hidden.
+@trusted
+void setIsCursorVisible(bool value) {
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isCursorVisible
+        : engineState.flags & ~EngineFlag.isCursorVisible;
+    if (value) rl.ShowCursor();
+    else rl.HideCursor();
+}
+
+/// Toggles the visibility of the cursor.
+void toggleIsCursorVisible() {
+    setIsCursorVisible(!isCursorVisible);
+}
+
 /// Returns true if the windows was resized.
 @trusted
 bool isWindowResized() {
@@ -1512,7 +1512,7 @@ bool isWindowResized() {
 
 /// Sets the background color to the specified value.
 void setBackgroundColor(Color value) {
-    engineState.viewport.color = value;
+    engineState.viewport.data.color = value;
 }
 
 /// Sets the border color to the specified value.
@@ -1536,7 +1536,7 @@ void setWindowMaxSize(int width, int height) {
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Fault setWindowIconFromFiles(IStr path) {
-    auto targetPath = canUseAssetsPath ? path.toAssetsPath() : path;
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto image = rl.LoadImage(targetPath.toCStr().getOr());
     if (image.data == null) return Fault.cantFind;
     rl.SetWindowIcon(image);
@@ -1613,7 +1613,7 @@ void setMasterVolume(float value) {
 
 /// Returns true if the resolution is locked and cannot be changed.
 bool isResolutionLocked() {
-    return !engineState.viewport.isEmpty;
+    return !engineState.viewport.data.isEmpty;
 }
 
 /// Locks the resolution to the specified width and height.
@@ -1621,21 +1621,21 @@ bool isResolutionLocked() {
 void lockResolution(int width, int height) {
     engineState.viewport.lockWidth = width;
     engineState.viewport.lockHeight = height;
-    if (engineState.flags.isUpdating) {
+    if (engineState.flags & EngineFlag.isUpdating) {
         engineState.viewport.isChanging = true;
     } else {
-        engineState.viewport.resize(width, height);
+        engineState.viewport.data.resize(width, height);
     }
 }
 
 /// Unlocks the resolution, allowing it to be changed.
 void unlockResolution() {
-    if (engineState.flags.isUpdating) {
+    if (engineState.flags & EngineFlag.isUpdating) {
         engineState.viewport.isChanging = true;
     } else {
-        auto temp = engineState.viewport.color;
-        engineState.viewport.free();
-        engineState.viewport.color = temp;
+        auto temp = engineState.viewport.data.color;
+        engineState.viewport.data.free();
+        engineState.viewport.data.color = temp;
     }
 }
 
@@ -1683,13 +1683,13 @@ Vec2 windowSize() {
 
 /// Returns the current resolution width.
 int resolutionWidth() {
-    if (isResolutionLocked) return engineState.viewport.width;
+    if (isResolutionLocked) return engineState.viewport.data.width;
     else return windowWidth;
 }
 
 /// Returns the current resolution height.
 int resolutionHeight() {
-    if (isResolutionLocked) return engineState.viewport.height;
+    if (isResolutionLocked) return engineState.viewport.data.height;
     else return windowHeight;
 }
 
