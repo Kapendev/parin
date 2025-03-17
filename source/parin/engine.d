@@ -37,7 +37,7 @@ enum EngineFlag : EngineFlags {
     isCursorVisible   = 0x0020,
 }
 
-/// A type representing flipping orientations.
+/// Flipping orientations.
 enum Flip : ubyte {
     none, /// No flipping.
     x,    /// Flipped along the X-axis.
@@ -45,26 +45,26 @@ enum Flip : ubyte {
     xy,   /// Flipped along both X and Y axes.
 }
 
-/// A type representing alignment orientations.
+/// Alignment orientations.
 enum Alignment : ubyte {
     left,   /// Align to the left.
     center, /// Align to the center.
     right,  /// Align to the right.
 }
 
-/// A type representing texture filtering modes.
+/// Texture filtering modes.
 enum Filter : ubyte {
     nearest = rl.TEXTURE_FILTER_POINT,   /// Nearest neighbor filtering (blocky).
     linear = rl.TEXTURE_FILTER_BILINEAR, /// Bilinear filtering (smooth).
 }
 
-/// A type representing texture wrapping modes.
+/// Texture wrapping modes.
 enum Wrap : ubyte {
     clamp = rl.TEXTURE_WRAP_CLAMP,   /// Clamps texture.
     repeat = rl.TEXTURE_WRAP_REPEAT, /// Repeats texture.
 }
 
-/// A type representing blending modes.
+/// Texture blending modes.
 enum Blend : ubyte {
     alpha = rl.BLEND_CUSTOM_SEPARATE, /// Standard alpha blending.
     additive = rl.BLEND_ADDITIVE,     /// Adds colors for light effects.
@@ -73,7 +73,7 @@ enum Blend : ubyte {
     sub = rl.BLEND_SUBTRACT_COLORS,   /// Simply subtracts colors.
 }
 
-/// A type representing a limited set of keyboard keys.
+/// A limited set of keyboard keys.
 enum Keyboard : ushort {
     none = rl.KEY_NULL,           /// Not a key.
     a = rl.KEY_A,                 /// The A key.
@@ -155,7 +155,7 @@ enum Keyboard : ushort {
     pageDown = rl.KEY_PAGE_DOWN,  /// The page down key.
 }
 
-/// A type representing a limited set of mouse keys.
+/// A limited set of mouse keys.
 enum Mouse : ushort {
     none = 0,                            /// Not a button.
     left = rl.MOUSE_BUTTON_LEFT + 1,     /// The left mouse button.
@@ -163,7 +163,7 @@ enum Mouse : ushort {
     middle = rl.MOUSE_BUTTON_MIDDLE + 1, /// The middle mouse button.
 }
 
-/// A type representing a limited set of gamepad buttons.
+/// A limited set of gamepad buttons.
 enum Gamepad : ushort {
     none = rl.GAMEPAD_BUTTON_UNKNOWN,          /// Not a button.
     left = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
@@ -185,12 +185,13 @@ enum Gamepad : ushort {
     middle = rl.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
 }
 
+/// Options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object. This value can be used to force a specific origin and is not used if it is set to zero.
+    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object. This value can be used to force a specific origin.
     Vec2 scale = Vec2(1.0f);              /// The scale of the drawn object.
     float rotation = 0.0f;                /// The rotation of the drawn object, in degrees.
-    Color color = white;                  /// The color of the drawn object.
-    Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is set to zero.
+    Color color = white;                  /// The color of the drawn object, in RGBA.
+    Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is zero.
     Flip flip = Flip.none;                /// A value representing flipping orientations.
 
     @safe @nogc nothrow:
@@ -221,15 +222,20 @@ struct DrawOptions {
     }
 }
 
-/// A structure containing options for configuring extra drawing parameters for text.
+/// Options for configuring extra drawing parameters for text.
 struct TextOptions {
-    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the text, where 0.0 means fully hidden and 1.0 means fully visible.
+    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
     int alignmentWidth = 0;               /// The width of the aligned text. It is used as a hint and is not enforced.
-    ushort visibilityCount = 0;           /// Controls the visibility count of the text. This value can be used to force a specific character count and is not used if it is set to zero.
+    ushort visibilityCount = 0;           /// Controls the visibility count of the text. This value can be used to force a specific character count.
     Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
     bool isRightToLeft = false;           /// Indicates whether the content of the text flows in a right-to-left direction.
 
     @safe @nogc nothrow:
+
+    /// Initializes the options with the given visibility ratio.
+    this(float visibilityRatio) {
+        this.visibilityRatio = visibilityRatio;
+    }
 
     /// Initializes the options with the given alignment.
     this(Alignment alignment, int alignmentWidth = 0) {
@@ -238,7 +244,7 @@ struct TextOptions {
     }
 }
 
-/// Represents a texture resource.
+/// A texture resource.
 struct Texture {
     rl.Texture2D data;
 
@@ -287,9 +293,8 @@ struct Texture {
     }
 }
 
-/// Represents an identifier for a managed engine resource.
-/// Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeResources` function or the `free` method on the identifier.
+/// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
+/// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct TextureId {
     GenerationalIndex data;
@@ -346,7 +351,7 @@ struct TextureId {
     }
 }
 
-/// Represents a font resource.
+/// A font resource.
 struct Font {
     rl.Font data;
     int runeSpacing; /// The spacing between individual characters.
@@ -387,9 +392,8 @@ struct Font {
     }
 }
 
-/// Represents an identifier for a managed engine resource.
-/// Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeResources` function or the `free` method on the identifier.
+/// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
+/// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct FontId {
     GenerationalIndex data;
@@ -446,7 +450,7 @@ struct FontId {
     }
 }
 
-/// Represents a sound resource.
+/// A sound resource.
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
     bool isPaused;
@@ -542,9 +546,8 @@ struct Sound {
     }
 }
 
-/// Represents an identifier for a managed engine resource.
-/// Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeResources` function or the `free` method on the identifier.
+/// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
+/// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct SoundId {
     GenerationalIndex data;
@@ -621,7 +624,7 @@ struct SoundId {
     }
 }
 
-/// Represents the viewing area for rendering.
+/// A viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
     Color color;     /// The background color of the viewport.
@@ -724,7 +727,7 @@ struct Viewport {
     }
 }
 
-/// A structure representing a camera.
+/// A camera.
 struct Camera {
     Vec2 position;         /// The position of the cammera.
     float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
@@ -859,7 +862,7 @@ struct Camera {
     }
 }
 
-/// A structure with information about the engine viewport, including its area.
+/// Information about the engine viewport, including its area.
 struct EngineViewportInfo {
     Rect area;             /// The area covered by the viewport.
     Vec2 minSize;          /// The minimum size that the viewport can be.
@@ -1113,7 +1116,6 @@ ref LStr prepareTempText() {
 }
 
 /// Loads a text file from the assets folder and saves the content into the given buffer.
-/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
@@ -1121,7 +1123,6 @@ Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
 }
 
 /// Loads a text file from the assets folder.
-/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 Result!LStr loadRawText(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
@@ -1137,7 +1138,6 @@ Result!IStr loadTempText(IStr path) {
 }
 
 /// Loads a texture file (PNG) from the assets folder.
-/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Texture loadRawTexture(IStr path) {
@@ -1149,7 +1149,7 @@ Result!Texture loadRawTexture(IStr path) {
 }
 
 /// Loads a texture file (PNG) from the assets folder.
-/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 TextureId loadTexture(IStr path) {
     auto resource = loadRawTexture(path);
@@ -1160,7 +1160,6 @@ TextureId loadTexture(IStr path) {
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
-/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
@@ -1177,7 +1176,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
-/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
     auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
@@ -1188,7 +1187,6 @@ FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 ru
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
@@ -1197,7 +1195,7 @@ Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
@@ -1209,7 +1207,6 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
 Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) {
@@ -1227,7 +1224,7 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) 
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 SoundId loadSound(IStr path, float volume, float pitch, bool isLooping) {
     auto resource = loadRawSound(path, volume, pitch, isLooping);
@@ -1245,7 +1242,7 @@ Fault saveText(IStr path, IStr text) {
 }
 
 /// Frees all managed engine resources.
-void freeResources() {
+void freeEngineResources() {
     engineState.textures.free();
     engineState.fonts.free();
     engineState.sounds.free();
@@ -1414,7 +1411,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 @trusted
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
-    freeResources();
+    freeEngineResources();
     engineState.viewport.data.free();
     engineState.debugFont.free();
     engineState.envArgsBuffer.free();
@@ -1961,9 +1958,11 @@ Vec2 wasdReleased() {
 @trusted
 void playSound(ref Sound sound) {
     if (sound.isEmpty) return;
+    if (sound.isPaused) resumeSound(sound);
     if (sound.data.isType!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
+        rl.StopMusicStream(sound.data.get!(rl.Music)());
         rl.PlayMusicStream(sound.data.get!(rl.Music)());
     }
 }
