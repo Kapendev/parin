@@ -185,18 +185,13 @@ enum Gamepad : ushort {
     middle = rl.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
 }
 
-/// A structure containing options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object. This value can be used to force a specific value when needed and is not used if it is set to zero.
+    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object. This value can be used to force a specific origin and is not used if it is set to zero.
     Vec2 scale = Vec2(1.0f);              /// The scale of the drawn object.
     float rotation = 0.0f;                /// The rotation of the drawn object, in degrees.
     Color color = white;                  /// The color of the drawn object.
     Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is set to zero.
     Flip flip = Flip.none;                /// A value representing flipping orientations.
-    Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
-    int alignmentWidth = 0;               /// The width of the aligned object. It is used as a hint and is not enforced. Usually used for text drawing.
-    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the object, where 0.0 means fully hidden and 1.0 means fully visible. Usually used for text drawing.
-    bool isRightToLeft = false;           /// Indicates whether the content of the object flows in a right-to-left direction, such as for Arabic or Hebrew text. Usually used for text drawing.
 
     @safe @nogc nothrow:
 
@@ -224,6 +219,19 @@ struct DrawOptions {
     this(Flip flip) {
         this.flip = flip;
     }
+}
+
+pragma(msg, TextOptions.sizeof);
+
+/// A structure containing options for configuring extra drawing parameters for text.
+struct TextOptions {
+    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the text, where 0.0 means fully hidden and 1.0 means fully visible.
+    int alignmentWidth = 0;               /// The width of the aligned text. It is used as a hint and is not enforced.
+    ushort visibilityCount = 0;           /// Controls the visibility count of the text. This value can be used to force a specific character count and is not used if it is set to zero.
+    Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
+    bool isRightToLeft = false;           /// Indicates whether the content of the text flows in a right-to-left direction.
+
+    @safe @nogc nothrow:
 
     /// Initializes the options with the given alignment.
     this(Alignment alignment, int alignmentWidth = 0) {
@@ -440,6 +448,7 @@ struct FontId {
     }
 }
 
+// TODO: Add looping variable and maybe change the loadSound function to something like `loadSound(path, volume, looping)`.
 /// Represents a sound resource.
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
@@ -1762,7 +1771,7 @@ float deltaWheel() {
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 @trusted
-Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) {
+Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
     auto lineCodepointCount = 0;
@@ -1792,7 +1801,7 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions()) 
         textCodepointIndex += codepointByteCount;
     }
     if (textMaxWidth < textWidth) textMaxWidth = textWidth;
-    if (textMaxWidth < options.alignmentWidth) textMaxWidth = options.alignmentWidth;
+    if (textMaxWidth < extraOptions.alignmentWidth) textMaxWidth = extraOptions.alignmentWidth;
     return Vec2(textMaxWidth * options.scale.x, textHeight * options.scale.y).floor();
 }
 
@@ -2270,7 +2279,7 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 @trusted
-void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
 
@@ -2297,7 +2306,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             }
             textCodepointIndex += codepointSize;
         }
-        if (textMaxLineWidth < options.alignmentWidth) textMaxLineWidth = options.alignmentWidth;
+        if (textMaxLineWidth < extraOptions.alignmentWidth) textMaxLineWidth = extraOptions.alignmentWidth;
     }
 
     // Prepare the the text for drawing.
@@ -2313,28 +2322,30 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
 
     // Draw the text.
-    auto drawMaxCodepointCount = cast(int) (textCodepointCount * clamp(options.visibilityRatio, 0.0f, 1.0f));
+    auto drawMaxCodepointCount = extraOptions.visibilityCount
+        ? extraOptions.visibilityCount
+        : textCodepointCount * extraOptions.visibilityRatio;
     auto drawCodepointCounter = 0;
     auto textOffsetY = 0;
     foreach (i, line; linesBuffer) {
         auto lineCodepointIndex = 0;
         // Find the initial x offset for the text.
         auto textOffsetX = 0;
-        if (options.isRightToLeft) {
-            final switch (options.alignment) {
+        if (extraOptions.isRightToLeft) {
+            final switch (extraOptions.alignment) {
                 case Alignment.left: textOffsetX = linesWidthBuffer[i]; break;
                 case Alignment.center: textOffsetX = textMaxLineWidth / 2 + linesWidthBuffer[i] / 2; break;
                 case Alignment.right: textOffsetX = textMaxLineWidth; break;
             }
         } else {
-            final switch (options.alignment) {
+            final switch (extraOptions.alignment) {
                 case Alignment.left: break;
                 case Alignment.center: textOffsetX = textMaxLineWidth / 2 - linesWidthBuffer[i] / 2; break;
                 case Alignment.right: textOffsetX = textMaxLineWidth - linesWidthBuffer[i]; break;
             }
         }
         // Go over the characters and draw them.
-        if (options.isRightToLeft) {
+        if (extraOptions.isRightToLeft) {
             lineCodepointIndex = cast(int) line.length;
             while (lineCodepointIndex > 0) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
@@ -2389,13 +2400,13 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
 }
 
 /// Draws text with the given font at the given position using the provided draw options.
-void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawText(font.getOr(), text, position, options);
+void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
+    drawText(font.getOr(), text, position, options, extraOptions);
 }
 
 /// Draws debug text at the given position with the provided draw options.
-void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawText(engineFont, text, position, options);
+void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
+    drawText(engineFont, text, position, options, extraOptions);
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.

@@ -9,19 +9,17 @@ void ready() {
 }
 
 bool update(float dt) {
-    auto options = DrawOptions();
+    auto options = TextOptions();
     // Set the alignment of the text.
     options.alignment = Alignment.center;
-    // Set the width of the aligned text. It is used as a hint and is not enforced.
-    options.alignmentWidth = 200;
-    // Set whether the content of the text flows in a right-to-left direction.
-    options.isRightToLeft = false;
     // Update how many characters are visible this frame.
     options.visibilityRatio = fmod(elapsedTime * 0.3, 1.5);
+    // Set whether the content of the text flows in a right-to-left direction.
+    options.isRightToLeft = false;
 
-    auto size = measureTextSize(engineFont, text, options);
+    auto size = measureTextSize(engineFont, text);
     drawRect(Rect(Vec2(8), size), black);
-    drawText(engineFont, text, Vec2(8), options);
+    drawText(engineFont, text, Vec2(8), DrawOptions(), options);
     return false;
 }
 

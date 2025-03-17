@@ -2,21 +2,23 @@
 
 import parin;
 
+auto infoText = "Press a number to select an option.\nPress space to continue.";
+auto infoArea = Rect(0, 180 * 0.8, 320, 180 * 0.2);
 auto story = Story();
 auto script = "
     # A comment.
     * label
     | Hello world!
     | This is a text line and the next is a menu line.
-    ^ Option 1 ^ Option 2 ^ Option 3
+    ^ Pick one. ^ Pick two. ^ Skip.
     $ MENU SKIP
 
     *
-    | Text of option 1.
+    | Text of option one.
     $ end JUMP
 
     *
-    | Text of option 2.
+    | Text of option two.
     $ end JUMP
 
     * end
@@ -35,7 +37,7 @@ void ready() {
 bool update(float dt) {
     // Update the story.
     if (story.hasText || story.hasPause) {
-        if (Keyboard.enter.isPressed) story.update();
+        if (Keyboard.space.isPressed) story.update();
     }
     if (story.hasMenu) {
         // Select an option based on a number.
@@ -56,16 +58,9 @@ bool update(float dt) {
     if (story.hasPause) {
         drawDebugText("The story is paused.", Vec2(8));
     }
-    // Draw some info.
-    auto w = resolutionWidth;
-    auto h = resolutionHeight;
-    auto text = "Press 1, 2 or 3 to select an option.\nPress enter to continue.";
-    auto textArea = Rect(0, h * 0.8, w, h * 0.2);
-    auto textPosition = textArea.centerPoint;
-    auto textOptions = DrawOptions(Alignment.left, w - 16);
-    textOptions.hook = Hook.center;
-    drawRect(textArea, gray1);
-    drawDebugText(text, textPosition, textOptions);
+    // Draw the info.
+    drawRect(infoArea, gray1);
+    drawDebugText(infoText, infoArea.centerPoint, DrawOptions(Hook.center), TextOptions(Alignment.left, 320 - 16));
     return false;
 }
 

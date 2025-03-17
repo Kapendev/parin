@@ -294,26 +294,27 @@ void updateUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
 // TODO SOME ALIGNEMENT SHIT WITH SCALING>>>>
 void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     auto font = options.font.isValid ? options.font.get() : engineFont;
-    auto textOptions = DrawOptions(options.alignment, cast(int) (area.size.x / options.fontScale));
-    textOptions.color = options.fontColor;
-    textOptions.scale = Vec2(options.fontScale);
+    auto extraOptions = TextOptions(options.alignment, cast(int) (area.size.x / options.fontScale));
+    auto drawOptions = DrawOptions(options.fontColor);
+    drawOptions.scale = Vec2(options.fontScale);
+
     auto textPosition = area.centerPoint;
     final switch (options.alignment) {
         case Alignment.left:
-            textOptions.hook = Hook.left;
+            drawOptions.hook = Hook.left;
             textPosition.x = area.position.x + options.alignmentOffset; break;
         case Alignment.center:
-            textOptions.hook = Hook.center;
+            drawOptions.hook = Hook.center;
             break;
         case Alignment.right:
-            textOptions.hook = Hook.right;
+            drawOptions.hook = Hook.right;
             textPosition.x = area.position.x + area.size.x - options.alignmentOffset; break;
     }
     textPosition = textPosition.round();
-    if (options.isDisabled && textOptions.color.a >= options.fontAlphaOffset) {
-        textOptions.color.a -= options.fontAlphaOffset;
+    if (options.isDisabled && drawOptions.color.a >= options.fontAlphaOffset) {
+        drawOptions.color.a -= options.fontAlphaOffset;
     }
-    drawText(font, text, textPosition, textOptions);
+    drawText(font, text, textPosition, drawOptions, extraOptions);
 }
 
 void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
@@ -516,17 +517,13 @@ void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     drawUiText(area, text, options);
     // TODO: Make that text position thing a function bro!!!
     // ---
-    auto textOptions = DrawOptions(options.alignment, cast(int) (area.size.x / options.fontScale));
     auto textPosition = area.centerPoint;
     final switch (options.alignment) {
         case Alignment.left:
-            textOptions.hook = Hook.left;
             textPosition.x = area.position.x + options.alignmentOffset; break;
         case Alignment.center:
-            textOptions.hook = Hook.center;
             break;
         case Alignment.right:
-            textOptions.hook = Hook.right;
             textPosition.x = area.position.x + area.size.x - options.alignmentOffset; break;
     }
     textPosition = textPosition.round();
