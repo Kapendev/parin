@@ -221,8 +221,6 @@ struct DrawOptions {
     }
 }
 
-pragma(msg, TextOptions.sizeof);
-
 /// A structure containing options for configuring extra drawing parameters for text.
 struct TextOptions {
     float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the text, where 0.0 means fully hidden and 1.0 means fully visible.
@@ -448,11 +446,11 @@ struct FontId {
     }
 }
 
-// TODO: Add looping variable and maybe change the loadSound function to something like `loadSound(path, volume, looping)`.
 /// Represents a sound resource.
 struct Sound {
     Variant!(rl.Sound, rl.Music) data;
     bool isPaused;
+    bool isLooping;
 
     @safe @nogc nothrow:
 
@@ -501,7 +499,7 @@ struct Sound {
         return time / duration;
     }
 
-    /// Sets the volume level for the sound.
+    /// Sets the volume level for the sound. One is the default value.
     @trusted
     void setVolume(float value) {
         if (data.isType!(rl.Sound)) {
@@ -511,7 +509,7 @@ struct Sound {
         }
     }
 
-    /// Sets the pitch of the sound.
+    /// Sets the pitch of the sound. One is the default value.
     @trusted
     void setPitch(float value) {
         if (data.isType!(rl.Sound)) {
@@ -521,7 +519,7 @@ struct Sound {
         }
     }
 
-    /// Sets the stereo panning of the sound.
+    /// Sets the stereo panning of the sound. One is the default value.
     @trusted
     void setPan(float value) {
         if (data.isType!(rl.Sound)) {
@@ -558,6 +556,11 @@ struct SoundId {
         return getOr().isPaused;
     }
 
+    /// Returns true if the sound associated with the resource identifier is looping.
+    bool isLooping() {
+        return getOr().isLooping;
+    }
+
     /// Returns true if the sound associated with the resource identifier is playing.
     bool isPlaying() {
         return getOr().isPlaying;
@@ -573,21 +576,22 @@ struct SoundId {
         return getOr().duration;
     }
 
+    /// Returns the progress of the sound associated with the resource identifier.
     float progress() {
         return getOr().progress;
     }
 
-    /// Sets the volume level for the sound associated with the resource identifier.
+    /// Sets the volume level for the sound associated with the resource identifier. One is the default value.
     void setVolume(float value) {
         getOr().setVolume(value);
     }
 
-    /// Sets the pitch for the sound associated with the resource identifier.
+    /// Sets the pitch for the sound associated with the resource identifier. One is the default value.
     void setPitch(float value) {
         getOr().setPitch(value);
     }
 
-    /// Sets the stereo panning for the sound associated with the resource identifier.
+    /// Sets the stereo panning for the sound associated with the resource identifier. One is the default value.
     void setPan(float value) {
         getOr().setPan(value);
     }
@@ -1208,7 +1212,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// The resource must be manually freed.
 /// Supports both forward slashes and backslashes in file paths.
 @trusted
-Result!Sound loadRawSound(IStr path, float volume, float pitch) {
+Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
@@ -1216,6 +1220,7 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
     } else {
         value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
     }
+    value.isLooping = isLooping;
     value.setVolume(volume);
     value.setPitch(pitch);
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
@@ -1224,8 +1229,8 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch) {
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// The resource is managed by the engine and can be freed manually or with the `freeResources` function.
 /// Supports both forward slashes and backslashes in file paths.
-SoundId loadSound(IStr path, float volume, float pitch) {
-    auto resource = loadRawSound(path, volume, pitch);
+SoundId loadSound(IStr path, float volume, float pitch, bool isLooping) {
+    auto resource = loadRawSound(path, volume, pitch, isLooping);
     if (resource.isNone) return SoundId();
     auto id = SoundId(engineState.sounds.append(resource.get()));
     id.data.value += 1;
@@ -1953,7 +1958,6 @@ Vec2 wasdReleased() {
 }
 
 /// Plays the specified sound.
-/// The sound will loop automatically for certain file types (OGG, MP3).
 @trusted
 void playSound(ref Sound sound) {
     if (sound.isEmpty) return;
@@ -1965,7 +1969,6 @@ void playSound(ref Sound sound) {
 }
 
 /// Plays the specified sound.
-/// The sound will loop automatically for certain file types (OGG, MP3).
 void playSound(SoundId sound) {
     if (sound.isValid) playSound(sound.get());
 }
@@ -2024,7 +2027,10 @@ void resumeSound(SoundId sound) {
 @trusted
 void updateSound(ref Sound sound) {
     if (sound.isEmpty) return;
-    if (sound.data.isType!(rl.Music)) {
+    if (sound.data.isType!(rl.Sound)) {
+        if (sound.isLooping && !sound.isPlaying) playSound(sound);
+    } else {
+        if (!sound.isLooping && (sound.duration - sound.time) < 0.1f) stopSound(sound);
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }
