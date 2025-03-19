@@ -1,7 +1,5 @@
 #!/bin/env -S dmd -run
 
-module noby;
-
 // [Noby Script]
 
 enum assetsDir   = join(".", "assets");
@@ -148,7 +146,7 @@ int runDubSetup(string[] args, bool isFirstRun) {
         auto dub1 = cmd("dub", "add", "raylib-d", "--verror");
         auto dub2 = cmd("dub", "run", "raylib-d:install", "--verror", "--", "-q", "-u=no");
         // Remove the lock file from the install script.
-        if (hasDubLockFileNow != dubLockFile.isX) rm (dubLockFile);
+        if (hasDubLockFileNow != dubLockFile.isX) rm(dubLockFile);
         // Remove the backup copies if something failed.
         if (dub1 || dub2) {
             restore(dubFile, true);

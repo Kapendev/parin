@@ -1,14 +1,6 @@
 #!/bin/env -S dmd -run
 
-/// A helper script to assist with the web export process.
-
-import std.path;
-import std.stdio;
-import std.file;
-import std.process;
-import std.string;
-
-// TODO: Clean it! Well... Not right now, but do it.
+// [Noby Script]
 
 version (Windows) {
     enum emrunName = "emrun.bat";
@@ -18,20 +10,18 @@ version (Windows) {
     enum emccName = "emcc";
 }
 
-enum dflags = ["-betterC", "-i", "--release"];              // The compiler flags passed to ldc. Local dependencies can be added here.
-enum output = buildPath(".", "web", "index.html");          // The output file that can be run with emrun.
+enum sourceDir   = join(".", "source");
+enum assetsDir   = join(".", "assets");
+enum outputFile  = join(".", "web", "index.html");
+enum shellFile   = join(".", ".__default_shell__.html");
+enum libFile     = join(".", "web", "libraylib.a");
+enum dubFile     = join(".", "dub.json");
+enum dubConfig   = "web";
+enum dubLibName  = "webgame";
+enum dflags      = ["-i", "-betterC", "--release"];
 
-enum sourceDir = buildPath(".", "source");                  // The source folder of the project.
-enum assetsDir = buildPath(".", "assets");                  // The assets folder of the projecr.
-
-enum dubFile = buildPath(".", "dub.json");                  // The dub that was hopefully created by the setup script.
-enum libraryFile = buildPath(".", "web", "libraylib.a");    // The raylib WebAssembly library that will be passed to emcc.
-enum shellFile = buildPath(".", ".__default_shell__.html"); // The default shell file that will be created and used.
-
-enum dubWebConfig = "web";                                  // The dub config that will be used to create a library file for the web.
-enum dubLibName = "webgame";                                // The library name that dub will output with the web config.
-
-enum shellFileContent = `<!doctype html>
+enum shellFileContent = `
+<!doctype html>
 <html lang="EN-us">
 <head>
     <title>game</title>
@@ -110,134 +100,246 @@ enum shellFileContent = `<!doctype html>
     {{{ SCRIPT }}}
 </body>
 </html>
-`;
+`[1 .. $];
 
-/// Get the object files in the current folder.
-string[] objectFiles() {
-    string[] result;
-    foreach (item; dirEntries(".", SpanMode.shallow)) {
-        if (item.name.endsWith(".o")) {
-            result ~= item.name;
-        }
+int main() {
+    auto isSimpProject = !dubFile.isX;
+    // Check if the files that are needed exist.
+    if (!sourceDir.isX) { echo("Folder `", sourceDir, "` doesn't exist. Create one."); return 1; }
+    if (!assetsDir.isX) { echo("Folder `", assetsDir, "` doesn't exist. Create one."); return 1; }
+    if (!libFile.isX)   { echo("File `"  , libFile  , "` doesn't exist. Download it from raylib releases."); return 1; }
+    clear(".", ".o");
+    // Compile the game.
+    if (isSimpProject) {
+        IStr[] args = ["ldc2", "-c", "-checkaction=halt", "-mtriple=wasm32-unknown-unknown-wasm", "I" ~ sourceDir];
+        args ~= dflags;
+        foreach (path; ls(sourceDir)) if (path.endsWith(".d")) args ~= path;
+        if (cmd(args)) return 1;
+    } else {
+        if (cmd("dub", "build", "--compiler", "ldc2", "--build", "release", "--config", dubConfig)) return 1;
+    }
+    // Check if the assets folder is empty because emcc will cry about it.
+    paste(shellFile, shellFileContent);
+    bool isAssetsDirEmpty = true;
+    foreach (path; ls(assetsDir)) {
+        if (path.isF) { isAssetsDirEmpty = false; break; }
+    }
+    // Build the web app.
+    IStr dubLibFile = "";
+    foreach (path; ls) {
+        if (path.findStart(dubLibName) != -1) { dubLibFile = path; break; }
+    }
+    IStr[] args = [emccName, "-o", outputFile, libFile, "-DPLATFORM_WEB", "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile];
+    if (!isAssetsDirEmpty) { args ~= "--preload-file"; args ~= assetsDir; }
+    if (isSimpProject) {
+        foreach (path; ls) if (path.endsWith(".o")) args ~= path;
+    } else {
+        args ~= dubLibFile;
+    }
+    if (cmd(args)) {
+        rm(shellFile);
+        rm(dubLibFile);
+        foreach (path; ls) if (path.endsWith(".o")) rm(path);
+        return 1;
+    }
+    rm(shellFile);
+    rm(dubLibFile);
+    foreach (path; ls) if (path.endsWith(".o")) rm(path);
+    // Run the web app.
+    return cmd(emrunName, outputFile);
+}
+
+// [Noby Library]
+
+enum cloneExt = "._cl";
+
+Level minLogLevel = Level.info;
+
+alias Sz      = size_t;         /// The result of sizeof, ...
+alias Str     = char[];         /// A string slice of chars.
+alias IStr    = const(char)[];  /// A string slice of constant chars.
+
+enum Level : ubyte {
+    none,
+    info,
+    warning,
+    error,
+}
+
+bool isX(IStr path) {
+    import std.file;
+    return path.exists;
+}
+
+bool isF(IStr path) {
+    import std.file;
+    return path.exists;
+}
+
+bool isD(IStr path) {
+    import std.file;
+    return path.isDir;
+}
+
+void echo(A...)(A args) {
+    import std.stdio;
+    writeln(args);
+}
+
+void echon(A...)(A args) {
+    import std.stdio;
+    write(args);
+}
+
+void cp(IStr source, IStr target) {
+    import std.file;
+    copy(source, target);
+}
+
+void rm(IStr path) {
+    import std.file;
+    if (path.isX) remove(path);
+}
+
+void mkdir(IStr path, bool isRecursive = false) {
+    import std.file;
+    if (!path.isX) {
+        if (isRecursive) mkdirRecurse(path);
+        else std.file.mkdir(path);
+    }
+}
+
+void rmdir(IStr path, bool isRecursive = false) {
+    import std.file;
+    if (!path.isX) {
+        if (isRecursive) rmdirRecurse(path);
+        else std.file.rmdir(path);
+    }
+}
+
+IStr cat(IStr path) {
+    import std.file;
+    return path.isX ? readText(path) : "";
+}
+
+IStr[] ls(IStr path = ".", bool isRecursive = false) {
+    import std.file;
+    IStr[] result = [];
+    foreach (dir; dirEntries(cast(string) path, isRecursive ? SpanMode.breadth : SpanMode.shallow)) {
+        result ~= dir.name;
     }
     return result;
 }
 
-/// Delete object files in the current folder.
-void deleteObjectFiles() {
-    foreach (file; objectFiles) {
-        std.file.remove(file);
+IStr basename(IStr path) {
+    import std.path;
+    return baseName(path);
+}
+
+IStr realpath(IStr path) {
+    import std.path;
+    return absolutePath(cast(string) path);
+}
+
+IStr read() {
+    import std.stdio;
+    import std.string;
+    return readln().strip();
+}
+
+IStr readYesNo(IStr text, IStr firstValue = "?") {
+    auto result = firstValue;
+    while (true) {
+        if (result.length == 0) result = "Y";
+        if (result.isYesOrNo) break;
+        echon(text, " [Y/n] ");
+        result = read();
+    }
+    return result;
+}
+
+
+IStr join(IStr[] args...) {
+    import std.path;
+    return buildPath(args);
+}
+
+bool isYes(IStr arg) {
+    return (arg.length == 1 && (arg[0] == 'Y' || arg[0] == 'y'));
+}
+
+bool isNo(IStr arg) {
+    return (arg.length == 1 && (arg[0] == 'N' || arg[0] == 'n'));
+}
+
+bool isYesOrNo(IStr arg) {
+    return arg.isYes || arg.isNo;
+}
+
+bool startsWith(IStr str, IStr start) {
+    if (str.length < start.length) return false;
+    return str[0 .. start.length] == start;
+}
+
+bool endsWith(IStr str, IStr end) {
+    if (str.length < end.length) return false;
+    return str[$ - end.length .. $] == end;
+}
+
+int findStart(IStr str, IStr item) {
+    import std.string;
+    return cast(int) str.indexOf(item);
+}
+
+void clear(IStr path = ".", IStr ext = "") {
+    foreach (file; ls(path)) {
+        if (file.endsWith(ext)) rm(file);
     }
 }
 
-int main(string[] args) {
-    // Pass extra arguments to ldc if needed.
-    writeln("If arguments are passed, then the project is not treated as a DUB project.");
-    string[] extraArgs = [];
-    foreach (arg; args[1 .. $]) {
-        extraArgs ~= arg;
+void paste(IStr path, IStr content, bool isOnlyMaking = false) {
+    import std.file;
+    if (isOnlyMaking) {
+        if (!path.isX) write(path, content);
+    } else {
+        write(path, content);
     }
+}
 
-    auto isDubProject = exists(dubFile) && extraArgs.length == 0;
+void clone(IStr path) {
+    if (path.isX) paste(path ~ cloneExt, cat(path));
+}
 
-    // Check if the files that are needed for building exist.
-    if (!exists(sourceDir)) {
-        writeln("Folder `", sourceDir, "` does not exist. Create one.");
+void restore(IStr path, bool isOnlyRemoving = false) {
+    auto clonePath = path ~ cloneExt;
+    if (clonePath.isX) {
+        if (!isOnlyRemoving) paste(path, cat(clonePath));
+        rm(clonePath);
+    }
+}
+
+void log(Level level, IStr text) {
+    if (minLogLevel == 0 || minLogLevel > level) return;
+    with (Level) final switch (level) {
+        case info:    echo("[INFO] ", text); break;
+        case warning: echo("[WARNING] ", text); break;
+        case error:   echo("[ERROR] ", text); break;
+        case none:    break;
+    }
+}
+
+void logf(A...)(Level level, IStr text, A args) {
+    import std.format;
+    log(level, text.format(args));
+}
+
+int cmd(IStr[] args...) {
+    import std.stdio;
+    import std.process;
+    writeln("[CMD] ", args);
+    try {
+        return spawnProcess(args).wait();
+    } catch (Exception e) {
         return 1;
     }
-    if (!exists(libraryFile)) {
-        writeln("File `", libraryFile, "` does not exist. Download it from the raylib repository and place it in the specified folder.");
-        return 1;
-    }
-
-    // Delete old object files inside current folder.
-    deleteObjectFiles();
-
-    if (isDubProject) {
-        // Create a library.
-        auto dub = spawnProcess(["dub", "build", "--compiler", "ldc2", "--config", dubWebConfig, "--build", "release"]).wait();
-        if (dub != 0) return dub;
-    } else {
-        // Find the first D files and create the object files.
-        string[] firstFiles = [];
-        foreach (item; dirEntries(sourceDir, SpanMode.shallow)) {
-            if (!item.name.endsWith(".d")) continue;
-            firstFiles ~= item.name;
-        }
-        // TODO: Needs testing.
-        auto ldc2 = spawnProcess(["ldc2", "-c", "-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt"] ~ [("I" ~ sourceDir)] ~ extraArgs ~ dflags ~ firstFiles).wait();
-        if (ldc2 != 0) return ldc2;
-    }
-
-    // Create the shell file that is needed by emcc.
-    std.file.write(shellFile, shellFileContent);
-
-    // Check if the assets folder is empty because emcc will cry about it.
-    bool isAssetsDirEmpty = true;
-    if (exists(assetsDir)) {
-        foreach (item; dirEntries(assetsDir, SpanMode.breadth)) {
-            if (item.name.isDir) continue;
-            isAssetsDirEmpty = false;
-            break;
-        }
-    }
-
-    // Build the web app.
-    if (isDubProject) {
-        // Search for the library file that was created.
-        string dubLibraryFile = [];
-        foreach (item; dirEntries(".", SpanMode.breadth)) {
-            if (item.name.indexOf(dubLibName) != -1) {
-                dubLibraryFile = item.name;
-                break;
-            }
-        }
-        // Compile project.
-        if (isAssetsDirEmpty) {
-            auto emcc = spawnProcess([emccName, "-o", output, dubLibraryFile, "-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile]).wait();
-            if (emcc != 0) {
-                // Cleanup.
-                std.file.remove(dubLibraryFile);
-                std.file.remove(shellFile);
-                deleteObjectFiles();
-                return emcc;
-            }
-        } else {
-            auto emcc = spawnProcess([emccName, "-o", output, dubLibraryFile, "-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile, "--preload-file", assetsDir]).wait();
-            if (emcc != 0) {
-                // Cleanup.
-                std.file.remove(dubLibraryFile);
-                std.file.remove(shellFile);
-                deleteObjectFiles();
-                return emcc;
-            }
-        }
-        // Cleanup.
-        std.file.remove(dubLibraryFile);
-    } else {
-        // Compile project.
-        if (isAssetsDirEmpty) {
-            auto emcc = spawnProcess([emccName, "-o", output] ~ objectFiles ~ ["-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile]).wait();
-            if (emcc != 0) {
-                // Cleanup.
-                std.file.remove(shellFile);
-                deleteObjectFiles();
-                return emcc;
-            }
-        } else {
-            auto emcc = spawnProcess([emccName, "-o", output] ~ objectFiles ~ ["-DPLATFORM_WEB", libraryFile, "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile, "--preload-file", assetsDir]).wait();
-            if (emcc != 0) {
-                // Cleanup.
-                std.file.remove(shellFile);
-                deleteObjectFiles();
-                return emcc;
-            }
-        }
-    }
-    // Cleanup.
-    std.file.remove(shellFile);
-    deleteObjectFiles();
-
-    // Run the web app.
-    return spawnProcess([emrunName, output]).wait();
 }
