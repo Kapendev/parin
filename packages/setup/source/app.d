@@ -139,8 +139,7 @@ int runDubSetup(string[] args, bool isFirstRun) {
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);
     // Get a yes or no and download the raylib libraries.
-    IStr arg = readYesNo("Would you like to download raylib?", args.length > 1 ? args[1] : "?");
-    if (arg.isYes) {
+    if (readYesNo("Would you like to download raylib?", args.length > 1 ? args[1] : "?").isYes) {
         echo("Downloading...");
         auto hasDubLockFileNow = dubLockFile.isX;
         auto dub1 = cmd("dub", "add", "raylib-d", "--verror");

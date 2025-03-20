@@ -13,8 +13,8 @@
 		"assets"
 	],
 	"subPackages" : [
-		"setup",
-		"web",
-		"rin"
+		"packages/rin",
+		"packages/setup",
+		"packages/web"
 	]
 }

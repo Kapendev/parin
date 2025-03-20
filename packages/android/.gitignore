@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/android
+android.so
+android.dylib
+android.dll
+android.a
+android.lib
+android-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+parin*

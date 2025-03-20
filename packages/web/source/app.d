@@ -139,12 +139,12 @@ int main() {
     if (cmd(args)) {
         rm(shellFile);
         rm(dubLibFile);
-        foreach (path; ls) if (path.endsWith(".o")) rm(path);
+        clear(".", ".o");
         return 1;
     }
     rm(shellFile);
     rm(dubLibFile);
-    foreach (path; ls) if (path.endsWith(".o")) rm(path);
+    clear(".", ".o");
     // Run the web app.
     return cmd(emrunName, outputFile);
 }

@@ -1092,13 +1092,20 @@ Vec2 toWorldPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) 
     return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
 }
 
-/// Returns an absolute path to the assets folder.
+/// Returns the path of the assets folder.
 IStr assetsPath() {
     return engineState.assetsPath.items;
 }
 
-/// Converts a relative path to an absolute path within the assets folder.
+/// Sets the path of the assets folder.
+void setAssetsPath(IStr path) {
+    engineState.assetsPath.clear();
+    engineState.assetsPath.append(path);
+}
+
+/// Converts a path to a path within the assets folder.
 IStr toAssetsPath(IStr path) {
+    if (!isUsingAssetsPath) return path;
     return pathConcat(assetsPath, path).pathFormat();
 }
 
