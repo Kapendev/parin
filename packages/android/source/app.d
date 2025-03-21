@@ -70,12 +70,12 @@ bool isX(IStr path) {
 
 bool isF(IStr path) {
     import std.file;
-    return path.exists;
+    return path.isX && path.isFile;
 }
 
 bool isD(IStr path) {
     import std.file;
-    return path.isDir;
+    return path.isX && path.isDir;
 }
 
 void echo(A...)(A args) {

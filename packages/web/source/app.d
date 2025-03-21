@@ -10,12 +10,12 @@ version (Windows) {
     enum emccName = "emcc";
 }
 
-enum sourceDir   = join(".", "source");
-enum assetsDir   = join(".", "assets");
-enum outputFile  = join(".", "web", "index.html");
-enum shellFile   = join(".", ".__default_shell__.html");
-enum libFile     = join(".", "web", "libraylib.a");
-enum dubFile     = join(".", "dub.json");
+enum sourceDir   = "source";
+enum assetsDir   = "assets";
+enum outputFile  = join("web", "index.html");
+enum libFile     = join("web", "libraylib.a");
+enum shellFile   = ".__default_shell__.html";
+enum dubFile     = "dub.json";
 enum dubConfig   = "web";
 enum dubLibName  = "webgame";
 enum dflags      = ["-i", "-betterC", "--release"];
@@ -174,12 +174,12 @@ bool isX(IStr path) {
 
 bool isF(IStr path) {
     import std.file;
-    return path.exists;
+    return path.isX && path.isFile;
 }
 
 bool isD(IStr path) {
     import std.file;
-    return path.isDir;
+    return path.isX && path.isDir;
 }
 
 void echo(A...)(A args) {

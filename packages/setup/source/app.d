@@ -2,12 +2,12 @@
 
 // [Noby Script]
 
-enum assetsDir   = join(".", "assets");
-enum webDir      = join(".", "web");
-enum readmeFile  = join(".", "README.md");
-enum gitFile     = join(".", ".gitignore");
-enum dubFile     = join(".", "dub.json");
-enum dubLockFile = join(".", "dub.selections.json");
+enum assetsDir   = "assets";
+enum webDir      = "web";
+enum readmeFile  = "README.md";
+enum gitFile     = ".gitignore";
+enum dubFile     = "dub.json";
+enum dubLockFile = "dub.selections.json";
 
 enum readmeFileContent = `
 # Title
@@ -133,13 +133,13 @@ int runDubSetup(string[] args, bool isFirstRun) {
     }
     makeBasicSetup();
     // Find the main file and replace its content.
-    auto appDir = join(".", "src");
-    if (!appDir.isX) appDir = join(".", "source");
+    auto appDir = "src";
+    if (!appDir.isX) appDir = "source";
     auto appFile = join(appDir, "main.d");
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);
     // Get a yes or no and download the raylib libraries.
-    if (readYesNo("Would you like to download raylib?", args.length > 1 ? args[1] : "?").isYes) {
+    if (readYesNo("Would you like to download raylib?", args.length >= 2 ? args[1] : "?").isYes) {
         echo("Downloading...");
         auto hasDubLockFileNow = dubLockFile.isX;
         auto dub1 = cmd("dub", "add", "raylib-d", "--verror");
@@ -165,9 +165,9 @@ int main(string[] args) {
     auto isFirstRun = !assetsDir.isX;
     auto isSimpProject = !dubFile.isX;
     if (isSimpProject) {
-        result = runSimpSetup(args[1 .. $], isFirstRun);
+        result = runSimpSetup(args, isFirstRun);
     } else {
-        result = runDubSetup(args[1 .. $], isFirstRun);
+        result = runDubSetup(args, isFirstRun);
     }
     if (result == 0) echo("Done!");
     return result;
@@ -198,12 +198,12 @@ bool isX(IStr path) {
 
 bool isF(IStr path) {
     import std.file;
-    return path.exists;
+    return path.isX && path.isFile;
 }
 
 bool isD(IStr path) {
     import std.file;
-    return path.isDir;
+    return path.isX && path.isDir;
 }
 
 void echo(A...)(A args) {

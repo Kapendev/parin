@@ -20,7 +20,7 @@ static assert(headerStart == headerEnd, "The header should start and end with th
 
 int main(string[] args) {
     // Basic error checking.
-    if (args.length == 1 || (!args[1].isX || !args[1].isD)) {
+    if (args.length == 1 || !args[1].isD) {
         echof("Provide a folder containing `%s` files.", fileExt);
         return 1;
     }
@@ -63,12 +63,12 @@ bool isX(IStr path) {
 
 bool isF(IStr path) {
     import std.file;
-    return path.exists;
+    return path.isX && path.isFile;
 }
 
 bool isD(IStr path) {
     import std.file;
-    return path.isDir;
+    return path.isX && path.isDir;
 }
 
 void echo(A...)(A args) {

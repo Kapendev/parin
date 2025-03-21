@@ -892,6 +892,7 @@ struct EngineFullscreenState {
 struct EngineState {
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
+    EngineViewportInfo viewportInfoBuffer;
 
     Sz tickCount;
     Color borderColor;
@@ -1287,6 +1288,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.fullscreenState.previousWindowHeight = height;
     engineState.viewport.data.color = gray;
     engineState.viewport.data.blend = Blend.init;
+    engineViewportInfo(true);
     // Ready resources.
     if (args.length) {
         foreach (arg; args) engineState.envArgsBuffer.append(arg);
@@ -1368,6 +1370,7 @@ void updateWindow(bool function(float dt) updateFunc) {
                 engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
             }
             engineState.viewport.isChanging = false;
+            engineViewportInfo(true);
         }
         // Fullscreen code.
         if (engineState.fullscreenState.isChanging) {
@@ -1563,8 +1566,9 @@ Fault setWindowIconFromFiles(IStr path) {
 }
 
 /// Returns information about the engine viewport, including its area.
-EngineViewportInfo engineViewportInfo() {
-    auto result = EngineViewportInfo();
+EngineViewportInfo engineViewportInfo(bool isRecalculationForced = false) {
+    auto result = &engineState.viewportInfoBuffer;
+    if (!isRecalculationForced && !isWindowResized) return *result;
     if (isResolutionLocked) {
         result.minSize = resolution;
         result.maxSize = windowSize;
@@ -1588,7 +1592,7 @@ EngineViewportInfo engineViewportInfo() {
         result.minRatio = 1.0f;
         result.area = Rect(result.minSize);
     }
-    return result;
+    return *result;
 }
 
 /// Returns the default engine font. This font should not be freed.
@@ -1643,6 +1647,7 @@ void lockResolution(int width, int height) {
         engineState.viewport.isChanging = true;
     } else {
         engineState.viewport.data.resize(width, height);
+        engineViewportInfo(true);
     }
 }
 
