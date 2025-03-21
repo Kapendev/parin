@@ -82,6 +82,7 @@ struct UiState {
     Vec2 viewportSize;
     Vec2 viewportScale = Vec2(1.0f);
 
+    Vec2 mouseBuffer;
     Vec2 mousePressedPosition;
     Vec2 itemDragOffset;
     short itemId;
@@ -133,12 +134,7 @@ void prepareUi() {
 }
 
 Vec2 uiMouse() {
-    auto result = (mouse - uiState.viewportPosition) / uiState.viewportScale;
-    if (result.x < 0) result.x = -100000.0f;
-    else if (result.x > uiState.viewportSize.x) result.x = 100000.0f;
-    if (result.y < 0) result.y = -100000.0f;
-    else if (result.y > uiState.viewportSize.y) result.y = 100000.0f;
-    return result;
+    return uiState.mouseBuffer;
 }
 
 void setUiClickAction(Mouse value) {
@@ -168,6 +164,11 @@ void setUiViewportState(Vec2 position, Vec2 size, Vec2 scale) {
     if (uiState.mouseClickAction.isPressed) {
         uiState.mousePressedPosition = uiMouse;
     }
+    uiState.mouseBuffer = (mouse - position) / scale;
+    if (uiState.mouseBuffer.x < 0) uiState.mouseBuffer.x = -100000.0f;
+    else if (uiState.mouseBuffer.x > size.x) uiState.mouseBuffer.x = 100000.0f;
+    if (uiState.mouseBuffer.y < 0) uiState.mouseBuffer.y = -100000.0f;
+    else if (uiState.mouseBuffer.y > size.y) uiState.mouseBuffer.y = 100000.0f;
 }
 
 short uiItemId() {

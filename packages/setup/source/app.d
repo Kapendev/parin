@@ -148,8 +148,8 @@ int runDubSetup(string[] args, bool isFirstRun) {
         if (hasDubLockFileNow != dubLockFile.isX) rm(dubLockFile);
         // Remove the backup copies if something failed.
         if (dub1 || dub2) {
-            restore(dubFile, true);
-            restore(dubLockFile, true);
+            restore(dubFile);
+            restore(dubLockFile);
             return 1;
         }
     }

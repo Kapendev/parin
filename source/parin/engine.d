@@ -599,6 +599,11 @@ struct SoundId {
         getOr().setPan(value);
     }
 
+    /// Sets the looping mode for the sound associated with the resource identifier.
+    void setIsLooping(bool value) {
+        if (isValid) get().isLooping = value;
+    }
+
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
         return data.value && engineState.sounds.has(GenerationalIndex(data.value - 1, data.generation));
@@ -893,6 +898,7 @@ struct EngineState {
     EngineFlags flags;
     EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
+    Vec2 mouseBuffer;
 
     Sz tickCount;
     Color borderColor;
@@ -1332,6 +1338,16 @@ void updateWindow(bool function(float dt) updateFunc) {
                 engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
             }
         }
+        if (isResolutionLocked) {
+            auto rlMouse = rl.GetTouchPosition(0);
+            auto info = engineViewportInfo;
+            engineState.mouseBuffer = Vec2(
+                (rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio,
+                (rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio,
+            );
+        } else {
+            engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+        }
         auto dt = deltaTime;
         auto result = __updateFunc(dt);
         engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
@@ -1724,17 +1740,7 @@ Vec2 resolution() {
 /// Returns the current position of the mouse on the screen.
 @trusted
 Vec2 mouse() {
-    // Touch works on desktop, web and mobile.
-    auto rlMouse = rl.GetTouchPosition(0);
-    if (isResolutionLocked) {
-        auto info = engineViewportInfo;
-        return Vec2(
-            (rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio,
-            (rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio,
-        );
-    } else {
-        return rlMouse.toParin();
-    }
+    return engineState.mouseBuffer;
 }
 
 /// Returns the current frames per second (FPS).
@@ -2436,7 +2442,6 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
                 Sz length = 0;
                 while (argv[i][length] != '\0') length += 1;
                 engineState.envArgsBuffer.append(argv[i][0 .. length]);
-
             }
             engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDir, "assets"));
             readyFunc();
