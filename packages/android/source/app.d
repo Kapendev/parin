@@ -30,7 +30,8 @@ version (Windows) {
 }
 
 int main(string[] args) {
-    logw("Script is not done yet.");
+    logw("Script is not done!");
+    logi("Base on: https://github.com/raysan5/raylib/wiki/Working-for-Android");
     foreach (path; buildDirs) mkdir(path);
     if (readYesNo("Would you like to install sdk packages?", args.length > 1 ? args[1] : "?").isYes) {
         if (cmd(sdkmanagerName, "--sdk_root=./android/sdk", "--update")) {
@@ -46,9 +47,10 @@ int main(string[] args) {
 
 // [Noby Library]
 
-enum cloneExt = "._cl";
-
 Level minLogLevel = Level.info;
+bool isCmdLineHidden = false;
+
+enum cloneExt = "._cl";
 
 alias Sz      = size_t;         /// The result of sizeof, ...
 alias Str     = char[];         /// A string slice of chars.
@@ -86,6 +88,16 @@ void echon(A...)(A args) {
     write(args);
 }
 
+void echof(A...)(IStr text, A args) {
+    import std.stdio;
+    writefln(text, args);
+}
+
+void echofn(A...)(IStr text, A args) {
+    import std.stdio;
+    writef(text, args);
+}
+
 void cp(IStr source, IStr target) {
     import std.file;
     copy(source, target);
@@ -106,10 +118,15 @@ void mkdir(IStr path, bool isRecursive = false) {
 
 void rmdir(IStr path, bool isRecursive = false) {
     import std.file;
-    if (!path.isX) {
+    if (path.isX) {
         if (isRecursive) rmdirRecurse(path);
         else std.file.rmdir(path);
     }
+}
+
+IStr pwd() {
+    import std.file;
+    return getcwd();
 }
 
 IStr cat(IStr path) {
@@ -152,6 +169,10 @@ IStr readYesNo(IStr text, IStr firstValue = "?") {
     return result;
 }
 
+IStr fmt(A...)(IStr text, A args...) {
+    import std.format;
+    return format(text, args);
+}
 
 IStr join(IStr[] args...) {
     import std.path;
@@ -196,7 +217,6 @@ int findEnd(IStr str, IStr item) {
     return -1;
 }
 
-
 IStr trimStart(IStr str) {
     IStr result = str;
     while (result.length > 0) {
@@ -237,7 +257,7 @@ void paste(IStr path, IStr content, bool isOnlyMaking = false) {
 }
 
 void clone(IStr path) {
-    if (path.isX) paste(path ~ cloneExt, cat(path));
+    if (path.isX) cp(path, path ~ cloneExt);
 }
 
 void restore(IStr path, bool isOnlyRemoving = false) {
@@ -258,15 +278,25 @@ void log(Level level, IStr text) {
     }
 }
 
+void logi(IStr text) {
+    log(Level.info, text);
+}
+
+void logw(IStr text) {
+    log(Level.warning, text);
+}
+
+void loge(IStr text) {
+    log(Level.error, text);
+}
+
 void logf(A...)(Level level, IStr text, A args) {
-    import std.format;
-    log(level, text.format(args));
+    log(level, text.fmt(args));
 }
 
 int cmd(IStr[] args...) {
-    import std.stdio;
     import std.process;
-    writeln("[CMD] ", args);
+    if (!isCmdLineHidden) echo("[CMD] ", args);
     try {
         return spawnProcess(args).wait();
     } catch (Exception e) {

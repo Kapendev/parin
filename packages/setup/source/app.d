@@ -175,9 +175,10 @@ int main(string[] args) {
 
 // [Noby Library]
 
-enum cloneExt = "._cl";
-
 Level minLogLevel = Level.info;
+bool isCmdLineHidden = false;
+
+enum cloneExt = "._cl";
 
 alias Sz      = size_t;         /// The result of sizeof, ...
 alias Str     = char[];         /// A string slice of chars.
@@ -215,6 +216,16 @@ void echon(A...)(A args) {
     write(args);
 }
 
+void echof(A...)(IStr text, A args) {
+    import std.stdio;
+    writefln(text, args);
+}
+
+void echofn(A...)(IStr text, A args) {
+    import std.stdio;
+    writef(text, args);
+}
+
 void cp(IStr source, IStr target) {
     import std.file;
     copy(source, target);
@@ -235,10 +246,15 @@ void mkdir(IStr path, bool isRecursive = false) {
 
 void rmdir(IStr path, bool isRecursive = false) {
     import std.file;
-    if (!path.isX) {
+    if (path.isX) {
         if (isRecursive) rmdirRecurse(path);
         else std.file.rmdir(path);
     }
+}
+
+IStr pwd() {
+    import std.file;
+    return getcwd();
 }
 
 IStr cat(IStr path) {
@@ -248,7 +264,7 @@ IStr cat(IStr path) {
 
 IStr[] ls(IStr path = ".", bool isRecursive = false) {
     import std.file;
-    IStr[] result;
+    IStr[] result = [];
     foreach (dir; dirEntries(cast(string) path, isRecursive ? SpanMode.breadth : SpanMode.shallow)) {
         result ~= dir.name;
     }
@@ -267,8 +283,7 @@ IStr realpath(IStr path) {
 
 IStr read() {
     import std.stdio;
-    import std.string;
-    return readln().strip();
+    return readln().trim();
 }
 
 IStr readYesNo(IStr text, IStr firstValue = "?") {
@@ -282,6 +297,10 @@ IStr readYesNo(IStr text, IStr firstValue = "?") {
     return result;
 }
 
+IStr fmt(A...)(IStr text, A args...) {
+    import std.format;
+    return format(text, args);
+}
 
 IStr join(IStr[] args...) {
     import std.path;
@@ -310,6 +329,52 @@ bool endsWith(IStr str, IStr end) {
     return str[$ - end.length .. $] == end;
 }
 
+int findStart(IStr str, IStr item) {
+    if (str.length < item.length || item.length == 0) return -1;
+    foreach (i; 0 .. str.length - item.length + 1) {
+        if (str[i .. i + item.length] == item) return cast(int) i;
+    }
+    return -1;
+}
+
+int findEnd(IStr str, IStr item) {
+    if (str.length < item.length || item.length == 0) return -1;
+    foreach_reverse (i; 0 .. str.length - item.length + 1) {
+        if (str[i .. i + item.length] == item) return cast(int) i;
+    }
+    return -1;
+}
+
+IStr trimStart(IStr str) {
+    IStr result = str;
+    while (result.length > 0) {
+        auto isSpace = (result[0] >= '\t' && result[0] <= '\r') || (result[0] == ' ');
+        if (isSpace) result = result[1 .. $];
+        else break;
+    }
+    return result;
+}
+
+IStr trimEnd(IStr str) {
+    IStr result = str;
+    while (result.length > 0) {
+        auto isSpace = (result[$ - 1] >= '\t' && result[$ - 1] <= '\r') || (result[$ - 1] == ' ');
+        if (isSpace) result = result[0 .. $ - 1];
+        else break;
+    }
+    return result;
+}
+
+IStr trim(IStr str) {
+    return str.trimStart().trimEnd();
+}
+
+void clear(IStr path = ".", IStr ext = "") {
+    foreach (file; ls(path)) {
+        if (file.endsWith(ext)) rm(file);
+    }
+}
+
 void paste(IStr path, IStr content, bool isOnlyMaking = false) {
     import std.file;
     if (isOnlyMaking) {
@@ -320,7 +385,7 @@ void paste(IStr path, IStr content, bool isOnlyMaking = false) {
 }
 
 void clone(IStr path) {
-    if (path.isX) paste(path ~ cloneExt, cat(path));
+    if (path.isX) cp(path, path ~ cloneExt);
 }
 
 void restore(IStr path, bool isOnlyRemoving = false) {
@@ -341,15 +406,25 @@ void log(Level level, IStr text) {
     }
 }
 
+void logi(IStr text) {
+    log(Level.info, text);
+}
+
+void logw(IStr text) {
+    log(Level.warning, text);
+}
+
+void loge(IStr text) {
+    log(Level.error, text);
+}
+
 void logf(A...)(Level level, IStr text, A args) {
-    import std.format;
-    log(level, text.format(args));
+    log(level, text.fmt(args));
 }
 
 int cmd(IStr[] args...) {
-    import std.stdio;
     import std.process;
-    writeln("[CMD] ", args);
+    if (!isCmdLineHidden) echo("[CMD] ", args);
     try {
         return spawnProcess(args).wait();
     } catch (Exception e) {
