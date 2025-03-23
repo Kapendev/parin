@@ -2,6 +2,14 @@
 
 // [Noby Script]
 
+version (Windows) {
+    enum makeName = "mingw32-make";
+    enum sdkmanagerName = ".\\android\\sdk\\cmdline-tools\\bin\\sdkmanager.bat";
+} else {
+    enum makeName = "make";
+    enum sdkmanagerName = "./android/sdk/cmdline-tools/bin/sdkmanager";
+}
+
 enum buildDirs = [
     "./src",
     "./android",
@@ -11,10 +19,7 @@ enum buildDirs = [
     "./assets",
     "./include",
     "./lib",
-    "./lib/armeabi-v7a",
     "./lib/arm64-v8a",
-    "./lib/x86",
-    "./lib/x86_64",
 ];
 
 enum sdkInstallNames = [
@@ -23,15 +28,46 @@ enum sdkInstallNames = [
     "build-tools;29.0.3",
 ];
 
-version (Windows) {
-    enum sdkmanagerName = ".\\android\\sdk\\cmdline-tools\\bin\\sdkmanager.bat";
-} else {
-    enum sdkmanagerName = "./android/sdk/cmdline-tools/bin/sdkmanager";
+enum javaContent = `
+package com.raylib.game;
+public class NativeLoader extends android.app.NativeActivity {
+    static {
+        System.loadLibrary("main");
+    }
 }
+`[1 .. $];
+
+// TODO: Look at it.
+enum manifestContent = `
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        package="com.raylib.game"
+        android:versionCode="1" android:versionName="1.0" >
+    <uses-sdk android:minSdkVersion="23" android:targetSdkVersion="34"/>
+    <uses-feature android:glEsVersion="0x00020000" android:required="true"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <application android:allowBackup="false" android:label="Game" android:icon="@drawable/icon">
+        <activity android:name="com.raylib.game.NativeLoader"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="true"
+            android:screenOrientation="landscape" android:launchMode="singleTask"
+            android:clearTaskOnLaunch="true">
+            <meta-data android:name="android.app.lib_name" android:value="main"/>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+`[1 .. $];
 
 int main(string[] args) {
     logw("Script is not done!");
     logi("Base on: https://github.com/raysan5/raylib/wiki/Working-for-Android");
+    return 1;
+    // Downloading sdk stuff.
     foreach (path; buildDirs) mkdir(path);
     if (readYesNo("Would you like to install sdk packages?", args.length > 1 ? args[1] : "?").isYes) {
         if (cmd(sdkmanagerName, "--sdk_root=./android/sdk", "--update")) {
@@ -42,6 +78,25 @@ int main(string[] args) {
             if (cmd(sdkmanagerName, "--sdk_root=./android/sdk", "--install", name)) return 1;
         }
     }
+    // Build raylib.
+    // Just testing how things should look. Will not work, so don't run this.
+    cmd(makeName, "-C", "path", "PLATFORM=PLATFORM_ANDROID", "ANDROID_NDK=../../android/ndk", "ANDROID_ARCH=arm64", "ANDROID_API_VERSION=34");
+    mv("libraylib.a", "../../lib/arm64-v8a");
+    cmd(makeName, "-C", "path", "clean");
+    // Icon stuff.
+    cp("raylib/logo/raylib_36x36.png", "assets/icon_ldpi.png");
+    cp("raylib/logo/raylib_48x48.png", "assets/icon_mdpi.png");
+    cp("raylib/logo/raylib_72x72.png", "assets/icon_hdpi.png");
+    cp("raylib/logo/raylib_96x96.png", "assets/icon_xhdpi.png");
+    // Ket stuff.
+    // ...
+    // Java stuff.
+    paste("android/build/src/com/raylib/game/NativeLoader.java", javaContent, true);
+    paste("android/build/AndroidManifest.xml", manifestContent, true);
+    // Build project.
+    // WTF are those flags that are just there to make things harder to read. -Werror=format-security????
+    // Also, it has a icon part again for some reason. WE ALREADY HAD AN ICON STEP IN THIS WIKI PAGE, WHY NOT JUST PUT IT THERE??
+    // Will probably have to use the arm64 target with ldc.
     return 0;
 }
 
@@ -106,6 +161,11 @@ void cp(IStr source, IStr target) {
 void rm(IStr path) {
     import std.file;
     if (path.isX) remove(path);
+}
+
+void mv(IStr source, IStr target) {
+    cp(source, target);
+    rm(source);
 }
 
 void mkdir(IStr path, bool isRecursive = false) {

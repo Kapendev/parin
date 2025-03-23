@@ -110,7 +110,7 @@ int findSpaceInTextField(IStr text) {
 }
 
 @trusted
-void prepareUi() {
+void readyUi() {
     if (uiState == null) {
         // NOTE: This leaks. THIS IS SO BAD WHERE IS `Box::leak` IN THIS CODEBASE???
         uiState = cast(UiState*) jokaMalloc(UiState.sizeof);
@@ -125,6 +125,11 @@ void prepareUi() {
         uiPreviousState.keyboardClickAction = Keyboard.enter;
         uiPreviousState.gamepadClickAction = Gamepad.a;
     }
+}
+
+@trusted
+void prepareUi() {
+    readyUi();
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     uiState.itemId = 0;
     uiState.hotItemId = 0;
