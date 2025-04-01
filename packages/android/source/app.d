@@ -70,10 +70,7 @@ int main(string[] args) {
     // Downloading sdk stuff.
     foreach (path; buildDirs) mkdir(path);
     if (readYesNo("Would you like to install sdk packages?", args.length > 1 ? args[1] : "?").isYes) {
-        if (cmd(sdkmanagerName, "--sdk_root=./android/sdk", "--update")) {
-            echo("X doesn't exist. Download it from Y.");
-            return 1;
-        }
+        if (cmd(sdkmanagerName, "--sdk_root=./android/sdk", "--update")) return 1;
         foreach (name; sdkInstallNames) {
             if (cmd(sdkmanagerName, "--sdk_root=./android/sdk", "--install", name)) return 1;
         }
@@ -102,14 +99,14 @@ int main(string[] args) {
 
 // [Noby Library]
 
-Level minLogLevel = Level.info;
+Level minLogLevel    = Level.info;
 bool isCmdLineHidden = false;
 
-enum cloneExt = "._cl";
+enum cloneExt = "._clone";
 
-alias Sz      = size_t;         /// The result of sizeof, ...
-alias Str     = char[];         /// A string slice of chars.
-alias IStr    = const(char)[];  /// A string slice of constant chars.
+alias Sz   = size_t;        /// The result of sizeof, ...
+alias Str  = char[];        /// A string slice of chars.
+alias IStr = const(char)[]; /// A string slice of constant chars.
 
 enum Level : ubyte {
     none,
@@ -197,8 +194,17 @@ IStr cat(IStr path) {
 IStr[] ls(IStr path = ".", bool isRecursive = false) {
     import std.file;
     IStr[] result = [];
-    foreach (dir; dirEntries(cast(string) path, isRecursive ? SpanMode.breadth : SpanMode.shallow)) {
-        result ~= dir.name;
+    foreach (file; dirEntries(cast(string) path, isRecursive ? SpanMode.breadth : SpanMode.shallow)) {
+        result ~= file.name;
+    }
+    return result;
+}
+
+IStr[] find(IStr path, IStr ext, bool isRecursive = false) {
+    import std.file;
+    IStr[] result = [];
+    foreach (file; dirEntries(cast(string) path, isRecursive ? SpanMode.breadth : SpanMode.shallow)) {
+        if (file.endsWith(ext)) result ~= file.name;
     }
     return result;
 }
@@ -249,56 +255,6 @@ bool isNo(IStr arg) {
 
 bool isYesOrNo(IStr arg) {
     return arg.isYes || arg.isNo;
-}
-
-bool startsWith(IStr str, IStr start) {
-    if (str.length < start.length) return false;
-    return str[0 .. start.length] == start;
-}
-
-bool endsWith(IStr str, IStr end) {
-    if (str.length < end.length) return false;
-    return str[$ - end.length .. $] == end;
-}
-
-int findStart(IStr str, IStr item) {
-    if (str.length < item.length || item.length == 0) return -1;
-    foreach (i; 0 .. str.length - item.length + 1) {
-        if (str[i .. i + item.length] == item) return cast(int) i;
-    }
-    return -1;
-}
-
-int findEnd(IStr str, IStr item) {
-    if (str.length < item.length || item.length == 0) return -1;
-    foreach_reverse (i; 0 .. str.length - item.length + 1) {
-        if (str[i .. i + item.length] == item) return cast(int) i;
-    }
-    return -1;
-}
-
-IStr trimStart(IStr str) {
-    IStr result = str;
-    while (result.length > 0) {
-        auto isSpace = (result[0] >= '\t' && result[0] <= '\r') || (result[0] == ' ');
-        if (isSpace) result = result[1 .. $];
-        else break;
-    }
-    return result;
-}
-
-IStr trimEnd(IStr str) {
-    IStr result = str;
-    while (result.length > 0) {
-        auto isSpace = (result[$ - 1] >= '\t' && result[$ - 1] <= '\r') || (result[$ - 1] == ' ');
-        if (isSpace) result = result[0 .. $ - 1];
-        else break;
-    }
-    return result;
-}
-
-IStr trim(IStr str) {
-    return str.trimStart().trimEnd();
 }
 
 void clear(IStr path = ".", IStr ext = "") {
@@ -362,4 +318,164 @@ int cmd(IStr[] args...) {
     } catch (Exception e) {
         return 1;
     }
+}
+
+/// Returns true if the character is a symbol (!, ", ...).
+pragma(inline, true);
+bool isSymbol(char c) {
+    return (c >= '!' && c <= '/') || (c >= ':' && c <= '@') || (c >= '[' && c <= '`') || (c >= '{' && c <= '~');
+}
+
+/// Returns true if the character is a digit (0-9).
+pragma(inline, true);
+bool isDigit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+/// Returns true if the character is an uppercase letter (A-Z).
+pragma(inline, true);
+bool isUpper(char c) {
+    return c >= 'A' && c <= 'Z';
+}
+
+/// Returns true the character is a lowercase letter (a-z).
+pragma(inline, true);
+bool isLower(char c) {
+    return c >= 'a' && c <= 'z';
+}
+
+/// Returns true if the character is an alphabetic letter (A-Z or a-z).
+pragma(inline, true);
+bool isAlpha(char c) {
+    return isLower(c) || isUpper(c);
+}
+
+/// Returns true if the character is a whitespace character (space, tab, ...).
+pragma(inline, true);
+bool isSpace(char c) {
+    return (c >= '\t' && c <= '\r') || (c == ' ');
+}
+
+/// Returns true if the string represents a C string.
+pragma(inline, true);
+bool isCStr(IStr str) {
+    return str.length != 0 && str[$ - 1] == '\0';
+}
+
+/// Converts the character to uppercase if it is a lowercase letter.
+char toUpper(char c) {
+    return isLower(c) ? cast(char) (c - 32) : c;
+}
+
+/// Converts all lowercase letters in the string to uppercase.
+void toUpper(Str str) {
+    foreach (ref c; str) c = toUpper(c);
+}
+
+/// Converts the character to lowercase if it is an uppercase letter.
+char toLower(char c) {
+    return isUpper(c) ? cast(char) (c + 32) : c;
+}
+
+/// Converts all uppercase letters in the string to lowercase.
+void toLower(Str str) {
+    foreach (ref c; str) c = toLower(c);
+}
+
+/// Returns true if the string starts with the specified substring.
+bool startsWith(IStr str, IStr start) {
+    if (str.length < start.length) return false;
+    return str[0 .. start.length] == start;
+}
+
+/// Returns true if the string ends with the specified substring.
+bool endsWith(IStr str, IStr end) {
+    if (str.length < end.length) return false;
+    return str[$ - end.length .. $] == end;
+}
+
+/// Counts the number of occurrences of the specified substring in the string.
+int countItem(IStr str, IStr item) {
+    int result = 0;
+    if (str.length < item.length || item.length == 0) return result;
+    foreach (i; 0 .. str.length - item.length) {
+        if (str[i .. i + item.length] == item) {
+            result += 1;
+            i += item.length - 1;
+        }
+    }
+    return result;
+}
+
+/// Finds the starting index of the first occurrence of the specified substring in the string, or returns -1 if not found.
+int findStart(IStr str, IStr item) {
+    if (str.length < item.length || item.length == 0) return -1;
+    foreach (i; 0 .. str.length - item.length + 1) {
+        if (str[i .. i + item.length] == item) return cast(int) i;
+    }
+    return -1;
+}
+
+/// Finds the ending index of the first occurrence of the specified substring in the string, or returns -1 if not found.
+int findEnd(IStr str, IStr item) {
+    if (str.length < item.length || item.length == 0) return -1;
+    foreach_reverse (i; 0 .. str.length - item.length + 1) {
+        if (str[i .. i + item.length] == item) return cast(int) i;
+    }
+    return -1;
+}
+
+/// Finds the first occurrence of the specified item in the slice, or returns -1 if not found.
+int findItem(IStr[] items, IStr item) {
+    foreach (i, it; items) if (it == item) return cast(int) i;
+    return -1;
+}
+
+/// Finds the first occurrence of the specified start in the slice, or returns -1 if not found.
+int findItemThatStartsWith(IStr[] items, IStr start) {
+    foreach (i, it; items) if (it.startsWith(start)) return cast(int) i;
+    return -1;
+}
+
+/// Finds the first occurrence of the specified end in the slice, or returns -1 if not found.
+int findItemThatEndsWith(IStr[] items, IStr end) {
+    foreach (i, it; items) if (it.endsWith(end)) return cast(int) i;
+    return -1;
+}
+
+/// Removes whitespace characters from the beginning of the string.
+IStr trimStart(IStr str) {
+    IStr result = str;
+    while (result.length > 0) {
+        if (isSpace(result[0])) result = result[1 .. $];
+        else break;
+    }
+    return result;
+}
+
+/// Removes whitespace characters from the end of the string.
+IStr trimEnd(IStr str) {
+    IStr result = str;
+    while (result.length > 0) {
+        if (isSpace(result[$ - 1])) result = result[0 .. $ - 1];
+        else break;
+    }
+    return result;
+}
+
+/// Removes whitespace characters from both the beginning and end of the string.
+IStr trim(IStr str) {
+    return str.trimStart().trimEnd();
+}
+
+/// Removes the specified prefix from the beginning of the string if it exists.
+IStr removePrefix(IStr str, IStr prefix) {
+    if (str.startsWith(prefix)) return str[prefix.length .. $];
+    else return str;
+}
+
+/// Removes the specified suffix from the end of the string if it exists.
+IStr removeSuffix(IStr str, IStr suffix) {
+    if (str.endsWith(suffix)) return str[0 .. $ - suffix.length];
+    else return str;
 }

@@ -85,7 +85,7 @@ enum StoryOp : ubyte {
 
 alias StoryWord = char[24];
 alias StoryNumber = int;
-alias StoryValueData = Variant!(StoryWord, StoryNumber);
+alias StoryValueData = Union!(StoryWord, StoryNumber);
 
 struct StoryValue {
     StoryValueData data;

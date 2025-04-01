@@ -21,9 +21,9 @@ public import joka.types;
 
 EngineState* engineState;
 
-enum defaultEngineTexturesCapacity = 256;
+enum defaultEngineTexturesCapacity = 128;
 enum defaultEngineSoundsCapacity = 128;
-enum defaultEngineFontsCapacity = 64;
+enum defaultEngineFontsCapacity = 16;
 
 alias EngineFlags = ushort;
 
@@ -452,7 +452,7 @@ struct FontId {
 
 /// A sound resource.
 struct Sound {
-    Variant!(rl.Sound, rl.Music) data;
+    Union!(rl.Sound, rl.Music) data;
     bool isPaused;
     bool isLooping;
 
@@ -1307,7 +1307,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.sounds.reserve(defaultEngineSoundsCapacity);
     engineState.fonts.reserve(defaultEngineFontsCapacity);
     // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import("parin_monogram.png");
+    auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
     engineState.debugFont = monogramTexture.toParin().toFont(6, 12);
