@@ -1,0 +1,8 @@
+-t=TRUE
+-I=../../../parin/source
+
+# Would be nice if joka was here...
+-I=../../../joka/source
+# HAHAHA IT FORCES YOU TO LINK WITH RAYLIB. Fix that.
+-L=-L../../../raylib/lib
+-L=-lraylib

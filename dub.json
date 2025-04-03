@@ -10,7 +10,7 @@
 		"joka": "*"
 	},
 	"stringImportPaths": [
-		"assets"
+		"source"
 	],
 	"subPackages" : [
 		"packages/rin",
