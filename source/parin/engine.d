@@ -1298,7 +1298,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     // Ready resources.
     if (args.length) {
         foreach (arg; args) engineState.envArgsBuffer.append(arg);
-        engineState.assetsPath.append(pathConcat(args[0].pathDir, "assets"));
+        engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
     }
     engineState.loadTextBuffer.reserve(8192);
     engineState.saveTextBuffer.reserve(8192);

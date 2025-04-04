@@ -1,0 +1,7 @@
+# This file is used by: https://github.com/Kapendev/closed
+-I=../source
+-o=../example
+# No Joka :(
+-I=../../joka/source
+-L=-L../../raylib/lib
+-L=-lraylib

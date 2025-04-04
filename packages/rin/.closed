@@ -1,8 +1,6 @@
--t=TRUE
--I=../../../parin/source
-
-# Would be nice if joka was here...
+# This file is used by: https://github.com/Kapendev/closed
+-I=../../source
+# HAHAHA IT FORCES YOU TO LINK WITH RAYLIB. Also no Joka :(
 -I=../../../joka/source
-# HAHAHA IT FORCES YOU TO LINK WITH RAYLIB. Fix that.
 -L=-L../../../raylib/lib
 -L=-lraylib
