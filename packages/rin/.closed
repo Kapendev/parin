@@ -1,6 +1,5 @@
 # This file is used by: https://github.com/Kapendev/closed
--I=../../source
-# HAHAHA IT FORCES YOU TO LINK WITH RAYLIB. Also no Joka :(
+
+-D=../../source/parin/story.d
+# This line works for me. Use -s=custom to fix any errors.
 -I=../../../joka/source
--L=-L../../../raylib/lib
--L=-lraylib

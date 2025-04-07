@@ -294,6 +294,10 @@ struct TileMap {
         }
         return Fault.none;
     }
+
+    Fault parse(IStr csv) {
+        return parse(csv, tileWidth, tileHeight);
+    }
 }
 
 Fault saveTileMap(IStr path, TileMap map) {

@@ -1,0 +1,13 @@
+{
+	"authors": [
+		"Alexandros F. G. Kapretsos"
+	],
+	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
+	"description": "A tile map editor for Parin.",
+	"license": "MIT",
+	"name": "mapy",
+	"dependencies": {
+		"joka": "*",
+		"parin": {"path": ".."}
+	},
+}

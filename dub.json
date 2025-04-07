@@ -13,6 +13,7 @@
 		"source"
 	],
 	"subPackages" : [
+		"packages/mapy",
 		"packages/rin",
 		"packages/setup",
 		"packages/web"
