@@ -667,13 +667,14 @@ struct Viewport {
     /// Resizes the viewport to the given width and height.
     /// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
     @trusted
-    void resize(int width, int height) {
+    void resize(int newWidth, int newHeight) {
+        if (width == newWidth && height == newHeight) return;
         if (!isEmpty) rl.UnloadRenderTexture(data);
-        if (width <= 0 || height <= 0) {
+        if (newWidth <= 0 || newHeight <= 0) {
             data = rl.RenderTexture2D();
             return;
         }
-        data = rl.LoadRenderTexture(width, height);
+        data = rl.LoadRenderTexture(newWidth, newHeight);
         setFilter(engineState.defaultFilter);
         setWrap(engineState.defaultWrap);
     }
