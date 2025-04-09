@@ -1,5 +1,7 @@
 /// A tile map editor for Parin.
 
+// TODO: Fix the variable names and try to clean things.
+
 import parin;
 
 AppState appState;
@@ -65,7 +67,8 @@ struct AppState {
     IStr mapFile;
     IStr atlasFile;
     AppMode mode;
-    short currentTileId; // TODO: Look at the old code and see how we did it there.
+    IVec2 editTilePointA;
+    IVec2 editTilePointB;
 }
 
 struct MouseInfo {
@@ -155,17 +158,17 @@ bool update(float dt) {
         case edit:
             if (0) {
             } else if (canvasMouse.y <= panelHeight) {
-                canvasMouse.y = -100000;
+                canvasMouse.y = -100000.0f;
             } else if (canvasMouse.y >= windowHeight - panelHeight) {
-                canvasMouse.y = 100000;
+                canvasMouse.y = 100000.0f;
             }
             break;
         case select:
             if (0) {
             } else if (canvasMouse.y <= panelHeight) {
-                canvasMouse.y = -100000;
+                canvasMouse.y = -100000.0f;
             } else if (canvasMouse.y >= windowHeight - panelHeight) {
-                canvasMouse.y = 100000;
+                canvasMouse.y = 100000.0f;
             }
             break;
     }
@@ -178,7 +181,13 @@ bool update(float dt) {
             if (appState.atlas.isValid && editMouseInfo.isInGrid) {
                 if (0) {
                 } else if (Mouse.left.isDown) {
-                    appState.map[editMouseInfo.gridPoint] = appState.currentTileId;
+                    foreach (y; appState.editTilePointA.y .. appState.editTilePointB.y + 1) {
+                        foreach (x; appState.editTilePointA.x .. appState.editTilePointB.x + 1) {
+                            auto targetPoint = editMouseInfo.gridPoint + IVec2(x - appState.editTilePointA.x, y - appState.editTilePointA.y);
+                            if (!appState.map.has(targetPoint)) continue;
+                            appState.map[targetPoint] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
+                        }
+                    }
                 } else if (Mouse.right.isDown) {
                     appState.map[editMouseInfo.gridPoint] = -1;
                 }
@@ -187,8 +196,21 @@ bool update(float dt) {
         case select:
             if (appState.atlas.isValid && selectMouseInfo.isInGrid) {
                 if (0) {
-                } else if (Mouse.left.isDown) {
-                    appState.currentTileId = cast(short) selectMouseInfo.gridIndex;
+                } else if (Mouse.left.isPressed) {
+                    appState.editTilePointA = selectMouseInfo.gridPoint;
+                    appState.editTilePointB = appState.editTilePointA;
+                } else if (Mouse.left.isReleased) {
+                    appState.editTilePointB = selectMouseInfo.gridPoint;
+                    if (appState.editTilePointA.x > appState.editTilePointB.x) {
+                        auto temp = appState.editTilePointA.x;
+                        appState.editTilePointA.x = appState.editTilePointB.x;
+                        appState.editTilePointB.x = temp;
+                    }
+                    if (appState.editTilePointA.y > appState.editTilePointB.y) {
+                        auto temp = appState.editTilePointA.y;
+                        appState.editTilePointA.y = appState.editTilePointB.y;
+                        appState.editTilePointB.y = temp;
+                    }
                 } else if (Mouse.right.isDown) {
 
                 }
@@ -202,13 +224,14 @@ bool update(float dt) {
     drawTileMap(appState.atlas, appState.map, appState.camera.data);
     if (appState.mode == AppMode.edit) {
         drawTextureArea(appState.atlas, Rect(
-            (appState.currentTileId % atlasColCount) * appState.map.tileWidth,
-            (appState.currentTileId / atlasColCount) * appState.map.tileHeight,
+            appState.editTilePointA.x * appState.map.tileWidth,
+            appState.editTilePointA.y * appState.map.tileHeight,
             appState.map.tileWidth,
             appState.map.tileHeight),
             editMouseInfo.worldGridPoint,
         );
-        drawHollowRect(Rect(editMouseInfo.worldGridPoint, appState.map.tileSize), 1, mouseAreaColor);
+        drawTextureArea(appState.atlas, Rect(appState.editTilePointA.toVec() * appState.map.tileSize, (appState.editTilePointB - appState.editTilePointA + IVec2(1)).toVec() * appState.map.tileSize), editMouseInfo.worldGridPoint);
+        drawHollowRect(Rect(editMouseInfo.worldGridPoint, (appState.editTilePointB - appState.editTilePointA + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
     }
     appState.camera.detach();
 
@@ -271,6 +294,7 @@ bool update(float dt) {
         appState.atlasCamera.attach();
         drawTexture(appState.atlas, Vec2(0));
         drawHollowRect(Rect(selectMouseInfo.worldGridPoint, appState.map.tileSize), 1, mouseAreaColor);
+        drawHollowRect(Rect(appState.editTilePointA.toVec() * appState.map.tileSize, (appState.editTilePointB - appState.editTilePointA + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
         appState.atlasCamera.detach();
         appState.atlasViewport.detach();
         drawViewport(appState.atlasViewport, atlasArea.position);
