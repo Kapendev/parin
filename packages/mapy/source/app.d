@@ -6,6 +6,7 @@ import parin;
 
 AppState appState;
 
+enum defaultPanelHeight = 48;
 enum defaultCameraMoveSpeed = 300;
 enum defaultCameraZoomSpeed = 60;
 enum defaultCameraSlowdown = 0.07f;
@@ -67,8 +68,47 @@ struct AppState {
     IStr mapFile;
     IStr atlasFile;
     AppMode mode;
-    IVec2 editTilePointA;
-    IVec2 editTilePointB;
+    GridPair mainPair;
+    GridPair tempPair;
+}
+
+struct GridPair {
+    IVec2 a;
+    IVec2 b;
+
+    this(IVec2 a, IVec2 b) {
+        this.a = a;
+        this.b = b;
+    }
+
+    this(IVec2 a) {
+        this(a, a);
+    }
+
+    int diffX() {
+        return b.x - a.x;
+    }
+
+    int diffY() {
+        return b.y - a.y;
+    }
+
+    IVec2 diff() {
+        return IVec2(diffX, diffY);
+    }
+
+    void fix() {
+        if (a.x > b.x) {
+            auto temp = a.x;
+            a.x = b.x;
+            b.x = temp;
+        }
+        if (a.y > b.y) {
+            auto temp = a.y;
+            a.y = b.y;
+            b.y = temp;
+        }
+    }
 }
 
 struct MouseInfo {
@@ -142,78 +182,53 @@ void ready() {
 
 bool update(float dt) {
     if (Keyboard.f11.isPressed) toggleIsFullscreen();
-    if (Keyboard.n1.isPressed) {
-        appState.mode = cast(AppMode) !appState.mode;
-    }
-    if (appState.mode == AppMode.edit) appState.camera.update(wasd, deltaWheel, dt);
-    if (appState.mode == AppMode.select) appState.atlasCamera.update(wasd, deltaWheel, dt);
+    if (Keyboard.n1.isPressed) appState.mode = cast(AppMode) !appState.mode;
 
-    auto panelHeight = 48;
     auto windowCenter = windowSize * Vec2(0.5f);
     auto atlasRowCount = appState.atlas.height / appState.map.tileHeight;
     auto atlasColCount = appState.atlas.width / appState.map.tileWidth;
-    auto appMouse = mouse;
-    auto canvasMouse = appMouse;
-    with (AppMode) final switch (appState.mode) {
-        case edit:
-            if (0) {
-            } else if (canvasMouse.y <= panelHeight) {
-                canvasMouse.y = -100000.0f;
-            } else if (canvasMouse.y >= windowHeight - panelHeight) {
-                canvasMouse.y = 100000.0f;
-            }
-            break;
-        case select:
-            if (0) {
-            } else if (canvasMouse.y <= panelHeight) {
-                canvasMouse.y = -100000.0f;
-            } else if (canvasMouse.y >= windowHeight - panelHeight) {
-                canvasMouse.y = 100000.0f;
-            }
-            break;
+    auto canvasMouse = mouse;
+    auto editMouseInfo = MouseInfo();
+    auto selectMouseInfo = MouseInfo();
+    if (0) {
+    } else if (canvasMouse.y <= defaultPanelHeight) {
+        canvasMouse.y = -100000.0f;
+    } else if (canvasMouse.y >= windowHeight - defaultPanelHeight) {
+        canvasMouse.y = 100000.0f;
     }
-
-    auto editMouseInfo = MouseInfo(canvasMouse, appState.camera, appState.map.softRowCount, appState.map.softColCount, appState.map.tileSize);
-    auto selectMouseInfo = MouseInfo(canvasMouse, appState.atlasCamera, atlasRowCount, atlasColCount, appState.map.tileSize);
+    editMouseInfo.update(canvasMouse, appState.camera, appState.map.softRowCount, appState.map.softColCount, appState.map.tileSize);
+    selectMouseInfo.update(canvasMouse, appState.atlasCamera, atlasRowCount, atlasColCount, appState.map.tileSize);
+    appState.camera.update(wasd * Vec2(appState.mode == AppMode.edit), deltaWheel * (appState.mode == AppMode.edit), dt);
+    appState.atlasCamera.update(wasd * Vec2(appState.mode == AppMode.select), deltaWheel * (appState.mode == AppMode.select), dt);
 
     with (AppMode) final switch (appState.mode) {
         case edit:
-            if (appState.atlas.isValid && editMouseInfo.isInGrid) {
-                if (0) {
-                } else if (Mouse.left.isDown) {
-                    foreach (y; appState.editTilePointA.y .. appState.editTilePointB.y + 1) {
-                        foreach (x; appState.editTilePointA.x .. appState.editTilePointB.x + 1) {
-                            auto targetPoint = editMouseInfo.gridPoint + IVec2(x - appState.editTilePointA.x, y - appState.editTilePointA.y);
-                            if (!appState.map.has(targetPoint)) continue;
-                            appState.map[targetPoint] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
-                        }
+            if (!appState.atlas.isValid) break;
+            if (!editMouseInfo.isInGrid) break;
+            if (0) {
+            } else if (Mouse.left.isDown) {
+                foreach (y; appState.mainPair.a.y .. appState.mainPair.b.y + 1) {
+                    foreach (x; appState.mainPair.a.x .. appState.mainPair.b.x + 1) {
+                        auto targetPoint = editMouseInfo.gridPoint + IVec2(x - appState.mainPair.a.x, y - appState.mainPair.a.y);
+                        if (!appState.map.has(targetPoint)) continue;
+                        appState.map[targetPoint] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
                     }
-                } else if (Mouse.right.isDown) {
-                    appState.map[editMouseInfo.gridPoint] = -1;
                 }
+            } else if (Mouse.right.isDown) {
+                appState.map[editMouseInfo.gridPoint] = -1;
             }
             break;
         case select:
-            if (appState.atlas.isValid && selectMouseInfo.isInGrid) {
-                if (0) {
-                } else if (Mouse.left.isPressed) {
-                    appState.editTilePointA = selectMouseInfo.gridPoint;
-                    appState.editTilePointB = appState.editTilePointA;
-                } else if (Mouse.left.isReleased) {
-                    appState.editTilePointB = selectMouseInfo.gridPoint;
-                    if (appState.editTilePointA.x > appState.editTilePointB.x) {
-                        auto temp = appState.editTilePointA.x;
-                        appState.editTilePointA.x = appState.editTilePointB.x;
-                        appState.editTilePointB.x = temp;
-                    }
-                    if (appState.editTilePointA.y > appState.editTilePointB.y) {
-                        auto temp = appState.editTilePointA.y;
-                        appState.editTilePointA.y = appState.editTilePointB.y;
-                        appState.editTilePointB.y = temp;
-                    }
-                } else if (Mouse.right.isDown) {
-
-                }
+            if (!appState.atlas.isValid) break;
+            if (!selectMouseInfo.isInGrid) break;
+            if (0) {
+            } else if (Mouse.left.isPressed) {
+                appState.tempPair = GridPair(selectMouseInfo.gridPoint);
+                appState.mainPair = appState.tempPair;
+            } else if (Mouse.left.isDown) {
+                appState.tempPair.b = selectMouseInfo.gridPoint;
+                appState.mainPair = appState.tempPair;
+                appState.mainPair.fix();
             }
             break;
     }
@@ -223,37 +238,34 @@ bool update(float dt) {
     if (appState.camera.targetScale >= 1.0f) drawHollowRect(Rect(appState.map.size).addAll(4), 1, mapAreaOutlineColor);
     drawTileMap(appState.atlas, appState.map, appState.camera.data);
     if (appState.mode == AppMode.edit) {
-        drawTextureArea(appState.atlas, Rect(
-            appState.editTilePointA.x * appState.map.tileWidth,
-            appState.editTilePointA.y * appState.map.tileHeight,
-            appState.map.tileWidth,
-            appState.map.tileHeight),
+        drawTextureArea(
+            appState.atlas,
+            Rect(appState.mainPair.a.toVec() * appState.map.tileSize, appState.map.tileSize),
             editMouseInfo.worldGridPoint,
         );
-        drawTextureArea(appState.atlas, Rect(appState.editTilePointA.toVec() * appState.map.tileSize, (appState.editTilePointB - appState.editTilePointA + IVec2(1)).toVec() * appState.map.tileSize), editMouseInfo.worldGridPoint);
-        drawHollowRect(Rect(editMouseInfo.worldGridPoint, (appState.editTilePointB - appState.editTilePointA + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
+        drawTextureArea(appState.atlas, Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), editMouseInfo.worldGridPoint);
+        drawHollowRect(Rect(editMouseInfo.worldGridPoint, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
     }
     appState.camera.detach();
 
     auto tempArea = Rect(windowSize);
-    auto topPanelArea    = tempArea.subTop(panelHeight);
-    auto canvasArea      = tempArea.subTop(tempArea.size.y - panelHeight);
-    auto bottomPanelArea = tempArea.subTop(panelHeight);
+    auto topPanelArea    = tempArea.subTop(defaultPanelHeight);
+    auto canvasArea      = tempArea.subTop(tempArea.size.y - defaultPanelHeight);
+    auto bottomPanelArea = tempArea.subTop(defaultPanelHeight);
     drawRect(topPanelArea, panelColor1);
     drawRect(bottomPanelArea, panelColor1);
     if (appState.camera.targetScale <= 0.5f) {
         drawRect(Rect(windowCenter, 15, 15).centerArea, panelColor1);
     }
 
+    auto textOptions = DrawOptions(panelColor4);
+    textOptions.hook = Hook.center;
     auto selectArea = canvasArea;
-    selectArea.subTopBottom(panelHeight * 0.50f);
+    selectArea.subTopBottom(defaultPanelHeight * 0.50f);
     selectArea.subLeftRight(windowWidth * 0.15f);
     auto atlasArea = selectArea;
     atlasArea.subAll(8);
     appState.atlasViewport.resize(cast(int) atlasArea.size.x, cast(int) atlasArea.size.y);
-
-    auto textOptions = DrawOptions(panelColor4);
-    textOptions.hook = Hook.center;
 
     tempArea = topPanelArea;
     tempArea.subLeftRight(16);
@@ -294,7 +306,7 @@ bool update(float dt) {
         appState.atlasCamera.attach();
         drawTexture(appState.atlas, Vec2(0));
         drawHollowRect(Rect(selectMouseInfo.worldGridPoint, appState.map.tileSize), 1, mouseAreaColor);
-        drawHollowRect(Rect(appState.editTilePointA.toVec() * appState.map.tileSize, (appState.editTilePointB - appState.editTilePointA + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
+        drawHollowRect(Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
         appState.atlasCamera.detach();
         appState.atlasViewport.detach();
         drawViewport(appState.atlasViewport, atlasArea.position);
