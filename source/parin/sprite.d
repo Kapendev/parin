@@ -145,7 +145,7 @@ struct Sprite {
     }
 }
 
-void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
+void drawSpriteX(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     if (sprite.width == 0 || sprite.height == 0) return;
 
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
@@ -156,9 +156,9 @@ void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOption
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;
     auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
-    drawTextureArea(texture, area, sprite.position, options);
+    drawTextureAreaX(texture, area, sprite.position, options);
 }
 
 void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
-    drawSprite(texture.getOr(), sprite, options);
+    drawSpriteX(texture.getOr(), sprite, options);
 }

@@ -1,5 +1,9 @@
 # This file is used by: https://github.com/Kapendev/closed
 
+[default]
 -D=../../source/parin/story.d
 # This line works for me. Use -s=custom to fix any errors.
 -I=../../../joka/source
+
+[custom]
+-D=../../source/parin/story.d

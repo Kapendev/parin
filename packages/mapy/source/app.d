@@ -1,6 +1,7 @@
 /// A tile map editor for Parin.
 
 // TODO: Fix the variable names and try to clean things.
+// TODO: Add modes: brush, random, eraser
 
 import parin;
 
@@ -25,6 +26,12 @@ enum mouseAreaColor = toRgb(0x5ca4cf);
 enum AppMode {
     edit,
     select,
+}
+
+enum EditMode {
+    brush,
+    random,
+    eraser,
 }
 
 struct AppCamera {
@@ -68,6 +75,10 @@ struct AppState {
     IStr mapFile;
     IStr atlasFile;
     AppMode mode;
+    EditMode editMode;
+
+    GridPair editMainPair;
+    GridPair editTempPair;
     GridPair mainPair;
     GridPair tempPair;
 }
@@ -134,7 +145,7 @@ struct MouseInfo {
 void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
     auto font = appState.font.isValid ? appState.font.get() : engineFont;
     if (font == engineFont) options.scale = Vec2(2);
-    parin.drawText(font, text, position, options);
+    drawTextX(font, text, position, options);
 }
 
 void ready() {
@@ -183,6 +194,7 @@ void ready() {
 bool update(float dt) {
     if (Keyboard.f11.isPressed) toggleIsFullscreen();
     if (Keyboard.n1.isPressed) appState.mode = cast(AppMode) !appState.mode;
+    if (Keyboard.n2.isPressed) appState.editMode = cast(EditMode) !appState.editMode;
 
     auto windowCenter = windowSize * Vec2(0.5f);
     auto atlasRowCount = appState.atlas.height / appState.map.tileHeight;
@@ -204,28 +216,54 @@ bool update(float dt) {
     with (AppMode) final switch (appState.mode) {
         case edit:
             if (!appState.atlas.isValid) break;
-            if (!editMouseInfo.isInGrid) break;
             if (0) {
+            } else if (Mouse.left.isPressed) {
+                appState.editMainPair.a = IVec2(-100000);
             } else if (Mouse.left.isDown) {
-                foreach (y; appState.mainPair.a.y .. appState.mainPair.b.y + 1) {
-                    foreach (x; appState.mainPair.a.x .. appState.mainPair.b.x + 1) {
-                        auto targetPoint = editMouseInfo.gridPoint + IVec2(x - appState.mainPair.a.x, y - appState.mainPair.a.y);
-                        if (!appState.map.has(targetPoint)) continue;
-                        appState.map[targetPoint] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
+                if (0) {
+                } else if (appState.editMode == EditMode.brush) {
+                    auto tileArea = IRect(appState.editMainPair.a, appState.mainPair.diff);
+                    auto userArea = IRect(editMouseInfo.gridPoint, appState.mainPair.diff);
+                    if (tileArea.hasIntersectionInclusive(userArea)) break;
+                    appState.editMainPair.a = editMouseInfo.gridPoint;
+                    foreach (y; appState.mainPair.a.y .. appState.mainPair.b.y + 1) {
+                        foreach (x; appState.mainPair.a.x .. appState.mainPair.b.x + 1) {
+                            auto point = editMouseInfo.gridPoint + IVec2(x - appState.mainPair.a.x, y - appState.mainPair.a.y);
+                            if (!appState.map.has(point)) continue;
+                            appState.map[point] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
+                        }
                     }
+                } else if (appState.editMode == EditMode.random) {
+                    if (!editMouseInfo.isInGrid) break;
+                    auto x = appState.mainPair.a.x + randi % (appState.mainPair.diff.x + 1);
+                    auto y = appState.mainPair.a.y + randi % (appState.mainPair.diff.y + 1);
+                    appState.map[editMouseInfo.gridPoint] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
+                } else if (appState.editMode == EditMode.eraser) {
+                    assert(0, "NOT DONE!");
+                    if (!editMouseInfo.isInGrid) break;
+                } else {
+                    assert(0, "WTF!");
                 }
+            } else if (Mouse.right.isPressed) {
+                if (!editMouseInfo.isInGrid) break;
+                appState.editTempPair = GridPair(editMouseInfo.gridPoint);
+                appState.editMainPair = appState.editTempPair;
             } else if (Mouse.right.isDown) {
-                appState.map[editMouseInfo.gridPoint] = -1;
+                if (!editMouseInfo.isInGrid) break;
+                appState.editTempPair.b = editMouseInfo.gridPoint;
+                appState.editMainPair = appState.editTempPair;
+                appState.editMainPair.fix();
             }
             break;
         case select:
             if (!appState.atlas.isValid) break;
-            if (!selectMouseInfo.isInGrid) break;
             if (0) {
-            } else if (Mouse.left.isPressed) {
+            } else if (Mouse.left.isPressed || Mouse.right.isPressed) {
+                if (!selectMouseInfo.isInGrid) break;
                 appState.tempPair = GridPair(selectMouseInfo.gridPoint);
                 appState.mainPair = appState.tempPair;
-            } else if (Mouse.left.isDown) {
+            } else if (Mouse.left.isDown || Mouse.right.isDown) {
+                if (!selectMouseInfo.isInGrid) break;
                 appState.tempPair.b = selectMouseInfo.gridPoint;
                 appState.mainPair = appState.tempPair;
                 appState.mainPair.fix();
@@ -243,8 +281,13 @@ bool update(float dt) {
             Rect(appState.mainPair.a.toVec() * appState.map.tileSize, appState.map.tileSize),
             editMouseInfo.worldGridPoint,
         );
-        drawTextureArea(appState.atlas, Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), editMouseInfo.worldGridPoint);
-        drawHollowRect(Rect(editMouseInfo.worldGridPoint, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
+        if (appState.editMode == EditMode.brush) {
+            drawTextureArea(appState.atlas, Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), editMouseInfo.worldGridPoint);
+            drawHollowRect(Rect(editMouseInfo.worldGridPoint, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
+        } else {
+            drawTextureArea(appState.atlas, Rect(appState.mainPair.a.toVec() * appState.map.tileSize, appState.map.tileSize), editMouseInfo.worldGridPoint);
+            drawHollowRect(Rect(editMouseInfo.worldGridPoint, appState.map.tileSize), 1, mouseAreaColor);
+        }
     }
     appState.camera.detach();
 
@@ -319,4 +362,4 @@ bool update(float dt) {
 
 void finish() { }
 
-mixin runGame!(ready, update, finish, 666, 666);
+mixin runGame!(ready, update, finish, 969, 666);

@@ -320,7 +320,7 @@ void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     if (options.isDisabled && drawOptions.color.a >= options.fontAlphaOffset) {
         drawOptions.color.a -= options.fontAlphaOffset;
     }
-    drawText(font, text, textPosition, drawOptions, extraOptions);
+    drawTextX(font, text, textPosition, drawOptions, extraOptions);
 }
 
 void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
@@ -534,7 +534,7 @@ void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     }
     textPosition = textPosition.round();
     // ---
-    auto textSize = measureTextSize(font, text);
+    auto textSize = measureTextSizeX(font, text);
     auto cursorPosition = textPosition;
     final switch (options.alignment) {
         case Alignment.left: cursorPosition.x += textSize.x * options.fontScale + defaultUiTextFieldCursorOffset; break;

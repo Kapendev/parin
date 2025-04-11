@@ -1315,6 +1315,15 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.UnloadImage(monogramImage);
 }
 
+/// Passes C strings to the window arguments.
+/// You should avoid calling this function manually.
+@trusted
+void openWindowExtraStep(int argc, immutable(char)** argv) {
+    engineState.envArgsBuffer.clear();
+    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
+    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
+}
+
 /// Updates the window every frame with the given function.
 /// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
@@ -1792,7 +1801,7 @@ float deltaWheel() {
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 @trusted
-Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
+Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
     auto lineCodepointCount = 0;
@@ -1828,7 +1837,7 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions(), 
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()) {
-    return measureTextSize(font.getOr(), text, options);
+    return measureTextSizeX(font.getOr(), text, options);
 }
 
 /// Returns true if the specified key is currently pressed.
@@ -1975,9 +1984,9 @@ Vec2 wasdReleased() {
 
 /// Plays the specified sound.
 @trusted
-void playSound(ref Sound sound) {
+void playSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
-    if (sound.isPaused) resumeSound(sound);
+    if (sound.isPaused) resumeSoundX(sound);
     if (sound.data.isType!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
@@ -1988,12 +1997,12 @@ void playSound(ref Sound sound) {
 
 /// Plays the specified sound.
 void playSound(SoundId sound) {
-    if (sound.isValid) playSound(sound.get());
+    if (sound.isValid) playSoundX(sound.get());
 }
 
 /// Stops playback of the specified sound.
 @trusted
-void stopSound(ref Sound sound) {
+void stopSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
@@ -2004,12 +2013,12 @@ void stopSound(ref Sound sound) {
 
 /// Stops playback of the specified sound.
 void stopSound(SoundId sound) {
-    if (sound.isValid) stopSound(sound.get());
+    if (sound.isValid) stopSoundX(sound.get());
 }
 
 /// Pauses playback of the specified sound.
 @trusted
-void pauseSound(ref Sound sound) {
+void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     sound.isPaused = true;
     if (sound.data.isType!(rl.Sound)) {
@@ -2021,12 +2030,12 @@ void pauseSound(ref Sound sound) {
 
 /// Pauses playback of the specified sound.
 void pauseSound(SoundId sound) {
-    if (sound.isValid) pauseSound(sound.get());
+    if (sound.isValid) pauseSoundX(sound.get());
 }
 
 /// Resumes playback of the specified paused sound.
 @trusted
-void resumeSound(ref Sound sound) {
+void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     sound.isPaused = false;
     if (sound.data.isType!(rl.Sound)) {
@@ -2038,24 +2047,24 @@ void resumeSound(ref Sound sound) {
 
 /// Resumes playback of the specified paused sound.
 void resumeSound(SoundId sound) {
-    if (sound.isValid) resumeSound(sound.get());
+    if (sound.isValid) resumeSoundX(sound.get());
 }
 
 /// Updates the playback state of the specified sound.
 @trusted
-void updateSound(ref Sound sound) {
+void updateSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
-        if (sound.isLooping && !sound.isPlaying) playSound(sound);
+        if (sound.isLooping && !sound.isPlaying) playSoundX(sound);
     } else {
-        if (!sound.isLooping && (sound.duration - sound.time) < 0.1f) stopSound(sound);
+        if (!sound.isLooping && (sound.duration - sound.time) < 0.1f) stopSoundX(sound);
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }
 
 /// Updates the playback state of the specified sound.
 void updateSound(SoundId sound) {
-    if (sound.isValid) updateSound(sound.get());
+    if (sound.isValid) updateSoundX(sound.get());
 }
 
 /// Draws a rectangle with the specified area and color.
@@ -2115,7 +2124,7 @@ void drawLine(Line area, float size, Color color = white) {
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 @trusted
-void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     auto target = Rect(position, area.size * options.scale.abs());
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
@@ -2156,21 +2165,21 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(texture.getOr(), area, position, options);
+    drawTextureAreaX(texture.getOr(), area, position, options);
 }
 
 /// Draws the texture at the given position with the specified draw options.
-void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(texture, Rect(texture.size), position, options);
+void drawTextureX(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTextureAreaX(texture, Rect(texture.size), position, options);
 }
 
 /// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTexture(texture.getOr(), position, options);
+    drawTextureX(texture.getOr(), position, options);
 }
 
 /// Draws a 9-patch texture from the specified texture area at the given target area.
-void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
+void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
     auto tileSize = (area.size / Vec2(3.0f)).floor();
     auto hOptions = options;
     auto vOptions = options;
@@ -2183,7 +2192,7 @@ void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, Dra
     // 1
     auto partPosition = target.position;
     auto partArea = Rect(area.position, tileSize);
-    drawTextureArea(texture, partArea, partPosition, options);
+    drawTextureAreaX(texture, partArea, partPosition, options);
     // 2
     partPosition.x += tileSize.x * options.scale.x;
     partArea.position.x += tileSize.x;
@@ -2191,15 +2200,15 @@ void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, Dra
         foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.x += i * tileSize.x * options.scale.x;
-            drawTextureArea(texture, partArea, tempPartPosition, options);
+            drawTextureAreaX(texture, partArea, tempPartPosition, options);
         }
     } else {
-        drawTextureArea(texture, partArea, partPosition, hOptions);
+        drawTextureAreaX(texture, partArea, partPosition, hOptions);
     }
     // 3
     partPosition.x += tileSize.x * hOptions.scale.x;
     partArea.position.x += tileSize.x;
-    drawTextureArea(texture, partArea, partPosition, options);
+    drawTextureAreaX(texture, partArea, partPosition, options);
     // 4
     partPosition.x = target.position.x;
     partPosition.y += tileSize.y * options.scale.y;
@@ -2209,15 +2218,15 @@ void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, Dra
         foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.y += i * tileSize.y * options.scale.y;
-            drawTextureArea(texture, partArea, tempPartPosition, options);
+            drawTextureAreaX(texture, partArea, tempPartPosition, options);
         }
     } else {
-        drawTextureArea(texture, partArea, partPosition, vOptions);
+        drawTextureAreaX(texture, partArea, partPosition, vOptions);
     }
     // 5
     partPosition.x += tileSize.x * options.scale.x;
     partArea.position.x += tileSize.x;
-    drawTextureArea(texture, partArea, partPosition, cOptions);
+    drawTextureAreaX(texture, partArea, partPosition, cOptions);
     // 6
     partPosition.x += tileSize.x * hOptions.scale.x;
     partArea.position.x += tileSize.x;
@@ -2225,17 +2234,17 @@ void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, Dra
         foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.y += i * tileSize.y * options.scale.y;
-            drawTextureArea(texture, partArea, tempPartPosition, options);
+            drawTextureAreaX(texture, partArea, tempPartPosition, options);
         }
     } else {
-        drawTextureArea(texture, partArea, partPosition, vOptions);
+        drawTextureAreaX(texture, partArea, partPosition, vOptions);
     }
     // 7
     partPosition.x = target.position.x;
     partPosition.y += tileSize.y * vOptions.scale.y;
     partArea.position.x = area.position.x;
     partArea.position.y += tileSize.y;
-    drawTextureArea(texture, partArea, partPosition, options);
+    drawTextureAreaX(texture, partArea, partPosition, options);
     // 8
     partPosition.x += tileSize.x * options.scale.x;
     partArea.position.x += tileSize.x;
@@ -2243,20 +2252,20 @@ void drawTexturePatch(Texture texture, Rect area, Rect target, bool isTiled, Dra
         foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.x += i * tileSize.x * options.scale.x;
-            drawTextureArea(texture, partArea, tempPartPosition, options);
+            drawTextureAreaX(texture, partArea, tempPartPosition, options);
         }
     } else {
-        drawTextureArea(texture, partArea, partPosition, hOptions);
+        drawTextureAreaX(texture, partArea, partPosition, hOptions);
     }
     // 9
     partPosition.x += tileSize.x * hOptions.scale.x;
     partArea.position.x += tileSize.x;
-    drawTextureArea(texture, partArea, partPosition, options);
+    drawTextureAreaX(texture, partArea, partPosition, options);
 }
 
 /// Draws a 9-patch texture from the specified texture area at the given target area.
 void drawTexturePatch(TextureId texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
-    drawTexturePatch(texture.getOr(), area, target, isTiled, options);
+    drawTexturePatchX(texture.getOr(), area, target, isTiled, options);
 }
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
@@ -2268,7 +2277,7 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
         case Flip.y: options.flip = Flip.none; break;
         case Flip.xy: options.flip = Flip.x; break;
     }
-    drawTextureArea(viewport.data.texture.toParin(), area, position, options);
+    drawTextureAreaX(viewport.data.texture.toParin(), area, position, options);
 }
 
 /// Draws the viewport at the given position with the specified draw options.
@@ -2278,7 +2287,7 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 @trusted
-void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawRuneX(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) return;
     auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
@@ -2297,13 +2306,13 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawRune(font.getOr(), rune, position, options);
+    drawRuneX(font.getOr(), rune, position, options);
 }
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 @trusted
-void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
+void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
 
@@ -2323,7 +2332,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.append(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.append(cast(ushort) (measureTextSizeX(font, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
                 if (codepoint == '\n') textHeight += font.lineSpacing;
                 lineCodepointIndex = cast(ushort) (textCodepointIndex + 1);
@@ -2425,12 +2434,12 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
 
 /// Draws text with the given font at the given position using the provided draw options.
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
-    drawText(font.getOr(), text, position, options, extraOptions);
+    drawTextX(font.getOr(), text, position, options, extraOptions);
 }
 
 /// Draws debug text at the given position with the provided draw options.
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
-    drawText(engineFont, text, position, options, extraOptions);
+    drawTextX(engineFont, text, position, options, extraOptions);
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
@@ -2438,13 +2447,8 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
     version (D_BetterC) {
         extern(C)
         void main(int argc, immutable(char)** argv) {
-            openWindow(width, height, [], title);
-            foreach (i; 0 .. argc) {
-                Sz length = 0;
-                while (argv[i][length] != '\0') length += 1;
-                engineState.envArgsBuffer.append(argv[i][0 .. length]);
-            }
-            engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDir, "assets"));
+            openWindow(width, height, null, title);
+            openWindowExtraStep(argc, argv);
             readyFunc();
             updateWindow(&updateFunc);
             finishFunc();

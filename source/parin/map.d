@@ -312,16 +312,16 @@ Fault saveTileMap(IStr path, TileMap map) {
     return saveText(path, csv.items);
 }
 
-void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
+void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
-    drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
+    drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
 }
 
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
-    drawTile(texture.getOr(), tile, options);
+    drawTileX(texture.getOr(), tile, options);
 }
 
-void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMapX(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
     auto topLeftWorldPoint = camera.topLeftPoint;
     auto bottomRightWorldPoint = camera.bottomRightPoint;
@@ -344,7 +344,7 @@ void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions option
             if (id < 0) continue;
             textureArea.position.x = (id % textureColCount) * map.tileWidth;
             textureArea.position.y = (id / textureColCount) * map.tileHeight;
-            drawTextureArea(
+            drawTextureAreaX(
                 texture,
                 textureArea,
                 map.position + Vec2(col * targetTileWidth, row * targetTileHeight),
@@ -355,5 +355,5 @@ void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions option
 }
 
 void drawTileMap(TextureId texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-    drawTileMap(texture.getOr(), map, camera, options);
+    drawTileMapX(texture.getOr(), map, camera, options);
 }
