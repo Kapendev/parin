@@ -1,0 +1,17 @@
+# This file is used by: https://github.com/Kapendev/closed
+
+[default]
+-t=lib
+-L=-lraylib
+# TODO: Make -J=source work by default maybe.
+-J=source
+-D=-betterC
+# Those lines work for me. Use -s=custom to fix any errors.
+-I=../joka/source
+-L=-L../raylib/lib
+
+[custom]
+-t=lib
+-L=-lraylib
+-J=source
+-D=-betterC

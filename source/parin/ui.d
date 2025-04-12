@@ -40,14 +40,14 @@ enum UiDragLimit: ubyte {
 
 struct UiOptions {
     FontId font = FontId();
-    Color fontColor = white;
+    Rgba fontColor = white;
     ubyte fontScale = 1;
     ubyte fontAlphaOffset = defaultUiFontAlphaOffset;
 
-    Color disabledColor = defaultUiDisabledColor;
-    Color idleColor = defaultUiIdleColor;
-    Color hotColor = defaultUiHotColor;
-    Color activeColor = defaultUiActiveColor;
+    Rgba disabledColor = defaultUiDisabledColor;
+    Rgba idleColor = defaultUiIdleColor;
+    Rgba hotColor = defaultUiHotColor;
+    Rgba activeColor = defaultUiActiveColor;
 
     Alignment alignment = Alignment.center;
     short alignmentOffset = 0;
