@@ -17,14 +17,16 @@ public import joka.containers;
 public import joka.math;
 public import joka.types;
 
-@safe @nogc nothrow:
+@trusted @nogc nothrow:
 
-EngineState* engineState;
+extern(C) __gshared EngineState* engineState;
 
 enum defaultEngineTexturesCapacity = 128;
 enum defaultEngineSoundsCapacity = 128;
 enum defaultEngineFontsCapacity = 16;
 
+alias EngineUpdateFunc = bool function(float dt);
+alias EngineReadyFinishFunc = void function();
 alias EngineFlags = ushort;
 
 enum EngineFlag : EngineFlags {
@@ -299,7 +301,7 @@ struct Texture {
 struct TextureId {
     GenerationalIndex data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Returns the width of the texture associated with the resource identifier.
     int width() {
@@ -398,7 +400,7 @@ struct Font {
 struct FontId {
     GenerationalIndex data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Returns the spacing between individual characters of the font associated with the resource identifier.
     int runeSpacing() {
@@ -552,7 +554,7 @@ struct Sound {
 struct SoundId {
     GenerationalIndex data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Returns true if the sound associated with the resource identifier is paused.
     bool isPaused() {
@@ -897,6 +899,7 @@ struct EngineFullscreenState {
 /// The engine state.
 struct EngineState {
     EngineFlags flags;
+    EngineUpdateFunc updateFunc;
     EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
     Vec2 mouseBuffer;
@@ -1361,120 +1364,120 @@ void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Pa
     openWindowExtraStep(argc, argv);
 }
 
+/// Use by the `updateWindow` function.
+/// You should avoid calling this function manually.
+@trusted extern(C)
+static bool updateWindowLoop() {
+    // Begin drawing.
+    if (isResolutionLocked) {
+        rl.BeginTextureMode(engineState.viewport.data.toRl());
+    } else {
+        rl.BeginDrawing();
+    }
+    rl.ClearBackground(engineState.viewport.data.color.toRl());
+
+    // The main loop.
+    if (rl.IsFileDropped) {
+        auto list = rl.LoadDroppedFiles();
+        foreach (i; 0 .. list.count) {
+            engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
+        }
+    }
+    if (isResolutionLocked) {
+        auto rlMouse = rl.GetTouchPosition(0);
+        auto info = engineViewportInfo;
+        engineState.mouseBuffer = Vec2(
+            (rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio,
+            (rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio,
+        );
+    } else {
+        engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+    }
+    auto dt = deltaTime;
+    auto result = engineState.updateFunc(dt);
+    engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
+    if (rl.IsFileDropped) {
+        // NOTE: LoadDroppedFiles just returns a global variable.
+        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
+        engineState.droppedFilePathsBuffer.clear();
+    }
+
+    // End drawing.
+    if (isResolutionLocked) {
+        auto info = engineViewportInfo;
+        rl.EndTextureMode();
+        rl.BeginDrawing();
+        rl.ClearBackground(engineState.borderColor.toRl());
+        rl.DrawTexturePro(
+            engineState.viewport.data.toRl().texture,
+            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
+            info.area.toRl(),
+            rl.Vector2(0.0f, 0.0f),
+            0.0f,
+            rl.Color(255, 255, 255, 255),
+        );
+        rl.EndDrawing();
+    } else {
+        rl.EndDrawing();
+    }
+
+    // Viewport code.
+    if (engineState.viewport.isChanging) {
+        if (isResolutionLocked) {
+            auto temp = engineState.viewport.data.color;
+            engineState.viewport.data.free();
+            engineState.viewport.data.color = temp;
+        } else {
+            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+        }
+        engineState.viewport.isChanging = false;
+        engineViewportInfo(true);
+    }
+    // Fullscreen code.
+    if (engineState.fullscreenState.isChanging) {
+        engineState.fullscreenState.changeTime += dt;
+        if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
+            if (rl.IsWindowFullscreen()) {
+                rl.ToggleFullscreen();
+                // Size is first because raylib likes that. I will make raylib happy.
+                rl.SetWindowSize(
+                    engineState.fullscreenState.previousWindowWidth,
+                    engineState.fullscreenState.previousWindowHeight,
+                );
+                rl.SetWindowPosition(
+                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
+                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
+                );
+            } else {
+                rl.ToggleFullscreen();
+            }
+            engineState.fullscreenState.isChanging = false;
+        }
+    }
+    return result;
+}
+
+/// Use by the `updateWindow` function.
+/// You should avoid calling this function manually.
+version(WebAssembly) {
+    @trusted extern(C)
+    void updateWindowLoopWeb() {
+        if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
+    }
+}
+
 /// Updates the window every frame with the given function.
 /// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
 @trusted extern(C)
 void updateWindow(bool function(float dt) updateFunc) {
-    static bool function(float _dt) @trusted @nogc nothrow __updateFunc;
-
-    @trusted @nogc nothrow extern(C)
-    static bool __updateWindow() {
-        // Begin drawing.
-        if (isResolutionLocked) {
-            rl.BeginTextureMode(engineState.viewport.data.toRl());
-        } else {
-            rl.BeginDrawing();
-        }
-        rl.ClearBackground(engineState.viewport.data.color.toRl());
-
-        // The main loop.
-        if (rl.IsFileDropped) {
-            auto list = rl.LoadDroppedFiles();
-            foreach (i; 0 .. list.count) {
-                engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
-            }
-        }
-        if (isResolutionLocked) {
-            auto rlMouse = rl.GetTouchPosition(0);
-            auto info = engineViewportInfo;
-            engineState.mouseBuffer = Vec2(
-                (rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio,
-                (rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio,
-            );
-        } else {
-            engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
-        }
-        auto dt = deltaTime;
-        auto result = __updateFunc(dt);
-        engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
-        if (rl.IsFileDropped) {
-            // NOTE: LoadDroppedFiles just returns a global variable.
-            rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-            engineState.droppedFilePathsBuffer.clear();
-        }
-
-        // End drawing.
-        if (isResolutionLocked) {
-            auto info = engineViewportInfo;
-            rl.EndTextureMode();
-            rl.BeginDrawing();
-            rl.ClearBackground(engineState.borderColor.toRl());
-            rl.DrawTexturePro(
-                engineState.viewport.data.toRl().texture,
-                rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
-                info.area.toRl(),
-                rl.Vector2(0.0f, 0.0f),
-                0.0f,
-                rl.Color(255, 255, 255, 255),
-            );
-            rl.EndDrawing();
-        } else {
-            rl.EndDrawing();
-        }
-
-        // Viewport code.
-        if (engineState.viewport.isChanging) {
-            if (isResolutionLocked) {
-                auto temp = engineState.viewport.data.color;
-                engineState.viewport.data.free();
-                engineState.viewport.data.color = temp;
-            } else {
-                engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
-            }
-            engineState.viewport.isChanging = false;
-            engineViewportInfo(true);
-        }
-        // Fullscreen code.
-        if (engineState.fullscreenState.isChanging) {
-            engineState.fullscreenState.changeTime += dt;
-            if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
-                if (rl.IsWindowFullscreen()) {
-                    rl.ToggleFullscreen();
-                    // Size is first because raylib likes that. I will make raylib happy.
-                    rl.SetWindowSize(
-                        engineState.fullscreenState.previousWindowWidth,
-                        engineState.fullscreenState.previousWindowHeight,
-                    );
-                    rl.SetWindowPosition(
-                        cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
-                        cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
-                    );
-                } else {
-                    rl.ToggleFullscreen();
-                }
-                engineState.fullscreenState.isChanging = false;
-            }
-        }
-        return result;
-    }
-
     // Maybe bad idea, but makes life of no-attribute people easier.
-    __updateFunc = cast(bool function(float _dt) @trusted @nogc nothrow) updateFunc;
+    engineState.updateFunc = cast(typeof(engineState.updateFunc)) updateFunc;
     engineState.flags |= EngineFlag.isUpdating;
     version(WebAssembly) {
-        static void __updateWindowWeb() {
-            if (__updateWindow()) {
-                rl.emscripten_cancel_main_loop();
-            }
-        }
-        rl.emscripten_set_main_loop(&__updateWindowWeb, 0, 1);
+        rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
     } else {
-        while (true) {
-            if (rl.WindowShouldClose() || __updateWindow()) {
-                break;
-            }
-        }
+        while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
     }
     engineState.flags &= ~EngineFlag.isUpdating;
 }
