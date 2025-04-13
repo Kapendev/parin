@@ -21,13 +21,13 @@ public import joka.types;
 
 extern(C) __gshared EngineState* engineState;
 
-enum defaultEngineTexturesCapacity = 128;
-enum defaultEngineSoundsCapacity = 128;
-enum defaultEngineFontsCapacity = 16;
-
 alias EngineUpdateFunc = bool function(float dt);
 alias EngineReadyFinishFunc = void function();
 alias EngineFlags = ushort;
+
+enum defaultEngineTexturesCapacity = 64;
+enum defaultEngineSoundsCapacity   = 64;
+enum defaultEngineFontsCapacity    = 16;
 
 enum EngineFlag : EngineFlags {
     none              = 0x0000,
@@ -196,7 +196,7 @@ struct DrawOptions {
     Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is zero.
     Flip flip = Flip.none;                /// A value representing flipping orientations.
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Initializes the options with the given rotation.
     this(float rotation) {
@@ -232,7 +232,7 @@ struct TextOptions {
     Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
     bool isRightToLeft = false;           /// Indicates whether the content of the text flows in a right-to-left direction.
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Initializes the options with the given visibility ratio.
     this(float visibilityRatio) {
@@ -250,7 +250,7 @@ struct TextOptions {
 struct Texture {
     rl.Texture2D data;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Checks if the texture is not loaded.
     bool isEmpty() {
@@ -273,21 +273,18 @@ struct Texture {
     }
 
     /// Sets the filter mode of the texture.
-    @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
         rl.SetTextureFilter(data, value);
     }
 
     /// Sets the wrap mode of the texture.
-    @trusted
     void setWrap(Wrap value) {
         if (isEmpty) return;
         rl.SetTextureWrap(data, value);
     }
 
     /// Frees the loaded texture.
-    @trusted
     void free() {
         if (isEmpty) return;
         rl.UnloadTexture(data);
@@ -359,7 +356,7 @@ struct Font {
     int runeSpacing; /// The spacing between individual characters.
     int lineSpacing; /// The spacing between lines of text.
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Checks if the font is not loaded.
     bool isEmpty() {
@@ -372,21 +369,18 @@ struct Font {
     }
 
     /// Sets the filter mode of the font.
-    @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
         rl.SetTextureFilter(data.texture, value);
     }
 
     /// Sets the wrap mode of the font.
-    @trusted
     void setWrap(Wrap value) {
         if (isEmpty) return;
         rl.SetTextureWrap(data.texture, value);
     }
 
     /// Frees the loaded font.
-    @trusted
     void free() {
         if (isEmpty) return;
         rl.UnloadFont(data);
@@ -458,7 +452,7 @@ struct Sound {
     bool isPaused;
     bool isLooping;
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Checks if the sound is not loaded.
     bool isEmpty() {
@@ -470,7 +464,6 @@ struct Sound {
     }
 
     /// Returns true if the sound is playing.
-    @trusted
     bool isPlaying() {
         if (data.isType!(rl.Sound)) {
             return rl.IsSoundPlaying(data.get!(rl.Sound)());
@@ -480,7 +473,6 @@ struct Sound {
     }
 
     /// Returns the current playback time of the sound.
-    @trusted
     float time() {
         if (data.isType!(rl.Sound)) {
             return 0.0f;
@@ -490,7 +482,6 @@ struct Sound {
     }
 
     /// Returns the total duration of the sound.
-    @trusted
     float duration() {
         if (data.isType!(rl.Sound)) {
             return 0.0f;
@@ -506,7 +497,6 @@ struct Sound {
     }
 
     /// Sets the volume level for the sound. One is the default value.
-    @trusted
     void setVolume(float value) {
         if (data.isType!(rl.Sound)) {
             rl.SetSoundVolume(data.get!(rl.Sound)(), value);
@@ -516,7 +506,6 @@ struct Sound {
     }
 
     /// Sets the pitch of the sound. One is the default value.
-    @trusted
     void setPitch(float value) {
         if (data.isType!(rl.Sound)) {
             rl.SetSoundPitch(data.get!(rl.Sound)(), value);
@@ -526,7 +515,6 @@ struct Sound {
     }
 
     /// Sets the stereo panning of the sound. One is the default value.
-    @trusted
     void setPan(float value) {
         if (data.isType!(rl.Sound)) {
             rl.SetSoundPan(data.get!(rl.Sound)(), value);
@@ -536,7 +524,6 @@ struct Sound {
     }
 
     /// Frees the loaded sound.
-    @trusted
     void free() {
         if (isEmpty) return;
         if (data.isType!(rl.Sound)) {
@@ -638,7 +625,7 @@ struct Viewport {
     Blend blend;     /// A value representing blending modes.
     bool isAttached; /// Indicates whether the viewport is currently in use.
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Initializes the viewport with the given size, background color and blend mode.
     this(Rgba color, Blend blend = Blend.alpha) {
@@ -668,7 +655,6 @@ struct Viewport {
 
     /// Resizes the viewport to the given width and height.
     /// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
-    @trusted
     void resize(int newWidth, int newHeight) {
         if (width == newWidth && height == newHeight) return;
         if (!isEmpty) rl.UnloadRenderTexture(data);
@@ -683,7 +669,6 @@ struct Viewport {
 
     /// Attaches the viewport, making it active.
     // NOTE: The engine viewport should not use this function.
-    @trusted
     void attach() {
         if (isEmpty) return;
         if (engineState.userViewport.isAttached) {
@@ -699,7 +684,6 @@ struct Viewport {
 
     /// Detaches the viewport, making it inactive.
     // NOTE: The engine viewport should not use this function.
-    @trusted
     void detach() {
         if (isEmpty) return;
         if (!isAttached) {
@@ -713,21 +697,18 @@ struct Viewport {
     }
 
     /// Sets the filter mode of the viewport.
-    @trusted
     void setFilter(Filter value) {
         if (isEmpty) return;
         rl.SetTextureFilter(data.texture, value);
     }
 
     /// Sets the wrap mode of the viewport.
-    @trusted
     void setWrap(Wrap value) {
         if (isEmpty) return;
         rl.SetTextureWrap(data.texture, value);
     }
 
     /// Frees the loaded viewport.
-    @trusted
     void free() {
         if (isEmpty) return;
         rl.UnloadRenderTexture(data);
@@ -743,7 +724,7 @@ struct Camera {
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
     bool isAttached;       /// Indicates whether the camera is currently in use.
 
-    @safe @nogc nothrow:
+    @trusted @nogc nothrow:
 
     /// Initializes the camera with the given position and optional centering.
     this(float x, float y, bool isCentered = false) {
@@ -841,7 +822,6 @@ struct Camera {
     }
 
     /// Attaches the camera, making it active.
-    @trusted
     void attach() {
         if (engineState.userCamera.isAttached) {
             assert(0, "Cannot attach camera because another camera is already attached.");
@@ -859,7 +839,6 @@ struct Camera {
     }
 
     /// Detaches the camera, making it inactive.
-    @trusted
     void detach() {
         if (!isAttached) {
             assert(0, "Cannot detach camera because it is not the attached camera.");
@@ -1024,6 +1003,30 @@ rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
     );
 }
 
+/// C wrapper over the method with the same name.
+extern(C)
+void attachCamera(ref Camera camera) {
+    camera.attach();
+}
+
+/// C wrapper over the method with the same name.
+extern(C)
+void detachCamera(ref Camera camera) {
+    camera.detach();
+}
+
+/// C wrapper over the method with the same name.
+extern(C)
+void attachViewport(ref Viewport viewport) {
+    viewport.attach();
+}
+
+/// C wrapper over the method with the same name.
+extern(C)
+void detachViewport(ref Viewport viewport) {
+    viewport.detach();
+}
+
 /// Converts a texture into a managed engine resource.
 /// The texture will be freed when the resource is freed.
 extern(C)
@@ -1055,7 +1058,7 @@ SoundId toSoundId(Sound from) {
 /// The texture will be freed when the font is freed.
 // NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
 // NOTE: It uses the raylib allocator.
-@trusted extern(C)
+extern(C)
 Font toAsciiFont(Texture from, int tileWidth, int tileHeight) {
     if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
     auto result = Font();
@@ -1096,19 +1099,19 @@ IStr[] envArgs() {
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
-@trusted extern(C)
+extern(C)
 int randi() {
     return rl.GetRandomValue(0, int.max);
 }
 
 /// Returns a random floating point number between 0.0 and 1.0 (inclusive).
-@trusted extern(C)
+extern(C)
 float randf() {
     return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
 /// Sets the seed of the random number generator to the given value.
-@trusted extern(C)
+extern(C)
 void randomizeSeed(int seed) {
     rl.SetRandomSeed(seed);
 }
@@ -1120,13 +1123,13 @@ void randomize() {
 }
 
 /// Converts a world point to a screen point based on the given camera.
-@trusted extern(C)
+extern(C)
 Vec2 toScreenPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
     return toParin(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Converts a screen point to a world point based on the given camera.
-@trusted extern(C)
+extern(C)
 Vec2 toWorldPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
     return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
 }
@@ -1152,7 +1155,7 @@ IStr toAssetsPath(IStr path) {
 }
 
 /// Returns the dropped file paths of the current frame.
-@trusted extern(C)
+extern(C)
 IStr[] droppedFilePaths() {
     return engineState.droppedFilePathsBuffer[];
 }
@@ -1188,7 +1191,6 @@ Result!IStr loadTempText(IStr path) {
 
 /// Loads a texture file (PNG) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-@trusted
 Result!Texture loadRawTexture(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toParin();
@@ -1209,7 +1211,6 @@ TextureId loadTexture(IStr path) {
 
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-@trusted
 Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
@@ -1254,7 +1255,6 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-@trusted
 Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
@@ -1297,14 +1297,14 @@ void freeEngineResources() {
 
 /// Opens a URL in the default web browser (if available).
 /// Redirect to Parin's GitHub when no URL is provided.
-@trusted extern(C)
+extern(C)
 void openUrl(IStr url = "https://github.com/Kapendev/parin") {
     rl.OpenURL(url.toCStr().getOr());
 }
 
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
-@trusted extern(C)
+extern(C)
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     if (rl.IsWindowReady) return;
     // Raylib stuff.
@@ -1349,7 +1349,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
 
 /// Passes C strings to the window arguments.
 /// You should avoid calling this function manually.
-@trusted extern(C)
+extern(C)
 void openWindowExtraStep(int argc, ICStr* argv) {
     engineState.envArgsBuffer.clear();
     foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
@@ -1358,7 +1358,7 @@ void openWindowExtraStep(int argc, ICStr* argv) {
 
 /// Opens a window with the specified size and title, using C strings.
 /// You should avoid calling this function manually.
-@trusted extern(C)
+extern(C)
 void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     openWindow(width, height, null, title.cStrToStr());
     openWindowExtraStep(argc, argv);
@@ -1366,8 +1366,8 @@ void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Pa
 
 /// Use by the `updateWindow` function.
 /// You should avoid calling this function manually.
-@trusted extern(C)
-static bool updateWindowLoop() {
+extern(C)
+bool updateWindowLoop() {
     // Begin drawing.
     if (isResolutionLocked) {
         rl.BeginTextureMode(engineState.viewport.data.toRl());
@@ -1460,7 +1460,7 @@ static bool updateWindowLoop() {
 /// Use by the `updateWindow` function.
 /// You should avoid calling this function manually.
 version(WebAssembly) {
-    @trusted extern(C)
+    extern(C)
     void updateWindowLoopWeb() {
         if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
     }
@@ -1469,10 +1469,10 @@ version(WebAssembly) {
 /// Updates the window every frame with the given function.
 /// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
-@trusted extern(C)
+extern(C)
 void updateWindow(bool function(float dt) updateFunc) {
     // Maybe bad idea, but makes life of no-attribute people easier.
-    engineState.updateFunc = cast(typeof(engineState.updateFunc)) updateFunc;
+    engineState.updateFunc = cast(EngineUpdateFunc) updateFunc;
     engineState.flags |= EngineFlag.isUpdating;
     version(WebAssembly) {
         rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
@@ -1484,7 +1484,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 
 /// Closes the window.
 /// You should avoid calling this function manually.
-@trusted extern(C)
+extern(C)
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
     freeEngineResources();
@@ -1545,14 +1545,14 @@ void setIsPixelPerfect(bool value) {
 
 /// Returns true if the application is currently in fullscreen mode.
 // NOTE: There is a conflict between the flag and real-window-state, which could potentially cause issues for some users.
-@trusted extern(C)
+extern(C)
 bool isFullscreen() {
     return cast(bool) (engineState.flags & EngineFlag.isFullscreen);
 }
 
 /// Sets whether the application should be in fullscreen mode.
 // NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
-@trusted extern(C)
+extern(C)
 void setIsFullscreen(bool value) {
     if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
     engineState.flags = value
@@ -1585,7 +1585,7 @@ bool isCursorVisible() {
 }
 
 /// Sets whether the cursor should be visible or hidden.
-@trusted extern(C)
+extern(C)
 void setIsCursorVisible(bool value) {
     engineState.flags = value
         ? engineState.flags | EngineFlag.isCursorVisible
@@ -1601,7 +1601,7 @@ void toggleIsCursorVisible() {
 }
 
 /// Returns true if the windows was resized.
-@trusted extern(C)
+extern(C)
 bool isWindowResized() {
     return rl.IsWindowResized();
 }
@@ -1619,20 +1619,20 @@ void setBorderColor(Rgba value) {
 }
 
 /// Sets the minimum size of the window to the specified value.
-@trusted extern(C)
+extern(C)
 void setWindowMinSize(int width, int height) {
     rl.SetWindowMinSize(width, height);
 }
 
 /// Sets the maximum size of the window to the specified value.
-@trusted extern(C)
+extern(C)
 void setWindowMaxSize(int width, int height) {
     rl.SetWindowMaxSize(width, height);
 }
 
 /// Sets the window icon to the specified image that will be loaded from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-@trusted extern(C)
+extern(C)
 Fault setWindowIconFromFiles(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto image = rl.LoadImage(targetPath.toCStr().getOr());
@@ -1674,7 +1674,7 @@ EngineViewportInfo engineViewportInfo(bool isRecalculationForced = false) {
 }
 
 /// Returns the default engine font. This font should not be freed.
-@trusted extern(C)
+extern(C)
 Font engineFont() {
     return engineState.debugFont;
 }
@@ -1704,13 +1704,13 @@ void setDefaultWrap(Wrap value) {
 }
 
 /// Returns the current master volume level.
-@trusted extern(C)
+extern(C)
 float masterVolume() {
     return rl.GetMasterVolume();
 }
 
 /// Sets the master volume level to the specified value.
-@trusted extern(C)
+extern(C)
 void setMasterVolume(float value) {
     rl.SetMasterVolume(value);
 }
@@ -1722,7 +1722,7 @@ bool isResolutionLocked() {
 }
 
 /// Locks the resolution to the specified width and height.
-@trusted extern(C)
+extern(C)
 void lockResolution(int width, int height) {
     engineState.viewport.lockWidth = width;
     engineState.viewport.lockHeight = height;
@@ -1754,13 +1754,13 @@ void toggleResolution(int width, int height) {
 }
 
 /// Returns the current screen width.
-@trusted extern(C)
+extern(C)
 int screenWidth() {
     return rl.GetMonitorWidth(rl.GetCurrentMonitor());
 }
 
 /// Returns the current screen height.
-@trusted extern(C)
+extern(C)
 int screenHeight() {
     return rl.GetMonitorHeight(rl.GetCurrentMonitor());
 }
@@ -1772,14 +1772,14 @@ Vec2 screenSize() {
 }
 
 /// Returns the current window width.
-@trusted extern(C)
+extern(C)
 int windowWidth() {
     if (isFullscreen) return screenWidth;
     else return rl.GetScreenWidth();
 }
 
 /// Returns the current window height.
-@trusted extern(C)
+extern(C)
 int windowHeight() {
     if (isFullscreen) return screenHeight;
     else return rl.GetScreenHeight();
@@ -1812,19 +1812,19 @@ Vec2 resolution() {
 }
 
 /// Returns the current position of the mouse on the screen.
-@trusted extern(C)
+extern(C)
 Vec2 mouse() {
     return engineState.mouseBuffer;
 }
 
 /// Returns the current frames per second (FPS).
-@trusted extern(C)
+extern(C)
 int fps() {
     return rl.GetFPS();
 }
 
 /// Returns the total elapsed time since the application started.
-@trusted extern(C)
+extern(C)
 double elapsedTime() {
     return rl.GetTime();
 }
@@ -1836,19 +1836,19 @@ long elapsedTickCount() {
 }
 
 /// Returns the time elapsed since the last frame.
-@trusted extern(C)
+extern(C)
 float deltaTime() {
     return rl.GetFrameTime();
 }
 
 /// Returns the change in mouse position since the last frame.
-@trusted extern(C)
+extern(C)
 Vec2 deltaMouse() {
     return rl.GetMouseDelta().toParin();
 }
 
 /// Returns the change in mouse wheel position since the last frame.
-@trusted extern(C)
+extern(C)
 float deltaWheel() {
     auto result = 0.0f;
     version (WebAssembly) {
@@ -1865,7 +1865,7 @@ float deltaWheel() {
 }
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
-@trusted extern(C)
+extern(C)
 Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
@@ -1907,7 +1907,6 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
 }
 
 /// Returns true if the specified key is currently pressed.
-@trusted
 bool isDown(char key) {
     return rl.IsKeyDown(toUpper(key));
 }
@@ -1919,7 +1918,6 @@ bool isDownChar(char key) {
 }
 
 /// Returns true if the specified key is currently pressed.
-@trusted
 bool isDown(Keyboard key) {
     if (key == Keyboard.shift) {
         return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_SHIFT);
@@ -1939,7 +1937,6 @@ bool isDownKeyboard(Keyboard key) {
 }
 
 /// Returns true if the specified key is currently pressed.
-@trusted
 bool isDown(Mouse key) {
     if (key) return rl.IsMouseButtonDown(key - 1);
     else return false;
@@ -1953,7 +1950,6 @@ bool isDownMouse(Mouse key) {
 }
 
 /// Returns true if the specified key is currently pressed.
-@trusted
 bool isDown(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonDown(id, key);
 }
@@ -1965,7 +1961,6 @@ bool isDownGamepad(Gamepad key, int id = 0) {
 }
 
 /// Returns true if the specified key was pressed.
-@trusted
 bool isPressed(char key) {
     return rl.IsKeyPressed(toUpper(key));
 }
@@ -1977,7 +1972,6 @@ bool isPressedChar(char key) {
 }
 
 /// Returns true if the specified key was pressed.
-@trusted
 bool isPressed(Keyboard key) {
     if (key == Keyboard.shift) {
         return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_SHIFT);
@@ -1998,7 +1992,6 @@ bool isPressedKeyboard(Keyboard key) {
 }
 
 /// Returns true if the specified key was pressed.
-@trusted
 bool isPressed(Mouse key) {
     if (key) return rl.IsMouseButtonPressed(key - 1);
     else return false;
@@ -2012,7 +2005,6 @@ bool isPressedMouse(Mouse key) {
 }
 
 /// Returns true if the specified key was pressed.
-@trusted
 bool isPressed(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonPressed(id, key);
 }
@@ -2024,7 +2016,6 @@ bool isPressedGamepad(Gamepad key, int id = 0) {
 }
 
 /// Returns true if the specified key was released.
-@trusted
 bool isReleased(char key) {
     return rl.IsKeyReleased(toUpper(key));
 }
@@ -2037,7 +2028,6 @@ bool isReleasedChar(char key) {
 }
 
 /// Returns true if the specified key was released.
-@trusted
 bool isReleased(Keyboard key) {
     if (key == Keyboard.shift) {
         return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_SHIFT);
@@ -2058,7 +2048,6 @@ bool isReleasedKeyboard(Keyboard key) {
 }
 
 /// Returns true if the specified key was released.
-@trusted
 bool isReleased(Mouse key) {
     if (key) return rl.IsMouseButtonReleased(key - 1);
     else return false;
@@ -2072,7 +2061,6 @@ bool isReleasedMouse(Mouse key) {
 }
 
 /// Returns true if the specified key was released.
-@trusted
 bool isReleased(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonReleased(id, key);
 }
@@ -2087,7 +2075,7 @@ bool isReleasedGamepad(Gamepad key, int id = 0) {
 /// Returns the recently pressed keyboard key.
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
 /// A none key is returned when the queue is empty.
-@trusted extern(C)
+extern(C)
 Keyboard dequeuePressedKey() {
     return cast(Keyboard) rl.GetKeyPressed();
 }
@@ -2095,7 +2083,7 @@ Keyboard dequeuePressedKey() {
 /// Returns the recently pressed character.
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
 /// A none character is returned when the queue is empty.
-@trusted extern(C)
+extern(C)
 dchar dequeuePressedRune() {
     return rl.GetCharPressed();
 }
@@ -2131,7 +2119,7 @@ Vec2 wasdReleased() {
 }
 
 /// Plays the specified sound.
-@trusted extern(C)
+extern(C)
 void playSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.isPaused) resumeSoundX(sound);
@@ -2150,7 +2138,7 @@ void playSound(SoundId sound) {
 }
 
 /// Stops playback of the specified sound.
-@trusted extern(C)
+extern(C)
 void stopSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
@@ -2167,7 +2155,7 @@ void stopSound(SoundId sound) {
 }
 
 /// Pauses playback of the specified sound.
-@trusted extern(C)
+extern(C)
 void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     sound.isPaused = true;
@@ -2185,7 +2173,7 @@ void pauseSound(SoundId sound) {
 }
 
 /// Resumes playback of the specified paused sound.
-@trusted extern(C)
+extern(C)
 void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     sound.isPaused = false;
@@ -2203,7 +2191,7 @@ void resumeSound(SoundId sound) {
 }
 
 /// Updates the playback state of the specified sound.
-@trusted extern(C)
+extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
@@ -2221,7 +2209,7 @@ void updateSound(SoundId sound) {
 }
 
 /// Draws a rectangle with the specified area and color.
-@trusted extern(C)
+extern(C)
 void drawRect(Rect area, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawRectanglePro(area.floor().toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
@@ -2231,7 +2219,7 @@ void drawRect(Rect area, Rgba color = white) {
 }
 
 /// Draws a hollow rectangle with the specified area and color.
-@trusted extern(C)
+extern(C)
 void drawHollowRect(Rect area, float thickness, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawRectangleLinesEx(area.floor().toRl(), thickness, color.toRl());
@@ -2247,7 +2235,7 @@ void drawVec2(Vec2 point, float size, Rgba color = white) {
 }
 
 /// Draws a circle with the specified area and color.
-@trusted extern(C)
+extern(C)
 void drawCirc(Circ area, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
@@ -2257,7 +2245,7 @@ void drawCirc(Circ area, Rgba color = white) {
 }
 
 /// Draws a hollow circle with the specified area and color.
-@trusted extern(C)
+extern(C)
 void drawHollowCirc(Circ area, float thickness, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawRing(area.position.floor().toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
@@ -2267,7 +2255,7 @@ void drawHollowCirc(Circ area, float thickness, Rgba color = white) {
 }
 
 /// Draws a line with the specified area, thickness, and color.
-@trusted extern(C)
+extern(C)
 void drawLine(Line area, float size, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawLineEx(area.a.floor().toRl(), area.b.floor().toRl(), size, color.toRl());
@@ -2277,7 +2265,7 @@ void drawLine(Line area, float size, Rgba color = white) {
 }
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
-@trusted extern(C)
+extern(C)
 void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty || area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     auto target = Rect(position, area.size * options.scale.abs());
@@ -2447,7 +2435,7 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 }
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
-@trusted extern(C)
+extern(C)
 void drawRuneX(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) return;
     auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
@@ -2473,7 +2461,7 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
-@trusted extern(C)
+extern(C)
 void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
