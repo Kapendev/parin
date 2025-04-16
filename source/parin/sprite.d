@@ -148,7 +148,7 @@ struct Sprite {
 void drawSpriteX(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     if (sprite.width == 0 || sprite.height == 0) return;
     if (texture.isEmpty) {
-        if (isEmptyTextureVisible) drawRect(Rect(sprite.position, sprite.size * options.scale).area(options.hook), green);
+        if (isEmptyTextureVisible) drawRect(Rect(sprite.position, sprite.size * options.scale).area(options.hook), defaultEngineEmptyTextureColor);
         return;
     }
 

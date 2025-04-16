@@ -317,7 +317,7 @@ Fault saveTileMap(IStr path, TileMap map) {
 void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
     if (tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
     if (texture.isEmpty) {
-        if (isEmptyTextureVisible) drawRect(Rect(tile.position, tile.size * options.scale).area(options.hook), green);
+        if (isEmptyTextureVisible) drawRect(Rect(tile.position, tile.size * options.scale).area(options.hook), defaultEngineEmptyTextureColor);
         return;
     }
     drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
@@ -330,7 +330,7 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 void drawTileMapX(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
     if (map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
     if (texture.isEmpty) {
-        if (isEmptyTextureVisible) drawRect(Rect(map.position, map.size * options.scale).area(options.hook), red);
+        if (isEmptyTextureVisible) drawRect(Rect(map.position, map.size * options.scale).area(options.hook), defaultEngineEmptyTextureColor);
         return;
     }
 

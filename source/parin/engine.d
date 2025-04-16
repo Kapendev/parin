@@ -25,9 +25,10 @@ alias EngineUpdateFunc = bool function(float dt);
 alias EngineReadyFinishFunc = void function();
 alias EngineFlags = ushort;
 
-enum defaultEngineTexturesCapacity = 64;
-enum defaultEngineSoundsCapacity   = 64;
-enum defaultEngineFontsCapacity    = 16;
+enum defaultEngineTexturesCapacity  = 128;
+enum defaultEngineSoundsCapacity    = 128;
+enum defaultEngineFontsCapacity     = 16;
+enum defaultEngineEmptyTextureColor = white;
 
 enum EngineFlag : EngineFlags {
     none                  = 0x0000,
@@ -2277,7 +2278,7 @@ extern(C)
 void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     if (texture.isEmpty) {
-        if (isEmptyTextureVisible) drawRect(Rect(position, area.size * options.scale).area(options.hook), red);
+        if (isEmptyTextureVisible) drawRect(Rect(position, area.size * options.scale).area(options.hook), defaultEngineEmptyTextureColor);
         return;
     }
     auto target = Rect(position, area.size * options.scale.abs());
@@ -2339,7 +2340,7 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 extern(C)
 void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
-        if (isEmptyTextureVisible) drawRect(target.area(options.hook), red);
+        if (isEmptyTextureVisible) drawRect(target.area(options.hook), defaultEngineEmptyTextureColor);
         return;
     }
 
