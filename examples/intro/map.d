@@ -5,7 +5,7 @@ import parin;
 auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true);
-auto tile = Tile(16, 16, 145);
+auto tile = Tile(16, 145);
 auto tileFlip = Flip.none;
 
 void ready() {
@@ -24,15 +24,15 @@ bool update(float dt) {
     foreach (point; map.gridPoints(camera.area)) {
         if (map[point] < 0) continue;
         auto area = Rect(map.toWorldPoint(point), map.tileSize);
-        while (area.hasIntersection(tile.area)) {
+        while (area.hasIntersection(Rect(tile.position, tile.size))) {
             tile.position -= wasd * Vec2(dt);
             camera.position = tile.position + tile.size * Vec2(0.5f);
         }
     }
     // Draw the world.
     camera.attach();
-    drawTile(atlas, tile, DrawOptions(tileFlip));
     drawTileMap(atlas, map, camera);
+    drawTile(atlas, tile, DrawOptions(tileFlip));
     camera.detach();
     return false;
 }

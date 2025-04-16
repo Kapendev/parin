@@ -18,26 +18,28 @@ import parin.engine;
 @safe @nogc nothrow:
 
 struct Tile {
-    int width = 16;
-    int height = 16;
-    short id;
+    int widthHeight = 16;
     Vec2 position;
+    short id;
 
     @safe @nogc nothrow:
 
-    this(int width, int height, short id, Vec2 position = Vec2()) {
-        this.width = width;
-        this.height = height;
+    this(int widthHeight, short id, Vec2 position = Vec2()) {
+        this.widthHeight = widthHeight;
         this.id = id;
         this.position = position;
     }
 
-    Vec2 size() {
-        return Vec2(width, height);
+    int width() {
+        return widthHeight;
     }
 
-    Rect area() {
-        return Rect(position, size);
+    int height() {
+        return widthHeight;
+    }
+
+    Vec2 size() {
+        return Vec2(widthHeight, widthHeight);
     }
 
     Sz row(Sz colCount) {
@@ -49,7 +51,7 @@ struct Tile {
     }
 
     Rect textureArea(Sz colCount) {
-        return Rect(col(colCount) * width, row(colCount) * height, width, height);
+        return Rect(col(colCount) * widthHeight, row(colCount) * widthHeight, widthHeight, widthHeight);
     }
 
     /// Moves the tile to follow the target position at the specified speed.
@@ -313,7 +315,11 @@ Fault saveTileMap(IStr path, TileMap map) {
 }
 
 void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty || tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
+    if (tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
+    if (texture.isEmpty) {
+        if (isEmptyTextureVisible) drawRect(Rect(tile.position, tile.size * options.scale).area(options.hook), green);
+        return;
+    }
     drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
 }
 
@@ -322,7 +328,12 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 }
 
 void drawTileMapX(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty || map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
+    if (map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
+    if (texture.isEmpty) {
+        if (isEmptyTextureVisible) drawRect(Rect(map.position, map.size * options.scale).area(options.hook), red);
+        return;
+    }
+
     auto topLeftWorldPoint = camera.topLeftPoint;
     auto bottomRightWorldPoint = camera.bottomRightPoint;
     auto textureColCount = texture.width / map.tileWidth;

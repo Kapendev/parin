@@ -30,13 +30,14 @@ enum defaultEngineSoundsCapacity   = 64;
 enum defaultEngineFontsCapacity    = 16;
 
 enum EngineFlag : EngineFlags {
-    none              = 0x0000,
-    isUpdating        = 0x0001,
-    isUsingAssetsPath = 0x0002,
-    isPixelSnapped    = 0x0004,
-    isPixelPerfect    = 0x0008,
-    isFullscreen      = 0x0010,
-    isCursorVisible   = 0x0020,
+    none                  = 0x0000,
+    isUpdating            = 0x0001,
+    isUsingAssetsPath     = 0x0002,
+    isPixelSnapped        = 0x0004,
+    isPixelPerfect        = 0x0008,
+    isEmptyTextureVisible = 0x0010,
+    isFullscreen          = 0x0020,
+    isCursorVisible       = 0x0040,
 }
 
 /// Flipping orientations.
@@ -1319,7 +1320,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     // Engine stuff.
     engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
     jokaMemset(engineState, 0, EngineState.sizeof);
-    engineState.flags |= EngineFlag.isUsingAssetsPath;
+    engineState.flags |= EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible;
     engineState.borderColor = black;
     engineState.defaultFilter = Filter.init;
     engineState.defaultWrap = Wrap.init;
@@ -1347,21 +1348,13 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.UnloadImage(monogramImage);
 }
 
-/// Passes C strings to the window arguments.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindowExtraStep(int argc, ICStr* argv) {
-    engineState.envArgsBuffer.clear();
-    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
-    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
-}
-
 /// Opens a window with the specified size and title, using C strings.
 /// You should avoid calling this function manually.
 extern(C)
 void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     openWindow(width, height, null, title.cStrToStr());
-    openWindowExtraStep(argc, argv);
+    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
+    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
 }
 
 /// Use by the `updateWindow` function.
@@ -1541,6 +1534,21 @@ void setIsPixelPerfect(bool value) {
     engineState.flags = value
         ? engineState.flags | EngineFlag.isPixelPerfect
         : engineState.flags & ~EngineFlag.isPixelPerfect;
+}
+
+
+/// Returns true if drawing is done when an empty texture is used.
+extern(C)
+bool isEmptyTextureVisible() {
+    return cast(bool) (engineState.flags & EngineFlag.isEmptyTextureVisible);
+}
+
+/// Sets whether drawing should be done when an empty texture is used.
+extern(C)
+void setIsEmptyTextureVisible(bool value) {
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isEmptyTextureVisible
+        : engineState.flags & ~EngineFlag.isEmptyTextureVisible;
 }
 
 /// Returns true if the application is currently in fullscreen mode.
@@ -2267,7 +2275,11 @@ void drawLine(Line area, float size, Rgba color = white) {
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 extern(C)
 void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty || area.size.x <= 0.0f || area.size.y <= 0.0f) return;
+    if (area.size.x <= 0.0f || area.size.y <= 0.0f) return;
+    if (texture.isEmpty) {
+        if (isEmptyTextureVisible) drawRect(Rect(position, area.size * options.scale).area(options.hook), red);
+        return;
+    }
     auto target = Rect(position, area.size * options.scale.abs());
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
     auto flip = options.flip;
@@ -2326,6 +2338,11 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 /// Draws a 9-patch texture from the specified texture area at the given target area.
 extern(C)
 void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
+    if (texture.isEmpty) {
+        if (isEmptyTextureVisible) drawRect(target.area(options.hook), red);
+        return;
+    }
+
     auto tileSize = (area.size / Vec2(3.0f)).floor();
     auto hOptions = options;
     auto vOptions = options;
@@ -2598,10 +2615,9 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
     version (D_BetterC) {
         extern(C)
-        int main(int argc, immutable(char)** argv) {
+        int main(int argc, const(char)** argv) {
             alias f = extern(C) bool function(float dt);
-            openWindow(width, height, null, title);
-            openWindowExtraStep(argc, cast(ICStr*) argv);
+            openWindowC(width, height, argc, argv, title);
             readyFunc();
             updateWindow(cast(f) &updateFunc);
             finishFunc();

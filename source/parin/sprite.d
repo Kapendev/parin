@@ -147,6 +147,10 @@ struct Sprite {
 
 void drawSpriteX(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     if (sprite.width == 0 || sprite.height == 0) return;
+    if (texture.isEmpty) {
+        if (isEmptyTextureVisible) drawRect(Rect(sprite.position, sprite.size * options.scale).area(options.hook), green);
+        return;
+    }
 
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
     auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width;
