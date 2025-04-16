@@ -1,4 +1,4 @@
-# Parin
+# 🍩 Parin
 
 A delightfully simple and lightweight 2D game engine for the D programming language.
 
@@ -24,9 +24,11 @@ mixin runGame!(ready, update, finish);
 Parin is packed with powerful features to get you started quickly:
 
 * Intuitive immediate mode UI
+* Efficient tile map structures
 * Flexible dialogue system with a stack-oriented scripting language
 * Atlas-based animation library
 * Pixel-perfect physics engine
+* Cross-language support for the core library
 * ...and more!
 
 ## Cross-Platform

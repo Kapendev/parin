@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.41
+// Version: v0.0.42
 // ---
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -19,7 +19,8 @@ public import joka.types;
 
 @trusted @nogc nothrow:
 
-extern(C) __gshared EngineState* engineState;
+extern(C)
+__gshared EngineState* engineState;
 
 alias EngineUpdateFunc = bool function(float dt);
 alias EngineReadyFinishFunc = void function();
