@@ -2277,11 +2277,14 @@ void drawLine(Line area, float size, Rgba color = white) {
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 extern(C)
 void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     if (texture.isEmpty) {
+        if (area.size.x <= 0.0f || area.size.y <= 0.0f) area.size = Vec2(64);
         if (isEmptyTextureVisible) drawRect(Rect(position, area.size * options.scale).area(options.hook), defaultEngineEmptyTextureColor);
         return;
+    } else {
+        if (area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     }
+
     auto target = Rect(position, area.size * options.scale.abs());
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
     auto flip = options.flip;
