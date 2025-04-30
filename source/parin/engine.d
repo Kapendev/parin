@@ -1382,8 +1382,8 @@ bool updateWindowLoop() {
         auto rlMouse = rl.GetTouchPosition(0);
         auto info = engineViewportInfo;
         engineState.mouseBuffer = Vec2(
-            (rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio,
-            (rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio,
+            floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
+            floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
         );
     } else {
         engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
@@ -2279,7 +2279,11 @@ extern(C)
 void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
         if (area.size.x <= 0.0f || area.size.y <= 0.0f) area.size = Vec2(64);
-        if (isEmptyTextureVisible) drawRect(Rect(position, area.size * options.scale).area(options.hook), defaultEngineEmptyTextureColor);
+        if (isEmptyTextureVisible) {
+            auto rect = Rect(position, area.size * options.scale).area(options.hook);
+            drawRect(rect, defaultEngineEmptyTextureColor);
+            drawHollowRect(rect, 1, black);
+        }
         return;
     } else {
         if (area.size.x <= 0.0f || area.size.y <= 0.0f) return;
@@ -2344,7 +2348,11 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 extern(C)
 void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
-        if (isEmptyTextureVisible) drawRect(target.area(options.hook), defaultEngineEmptyTextureColor);
+        if (isEmptyTextureVisible) {
+            auto rect = target.area(options.hook);
+            drawRect(rect, defaultEngineEmptyTextureColor);
+            drawHollowRect(rect, 1, black);
+        }
         return;
     }
 
@@ -2614,6 +2622,23 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 extern(C)
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
     drawTextX(engineFont, text, position, options, extraOptions);
+}
+
+/// Draws debug engine information at the given position with the provided draw options.
+extern(C)
+void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
+    auto font = engineFont;
+    auto linePosition = position;
+    drawDebugText("FPS: {}".format(fps), linePosition, options);
+    linePosition.y += font.lineSpacing * options.scale.y;
+    drawDebugText("Mouse: ({}, {})".format(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
+    linePosition.y += font.lineSpacing * options.scale.y;
+    drawDebugText("Textures: {}".format(engineState.textures.length), linePosition, options);
+    linePosition.y += font.lineSpacing * options.scale.y;
+    drawDebugText("Fonts: {}".format(engineState.fonts.length), linePosition, options);
+    linePosition.y += font.lineSpacing * options.scale.y;
+    drawDebugText("Sounds: {}".format(engineState.sounds.length), linePosition, options);
+    linePosition.y += font.lineSpacing * options.scale.y;
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
