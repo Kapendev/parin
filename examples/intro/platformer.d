@@ -1,5 +1,7 @@
 /// This example shows how to use the Parin physics engine.
 
+// TODO: Change the names after some refactors. I want first to know that the old names still work.
+
 import parin;
 
 auto world = BoxWorld();

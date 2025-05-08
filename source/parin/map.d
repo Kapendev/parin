@@ -274,24 +274,25 @@ struct TileMap {
     }
 
     Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
+        resizeSoft(0, 0);
         if (csv.length == 0) return Fault.invalid;
         if (data.isEmpty) data.resizeBlank(defaultGridRowCount, defaultGridColCount);
         tileWidth = newTileWidth;
         tileHeight = newTileHeight;
-        softRowCount = 0;
-        softColCount = 0;
-        auto view = csv;
-        while (view.length != 0) {
+        while (csv.length != 0) {
             softRowCount += 1;
             softColCount = 0;
             if (softRowCount > data.rowCount) return Fault.invalid;
-            auto line = view.skipLine();
+            auto line = csv.skipLine();
             while (line.length != 0) {
                 softColCount += 1;
                 if (softColCount > data.colCount) return Fault.invalid;
                 auto tile = line.skipValue(',').toSigned();
-                if (tile.isNone) return Fault.invalid;
-                data[softRowCount - 1, softColCount - 1] = cast(short) tile.get();
+                if (tile.isNone) {
+                    resizeSoft(0, 0);
+                    return Fault.invalid;
+                }
+                data[softRowCount - 1, softColCount - 1] = cast(short) tile.value;
             }
         }
         return Fault.none;
