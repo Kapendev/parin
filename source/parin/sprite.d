@@ -20,19 +20,22 @@ struct SpriteAnimation {
     ubyte frameRow;
     ubyte frameCount = 1;
     ubyte frameSpeed = 6;
+    bool canRepeat = true;
 }
 
 struct SpriteAnimationGroup2 {
     ubyte[2] frameRows;
     ubyte frameCount = 1;
     ubyte frameSpeed = 6;
+    bool canRepeat = true;
+
     enum angleStep = 180.0f;
 
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
-        return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
+        return SpriteAnimation(frameRows[id], frameCount, frameSpeed, canRepeat);
     }
 }
 
@@ -40,6 +43,8 @@ struct SpriteAnimationGroup4 {
     ubyte[4] frameRows;
     ubyte frameCount = 1;
     ubyte frameSpeed = 6;
+    bool canRepeat = true;
+
     enum angleStep = 90.0f;
 
     @safe @nogc nothrow:
@@ -51,7 +56,7 @@ struct SpriteAnimationGroup4 {
         if (hackAngle == -135) return SpriteAnimation(frameRows[3], frameCount, frameSpeed);
 
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
-        return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
+        return SpriteAnimation(frameRows[id], frameCount, frameSpeed, canRepeat);
     }
 }
 
@@ -59,13 +64,15 @@ struct SpriteAnimationGroup8 {
     ubyte[8] frameRows;
     ubyte frameCount = 1;
     ubyte frameSpeed = 6;
+    bool canRepeat = true;
+
     enum angleStep = 45.0f;
 
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
-        return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
+        return SpriteAnimation(frameRows[id], frameCount, frameSpeed, canRepeat);
     }
 }
 
@@ -73,13 +80,15 @@ struct SpriteAnimationGroup16 {
     ubyte[16] frameRows;
     ubyte frameCount = 1;
     ubyte frameSpeed = 6;
+    bool canRepeat = true;
+
     enum angleStep = 22.5f;
 
     @safe @nogc nothrow:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
-        return SpriteAnimation(frameRows[id], frameCount, frameSpeed);
+        return SpriteAnimation(frameRows[id], frameCount, frameSpeed, canRepeat);
     }
 }
 
@@ -131,7 +140,8 @@ struct Sprite {
 
     void update(float dt) {
         if (animation.frameCount <= 1) return;
-        frameProgress = fmod(frameProgress + animation.frameSpeed * dt, cast(float) animation.frameCount);
+        if (animation.canRepeat) frameProgress = fmod(frameProgress + animation.frameSpeed * dt, cast(float) animation.frameCount);
+        else frameProgress = min(frameProgress + animation.frameSpeed * dt, cast(float) (animation.frameCount - 1));
     }
 
     /// Moves the sprite to follow the target position at the specified speed.

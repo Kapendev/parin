@@ -452,8 +452,11 @@ struct FontId {
 /// A sound resource.
 struct Sound {
     Union!(rl.Sound, rl.Music) data;
+    bool canRepeat;
     bool isPaused;
-    bool isLooping;
+
+    deprecated("Will be replaced with canRepeat.")
+    alias isLooping = canRepeat;
 
     @trusted @nogc nothrow:
 
@@ -544,16 +547,19 @@ struct Sound {
 struct SoundId {
     GenerationalIndex data;
 
+    deprecated("Will be replaced with canRepeat.")
+    alias isLooping = canRepeat;
+
     @trusted @nogc nothrow:
+
+    /// Returns true if the sound associated with the resource identifier can repeat.
+    bool canRepeat() {
+        return getOr().canRepeat;
+    }
 
     /// Returns true if the sound associated with the resource identifier is paused.
     bool isPaused() {
         return getOr().isPaused;
-    }
-
-    /// Returns true if the sound associated with the resource identifier is looping.
-    bool isLooping() {
-        return getOr().isLooping;
     }
 
     /// Returns true if the sound associated with the resource identifier is playing.
@@ -591,9 +597,9 @@ struct SoundId {
         getOr().setPan(value);
     }
 
-    /// Sets the looping mode for the sound associated with the resource identifier.
-    void setIsLooping(bool value) {
-        if (isValid) get().isLooping = value;
+    /// Sets the repeat mode for the sound associated with the resource identifier.
+    void setCanRepeat(bool value) {
+        if (isValid) get().canRepeat = value;
     }
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
@@ -885,6 +891,9 @@ struct EngineState {
     EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
     Vec2 mouseBuffer;
+    Vec2 wasdBuffer;
+    Vec2 wasdPressedBuffer;
+    Vec2 wasdReleasedBuffer;
 
     Sz tickCount;
     Rgba borderColor;
@@ -906,97 +915,97 @@ struct EngineState {
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Rgba toParin(rl.Color from) {
     return Rgba(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Vec2 toParin(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Vec3 toParin(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Vec4 toParin(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Rect toParin(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Texture toParin(rl.Texture2D from) {
     return Texture(from);
 }
 
 /// Converts a raylib type to a Parin type.
-pragma(inline, true);
+pragma(inline, true)
 Font toParin(rl.Font from) {
     return Font(from);
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Color toRl(Rgba from) {
     return rl.Color(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Vector2 toRl(Vec2 from) {
     return rl.Vector2(from.x, from.y);
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Vector3 toRl(Vec3 from) {
     return rl.Vector3(from.x, from.y, from.z);
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Vector4 toRl(Vec4 from) {
     return rl.Vector4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Rectangle toRl(Rect from) {
     return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Texture2D toRl(Texture from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Font toRl(Font from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.RenderTexture2D toRl(Viewport from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
-pragma(inline, true);
+pragma(inline, true)
 rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
     return rl.Camera2D(
         Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
@@ -1258,7 +1267,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) {
+Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
@@ -1266,7 +1275,7 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) 
     } else {
         value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
     }
-    value.isLooping = isLooping;
+    value.canRepeat = canRepeat;
     value.setVolume(volume);
     value.setPitch(pitch);
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
@@ -1276,8 +1285,8 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool isLooping) 
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-SoundId loadSound(IStr path, float volume, float pitch, bool isLooping) {
-    auto resource = loadRawSound(path, volume, pitch, isLooping);
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat) {
+    auto resource = loadRawSound(path, volume, pitch, canRepeat);
     if (resource.isNone) return SoundId();
     return resource.get().toSoundId();
 }
@@ -1378,15 +1387,30 @@ bool updateWindowLoop() {
             engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
         }
     }
-    if (isResolutionLocked) {
-        auto rlMouse = rl.GetTouchPosition(0);
-        auto info = engineViewportInfo;
-        engineState.mouseBuffer = Vec2(
-            floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
-            floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+    // Update buffers.
+    with (Keyboard) {
+        if (isResolutionLocked) {
+            auto rlMouse = rl.GetTouchPosition(0);
+            auto info = engineViewportInfo;
+            engineState.mouseBuffer = Vec2(
+                floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
+                floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+            );
+        } else {
+            engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+        }
+        engineState.wasdBuffer = Vec2(
+            (d.isDown || right.isDown) - (a.isDown || left.isDown),
+            (s.isDown || down.isDown) - (w.isDown || up.isDown),
         );
-    } else {
-        engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+        engineState.wasdPressedBuffer = Vec2(
+            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
+            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+        );
+        engineState.wasdReleasedBuffer = Vec2(
+            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
+            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+        );
     }
     auto dt = deltaTime;
     auto result = engineState.updateFunc(dt);
@@ -1822,6 +1846,7 @@ Vec2 resolution() {
 }
 
 /// Returns the current position of the mouse on the screen.
+pragma(inline, true)
 extern(C)
 Vec2 mouse() {
     return engineState.mouseBuffer;
@@ -2050,7 +2075,6 @@ bool isReleased(Keyboard key) {
     }
 }
 
-
 /// Returns true if the specified key was released.
 extern(C)
 bool isReleasedKeyboard(Keyboard key) {
@@ -2063,7 +2087,6 @@ bool isReleased(Mouse key) {
     else return false;
 }
 
-
 /// Returns true if the specified key was released.
 extern(C)
 bool isReleasedMouse(Mouse key) {
@@ -2074,7 +2097,6 @@ bool isReleasedMouse(Mouse key) {
 bool isReleased(Gamepad key, int id = 0) {
     return rl.IsGamepadButtonReleased(id, key);
 }
-
 
 /// Returns true if the specified key was released.
 extern(C)
@@ -2100,32 +2122,26 @@ dchar dequeuePressedRune() {
 
 /// Returns the directional input based on the WASD and arrow keys when they are down.
 /// The vector is not normalized.
+pragma(inline, true)
 extern(C)
 Vec2 wasd() {
-    with (Keyboard) return Vec2(
-        (d.isDown || right.isDown) - (a.isDown || left.isDown),
-        (s.isDown || down.isDown) - (w.isDown || up.isDown),
-    );
+    return engineState.wasdBuffer;
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are pressed.
 /// The vector is not normalized.
+pragma(inline, true)
 extern(C)
 Vec2 wasdPressed() {
-    with (Keyboard) return Vec2(
-        (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
-        (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
-    );
+    return engineState.wasdPressedBuffer;
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are released.
 /// The vector is not normalized.
+pragma(inline, true)
 extern(C)
 Vec2 wasdReleased() {
-    with (Keyboard) return Vec2(
-        (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
-        (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
-    );
+    return engineState.wasdReleasedBuffer;
 }
 
 /// Plays the specified sound.
@@ -2205,9 +2221,9 @@ extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
-        if (sound.isLooping && !sound.isPlaying) playSoundX(sound);
+        if (sound.canRepeat && !sound.isPlaying) playSoundX(sound);
     } else {
-        if (!sound.isLooping && (sound.duration - sound.time) < 0.1f) stopSoundX(sound);
+        if (!sound.canRepeat && (sound.duration - sound.time) < 0.1f) stopSoundX(sound);
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }

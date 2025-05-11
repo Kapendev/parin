@@ -53,9 +53,9 @@ alias BoxWallProperties  = BoxProperties;
 alias BoxActorProperties = BoxProperties;
 
 // TODO: Think about this name of unions.
-enum boxUnionTagBit  = 1 << 31;
+enum boxUnionTypeBit  = 1 << 31;
 
-enum BoxUnionTag : ubyte {
+enum BoxUnionType : ubyte {
     wall  = 0x0,
     actor = 0x1,
 }
@@ -180,7 +180,7 @@ struct BoxWorld {
         auto id = cast(BoxId) walls.length;
         if (grid.length) {
             auto point = getGridPoint(box);
-            if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~boxUnionTagBit);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~boxUnionTypeBit);
         }
         return id;
     }
@@ -192,7 +192,7 @@ struct BoxWorld {
         auto id = cast(BoxId) actors.length;
         if (grid.length) {
             auto point = getGridPoint(box);
-            if (isGridPointValid(point)) grid[point.y, point.x].append(id | boxUnionTagBit);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id | boxUnionTypeBit);
         }
         return id;
     }
@@ -228,12 +228,12 @@ struct BoxWorld {
         foreach (i, wall; walls) {
             auto id = cast(BoxId) (i + 1);
             auto point = getGridPoint(wall);
-            if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~boxUnionTagBit);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~boxUnionTypeBit);
         }
         foreach (i, actor; actors) {
             auto id = cast(BoxId) (i + 1);
             auto point = getGridPoint(actor);
-            if (isGridPointValid(point)) grid[point.y, point.x].append(id | boxUnionTagBit);
+            if (isGridPointValid(point)) grid[point.y, point.x].append(id | boxUnionTypeBit);
         }
     }
 
@@ -283,8 +283,8 @@ struct BoxWorld {
                 auto otherPoint = IVec2(point.x + x, point.y + y);
                 if (!isGridPointValid(otherPoint)) continue;
                 foreach (taggedId; grid[otherPoint.y, otherPoint.x]) {
-                    auto i = (taggedId & ~boxUnionTagBit) - 1;
-                    auto isActor = taggedId & boxUnionTagBit;
+                    auto i = (taggedId & ~boxUnionTypeBit) - 1;
+                    auto isActor = taggedId & boxUnionTypeBit;
                     if (isActor) continue;
                     if (walls[i].hasIntersection(box) && ~wallsProperties[i].flags & BoxFlag.isPassable) {
                         wallIdsBuffer.append(cast(BoxId) (i + 1));
@@ -311,8 +311,8 @@ struct BoxWorld {
                 auto otherPoint = IVec2(point.x + x, point.y + y);
                 if (!isGridPointValid(otherPoint)) continue;
                 foreach (taggedId; grid[otherPoint.y, otherPoint.x]) {
-                    auto i = (taggedId & ~boxUnionTagBit) - 1;
-                    auto isWall = !(taggedId & boxUnionTagBit);
+                    auto i = (taggedId & ~boxUnionTypeBit) - 1;
+                    auto isWall = !(taggedId & boxUnionTypeBit);
                     if (isWall) continue;
                     if (actors[i].hasIntersection(box) && ~actorsProperties[i].flags & BoxFlag.isPassable) {
                         actorIdsBuffer.append(cast(BoxId) (i + 1));
@@ -384,8 +384,8 @@ struct BoxWorld {
                     if (oldPoint != newPoint) {
                         if (isGridPointValid(oldPoint)) {
                             foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
-                                auto i = (taggedId & ~boxUnionTagBit) - 1;
-                                auto isActor = taggedId & boxUnionTagBit;
+                                auto i = (taggedId & ~boxUnionTypeBit) - 1;
+                                auto isActor = taggedId & boxUnionTypeBit;
                                 if (isActor && (i + 1 == id)) {
                                     grid[oldPoint.y, oldPoint.x].remove(j);
                                     break;
@@ -393,7 +393,7 @@ struct BoxWorld {
                             }
                         }
                         if (isGridPointValid(newPoint)) {
-                            grid[newPoint.y, newPoint.x].append(id | boxUnionTagBit);
+                            grid[newPoint.y, newPoint.x].append(id | boxUnionTypeBit);
                         }
                     }
                 } else {
@@ -460,8 +460,8 @@ struct BoxWorld {
                     if (oldPoint != newPoint) {
                         if (isGridPointValid(oldPoint)) {
                             foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
-                                auto i = (taggedId & ~boxUnionTagBit) - 1;
-                                auto isActor = taggedId & boxUnionTagBit;
+                                auto i = (taggedId & ~boxUnionTypeBit) - 1;
+                                auto isActor = taggedId & boxUnionTypeBit;
                                 if (isActor && (i + 1 == id)) {
                                     grid[oldPoint.y, oldPoint.x].remove(j);
                                     break;
@@ -469,7 +469,7 @@ struct BoxWorld {
                             }
                         }
                         if (isGridPointValid(newPoint)) {
-                            grid[newPoint.y, newPoint.x].append(id | boxUnionTagBit);
+                            grid[newPoint.y, newPoint.x].append(id | boxUnionTypeBit);
                         }
                     }
                 } else {
@@ -578,8 +578,8 @@ struct BoxWorld {
                 if (oldPoint != newPoint) {
                     if (isGridPointValid(oldPoint)) {
                         foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
-                            auto i = (taggedId & ~boxUnionTagBit) - 1;
-                            auto isWall = !(taggedId & boxUnionTagBit);
+                            auto i = (taggedId & ~boxUnionTypeBit) - 1;
+                            auto isWall = !(taggedId & boxUnionTypeBit);
                             if (isWall && (i + 1 == id)) {
                                 grid[oldPoint.y, oldPoint.x].remove(j);
                                 break;
@@ -587,7 +587,7 @@ struct BoxWorld {
                         }
                     }
                     if (isGridPointValid(newPoint)) {
-                        grid[newPoint.y, newPoint.x].append(id & ~boxUnionTagBit);
+                        grid[newPoint.y, newPoint.x].append(id & ~boxUnionTypeBit);
                     }
                 }
             } else {
@@ -626,8 +626,8 @@ struct BoxWorld {
                 if (oldPoint != newPoint) {
                     if (isGridPointValid(oldPoint)) {
                         foreach (j, taggedId; grid[oldPoint.y, oldPoint.x]) {
-                            auto i = (taggedId & ~boxUnionTagBit) - 1;
-                            auto isWall = !(taggedId & boxUnionTagBit);
+                            auto i = (taggedId & ~boxUnionTypeBit) - 1;
+                            auto isWall = !(taggedId & boxUnionTypeBit);
                             if (isWall && (i + 1 == id)) {
                                 grid[oldPoint.y, oldPoint.x].remove(j);
                                 break;
@@ -635,7 +635,7 @@ struct BoxWorld {
                         }
                     }
                     if (isGridPointValid(newPoint)) {
-                        grid[newPoint.y, newPoint.x].append(id & ~boxUnionTagBit);
+                        grid[newPoint.y, newPoint.x].append(id & ~boxUnionTypeBit);
                     }
                 }
             } else {
