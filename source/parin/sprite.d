@@ -119,6 +119,14 @@ struct Sprite {
         return animation.frameCount != 0 ? (frame == animation.frameCount - 1) : true;
     }
 
+    bool hasFirstFrameProgress() {
+        return frameProgress == 0.0f;
+    }
+
+    bool hasLastFrameProgress() {
+        return animation.frameCount != 0 ? (frameProgress.fequals(animation.frameCount - epsilon)) : true;
+    }
+
     Vec2 size() {
         return Vec2(width, height);
     }
@@ -140,8 +148,8 @@ struct Sprite {
 
     void update(float dt) {
         if (animation.frameCount <= 1) return;
-        if (animation.canRepeat) frameProgress = fmod(frameProgress + animation.frameSpeed * dt, cast(float) animation.frameCount);
-        else frameProgress = min(frameProgress + animation.frameSpeed * dt, cast(float) (animation.frameCount - 1));
+        if (animation.canRepeat) frameProgress = fmod(frameProgress + animation.frameSpeed * dt, animation.frameCount);
+        else frameProgress = min(frameProgress + animation.frameSpeed * dt, animation.frameCount - epsilon);
     }
 
     /// Moves the sprite to follow the target position at the specified speed.

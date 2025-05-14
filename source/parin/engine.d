@@ -6,6 +6,8 @@
 // Version: v0.0.43
 // ---
 
+// TODO: Looks at randomPitch again.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -452,6 +454,9 @@ struct FontId {
 /// A sound resource.
 struct Sound {
     Union!(rl.Sound, rl.Music) data;
+    float pitch = 1.0f;
+    float pitchBuffer = 1.0f;
+    float randomPitch = 1.0f; // A value of 1 means no variation.
     bool canRepeat;
     bool isPaused;
 
@@ -512,7 +517,9 @@ struct Sound {
     }
 
     /// Sets the pitch of the sound. One is the default value.
-    void setPitch(float value) {
+    void setPitch(float value, bool canUpdateBuffer = false) {
+        pitch = value;
+        if (canUpdateBuffer) pitchBuffer = value;
         if (data.isType!(rl.Sound)) {
             rl.SetSoundPitch(data.get!(rl.Sound)(), value);
         } else {
@@ -549,8 +556,15 @@ struct SoundId {
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
+    deprecated("Will be replaced with setCanRepeat.")
+    alias setIsLooping = setCanRepeat;
 
     @trusted @nogc nothrow:
+
+    /// Returns the random pitch of the sound associated with the resource identifier.
+    float randomPitch() {
+        return getOr().randomPitch;
+    }
 
     /// Returns true if the sound associated with the resource identifier can repeat.
     bool canRepeat() {
@@ -588,8 +602,13 @@ struct SoundId {
     }
 
     /// Sets the pitch for the sound associated with the resource identifier. One is the default value.
-    void setPitch(float value) {
-        getOr().setPitch(value);
+    void setPitch(float value, bool canUpdateBuffer = false) {
+        getOr().setPitch(value, canUpdateBuffer);
+    }
+
+    /// Sets the random pitch for the sound associated with the resource identifier. One is the default value.
+    void setRandomPitch(float value) {
+        getOr().randomPitch = value;
     }
 
     /// Sets the stereo panning for the sound associated with the resource identifier. One is the default value.
@@ -1267,7 +1286,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat) {
+Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, float randomPitch = 1.0f) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
@@ -1277,7 +1296,8 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat) 
     }
     value.canRepeat = canRepeat;
     value.setVolume(volume);
-    value.setPitch(pitch);
+    value.setPitch(pitch, true);
+    value.randomPitch = randomPitch;
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -1285,8 +1305,8 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat) 
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat) {
-    auto resource = loadRawSound(path, volume, pitch, canRepeat);
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float randomPitch = 1.0f) {
+    auto resource = loadRawSound(path, volume, pitch, canRepeat, randomPitch);
     if (resource.isNone) return SoundId();
     return resource.get().toSoundId();
 }
@@ -1689,7 +1709,7 @@ EngineViewportInfo engineViewportInfo(bool isRecalculationForced = false) {
         if (isPixelPerfect) {
             auto roundMinRatio = result.minRatio.round();
             auto floorMinRation = result.minRatio.floor();
-            result.minRatio = result.minRatio.equals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
+            result.minRatio = result.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
         }
         auto targetSize = result.minSize * Vec2(result.minRatio);
         auto targetPosition = result.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
@@ -1901,7 +1921,7 @@ float deltaWheel() {
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 extern(C)
-Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
+Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
     auto lineCodepointCount = 0;
@@ -1931,7 +1951,7 @@ Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(),
         textCodepointIndex += codepointByteCount;
     }
     if (textMaxWidth < textWidth) textMaxWidth = textWidth;
-    if (textMaxWidth < extraOptions.alignmentWidth) textMaxWidth = extraOptions.alignmentWidth;
+    if (textMaxWidth < extra.alignmentWidth) textMaxWidth = extra.alignmentWidth;
     return Vec2(textMaxWidth * options.scale.x, textHeight * options.scale.y).floor();
 }
 
@@ -2149,6 +2169,7 @@ extern(C)
 void playSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.isPaused) resumeSoundX(sound);
+    if (sound.isPlaying) return;
     if (sound.data.isType!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
@@ -2221,9 +2242,24 @@ extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
-        if (sound.canRepeat && !sound.isPlaying) playSoundX(sound);
+        if (sound.canRepeat && !sound.isPlaying) {
+            playSoundX(sound);
+            if (sound.randomPitch != 1.0f) {
+                auto pitchDiff = sound.pitchBuffer * sound.randomPitch - sound.pitchBuffer;
+                sound.setPitch(sound.pitchBuffer + pitchDiff * randf);
+            }
+        }
     } else {
-        if (!sound.canRepeat && (sound.duration - sound.time) < 0.1f) stopSoundX(sound);
+        if ((sound.duration - sound.time) < 0.1f) {
+            if (sound.canRepeat) {
+                if (sound.randomPitch != 1.0f) {
+                    auto pitchDiff = sound.pitchBuffer * sound.randomPitch - sound.pitchBuffer;
+                    sound.setPitch(sound.pitchBuffer + pitchDiff * randf);
+                }
+            } else {
+                stopSoundX(sound);
+            }
+        }
         rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }
@@ -2508,7 +2544,7 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 extern(C)
-void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
+void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
 
@@ -2535,7 +2571,7 @@ void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOp
             }
             textCodepointIndex += codepointSize;
         }
-        if (textMaxLineWidth < extraOptions.alignmentWidth) textMaxLineWidth = extraOptions.alignmentWidth;
+        if (textMaxLineWidth < extra.alignmentWidth) textMaxLineWidth = extra.alignmentWidth;
     }
 
     // Prepare the the text for drawing.
@@ -2551,30 +2587,30 @@ void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOp
     rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
 
     // Draw the text.
-    auto drawMaxCodepointCount = extraOptions.visibilityCount
-        ? extraOptions.visibilityCount
-        : textCodepointCount * extraOptions.visibilityRatio;
+    auto drawMaxCodepointCount = extra.visibilityCount
+        ? extra.visibilityCount
+        : textCodepointCount * extra.visibilityRatio;
     auto drawCodepointCounter = 0;
     auto textOffsetY = 0;
     foreach (i, line; linesBuffer) {
         auto lineCodepointIndex = 0;
         // Find the initial x offset for the text.
         auto textOffsetX = 0;
-        if (extraOptions.isRightToLeft) {
-            final switch (extraOptions.alignment) {
+        if (extra.isRightToLeft) {
+            final switch (extra.alignment) {
                 case Alignment.left: textOffsetX = linesWidthBuffer[i]; break;
                 case Alignment.center: textOffsetX = textMaxLineWidth / 2 + linesWidthBuffer[i] / 2; break;
                 case Alignment.right: textOffsetX = textMaxLineWidth; break;
             }
         } else {
-            final switch (extraOptions.alignment) {
+            final switch (extra.alignment) {
                 case Alignment.left: break;
                 case Alignment.center: textOffsetX = textMaxLineWidth / 2 - linesWidthBuffer[i] / 2; break;
                 case Alignment.right: textOffsetX = textMaxLineWidth - linesWidthBuffer[i]; break;
             }
         }
         // Go over the characters and draw them.
-        if (extraOptions.isRightToLeft) {
+        if (extra.isRightToLeft) {
             lineCodepointIndex = cast(int) line.length;
             while (lineCodepointIndex > 0) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
@@ -2630,14 +2666,14 @@ void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOp
 
 /// Draws text with the given font at the given position using the provided draw options.
 extern(C)
-void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
-    drawTextX(font.getOr(), text, position, options, extraOptions);
+void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+    drawTextX(font.getOr(), text, position, options, extra);
 }
 
 /// Draws debug text at the given position with the provided draw options.
 extern(C)
-void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extraOptions = TextOptions()) {
-    drawTextX(engineFont, text, position, options, extraOptions);
+void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+    drawTextX(engineFont, text, position, options, extra);
 }
 
 /// Draws debug engine information at the given position with the provided draw options.
@@ -2647,13 +2683,9 @@ void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
     auto linePosition = position;
     drawDebugText("FPS: {}".format(fps), linePosition, options);
     linePosition.y += font.lineSpacing * options.scale.y;
-    drawDebugText("Mouse: ({}, {})".format(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
+    drawDebugText("Mouse: ({} {})".format(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
     linePosition.y += font.lineSpacing * options.scale.y;
-    drawDebugText("Textures: {}".format(engineState.textures.length), linePosition, options);
-    linePosition.y += font.lineSpacing * options.scale.y;
-    drawDebugText("Fonts: {}".format(engineState.fonts.length), linePosition, options);
-    linePosition.y += font.lineSpacing * options.scale.y;
-    drawDebugText("Sounds: {}".format(engineState.sounds.length), linePosition, options);
+    drawDebugText("Assets: (T{} F{} S{})".format(engineState.textures.length, engineState.fonts.length, engineState.sounds.length), linePosition, options);
     linePosition.y += font.lineSpacing * options.scale.y;
 }
 
