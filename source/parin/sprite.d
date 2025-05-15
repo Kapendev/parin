@@ -18,15 +18,15 @@ import parin.engine;
 
 struct SpriteAnimation {
     ubyte frameRow;
-    ubyte frameCount = 1;
-    ubyte frameSpeed = 6;
+    ubyte frameCount;
+    ubyte frameSpeed;
     bool canRepeat = true;
 }
 
 struct SpriteAnimationGroup2 {
     ubyte[2] frameRows;
-    ubyte frameCount = 1;
-    ubyte frameSpeed = 6;
+    ubyte frameCount;
+    ubyte frameSpeed;
     bool canRepeat = true;
 
     enum angleStep = 180.0f;
@@ -41,8 +41,8 @@ struct SpriteAnimationGroup2 {
 
 struct SpriteAnimationGroup4 {
     ubyte[4] frameRows;
-    ubyte frameCount = 1;
-    ubyte frameSpeed = 6;
+    ubyte frameCount;
+    ubyte frameSpeed;
     bool canRepeat = true;
 
     enum angleStep = 90.0f;
@@ -62,8 +62,8 @@ struct SpriteAnimationGroup4 {
 
 struct SpriteAnimationGroup8 {
     ubyte[8] frameRows;
-    ubyte frameCount = 1;
-    ubyte frameSpeed = 6;
+    ubyte frameCount;
+    ubyte frameSpeed;
     bool canRepeat = true;
 
     enum angleStep = 45.0f;
@@ -78,8 +78,8 @@ struct SpriteAnimationGroup8 {
 
 struct SpriteAnimationGroup16 {
     ubyte[16] frameRows;
-    ubyte frameCount = 1;
-    ubyte frameSpeed = 6;
+    ubyte frameCount;
+    ubyte frameSpeed;
     bool canRepeat = true;
 
     enum angleStep = 22.5f;
@@ -100,6 +100,7 @@ struct Sprite {
     float frameProgress = 0.0f;
     SpriteAnimation animation;
     Vec2 position;
+    bool isPaused;
 
     @safe @nogc nothrow:
 
@@ -111,12 +112,16 @@ struct Sprite {
         this.position = position;
     }
 
+    bool hasAnimation() {
+        return animation.frameCount != 0;
+    }
+
     bool hasFirstFrame() {
         return frame == 0;
     }
 
     bool hasLastFrame() {
-        return animation.frameCount != 0 ? (frame == animation.frameCount - 1) : true;
+        return hasAnimation ? (frame == animation.frameCount - 1) : true;
     }
 
     bool hasFirstFrameProgress() {
@@ -124,7 +129,7 @@ struct Sprite {
     }
 
     bool hasLastFrameProgress() {
-        return animation.frameCount != 0 ? (frameProgress.fequals(animation.frameCount - epsilon)) : true;
+        return hasAnimation ? (frameProgress.fequals(animation.frameCount - epsilon)) : true;
     }
 
     Vec2 size() {
@@ -139,15 +144,27 @@ struct Sprite {
         frameProgress = resetFrame;
     }
 
-    void play(SpriteAnimation animation, bool canKeepFrame = false) {
-        if (this.animation != animation) {
-            if (!canKeepFrame) reset();
-            this.animation = animation;
-        }
+    void play(SpriteAnimation newAnimation, bool canKeepProgress = false) {
+        if (isPaused || animation == newAnimation) return;
+        if (!canKeepProgress) reset();
+        animation = newAnimation;
+    }
+
+    void stop() {
+        if (isPaused) return;
+        play(SpriteAnimation());
+    }
+
+    void pause() {
+        isPaused = true;
+    }
+
+    void resume() {
+        isPaused = false;
     }
 
     void update(float dt) {
-        if (animation.frameCount <= 1) return;
+        if (!hasAnimation || isPaused) return;
         if (animation.canRepeat) frameProgress = fmod(frameProgress + animation.frameSpeed * dt, animation.frameCount);
         else frameProgress = min(frameProgress + animation.frameSpeed * dt, animation.frameCount - epsilon);
     }

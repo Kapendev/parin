@@ -6,7 +6,7 @@
 // Version: v0.0.43
 // ---
 
-// TODO: Looks at randomPitch again.
+// TODO: The sound API needs testing. It's so "random" right now how things work. Should be based on how Sprite works.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -455,10 +455,11 @@ struct FontId {
 struct Sound {
     Union!(rl.Sound, rl.Music) data;
     float pitch = 1.0f;
-    float pitchBuffer = 1.0f;
-    float randomPitch = 1.0f; // A value of 1 means no variation.
+    float pitchVariance = 1.0f; // A value of 1 means no variation.
+    float pitchVarianceBase = 1.0f;
     bool canRepeat;
     bool isPaused;
+    bool isPlayingInternallyBuffer;
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
@@ -474,13 +475,10 @@ struct Sound {
         }
     }
 
-    /// Returns true if the sound is playing.
+    /// Checks if the sound is playback.
+    deprecated("Will be removed because it's unclear what it means. Use `isPaused` instead.")
     bool isPlaying() {
-        if (data.isType!(rl.Sound)) {
-            return rl.IsSoundPlaying(data.get!(rl.Sound)());
-        } else {
-            return rl.IsMusicStreamPlaying(data.get!(rl.Music)());
-        }
+        return false;
     }
 
     /// Returns the current playback time of the sound.
@@ -517,9 +515,9 @@ struct Sound {
     }
 
     /// Sets the pitch of the sound. One is the default value.
-    void setPitch(float value, bool canUpdateBuffer = false) {
+    void setPitch(float value, bool canUpdatePitchVarianceBase = false) {
         pitch = value;
-        if (canUpdateBuffer) pitchBuffer = value;
+        if (canUpdatePitchVarianceBase) pitchVarianceBase = value;
         if (data.isType!(rl.Sound)) {
             rl.SetSoundPitch(data.get!(rl.Sound)(), value);
         } else {
@@ -561,9 +559,14 @@ struct SoundId {
 
     @trusted @nogc nothrow:
 
-    /// Returns the random pitch of the sound associated with the resource identifier.
-    float randomPitch() {
-        return getOr().randomPitch;
+    /// Returns the pitch variance of the sound associated with the resource identifier.
+    float pitchVariance() {
+        return getOr().pitchVariance;
+    }
+
+    /// Sets the pitch variance for the sound associated with the resource identifier. One is the default value.
+    void setPitchVariance(float value) {
+        getOr().pitchVariance = value;
     }
 
     /// Returns true if the sound associated with the resource identifier can repeat.
@@ -577,8 +580,9 @@ struct SoundId {
     }
 
     /// Returns true if the sound associated with the resource identifier is playing.
+    deprecated("Will be removed because it's unclear what it means. Use `isPaused` instead.")
     bool isPlaying() {
-        return getOr().isPlaying;
+        return false;
     }
 
     /// Returns the current playback time of the sound associated with the resource identifier.
@@ -604,11 +608,6 @@ struct SoundId {
     /// Sets the pitch for the sound associated with the resource identifier. One is the default value.
     void setPitch(float value, bool canUpdateBuffer = false) {
         getOr().setPitch(value, canUpdateBuffer);
-    }
-
-    /// Sets the random pitch for the sound associated with the resource identifier. One is the default value.
-    void setRandomPitch(float value) {
-        getOr().randomPitch = value;
     }
 
     /// Sets the stereo panning for the sound associated with the resource identifier. One is the default value.
@@ -1286,7 +1285,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, float randomPitch = 1.0f) {
+Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
@@ -1297,7 +1296,7 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, 
     value.canRepeat = canRepeat;
     value.setVolume(volume);
     value.setPitch(pitch, true);
-    value.randomPitch = randomPitch;
+    value.pitchVariance = pitchVariance;
     return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -1305,8 +1304,8 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, 
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float randomPitch = 1.0f) {
-    auto resource = loadRawSound(path, volume, pitch, canRepeat, randomPitch);
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f) {
+    auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
     if (resource.isNone) return SoundId();
     return resource.get().toSoundId();
 }
@@ -2164,16 +2163,31 @@ Vec2 wasdReleased() {
     return engineState.wasdReleasedBuffer;
 }
 
+/// Resets the specific sound.
+extern(C)
+void resetSoundX(ref Sound sound) {
+    auto wasPlayingInternally = sound.isPlayingInternallyBuffer;
+    stopSoundX(sound);
+    if (wasPlayingInternally) playSoundX(sound);
+}
+
+/// Resets the specific sound.
+extern(C)
+void resetSound(SoundId sound) {
+    if (sound.isValid) resetSoundX(sound.get());
+}
+
 /// Plays the specified sound.
 extern(C)
 void playSoundX(ref Sound sound) {
-    if (sound.isEmpty) return;
-    if (sound.isPaused) resumeSoundX(sound);
-    if (sound.isPlaying) return;
+    if (sound.isEmpty || sound.isPaused || sound.isPlayingInternallyBuffer) return;
+    sound.isPlayingInternallyBuffer = true;
+    if (sound.pitchVariance != 1.0f) {
+        sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
+    }
     if (sound.data.isType!(rl.Sound)) {
         rl.PlaySound(sound.data.get!(rl.Sound)());
     } else {
-        rl.StopMusicStream(sound.data.get!(rl.Music)());
         rl.PlayMusicStream(sound.data.get!(rl.Music)());
     }
 }
@@ -2187,7 +2201,8 @@ void playSound(SoundId sound) {
 /// Stops playback of the specified sound.
 extern(C)
 void stopSoundX(ref Sound sound) {
-    if (sound.isEmpty) return;
+    if (sound.isEmpty || sound.isPaused || !sound.isPlayingInternallyBuffer) return;
+    sound.isPlayingInternallyBuffer = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2204,8 +2219,9 @@ void stopSound(SoundId sound) {
 /// Pauses playback of the specified sound.
 extern(C)
 void pauseSoundX(ref Sound sound) {
-    if (sound.isEmpty) return;
+    if (sound.isEmpty || !sound.isPaused) return;
     sound.isPaused = true;
+    sound.isPlayingInternallyBuffer = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.PauseSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2222,8 +2238,9 @@ void pauseSound(SoundId sound) {
 /// Resumes playback of the specified paused sound.
 extern(C)
 void resumeSoundX(ref Sound sound) {
-    if (sound.isEmpty) return;
+    if (sound.isEmpty || sound.isPaused) return;
     sound.isPaused = false;
+    sound.isPlayingInternallyBuffer = true;
     if (sound.data.isType!(rl.Sound)) {
         rl.ResumeSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2242,25 +2259,17 @@ extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty) return;
     if (sound.data.isType!(rl.Sound)) {
-        if (sound.canRepeat && !sound.isPlaying) {
-            playSoundX(sound);
-            if (sound.randomPitch != 1.0f) {
-                auto pitchDiff = sound.pitchBuffer * sound.randomPitch - sound.pitchBuffer;
-                sound.setPitch(sound.pitchBuffer + pitchDiff * randf);
-            }
-        }
+        auto wasPlayingInternally = sound.isPlayingInternallyBuffer;
+        if (sound.canRepeat && wasPlayingInternally) playSoundX(sound);
+        sound.isPlayingInternallyBuffer = rl.IsSoundPlaying(sound.data.get!(rl.Sound)());
     } else {
-        if ((sound.duration - sound.time) < 0.1f) {
-            if (sound.canRepeat) {
-                if (sound.randomPitch != 1.0f) {
-                    auto pitchDiff = sound.pitchBuffer * sound.randomPitch - sound.pitchBuffer;
-                    sound.setPitch(sound.pitchBuffer + pitchDiff * randf);
-                }
-            } else {
-                stopSoundX(sound);
-            }
+        auto diff = sound.duration - sound.time;
+        if (diff < 0.1f) {
+            stopSoundX(sound);
+            if (sound.canRepeat) playSoundX(sound);
         }
-        rl.UpdateMusicStream(sound.data.get!(rl.Music)());
+        if (sound.isPlayingInternallyBuffer) rl.UpdateMusicStream(sound.data.get!(rl.Music)());
+        sound.isPlayingInternallyBuffer = rl.IsMusicStreamPlaying(sound.data.get!(rl.Music)());
     }
 }
 
