@@ -101,6 +101,7 @@ struct Sprite {
     SpriteAnimation animation;
     Vec2 position;
     bool isPaused;
+    bool isPlaying;
 
     @safe @nogc nothrow:
 
@@ -148,11 +149,13 @@ struct Sprite {
         if (isPaused || animation == newAnimation) return;
         if (!canKeepProgress) reset();
         animation = newAnimation;
+        isPlaying = true;
     }
 
     void stop() {
         if (isPaused) return;
         play(SpriteAnimation());
+        isPlaying = false;
     }
 
     void pause() {
@@ -164,7 +167,7 @@ struct Sprite {
     }
 
     void update(float dt) {
-        if (!hasAnimation || isPaused) return;
+        if (!hasAnimation || isPaused || !isPlaying) return;
         if (animation.canRepeat) frameProgress = fmod(frameProgress + animation.frameSpeed * dt, animation.frameCount);
         else frameProgress = min(frameProgress + animation.frameSpeed * dt, animation.frameCount - epsilon);
     }

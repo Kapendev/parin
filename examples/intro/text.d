@@ -17,9 +17,9 @@ bool update(float dt) {
     // Set whether the content of the text flows in a right-to-left direction.
     options.isRightToLeft = false;
 
-    auto size = measureTextSize(engineFont, text);
+    auto size = measureTextSizeX(engineFont, text);
     drawRect(Rect(Vec2(8), size), black);
-    drawText(engineFont, text, Vec2(8), DrawOptions(), options);
+    drawTextX(engineFont, text, Vec2(8), DrawOptions(), options);
     return false;
 }
 

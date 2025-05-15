@@ -6,7 +6,7 @@
 // Version: v0.0.43
 // ---
 
-// TODO: The sound API needs testing. It's so "random" right now how things work. Should be based on how Sprite works.
+// TODO: The sound API needs testing. Write an example maybe.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -458,8 +458,8 @@ struct Sound {
     float pitchVariance = 1.0f; // A value of 1 means no variation.
     float pitchVarianceBase = 1.0f;
     bool canRepeat;
+    bool isPlaying;
     bool isPaused;
-    bool isPlayingInternallyBuffer;
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
@@ -473,12 +473,6 @@ struct Sound {
         } else {
             return data.get!(rl.Music)().stream.sampleRate == 0;
         }
-    }
-
-    /// Checks if the sound is playback.
-    deprecated("Will be removed because it's unclear what it means. Use `isPaused` instead.")
-    bool isPlaying() {
-        return false;
     }
 
     /// Returns the current playback time of the sound.
@@ -569,20 +563,29 @@ struct SoundId {
         getOr().pitchVariance = value;
     }
 
+    /// Returns the pitch variance base of the sound associated with the resource identifier.
+    float pitchVarianceBase() {
+        return getOr().pitchVarianceBase;
+    }
+
+    /// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
+    void setPitchVarianceBase(float value) {
+        getOr().pitchVarianceBase = value;
+    }
+
     /// Returns true if the sound associated with the resource identifier can repeat.
     bool canRepeat() {
         return getOr().canRepeat;
     }
 
+    /// Returns true if the sound associated with the resource identifier is playing.
+    bool isPlaying() {
+        return getOr().isPlaying;
+    }
+
     /// Returns true if the sound associated with the resource identifier is paused.
     bool isPaused() {
         return getOr().isPaused;
-    }
-
-    /// Returns true if the sound associated with the resource identifier is playing.
-    deprecated("Will be removed because it's unclear what it means. Use `isPaused` instead.")
-    bool isPlaying() {
-        return false;
     }
 
     /// Returns the current playback time of the sound associated with the resource identifier.
@@ -2166,9 +2169,9 @@ Vec2 wasdReleased() {
 /// Resets the specific sound.
 extern(C)
 void resetSoundX(ref Sound sound) {
-    auto wasPlayingInternally = sound.isPlayingInternallyBuffer;
+    auto wasPlaying = sound.isPlaying;
     stopSoundX(sound);
-    if (wasPlayingInternally) playSoundX(sound);
+    if (wasPlaying) playSoundX(sound);
 }
 
 /// Resets the specific sound.
@@ -2180,8 +2183,8 @@ void resetSound(SoundId sound) {
 /// Plays the specified sound.
 extern(C)
 void playSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || sound.isPlayingInternallyBuffer) return;
-    sound.isPlayingInternallyBuffer = true;
+    if (sound.isEmpty || sound.isPaused || sound.isPlaying) return;
+    sound.isPlaying = true;
     if (sound.pitchVariance != 1.0f) {
         sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
     }
@@ -2201,8 +2204,8 @@ void playSound(SoundId sound) {
 /// Stops playback of the specified sound.
 extern(C)
 void stopSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isPlayingInternallyBuffer) return;
-    sound.isPlayingInternallyBuffer = false;
+    if (sound.isEmpty || sound.isPaused || !sound.isPlaying) return;
+    sound.isPlaying = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2221,7 +2224,6 @@ extern(C)
 void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty || !sound.isPaused) return;
     sound.isPaused = true;
-    sound.isPlayingInternallyBuffer = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.PauseSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2240,7 +2242,6 @@ extern(C)
 void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused) return;
     sound.isPaused = false;
-    sound.isPlayingInternallyBuffer = true;
     if (sound.data.isType!(rl.Sound)) {
         rl.ResumeSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2257,19 +2258,28 @@ void resumeSound(SoundId sound) {
 /// Updates the playback state of the specified sound.
 extern(C)
 void updateSoundX(ref Sound sound) {
-    if (sound.isEmpty) return;
+    if (sound.isEmpty || sound.isPaused || !sound.isPlaying) return;
     if (sound.data.isType!(rl.Sound)) {
-        auto wasPlayingInternally = sound.isPlayingInternallyBuffer;
-        if (sound.canRepeat && wasPlayingInternally) playSoundX(sound);
-        sound.isPlayingInternallyBuffer = rl.IsSoundPlaying(sound.data.get!(rl.Sound)());
-    } else {
-        auto diff = sound.duration - sound.time;
-        if (diff < 0.1f) {
-            stopSoundX(sound);
-            if (sound.canRepeat) playSoundX(sound);
+        auto isPlayingInternally = rl.IsSoundPlaying(sound.data.get!(rl.Sound)());
+        if (sound.canRepeat && !isPlayingInternally) {
+            sound.isPlaying = false; // NOTE: Avoids a lock.
+            playSoundX(sound);
         }
-        if (sound.isPlayingInternallyBuffer) rl.UpdateMusicStream(sound.data.get!(rl.Music)());
-        sound.isPlayingInternallyBuffer = rl.IsMusicStreamPlaying(sound.data.get!(rl.Music)());
+    } else {
+        auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.get!(rl.Music)());
+        auto hasLoopedInternally = sound.duration - sound.time < 0.1f;
+        if (hasLoopedInternally) {
+            if (sound.canRepeat) {
+                // Copy-paste from `playSound`. Maybe make that a function.
+                if (sound.pitchVariance != 1.0f) {
+                    sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
+                }
+            } else {
+                stopSoundX(sound);
+                isPlayingInternally = false;
+            }
+        }
+        if (isPlayingInternally) rl.UpdateMusicStream(sound.data.get!(rl.Music)());
     }
 }
 
