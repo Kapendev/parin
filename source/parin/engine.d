@@ -6,8 +6,6 @@
 // Version: v0.0.43
 // ---
 
-// TODO: The sound API needs testing. Write an example maybe.
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -458,13 +456,15 @@ struct Sound {
     float pitchVariance = 1.0f; // A value of 1 means no variation.
     float pitchVarianceBase = 1.0f;
     bool canRepeat;
-    bool isPlaying;
+    bool isPlaying_;
     bool isPaused;
+
+    @trusted @nogc nothrow:
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
-
-    @trusted @nogc nothrow:
+    deprecated("Will be replaced with a variable. Remove `()` when using this name.")
+    bool isPlaying() { return this.isPlaying_; }
 
     /// Checks if the sound is not loaded.
     bool isEmpty() {
@@ -580,7 +580,7 @@ struct SoundId {
 
     /// Returns true if the sound associated with the resource identifier is playing.
     bool isPlaying() {
-        return getOr().isPlaying;
+        return getOr().isPlaying_;
     }
 
     /// Returns true if the sound associated with the resource identifier is paused.
@@ -907,7 +907,7 @@ struct EngineFullscreenState {
 
 /// The engine state.
 struct EngineState {
-    EngineFlags flags;
+    EngineFlags flags = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible;
     EngineUpdateFunc updateFunc;
     EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
@@ -917,7 +917,7 @@ struct EngineState {
     Vec2 wasdReleasedBuffer;
 
     Sz tickCount;
-    Rgba borderColor;
+    Rgba borderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
     Camera userCamera;
@@ -1064,6 +1064,7 @@ void detachViewport(ref Viewport viewport) {
 /// The texture will be freed when the resource is freed.
 extern(C)
 TextureId toTextureId(Texture from) {
+    if (from.isEmpty) return TextureId(GenerationalIndex(0));
     auto id = TextureId(engineState.textures.append(from));
     id.data.value += 1;
     return id;
@@ -1073,6 +1074,7 @@ TextureId toTextureId(Texture from) {
 /// The font will be freed when the resource is freed.
 extern(C)
 FontId toFontId(Font from) {
+    if (from.isEmpty) return FontId(GenerationalIndex(0));
     auto id = FontId(engineState.fonts.append(from));
     id.data.value += 1;
     return id;
@@ -1082,6 +1084,7 @@ FontId toFontId(Font from) {
 /// The sound will be freed when the resource is freed.
 extern(C)
 SoundId toSoundId(Sound from) {
+    if (from.isEmpty) return SoundId(GenerationalIndex(0));
     auto id = SoundId(engineState.sounds.append(from));
     id.data.value += 1;
     return id;
@@ -1288,7 +1291,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f) {
+Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
@@ -1296,18 +1299,22 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat, 
     } else {
         value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
     }
-    value.canRepeat = canRepeat;
-    value.setVolume(volume);
-    value.setPitch(pitch, true);
-    value.pitchVariance = pitchVariance;
-    return Result!Sound(value, value.isEmpty.toFault(Fault.cantFind));
+    if (value.isEmpty) {
+        return Result!Sound();
+    } else {
+        value.setVolume(volume);
+        value.setPitch(pitch, true);
+        value.canRepeat = canRepeat;
+        value.pitchVariance = pitchVariance;
+        return Result!Sound(value);
+    }
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f) {
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
     auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
     if (resource.isNone) return SoundId();
     return resource.get().toSoundId();
@@ -1351,18 +1358,11 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.SetWindowMinSize(240, 135);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
     // Engine stuff.
-    engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
-    jokaMemset(engineState, 0, EngineState.sizeof);
-    engineState.flags |= EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible;
-    engineState.borderColor = black;
-    engineState.defaultFilter = Filter.init;
-    engineState.defaultWrap = Wrap.init;
+    engineState = jokaMake!EngineState();
     engineState.fullscreenState.previousWindowWidth = width;
     engineState.fullscreenState.previousWindowHeight = height;
     engineState.viewport.data.color = gray;
-    engineState.viewport.data.blend = Blend.init;
     engineViewportInfo(true);
-    // Ready resources.
     if (args.length) {
         foreach (arg; args) engineState.envArgsBuffer.append(arg);
         engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
@@ -1409,7 +1409,7 @@ bool updateWindowLoop() {
             engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
         }
     }
-    // Update buffers.
+    // Update buffers and resources.
     with (Keyboard) {
         if (isResolutionLocked) {
             auto rlMouse = rl.GetTouchPosition(0);
@@ -1434,8 +1434,10 @@ bool updateWindowLoop() {
             (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
         );
     }
-    auto dt = deltaTime;
-    auto result = engineState.updateFunc(dt);
+    foreach (ref sound; engineState.sounds.items) {
+        updateSoundX(sound);
+    }
+    auto result = engineState.updateFunc(deltaTime);
     engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
     if (rl.IsFileDropped) {
         // NOTE: LoadDroppedFiles just returns a global variable.
@@ -1476,7 +1478,7 @@ bool updateWindowLoop() {
     }
     // Fullscreen code.
     if (engineState.fullscreenState.isChanging) {
-        engineState.fullscreenState.changeTime += dt;
+        engineState.fullscreenState.changeTime += deltaTime;
         if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
             if (rl.IsWindowFullscreen()) {
                 rl.ToggleFullscreen();
@@ -2169,7 +2171,7 @@ Vec2 wasdReleased() {
 /// Resets the specific sound.
 extern(C)
 void resetSoundX(ref Sound sound) {
-    auto wasPlaying = sound.isPlaying;
+    auto wasPlaying = sound.isPlaying_;
     stopSoundX(sound);
     if (wasPlaying) playSoundX(sound);
 }
@@ -2183,8 +2185,8 @@ void resetSound(SoundId sound) {
 /// Plays the specified sound.
 extern(C)
 void playSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || sound.isPlaying) return;
-    sound.isPlaying = true;
+    if (sound.isEmpty || sound.isPaused || sound.isPlaying_) return;
+    sound.isPlaying_ = true;
     if (sound.pitchVariance != 1.0f) {
         sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
     }
@@ -2204,8 +2206,8 @@ void playSound(SoundId sound) {
 /// Stops playback of the specified sound.
 extern(C)
 void stopSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isPlaying) return;
-    sound.isPlaying = false;
+    if (sound.isEmpty || sound.isPaused || !sound.isPlaying_) return;
+    sound.isPlaying_ = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2258,11 +2260,11 @@ void resumeSound(SoundId sound) {
 /// Updates the playback state of the specified sound.
 extern(C)
 void updateSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isPlaying) return;
+    if (sound.isEmpty || sound.isPaused || !sound.isPlaying_) return;
     if (sound.data.isType!(rl.Sound)) {
         auto isPlayingInternally = rl.IsSoundPlaying(sound.data.get!(rl.Sound)());
         if (sound.canRepeat && !isPlayingInternally) {
-            sound.isPlaying = false; // NOTE: Avoids a lock.
+            sound.isPlaying_ = false; // NOTE: Avoids a lock.
             playSoundX(sound);
         }
     } else {
@@ -2283,10 +2285,11 @@ void updateSoundX(ref Sound sound) {
     }
 }
 
-/// Updates the playback state of the specified sound.
+/// This function does nothing because managed resources are updated by the engine.
+/// It only exists to make it easier to swap between resource types.
 extern(C)
 void updateSound(SoundId sound) {
-    if (sound.isValid) updateSoundX(sound.get());
+    // if (sound.isValid) updateSoundX(sound.get());
 }
 
 /// Draws a rectangle with the specified area and color.

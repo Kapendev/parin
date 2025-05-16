@@ -89,3 +89,10 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 
 Start with the [examples](./examples/) folder or the [cheatsheet](https://kapendev.github.io/parin-website/pages/cheatsheet.html) for a quick overview.
 For more details, check the [tour](https://kapendev.github.io/parin-website/pages/tour.html) page.
+
+## Dependencies
+
+Parin relies on the following libraries:
+
+* [Joka](https://github.com/Kapendev/joka): A nogc utility library.
+* [raylib](https://github.com/raysan5/raylib): A easy-to-use graphics library.

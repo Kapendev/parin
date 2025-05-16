@@ -6,17 +6,16 @@ auto sound = SoundId();
 
 void ready() {
     lockResolution(320, 180);
-    sound = loadSound("parin_end.ogg", 1.0, 1.0, false, 1.3);
+    sound = loadSound("parin_end.ogg", 1.0, 1.0);
 }
 
 bool update(float dt) {
-    updateSound(sound);
     if (Keyboard.space.isPressed) {
         if (sound.isPlaying) stopSound(sound);
         else playSound(sound);
     }
     if (Keyboard.esc.isPressed) sound.setCanRepeat(!sound.canRepeat);
-    drawDebugText("Press SPACE to toggle playing.\nPress ESC to toggle looping.\ncanRepeat: {}".format(sound.canRepeat), Vec2(8));
+    drawDebugText("SPACE to toggle playing.\nESC to toggle looping.\nisPlaying: {}\ncanRepeat: {}".format(sound.isPlaying, sound.canRepeat), Vec2(8));
     return false;
 }
 
