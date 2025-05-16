@@ -30,6 +30,7 @@ enum defaultEngineTexturesCapacity  = 128;
 enum defaultEngineSoundsCapacity    = 128;
 enum defaultEngineFontsCapacity     = 16;
 enum defaultEngineEmptyTextureColor = white;
+enum engineFont = FontId(GenerationalIndex(1)); /// The default engine font. This font should not be freed.
 
 enum EngineFlag : EngineFlags {
     none                  = 0x0000,
@@ -445,7 +446,7 @@ struct FontId {
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.fonts.remove(GenerationalIndex(data.value - 1, data.generation));
+        if (isValid && this != engineFont) engineState.fonts.remove(GenerationalIndex(data.value - 1, data.generation));
     }
 }
 
@@ -927,7 +928,6 @@ struct EngineState {
     GenerationalList!Texture textures;
     GenerationalList!Sound sounds;
     GenerationalList!Font fonts;
-    Font debugFont;
     List!IStr envArgsBuffer;
     List!IStr droppedFilePathsBuffer;
     LStr loadTextBuffer;
@@ -1064,7 +1064,7 @@ void detachViewport(ref Viewport viewport) {
 /// The texture will be freed when the resource is freed.
 extern(C)
 TextureId toTextureId(Texture from) {
-    if (from.isEmpty) return TextureId(GenerationalIndex(0));
+    if (from.isEmpty) return TextureId();
     auto id = TextureId(engineState.textures.append(from));
     id.data.value += 1;
     return id;
@@ -1074,7 +1074,7 @@ TextureId toTextureId(Texture from) {
 /// The font will be freed when the resource is freed.
 extern(C)
 FontId toFontId(Font from) {
-    if (from.isEmpty) return FontId(GenerationalIndex(0));
+    if (from.isEmpty) return FontId();
     auto id = FontId(engineState.fonts.append(from));
     id.data.value += 1;
     return id;
@@ -1084,7 +1084,7 @@ FontId toFontId(Font from) {
 /// The sound will be freed when the resource is freed.
 extern(C)
 SoundId toSoundId(Sound from) {
-    if (from.isEmpty) return SoundId(GenerationalIndex(0));
+    if (from.isEmpty) return SoundId();
     auto id = SoundId(engineState.sounds.append(from));
     id.data.value += 1;
     return id;
@@ -1331,9 +1331,18 @@ Fault saveText(IStr path, IStr text) {
 /// Frees all managed engine resources.
 extern(C)
 void freeEngineResources() {
-    engineState.textures.free();
-    engineState.fonts.free();
-    engineState.sounds.free();
+    foreach (ref item; engineState.textures.items) item.free();
+    engineState.textures.clear();
+    foreach (ref item; engineState.sounds.items) item.free();
+    engineState.sounds.clear();
+    // The engine font in stored with the user fonts, so it needs to be skipped.
+    auto engineFontId = GenerationalIndex();
+    auto engineFontData = engineFont.get();
+    foreach (id; engineState.fonts.ids) {
+        if (id != engineFontId) engineState.fonts[id].free();
+    }
+    engineState.fonts.clear();
+    engineState.fonts.append(engineFontData);
 }
 
 /// Opens a URL in the default web browser (if available).
@@ -1376,8 +1385,8 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     // Load debug font.
     auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
-    auto monogramTexture = rl.LoadTextureFromImage(monogramImage);
-    engineState.debugFont = monogramTexture.toParin().toAsciiFont(6, 12);
+    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toParin();
+    engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
     rl.UnloadImage(monogramImage);
 }
 
@@ -1530,15 +1539,7 @@ void updateWindow(bool function(float dt) updateFunc) {
 extern(C)
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
-    freeEngineResources();
-    engineState.viewport.data.free();
-    engineState.debugFont.free();
-    engineState.envArgsBuffer.free();
-    engineState.droppedFilePathsBuffer.free();
-    engineState.loadTextBuffer.free();
-    engineState.saveTextBuffer.free();
-    engineState.assetsPath.free();
-    jokaFree(engineState);
+    // NOTE: This leaks. Someone call the memory police!!!
     engineState = null;
     rl.CloseAudioDevice();
     rl.CloseWindow();
@@ -1729,12 +1730,6 @@ EngineViewportInfo engineViewportInfo(bool isRecalculationForced = false) {
         result.area = Rect(result.minSize);
     }
     return *result;
-}
-
-/// Returns the default engine font. This font should not be freed.
-extern(C)
-Font engineFont() {
-    return engineState.debugFont;
 }
 
 /// Returns the default filter mode.
@@ -2695,20 +2690,19 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 /// Draws debug text at the given position with the provided draw options.
 extern(C)
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    drawTextX(engineFont, text, position, options, extra);
+    drawText(engineFont, text, position, options, extra);
 }
 
 /// Draws debug engine information at the given position with the provided draw options.
 extern(C)
 void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
-    auto font = engineFont;
     auto linePosition = position;
     drawDebugText("FPS: {}".format(fps), linePosition, options);
-    linePosition.y += font.lineSpacing * options.scale.y;
+    linePosition.y += engineFont.lineSpacing * options.scale.y;
     drawDebugText("Mouse: ({} {})".format(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
-    linePosition.y += font.lineSpacing * options.scale.y;
-    drawDebugText("Assets: (T{} F{} S{})".format(engineState.textures.length, engineState.fonts.length, engineState.sounds.length), linePosition, options);
-    linePosition.y += font.lineSpacing * options.scale.y;
+    linePosition.y += engineFont.lineSpacing * options.scale.y;
+    drawDebugText("Assets: (T{} F{} S{})".format(engineState.textures.length, engineState.fonts.length - 1, engineState.sounds.length), linePosition, options);
+    linePosition.y += engineFont.lineSpacing * options.scale.y;
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.

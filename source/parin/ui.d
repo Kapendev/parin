@@ -39,7 +39,7 @@ enum UiDragLimit: ubyte {
 }
 
 struct UiOptions {
-    FontId font = FontId();
+    FontId font = engineFont;
     Rgba fontColor = white;
     ubyte fontScale = 1;
     ubyte fontAlphaOffset = defaultUiFontAlphaOffset;
@@ -110,26 +110,12 @@ int findSpaceInTextField(IStr text) {
 }
 
 @trusted
-void readyUi() {
+void prepareUi() {
     if (uiState == null) {
         // NOTE: This leaks. THIS IS SO BAD WHERE IS `Box::leak` IN THIS CODEBASE???
-        uiState = cast(UiState*) jokaMalloc(UiState.sizeof);
-        uiPreviousState = cast(UiState*) jokaMalloc(UiState.sizeof);
-        jokaMemset(uiState, 0, UiState.sizeof);
-        jokaMemset(uiPreviousState, 0, UiState.sizeof);
-        // TODO: Should be changed to something better looking.
-        uiState.mouseClickAction = Mouse.left;
-        uiState.keyboardClickAction = Keyboard.enter;
-        uiState.gamepadClickAction = Gamepad.a;
-        uiPreviousState.mouseClickAction = Mouse.left;
-        uiPreviousState.keyboardClickAction = Keyboard.enter;
-        uiPreviousState.gamepadClickAction = Gamepad.a;
+        uiState = jokaMake!UiState();
+        uiPreviousState = jokaMake!UiState();
     }
-}
-
-@trusted
-void prepareUi() {
-    readyUi();
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     uiState.itemId = 0;
     uiState.hotItemId = 0;
@@ -299,7 +285,6 @@ void updateUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
 
 // TODO SOME ALIGNEMENT SHIT WITH SCALING>>>>
 void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
-    auto font = options.font.isValid ? options.font.get() : engineFont;
     auto extraOptions = TextOptions(options.alignment, cast(int) (area.size.x / options.fontScale));
     auto drawOptions = DrawOptions(options.fontColor);
     drawOptions.scale = Vec2(options.fontScale);
@@ -320,7 +305,7 @@ void drawUiText(Rect area, IStr text, UiOptions options = UiOptions()) {
     if (options.isDisabled && drawOptions.color.a >= options.fontAlphaOffset) {
         drawOptions.color.a -= options.fontAlphaOffset;
     }
-    drawTextX(font, text, textPosition, drawOptions, extraOptions);
+    drawText(options.font, text, textPosition, drawOptions, extraOptions);
 }
 
 void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
@@ -329,7 +314,6 @@ void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
 }
 
 bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
-    auto font = options.font.isValid ? options.font.get() : engineFont;
     auto m = uiMouse;
     auto id = uiState.itemId + 1;
     auto isHot = area.hasPointInclusive(m);
@@ -362,7 +346,6 @@ bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
 }
 
 void drawUiButton(Rect area, IStr text, bool isHot, bool isActive, UiOptions options = UiOptions()) {
-    auto font = options.font.isValid ? options.font.get() : engineFont;
     if (options.isDisabled) drawRect(area, options.disabledColor);
     else if (isActive) drawRect(area, options.activeColor);
     else if (isHot) drawRect(area, options.hotColor);
@@ -519,7 +502,6 @@ bool updateUiTextField(Rect area, ref Str text, Str textBuffer, UiOptions option
 
 // TODO: Add support for right-to-left text.
 void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
-    auto font = options.font.isValid ? options.font.get() : engineFont;
     drawUiText(area, text, options);
     // TODO: Make that text position thing a function bro!!!
     // ---
@@ -534,7 +516,7 @@ void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     }
     textPosition = textPosition.round();
     // ---
-    auto textSize = measureTextSizeX(font, text);
+    auto textSize = measureTextSize(options.font, text);
     auto cursorPosition = textPosition;
     final switch (options.alignment) {
         case Alignment.left: cursorPosition.x += textSize.x * options.fontScale + defaultUiTextFieldCursorOffset; break;
@@ -544,8 +526,8 @@ void drawUiTextField(Rect area, Str text, UiOptions options = UiOptions()) {
     if (!options.isDisabled) {
         auto rect = Rect(
             cursorPosition,
-            font.size * options.fontScale * 0.08f,
-            font.size * options.fontScale,
+            options.font.size * options.fontScale * 0.08f,
+            options.font.size * options.fontScale,
         ).area(Hook.center);
         if (rect.size.x <= 1.0f) rect.size.x = 1.0f;
         drawRect(rect, options.disabledColor.alpha(defaultUiTextFieldCursorDisabledAlpha));
