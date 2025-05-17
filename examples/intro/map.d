@@ -2,6 +2,7 @@
 
 import parin;
 
+auto csv = "-1,-1,-1\n21,22,23\n37,38,39\n53,54,55\n";
 auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true);
@@ -9,10 +10,9 @@ auto tile = Tile(16, 145);
 auto tileFlip = Flip.none;
 
 void ready() {
-    lockResolution(160, 90);
+    lockResolution(320, 180);
     atlas = loadTexture("parin_atlas.png");
-    // Parse a CSV representing a tile map, where each tile is 16x16 pixels in size.
-    map.parse("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55", 16, 16);
+    map.parse(csv, 16, 16); // Parse a CSV, where each tile is 16x16 pixels in size.
 }
 
 bool update(float dt) {
@@ -34,6 +34,7 @@ bool update(float dt) {
     drawTileMap(atlas, map, camera);
     drawTile(atlas, tile, DrawOptions(tileFlip));
     camera.detach();
+    drawDebugText("Move with arrow keys.", Vec2(8));
     return false;
 }
 

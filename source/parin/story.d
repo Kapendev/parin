@@ -103,10 +103,10 @@ struct StoryValue {
     @trusted
     IStr toStr() {
         if (data.isType!StoryNumber) {
-            return format("{}", data.get!StoryNumber());
+            return fmt("{}", data.get!StoryNumber());
         } else {
             auto temp = data.get!(StoryWord)()[];
-            return format("{}", temp[0 .. temp.findStart(char.init)]);
+            return fmt("{}", temp[0 .. temp.findStart(char.init)]);
         }
     }
 }
@@ -138,7 +138,7 @@ struct Story {
     @safe @nogc nothrow:
 
     IStr opIndex(Sz i) {
-        if (i >= lineCount) assert(0, "Index `[{}]` does not exist.".format(i));
+        if (i >= lineCount) assert(0, "Index `[{}]` does not exist.".fmt(i));
         return script[pairs[i].a .. pairs[i].b + 1];
     }
 

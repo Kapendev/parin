@@ -89,7 +89,7 @@ struct TileMap {
 
     ref short opIndex(Sz row, Sz col) {
         if (!has(row, col)) {
-            assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
+            assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
         }
         return data[row, col];
     }
@@ -100,7 +100,7 @@ struct TileMap {
 
     void opIndexAssign(short rhs, Sz row, Sz col) {
         if (!has(row, col)) {
-            assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
+            assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
         }
         data[row, col] = rhs;
     }
@@ -111,7 +111,7 @@ struct TileMap {
 
     void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
         if (!has(row, col)) {
-            assert(0, "Tile `[{}, {}]` does not exist.".format(row, col));
+            assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
         }
         mixin("data[colCount * row + col]", op, "= rhs;");
     }

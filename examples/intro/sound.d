@@ -2,6 +2,7 @@
 
 import parin;
 
+auto text = "Press SPACE to toggle playing.\nPress ESC to toggle looping.\nisPlaying: {}\ncanRepeat: {}";
 auto sound = SoundId();
 
 void ready() {
@@ -15,7 +16,7 @@ bool update(float dt) {
         else playSound(sound);
     }
     if (Keyboard.esc.isPressed) sound.setCanRepeat(!sound.canRepeat);
-    drawDebugText("SPACE to toggle playing.\nESC to toggle looping.\nisPlaying: {}\ncanRepeat: {}".format(sound.isPlaying, sound.canRepeat), Vec2(8));
+    drawDebugText(text.fmt(sound.isPlaying, sound.canRepeat), Vec2(8));
     return false;
 }
 

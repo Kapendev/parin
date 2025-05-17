@@ -337,7 +337,7 @@ struct TextureId {
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) {
-            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".fmt(data.value, data.generation));
             else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
         }
         return engineState.textures[GenerationalIndex(data.value - 1, data.generation)];
@@ -433,7 +433,7 @@ struct FontId {
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) {
-            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".fmt(data.value, data.generation));
             else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
         }
         return engineState.fonts[GenerationalIndex(data.value - 1, data.generation)];
@@ -632,7 +632,7 @@ struct SoundId {
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) {
-            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".format(data.value, data.generation));
+            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".fmt(data.value, data.generation));
             else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
         }
         return engineState.sounds[GenerationalIndex(data.value - 1, data.generation)];
@@ -1336,13 +1336,13 @@ void freeEngineResources() {
     foreach (ref item; engineState.sounds.items) item.free();
     engineState.sounds.clear();
     // The engine font in stored with the user fonts, so it needs to be skipped.
-    auto engineFontId = GenerationalIndex();
-    auto engineFontData = engineFont.get();
+    auto engineFontItemId = engineFont.data;
+    engineFontItemId.value -= 1;
     foreach (id; engineState.fonts.ids) {
-        if (id != engineFontId) engineState.fonts[id].free();
+        if (id == engineFontItemId) continue;
+        engineState.fonts[id].free();
+        engineState.fonts.remove(id);
     }
-    engineState.fonts.clear();
-    engineState.fonts.append(engineFontData);
 }
 
 /// Opens a URL in the default web browser (if available).
@@ -2697,11 +2697,11 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 extern(C)
 void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
     auto linePosition = position;
-    drawDebugText("FPS: {}".format(fps), linePosition, options);
+    drawDebugText("FPS: {}".fmt(fps), linePosition, options);
     linePosition.y += engineFont.lineSpacing * options.scale.y;
-    drawDebugText("Mouse: ({} {})".format(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
+    drawDebugText("Mouse: ({} {})".fmt(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
     linePosition.y += engineFont.lineSpacing * options.scale.y;
-    drawDebugText("Assets: (T{} F{} S{})".format(engineState.textures.length, engineState.fonts.length - 1, engineState.sounds.length), linePosition, options);
+    drawDebugText("Assets: (T{} F{} S{})".fmt(engineState.textures.length, engineState.fonts.length - 1, engineState.sounds.length), linePosition, options);
     linePosition.y += engineFont.lineSpacing * options.scale.y;
 }
 

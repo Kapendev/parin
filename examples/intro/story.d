@@ -52,7 +52,7 @@ bool update(float dt) {
     }
     if (story.hasMenu) {
         foreach (i, option; story.menu) {
-            drawDebugText("{} | {}".format(i + 1, option), Vec2(8, 8 + i * 14));
+            drawDebugText("{} | {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
         }
     }
     if (story.hasPause) {

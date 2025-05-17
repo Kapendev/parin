@@ -16,7 +16,7 @@ bool update(float dt) {
     extra.alignment = Alignment.center;
     extra.visibilityRatio = fmod(elapsedTime * 0.3, 1.5);
     extra.isRightToLeft = true;
-    // Draw the text.
+    // Draw the text with the engine font.
     drawRect(Rect(Vec2(8), measureTextSize(engineFont, text)), black);
     drawText(engineFont, text, Vec2(8), options, extra);
     return false;
