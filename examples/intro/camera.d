@@ -2,8 +2,8 @@
 
 import parin;
 
-auto camera = Camera(0, -14);
-auto cameraTarget = Vec2(0, -14);
+auto camera = Camera(0, -14);     // Create a camera at (0, -14).
+auto cameraTarget = Vec2(0, -14); // The follow position of the camera.
 
 void ready() {
     lockResolution(320, 180);

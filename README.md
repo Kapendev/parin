@@ -96,3 +96,8 @@ Parin relies on the following libraries:
 
 * [Joka](https://github.com/Kapendev/joka): A nogc utility library.
 * [raylib](https://github.com/raysan5/raylib): A easy-to-use graphics library.
+
+## Ideas
+
+If you notice anything missing or would like to contribute, feel free to create an [issue](https://github.com/Kapendev/parin/issues)!
+Most ideas are welcome, except ECS.

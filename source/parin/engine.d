@@ -893,7 +893,8 @@ struct EngineViewport {
     Viewport data;   /// The viewport data.
     int lockWidth;   /// The target lock width.
     int lockHeight;  /// The target lock height.
-    bool isChanging; /// The flag that triggers the lock state.
+    bool isChanging; /// The flag that triggers the new lock state.
+    bool isLocking;  /// The flag that tells what the new lock state is.
 }
 
 /// The engine fullscreen state.
@@ -1475,12 +1476,12 @@ bool updateWindowLoop() {
 
     // Viewport code.
     if (engineState.viewport.isChanging) {
-        if (isResolutionLocked) {
+        if (engineState.viewport.isLocking) {
+            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+        } else {
             auto temp = engineState.viewport.data.color;
             engineState.viewport.data.free();
             engineState.viewport.data.color = temp;
-        } else {
-            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
         }
         engineState.viewport.isChanging = false;
         engineViewportInfo(true);
@@ -1781,6 +1782,7 @@ void lockResolution(int width, int height) {
     engineState.viewport.lockHeight = height;
     if (engineState.flags & EngineFlag.isUpdating) {
         engineState.viewport.isChanging = true;
+        engineState.viewport.isLocking = true;
     } else {
         engineState.viewport.data.resize(width, height);
         engineViewportInfo(true);
@@ -1792,6 +1794,7 @@ extern(C)
 void unlockResolution() {
     if (engineState.flags & EngineFlag.isUpdating) {
         engineState.viewport.isChanging = true;
+        engineState.viewport.isLocking = false;
     } else {
         auto temp = engineState.viewport.data.color;
         engineState.viewport.data.free();
@@ -2257,11 +2260,9 @@ extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused || !sound.isPlaying_) return;
     if (sound.data.isType!(rl.Sound)) {
-        auto isPlayingInternally = rl.IsSoundPlaying(sound.data.get!(rl.Sound)());
-        if (sound.canRepeat && !isPlayingInternally) {
-            sound.isPlaying_ = false; // NOTE: Avoids a lock.
-            playSoundX(sound);
-        }
+        if (rl.IsSoundPlaying(sound.data.get!(rl.Sound)())) return;
+        sound.isPlaying_ = false;
+        if (sound.canRepeat) playSoundX(sound);
     } else {
         auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.get!(rl.Music)());
         auto hasLoopedInternally = sound.duration - sound.time < 0.1f;
@@ -2696,13 +2697,18 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Draws debug engine information at the given position with the provided draw options.
 extern(C)
 void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
-    auto linePosition = position;
-    drawDebugText("FPS: {}".fmt(fps), linePosition, options);
-    linePosition.y += engineFont.lineSpacing * options.scale.y;
-    drawDebugText("Mouse: ({} {})".fmt(cast(int) mouse.x, cast(int) mouse.y), linePosition, options);
-    linePosition.y += engineFont.lineSpacing * options.scale.y;
-    drawDebugText("Assets: (T{} F{} S{})".fmt(engineState.textures.length, engineState.fonts.length - 1, engineState.sounds.length), linePosition, options);
-    linePosition.y += engineFont.lineSpacing * options.scale.y;
+    drawDebugText(
+        "FPS: {}\nMouse: ({} {})\nAssets: (T{} F{} S{})".fmt(
+            fps,
+            cast(int) mouse.x,
+            cast(int) mouse.y,
+            engineState.textures.length,
+            engineState.fonts.length - 1,
+            engineState.sounds.length,
+        ),
+        position,
+        options,
+    );
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.

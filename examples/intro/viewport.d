@@ -2,7 +2,7 @@
 
 import parin;
 
-auto viewport = Viewport(black);
+auto viewport = Viewport(black); // Create a viewport with a black background.
 
 void ready() {
     // Resize the viewport based on the current resolution.

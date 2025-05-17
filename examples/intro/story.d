@@ -2,7 +2,7 @@
 
 import parin;
 
-auto infoText = "Press a number to select an option.\nPress space to continue.";
+auto infoText = "Press a number to select an option.\nPress SPACE to continue.";
 auto infoArea = Rect(0, 180 * 0.8, 320, 180 * 0.2);
 auto story = Story();
 auto script = "
@@ -45,7 +45,6 @@ bool update(float dt) {
             if (digit.isPressed) story.select(i);
         }
     }
-
     // Draw the story.
     if (story.hasText) {
         drawDebugText(story.text, Vec2(8));
@@ -58,7 +57,6 @@ bool update(float dt) {
     if (story.hasPause) {
         drawDebugText("The story is paused.", Vec2(8));
     }
-    // Draw the info.
     drawRect(infoArea, gray1);
     drawDebugText(infoText, infoArea.centerPoint, DrawOptions(Hook.center), TextOptions(Alignment.left, 320 - 16));
     return false;

@@ -143,9 +143,9 @@ struct MouseInfo {
 }
 
 void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto font = appState.font.isValid ? appState.font.get() : engineFont;
+    auto font = appState.font.isValid ? appState.font : engineFont;
     if (font == engineFont) options.scale = Vec2(2);
-    drawTextX(font, text, position, options);
+    parin.drawText(font, text, position, options);
 }
 
 void ready() {
@@ -330,7 +330,7 @@ bool update(float dt) {
     tempArea.subTopBottom(8);
     textOptions.hook = Hook.left;
     drawText(
-        "({},{})({})".format(
+        "({},{})({})".fmt(
             editMouseInfo.isInGrid ? editMouseInfo.gridPoint.x : 0,
             editMouseInfo.isInGrid ? editMouseInfo.gridPoint.y : 0,
             editMouseInfo.isInGrid ? editMouseInfo.gridIndex : 0,
@@ -341,7 +341,7 @@ bool update(float dt) {
     textOptions.hook = Hook.center;
     drawText(appState.atlasFile.length ? appState.atlasFile.pathBaseNameNoExt : "Empty", tempArea.centerPoint.floor(), textOptions);
     textOptions.hook = Hook.right;
-    drawText("{}x{}".format(appState.map.tileWidth, appState.map.tileHeight), tempArea.rightPoint.floor(), textOptions);
+    drawText("{}x{}".fmt(appState.map.tileWidth, appState.map.tileHeight), tempArea.rightPoint.floor(), textOptions);
 
     if (appState.mode == AppMode.select) {
         drawRect(selectArea, panelColor1);

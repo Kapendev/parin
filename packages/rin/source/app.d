@@ -32,9 +32,9 @@ IStr prepareErrorMsg(Fault fault) {
 IStr updateErrorMsg(Fault fault) {
     switch (fault) with (Fault) {
         case assertion: return "Assertion failed.";
-        case invalid: return "Invalid values passed to `{}` at token position `{}`.".format(rinState.story.faultOp, rinState.story.faultTokenPosition);
-        case overflow: return "A value is too long at token position `{}`.".format(rinState.story.faultTokenPosition);
-        case cantParse: return "A value or operator contains invalid characters at token position `{}`.".format(rinState.story.faultTokenPosition);
+        case invalid: return "Invalid values passed to `{}` at token position `{}`.".fmt(rinState.story.faultOp, rinState.story.faultTokenPosition);
+        case overflow: return "A value is too long at token position `{}`.".fmt(rinState.story.faultTokenPosition);
+        case cantParse: return "A value or operator contains invalid characters at token position `{}`.".fmt(rinState.story.faultTokenPosition);
         default: return "WTF!";
     }
 }

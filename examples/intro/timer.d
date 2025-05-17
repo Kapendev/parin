@@ -16,7 +16,6 @@ bool update(float dt) {
     timer.update(dt);
     // Check if the timer has stopped and add 1 to the counter.
     if (timer.hasStopped) counter += 1;
-    // Draw the timer and the counter.
     drawDebugText(text.fmt(counter, timer.duration, timer.time, timer.duration - timer.time), Vec2(8));
     return false;
 }
