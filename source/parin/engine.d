@@ -30,6 +30,7 @@ enum defaultEngineTexturesCapacity  = 128;
 enum defaultEngineSoundsCapacity    = 128;
 enum defaultEngineFontsCapacity     = 16;
 enum defaultEngineEmptyTextureColor = white;
+enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
 enum engineFont = FontId(GenerationalIndex(1)); /// The default engine font. This font should not be freed.
 
 enum EngineFlag : EngineFlags {
@@ -39,8 +40,9 @@ enum EngineFlag : EngineFlags {
     isPixelSnapped        = 0x0004,
     isPixelPerfect        = 0x0008,
     isEmptyTextureVisible = 0x0010,
-    isFullscreen          = 0x0020,
-    isCursorVisible       = 0x0040,
+    isEmptyFontVisible    = 0x0020,
+    isFullscreen          = 0x0040,
+    isCursorVisible       = 0x0080,
 }
 
 /// Flipping orientations.
@@ -334,12 +336,15 @@ struct TextureId {
         return data.value && engineState.textures.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
+    /// Checks if the resource identifier is valid and asserts if it is not.
+    TextureId validate(IStr message = defaultEngineValidateErrorMessage) {
+        if (!isValid) assert(0, message);
+        return this;
+    }
+
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
-        if (!isValid) {
-            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".fmt(data.value, data.generation));
-            else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
-        }
+        if (!isValid) assert(0, defaultEngineValidateErrorMessage);
         return engineState.textures[GenerationalIndex(data.value - 1, data.generation)];
     }
 
@@ -430,12 +435,15 @@ struct FontId {
         return data.value && engineState.fonts.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
+    /// Checks if the resource identifier is valid and asserts if it is not.
+    FontId validate(IStr message = defaultEngineValidateErrorMessage) {
+        if (!isValid) assert(0, message);
+        return this;
+    }
+
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
-        if (!isValid) {
-            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".fmt(data.value, data.generation));
-            else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
-        }
+        if (!isValid) assert(0, defaultEngineValidateErrorMessage);
         return engineState.fonts[GenerationalIndex(data.value - 1, data.generation)];
     }
 
@@ -629,12 +637,15 @@ struct SoundId {
         return data.value && engineState.sounds.has(GenerationalIndex(data.value - 1, data.generation));
     }
 
+    /// Checks if the resource identifier is valid and asserts if it is not.
+    SoundId validate(IStr message = defaultEngineValidateErrorMessage) {
+        if (!isValid) assert(0, message);
+        return this;
+    }
+
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
-        if (!isValid) {
-            if (data.value) assert(0, "ID `{}` with generation `{}` does not exist.".fmt(data.value, data.generation));
-            else assert(0, "ID `0` is always invalid and represents a resource that was never created.");
-        }
+        if (!isValid) assert(0, defaultEngineValidateErrorMessage);
         return engineState.sounds[GenerationalIndex(data.value - 1, data.generation)];
     }
 
@@ -909,7 +920,11 @@ struct EngineFullscreenState {
 
 /// The engine state.
 struct EngineState {
-    EngineFlags flags = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible;
+    EngineFlags flags =
+        EngineFlag.isUsingAssetsPath |
+        EngineFlag.isEmptyTextureVisible |
+        EngineFlag.isEmptyFontVisible;
+
     EngineUpdateFunc updateFunc;
     EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
@@ -1588,7 +1603,6 @@ void setIsPixelPerfect(bool value) {
         : engineState.flags & ~EngineFlag.isPixelPerfect;
 }
 
-
 /// Returns true if drawing is done when an empty texture is used.
 extern(C)
 bool isEmptyTextureVisible() {
@@ -1603,6 +1617,20 @@ void setIsEmptyTextureVisible(bool value) {
         : engineState.flags & ~EngineFlag.isEmptyTextureVisible;
 }
 
+/// Returns true if drawing is done when an empty font is used.
+extern(C)
+bool isEmptyFontVisible() {
+    return cast(bool) (engineState.flags & EngineFlag.isEmptyFontVisible);
+}
+
+/// Sets whether drawing should be done when an empty font is used.
+extern(C)
+void setIsEmptyFontVisible(bool value) {
+    engineState.flags = value
+        ? engineState.flags | EngineFlag.isEmptyFontVisible
+        : engineState.flags & ~EngineFlag.isEmptyFontVisible;
+}
+
 /// Returns true if the application is currently in fullscreen mode.
 // NOTE: There is a conflict between the flag and real-window-state, which could potentially cause issues for some users.
 extern(C)
@@ -1614,13 +1642,12 @@ bool isFullscreen() {
 // NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
 extern(C)
 void setIsFullscreen(bool value) {
-    if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isFullscreen
-        : engineState.flags & ~EngineFlag.isFullscreen;
     version(WebAssembly) {
-
     } else {
+        if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
+        engineState.flags = value
+            ? engineState.flags | EngineFlag.isFullscreen
+            : engineState.flags & ~EngineFlag.isFullscreen;
         if (value) {
             engineState.fullscreenState.previousWindowWidth = rl.GetScreenWidth();
             engineState.fullscreenState.previousWindowHeight = rl.GetScreenHeight();
@@ -2566,7 +2593,11 @@ void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOp
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
 
-    if (font.isEmpty || text.length == 0) return;
+    if (text.length == 0) return;
+    if (font.isEmpty) {
+        if (isEmptyFontVisible) font = engineFont.get();
+        else return;
+    }
     linesBuffer.clear();
     linesWidthBuffer.clear();
     // Get some info about the text.
@@ -2697,18 +2728,61 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Draws debug engine information at the given position with the provided draw options.
 extern(C)
 void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
-    drawDebugText(
-        "FPS: {}\nMouse: ({} {})\nAssets: (T{} F{} S{})".fmt(
-            fps,
-            cast(int) mouse.x,
-            cast(int) mouse.y,
-            engineState.textures.length,
-            engineState.fonts.length - 1,
-            engineState.sounds.length,
-        ),
-        position,
-        options,
-    );
+    static clickPoint = Vec2();
+    static a = Vec2();
+    static b = Vec2();
+    static s = Vec2();
+
+    if (Mouse.left.isDown) {
+        if (Mouse.left.isPressed) clickPoint = mouse;
+        a = Vec2(min(clickPoint.x, mouse.x), min(clickPoint.y, mouse.y));
+        b = Vec2(max(clickPoint.x, mouse.x), max(clickPoint.y, mouse.y));
+        s = b - a;
+        drawRect(Rect(a, s), white.alpha(150));
+        drawHollowRect(Rect(a, s), 1, gray.alpha(150));
+        drawDebugText(
+            "FPS: {}\nMouse: A({} {}) B({} {}) S({} {})\nAssets: (T{} F{} S{})".fmt(
+                fps,
+                cast(int) a.x,
+                cast(int) a.y,
+                cast(int) b.x,
+                cast(int) b.y,
+                cast(int) s.x,
+                cast(int) s.y,
+                engineState.textures.length,
+                engineState.fonts.length - 1,
+                engineState.sounds.length,
+            ),
+            position,
+            options,
+        );
+    } else {
+        drawDebugText(
+            "FPS: {}\nMouse: ({} {})\nAssets: (T{} F{} S{})".fmt(
+                fps,
+                cast(int) mouse.x,
+                cast(int) mouse.y,
+                engineState.textures.length,
+                engineState.fonts.length - 1,
+                engineState.sounds.length,
+            ),
+            position,
+            options,
+        );
+    }
+    debug {
+        if (Mouse.left.isReleased) {
+            printfln(
+                "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})\n",
+                cast(int) a.x,
+                cast(int) a.y,
+                cast(int) b.x,
+                cast(int) b.y,
+                cast(int) s.x,
+                cast(int) s.y,
+            );
+        }
+    }
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.

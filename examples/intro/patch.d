@@ -1,9 +1,9 @@
-/// This example shows how to draw a 9-patch texture in Parin.
+/// This example shows how to draw a 9-patch in Parin.
 
 import parin;
 
 auto atlas = TextureId();
-auto patchAtlasArea = Rect(5 * 16, 1 * 16, Vec2(16 * 3));
+auto patch = Rect(16 * 5, 16 * 1, Vec2(16 * 3)); // A 9-patch with 16x16 tiles.
 
 void ready() {
     lockResolution(320, 180);
@@ -11,9 +11,8 @@ void ready() {
 }
 
 bool update(float dt) {
-    auto start = Vec2(8);
-    // Draw a 9-patch texture with a size based on the mouse position.
-    drawTexturePatch(atlas, patchAtlasArea, Rect(start, mouse - start), true);
+    // Draw a 9-patch with a size based on the mouse position.
+    drawTexturePatch(atlas, patch, Rect(Vec2(8), mouse - Vec2(8)), true);
     return false;
 }
 

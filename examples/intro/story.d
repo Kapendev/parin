@@ -39,8 +39,8 @@ bool update(float dt) {
     if (story.hasText || story.hasPause) {
         if (Keyboard.space.isPressed) story.update();
     }
+    // Select an option based on a number.
     if (story.hasMenu) {
-        // Select an option based on a number.
         foreach (i, digit; digitChars[1 .. story.menu.length + 1]) {
             if (digit.isPressed) story.select(i);
         }

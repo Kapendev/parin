@@ -4,7 +4,7 @@
 import parin;
 
 auto atlas = TextureId();
-auto sprite = Sprite(16, 16, 0, 128);          // Create a 16x16 sprite with an atlas position of (0, 128).
+auto sprite = Sprite(16, 16, 0, 128);          // Create a 16x16 sprite with the atlas position (0, 128).
 auto spriteFlip = Flip.none;
 auto idleAnimation = SpriteAnimation(0, 1, 6); // Create an animation at row 0, with 1 frame and a speed of 6.
 auto walkAnimation = SpriteAnimation(0, 2, 6); // Create an animation at row 0, with 2 frames and a speed of 6.

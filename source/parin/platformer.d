@@ -21,7 +21,7 @@ import joka.types;
 
 @safe @nogc nothrow:
 
-deprecated("Will be removed. Every name starts with `Box` now.") {
+deprecated("Every name starts with `Box` now.") {
     alias BaseBoxId        = BoxId;
     alias BaseBoxFlags     = BoxFlags;
     alias WallBoxId        = BoxId;
@@ -52,8 +52,8 @@ alias BoxUnionIdGroup    = FixedList!(BoxUnionId, 254);
 alias BoxWallProperties  = BoxProperties;
 alias BoxActorProperties = BoxProperties;
 
-// TODO: Think about this name of unions.
 enum boxUnionTypeBit  = 1 << 31;
+enum boxErrorMessage = "Box is invalid or was never assigned.";
 
 enum BoxUnionType : ubyte {
     wall  = 0x0,
@@ -256,22 +256,22 @@ struct BoxWorld {
     }
 
     ref IRect getWall(BoxWallId id) {
-        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        if (id == 0) assert(0, boxErrorMessage);
         return walls[id - 1];
     }
 
     ref BoxWallProperties getWallProperties(BoxWallId id) {
-        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        if (id == 0) assert(0, boxErrorMessage);
         return wallsProperties[id - 1];
     }
 
     ref IRect getActor(BoxActorId id) {
-        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        if (id == 0) assert(0, boxErrorMessage);
         return actors[id - 1];
     }
 
     ref BoxActorProperties getActorProperties(BoxActorId id) {
-        if (id == 0) assert(0, "ID `0` is always invalid and represents a box that was never created.");
+        if (id == 0) assert(0, boxErrorMessage);
         return actorsProperties[id - 1];
     }
 
