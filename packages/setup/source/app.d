@@ -139,11 +139,13 @@ int runDubSetup(string[] args, bool isFirstRun) {
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);
     // Get a yes or no and download the raylib libraries.
-    if (readYesNo("Would you like to download raylib?", args.length >= 2 ? args[1] : "?").isYes) {
-        echo("Downloading...");
+    auto userInput = args.length >= 2 ? args[1] : "?";
+    if (userInput[0] == '-') userInput = userInput[1 .. $];
+    if (readYesNo("Would you like to download the required engine DLLs?", userInput).isYes) {
+        echo("Downloading required engine DLLs...");
         auto hasDubLockFileNow = dubLockFile.isX;
         auto dub1 = cmd("dub", "add", "raylib-d", "--verror");
-        auto dub2 = cmd("dub", "run", "raylib-d:install", "--verror", "--", "-q", "-u=no");
+        auto dub2 = cmd("dub", "run", "raylib-d:install", "--verror", "--yes", "--", "-q", "-u=no");
         // Remove the lock file from the install script.
         if (hasDubLockFileNow != dubLockFile.isX) rm(dubLockFile);
         // Remove the backup copies if something failed.
@@ -161,6 +163,8 @@ int runDubSetup(string[] args, bool isFirstRun) {
 }
 
 int main(string[] args) {
+    isCmdLineHidden = true;
+    isCmdOutputHidden = true;
     auto result = 0;
     auto isFirstRun = !assetsDir.isX;
     auto isSimpProject = !dubFile.isX;
@@ -177,6 +181,7 @@ int main(string[] args) {
 
 Level minLogLevel = Level.info;
 bool isCmdLineHidden = false;
+bool isCmdOutputHidden = false;
 
 enum cloneExt = "._cl";
 
@@ -426,7 +431,14 @@ int cmd(IStr[] args...) {
     import std.process;
     if (!isCmdLineHidden) echo("[CMD] ", args);
     try {
-        return spawnProcess(args).wait();
+        if (isCmdOutputHidden) {
+            auto result = execute(args);
+            if (result.status == 0) return 0;
+            echo(result.output);
+            return result.status;
+        } else {
+            return spawnProcess(args).wait();
+        }
     } catch (Exception e) {
         return 1;
     }

@@ -6,7 +6,7 @@ auto world = BoxWorld();
 auto platformBoxId = BoxWallId();
 auto groundBoxId = BoxWallId();
 auto playerBoxId = BoxActorId();
-auto playerMover = BoxMover(2, 1, 0.3, 4);
+auto playerMover = BoxMover(2, 1, 0.3, 4); // Create a mover with: speed=2, acceleration=1, gravity=0.3, jump=4
 auto groundY = 140;
 
 void ready() {
@@ -22,9 +22,7 @@ bool update(float dt) {
     // Move the platform.
     world.moveWallX(platformBoxId, sin(elapsedTime * 4) * 1.7);
     // Move the player.
-    playerMover.direction.x = wasd.x;
-    playerMover.direction.y = wasdPressed.y;
-    playerMover.move();
+    playerMover.move(Vec2(wasd.x, wasdPressed.y));
     world.moveActorX(playerBoxId, playerMover.velocity.x);
     // If there is a collision while falling, set the velocity to zero.
     if (world.moveActorY(playerBoxId, playerMover.velocity.y)) {

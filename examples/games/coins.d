@@ -4,20 +4,20 @@ import parin;
 
 auto player = Rect(16, 16);
 auto coins = SparseList!Rect();
-auto maxCoinCount = 8;
+auto coinSize = Vec2(8);
+auto coinCount = 8;
 
 void ready() {
     lockResolution(320, 180);
     // Place the player at the center of the window.
     player.position = resolution * Vec2(0.5);
     // Create the coins. Every coin will have a random starting position.
-    auto coinSize = Vec2(8);
-    foreach (i; 0 .. maxCoinCount) {
-        auto minPosition = Vec2(0, 40);
-        auto maxPosition = resolution - coinSize - minPosition;
+    foreach (i; 0 .. coinCount) {
+        auto a = Vec2(0, 40);
+        auto b = resolution - coinSize - a;
         auto coin = Rect(
-            randf * maxPosition.x + minPosition.x,
-            randf * maxPosition.y + minPosition.y,
+            randf * b.x + a.x,
+            randf * b.y + a.y,
             coinSize,
         );
         coins.append(coin);
@@ -25,23 +25,19 @@ void ready() {
 }
 
 bool update(float dt) {
-    // Move the player.
-    auto playerDirection = Vec2(
-        Keyboard.right.isDown - Keyboard.left.isDown,
-        Keyboard.down.isDown - Keyboard.up.isDown,
-    );
-    player.position += playerDirection * Vec2(120 * dt);
-    // Check if the player is touching coins and remove them.
+    // Move and draw the player.
+    player.position += wasd * Vec2(120 * dt);
+    drawRect(player, black);
+    // Collect and draw the coins.
     foreach (id; coins.ids) {
+        drawRect(coins[id], yellow);
         if (coins[id].hasIntersection(player)) coins.remove(id);
     }
-    // Draw the game.
-    foreach (coin; coins.items) drawRect(coin);
-    drawRect(player);
+    // Draw some info about the game.
     if (coins.length == 0) {
         drawDebugText("You collected all the coins!", Vec2(8));
     } else {
-        drawDebugText("Coins: {}/{}\nMove with arrow keys.".fmt(maxCoinCount - coins.length, maxCoinCount), Vec2(8));
+        drawDebugText("Coins: {}/{}\nMove with arrow keys.".fmt(coinCount - coins.length, coinCount), Vec2(8));
     }
     return false;
 }

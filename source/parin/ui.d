@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.43
+// Version: v0.0.44
 // ---
 
 /// The `ui` module functions as a immediate mode UI library.
