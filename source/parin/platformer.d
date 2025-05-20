@@ -18,6 +18,7 @@ import joka.ascii;
 import joka.containers;
 import joka.math;
 import joka.types;
+import parin.engine;
 
 @safe @nogc nothrow:
 
@@ -705,4 +706,9 @@ struct BoxWorld {
         grid.free();
         this = BoxWorld();
     }
+}
+
+void drawDebugBoxWorld(ref BoxWorld world) {
+    foreach (wall; world.walls) drawRect(wall.toRect(), brown.alpha(170));
+    foreach (actor; world.actors) drawRect(actor.toRect(), cyan.alpha(170));
 }

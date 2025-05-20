@@ -2738,8 +2738,8 @@ void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
         a = Vec2(min(clickPoint.x, mouse.x), min(clickPoint.y, mouse.y));
         b = Vec2(max(clickPoint.x, mouse.x), max(clickPoint.y, mouse.y));
         s = b - a;
-        drawRect(Rect(a, s), white.alpha(150));
-        drawHollowRect(Rect(a, s), 1, gray.alpha(150));
+        drawRect(Rect(a, s), white.alpha(130));
+        drawHollowRect(Rect(a, s), 1, gray.alpha(130));
         drawDebugText(
             "FPS: {}\nMouse: A({} {}) B({} {}) S({} {})\nAssets: (T{} F{} S{})".fmt(
                 fps,

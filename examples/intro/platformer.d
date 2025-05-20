@@ -31,8 +31,7 @@ bool update(float dt) {
         playerMover.velocity.y = 0;
     }
     // Draw the world.
-    foreach (wall; world.walls) drawRect(wall.toRect(), black.alpha(190));
-    foreach (actor; world.actors) drawRect(actor.toRect(), yellow.alpha(190));
+    drawDebugBoxWorld(world);
     drawDebugText("Move with arrow keys.", Vec2(8));
     return false;
 }
