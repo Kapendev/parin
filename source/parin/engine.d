@@ -6,6 +6,8 @@
 // Version: v0.0.44
 // ---
 
+// TODO: Check sound again. I think pause and resume don't work.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -22,16 +24,16 @@ public import joka.types;
 extern(C)
 __gshared EngineState* engineState;
 
-alias EngineUpdateFunc = bool function(float dt);
+alias EngineUpdateFunc      = bool function(float dt);
 alias EngineReadyFinishFunc = void function();
-alias EngineFlags = ushort;
+alias EngineFlags           = ushort;
 
-enum defaultEngineTexturesCapacity  = 128;
-enum defaultEngineSoundsCapacity    = 128;
-enum defaultEngineFontsCapacity     = 16;
-enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
-enum engineFont = FontId(GenerationalIndex(1)); /// The default engine font. This font should not be freed.
+enum defaultEngineTexturesCapacity     = 128;
+enum defaultEngineSoundsCapacity       = 128;
+enum defaultEngineFontsCapacity        = 16;
+enum defaultEngineEmptyTextureColor    = white;
+enum engineFont                        = FontId(GenerationalIndex(1)); /// The default engine font. This font should not be freed.
 
 enum EngineFlag : EngineFlags {
     none                  = 0x0000,
@@ -62,23 +64,23 @@ enum Alignment : ubyte {
 
 /// Texture filtering modes.
 enum Filter : ubyte {
-    nearest = rl.TEXTURE_FILTER_POINT,   /// Nearest neighbor filtering (blocky).
-    linear = rl.TEXTURE_FILTER_BILINEAR, /// Bilinear filtering (smooth).
+    nearest = rl.TEXTURE_FILTER_POINT,    /// Nearest neighbor filtering (blocky).
+    linear  = rl.TEXTURE_FILTER_BILINEAR, /// Bilinear filtering (smooth).
 }
 
 /// Texture wrapping modes.
 enum Wrap : ubyte {
-    clamp = rl.TEXTURE_WRAP_CLAMP,   /// Clamps texture.
+    clamp  = rl.TEXTURE_WRAP_CLAMP,  /// Clamps texture.
     repeat = rl.TEXTURE_WRAP_REPEAT, /// Repeats texture.
 }
 
 /// Texture blending modes.
 enum Blend : ubyte {
-    alpha = rl.BLEND_CUSTOM_SEPARATE, /// Standard alpha blending.
-    additive = rl.BLEND_ADDITIVE,     /// Adds colors for light effects.
-    multiplied = rl.BLEND_MULTIPLIED, /// Multiplies colors for shadows.
-    add = rl.BLEND_ADD_COLORS,        /// Simply adds colors.
-    sub = rl.BLEND_SUBTRACT_COLORS,   /// Simply subtracts colors.
+    alpha      = rl.BLEND_CUSTOM_SEPARATE, /// Standard alpha blending.
+    additive   = rl.BLEND_ADDITIVE,        /// Adds colors for light effects.
+    multiplied = rl.BLEND_MULTIPLIED,      /// Multiplies colors for shadows.
+    add        = rl.BLEND_ADD_COLORS,      /// Simply adds colors.
+    sub        = rl.BLEND_SUBTRACT_COLORS, /// Simply subtracts colors.
 }
 
 /// A limited set of keyboard keys.
