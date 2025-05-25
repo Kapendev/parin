@@ -163,7 +163,10 @@ struct TileMap {
         softColCount = newHardColCount;
     }
 
-    void resizeSoft(Sz newSoftRowCount, Sz newSoftColCount) {
+    deprecated("Will be replaced with resize.")
+    alias resizeSoft = resize;
+
+    void resize(Sz newSoftRowCount, Sz newSoftColCount) {
         if (newSoftRowCount > hardRowCount || newSoftColCount > hardColCount) {
             assert(0, "Soft count must be smaller than hard count.");
         }
@@ -171,8 +174,30 @@ struct TileMap {
         softColCount = newSoftColCount;
     }
 
-    void fill(short value) {
+    void fillHard(short value) {
         data.fill(value);
+    }
+
+    deprecated("Will be replaced with fill.")
+    alias fillSoft = fill;
+
+    void fill(short value) {
+        foreach (row; 0 .. softRowCount) {
+            foreach (col; 0 .. softColCount) {
+                data[row, col] = value;
+            }
+        }
+    }
+
+    void clearHard() {
+        fillHard(-1);
+    }
+
+    deprecated("Will be replaced with clear.")
+    alias clearSoft = clear;
+
+    void clear() {
+        fill(-1);
     }
 
     void free() {
@@ -274,7 +299,7 @@ struct TileMap {
     }
 
     Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
-        resizeSoft(0, 0);
+        resize(0, 0);
         if (csv.length == 0) return Fault.invalid;
         if (data.isEmpty) data.resizeBlank(defaultGridRowCount, defaultGridColCount);
         tileWidth = newTileWidth;
@@ -289,7 +314,7 @@ struct TileMap {
                 if (softColCount > data.colCount) return Fault.invalid;
                 auto tile = line.skipValue(',').toSigned();
                 if (tile.isNone) {
-                    resizeSoft(0, 0);
+                    resize(0, 0);
                     return Fault.invalid;
                 }
                 data[softRowCount - 1, softColCount - 1] = cast(short) tile.value;

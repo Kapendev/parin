@@ -2728,52 +2728,61 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 }
 
 /// Draws debug engine information at the given position with the provided draw options.
+/// Hold the left mouse button down to... TODO.
+/// Hold the right mouse button down to... TODO.
+/// Press the middle mouse button to... TODO.
 extern(C)
 void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
     static clickPoint = Vec2();
+    static clickOffset = Vec2();
     static a = Vec2();
     static b = Vec2();
     static s = Vec2();
 
+    auto text = "OwO".fmt();
+    if (Mouse.middle.isPressed) s = Vec2();
+    if (Mouse.right.isDown) {
+        if (s.isZero) {
+            if (Mouse.right.isPressed) clickPoint = mouse;
+            a = Vec2(min(clickPoint.x, mouse.x), min(clickPoint.y, mouse.y));
+            b = a;
+        } else {
+            if (Mouse.right.isPressed) clickOffset = a - mouse;
+            a = mouse + clickOffset;
+        }
+    }
     if (Mouse.left.isDown) {
         if (Mouse.left.isPressed) clickPoint = mouse;
         a = Vec2(min(clickPoint.x, mouse.x), min(clickPoint.y, mouse.y));
         b = Vec2(max(clickPoint.x, mouse.x), max(clickPoint.y, mouse.y));
         s = b - a;
-        drawRect(Rect(a, s), white.alpha(130));
-        drawHollowRect(Rect(a, s), 1, gray.alpha(130));
-        drawDebugText(
-            "FPS: {}\nMouse: A({} {}) B({} {}) S({} {})\nAssets: (T{} F{} S{})".fmt(
-                fps,
-                cast(int) a.x,
-                cast(int) a.y,
-                cast(int) b.x,
-                cast(int) b.y,
-                cast(int) s.x,
-                cast(int) s.y,
-                engineState.textures.length,
-                engineState.fonts.length - 1,
-                engineState.sounds.length,
-            ),
-            position,
-            options,
+        text = "FPS: {}\nMouse: A({} {}) B({} {}) S({} {})\nAssets: (T{} F{} S{})".fmt(
+            fps,
+            cast(int) a.x,
+            cast(int) a.y,
+            cast(int) b.x,
+            cast(int) b.y,
+            cast(int) s.x,
+            cast(int) s.y,
+            engineState.textures.length,
+            engineState.fonts.length - 1,
+            engineState.sounds.length,
         );
     } else {
-        drawDebugText(
-            "FPS: {}\nMouse: ({} {})\nAssets: (T{} F{} S{})".fmt(
-                fps,
-                cast(int) mouse.x,
-                cast(int) mouse.y,
-                engineState.textures.length,
-                engineState.fonts.length - 1,
-                engineState.sounds.length,
-            ),
-            position,
-            options,
+        text = "FPS: {}\nMouse: ({} {})\nAssets: (T{} F{} S{})".fmt(
+            fps,
+            cast(int) mouse.x,
+            cast(int) mouse.y,
+            engineState.textures.length,
+            engineState.fonts.length - 1,
+            engineState.sounds.length,
         );
     }
+    drawRect(Rect(a, s), white.alpha(130));
+    drawHollowRect(Rect(a, s), 1, gray.alpha(130));
+    drawDebugText(text, position, options);
     debug {
-        if (Mouse.left.isReleased) {
+        if (Mouse.left.isReleased || Mouse.right.isReleased) {
             printfln(
                 "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})\n",
                 cast(int) a.x,
