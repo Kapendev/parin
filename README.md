@@ -1,56 +1,24 @@
-# 🦆 Parin
+<div align="center">
+<h1>🦆 Parin</h1>
+A delightfully simple and lightweight 2D game engine for the D programming language. Parin is made to make game development fun — it's easy to set up and lets you jump right into making things.
+<br><br>
+<img alt="Game 1" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png" width="320px">
+<img alt="Game 2" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0NC5wbmc=/original/lH162J.png" width="320px">
+<br><br>
+A full list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.
+</div>
 
-A delightfully simple and lightweight 2D game engine for the D programming language.
+## Major Features
 
-```d
-import parin;
-
-// Called once when the game starts.
-void ready() {
-    lockResolution(320, 180);
-}
-
-// Called every frame while the game is running.
-bool update(float dt) {
-    drawDebugText("Hello world!", Vec2(8));
-    return false;
-}
-
-// Called once when the game ends.
-void finish() { }
-
-mixin runGame!(ready, update, finish);
-```
-
-## Batteries Included
-
-Parin is packed with powerful features to get you started quickly:
-
-* Intuitive immediate mode UI
 * Efficient tile map structures
-* Flexible dialogue system with a stack-oriented scripting language
+* Flexible dialogue system
+* Intuitive immediate mode UI
 * Atlas-based animation library
 * Pixel-perfect physics engine
 * Cross-language support for the core library
-* ...and more!
+* Cross-platform (Windows, Linux, macOS, Web)
 
-## Cross-Platform
-
-Parin lets you to build games for multiple platforms with ease:
-
-* PC: Windows, Linux, Mac
-* WebAssembly
-* ...and more in the future!
-
-## Open-Source
-
-Parin is MIT-licensed and free to use forever.
-
-## Projects Made With Parin
-
-A list of projects made with Parin is available in the [projects](https://kapendev.github.io/parin-website/pages/projects.html) page.
-
-## Installation
+## Quick Start
 
 This guide shows how to install Parin and its dependencies using [DUB](https://dub.pm/).
 Create a new folder and run inside the following commands:
@@ -89,13 +57,6 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 
 Start with the [examples](./examples/) folder or the [cheatsheet](https://kapendev.github.io/parin-website/pages/cheatsheet.html) for a quick overview.
 For more details, check the [tour](https://kapendev.github.io/parin-website/pages/tour.html) page.
-
-## Dependencies
-
-Parin relies on the following libraries:
-
-* [Joka](https://github.com/Kapendev/joka): A nogc utility library.
-* [raylib](https://github.com/raysan5/raylib): A easy-to-use graphics library.
 
 ## Ideas
 
