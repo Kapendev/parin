@@ -1,9 +1,9 @@
 <div align="center">
 <h1>🦆 Parin</h1>
-A delightfully simple and lightweight 2D game engine for the D programming language. Parin is made to make game development fun — it's easy to set up and lets you jump right into making things.
+A delightfully simple and lightweight 2D game engine for the D programming language. Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.
 <br><br>
-<img alt="Game 1" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png" width="320px">
-<img alt="Game 2" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0NC5wbmc=/original/lH162J.png" width="320px">
+<img alt="Game 1" width="360px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
+<img alt="Game 2" width="360px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0NC5wbmc=/original/lH162J.png">
 <br><br>
 A full list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.
 </div>
