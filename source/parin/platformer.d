@@ -198,8 +198,16 @@ struct BoxWorld {
         return id;
     }
 
-    Fault parseWalls(IStr csv, int tileWidth, int tileHeight) {
+    void clearWalls() {
         walls.clear();
+    }
+
+    void clearActors() {
+        actors.clear();
+    }
+
+    Fault parseWalls(IStr csv, int tileWidth, int tileHeight) {
+        clearWalls();
         if (csv.length == 0) return Fault.invalid;
         auto rowCount = 0;
         auto colCount = 0;
@@ -304,6 +312,19 @@ struct BoxWorld {
         return wallIdsBuffer[];
     }
 
+    BoxWallId hasWallCollision(IRect box) {
+        auto boxes = getWallCollisions(box, true);
+        return boxes.length ? boxes[0] : 0;
+    }
+
+    BoxWallId hasWallCollision(BoxWallId id) {
+        return hasWallCollision(getWall(id));
+    }
+
+    BoxWallId hasWallCollision(BoxWallId id1, BoxWallId id2) {
+        return getWall(id1).hasIntersection(getWall(id2)) ? id2 : 0;
+    }
+
     BoxActorId[] getActorCollisions(IRect box, bool canStopAtFirst = false) {
         actorIdsBuffer.clear();
         if (grid.length) {
@@ -332,14 +353,17 @@ struct BoxWorld {
         return actorIdsBuffer[];
     }
 
-    BoxWallId hasWallCollision(IRect box) {
-        auto boxes = getWallCollisions(box, true);
-        return boxes.length ? boxes[0] : 0;
-    }
-
     BoxActorId hasActorCollision(IRect box) {
         auto boxes = getActorCollisions(box, true);
         return boxes.length ? boxes[0] : 0;
+    }
+
+    BoxActorId hasActorCollision(BoxActorId id) {
+        return hasActorCollision(getActor(id));
+    }
+
+    BoxActorId hasActorCollision(BoxActorId id1, BoxActorId id2) {
+        return getActor(id1).hasIntersection(getActor(id2)) ? id2 : 0;
     }
 
     BoxWallId moveActorX(BoxActorId id, float amount) {

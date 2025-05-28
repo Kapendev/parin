@@ -1,6 +1,6 @@
 <div align="center">
 <h1>🦆 Parin</h1>
-<p>A delightfully simple 2D game engine for the D programming language. Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.</p>
+<p>A delightfully simple 2D game engine for the <a href="https://dlang.org/">D programming language</a>. Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.</p>
 <p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
 <a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
 <br>
@@ -15,7 +15,7 @@
 * Intuitive immediate mode UI
 * Atlas-based animation library
 * Pixel-perfect physics engine
-* Cross-language support for the core library
+* Cross-language support
 * Cross-platform (Windows, Linux, macOS, Web)
 
 ## Hello World Example
@@ -57,19 +57,19 @@ If everything is set up correctly, a window will appear showing the message "Hel
 
 Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.
 
-Ubuntu:
+**Ubuntu**:
 
 ```cmd
 sudo apt install libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
-Fedora:
+**Fedora**:
 
 ```cmd
 sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel libatomic
 ```
 
-Arch:
+**Arch**:
 
 ```cmd
 sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
@@ -78,7 +78,7 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ## Documentation
 
 Start with the [examples](./examples/) folder or the [cheatsheet](https://kapendev.github.io/parin-website/pages/cheatsheet.html) for a quick overview.
-For more details, check the [tour](https://kapendev.github.io/parin-website/pages/tour.html) page.
+For more details, check the [tour page](https://kapendev.github.io/parin-website/pages/tour.html).
 
 ## Ideas
 
