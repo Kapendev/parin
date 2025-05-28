@@ -1,4 +1,4 @@
-/// This example serves as a classic hello-world example, introducing the UI system of Parin.
+/// This example serves as a classic hello world example, introducing the UI system of Parin.
 
 import parin;
 

@@ -1,4 +1,4 @@
-/// This example serves as a classic hello-world program, introducing the structure of a Parin program.
+/// This example serves as a classic hello world program, introducing the structure of a Parin program.
 
 import parin;
 

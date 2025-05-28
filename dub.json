@@ -3,7 +3,7 @@
 		"Alexandros F. G. Kapretsos"
 	],
 	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
-	"description": "A delightfully simple and lightweight 2D game engine.",
+	"description": "A delightfully simple 2D game engine.",
 	"license": "MIT",
 	"name": "parin",
 	"dependencies": {

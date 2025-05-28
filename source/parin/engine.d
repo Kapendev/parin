@@ -197,12 +197,12 @@ enum Gamepad : ushort {
 
 /// Options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f);             /// The origin point of the drawn object. This value can be used to force a specific origin.
-    Vec2 scale = Vec2(1.0f);              /// The scale of the drawn object.
-    float rotation = 0.0f;                /// The rotation of the drawn object, in degrees.
-    Rgba color = white;                  /// The color of the drawn object, in RGBA.
-    Hook hook = Hook.topLeft;             /// A value representing the origin point of the drawn object when origin is zero.
-    Flip flip = Flip.none;                /// A value representing flipping orientations.
+    Vec2 origin     = Vec2(0.0f);   /// The origin point of the drawn object. This value can be used to force a specific origin.
+    Vec2 scale      = Vec2(1.0f);   /// The scale of the drawn object.
+    float rotation  = 0.0f;         /// The rotation of the drawn object, in degrees.
+    Rgba color      = white;        /// The color of the drawn object, in RGBA.
+    Hook hook       = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
+    Flip flip       = Flip.none;    /// A value representing flipping orientations.
 
     @trusted @nogc nothrow:
 
@@ -234,11 +234,11 @@ struct DrawOptions {
 
 /// Options for configuring extra drawing parameters for text.
 struct TextOptions {
-    float visibilityRatio = 1.0f;         /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
-    int alignmentWidth = 0;               /// The width of the aligned text. It is used as a hint and is not enforced.
-    ushort visibilityCount = 0;           /// Controls the visibility count of the text. This value can be used to force a specific character count.
-    Alignment alignment = Alignment.left; /// A value represeting alignment orientations.
-    bool isRightToLeft = false;           /// Indicates whether the content of the text flows in a right-to-left direction.
+    float visibilityRatio  = 1.0f;           /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
+    int alignmentWidth     = 0;              /// The width of the aligned text. It is used as a hint and is not enforced.
+    ushort visibilityCount = 0;              /// Controls the visibility count of the text. This value can be used to force a specific character count.
+    Alignment alignment    = Alignment.left; /// A value represeting alignment orientations.
+    bool isRightToLeft     = false;          /// Indicates whether the content of the text flows in a right-to-left direction.
 
     @trusted @nogc nothrow:
 
