@@ -3,7 +3,7 @@
 <p>A delightfully simple 2D game engine for the D programming language. Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.</p>
 <hr>
 <p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
-<a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="320px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
+<a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="460px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
 <br>
 <br>
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
