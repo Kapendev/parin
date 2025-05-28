@@ -1,16 +1,9 @@
-<div style="text-align: center;">
+<div align="center">
 <h1>🦆 Parin</h1>
 <p>A delightfully simple 2D game engine for the D programming language. Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.</p>
-<div style="display: flex; justify-content: center; gap: 11px;">
-    <div style="text-align: center;">
-        <p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
-        <a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="320px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
-    </div>
-    <div style="text-align: center;">
-        <p><strong>A Short Metamorphosis</strong><br>A visual novel about looking at an egg.</p>
-        <a href="https://kapendev.itch.io/a-short-metamorphosis"><img alt="Game 2" width="320px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0NC5wbmc=/original/lH162J.png"></a>
-    </div>
-</div>
+<p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
+<a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="320px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
+<br>
 <br>
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
 </div>
