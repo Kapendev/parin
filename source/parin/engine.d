@@ -777,6 +777,11 @@ struct Camera {
         this.isCentered = isCentered;
     }
 
+    pragma(inline, true)
+    ref float x() => position.x; /// The X position of the camera.
+    pragma(inline, true)
+    ref float y() => position.y; /// The Y position of the camera.
+
     /// Returns the current hook associated with the camera.
     Hook hook() {
         return isCentered ? Hook.center : Hook.topLeft;

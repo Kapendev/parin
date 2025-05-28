@@ -18,19 +18,6 @@ enum Wisp2 {
     white = toRgb(0xDAD6D0),
 }
 
-/// This palette includes a set of muted colors designed to evoke a nostalgic atmosphere.
-/// Link: https://lospec.com/palette-list/nostalgi8re
-enum Nostalgi8 {
-    charcoal = toRgb(0x494252),
-    taupe    = toRgb(0x8A7F85),
-    sand     = toRgb(0xC7B68D),
-    clay     = toRgb(0xC79275),
-    plum     = toRgb(0x96607F),
-    dusk     = toRgb(0x55527A),
-    slate    = toRgb(0x6284A1),
-    moss     = toRgb(0x7C9E64),
-}
-
 /// This palette includes the 16-color set used by the PICO-8 fantasy console.
 /// Link: https://lospec.com/palette-list/pico-8
 enum Pico8 {

@@ -30,17 +30,19 @@ struct Tile {
         this.position = position;
     }
 
-    int width() {
-        return widthHeight;
-    }
+    pragma(inline, true)
+    @trusted
+    ref float x() => position.x; /// The X position of the tile.
+    pragma(inline, true)
+    @trusted
+    ref float y() => position.y; /// The Y position of the tile.
 
-    int height() {
-        return widthHeight;
-    }
-
-    Vec2 size() {
-        return Vec2(widthHeight, widthHeight);
-    }
+    pragma(inline, true)
+    int width() => widthHeight;
+    pragma(inline, true)
+    int height() => widthHeight;
+    pragma(inline, true)
+    Vec2 size() => Vec2(widthHeight, widthHeight);
 
     Sz row(Sz colCount) {
         return id / colCount;
@@ -123,6 +125,13 @@ struct TileMap {
     Sz opDollar(Sz dim)() {
         return data.opDollar!dim();
     }
+
+    pragma(inline, true)
+    @trusted
+    ref float x() => position.x; /// The X position of the map.
+    pragma(inline, true)
+    @trusted
+    ref float y() => position.y; /// The Y position of the map.
 
     Sz length() {
         return data.length;

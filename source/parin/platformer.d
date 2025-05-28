@@ -7,6 +7,8 @@
 // ---
 
 // TODO: Update all the doc comments here.
+// TODO: Could have a simpler layer system that is just a number check like `layer1 == later2`.
+// TODO: Should maybe create an actor and resolve the collisions at that position. Right now it only resolves when moving.
 // TODO: Work on BoxMover acceleration. It's not good right now, but works.
 // TODO: Add one-way collision support for moving walls.
 // NOTE: The code works, but it's  super experimental and will change in the future!
@@ -53,7 +55,8 @@ alias BoxUnionIdGroup    = FixedList!(BoxUnionId, 254);
 alias BoxWallProperties  = BoxProperties;
 alias BoxActorProperties = BoxProperties;
 
-enum boxUnionTypeBit  = 1 << 31;
+enum boxNoneId       = 0;
+enum boxUnionTypeBit = 1 << 31;
 enum boxErrorMessage = "Box is invalid or was never assigned.";
 
 enum BoxUnionType : ubyte {
@@ -265,22 +268,22 @@ struct BoxWorld {
     }
 
     ref IRect getWall(BoxWallId id) {
-        if (id == 0) assert(0, boxErrorMessage);
+        if (id == boxNoneId) assert(0, boxErrorMessage);
         return walls[id - 1];
     }
 
     ref BoxWallProperties getWallProperties(BoxWallId id) {
-        if (id == 0) assert(0, boxErrorMessage);
+        if (id == boxNoneId) assert(0, boxErrorMessage);
         return wallsProperties[id - 1];
     }
 
     ref IRect getActor(BoxActorId id) {
-        if (id == 0) assert(0, boxErrorMessage);
+        if (id == boxNoneId) assert(0, boxErrorMessage);
         return actors[id - 1];
     }
 
     ref BoxActorProperties getActorProperties(BoxActorId id) {
-        if (id == 0) assert(0, boxErrorMessage);
+        if (id == boxNoneId) assert(0, boxErrorMessage);
         return actorsProperties[id - 1];
     }
 
@@ -387,13 +390,13 @@ struct BoxWorld {
                         break;
                     case top:
                     case bottom:
-                        wallId = 0;
+                        wallId = boxNoneId;
                         break;
                     case left:
-                        if (wall.position.x < actor.position.x || wall.hasIntersection(*actor)) wallId = 0;
+                        if (wall.position.x < actor.position.x || wall.hasIntersection(*actor)) wallId = boxNoneId;
                         break;
                     case right:
-                        if (wall.position.x > actor.position.x || wall.hasIntersection(*actor)) wallId = 0;
+                        if (wall.position.x > actor.position.x || wall.hasIntersection(*actor)) wallId = boxNoneId;
                         break;
                 }
             }
@@ -463,13 +466,13 @@ struct BoxWorld {
                         break;
                     case left:
                     case right:
-                        wallId = 0;
+                        wallId = boxNoneId;
                         break;
                     case top:
-                        if (wall.position.y < actor.position.y || wall.hasIntersection(*actor)) wallId = 0;
+                        if (wall.position.y < actor.position.y || wall.hasIntersection(*actor)) wallId = boxNoneId;
                         break;
                     case bottom:
-                        if (wall.position.y > actor.position.y || wall.hasIntersection(*actor)) wallId = 0;
+                        if (wall.position.y > actor.position.y || wall.hasIntersection(*actor)) wallId = boxNoneId;
                         break;
                 }
             }

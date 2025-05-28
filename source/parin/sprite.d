@@ -113,6 +113,13 @@ struct Sprite {
         this.position = position;
     }
 
+    pragma(inline, true)
+    @trusted
+    ref float x() => position.x; /// The X position of the sprite.
+    pragma(inline, true)
+    @trusted
+    ref float y() => position.y; /// The Y position of the sprite.
+
     bool hasAnimation() {
         return animation.frameCount != 0;
     }
