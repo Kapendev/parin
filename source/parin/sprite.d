@@ -113,6 +113,10 @@ struct Sprite {
         this.position = position;
     }
 
+    this(int width, int height, ushort atlasLeft, ushort atlasTop, float x, float y) {
+        this(width, height, atlasLeft, atlasTop, Vec2(x, y));
+    }
+
     pragma(inline, true)
     @trusted
     ref float x() => position.x; /// The X position of the sprite.

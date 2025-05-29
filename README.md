@@ -29,14 +29,16 @@ void ready() {
 }
 
 // Called every frame while the game is running.
+// If true is returned, then the game will stop running.
 bool update(float dt) {
     drawDebugText("Hello world!", Vec2(8));
     return false;
 }
 
 // Called once when the game ends.
-void finish() { }
+void finish() {}
 
+// Creates a main function that calls the given functions.
 mixin runGame!(ready, update, finish);
 ```
 

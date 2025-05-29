@@ -2,8 +2,6 @@
 
 import parin;
 
-void ready() { }
-
 bool update(float dt) {
     prepareUi();
     setUiFocus(0);
@@ -66,6 +64,4 @@ bool update(float dt) {
     return false;
 }
 
-void finish() { }
-
-mixin runGame!(ready, update, finish, 306, 450);
+mixin runGame!(null, update, null, 306, 450);

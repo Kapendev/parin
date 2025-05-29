@@ -15,7 +15,7 @@ bool update(float dt) {
 }
 
 // Called once when the game ends.
-void finish() { }
+void finish() {}
 
 // Creates a main function that calls the given functions.
 mixin runGame!(ready, update, finish);

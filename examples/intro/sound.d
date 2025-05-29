@@ -24,6 +24,4 @@ bool update(float dt) {
     return false;
 }
 
-void finish() { }
-
-mixin runGame!(ready, update, finish);
+mixin runGame!(ready, update, null);

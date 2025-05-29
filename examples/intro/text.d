@@ -3,6 +3,7 @@
 import parin;
 
 auto text = "Hello!\nI am you and you are me.\nSomething deep to think about.";
+auto textPosition = Vec2(8);
 
 void ready() {
     lockResolution(320, 180);
@@ -17,11 +18,9 @@ bool update(float dt) {
     extra.visibilityRatio = fmod(elapsedTime * 0.3, 1.5);
     extra.isRightToLeft = true;
     // Draw the text with the engine font.
-    drawRect(Rect(Vec2(8), measureTextSize(engineFont, text)), black);
-    drawText(engineFont, text, Vec2(8), options, extra);
+    drawRect(Rect(textPosition, measureTextSize(engineFont, text)), black);
+    drawText(engineFont, text, textPosition, options, extra);
     return false;
 }
 
-void finish() { }
-
-mixin runGame!(ready, update, finish);
+mixin runGame!(ready, update, null);

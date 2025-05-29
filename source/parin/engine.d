@@ -771,10 +771,14 @@ struct Camera {
     @trusted @nogc nothrow:
 
     /// Initializes the camera with the given position and optional centering.
-    this(float x, float y, bool isCentered = false) {
-        this.position.x = x;
-        this.position.y = y;
+    this(Vec2 position, bool isCentered = false) {
+        this.position = position;
         this.isCentered = isCentered;
+    }
+
+    /// Initializes the camera with the given position and optional centering.
+    this(float x, float y, bool isCentered = false) {
+        this(Vec2(x, y), isCentered);
     }
 
     pragma(inline, true)
@@ -2806,22 +2810,23 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
-            alias f = extern(C) bool function(float dt);
+            alias F = extern(C) bool function(float dt);
             openWindowC(width, height, argc, argv, title);
-            readyFunc();
-            updateWindow(cast(f) &updateFunc);
-            finishFunc();
+            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(F) &updateFunc);
+            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
             closeWindow();
             return 0;
         }
     } else {
-        void main(immutable(char)[][] args) {
-            alias f = extern(C) bool function(float dt);
+        int main(immutable(char)[][] args) {
+            alias F = extern(C) bool function(float dt);
             openWindow(width, height, args, title);
-            readyFunc();
-            updateWindow(cast(f) &updateFunc);
-            finishFunc();
+            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(F) &updateFunc);
+            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
             closeWindow();
+            return 0;
         }
     }
 }

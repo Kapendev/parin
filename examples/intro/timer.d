@@ -4,7 +4,9 @@ import parin;
 
 auto text = "Counter: {}\nTimer Duration: {}\nTimer (A-B): {}\nTimer (B-A): {}";
 auto counter = 0;
-auto timer = Timer(5, true);
+auto timer = Timer(5, true); // Create a timer that repeats every 5 seconds.
+
+// TODO: Try to write timer with elapsedTime and maybe also remove the need for update.
 
 void ready() {
     lockResolution(320, 180);
@@ -20,6 +22,4 @@ bool update(float dt) {
     return false;
 }
 
-void finish() { }
-
-mixin runGame!(ready, update, finish);
+mixin runGame!(ready, update, null);

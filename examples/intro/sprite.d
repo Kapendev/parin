@@ -29,9 +29,10 @@ bool update(float dt) {
     else if (mouseDirection.x < 0) spriteFlip = Flip.none;
     // Check if 1, 2, or 3 is pressed and change the character.
     foreach (i, digit; digitChars[1 .. 4]) {
+        auto row = cast(ubyte) i;
         if (digit.isPressed) {
-            idleAnimation.frameRow = cast(ubyte) i;
-            walkAnimation.frameRow = cast(ubyte) i;
+            idleAnimation.frameRow = row;
+            walkAnimation.frameRow = row;
         }
     }
     // Draw the sprite.
@@ -43,6 +44,4 @@ bool update(float dt) {
     return false;
 }
 
-void finish() { }
-
-mixin runGame!(ready, update, finish);
+mixin runGame!(ready, update, null);

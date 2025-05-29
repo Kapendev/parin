@@ -30,6 +30,10 @@ struct Tile {
         this.position = position;
     }
 
+    this(int widthHeight, short id, float x, float y) {
+        this(widthHeight, id, Vec2(x, y));
+    }
+
     pragma(inline, true)
     @trusted
     ref float x() => position.x; /// The X position of the tile.
