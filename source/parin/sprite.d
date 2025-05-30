@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.44
+// Version: v0.0.45
 // ---
 
 // TODO: Think about gaps in an atlas texture.
