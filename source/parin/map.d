@@ -71,7 +71,6 @@ struct Tile {
     }
 }
 
-// TODO: Look at it again now with the Grid changes. It works, I know that :)
 // NOTE: Things like changing the grid row count might be interesting.
 struct TileMap {
     Grid!short data;

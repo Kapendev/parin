@@ -182,7 +182,7 @@ struct BoxWorld {
         wallsProperties.append(BoxProperties());
         wallsProperties[$ - 1].side = side;
         auto id = cast(BoxId) walls.length;
-        if (grid.length) {
+        if (grid.length != 0) {
             auto point = getGridPoint(box);
             if (isGridPointValid(point)) grid[point.y, point.x].append(id & ~boxUnionTypeBit);
         }
@@ -194,7 +194,7 @@ struct BoxWorld {
         actorsProperties.append(BoxProperties());
         actorsProperties[$ - 1].side = side;
         auto id = cast(BoxId) actors.length;
-        if (grid.length) {
+        if (grid.length != 0) {
             auto point = getGridPoint(box);
             if (isGridPointValid(point)) grid[point.y, point.x].append(id | boxUnionTypeBit);
         }
@@ -202,11 +202,15 @@ struct BoxWorld {
     }
 
     void clearWalls() {
+        if (grid.length != 0) return;
         walls.clear();
+        wallsProperties.clear();
     }
 
     void clearActors() {
+        if (grid.length != 0) return;
         actors.clear();
+        actorsProperties.clear();
     }
 
     Fault parseWalls(IStr csv, int tileWidth, int tileHeight) {

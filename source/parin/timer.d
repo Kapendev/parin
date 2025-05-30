@@ -11,73 +11,94 @@
 /// The `timer` module provides a simple and extensible timer.
 module parin.timer;
 
-import joka.math;
+import parin.engine;
 
 @safe @nogc nothrow:
 
 struct Timer {
-    float time = 1.0f;
     float duration = 1.0f;
-    float prevTime = 1.0f;
-    bool isPaused;
+    float pausedTime = 0.0f;
+    float startTime = 0.0f;
+    float startTimeElapsedTimeBuffer = 0.0f;
     bool canRepeat;
 
     @safe @nogc nothrow:
 
     this(float duration, bool canRepeat = false) {
-        this.time = duration;
         this.duration = duration;
-        this.prevTime = duration;
         this.canRepeat = canRepeat;
     }
 
-    bool isRunning() {
-        return !isPaused && time != duration && prevTime != duration;
+    bool isPaused() {
+        time(); // We need to update the state before checking.
+        return pausedTime != 0.0f;
     }
 
-    bool hasFirstTime() {
-        return time == 0.0f;
-    }
-
-    bool hasLastTime() {
-        return time == duration;
+    bool isActive() {
+        time(); // We need to update the state before checking.
+        return startTime != 0.0f;
     }
 
     bool hasStarted() {
-        return !isPaused && time != duration && prevTime != time && prevTime == 0.0f;
+        time(); // We need to update the state before checking.
+        return startTime.fequals(elapsedTime);
     }
 
     bool hasStopped() {
-        return !isPaused && time == duration && prevTime != duration;
+        time(); // We need to update the state before checking.
+        return startTimeElapsedTimeBuffer.fequals(elapsedTime);
     }
 
     void start(float duration = -1.0f) {
         if (duration >= 0.0f) this.duration = duration;
-        time = 0.0f;
-        prevTime = 0.0f;
+        startTime = elapsedTime;
+        startTimeElapsedTimeBuffer = 0.0f;
     }
 
     void stop() {
-        time = duration;
-        prevTime = duration - 0.1f;
+        startTime = 0.0f;
+        startTimeElapsedTimeBuffer = elapsedTime;
+    }
+
+    void toggleIsActive() {
+        if (isActive) stop();
+        else start();
     }
 
     void pause() {
-        isPaused = true;
+        pausedTime = time;
     }
 
     void resume() {
-        isPaused = false;
+        startTime = elapsedTime - pausedTime;
+        pausedTime = 0.0f;
     }
 
     void toggleIsPaused() {
-        isPaused = !isPaused;
+        if (isPaused) resume();
+        else pause();
     }
 
-    void update(float dt) {
-        if (isPaused || (time == duration && prevTime == duration)) return;
-        if (canRepeat && hasStopped) start();
-        prevTime = time;
-        time = min(time + dt, duration);
+    float time() {
+        if (startTime == 0.0f) return 0.0f;
+        if (pausedTime != 0.0f) return pausedTime;
+        auto result = max(elapsedTime - startTime, 0.0f);
+        if (result >= duration) {
+            stop();
+            if (canRepeat) startTime = elapsedTime;
+        }
+        result = min(result, duration);
+        return result;
     }
+
+    float timeLeft() {
+        return duration - time;
+    }
+
+    deprecated("Will be replaced with isActive.")
+    alias isRunning = isActive;
+    deprecated("Will be removed because it does nothing now.")
+    void update(float dt) {};
+    deprecated("Will be removed because it's not really possible to set the timer now. Passing `0.0f` will stop the timer.")
+    void time(float newTime) { if (newTime == 0.0f) stop(); }
 }

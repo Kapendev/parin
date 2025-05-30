@@ -9,13 +9,17 @@ enum gitFile     = ".gitignore";
 enum dubFile     = "dub.json";
 enum dubLockFile = "dub.selections.json";
 
-enum readmeFileContent = `
-# Title
+enum readmeFileContent = "
+# Super Cool Title
 
 This game was created with [Parin](https://github.com/Kapendev/parin).
+To compile and play, run:
 
-To compile the game, run: ...
-`[1 .. $];
+```cmd
+dub run parin:setup -- -y
+dub run
+```
+"[1 .. $];
 
 enum gitFileContent = `
 .dub
@@ -38,17 +42,22 @@ test*
 enum appFileContent = `
 import parin;
 
+// Called once when the game starts.
 void ready() {
     lockResolution(320, 180);
 }
 
+// Called every frame while the game is running.
+// If true is returned, then the game will stop running.
 bool update(float dt) {
     drawDebugText("Hello world!", Vec2(8));
     return false;
 }
 
-void finish() { }
+// Called once when the game ends.
+void finish() {}
 
+// Creates a main function that calls the given functions.
 mixin runGame!(ready, update, finish);
 `[1 .. $];
 

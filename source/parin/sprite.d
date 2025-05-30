@@ -7,6 +7,7 @@
 // ---
 
 // TODO: Think about gaps in an atlas texture.
+// TODO: Think about giving sprite a API that looks like the Parin timer.
 // TODO: Update all the doc comments here.
 
 /// The `sprite` module provides a simple and flexible sprite.
@@ -129,11 +130,11 @@ struct Sprite {
     }
 
     bool hasFirstFrame() {
-        return frame == 0;
+        return hasAnimation ? frame == 0 : false;
     }
 
     bool hasLastFrame() {
-        return hasAnimation ? (frame == animation.frameCount - 1) : true;
+        return hasAnimation ? frame == animation.frameCount - 1 : false;
     }
 
     bool hasFirstFrameProgress() {
@@ -141,7 +142,7 @@ struct Sprite {
     }
 
     bool hasLastFrameProgress() {
-        return hasAnimation ? (frameProgress.fequals(animation.frameCount - epsilon)) : true;
+        return hasAnimation ? frameProgress.fequals(animation.frameCount - epsilon) : false;
     }
 
     Vec2 size() {
@@ -157,7 +158,7 @@ struct Sprite {
     }
 
     void play(SpriteAnimation newAnimation, bool canKeepProgress = false) {
-        if (isPaused || animation == newAnimation) return;
+        if (animation == newAnimation) return;
         if (!canKeepProgress) reset();
         animation = newAnimation;
         isPlaying = true;

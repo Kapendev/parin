@@ -7,6 +7,7 @@
 // ---
 
 // TODO: Check sound again. I think pause and resume don't work.
+// TODO: Think about giving sound a API that looks like the Parin timer.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -2258,6 +2259,7 @@ void stopSound(SoundId sound) {
 }
 
 /// Pauses playback of the specified sound.
+/// NOTE: It's broken right now.
 extern(C)
 void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty || !sound.isPaused) return;
@@ -2270,12 +2272,14 @@ void pauseSoundX(ref Sound sound) {
 }
 
 /// Pauses playback of the specified sound.
+/// NOTE: It's broken right now.
 extern(C)
 void pauseSound(SoundId sound) {
     if (sound.isValid) pauseSoundX(sound.get());
 }
 
 /// Resumes playback of the specified paused sound.
+/// NOTE: It's broken right now.
 extern(C)
 void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused) return;
@@ -2288,6 +2292,7 @@ void resumeSoundX(ref Sound sound) {
 }
 
 /// Resumes playback of the specified paused sound.
+/// NOTE: It's broken right now.
 extern(C)
 void resumeSound(SoundId sound) {
     if (sound.isValid) resumeSoundX(sound.get());
@@ -2737,9 +2742,9 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 }
 
 /// Draws debug engine information at the given position with the provided draw options.
-/// Hold the left mouse button down to... TODO.
-/// Hold the right mouse button down to... TODO.
-/// Press the middle mouse button to... TODO.
+/// Hold the left mouse button to create and resize a debug area.
+/// Hold the right mouse button to move the debug area.
+/// Press the middle mouse button to clear the debug area.
 extern(C)
 void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
     static clickPoint = Vec2();
