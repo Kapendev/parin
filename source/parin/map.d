@@ -369,7 +369,7 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
     drawTileX(texture.getOr(), tile, options);
 }
 
-void drawTileMapX(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     if (map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
@@ -411,6 +411,6 @@ void drawTileMapX(Texture texture, TileMap map, Camera camera, DrawOptions optio
     }
 }
 
-void drawTileMap(TextureId texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMap(TextureId texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     drawTileMapX(texture.getOr(), map, camera, options);
 }

@@ -34,6 +34,8 @@ enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
 enum defaultEngineEmptyTextureColor    = white;
+enum defaultEngineDebugColor1          = black.alpha(140);
+enum defaultEngineDebugColor2          = white.alpha(140);
 enum engineFont                        = FontId(GenerationalIndex(1)); /// The default engine font. This font should not be freed.
 
 enum EngineFlag : EngineFlags {
@@ -1539,7 +1541,7 @@ bool updateWindowLoop() {
 
 /// Use by the `updateWindow` function.
 /// You should avoid calling this function manually.
-version(WebAssembly) {
+version (WebAssembly) {
     extern(C)
     void updateWindowLoopWeb() {
         if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
@@ -1554,7 +1556,7 @@ void updateWindow(bool function(float dt) updateFunc) {
     // Maybe bad idea, but makes life of no-attribute people easier.
     engineState.updateFunc = cast(EngineUpdateFunc) updateFunc;
     engineState.flags |= EngineFlag.isUpdating;
-    version(WebAssembly) {
+    version (WebAssembly) {
         rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
     } else {
         while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
@@ -1654,7 +1656,7 @@ bool isFullscreen() {
 // NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
 extern(C)
 void setIsFullscreen(bool value) {
-    version(WebAssembly) {
+    version (WebAssembly) {
     } else {
         if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
         engineState.flags = value
@@ -2746,7 +2748,7 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Hold the right mouse button to move the debug area.
 /// Press the middle mouse button to clear the debug area.
 extern(C)
-void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
+void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     static clickPoint = Vec2();
     static clickOffset = Vec2();
     static a = Vec2();
@@ -2754,6 +2756,7 @@ void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
     static s = Vec2();
 
     auto text = "OwO".fmt();
+    auto mouse = mouse.toWorldPoint(camera);
     if (Mouse.middle.isPressed) s = Vec2();
     if (Mouse.right.isDown) {
         if (s.isZero) {
@@ -2770,32 +2773,50 @@ void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
         a = Vec2(min(clickPoint.x, mouse.x), min(clickPoint.y, mouse.y));
         b = Vec2(max(clickPoint.x, mouse.x), max(clickPoint.y, mouse.y));
         s = b - a;
-        text = "FPS: {}\nMouse: A({} {}) B({} {}) S({} {})\nAssets: (T{} F{} S{})".fmt(
+        text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
+            engineState.textures.length,
+            engineState.fonts.length - 1,
+            engineState.sounds.length,
             cast(int) a.x,
             cast(int) a.y,
             cast(int) b.x,
             cast(int) b.y,
             cast(int) s.x,
             cast(int) s.y,
-            engineState.textures.length,
-            engineState.fonts.length - 1,
-            engineState.sounds.length,
         );
     } else {
-        text = "FPS: {}\nMouse: ({} {})\nAssets: (T{} F{} S{})".fmt(
-            fps,
-            cast(int) mouse.x,
-            cast(int) mouse.y,
-            engineState.textures.length,
-            engineState.fonts.length - 1,
-            engineState.sounds.length,
-        );
+        if (s.isZero) {
+            text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
+                fps,
+                engineState.textures.length,
+                engineState.fonts.length - 1,
+                engineState.sounds.length,
+                cast(int) mouse.x,
+                cast(int) mouse.y,
+            );
+        } else {
+            text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
+                fps,
+                engineState.textures.length,
+                engineState.fonts.length - 1,
+                engineState.sounds.length,
+                cast(int) mouse.x,
+                cast(int) mouse.y,
+                cast(int) a.x,
+                cast(int) a.y,
+                cast(int) b.x,
+                cast(int) b.y,
+                cast(int) s.x,
+                cast(int) s.y,
+            );
+        }
     }
-    drawRect(Rect(a, s), white.alpha(130));
-    drawHollowRect(Rect(a, s), 1, gray.alpha(130));
-    drawDebugText(text, position, options);
-    debug {
+    drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor2);
+    drawHollowRect(Rect(a.toScreenPoint(camera), s), 1, defaultEngineDebugColor1);
+    drawDebugText(text, screenPoint, options);
+    version (WebAssembly) {
+    } else {
         if (Mouse.left.isReleased || Mouse.right.isReleased) {
             printfln(
                 "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})\n",
@@ -2805,6 +2826,34 @@ void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions()) {
                 cast(int) b.y,
                 cast(int) s.x,
                 cast(int) s.y,
+            );
+        }
+    }
+}
+
+/// Draws debug tile information at the given position with the provided draw options.
+void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
+    auto mouse = mouse.toWorldPoint(camera);
+    auto gridPoint = Vec2(mouse.x / tileWidth, mouse.y / tileHeight).floor();
+    auto tile = Rect(gridPoint.x * tileWidth, gridPoint.y * tileHeight, tileWidth, tileHeight);
+    auto text = "Grid: ({} {})\nWorld: ({} {})".fmt(
+        cast(int) gridPoint.x,
+        cast(int) gridPoint.y,
+        cast(int) tile.x,
+        cast(int) tile.y,
+    );
+    drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor2);
+    drawHollowRect(Rect(tile.position.toScreenPoint(camera), tile.size), 1, defaultEngineDebugColor1);
+    drawDebugText(text, screenPoint, options);
+    version (WebAssembly) {
+    } else {
+        if (Mouse.left.isReleased || Mouse.right.isReleased) {
+            printfln(
+                "Debug Tile Info\n Grid: Vec2({}, {})\n World: Vec2({}, {})\n",
+                cast(int) gridPoint.x,
+                cast(int) gridPoint.y,
+                cast(int) tile.x,
+                cast(int) tile.y,
             );
         }
     }
