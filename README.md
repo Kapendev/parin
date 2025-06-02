@@ -86,3 +86,27 @@ For more details, check the [tour page](https://kapendev.github.io/parin-website
 
 If you notice anything missing or would like to contribute, feel free to create an [issue](https://github.com/Kapendev/parin/issues)!
 Most ideas are welcome, except ECS.
+
+## Frequently Asked Questions
+
+### How can I load an asset outside of the assets folder?
+
+By default, assets are loaded from the assets folder.
+To load from a different location, call `setIsUsingAssetsPath(false)` to disable this behavior.
+
+### How can I hot reload assets?
+
+Asset hot reloading is not supported out of the box.
+The [arsd](https://github.com/adamdruppe/arsd) libraries may help, but with Parin alone, you can manually reload assets like this:
+
+```d
+bool update(float dt) {
+    // Reload the texture whenever the 0 key is pressed.
+    if ('0'.isPressed) {
+        atlas.free();
+        atlas = loadTexture("parin_atlas.png");
+    }
+    drawTexture(atlas, Vec2(8));
+    return false;
+}
+```
