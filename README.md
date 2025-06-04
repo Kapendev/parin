@@ -89,6 +89,21 @@ Most ideas are welcome, except ECS.
 
 ## Frequently Asked Questions
 
+### Is Parin a raylib wrapper?
+
+No. Raylib is just the current backend.
+A custom backend may be added in the future, but it's not a priority right now.
+
+### What are Parin's priorities?
+
+Ease of use and helpful tooling are the main focus.
+The goal is a smooth experience, similar to Godot or Unity.
+
+### Are the Parin assets free to use?
+
+Yes. The assets are free to use for any purpose, even commercially.
+Be sure to check the associated [README](assets/README.md) for any licensing notes.
+
 ### How can I load an asset outside of the assets folder?
 
 By default, assets are loaded from the assets folder.
