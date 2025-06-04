@@ -10,7 +10,7 @@ enum header = `
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.45
+// Version: v0.0.46
 // ---
 `[1 .. $ - 1];
 
