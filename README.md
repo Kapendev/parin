@@ -1,6 +1,8 @@
+# 🦆 Parin
+
+A delightfully simple 2D game engine for the [D programming language](https://dlang.org/). Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.
+
 <div align="center">
-<h1>🦆 Parin</h1>
-<p>A delightfully simple 2D game engine for the <a href="https://dlang.org/">D programming language</a>. Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.</p>
 <p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
 <a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
 <br>

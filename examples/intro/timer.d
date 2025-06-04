@@ -4,7 +4,7 @@ import parin;
 
 auto text = "Press SPACE to toggle the active state.\nPress ESC to toggle the pause state.\nCounter: {}\nTimer Duration: {}\nTimer (A-B): {}\nTimer (B-A): {}";
 auto counter = 0;
-auto timer = Timer(5, false); // Create a timer that repeats every 5 seconds.
+auto timer = Timer(4, true); // Create a timer that repeats every 4 seconds.
 
 void ready() {
     lockResolution(320, 180);

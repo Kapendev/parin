@@ -5,7 +5,8 @@
 # A comment.
 * label
 | Hello world!
-| This is a text line and the next is an expression line.
+| This is a text line.
+| The next is an expression line.
 $ end JUMP
 
 | You can't see me...

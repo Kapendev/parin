@@ -6,7 +6,6 @@
 // Version: v0.0.45
 // ---
 
-// TODO: Think about gaps in an atlas texture.
 // TODO: Update all the doc comments here.
 
 /// The `map` module provides a simple and fast tile map.
@@ -34,12 +33,12 @@ struct Tile {
         this(widthHeight, id, Vec2(x, y));
     }
 
+    /// The X position of the tile.
     pragma(inline, true)
-    @trusted
-    ref float x() => position.x; /// The X position of the tile.
+    @trusted ref float x() => position.x;
+    /// The Y position of the tile.
     pragma(inline, true)
-    @trusted
-    ref float y() => position.y; /// The Y position of the tile.
+    @trusted ref float y() => position.y;
 
     pragma(inline, true)
     int width() => widthHeight;

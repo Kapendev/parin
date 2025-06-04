@@ -6,10 +6,6 @@
 // Version: v0.0.45
 // ---
 
-// TODO: Think about gaps in an atlas texture.
-// TODO: Think about giving sprite a API that looks like the Parin timer.
-// TODO: Update all the doc comments here.
-
 /// The `sprite` module provides a simple and flexible sprite.
 module parin.sprite;
 
@@ -93,19 +89,23 @@ struct SpriteAnimationGroup16 {
     }
 }
 
+/// A sprite with support for animation, positioning, and movement.
 struct Sprite {
-    int width;
-    int height;
-    ushort atlasLeft;
-    ushort atlasTop;
-    float frameProgress = 0.0f;
-    SpriteAnimation animation;
-    Vec2 position;
-    bool isPaused;
-    bool isPlaying;
+    int width;                  /// The width of the sprite.
+    int height;                 /// The height of the sprite.
+    ushort atlasLeft;           /// X offset in the texture atlas.
+    ushort atlasTop;            /// Y offset in the texture atlas.
+    float frameProgress = 0.0f; /// The current animation progress. The value is between 0 and animation.frameCount (exclusive).
+    SpriteAnimation animation;  /// The current animation.
+    Vec2 position;              /// The position of the sprite.
+    bool isPaused;              /// The pause state of the sprite.
 
     @safe @nogc nothrow:
 
+    deprecated("Will be replaced with isActive.")
+    alias isRunning = isActive;
+
+    /// Initializes the sprite with the specified size, atlas position, and optional world position.
     this(int width, int height, ushort atlasLeft, ushort atlasTop, Vec2 position = Vec2()) {
         this.width = width;
         this.height = height;
@@ -114,72 +114,95 @@ struct Sprite {
         this.position = position;
     }
 
+    /// Initializes the sprite with the specified size, atlas position, and world position.
     this(int width, int height, ushort atlasLeft, ushort atlasTop, float x, float y) {
         this(width, height, atlasLeft, atlasTop, Vec2(x, y));
     }
 
+    /// The X position of the sprite.
     pragma(inline, true)
-    @trusted
-    ref float x() => position.x; /// The X position of the sprite.
+    @trusted ref float x() => position.x;
+    /// The Y position of the sprite.
     pragma(inline, true)
-    @trusted
-    ref float y() => position.y; /// The Y position of the sprite.
+    @trusted ref float y() => position.y;
 
-    bool hasAnimation() {
+    /// Returns true if the sprite is currently active (running).
+    bool isActive() {
         return animation.frameCount != 0;
     }
 
+    /// Returns true if the sprite has an animation assigned.
+    bool hasAnimation() {
+        return isActive;
+    }
+
+    /// Returns true if the sprite is on the first animation frame.
     bool hasFirstFrame() {
         return hasAnimation ? frame == 0 : false;
     }
 
+    /// Returns true if the sprite is on the last animation frame.
     bool hasLastFrame() {
         return hasAnimation ? frame == animation.frameCount - 1 : false;
     }
 
+    /// Returns true if the sprite is on the first animation frame progress.
     bool hasFirstFrameProgress() {
-        return frameProgress == 0.0f;
+        return hasAnimation ? frameProgress.fequals(0.0f) : false;
     }
 
+    /// Returns true if the sprite is on the last animation frame progress.
     bool hasLastFrameProgress() {
         return hasAnimation ? frameProgress.fequals(animation.frameCount - epsilon) : false;
     }
 
+    /// Returns the size of the sprite.
     Vec2 size() {
         return Vec2(width, height);
     }
 
+    /// Returns the current animation frame of the sprite.
     int frame() {
         return cast(int) frameProgress;
     }
 
+    /// Resets the animation frame of the sprite.
     void reset(int resetFrame = 0) {
         frameProgress = resetFrame;
     }
 
+    /// Starts playing a new animation, optionally preserving current frame progress.
     void play(SpriteAnimation newAnimation, bool canKeepProgress = false) {
         if (animation == newAnimation) return;
-        if (!canKeepProgress) reset();
+        if (!canKeepProgress) frameProgress = 0.0f;
         animation = newAnimation;
-        isPlaying = true;
+        isPaused = false;
     }
 
+    /// Stops the current animation of the sprite.
     void stop() {
-        if (isPaused) return;
         play(SpriteAnimation());
-        isPlaying = false;
     }
 
+    /// Pauses the current animation of the sprite.
     void pause() {
         isPaused = true;
     }
 
+    /// Resumes the current animation of the sprite.
     void resume() {
         isPaused = false;
     }
 
+    /// Toggles the paused state of the sprite.
+    void toggleIsPaused() {
+        if (isPaused) resume();
+        else pause();
+    }
+
+    /// Updates the state of the sprite.
     void update(float dt) {
-        if (!hasAnimation || isPaused || !isPlaying) return;
+        if (!isActive || isPaused) return;
         if (animation.canRepeat) frameProgress = fmod(frameProgress + animation.frameSpeed * dt, animation.frameCount);
         else frameProgress = min(frameProgress + animation.frameSpeed * dt, animation.frameCount - epsilon);
     }

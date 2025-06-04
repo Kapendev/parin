@@ -9,7 +9,8 @@ auto script = "
     # A comment.
     * label
     | Hello world!
-    | This is a text line and the next is a menu line.
+    | This is a text line.
+    | The next is a menu line.
     ^ Pick one. ^ Pick two. ^ Skip.
     $ MENU SKIP
 
