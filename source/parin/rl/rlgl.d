@@ -1083,7 +1083,6 @@ void rlLoadDrawQuad (); // Load and draw a quad
 // Register supported extensions flags
 // OpenGL ES 3.0 extensions supported by default (or it should be)
 
-// TODO: Check for additional OpenGL ES 3.0 supported extensions:
 //RLGL.ExtSupported.texCompDXT = true;
 //RLGL.ExtSupported.texCompETC1 = true;
 //RLGL.ExtSupported.texCompETC2 = true;
@@ -1093,7 +1092,6 @@ void rlLoadDrawQuad (); // Load and draw a quad
 //RLGL.ExtSupported.computeShader = true;
 //RLGL.ExtSupported.ssbo = true;
 
-// TODO: Support GLAD loader for OpenGL ES 3.0
 
 // Get supported extensions list
 
@@ -1256,7 +1254,6 @@ void rlLoadDrawQuad (); // Load and draw a quad
 // Update batch vertex buffers
 //------------------------------------------------------------------------------------------------------------
 // NOTE: If there is not vertex data, buffers doesn't need to be updated (vertexCount > 0)
-// TODO: If no data changed on the CPU arrays --> No need to re-update GPU arrays (use a change detector flag?)
 
 // Activate elements VAO
 
@@ -1541,7 +1538,6 @@ void rlLoadDrawQuad (); // Load and draw a quad
 
 // Bind framebuffer to query depth texture type
 
-// TODO: Review warning retrieving object name in WebGL
 // WARNING: WebGL: INVALID_ENUM: getFramebufferAttachmentParameter: invalid parameter name
 // https://registry.khronos.org/webgl/specs/latest/1.0/
 
@@ -1744,7 +1740,6 @@ else
 
 // Get internal accumulated transform matrix
 
-// TODO: Consider possible transform matrices in the RLGL.State.stack
 // Is this the right order? or should we start with the first stored matrix instead of the last one?
 //Matrix matStackTransform = rlMatrixIdentity();
 //for (int i = RLGL.State.stackCounter; i > 0; i--) matStackTransform = rlMatrixMultiply(RLGL.State.stack[i], matStackTransform);

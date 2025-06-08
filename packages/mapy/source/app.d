@@ -135,7 +135,7 @@ struct MouseInfo {
 
     void update(Vec2 mouse, AppCamera camera, Sz rowCount, Sz colCount, Vec2 tileSize) {
         worldPoint = mouse.toWorldPoint(camera.data);
-        gridPoint = floor(worldPoint / tileSize).toIVec();
+        gridPoint = (worldPoint / tileSize).floor().toIVec();
         gridIndex = colCount * gridPoint.y + gridPoint.x;
         worldGridPoint = gridPoint.toVec() * tileSize;
         isInGrid = gridPoint.y < colCount && gridPoint.x < rowCount;
@@ -185,7 +185,7 @@ void ready() {
     auto value = loadTempText(appState.mapFile);
     if (value.isSome) {
         appState.map.parse(value.get());
-        appState.map.resizeSoft(appState.map.hardColCount, appState.map.hardRowCount);
+        appState.map.resize(appState.map.hardColCount, appState.map.hardRowCount);
     } else {
         appState.mapFile = "";
     }
@@ -321,9 +321,6 @@ bool update(float dt) {
     tempArea.subLeft(6);
     drawRect(tempArea.subLeft(48 - 16), panelColor2); // Set
     tempArea.subLeft(16);
-    auto mapButtonArea = tempArea.subLeft(200);
-    drawRect(mapButtonArea, panelColor2); // Map 1
-    drawText(appState.mapFile.length ? appState.mapFile.pathBaseNameNoExt : "Empty", mapButtonArea.centerPoint.floor(), textOptions);
 
     tempArea = bottomPanelArea;
     tempArea.subLeftRight(16);

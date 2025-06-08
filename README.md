@@ -1,6 +1,7 @@
 # 🦆 Parin
 
-A delightfully simple 2D game engine for the [D programming language](https://dlang.org/). Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.
+A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
+Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.
 
 <div align="center">
 <p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
@@ -94,36 +95,36 @@ Most ideas are welcome, except ECS.
 ### Is Parin a raylib wrapper?
 
 No. Raylib is just the current backend.
-A custom backend may be added in the future, but it's not a priority right now.
+A custom backend may be added in the future, but it's not a priority.
 
 ### What are Parin's priorities?
 
-Ease of use and helpful tooling are the main focus.
 The goal is a smooth experience, similar to Godot or Unity.
 
-### Are the Parin assets free to use?
+### Where does `Vec2` come from?
 
-Yes. The assets are free to use for any purpose, even commercially.
-Be sure to check the associated [README](assets/README.md) for any licensing notes.
+`Vec2` is a type provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
 
 ### How can I load an asset outside of the assets folder?
 
-By default, assets are loaded from the assets folder.
-To load from a different location, call `setIsUsingAssetsPath(false)` to disable this behavior.
+Call `setIsUsingAssetsPath(false)` to disable the default behavior.
 
 ### How can I hot reload assets?
 
 Asset hot reloading is not supported out of the box.
-The [arsd](https://github.com/adamdruppe/arsd) libraries may help, but with Parin alone, you can manually reload assets like this:
+The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
-```d
-bool update(float dt) {
-    // Reload the texture whenever the 0 key is pressed.
-    if ('0'.isPressed) {
-        atlas.free();
-        atlas = loadTexture("parin_atlas.png");
-    }
-    drawTexture(atlas, Vec2(8));
-    return false;
-}
+### How to build without DUB?
+
+Follow these steps:
+
+1. Download [Joka](https://github.com/Kapendev/joka) and [raylib](https://github.com/raysan5/raylib).
+2. Compile your game using the DMD compiler with a command like:
+
+```cmd
+dmd -i -I=joka_path -I=parin_path -J=parin_path -L=-lraylib game.d
 ```
+
+### Are the Parin assets free to use?
+
+Yes. Be sure to check the associated [README](assets/README.md) for any licensing notes.
