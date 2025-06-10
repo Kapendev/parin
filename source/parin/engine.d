@@ -2819,7 +2819,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     } else {
         if (Mouse.left.isReleased || Mouse.right.isReleased) {
             printfln(
-                "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})\n",
+                "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})",
                 cast(int) a.x,
                 cast(int) a.y,
                 cast(int) b.x,
@@ -2849,7 +2849,7 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
     } else {
         if (Mouse.left.isReleased || Mouse.right.isReleased) {
             printfln(
-                "Debug Tile Info\n Grid: Vec2({}, {})\n World: Vec2({}, {})\n",
+                "Debug Tile Info\n Grid: Vec2({}, {})\n World: Vec2({}, {})",
                 cast(int) gridPoint.x,
                 cast(int) gridPoint.y,
                 cast(int) tile.x,
