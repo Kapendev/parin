@@ -328,7 +328,6 @@ struct Wave
 }
 
 // Opaque structs declaration
-// NOTE: Actual structs are defined internally in raudio module
 struct rAudioBuffer;
 struct rAudioProcessor;
 
@@ -417,7 +416,6 @@ struct AutomationEventList
 // Enumerators Definition
 //----------------------------------------------------------------------------------
 // System/Window config flags
-// NOTE: Every bit registers one state (use it with bit masks)
 // By default all flags are set to 0
 enum
 {
@@ -440,7 +438,6 @@ enum
 }
 
 // Trace log level
-// NOTE: Organized by priority level
 enum
 {
     LOG_ALL = 0, // Display all logs
@@ -454,7 +451,6 @@ enum
 }
 
 // Keyboard keys (US keyboard layout)
-// NOTE: Use GetKeyPressed() to allow redefining
 // required keys for alternative layouts
 enum
 {
@@ -651,9 +647,9 @@ enum
     MATERIAL_MAP_OCCLUSION = 4, // Ambient occlusion material
     MATERIAL_MAP_EMISSION = 5, // Emission material
     MATERIAL_MAP_HEIGHT = 6, // Heightmap material
-    MATERIAL_MAP_CUBEMAP = 7, // Cubemap material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
-    MATERIAL_MAP_IRRADIANCE = 8, // Irradiance material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
-    MATERIAL_MAP_PREFILTER = 9, // Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
+    MATERIAL_MAP_CUBEMAP = 7, // Cubemap material
+    MATERIAL_MAP_IRRADIANCE = 8, // Irradiance material
+    MATERIAL_MAP_PREFILTER = 9, // Prefilter material
     MATERIAL_MAP_BRDF = 10 // Brdf material
 }
 
@@ -718,7 +714,6 @@ enum
 }
 
 // Pixel formats
-// NOTE: Support depends on OpenGL version and platform
 enum
 {
     PIXELFORMAT_UNCOMPRESSED_GRAYSCALE = 1, // 8 bit per pixel (no alpha)
@@ -748,8 +743,6 @@ enum
 }
 
 // Texture parameters: filter mode
-// NOTE 1: Filtering considers mipmaps if available in the texture
-// NOTE 2: Filter is accordingly set for minification and magnification
 enum
 {
     TEXTURE_FILTER_POINT = 0, // No filter, just pixel approximation
@@ -802,7 +795,6 @@ enum
 }
 
 // Gesture
-// NOTE: Provided as bit-wise flags to enable only desired gestures
 enum
 {
     GESTURE_NONE = 0, // No gesture
@@ -943,7 +935,6 @@ VrStereoConfig LoadVrStereoConfig (VrDeviceInfo device); // Load VR stereo confi
 void UnloadVrStereoConfig (VrStereoConfig config); // Unload VR stereo config
 
 // Shader management functions
-// NOTE: Shader functionality is not available on OpenGL 1.1
 Shader LoadShader (const(char)* vsFileName, const(char)* fsFileName); // Load shader from files and bind default locations
 Shader LoadShaderFromMemory (const(char)* vsCode, const(char)* fsCode); // Load shader from code strings and bind default locations
 bool IsShaderReady (Shader shader); // Check if a shader is ready
@@ -971,7 +962,6 @@ double GetTime (); // Get elapsed time in seconds since InitWindow()
 int GetFPS (); // Get current FPS
 
 // Custom frame control functions
-// NOTE: Those functions are intended for advance users that want full control over the frame processing
 // By default EndDrawing() does this job: draws everything + SwapScreenBuffer() + manage frame timing + PollInputEvents()
 // To avoid that behaviour and control frame processes manually, enable in config.h: SUPPORT_CUSTOM_FRAME_CONTROL
 void SwapScreenBuffer (); // Swap back buffer with front buffer (screen drawing)
@@ -989,7 +979,6 @@ void TakeScreenshot (const(char)* fileName); // Takes a screenshot of current sc
 void SetConfigFlags (uint flags); // Setup init configuration flags (view FLAGS)
 void OpenURL (const(char)* url); // Open URL with default system browser (if available)
 
-// NOTE: Following functions implemented in module [utils]
 //------------------------------------------------------------------
 void SetTraceLogLevel (int logLevel); // Set the current threshold (minimum) log level
 void* MemAlloc (uint size); // Internal memory allocator
@@ -1017,7 +1006,7 @@ bool SaveFileText (const(char)* fileName, char* text); // Save text data to file
 bool FileExists (const(char)* fileName); // Check if file exists
 bool DirectoryExists (const(char)* dirPath); // Check if a directory path exists
 bool IsFileExtension (const(char)* fileName, const(char)* ext); // Check file extension (including point: .png, .wav)
-int GetFileLength (const(char)* fileName); // Get file length in bytes (NOTE: GetFileSize() conflicts with windows.h)
+int GetFileLength (const(char)* fileName); // Get file length in bytes
 const(char)* GetFileExtension (const(char)* fileName); // Get pointer to extension for a filename string (includes dot: '.png')
 const(char)* GetFileName (const(char)* filePath); // Get pointer to filename for a path string
 const(char)* GetFileNameWithoutExt (const(char)* filePath); // Get filename string without extension (uses static string)
@@ -1121,7 +1110,6 @@ void UpdateCameraPro (Camera* camera, Vector3 movement, Vector3 rotation, float 
 // Basic Shapes Drawing Functions (Module: shapes)
 //------------------------------------------------------------------------------------
 // Set texture and rectangle to be used on shapes drawing
-// NOTE: It can be useful when using basic shapes and one single font,
 // defining a font char white rectangle would allow drawing everything in a single draw call
 void SetShapesTexture (Texture2D texture, Rectangle source); // Set texture and rectangle to be used on shapes drawing
 
@@ -1199,7 +1187,6 @@ Rectangle GetCollisionRec (Rectangle rec1, Rectangle rec2); // Get collision rec
 //------------------------------------------------------------------------------------
 
 // Image loading functions
-// NOTE: These functions do not require GPU access
 Image LoadImage (const(char)* fileName); // Load image from file into CPU memory (RAM)
 Image LoadImageRaw (const(char)* fileName, int width, int height, int format, int headerSize); // Load image from RAW file data
 Image LoadImageSvg (const(char)* fileNameOrString, int width, int height); // Load image from SVG file data or string with specified size
@@ -1261,7 +1248,6 @@ Rectangle GetImageAlphaBorder (Image image, float threshold); // Get image alpha
 Color GetImageColor (Image image, int x, int y); // Get image pixel color at (x, y) position
 
 // Image drawing functions
-// NOTE: Image software-rendering functions (CPU)
 void ImageClearBackground (Image* dst, Color color); // Clear image background with given color
 void ImageDrawPixel (Image* dst, int posX, int posY, Color color); // Draw pixel within an image
 void ImageDrawPixelV (Image* dst, Vector2 position, Color color); // Draw pixel within an image (Vector version)
@@ -1280,7 +1266,6 @@ void ImageDrawText (Image* dst, const(char)* text, int posX, int posY, int fontS
 void ImageDrawTextEx (Image* dst, Font font, const(char)* text, Vector2 position, float fontSize, float spacing, Color tint); // Draw text (custom sprite font) within an image (destination)
 
 // Texture loading functions
-// NOTE: These functions require GPU access
 Texture2D LoadTexture (const(char)* fileName); // Load texture from file into GPU memory (VRAM)
 Texture2D LoadTextureFromImage (Image image); // Load texture from image data
 TextureCubemap LoadTextureCubemap (Image image, int layout); // Load cubemap from image, multiple image cubemap layouts supported
@@ -1367,7 +1352,6 @@ int GetCodepointPrevious (const(char)* text, int* codepointSize); // Get previou
 const(char)* CodepointToUTF8 (int codepoint, int* utf8Size); // Encode one codepoint into UTF-8 byte array (array length returned as parameter)
 
 // Text strings management functions (no UTF-8 strings, only byte chars)
-// NOTE: Some strings allocate memory internally for returned strings, just be careful!
 int TextCopy (char* dst, const(char)* src); // Copy one string to another, returns bytes copied
 bool TextIsEqual (const(char)* text1, const(char)* text2); // Check if two text string are equal
 uint TextLength (const(char)* text); // Get text length, checks for '\0' ending

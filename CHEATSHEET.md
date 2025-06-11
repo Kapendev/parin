@@ -1,4 +1,4 @@
-# Cheatsheet
+# Cheatsheet (WIP)
 
 Welcome to the Parin cheatsheet.
 If you notice anything missing or would like to contribute, feel free to create an [issue](https://github.com/Kapendev/parin/issues)!

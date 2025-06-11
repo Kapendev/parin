@@ -6,8 +6,6 @@
 // Version: v0.0.46
 // ---
 
-// TODO: Think about giving sound a API that looks like the Parin timer.
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -466,18 +464,18 @@ struct FontId {
 struct Sound {
     Union!(rl.Sound, rl.Music) data;
     float pitch = 1.0f;
-    float pitchVariance = 1.0f; // A value of 1 means no variation.
+    float pitchVariance = 1.0f; // A value of 1.0 means no variation.
     float pitchVarianceBase = 1.0f;
     bool canRepeat;
-    bool isPlaying_;
+    bool isActive;
     bool isPaused;
 
     @trusted @nogc nothrow:
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
-    deprecated("Will be replaced with a variable. Remove `()` when using this name.")
-    bool isPlaying() { return this.isPlaying_; }
+    deprecated("Will be replaced with a variable called isActive. Remove `()` when using this name.")
+    bool isPlaying() { return this.isActive; }
 
     /// Checks if the sound is not loaded.
     bool isEmpty() {
@@ -559,12 +557,14 @@ struct Sound {
 struct SoundId {
     GenerationalIndex data;
 
+    @trusted @nogc nothrow:
+
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
     deprecated("Will be replaced with setCanRepeat.")
     alias setIsLooping = setCanRepeat;
-
-    @trusted @nogc nothrow:
+    deprecated("Will be replaced with isActive.")
+    bool isPlaying() { return isActive; }
 
     /// Returns the pitch variance of the sound associated with the resource identifier.
     float pitchVariance() {
@@ -592,8 +592,8 @@ struct SoundId {
     }
 
     /// Returns true if the sound associated with the resource identifier is playing.
-    bool isPlaying() {
-        return getOr().isPlaying_;
+    bool isActive() {
+        return getOr().isActive;
     }
 
     /// Returns true if the sound associated with the resource identifier is paused.
@@ -966,97 +966,97 @@ struct EngineState {
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Rgba toParin(rl.Color from) {
+private Rgba toParin(rl.Color from) {
     return Rgba(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Vec2 toParin(rl.Vector2 from) {
+private Vec2 toParin(rl.Vector2 from) {
     return Vec2(from.x, from.y);
 }
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Vec3 toParin(rl.Vector3 from) {
+private Vec3 toParin(rl.Vector3 from) {
     return Vec3(from.x, from.y, from.z);
 }
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Vec4 toParin(rl.Vector4 from) {
+private Vec4 toParin(rl.Vector4 from) {
     return Vec4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Rect toParin(rl.Rectangle from) {
+private Rect toParin(rl.Rectangle from) {
     return Rect(from.x, from.y, from.width, from.height);
 }
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Texture toParin(rl.Texture2D from) {
+private Texture toParin(rl.Texture2D from) {
     return Texture(from);
 }
 
 /// Converts a raylib type to a Parin type.
 pragma(inline, true)
-Font toParin(rl.Font from) {
+private Font toParin(rl.Font from) {
     return Font(from);
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Color toRl(Rgba from) {
+private rl.Color toRl(Rgba from) {
     return rl.Color(from.r, from.g, from.b, from.a);
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Vector2 toRl(Vec2 from) {
+private rl.Vector2 toRl(Vec2 from) {
     return rl.Vector2(from.x, from.y);
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Vector3 toRl(Vec3 from) {
+private rl.Vector3 toRl(Vec3 from) {
     return rl.Vector3(from.x, from.y, from.z);
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Vector4 toRl(Vec4 from) {
+private rl.Vector4 toRl(Vec4 from) {
     return rl.Vector4(from.x, from.y, from.z, from.w);
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Rectangle toRl(Rect from) {
+private rl.Rectangle toRl(Rect from) {
     return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Texture2D toRl(Texture from) {
+private rl.Texture2D toRl(Texture from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Font toRl(Font from) {
+private rl.Font toRl(Font from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.RenderTexture2D toRl(Viewport from) {
+private rl.RenderTexture2D toRl(Viewport from) {
     return from.data;
 }
 
 /// Converts a Parin type to a raylib type.
 pragma(inline, true)
-rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
+private rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
     return rl.Camera2D(
         Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
         from.position.toRl(),
@@ -2206,25 +2206,12 @@ Vec2 wasdReleased() {
     return engineState.wasdReleasedBuffer;
 }
 
-/// Resets the specific sound.
-extern(C)
-void resetSoundX(ref Sound sound) {
-    auto wasPlaying = sound.isPlaying_;
-    stopSoundX(sound);
-    if (wasPlaying) playSoundX(sound);
-}
-
-/// Resets the specific sound.
-extern(C)
-void resetSound(SoundId sound) {
-    if (sound.isValid) resetSoundX(sound.get());
-}
-
 /// Plays the specified sound.
 extern(C)
 void playSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || sound.isPlaying_) return;
-    sound.isPlaying_ = true;
+    if (sound.isEmpty || sound.isActive) return;
+    sound.isActive = true;
+    resumeSoundX(sound);
     if (sound.pitchVariance != 1.0f) {
         sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
     }
@@ -2244,8 +2231,9 @@ void playSound(SoundId sound) {
 /// Stops playback of the specified sound.
 extern(C)
 void stopSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isPlaying_) return;
-    sound.isPlaying_ = false;
+    if (sound.isEmpty || !sound.isActive) return;
+    sound.isActive = false;
+    resumeSoundX(sound);
     if (sound.data.isType!(rl.Sound)) {
         rl.StopSound(sound.data.get!(rl.Sound)());
     } else {
@@ -2260,7 +2248,6 @@ void stopSound(SoundId sound) {
 }
 
 /// Pauses playback of the specified sound.
-/// NOTE: It's broken right now.
 extern(C)
 void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused) return;
@@ -2273,14 +2260,12 @@ void pauseSoundX(ref Sound sound) {
 }
 
 /// Pauses playback of the specified sound.
-/// NOTE: It's broken right now.
 extern(C)
 void pauseSound(SoundId sound) {
     if (sound.isValid) pauseSoundX(sound.get());
 }
 
 /// Resumes playback of the specified paused sound.
-/// NOTE: It's broken right now.
 extern(C)
 void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty || !sound.isPaused) return;
@@ -2293,19 +2278,57 @@ void resumeSoundX(ref Sound sound) {
 }
 
 /// Resumes playback of the specified paused sound.
-/// NOTE: It's broken right now.
 extern(C)
 void resumeSound(SoundId sound) {
     if (sound.isValid) resumeSoundX(sound.get());
 }
 
+/// Toggles the active state of the sound.
+extern(C)
+void toggleSoundIsActiveX(ref Sound sound) {
+    if (sound.isActive) stopSoundX(sound);
+    else playSoundX(sound);
+}
+
+/// Toggles the active state of the sound.
+extern(C)
+void toggleSoundIsActive(SoundId sound) {
+    if (sound.isValid) toggleSoundIsActiveX(sound.get());
+}
+
+/// Toggles the paused state of the sound.
+extern(C)
+void toggleSoundIsPausedX(ref Sound sound) {
+    if (sound.isPaused) resumeSoundX(sound);
+    else pauseSoundX(sound);
+}
+
+/// Toggles the paused state of the sound.
+extern(C)
+void toggleSoundIsPaused(SoundId sound) {
+    if (sound.isValid) toggleSoundIsPausedX(sound.get());
+}
+
+/// Resets and plays the specified sound.
+extern(C)
+void startSoundX(ref Sound sound) {
+    stopSoundX(sound);
+    playSoundX(sound);
+}
+
+/// Resets and plays the specified sound.
+extern(C)
+void startSound(SoundId sound) {
+    if (sound.isValid) startSoundX(sound.get());
+}
+
 /// Updates the playback state of the specified sound.
 extern(C)
 void updateSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isPlaying_) return;
+    if (sound.isEmpty || sound.isPaused || !sound.isActive) return;
     if (sound.data.isType!(rl.Sound)) {
         if (rl.IsSoundPlaying(sound.data.get!(rl.Sound)())) return;
-        sound.isPlaying_ = false;
+        sound.isActive = false;
         if (sound.canRepeat) playSoundX(sound);
     } else {
         auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.get!(rl.Music)());
