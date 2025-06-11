@@ -6,7 +6,6 @@
 // Version: v0.0.46
 // ---
 
-// TODO: Check sound again. I think pause and resume don't work.
 // TODO: Think about giving sound a API that looks like the Parin timer.
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -2264,7 +2263,7 @@ void stopSound(SoundId sound) {
 /// NOTE: It's broken right now.
 extern(C)
 void pauseSoundX(ref Sound sound) {
-    if (sound.isEmpty || !sound.isPaused) return;
+    if (sound.isEmpty || sound.isPaused) return;
     sound.isPaused = true;
     if (sound.data.isType!(rl.Sound)) {
         rl.PauseSound(sound.data.get!(rl.Sound)());
@@ -2284,7 +2283,7 @@ void pauseSound(SoundId sound) {
 /// NOTE: It's broken right now.
 extern(C)
 void resumeSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused) return;
+    if (sound.isEmpty || !sound.isPaused) return;
     sound.isPaused = false;
     if (sound.data.isType!(rl.Sound)) {
         rl.ResumeSound(sound.data.get!(rl.Sound)());

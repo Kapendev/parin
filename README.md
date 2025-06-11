@@ -82,7 +82,7 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 
 ## Documentation
 
-Start with the [examples](./examples/) folder or the [cheatsheet](https://kapendev.github.io/parin-website/pages/cheatsheet.html) for a quick overview.
+Start with the [examples](./examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
 For more details, check the [tour page](https://kapendev.github.io/parin-website/pages/tour.html).
 
 ## Ideas
@@ -114,7 +114,7 @@ Call `setIsUsingAssetsPath(false)` to disable the default behavior.
 Asset hot reloading is not supported out of the box.
 The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
-### How to build without DUB?
+### How can I build without DUB?
 
 Follow these steps:
 

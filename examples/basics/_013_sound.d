@@ -13,10 +13,6 @@ void ready() {
 
 bool update(float dt) {
     // Play and stop the sound.
-    if (Keyboard.enter.isPressed) {
-        if (sound.isPaused) resumeSound(sound);
-        else pauseSound(sound);
-    }
     if (Keyboard.space.isPressed) {
         if (sound.isPlaying) stopSound(sound);
         else playSound(sound);
