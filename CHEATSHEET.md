@@ -1,10 +1,9 @@
-# 🧠 Parin Cheatsheet (WIP)
+# 📋 Parin Cheatsheet (WIP)
 
-Welcome to the Parin cheatsheet!
 This guide highlights the **most commonly used parts** of each module — it's not meant to be full documentation.
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 
-## 📦 Module: `parin.engine`
+## 📦 `parin.engine`
 
 ### 🚀 Basic
 
@@ -107,7 +106,7 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
-void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions());
+void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 ```
 
@@ -131,11 +130,6 @@ FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 ru
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
 
-Result!Texture loadRawTexture(IStr path);
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
-Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight);
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
-
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
 Result!LStr loadRawText(IStr path);
 Result!IStr loadTempText(IStr path);
@@ -149,6 +143,90 @@ int randi();
 float randf();
 void randomizeSeed(int seed);
 void randomize();
+```
+
+### 🧺 Data Structures
+
+```d
+struct DrawOptions {
+    Vec2 origin;
+    Vec2 scale;
+    float rotation;
+    Rgba color;
+    Hook hook;
+    Flip flip;
+
+    this(float rotation);
+    this(Vec2 scale);
+    this(Rgba color);
+    this(Hook hook);
+    this(Flip flip);
+}
+
+struct TextOptions {
+    float visibilityRatio;
+    int alignmentWidth;
+    ushort visibilityCount;
+    Alignment alignment;
+    bool isRightToLeft;
+
+    this(float visibilityRatio);
+    this(Alignment alignment, int alignmentWidth = 0);
+}
+
+struct TextureId {
+    GenerationalIndex data;
+
+    int width();
+    int height();
+    Vec2 size();
+    void setFilter(Filter value);
+    void setWrap(Wrap value);
+    bool isValid();
+    TextureId validate(IStr message = defaultEngineValidateErrorMessage);
+    ref Texture get();
+    Texture getOr();
+    void free();
+}
+
+struct FontId {
+    GenerationalIndex data;
+
+    int runeSpacing();
+    int lineSpacing();
+    int size();
+    void setFilter(Filter value);
+    void setWrap(Wrap value);
+    bool isValid();
+    FontId validate(IStr message = defaultEngineValidateErrorMessage);
+    ref Font get();
+    Font getOr();
+    void free();
+}
+
+struct SoundId {
+    GenerationalIndex data;
+
+    float pitchVariance();
+    void setPitchVariance(float value);
+    float pitchVarianceBase();
+    void setPitchVarianceBase(float value);
+    bool canRepeat();
+    bool isActive();
+    bool isPaused();
+    float time();
+    float duration();
+    float progress();
+    void setVolume(float value);
+    void setPitch(float value);
+    void setPan(float value);
+    void setCanRepeat(bool value);
+    bool isValid();
+    SoundId validate(IStr message = defaultEngineValidateErrorMessage);
+    ref Sound get();
+    Sound getOr();
+    void free();
+}
 ```
 
 ### 📌 Constants
@@ -295,71 +373,61 @@ enum Gamepad : ushort {
 }
 ```
 
+## 📦 `parin.timer`
+
 ### 🧺 Data Structures
 
 ```d
-struct DrawOptions {
-    Vec2 origin;
-    Vec2 scale;
-    float rotation;
-    Rgba color;
-    Hook hook;
-    Flip flip;
-}
+struct Timer {
+    float duration;
+    float pausedTime;
+    float startTime;
+    float stopTimeElapsedTimeBuffer;
+    bool canRepeat;
 
-struct TextOptions {
-    float visibilityRatio;
-    int alignmentWidth;
-    ushort visibilityCount;
-    Alignment alignment;
-    bool isRightToLeft;
-}
-
-struct TextureId {
-    int width();
-    int height();
-    Vec2 size();
-    void setFilter(Filter value);
-    void setWrap(Wrap value);
-    bool isValid();
-    TextureId validate(IStr message = defaultEngineValidateErrorMessage);
-    ref Texture get();
-    Texture getOr();
-    void free();
-}
-
-struct FontId {
-    int runeSpacing();
-    int lineSpacing();
-    int size();
-    void setFilter(Filter value);
-    void setWrap(Wrap value);
-    bool isValid();
-    FontId validate(IStr message = defaultEngineValidateErrorMessage);
-    ref Font get();
-    Font getOr();
-    void free();
-}
-
-struct SoundId {
-    float pitchVariance();
-    void setPitchVariance(float value);
-    float pitchVarianceBase();
-    void setPitchVarianceBase(float value);
-    bool canRepeat();
-    bool isActive();
+    this(float duration, bool canRepeat = false);
     bool isPaused();
+    bool isActive();
+    bool hasStarted();
+    bool hasStopped();
+    void start(float newDuration = -1.0f);
+    void stop();
+    void toggleIsActive();
+    void pause();
+    void resume();
+    void toggleIsPaused();
     float time();
-    float duration();
-    float progress();
-    void setVolume(float value);
-    void setPitch(float value);
-    void setPan(float value);
-    void setCanRepeat(bool value);
-    bool isValid();
-    SoundId validate(IStr message = defaultEngineValidateErrorMessage);
-    ref Sound get();
-    Sound getOr();
-    void free();
+    float timeLeft();
+    void setTime(float newTime);
+}
+```
+
+## 📦 `parin.palettes`
+
+### 📌 Constants
+
+```d
+enum Wisp2 : Rgba {
+    black,
+    white,
+}
+
+enum Pico8 : Rgba {
+    black,
+    navy,
+    maroon,
+    darkGreen,
+    brown,
+    darkGray,
+    lightGray,
+    white,
+    red,
+    orange,
+    yellow,
+    lightGreen,
+    blue,
+    purple,
+    pink,
+    peach,
 }
 ```

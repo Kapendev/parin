@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.46
+// Version: v0.0.47
 // ---
 
 /// The `sprite` module provides a simple and flexible sprite.
@@ -120,11 +120,12 @@ struct Sprite {
     }
 
     /// The X position of the sprite.
-    pragma(inline, true)
-    @trusted ref float x() => position.x;
+    pragma(inline, true) @trusted
+    ref float x() => position.x;
+
     /// The Y position of the sprite.
-    pragma(inline, true)
-    @trusted ref float y() => position.y;
+    pragma(inline, true) @trusted
+    ref float y() => position.y;
 
     /// Returns true if the sprite is currently active (running).
     bool isActive() {

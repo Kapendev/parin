@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.46
+// Version: v0.0.47
 // ---
 
 /// The `palettes` module offers a collection of predefined colors.
@@ -13,14 +13,14 @@ import joka.math;
 
 /// This palette includes a 2-color set inspired by the Playdate handheld console.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
-enum Wisp2 {
+enum Wisp2 : Rgba {
     black = toRgb(0x322F29),
     white = toRgb(0xDAD6D0),
 }
 
 /// This palette includes the 16-color set used by the PICO-8 fantasy console.
 /// Link: https://lospec.com/palette-list/pico-8
-enum Pico8 {
+enum Pico8 : Rgba {
     black      = toRgb(0x000000),
     navy       = toRgb(0x1D2B53),
     maroon     = toRgb(0x7E2553),

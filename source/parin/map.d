@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.46
+// Version: v0.0.47
 // ---
 
 // TODO: Update all the doc comments here.
@@ -33,27 +33,28 @@ struct Tile {
         this(widthHeight, id, Vec2(x, y));
     }
 
-    /// The X position of the tile.
-    pragma(inline, true)
-    @trusted ref float x() => position.x;
-    /// The Y position of the tile.
-    pragma(inline, true)
-    @trusted ref float y() => position.y;
-
-    pragma(inline, true)
+    deprecated("Will be replaced with widthHeight.")
     int width() => widthHeight;
-    pragma(inline, true)
+    deprecated("Will be replaced with widthHeight.")
     int height() => widthHeight;
+
+    /// The X position of the tile.
+    pragma(inline, true) @trusted
+    ref float x() => position.x;
+
+    /// The Y position of the tile.
+    pragma(inline, true) @trusted
+    ref float y() => position.y;
+
+    /// The size of the tile.
     pragma(inline, true)
     Vec2 size() => Vec2(widthHeight, widthHeight);
 
-    Sz row(Sz colCount) {
-        return id / colCount;
-    }
+    pragma(inline, true)
+    Sz row(Sz colCount) => id / colCount;
 
-    Sz col(Sz colCount) {
-        return id % colCount;
-    }
+    pragma(inline, true)
+    Sz col(Sz colCount) => id % colCount;
 
     Rect textureArea(Sz colCount) {
         return Rect(col(colCount) * widthHeight, row(colCount) * widthHeight, widthHeight, widthHeight);
@@ -128,12 +129,13 @@ struct TileMap {
         return data.opDollar!dim();
     }
 
-    pragma(inline, true)
-    @trusted
-    ref float x() => position.x; /// The X position of the map.
-    pragma(inline, true)
-    @trusted
-    ref float y() => position.y; /// The Y position of the map.
+    /// The X position of the map.
+    pragma(inline, true) @trusted
+    ref float x() => position.x;
+
+    /// The Y position of the map.
+    pragma(inline, true) @trusted
+    ref float y() => position.y;
 
     Sz length() {
         return data.length;
@@ -352,7 +354,7 @@ Fault saveTileMap(IStr path, TileMap map) {
 }
 
 void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-    if (tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
+    if (tile.id < 0 || tile.widthHeight <= 0) return;
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
             auto rect = Rect(tile.position, tile.size * options.scale).area(options.hook);
@@ -361,7 +363,7 @@ void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) 
         }
         return;
     }
-    drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
+    drawTextureAreaX(texture, tile.textureArea(texture.width / tile.widthHeight), tile.position, options);
 }
 
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {

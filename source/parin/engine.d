@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.46
+// Version: v0.0.47
 // ---
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -783,10 +783,13 @@ struct Camera {
         this(Vec2(x, y), isCentered);
     }
 
+    /// The X position of the camera.
     pragma(inline, true)
-    ref float x() => position.x; /// The X position of the camera.
+    ref float x() => position.x;
+
+    /// The Y position of the camera.
     pragma(inline, true)
-    ref float y() => position.y; /// The Y position of the camera.
+    ref float y() => position.y;
 
     /// Returns the current hook associated with the camera.
     Hook hook() {

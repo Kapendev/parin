@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.46
+// Version: v0.0.47
 // ---
 
 /// The `timer` module provides a simple timer.
@@ -54,8 +54,8 @@ struct Timer {
     }
 
     /// Starts the timer with an optional new duration.
-    void start(float duration = -1.0f) {
-        if (duration >= 0.0f) this.duration = duration;
+    void start(float newDuration = -1.0f) {
+        if (newDuration >= 0.0f) duration = newDuration;
         startTime = elapsedTime;
         stopTimeElapsedTimeBuffer = 0.0f;
         pausedTime = 0.0f;
