@@ -87,7 +87,7 @@ For more details, check the [tour page](https://kapendev.github.io/parin-website
 
 ## Ideas
 
-If you notice anything missing or would like to contribute, feel free to create an [issue](https://github.com/Kapendev/parin/issues)!
+If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 Most ideas are welcome, except ECS.
 
 ## Frequently Asked Questions

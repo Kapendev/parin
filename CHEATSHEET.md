@@ -1,11 +1,12 @@
-# Cheatsheet (WIP)
+# 🧠 Parin Cheatsheet (WIP)
 
-Welcome to the Parin cheatsheet.
-If you notice anything missing or would like to contribute, feel free to create an [issue](https://github.com/Kapendev/parin/issues)!
+Welcome to the Parin cheatsheet!
+This guide highlights the **most commonly used parts** of each module — it's not meant to be full documentation.
+If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 
-## parin.engine
+## 📦 Module: `parin.engine`
 
-### Basic
+### 🚀 Basic
 
 ```d
 int fps();
@@ -22,14 +23,13 @@ Vec2 windowSize();
 int resolutionWidth();
 int resolutionHeight();
 Vec2 resolution();
-EngineViewportInfo engineViewportInfo();
 
+void setBackgroundColor(Rgba value);
+void setBorderColor(Rgba value);
 void lockResolution(int width, int height);
 void unlockResolution();
 void toggleResolution(int width, int height);
 bool isWindowResized();
-void setBackgroundColor(Rgba value);
-void setBorderColor(Rgba value);
 void setWindowMinSize(int width, int height);
 void setWindowMaxSize(int width, int height);
 Fault setWindowIconFromFiles(IStr path);
@@ -38,26 +38,28 @@ bool isPixelSnapped();
 void setIsPixelSnapped(bool value);
 bool isPixelPerfect();
 void setIsPixelPerfect(bool value);
-bool isEmptyTextureVisible();
-void setIsEmptyTextureVisible(bool value);
 bool isFullscreen();
 void setIsFullscreen(bool value);
 void toggleIsFullscreen();
 bool isCursorVisible();
 void setIsCursorVisible(bool value);
 void toggleIsCursorVisible();
+bool isEmptyTextureVisible();
+void setIsEmptyTextureVisible(bool value);
+bool isEmptyFontVisible();
+void setIsEmptyFontVisible(bool value);
+bool isUsingAssetsPath();
+void setIsUsingAssetsPath(bool value);
 
 IStr[] envArgs();
 IStr[] droppedFilePaths();
 IStr assetsPath();
 IStr toAssetsPath(IStr path);
-bool isUsingAssetsPath();
-void setIsUsingAssetsPath(bool value);
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
 void freeEngineResources();
 ```
 
-### Input
+### 🎮 Input
 
 ```d
 bool isDown(char key);
@@ -75,20 +77,20 @@ bool isReleased(Keyboard key);
 bool isReleased(Mouse key);
 bool isReleased(Gamepad key, int id = 0);
 
-Keyboard dequeuePressedKey();
-dchar dequeuePressedRune();
-
 Vec2 wasd();
 Vec2 wasdPressed();
 Vec2 wasdReleased();
 Vec2 mouse();
 Vec2 deltaMouse();
 float deltaWheel();
+
+Keyboard dequeuePressedKey();
+dchar dequeuePressedRune();
 ```
 
-### Drawing
+### 🖼️ Drawing
 
-```
+```d
 void drawRect(Rect area, Rgba color = white);
 void drawHollowRect(Rect area, float thickness, Rgba color = white);
 void drawCirc(Circ area, Rgba color = white);
@@ -101,23 +103,27 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 void drawTexturePatch(TextureId texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions());
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
-void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
-void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions());
-
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+
+void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+void drawDebugEngineInfo(Vec2 position, DrawOptions options = DrawOptions());
+void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 ```
 
-### Sound
+### 🔊 Sound
 
 ```d
 void playSound(SoundId sound);
 void stopSound(SoundId sound);
 void pauseSound(SoundId sound);
 void resumeSound(SoundId sound);
+void startSound(SoundId sound);
+void toggleSoundIsActive(SoundId sound);
+void toggleSoundIsPaused(SoundId sound);
 ```
 
-### Loading and Saving
+### 💾 Loading and Saving
 
 ```d
 TextureId loadTexture(IStr path);
@@ -136,7 +142,7 @@ Result!IStr loadTempText(IStr path);
 Fault saveText(IStr path, IStr text);
 ```
 
-### Randomness
+### 🎲 Randomness
 
 ```d
 int randi();
@@ -145,7 +151,7 @@ void randomizeSeed(int seed);
 void randomize();
 ```
 
-### Constants
+### 📌 Constants
 
 ```d
 enum Flip : ubyte {
@@ -289,24 +295,24 @@ enum Gamepad : ushort {
 }
 ```
 
-### Data Structure
+### 🧺 Data Structures
 
 ```d
 struct DrawOptions {
-    Vec2 origin = Vec2(0.0f);
-    Vec2 scale = Vec2(1.0f);
-    float rotation = 0.0f;
-    Rgba color = white;
-    Hook hook = Hook.topLeft;
-    Flip flip = Flip.none;
+    Vec2 origin;
+    Vec2 scale;
+    float rotation;
+    Rgba color;
+    Hook hook;
+    Flip flip;
 }
 
 struct TextOptions {
-    float visibilityRatio = 1.0f;
-    int alignmentWidth = 0;
-    ushort visibilityCount = 0;
-    Alignment alignment = Alignment.left;
-    bool isRightToLeft = false;
+    float visibilityRatio;
+    int alignmentWidth;
+    ushort visibilityCount;
+    Alignment alignment;
+    bool isRightToLeft;
 }
 
 struct TextureId {
@@ -341,7 +347,7 @@ struct SoundId {
     float pitchVarianceBase();
     void setPitchVarianceBase(float value);
     bool canRepeat();
-    bool isPlaying();
+    bool isActive();
     bool isPaused();
     float time();
     float duration();

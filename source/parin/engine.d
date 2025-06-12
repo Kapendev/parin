@@ -2283,6 +2283,19 @@ void resumeSound(SoundId sound) {
     if (sound.isValid) resumeSoundX(sound.get());
 }
 
+/// Resets and plays the specified sound.
+extern(C)
+void startSoundX(ref Sound sound) {
+    stopSoundX(sound);
+    playSoundX(sound);
+}
+
+/// Resets and plays the specified sound.
+extern(C)
+void startSound(SoundId sound) {
+    if (sound.isValid) startSoundX(sound.get());
+}
+
 /// Toggles the active state of the sound.
 extern(C)
 void toggleSoundIsActiveX(ref Sound sound) {
@@ -2307,19 +2320,6 @@ void toggleSoundIsPausedX(ref Sound sound) {
 extern(C)
 void toggleSoundIsPaused(SoundId sound) {
     if (sound.isValid) toggleSoundIsPausedX(sound.get());
-}
-
-/// Resets and plays the specified sound.
-extern(C)
-void startSoundX(ref Sound sound) {
-    stopSoundX(sound);
-    playSoundX(sound);
-}
-
-/// Resets and plays the specified sound.
-extern(C)
-void startSound(SoundId sound) {
-    if (sound.isValid) startSoundX(sound.get());
 }
 
 /// Updates the playback state of the specified sound.
