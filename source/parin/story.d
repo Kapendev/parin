@@ -16,7 +16,7 @@ import joka.containers;
 import joka.io;
 import joka.types;
 
-@safe @nogc nothrow:
+@safe nothrow:
 
 enum defaultStoryFixedListCapacity = 16;
 
@@ -92,7 +92,7 @@ struct StoryValue {
 
     alias data this;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     static foreach (Type; StoryValueData.Types) {
         this(Type value) {
@@ -135,44 +135,53 @@ struct Story {
     bool debugMode;
     bool linearMode;
 
-    @safe @nogc nothrow:
+    @safe nothrow:
 
+    @nogc
     IStr opIndex(Sz i) {
         if (i >= lineCount) assert(0, "Index `[{}]` does not exist.".fmt(i));
         return script[pairs[i].a .. pairs[i].b + 1];
     }
 
+    @nogc
     StoryNumber lineCount() {
         return cast(StoryNumber) pairs.length;
     }
 
+    @nogc
     bool hasKind(StoryLineKind kind) {
         if (lineIndex >= lineCount) return false;
         auto line = opIndex(lineIndex);
         return line.length && line[0] == kind;
     }
 
+    @nogc
     bool hasEnd() {
         return lineIndex == lineCount;
     }
 
+    @nogc
     bool hasPause() {
         if (hasEnd) return true;
         return hasKind(StoryLineKind.pause);
     }
 
+    @nogc
     bool hasProcedure() {
         return hasKind(StoryLineKind.procedure);
     }
 
+    @nogc
     bool hasMenu() {
         return hasKind(StoryLineKind.menu);
     }
 
+    @nogc
     bool hasText() {
         return hasKind(StoryLineKind.text);
     }
 
+    @nogc
     IStr[] procedure() {
         static FixedList!(IStr, defaultStoryFixedListCapacity) buffer;
 
@@ -186,6 +195,7 @@ struct Story {
         return buffer[];
     }
 
+    @nogc
     IStr[] menu() {
         static FixedList!(IStr, defaultStoryFixedListCapacity) buffer;
 
@@ -199,17 +209,20 @@ struct Story {
         return buffer[];
     }
 
+    @nogc
     IStr text() {
         if (!hasText) return "";
         return opIndex(lineIndex)[1 .. $].trimStart();
     }
 
+    @nogc
     Fault throwOpFault(StoryOp op, Sz position) {
         faultOp = op;
         faultTokenPosition = position;
         return Fault.invalid;
     }
 
+    @nogc
     StoryNumber findVariable(StoryWord name) {
         foreach (i, variable; variables) {
             if (name == variable.name) return cast(StoryNumber) i;
@@ -217,6 +230,7 @@ struct Story {
         return -1;
     }
 
+    @nogc
     StoryNumber findLabel(StoryWord name) {
         foreach (i, label; labels) {
             if (name == label.name) return cast(StoryNumber) i;
@@ -224,19 +238,23 @@ struct Story {
         return -1;
     }
 
+    @nogc
     void setNextLabelIndex(StoryNumber value) {
         nextLabelIndex = cast(StoryNumber) (value % (labels.length + 1));
     }
 
+    @nogc
     void setLineIndex(StoryNumber value) {
         lineIndex = (value) % (lineCount + 1);
     }
 
+    @nogc
     void resetLineIndex() {
         lineIndex = lineCount;
         nextLabelIndex = 0;
     }
 
+    @nogc
     void jumpLineIndex(StoryNumber labelIndex) {
         lineIndex = labels[labelIndex].value.get!StoryNumber();
         setNextLabelIndex(labelIndex + 1);
@@ -712,6 +730,7 @@ struct Story {
         variables.reserve(capacity);
     }
 
+    @nogc
     void free() {
         script.free();
         pairs.free();
@@ -721,6 +740,7 @@ struct Story {
     }
 }
 
+@nogc
 bool isMaybeStoryOp(IStr value) {
     if (value.length == 0) return false;
     auto c = value[0];
@@ -732,6 +752,7 @@ bool isMaybeStoryOp(IStr value) {
     }
 }
 
+@nogc
 bool isMaybeStoryNumber(IStr value) {
     if (value.length == 0) return false;
     auto c = value[0];
@@ -743,12 +764,14 @@ bool isMaybeStoryNumber(IStr value) {
     }
 }
 
+@nogc
 bool isMaybeStoryWord(IStr value) {
     if (value.length == 0) return false;
     auto c = value[0];
     return c == '_' || (!c.isUpper && !c.isSymbol);
 }
 
+@nogc
 Result!StoryLineKind toStoryLineKind(char value) {
     switch (value) with (StoryLineKind) {
         case ' ': return Result!StoryLineKind(empty);
@@ -763,6 +786,7 @@ Result!StoryLineKind toStoryLineKind(char value) {
     }
 }
 
+@nogc
 Result!StoryOp toStoryOp(IStr value) {
     switch (value) with (StoryOp) {
         case "+": return Result!StoryOp(ADD);

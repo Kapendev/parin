@@ -22,7 +22,7 @@ import joka.math;
 import joka.types;
 import parin.engine;
 
-@safe @nogc nothrow:
+@safe nothrow:
 
 deprecated("Every name starts with `Box` now.") {
     alias BaseBoxId        = BoxId;
@@ -94,7 +94,7 @@ struct BoxMover {
     float gravityFallFactor = 0.7f;
     float decelerationFactor = 0.3f;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     this(float speed, float acceleration, float gravity = 0.0f, float jump = 0.0f) {
         this.speed = speed;
@@ -175,7 +175,7 @@ struct BoxWorld {
     int gridTileWidth;
     int gridTileHeight;
 
-    @safe @nogc nothrow:
+    @safe nothrow:
 
     BoxWallId appendWall(IRect box, BoxSide side = BoxSide.none) {
         walls.append(box);
@@ -201,12 +201,14 @@ struct BoxWorld {
         return id;
     }
 
+    @nogc
     void clearWalls() {
         if (grid.length != 0) return;
         walls.clear();
         wallsProperties.clear();
     }
 
+    @nogc
     void clearActors() {
         if (grid.length != 0) return;
         actors.clear();
@@ -253,16 +255,19 @@ struct BoxWorld {
         }
     }
 
+    @nogc
     void disableGrid() {
         gridTileWidth = 0;
         gridTileHeight = 0;
         grid.clear();
     }
 
+    @nogc
     bool isGridPointValid(IVec2 point) {
         return point.x >= 0 && point.y >= 0 && grid.has(point.y, point.x);
     }
 
+    @nogc
     IVec2 getGridPoint(IRect box) {
         if (!grid.length) assert(0, "Can't get a grid point from a disabled grid.");
         return IVec2(
@@ -271,21 +276,25 @@ struct BoxWorld {
         );
     }
 
+    @nogc
     ref IRect getWall(BoxWallId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return walls[id - 1];
     }
 
+    @nogc
     ref BoxWallProperties getWallProperties(BoxWallId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return wallsProperties[id - 1];
     }
 
+    @nogc
     ref IRect getActor(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return actors[id - 1];
     }
 
+    @nogc
     ref BoxActorProperties getActorProperties(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return actorsProperties[id - 1];
@@ -328,6 +337,7 @@ struct BoxWorld {
         return hasWallCollision(getWall(id));
     }
 
+    @nogc
     BoxWallId hasWallCollision(BoxWallId id1, BoxWallId id2) {
         return getWall(id1).hasIntersection(getWall(id2)) ? id2 : 0;
     }
@@ -369,6 +379,7 @@ struct BoxWorld {
         return hasActorCollision(getActor(id));
     }
 
+    @nogc
     BoxActorId hasActorCollision(BoxActorId id1, BoxActorId id2) {
         return getActor(id1).hasIntersection(getActor(id2)) ? id2 : 0;
     }
@@ -711,6 +722,7 @@ struct BoxWorld {
         return moveWall(id, target - wall.position.toVec());
     }
 
+    @nogc
     void clear() {
         walls.clear();
         wallsProperties.clear();
@@ -726,6 +738,7 @@ struct BoxWorld {
         actorsProperties.reserve(capacity);
     }
 
+    @nogc
     void free() {
         walls.free();
         actors.free();
@@ -739,6 +752,7 @@ struct BoxWorld {
     }
 }
 
+@nogc
 void drawDebugBoxWorld(ref BoxWorld world) {
     foreach (wall; world.walls) drawRect(wall.toRect(), brown.alpha(170));
     foreach (actor; world.actors) drawRect(actor.toRect(), cyan.alpha(170));

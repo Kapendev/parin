@@ -11,17 +11,20 @@ module parin.timer;
 
 import parin.engine;
 
-@safe @nogc nothrow:
+@safe nothrow @nogc:
 
 /// A timer with pause/resume and repeat support.
 struct Timer {
     float duration = 1.0f;                  /// The duration of the timer, in seconds.
-    float pausedTime = 0.0f;                /// The elapsed time when the timer was paused.
+    float pauseTime = 0.0f;                 /// The elapsed time when the timer was paused.
     float startTime = 0.0f;                 /// The elapsed time when the timer was started.
     float stopTimeElapsedTimeBuffer = 0.0f; /// Buffer storing the elapsed time after stopping.
     bool canRepeat;                         /// Whether the timer restarts automatically after completion.
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
+
+    deprecated("Will be replaced with pauseTime.")
+    alias pausedTime = pauseTime;
 
     /// Initializes the timer with the specified duration and repeat behavior.
     this(float duration, bool canRepeat = false) {
@@ -32,7 +35,7 @@ struct Timer {
     /// Returns true if the timer is currently paused.
     bool isPaused() {
         time(); // We need to update the state before checking.
-        return pausedTime != 0.0f;
+        return pauseTime != 0.0f;
     }
 
     /// Returns true if the timer is currently active (running).
@@ -58,14 +61,14 @@ struct Timer {
         if (newDuration >= 0.0f) duration = newDuration;
         startTime = elapsedTime;
         stopTimeElapsedTimeBuffer = 0.0f;
-        pausedTime = 0.0f;
+        pauseTime = 0.0f;
     }
 
     /// Stops the timer and records the time at which it stopped.
     void stop() {
         startTime = 0.0f;
         stopTimeElapsedTimeBuffer = elapsedTime;
-        pausedTime = 0.0f;
+        pauseTime = 0.0f;
     }
 
     /// Toggles the active state of the timer.
@@ -76,13 +79,13 @@ struct Timer {
 
     /// Pauses the time.
     void pause() {
-        pausedTime = time;
+        pauseTime = time;
     }
 
     /// Resumes the timer from the paused state.
     void resume() {
-        startTime = elapsedTime - pausedTime;
-        pausedTime = 0.0f;
+        startTime = elapsedTime - pauseTime;
+        pauseTime = 0.0f;
     }
 
     /// Toggles the paused state of the timer.
@@ -94,7 +97,7 @@ struct Timer {
     /// Returns the current time of the timer and handles stop/repeat logic.
     float time() {
         if (startTime == 0.0f) return 0.0f;
-        if (pausedTime != 0.0f) return pausedTime;
+        if (pauseTime != 0.0f) return pauseTime;
         auto result = max(elapsedTime - startTime, 0.0f);
         if (result >= duration) {
             stop();
@@ -114,8 +117,8 @@ struct Timer {
     void setTime(float newTime) {
         startTime = max(elapsedTime - newTime, 0.0f);
         if (isPaused) {
-            pausedTime = 0.0f;
-            pausedTime = time;
+            pauseTime = 0.0f;
+            pauseTime = time;
         }
     }
 

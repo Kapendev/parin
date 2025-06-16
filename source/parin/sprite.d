@@ -11,7 +11,7 @@ module parin.sprite;
 
 import parin.engine;
 
-@safe @nogc nothrow:
+@safe nothrow @nogc:
 
 struct SpriteAnimation {
     ubyte frameRow;
@@ -28,7 +28,7 @@ struct SpriteAnimationGroup2 {
 
     enum angleStep = 180.0f;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -44,7 +44,7 @@ struct SpriteAnimationGroup4 {
 
     enum angleStep = 90.0f;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     SpriteAnimation pick(float angle) {
         // NOTE: This is a hack to make things look better in simple cases.
@@ -65,7 +65,7 @@ struct SpriteAnimationGroup8 {
 
     enum angleStep = 45.0f;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -81,7 +81,7 @@ struct SpriteAnimationGroup16 {
 
     enum angleStep = 22.5f;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     SpriteAnimation pick(float angle) {
         auto id = (cast(int) round(snap(angle, angleStep) / angleStep)) % frameRows.length;
@@ -100,7 +100,7 @@ struct Sprite {
     Vec2 position;              /// The position of the sprite.
     bool isPaused;              /// The pause state of the sprite.
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     deprecated("Will be replaced with isActive.")
     alias isRunning = isActive;

@@ -380,7 +380,7 @@ enum Gamepad : ushort {
 ```d
 struct Timer {
     float duration;
-    float pausedTime;
+    float pauseTime;
     float startTime;
     float stopTimeElapsedTimeBuffer;
     bool canRepeat;

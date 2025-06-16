@@ -14,7 +14,7 @@ import joka.ascii;
 import joka.memory;
 import parin.engine;
 
-@safe @nogc nothrow:
+@safe nothrow:
 
 UiState* uiState;
 UiState* uiPreviousState;
@@ -56,7 +56,7 @@ struct UiOptions {
     Vec2 dragLimitY = Vec2(-100000.0f, 100000.0f);
     bool isDisabled = false;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     this(ubyte fontScale) {
         this.fontScale = fontScale;
@@ -95,20 +95,6 @@ struct UiState {
     short previousMaxHotItemIdBuffer;
 }
 
-bool isSpaceInTextField(char c) {
-    return c == ' ' || c == '_' || c == '.';
-}
-
-int findSpaceInTextField(IStr text) {
-    auto result = text.findEnd(' ');
-    auto temp = -1;
-    temp = text.findEnd('_');
-    if (temp > result) result = temp;
-    temp = text.findEnd('.');
-    if (temp > result) result = temp;
-    return result;
-}
-
 @trusted
 void prepareUi() {
     if (uiState == null) {
@@ -122,6 +108,22 @@ void prepareUi() {
     uiState.activeItemId = 0;
     uiState.clickedItemId = 0;
     uiState.previousMaxHotItemId = uiState.previousMaxHotItemIdBuffer;
+}
+
+@safe nothrow @nogc:
+
+bool isSpaceInTextField(char c) {
+    return c == ' ' || c == '_' || c == '.';
+}
+
+int findSpaceInTextField(IStr text) {
+    auto result = text.findEnd(' ');
+    auto temp = -1;
+    temp = text.findEnd('_');
+    if (temp > result) result = temp;
+    temp = text.findEnd('.');
+    if (temp > result) result = temp;
+    return result;
 }
 
 Vec2 uiMouse() {

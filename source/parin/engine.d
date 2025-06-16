@@ -17,10 +17,404 @@ public import joka.containers;
 public import joka.math;
 public import joka.types;
 
-@trusted @nogc nothrow:
+extern(C) __gshared EngineState* engineState;
 
+@trusted nothrow:
+
+/// Converts a texture into a managed engine resource.
+/// The texture will be freed when the resource is freed.
 extern(C)
-__gshared EngineState* engineState;
+TextureId toTextureId(Texture from) {
+    if (from.isEmpty) return TextureId();
+    auto id = TextureId(engineState.textures.append(from));
+    id.data.value += 1;
+    return id;
+}
+
+/// Converts a font into a managed engine resource.
+/// The font will be freed when the resource is freed.
+extern(C)
+FontId toFontId(Font from) {
+    if (from.isEmpty) return FontId();
+    auto id = FontId(engineState.fonts.append(from));
+    id.data.value += 1;
+    return id;
+}
+
+/// Converts a sound into a managed engine resource.
+/// The sound will be freed when the resource is freed.
+extern(C)
+SoundId toSoundId(Sound from) {
+    if (from.isEmpty) return SoundId();
+    auto id = SoundId(engineState.sounds.append(from));
+    id.data.value += 1;
+    return id;
+}
+
+/// Converts an ASCII bitmap font texture into a font.
+/// The texture will be freed when the font is freed.
+// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
+// NOTE: It uses the raylib allocator.
+extern(C)
+Font toAsciiFont(Texture from, int tileWidth, int tileHeight) {
+    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
+    auto result = Font();
+    result.lineSpacing = tileHeight;
+    auto rowCount = from.height / tileHeight;
+    auto colCount = from.width / tileWidth;
+    auto maxCount = rowCount * colCount;
+    result.data.baseSize = tileHeight;
+    result.data.glyphCount = maxCount;
+    result.data.glyphPadding = 0;
+    result.data.texture = from.data;
+    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
+    foreach (i; 0 .. maxCount) {
+        result.data.recs[i].x = (i % colCount) * tileWidth;
+        result.data.recs[i].y = (i / colCount) * tileHeight;
+        result.data.recs[i].width = tileWidth;
+        result.data.recs[i].height = tileHeight;
+    }
+    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
+    foreach (i; 0 .. maxCount) {
+        result.data.glyphs[i] = rl.GlyphInfo();
+        result.data.glyphs[i].value = i + 32;
+    }
+    return result;
+}
+
+/// Loads a text file from the assets folder and saves the content into the given buffer.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    return readTextIntoBuffer(targetPath, buffer);
+}
+
+/// Loads a text file from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Result!LStr loadRawText(IStr path) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    return readText(targetPath);
+}
+
+/// Loads a text file from the assets folder.
+/// The resource remains valid until this function is called again.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Result!IStr loadTempText(IStr path) {
+    auto fault = loadRawTextIntoBuffer(path, engineState.loadTextBuffer);
+    return Result!IStr(engineState.loadTextBuffer.items, fault);
+}
+
+/// Loads a texture file (PNG) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Result!Texture loadRawTexture(IStr path) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toParin();
+    value.setFilter(engineState.defaultFilter);
+    value.setWrap(engineState.defaultWrap);
+    return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads a texture file (PNG) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+TextureId loadTexture(IStr path) {
+    auto resource = loadRawTexture(path);
+    if (resource.isNone) return TextureId();
+    return resource.get().toTextureId();
+}
+
+/// Loads a font file (TTF, OTF) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
+    if (value.data.texture.id == rl.GetFontDefault().texture.id) {
+        value = Font();
+    }
+    value.runeSpacing = runeSpacing;
+    value.lineSpacing = lineSpacing;
+    value.setFilter(engineState.defaultFilter);
+    value.setWrap(engineState.defaultWrap);
+    return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads a font file (TTF, OTF) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
+    auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
+    if (resource.isNone) return FontId();
+    return resource.get().toFontId();
+}
+
+/// Loads an ASCII bitmap font file (PNG) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+extern(C)
+Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
+    auto value = loadRawTexture(path).getOr();
+    return Result!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads an ASCII bitmap font file (PNG) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+extern(C)
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
+    auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight);
+    if (resource.isNone) return FontId();
+    return resource.get().toFontId();
+}
+
+/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    auto value = Sound();
+    if (path.endsWith(".wav")) {
+        value.data = rl.LoadSound(targetPath.toCStr().getOr());
+    } else {
+        value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
+    }
+    if (value.isEmpty) {
+        return Result!Sound();
+    } else {
+        value.setVolume(volume);
+        value.setPitch(pitch, true);
+        value.canRepeat = canRepeat;
+        value.pitchVariance = pitchVariance;
+        return Result!Sound(value);
+    }
+}
+
+/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
+    auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
+    if (resource.isNone) return SoundId();
+    return resource.get().toSoundId();
+}
+
+/// Saves a text file to the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+extern(C)
+Fault saveText(IStr path, IStr text) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    return writeText(targetPath, text);
+}
+
+/// Sets the path of the assets folder.
+extern(C)
+void setAssetsPath(IStr path) {
+    engineState.assetsPath.clear();
+    engineState.assetsPath.append(path);
+}
+
+/// Opens a window with the specified size and title.
+/// You should avoid calling this function manually.
+extern(C)
+void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
+    if (rl.IsWindowReady) return;
+    // Raylib stuff.
+    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
+    rl.SetTraceLogLevel(rl.LOG_ERROR);
+    rl.InitWindow(width, height, title.toCStr().getOr());
+    rl.InitAudioDevice();
+    rl.SetExitKey(rl.KEY_NULL);
+    rl.SetTargetFPS(60);
+    rl.SetWindowMinSize(240, 135);
+    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+    // Engine stuff.
+    engineState = jokaMake!EngineState();
+    engineState.fullscreenState.previousWindowWidth = width;
+    engineState.fullscreenState.previousWindowHeight = height;
+    engineState.viewport.data.color = gray;
+    engineViewportInfo(true);
+    if (args.length) {
+        foreach (arg; args) engineState.envArgsBuffer.append(arg);
+        engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+    }
+    engineState.loadTextBuffer.reserve(8192);
+    engineState.saveTextBuffer.reserve(8192);
+    engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
+    engineState.textures.reserve(defaultEngineTexturesCapacity);
+    engineState.sounds.reserve(defaultEngineSoundsCapacity);
+    engineState.fonts.reserve(defaultEngineFontsCapacity);
+    // Load debug font.
+    auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
+    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
+    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toParin();
+    engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
+    rl.UnloadImage(monogramImage);
+}
+
+/// Opens a window with the specified size and title, using C strings.
+/// You should avoid calling this function manually.
+extern(C)
+void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
+    openWindow(width, height, null, title.cStrToStr());
+    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
+    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
+}
+
+/// Use by the `updateWindow` function.
+/// You should avoid calling this function manually.
+extern(C)
+bool updateWindowLoop() {
+    // Begin drawing.
+    if (isResolutionLocked) {
+        rl.BeginTextureMode(engineState.viewport.data.toRl());
+    } else {
+        rl.BeginDrawing();
+    }
+    rl.ClearBackground(engineState.viewport.data.color.toRl());
+
+    // The main loop.
+    if (rl.IsFileDropped) {
+        auto list = rl.LoadDroppedFiles();
+        foreach (i; 0 .. list.count) {
+            engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
+        }
+    }
+    // Update buffers and resources.
+    with (Keyboard) {
+        if (isResolutionLocked) {
+            auto rlMouse = rl.GetTouchPosition(0);
+            auto info = engineViewportInfo;
+            engineState.mouseBuffer = Vec2(
+                floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
+                floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+            );
+        } else {
+            engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+        }
+        engineState.wasdBuffer = Vec2(
+            (d.isDown || right.isDown) - (a.isDown || left.isDown),
+            (s.isDown || down.isDown) - (w.isDown || up.isDown),
+        );
+        engineState.wasdPressedBuffer = Vec2(
+            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
+            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+        );
+        engineState.wasdReleasedBuffer = Vec2(
+            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
+            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+        );
+    }
+    foreach (ref sound; engineState.sounds.items) {
+        updateSoundX(sound);
+    }
+    auto result = engineState.updateFunc(deltaTime);
+    engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
+    if (rl.IsFileDropped) {
+        // NOTE: LoadDroppedFiles just returns a global variable.
+        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
+        engineState.droppedFilePathsBuffer.clear();
+    }
+
+    // End drawing.
+    if (isResolutionLocked) {
+        auto info = engineViewportInfo;
+        rl.EndTextureMode();
+        rl.BeginDrawing();
+        rl.ClearBackground(engineState.borderColor.toRl());
+        rl.DrawTexturePro(
+            engineState.viewport.data.toRl().texture,
+            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
+            info.area.toRl(),
+            rl.Vector2(0.0f, 0.0f),
+            0.0f,
+            rl.Color(255, 255, 255, 255),
+        );
+        rl.EndDrawing();
+    } else {
+        rl.EndDrawing();
+    }
+
+    // Viewport code.
+    if (engineState.viewport.isChanging) {
+        if (engineState.viewport.isLocking) {
+            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+        } else {
+            auto temp = engineState.viewport.data.color;
+            engineState.viewport.data.free();
+            engineState.viewport.data.color = temp;
+        }
+        engineState.viewport.isChanging = false;
+        engineViewportInfo(true);
+    }
+    // Fullscreen code.
+    if (engineState.fullscreenState.isChanging) {
+        engineState.fullscreenState.changeTime += deltaTime;
+        if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
+            if (rl.IsWindowFullscreen()) {
+                rl.ToggleFullscreen();
+                // Size is first because raylib likes that. I will make raylib happy.
+                rl.SetWindowSize(
+                    engineState.fullscreenState.previousWindowWidth,
+                    engineState.fullscreenState.previousWindowHeight,
+                );
+                rl.SetWindowPosition(
+                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
+                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
+                );
+            } else {
+                rl.ToggleFullscreen();
+            }
+            engineState.fullscreenState.isChanging = false;
+        }
+    }
+    return result;
+}
+
+version (WebAssembly) {
+    /// Use by the `updateWindow` function.
+    /// You should avoid calling this function manually.
+    extern(C)
+    void updateWindowLoopWeb() {
+        if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
+    }
+}
+
+/// Updates the window every frame with the given function.
+/// This function will return when the given function returns true.
+/// You should avoid calling this function manually.
+extern(C)
+void updateWindow(bool function(float dt) updateFunc) {
+    // Maybe bad idea, but makes life of no-attribute people easier.
+    engineState.updateFunc = cast(EngineUpdateFunc) updateFunc;
+    engineState.flags |= EngineFlag.isUpdating;
+    version (WebAssembly) {
+        rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
+    } else {
+        while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
+    }
+    engineState.flags &= ~EngineFlag.isUpdating;
+}
+
+/// Closes the window.
+/// You should avoid calling this function manually.
+extern(C)
+void closeWindow() {
+    if (!rl.IsWindowReady()) return;
+    // NOTE: This leaks. Someone call the memory police!!!
+    engineState = null;
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
+}
+
+@trusted nothrow @nogc:
 
 alias EngineUpdateFunc      = bool function(float dt);
 alias EngineReadyFinishFunc = void function();
@@ -204,7 +598,7 @@ struct DrawOptions {
     Hook hook       = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
     Flip flip       = Flip.none;    /// A value representing flipping orientations.
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Initializes the options with the given rotation.
     this(float rotation) {
@@ -240,7 +634,7 @@ struct TextOptions {
     Alignment alignment    = Alignment.left; /// A value represeting alignment orientations.
     bool isRightToLeft     = false;          /// Indicates whether the content of the text flows in a right-to-left direction.
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Initializes the options with the given visibility ratio.
     this(float visibilityRatio) {
@@ -258,7 +652,7 @@ struct TextOptions {
 struct Texture {
     rl.Texture2D data;
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Checks if the texture is not loaded.
     bool isEmpty() {
@@ -306,7 +700,7 @@ struct Texture {
 struct TextureId {
     GenerationalIndex data;
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Returns the width of the texture associated with the resource identifier.
     int width() {
@@ -367,7 +761,7 @@ struct Font {
     int runeSpacing; /// The spacing between individual characters.
     int lineSpacing; /// The spacing between lines of text.
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Checks if the font is not loaded.
     bool isEmpty() {
@@ -405,7 +799,7 @@ struct Font {
 struct FontId {
     GenerationalIndex data;
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Returns the spacing between individual characters of the font associated with the resource identifier.
     int runeSpacing() {
@@ -470,7 +864,7 @@ struct Sound {
     bool isActive;
     bool isPaused;
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
@@ -557,7 +951,7 @@ struct Sound {
 struct SoundId {
     GenerationalIndex data;
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     deprecated("Will be replaced with canRepeat.")
     alias isLooping = canRepeat;
@@ -671,7 +1065,7 @@ struct Viewport {
     Blend blend;     /// A value representing blending modes.
     bool isAttached; /// Indicates whether the viewport is currently in use.
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Initializes the viewport with the given size, background color and blend mode.
     this(Rgba color, Blend blend = Blend.alpha) {
@@ -770,7 +1164,7 @@ struct Camera {
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
     bool isAttached;       /// Indicates whether the camera is currently in use.
 
-    @trusted @nogc nothrow:
+    @trusted nothrow @nogc:
 
     /// Initializes the camera with the given position and optional centering.
     this(Vec2 position, bool isCentered = false) {
@@ -1092,67 +1486,6 @@ void detachViewport(ref Viewport viewport) {
     viewport.detach();
 }
 
-/// Converts a texture into a managed engine resource.
-/// The texture will be freed when the resource is freed.
-extern(C)
-TextureId toTextureId(Texture from) {
-    if (from.isEmpty) return TextureId();
-    auto id = TextureId(engineState.textures.append(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts a font into a managed engine resource.
-/// The font will be freed when the resource is freed.
-extern(C)
-FontId toFontId(Font from) {
-    if (from.isEmpty) return FontId();
-    auto id = FontId(engineState.fonts.append(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts a sound into a managed engine resource.
-/// The sound will be freed when the resource is freed.
-extern(C)
-SoundId toSoundId(Sound from) {
-    if (from.isEmpty) return SoundId();
-    auto id = SoundId(engineState.sounds.append(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts an ASCII bitmap font texture into a font.
-/// The texture will be freed when the font is freed.
-// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
-// NOTE: It uses the raylib allocator.
-extern(C)
-Font toAsciiFont(Texture from, int tileWidth, int tileHeight) {
-    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
-    auto result = Font();
-    result.lineSpacing = tileHeight;
-    auto rowCount = from.height / tileHeight;
-    auto colCount = from.width / tileWidth;
-    auto maxCount = rowCount * colCount;
-    result.data.baseSize = tileHeight;
-    result.data.glyphCount = maxCount;
-    result.data.glyphPadding = 0;
-    result.data.texture = from.data;
-    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.recs[i].x = (i % colCount) * tileWidth;
-        result.data.recs[i].y = (i / colCount) * tileHeight;
-        result.data.recs[i].width = tileWidth;
-        result.data.recs[i].height = tileHeight;
-    }
-    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.glyphs[i] = rl.GlyphInfo();
-        result.data.glyphs[i].value = i + 32;
-    }
-    return result;
-}
-
 /// Returns the opposite flip value.
 /// The opposite of every flip value except none is none.
 /// The fallback value is returned if the flip value is none.
@@ -1208,13 +1541,6 @@ IStr assetsPath() {
     return engineState.assetsPath.items;
 }
 
-/// Sets the path of the assets folder.
-extern(C)
-void setAssetsPath(IStr path) {
-    engineState.assetsPath.clear();
-    engineState.assetsPath.append(path);
-}
-
 /// Converts a path to a path within the assets folder.
 extern(C)
 IStr toAssetsPath(IStr path) {
@@ -1233,131 +1559,6 @@ IStr[] droppedFilePaths() {
 ref LStr prepareTempText() {
     engineState.saveTextBuffer.clear();
     return engineState.saveTextBuffer;
-}
-
-/// Loads a text file from the assets folder and saves the content into the given buffer.
-/// Supports both forward slashes and backslashes in file paths.
-Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return readTextIntoBuffer(targetPath, buffer);
-}
-
-/// Loads a text file from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-Result!LStr loadRawText(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return readText(targetPath);
-}
-
-/// Loads a text file from the assets folder.
-/// The resource remains valid until this function is called again.
-/// Supports both forward slashes and backslashes in file paths.
-Result!IStr loadTempText(IStr path) {
-    auto fault = loadRawTextIntoBuffer(path, engineState.loadTextBuffer);
-    return Result!IStr(engineState.loadTextBuffer.items, fault);
-}
-
-/// Loads a texture file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-Result!Texture loadRawTexture(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toParin();
-    value.setFilter(engineState.defaultFilter);
-    value.setWrap(engineState.defaultWrap);
-    return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
-}
-
-/// Loads a texture file (PNG) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-TextureId loadTexture(IStr path) {
-    auto resource = loadRawTexture(path);
-    if (resource.isNone) return TextureId();
-    return resource.get().toTextureId();
-}
-
-/// Loads a font file (TTF, OTF) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
-    if (value.data.texture.id == rl.GetFontDefault().texture.id) {
-        value = Font();
-    }
-    value.runeSpacing = runeSpacing;
-    value.lineSpacing = lineSpacing;
-    value.setFilter(engineState.defaultFilter);
-    value.setWrap(engineState.defaultWrap);
-    return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
-}
-
-/// Loads a font file (TTF, OTF) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
-    auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
-    if (resource.isNone) return FontId();
-    return resource.get().toFontId();
-}
-
-/// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    auto value = loadRawTexture(path).getOr();
-    return Result!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
-}
-
-/// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-extern(C)
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight);
-    if (resource.isNone) return FontId();
-    return resource.get().toFontId();
-}
-
-/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = Sound();
-    if (path.endsWith(".wav")) {
-        value.data = rl.LoadSound(targetPath.toCStr().getOr());
-    } else {
-        value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
-    }
-    if (value.isEmpty) {
-        return Result!Sound();
-    } else {
-        value.setVolume(volume);
-        value.setPitch(pitch, true);
-        value.canRepeat = canRepeat;
-        value.pitchVariance = pitchVariance;
-        return Result!Sound(value);
-    }
-}
-
-/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
-    if (resource.isNone) return SoundId();
-    return resource.get().toSoundId();
-}
-
-/// Saves a text file to the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Fault saveText(IStr path, IStr text) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return writeText(targetPath, text);
 }
 
 /// Frees all managed engine resources.
@@ -1382,199 +1583,6 @@ void freeEngineResources() {
 extern(C)
 void openUrl(IStr url = "https://github.com/Kapendev/parin") {
     rl.OpenURL(url.toCStr().getOr());
-}
-
-/// Opens a window with the specified size and title.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
-    if (rl.IsWindowReady) return;
-    // Raylib stuff.
-    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
-    rl.SetTraceLogLevel(rl.LOG_ERROR);
-    rl.InitWindow(width, height, title.toCStr().getOr());
-    rl.InitAudioDevice();
-    rl.SetExitKey(rl.KEY_NULL);
-    rl.SetTargetFPS(60);
-    rl.SetWindowMinSize(240, 135);
-    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-    // Engine stuff.
-    engineState = jokaMake!EngineState();
-    engineState.fullscreenState.previousWindowWidth = width;
-    engineState.fullscreenState.previousWindowHeight = height;
-    engineState.viewport.data.color = gray;
-    engineViewportInfo(true);
-    if (args.length) {
-        foreach (arg; args) engineState.envArgsBuffer.append(arg);
-        engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
-    }
-    engineState.loadTextBuffer.reserve(8192);
-    engineState.saveTextBuffer.reserve(8192);
-    engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
-    engineState.textures.reserve(defaultEngineTexturesCapacity);
-    engineState.sounds.reserve(defaultEngineSoundsCapacity);
-    engineState.fonts.reserve(defaultEngineFontsCapacity);
-    // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
-    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
-    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toParin();
-    engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
-    rl.UnloadImage(monogramImage);
-}
-
-/// Opens a window with the specified size and title, using C strings.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
-    openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
-    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
-}
-
-/// Use by the `updateWindow` function.
-/// You should avoid calling this function manually.
-extern(C)
-bool updateWindowLoop() {
-    // Begin drawing.
-    if (isResolutionLocked) {
-        rl.BeginTextureMode(engineState.viewport.data.toRl());
-    } else {
-        rl.BeginDrawing();
-    }
-    rl.ClearBackground(engineState.viewport.data.color.toRl());
-
-    // The main loop.
-    if (rl.IsFileDropped) {
-        auto list = rl.LoadDroppedFiles();
-        foreach (i; 0 .. list.count) {
-            engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
-        }
-    }
-    // Update buffers and resources.
-    with (Keyboard) {
-        if (isResolutionLocked) {
-            auto rlMouse = rl.GetTouchPosition(0);
-            auto info = engineViewportInfo;
-            engineState.mouseBuffer = Vec2(
-                floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
-                floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
-            );
-        } else {
-            engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
-        }
-        engineState.wasdBuffer = Vec2(
-            (d.isDown || right.isDown) - (a.isDown || left.isDown),
-            (s.isDown || down.isDown) - (w.isDown || up.isDown),
-        );
-        engineState.wasdPressedBuffer = Vec2(
-            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
-            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
-        );
-        engineState.wasdReleasedBuffer = Vec2(
-            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
-            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
-        );
-    }
-    foreach (ref sound; engineState.sounds.items) {
-        updateSoundX(sound);
-    }
-    auto result = engineState.updateFunc(deltaTime);
-    engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
-    if (rl.IsFileDropped) {
-        // NOTE: LoadDroppedFiles just returns a global variable.
-        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-        engineState.droppedFilePathsBuffer.clear();
-    }
-
-    // End drawing.
-    if (isResolutionLocked) {
-        auto info = engineViewportInfo;
-        rl.EndTextureMode();
-        rl.BeginDrawing();
-        rl.ClearBackground(engineState.borderColor.toRl());
-        rl.DrawTexturePro(
-            engineState.viewport.data.toRl().texture,
-            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
-            info.area.toRl(),
-            rl.Vector2(0.0f, 0.0f),
-            0.0f,
-            rl.Color(255, 255, 255, 255),
-        );
-        rl.EndDrawing();
-    } else {
-        rl.EndDrawing();
-    }
-
-    // Viewport code.
-    if (engineState.viewport.isChanging) {
-        if (engineState.viewport.isLocking) {
-            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
-        } else {
-            auto temp = engineState.viewport.data.color;
-            engineState.viewport.data.free();
-            engineState.viewport.data.color = temp;
-        }
-        engineState.viewport.isChanging = false;
-        engineViewportInfo(true);
-    }
-    // Fullscreen code.
-    if (engineState.fullscreenState.isChanging) {
-        engineState.fullscreenState.changeTime += deltaTime;
-        if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
-            if (rl.IsWindowFullscreen()) {
-                rl.ToggleFullscreen();
-                // Size is first because raylib likes that. I will make raylib happy.
-                rl.SetWindowSize(
-                    engineState.fullscreenState.previousWindowWidth,
-                    engineState.fullscreenState.previousWindowHeight,
-                );
-                rl.SetWindowPosition(
-                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
-                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
-                );
-            } else {
-                rl.ToggleFullscreen();
-            }
-            engineState.fullscreenState.isChanging = false;
-        }
-    }
-    return result;
-}
-
-/// Use by the `updateWindow` function.
-/// You should avoid calling this function manually.
-version (WebAssembly) {
-    extern(C)
-    void updateWindowLoopWeb() {
-        if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
-    }
-}
-
-/// Updates the window every frame with the given function.
-/// This function will return when the given function returns true.
-/// You should avoid calling this function manually.
-extern(C)
-void updateWindow(bool function(float dt) updateFunc) {
-    // Maybe bad idea, but makes life of no-attribute people easier.
-    engineState.updateFunc = cast(EngineUpdateFunc) updateFunc;
-    engineState.flags |= EngineFlag.isUpdating;
-    version (WebAssembly) {
-        rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
-    } else {
-        while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
-    }
-    engineState.flags &= ~EngineFlag.isUpdating;
-}
-
-/// Closes the window.
-/// You should avoid calling this function manually.
-extern(C)
-void closeWindow() {
-    if (!rl.IsWindowReady()) return;
-    // NOTE: This leaks. Someone call the memory police!!!
-    engineState = null;
-    rl.CloseAudioDevice();
-    rl.CloseWindow();
 }
 
 /// Returns true if the assets path is currently in use when loading.
@@ -2857,6 +2865,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 }
 
 /// Draws debug tile information at the given position with the provided draw options.
+extern(C)
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     auto mouse = mouse.toWorldPoint(camera);
     auto gridPoint = Vec2(mouse.x / tileWidth, mouse.y / tileHeight).floor();

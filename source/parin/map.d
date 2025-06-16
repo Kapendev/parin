@@ -14,14 +14,14 @@ module parin.map;
 import joka.ascii;
 import parin.engine;
 
-@safe @nogc nothrow:
+@safe nothrow:
 
 struct Tile {
     int widthHeight = 16;
     Vec2 position;
     short id;
 
-    @safe @nogc nothrow:
+    @safe nothrow @nogc:
 
     this(int widthHeight, short id, Vec2 position = Vec2()) {
         this.widthHeight = widthHeight;
@@ -80,7 +80,7 @@ struct TileMap {
     int tileHeight = 16;
     Vec2 position;
 
-    @safe @nogc nothrow:
+    @safe nothrow:
 
     this(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
         this.tileWidth = tileWidth;
@@ -92,79 +92,88 @@ struct TileMap {
         this(defaultGridRowCount, defaultGridColCount, tileWidth, tileHeight);
     }
 
+    @nogc
     ref short opIndex(Sz row, Sz col) {
-        if (!has(row, col)) {
-            assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        }
+        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
         return data[row, col];
     }
 
+    @nogc
     ref short opIndex(IVec2 position) {
         return opIndex(position.y, position.x);
     }
 
+    @nogc
     void opIndexAssign(short rhs, Sz row, Sz col) {
-        if (!has(row, col)) {
-            assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        }
+        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
         data[row, col] = rhs;
     }
 
+    @nogc
     void opIndexAssign(short rhs, IVec2 position) {
         return opIndexAssign(rhs, position.y, position.x);
     }
 
+    @nogc
     void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
-        if (!has(row, col)) {
-            assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        }
+        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
         mixin("data[colCount * row + col]", op, "= rhs;");
     }
 
+    @nogc
     void opIndexOpAssign(IStr op)(T rhs, IVec2 position) {
         return opIndexOpAssign!(op)(rhs, position.y, position.x);
     }
 
+    @nogc
     Sz opDollar(Sz dim)() {
         return data.opDollar!dim();
     }
 
     /// The X position of the map.
-    pragma(inline, true) @trusted
+    pragma(inline, true) @trusted @nogc
     ref float x() => position.x;
 
     /// The Y position of the map.
-    pragma(inline, true) @trusted
+    pragma(inline, true) @trusted @nogc
     ref float y() => position.y;
 
+    @nogc
     Sz length() {
         return data.length;
     }
 
+    @nogc
     short* ptr() {
         return data.ptr;
     }
 
+    @nogc
     Sz capacity() {
         return data.capacity;
     }
 
+    @nogc
     bool isEmpty() {
         return data.isEmpty;
     }
 
+    @nogc
     bool has(Sz row, Sz col) {
         return row < softRowCount && col < softColCount;
     }
 
+    @nogc
     bool has(IVec2 position) {
         return has(position.y, position.x);
     }
 
+    @nogc
     Sz hardRowCount() {
         return data.rowCount;
     }
 
+    @nogc
     Sz hardColCount() {
         return data.colCount;
     }
@@ -187,6 +196,7 @@ struct TileMap {
         softColCount = newSoftColCount;
     }
 
+    @nogc
     void fillHard(short value) {
         data.fill(value);
     }
@@ -194,6 +204,7 @@ struct TileMap {
     deprecated("Will be replaced with fill.")
     alias fillSoft = fill;
 
+    @nogc
     void fill(short value) {
         foreach (row; 0 .. softRowCount) {
             foreach (col; 0 .. softColCount) {
@@ -202,6 +213,7 @@ struct TileMap {
         }
     }
 
+    @nogc
     void clearHard() {
         fillHard(-1);
     }
@@ -209,6 +221,7 @@ struct TileMap {
     deprecated("Will be replaced with clear.")
     alias clearSoft = clear;
 
+    @nogc
     void clear() {
         fill(-1);
     }
@@ -217,35 +230,42 @@ struct TileMap {
         data.free();
     }
 
+    @nogc
     int width() {
         return cast(int) (softColCount * tileWidth);
     }
 
+    @nogc
     int height() {
         return cast(int) (softRowCount * tileHeight);
     }
 
     /// Returns the size of the tile map.
+    @nogc
     Vec2 size() {
         return Vec2(width, height);
     }
 
     /// Returns the tile size of the tile map.
+    @nogc
     Vec2 tileSize() {
         return Vec2(tileWidth, tileHeight);
     }
 
     /// Moves the tile map to follow the target position at the specified speed.
+    @nogc
     void followPosition(Vec2 target, float speed) {
         position = position.moveTo(target, Vec2(speed));
     }
 
     /// Moves the tile map to follow the target position with gradual slowdown.
+    @nogc
     void followPositionWithSlowdown(Vec2 target, float slowdown) {
         position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
     }
 
     /// Returns the top left world position of a grid position.
+    @nogc
     Vec2 toWorldPoint(Sz row, Sz col, DrawOptions options = DrawOptions()) {
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
@@ -259,10 +279,12 @@ struct TileMap {
     }
 
     /// Returns the top left world position of a grid position.
+    @nogc
     Vec2 toWorldPoint(IVec2 gridPosition, DrawOptions options = DrawOptions()) {
         return toWorldPoint(gridPosition.y, gridPosition.x, options);
     }
 
+    @nogc
     auto gridPoints(Vec2 topLeftWorldPoint, Vec2 bottomRightWorldPoint, DrawOptions options = DrawOptions()) {
         static struct Range {
             Sz colCount;
@@ -307,6 +329,7 @@ struct TileMap {
         );
     }
 
+    @nogc
     auto gridPoints(Rect worldArea, DrawOptions options = DrawOptions()) {
         return gridPoints(worldArea.topLeftPoint, worldArea.bottomRightPoint, options);
     }
@@ -353,6 +376,7 @@ Fault saveTileMap(IStr path, TileMap map) {
     return saveText(path, csv.items);
 }
 
+@nogc
 void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
     if (tile.id < 0 || tile.widthHeight <= 0) return;
     if (texture.isEmpty) {
@@ -366,10 +390,12 @@ void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) 
     drawTextureAreaX(texture, tile.textureArea(texture.width / tile.widthHeight), tile.position, options);
 }
 
+@nogc
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
     drawTileX(texture.getOr(), tile, options);
 }
 
+@nogc
 void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     if (map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
     if (texture.isEmpty) {
@@ -412,6 +438,7 @@ void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOp
     }
 }
 
+@nogc
 void drawTileMap(TextureId texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     drawTileMapX(texture.getOr(), map, camera, options);
 }
