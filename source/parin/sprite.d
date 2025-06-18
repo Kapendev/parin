@@ -96,9 +96,9 @@ struct Sprite {
     ushort atlasLeft;           /// X offset in the texture atlas.
     ushort atlasTop;            /// Y offset in the texture atlas.
     float frameProgress = 0.0f; /// The current animation progress. The value is between 0 and animation.frameCount (exclusive).
+    bool isPaused;              /// The pause state of the sprite.
     SpriteAnimation animation;  /// The current animation.
     Vec2 position;              /// The position of the sprite.
-    bool isPaused;              /// The pause state of the sprite.
 
     @safe nothrow @nogc:
 

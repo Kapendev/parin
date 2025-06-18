@@ -7,6 +7,8 @@
 // ---
 
 // TODO: Update all the doc comments here.
+// TODO: Try to make some stuff simpler maybe.
+// NOTE: Maybe the map could return `Tile` as info for something.
 
 /// The `map` module provides a simple and fast tile map.
 module parin.map;
@@ -17,26 +19,27 @@ import parin.engine;
 @safe nothrow:
 
 struct Tile {
-    int widthHeight = 16;
-    Vec2 position;
+    short width;
+    short height;
     short id;
+    ubyte idOffset;
+    Vec2 position;
 
     @safe nothrow @nogc:
 
-    this(int widthHeight, short id, Vec2 position = Vec2()) {
-        this.widthHeight = widthHeight;
+    this(short width, short height, short id, Vec2 position = Vec2()) {
+        this.width = width;
+        this.height = height;
         this.id = id;
         this.position = position;
     }
 
-    this(int widthHeight, short id, float x, float y) {
-        this(widthHeight, id, Vec2(x, y));
+    this(short width, short height, short id, float x, float y) {
+        this(width, height, id, Vec2(x, y));
     }
 
-    deprecated("Will be replaced with widthHeight.")
-    int width() => widthHeight;
-    deprecated("Will be replaced with widthHeight.")
-    int height() => widthHeight;
+    deprecated("Will be replaced with width and height.")
+    int widthHeight() => width;
 
     /// The X position of the tile.
     pragma(inline, true) @trusted
@@ -48,16 +51,16 @@ struct Tile {
 
     /// The size of the tile.
     pragma(inline, true)
-    Vec2 size() => Vec2(widthHeight, widthHeight);
+    Vec2 size() => Vec2(width, height);
 
     pragma(inline, true)
-    Sz row(Sz colCount) => id / colCount;
+    Sz row(Sz colCount) => (id + idOffset) / colCount;
 
     pragma(inline, true)
-    Sz col(Sz colCount) => id % colCount;
+    Sz col(Sz colCount) => (id + idOffset) % colCount;
 
     Rect textureArea(Sz colCount) {
-        return Rect(col(colCount) * widthHeight, row(colCount) * widthHeight, widthHeight, widthHeight);
+        return Rect(col(colCount) * width, row(colCount) * height, width, height);
     }
 
     /// Moves the tile to follow the target position at the specified speed.
@@ -76,8 +79,8 @@ struct TileMap {
     Grid!short data;
     Sz softRowCount;
     Sz softColCount;
-    int tileWidth = 16;
-    int tileHeight = 16;
+    int tileWidth;
+    int tileHeight;
     Vec2 position;
 
     @safe nothrow:
@@ -378,7 +381,7 @@ Fault saveTileMap(IStr path, TileMap map) {
 
 @nogc
 void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-    if (tile.id < 0 || tile.widthHeight <= 0) return;
+    if (tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
             auto rect = Rect(tile.position, tile.size * options.scale).area(options.hook);
@@ -387,7 +390,7 @@ void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) 
         }
         return;
     }
-    drawTextureAreaX(texture, tile.textureArea(texture.width / tile.widthHeight), tile.position, options);
+    drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
 }
 
 @nogc

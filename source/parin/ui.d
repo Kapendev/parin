@@ -6,6 +6,10 @@
 // Version: v0.0.47
 // ---
 
+// TODO: Add some helper function for arcade-like menus.
+//  Example: https://x.com/hiulit/status/1930230660242747554/photo/3
+//  This example is also nice because it changes some stuff based on the game resolution.
+
 /// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
 

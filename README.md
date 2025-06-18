@@ -83,7 +83,7 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ## Documentation
 
 Start with the [examples](./examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
-For more details, check the [tour page](https://kapendev.github.io/parin-website/pages/tour.html).
+For more details, check the [tour page](TOUR.md).
 
 ## Ideas
 
