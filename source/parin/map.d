@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.47
+// Version: v0.0.48
 // ---
 
 // TODO: Update all the doc comments here.
@@ -92,7 +92,7 @@ struct TileMap {
     }
 
     this(int tileWidth, int tileHeight) {
-        this(defaultGridRowCount, defaultGridColCount, tileWidth, tileHeight);
+        this(128, 128, tileWidth, tileHeight);
     }
 
     @nogc
@@ -340,7 +340,7 @@ struct TileMap {
     Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
         resize(0, 0);
         if (csv.length == 0) return Fault.invalid;
-        if (data.isEmpty) data.resizeBlank(defaultGridRowCount, defaultGridColCount);
+        if (data.isEmpty) data.resizeBlank(128, 128);
         tileWidth = newTileWidth;
         tileHeight = newTileHeight;
         while (csv.length != 0) {

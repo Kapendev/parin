@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.47
+// Version: v0.0.48
 // ---
 
 // TODO: Add some helper function for arcade-like menus.

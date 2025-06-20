@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.47
+// Version: v0.0.48
 // ---
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -427,7 +427,7 @@ enum defaultEngineFontsCapacity        = 16;
 enum defaultEngineEmptyTextureColor    = white;
 enum defaultEngineDebugColor1          = black.alpha(140);
 enum defaultEngineDebugColor2          = white.alpha(140);
-enum engineFont                        = FontId(GenerationalIndex(1)); /// The default engine font. This font should not be freed.
+enum engineFont                        = FontId(GenIndex(1)); /// The default engine font. This font should not be freed.
 
 enum EngineFlag : EngineFlags {
     none                  = 0x0000,
@@ -698,7 +698,7 @@ struct Texture {
 /// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct TextureId {
-    GenerationalIndex data;
+    GenIndex data;
 
     @trusted nothrow @nogc:
 
@@ -729,7 +729,7 @@ struct TextureId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value && engineState.textures.has(GenerationalIndex(data.value - 1, data.generation));
+        return data.value && engineState.textures.has(GenIndex(data.value - 1, data.generation));
     }
 
     /// Checks if the resource identifier is valid and asserts if it is not.
@@ -741,17 +741,17 @@ struct TextureId {
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return engineState.textures[GenerationalIndex(data.value - 1, data.generation)];
+        return engineState.textures[GenIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the texture associated with the resource identifier or returns a default value if invalid.
     Texture getOr() {
-        return isValid ? engineState.textures[GenerationalIndex(data.value - 1, data.generation)] : Texture();
+        return isValid ? engineState.textures[GenIndex(data.value - 1, data.generation)] : Texture();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.textures.remove(GenerationalIndex(data.value - 1, data.generation));
+        if (isValid) engineState.textures.remove(GenIndex(data.value - 1, data.generation));
     }
 }
 
@@ -797,7 +797,7 @@ struct Font {
 /// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct FontId {
-    GenerationalIndex data;
+    GenIndex data;
 
     @trusted nothrow @nogc:
 
@@ -828,7 +828,7 @@ struct FontId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value && engineState.fonts.has(GenerationalIndex(data.value - 1, data.generation));
+        return data.value && engineState.fonts.has(GenIndex(data.value - 1, data.generation));
     }
 
     /// Checks if the resource identifier is valid and asserts if it is not.
@@ -840,17 +840,17 @@ struct FontId {
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return engineState.fonts[GenerationalIndex(data.value - 1, data.generation)];
+        return engineState.fonts[GenIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the font associated with the resource identifier or returns a default value if invalid.
     Font getOr() {
-        return isValid ? engineState.fonts[GenerationalIndex(data.value - 1, data.generation)] : Font();
+        return isValid ? engineState.fonts[GenIndex(data.value - 1, data.generation)] : Font();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid && this != engineFont) engineState.fonts.remove(GenerationalIndex(data.value - 1, data.generation));
+        if (isValid && this != engineFont) engineState.fonts.remove(GenIndex(data.value - 1, data.generation));
     }
 }
 
@@ -949,7 +949,7 @@ struct Sound {
 /// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct SoundId {
-    GenerationalIndex data;
+    GenIndex data;
 
     @trusted nothrow @nogc:
 
@@ -1032,7 +1032,7 @@ struct SoundId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value && engineState.sounds.has(GenerationalIndex(data.value - 1, data.generation));
+        return data.value && engineState.sounds.has(GenIndex(data.value - 1, data.generation));
     }
 
     /// Checks if the resource identifier is valid and asserts if it is not.
@@ -1044,17 +1044,17 @@ struct SoundId {
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return engineState.sounds[GenerationalIndex(data.value - 1, data.generation)];
+        return engineState.sounds[GenIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the sound associated with the resource identifier or returns a default value if invalid.
     Sound getOr() {
-        return isValid ? engineState.sounds[GenerationalIndex(data.value - 1, data.generation)] : Sound();
+        return isValid ? engineState.sounds[GenIndex(data.value - 1, data.generation)] : Sound();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.sounds.remove(GenerationalIndex(data.value - 1, data.generation));
+        if (isValid) engineState.sounds.remove(GenIndex(data.value - 1, data.generation));
     }
 }
 
@@ -1351,9 +1351,9 @@ struct EngineState {
     Viewport userViewport;
 
     EngineViewport viewport;
-    GenerationalList!Texture textures;
-    GenerationalList!Sound sounds;
-    GenerationalList!Font fonts;
+    GenList!Texture textures;
+    GenList!Sound sounds;
+    GenList!Font fonts;
     List!IStr envArgsBuffer;
     List!IStr droppedFilePathsBuffer;
     LStr loadTextBuffer;
