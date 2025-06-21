@@ -19,6 +19,249 @@ public import joka.types;
 
 extern(C) __gshared EngineState* engineState;
 
+alias EngineUpdateFunc      = extern(C) bool function(float dt);
+alias EngineReadyFinishFunc = extern(C) void function();
+alias EngineFlags           = ushort;
+
+/// Opens a window with the specified size and title.
+/// You should avoid calling this function manually.
+extern(C)
+void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
+    if (rl.IsWindowReady) return;
+    // Raylib stuff.
+    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
+    rl.SetTraceLogLevel(rl.LOG_ERROR);
+    rl.InitWindow(width, height, title.toCStr().getOr());
+    rl.InitAudioDevice();
+    rl.SetExitKey(rl.KEY_NULL);
+    rl.SetTargetFPS(60);
+    rl.SetWindowMinSize(240, 135);
+    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+    // Engine stuff.
+    engineState = jokaMake!EngineState();
+    engineState.fullscreenState.previousWindowWidth = width;
+    engineState.fullscreenState.previousWindowHeight = height;
+    engineState.viewport.data.color = gray;
+    if (args.length) {
+        foreach (arg; args) engineState.envArgsBuffer.append(arg);
+        engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+    }
+    engineState.loadTextBuffer.reserve(8192);
+    engineState.saveTextBuffer.reserve(8192);
+    engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
+    engineState.textures.reserve(defaultEngineTexturesCapacity);
+    engineState.sounds.reserve(defaultEngineSoundsCapacity);
+    engineState.fonts.reserve(defaultEngineFontsCapacity);
+    // Load debug font.
+    auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
+    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
+    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toParin();
+    engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
+    rl.UnloadImage(monogramImage);
+}
+
+/// Opens a window with the specified size and title, using C strings.
+/// You should avoid calling this function manually.
+extern(C)
+void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
+    openWindow(width, height, null, title.cStrToStr());
+    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
+    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
+}
+
+/// Use by the `updateWindow` function.
+/// You should avoid calling this function manually.
+extern(C)
+bool updateWindowLoop() {
+    // Update buffers and resources.
+    {
+        auto info = &engineState.viewportInfoBuffer;
+        if (isResolutionLocked) {
+            info.minSize = resolution;
+            info.maxSize = windowSize;
+            auto ratio = info.maxSize / info.minSize;
+            info.minRatio = min(ratio.x, ratio.y);
+            if (isPixelPerfect) {
+                auto roundMinRatio = info.minRatio.round();
+                auto floorMinRation = info.minRatio.floor();
+                info.minRatio = info.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
+            }
+            auto targetSize = info.minSize * Vec2(info.minRatio);
+            auto targetPosition = info.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+            info.area = Rect(
+                targetPosition.floor(),
+                ratio.x == info.minRatio ? targetSize.x : floor(targetSize.x),
+                ratio.y == info.minRatio ? targetSize.y : floor(targetSize.y),
+            );
+        } else {
+            info.minSize = windowSize;
+            info.maxSize = info.minSize;
+            info.minRatio = 1.0f;
+            info.area = Rect(info.minSize);
+        }
+        with (Keyboard) {
+            if (isResolutionLocked) {
+                auto rlMouse = rl.GetTouchPosition(0);
+                engineState.mouseBuffer = Vec2(
+                    floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
+                    floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+                );
+            } else {
+                engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+            }
+            engineState.wasdBuffer = Vec2(
+                (d.isDown || right.isDown) - (a.isDown || left.isDown),
+                (s.isDown || down.isDown) - (w.isDown || up.isDown),
+            );
+            engineState.wasdPressedBuffer = Vec2(
+                (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
+                (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+            );
+            engineState.wasdReleasedBuffer = Vec2(
+                (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
+                (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+            );
+        }
+        foreach (ref sound; engineState.sounds.items) {
+            updateSoundX(sound);
+        }
+        if (rl.IsFileDropped) {
+            auto list = rl.LoadDroppedFiles();
+            foreach (i; 0 .. list.count) {
+                engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
+            }
+        }
+    }
+
+    // Begin drawing.
+    if (isResolutionLocked) {
+        rl.BeginTextureMode(engineState.viewport.data.toRl());
+    } else {
+        rl.BeginDrawing();
+    }
+    rl.ClearBackground(engineState.viewport.data.color.toRl());
+    // Update the game.
+    auto result = engineState.updateFunc(deltaTime);
+    engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
+    if (rl.IsFileDropped) {
+        // NOTE: LoadDroppedFiles just returns a global variable.
+        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
+        engineState.droppedFilePathsBuffer.clear();
+    }
+    // End drawing.
+    if (isResolutionLocked) {
+        auto info = engineViewportInfo;
+        rl.EndTextureMode();
+        rl.BeginDrawing();
+        rl.ClearBackground(engineState.borderColor.toRl());
+        rl.DrawTexturePro(
+            engineState.viewport.data.toRl().texture,
+            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
+            info.area.toRl(),
+            rl.Vector2(0.0f, 0.0f),
+            0.0f,
+            rl.Color(255, 255, 255, 255),
+        );
+        rl.EndDrawing();
+    } else {
+        rl.EndDrawing();
+    }
+
+    // Viewport code.
+    if (engineState.viewport.isChanging) {
+        if (engineState.viewport.isLocking) {
+            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+        } else {
+            auto temp = engineState.viewport.data.color;
+            engineState.viewport.data.free();
+            engineState.viewport.data.color = temp;
+        }
+        engineState.viewport.isChanging = false;
+    }
+    // Fullscreen code.
+    if (engineState.fullscreenState.isChanging) {
+        engineState.fullscreenState.changeTime += deltaTime;
+        if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
+            if (rl.IsWindowFullscreen()) {
+                rl.ToggleFullscreen();
+                // Size is first because raylib likes that. I will make raylib happy.
+                rl.SetWindowSize(
+                    engineState.fullscreenState.previousWindowWidth,
+                    engineState.fullscreenState.previousWindowHeight,
+                );
+                rl.SetWindowPosition(
+                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
+                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
+                );
+            } else {
+                rl.ToggleFullscreen();
+            }
+            engineState.fullscreenState.isChanging = false;
+        }
+    }
+    return result;
+}
+
+version (WebAssembly) {
+    /// Use by the `updateWindow` function.
+    /// You should avoid calling this function manually.
+    extern(C)
+    void updateWindowLoopWeb() {
+        if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
+    }
+}
+
+/// Updates the window every frame with the given function.
+/// This function will return when the given function returns true.
+/// You should avoid calling this function manually.
+extern(C)
+void updateWindow(EngineUpdateFunc updateFunc) {
+    // Maybe bad idea, but makes life of no-attribute people easier.
+    engineState.updateFunc = updateFunc;
+    engineState.flags |= EngineFlag.isUpdating;
+    version (WebAssembly) {
+        rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
+    } else {
+        while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
+    }
+    engineState.flags &= ~EngineFlag.isUpdating;
+}
+
+/// Closes the window.
+/// You should avoid calling this function manually.
+extern(C)
+void closeWindow() {
+    if (!rl.IsWindowReady()) return;
+    // NOTE: This leaks. Someone call the memory police!!!
+    engineState = null;
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
+}
+
+/// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
+mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
+    version (D_BetterC) {
+        extern(C)
+        int main(int argc, const(char)** argv) {
+            openWindowC(width, height, argc, argv, title);
+            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(EngineUpdateFunc) &updateFunc);
+            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
+            closeWindow();
+            return 0;
+        }
+    } else {
+        int main(immutable(char)[][] args) {
+            openWindow(width, height, args, title);
+            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(EngineUpdateFunc) &updateFunc);
+            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
+            closeWindow();
+            return 0;
+        }
+    }
+}
+
 @trusted nothrow:
 
 /// Converts a texture into a managed engine resource.
@@ -221,204 +464,7 @@ void setAssetsPath(IStr path) {
     engineState.assetsPath.append(path);
 }
 
-/// Opens a window with the specified size and title.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
-    if (rl.IsWindowReady) return;
-    // Raylib stuff.
-    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
-    rl.SetTraceLogLevel(rl.LOG_ERROR);
-    rl.InitWindow(width, height, title.toCStr().getOr());
-    rl.InitAudioDevice();
-    rl.SetExitKey(rl.KEY_NULL);
-    rl.SetTargetFPS(60);
-    rl.SetWindowMinSize(240, 135);
-    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-    // Engine stuff.
-    engineState = jokaMake!EngineState();
-    engineState.fullscreenState.previousWindowWidth = width;
-    engineState.fullscreenState.previousWindowHeight = height;
-    engineState.viewport.data.color = gray;
-    engineViewportInfo(true);
-    if (args.length) {
-        foreach (arg; args) engineState.envArgsBuffer.append(arg);
-        engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
-    }
-    engineState.loadTextBuffer.reserve(8192);
-    engineState.saveTextBuffer.reserve(8192);
-    engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
-    engineState.textures.reserve(defaultEngineTexturesCapacity);
-    engineState.sounds.reserve(defaultEngineSoundsCapacity);
-    engineState.fonts.reserve(defaultEngineFontsCapacity);
-    // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
-    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
-    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toParin();
-    engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
-    rl.UnloadImage(monogramImage);
-}
-
-/// Opens a window with the specified size and title, using C strings.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
-    openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
-    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
-}
-
-/// Use by the `updateWindow` function.
-/// You should avoid calling this function manually.
-extern(C)
-bool updateWindowLoop() {
-    // Begin drawing.
-    if (isResolutionLocked) {
-        rl.BeginTextureMode(engineState.viewport.data.toRl());
-    } else {
-        rl.BeginDrawing();
-    }
-    rl.ClearBackground(engineState.viewport.data.color.toRl());
-
-    // The main loop.
-    if (rl.IsFileDropped) {
-        auto list = rl.LoadDroppedFiles();
-        foreach (i; 0 .. list.count) {
-            engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
-        }
-    }
-    // Update buffers and resources.
-    with (Keyboard) {
-        if (isResolutionLocked) {
-            auto rlMouse = rl.GetTouchPosition(0);
-            auto info = engineViewportInfo;
-            engineState.mouseBuffer = Vec2(
-                floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
-                floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
-            );
-        } else {
-            engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
-        }
-        engineState.wasdBuffer = Vec2(
-            (d.isDown || right.isDown) - (a.isDown || left.isDown),
-            (s.isDown || down.isDown) - (w.isDown || up.isDown),
-        );
-        engineState.wasdPressedBuffer = Vec2(
-            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
-            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
-        );
-        engineState.wasdReleasedBuffer = Vec2(
-            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
-            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
-        );
-    }
-    foreach (ref sound; engineState.sounds.items) {
-        updateSoundX(sound);
-    }
-    auto result = engineState.updateFunc(deltaTime);
-    engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
-    if (rl.IsFileDropped) {
-        // NOTE: LoadDroppedFiles just returns a global variable.
-        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-        engineState.droppedFilePathsBuffer.clear();
-    }
-
-    // End drawing.
-    if (isResolutionLocked) {
-        auto info = engineViewportInfo;
-        rl.EndTextureMode();
-        rl.BeginDrawing();
-        rl.ClearBackground(engineState.borderColor.toRl());
-        rl.DrawTexturePro(
-            engineState.viewport.data.toRl().texture,
-            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
-            info.area.toRl(),
-            rl.Vector2(0.0f, 0.0f),
-            0.0f,
-            rl.Color(255, 255, 255, 255),
-        );
-        rl.EndDrawing();
-    } else {
-        rl.EndDrawing();
-    }
-
-    // Viewport code.
-    if (engineState.viewport.isChanging) {
-        if (engineState.viewport.isLocking) {
-            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
-        } else {
-            auto temp = engineState.viewport.data.color;
-            engineState.viewport.data.free();
-            engineState.viewport.data.color = temp;
-        }
-        engineState.viewport.isChanging = false;
-        engineViewportInfo(true);
-    }
-    // Fullscreen code.
-    if (engineState.fullscreenState.isChanging) {
-        engineState.fullscreenState.changeTime += deltaTime;
-        if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
-            if (rl.IsWindowFullscreen()) {
-                rl.ToggleFullscreen();
-                // Size is first because raylib likes that. I will make raylib happy.
-                rl.SetWindowSize(
-                    engineState.fullscreenState.previousWindowWidth,
-                    engineState.fullscreenState.previousWindowHeight,
-                );
-                rl.SetWindowPosition(
-                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
-                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
-                );
-            } else {
-                rl.ToggleFullscreen();
-            }
-            engineState.fullscreenState.isChanging = false;
-        }
-    }
-    return result;
-}
-
-version (WebAssembly) {
-    /// Use by the `updateWindow` function.
-    /// You should avoid calling this function manually.
-    extern(C)
-    void updateWindowLoopWeb() {
-        if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
-    }
-}
-
-/// Updates the window every frame with the given function.
-/// This function will return when the given function returns true.
-/// You should avoid calling this function manually.
-extern(C)
-void updateWindow(bool function(float dt) updateFunc) {
-    // Maybe bad idea, but makes life of no-attribute people easier.
-    engineState.updateFunc = cast(EngineUpdateFunc) updateFunc;
-    engineState.flags |= EngineFlag.isUpdating;
-    version (WebAssembly) {
-        rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
-    } else {
-        while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
-    }
-    engineState.flags &= ~EngineFlag.isUpdating;
-}
-
-/// Closes the window.
-/// You should avoid calling this function manually.
-extern(C)
-void closeWindow() {
-    if (!rl.IsWindowReady()) return;
-    // NOTE: This leaks. Someone call the memory police!!!
-    engineState = null;
-    rl.CloseAudioDevice();
-    rl.CloseWindow();
-}
-
 @trusted nothrow @nogc:
-
-alias EngineUpdateFunc      = bool function(float dt);
-alias EngineReadyFinishFunc = void function();
-alias EngineFlags           = ushort;
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
 enum defaultEngineTexturesCapacity     = 128;
@@ -1755,33 +1801,8 @@ Fault setWindowIconFromFiles(IStr path) {
 
 /// Returns information about the engine viewport, including its area.
 extern(C)
-EngineViewportInfo engineViewportInfo(bool isRecalculationForced = false) {
-    auto result = &engineState.viewportInfoBuffer;
-    if (!isRecalculationForced && !isWindowResized) return *result;
-    if (isResolutionLocked) {
-        result.minSize = resolution;
-        result.maxSize = windowSize;
-        auto ratio = result.maxSize / result.minSize;
-        result.minRatio = min(ratio.x, ratio.y);
-        if (isPixelPerfect) {
-            auto roundMinRatio = result.minRatio.round();
-            auto floorMinRation = result.minRatio.floor();
-            result.minRatio = result.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
-        }
-        auto targetSize = result.minSize * Vec2(result.minRatio);
-        auto targetPosition = result.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-        result.area = Rect(
-            targetPosition.floor(),
-            ratio.x == result.minRatio ? targetSize.x : floor(targetSize.x),
-            ratio.y == result.minRatio ? targetSize.y : floor(targetSize.y),
-        );
-    } else {
-        result.minSize = windowSize;
-        result.maxSize = result.minSize;
-        result.minRatio = 1.0f;
-        result.area = Rect(result.minSize);
-    }
-    return *result;
+EngineViewportInfo engineViewportInfo() {
+    return engineState.viewportInfoBuffer;
 }
 
 /// Returns the default filter mode.
@@ -1836,7 +1857,6 @@ void lockResolution(int width, int height) {
         engineState.viewport.isLocking = true;
     } else {
         engineState.viewport.data.resize(width, height);
-        engineViewportInfo(true);
     }
 }
 
@@ -2889,32 +2909,6 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
                 cast(int) tile.x,
                 cast(int) tile.y,
             );
-        }
-    }
-}
-
-/// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
-mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
-    version (D_BetterC) {
-        extern(C)
-        int main(int argc, const(char)** argv) {
-            alias F = extern(C) bool function(float dt);
-            openWindowC(width, height, argc, argv, title);
-            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(F) &updateFunc);
-            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-            closeWindow();
-            return 0;
-        }
-    } else {
-        int main(immutable(char)[][] args) {
-            alias F = extern(C) bool function(float dt);
-            openWindow(width, height, args, title);
-            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(F) &updateFunc);
-            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-            closeWindow();
-            return 0;
         }
     }
 }

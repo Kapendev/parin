@@ -22,7 +22,7 @@ struct Tile {
     short width;
     short height;
     short id;
-    ubyte idOffset;
+    byte idOffset;
     Vec2 position;
 
     @safe nothrow @nogc:
