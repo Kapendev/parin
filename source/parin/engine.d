@@ -637,12 +637,12 @@ enum Gamepad : ushort {
 
 /// Options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin     = Vec2(0.0f);   /// The origin point of the drawn object. This value can be used to force a specific origin.
-    Vec2 scale      = Vec2(1.0f);   /// The scale of the drawn object.
-    float rotation  = 0.0f;         /// The rotation of the drawn object, in degrees.
-    Rgba color      = white;        /// The color of the drawn object, in RGBA.
-    Hook hook       = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
-    Flip flip       = Flip.none;    /// A value representing flipping orientations.
+    Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object. This value can be used to force a specific origin.
+    Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
+    float rotation = 0.0f;         /// The rotation of the drawn object, in degrees.
+    Rgba color     = white;        /// The color of the drawn object, in RGBA.
+    Hook hook      = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
+    Flip flip      = Flip.none;    /// A value representing flipping orientations.
 
     @trusted nothrow @nogc:
 
@@ -1510,6 +1510,24 @@ private rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
 
 /// C wrapper over the method with the same name.
 extern(C)
+ref Texture getTexture(TextureId id) {
+    return id.get();
+}
+
+/// C wrapper over the method with the same name.
+extern(C)
+ref Font getFont(FontId id) {
+    return id.get();
+}
+
+/// C wrapper over the method with the same name.
+extern(C)
+ref Sound getSound(SoundId id) {
+    return id.get();
+}
+
+/// C wrapper over the method with the same name.
+extern(C)
 void attachCamera(ref Camera camera) {
     camera.attach();
 }
@@ -1986,9 +2004,6 @@ float deltaWheel() {
     } else {
         result = rl.GetMouseWheelMove();
     }
-    if (result < 0.0f) result = -1.0f;
-    else if (result > 0.0f) result = 1.0f;
-    else result = 0.0f;
     return result;
 }
 
@@ -2125,7 +2140,6 @@ bool isPressed(Mouse key) {
     else return false;
 }
 
-
 /// Returns true if the specified key was pressed.
 extern(C)
 bool isPressedMouse(Mouse key) {
@@ -2147,7 +2161,6 @@ bool isPressedGamepad(Gamepad key, int id = 0) {
 bool isReleased(char key) {
     return rl.IsKeyReleased(toUpper(key));
 }
-
 
 /// Returns true if the specified key was released.
 extern(C)
