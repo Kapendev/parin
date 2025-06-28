@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.48
+// Version: v0.0.49
 // ---
 
 // TODO: Needs cleaning!!! I changed how the world data is stored. Turned 2 arrays into 1. The API is the same.
