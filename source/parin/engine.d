@@ -1510,19 +1510,19 @@ private rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
 
 /// C wrapper over the method with the same name.
 extern(C)
-ref Texture getTexture(TextureId id) {
+ref Texture getTextureData(TextureId id) {
     return id.get();
 }
 
 /// C wrapper over the method with the same name.
 extern(C)
-ref Font getFont(FontId id) {
+ref Font getFontData(FontId id) {
     return id.get();
 }
 
 /// C wrapper over the method with the same name.
 extern(C)
-ref Sound getSound(SoundId id) {
+ref Sound getSoundData(SoundId id) {
     return id.get();
 }
 
@@ -2045,8 +2045,8 @@ Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(),
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 extern(C)
-Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()) {
-    return measureTextSizeX(font.getOr(), text, options);
+Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+    return measureTextSizeX(font.getOr(), text, options, extra);
 }
 
 /// Returns true if the specified key is currently pressed.
