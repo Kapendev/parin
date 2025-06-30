@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.49
+// Version: v0.0.50
 // ---
 
 /// The `sprite` module provides a simple and flexible sprite.
