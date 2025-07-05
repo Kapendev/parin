@@ -374,14 +374,16 @@ TextureId loadTexture(IStr path) {
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
+Result!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
     if (value.data.texture.id == rl.GetFontDefault().texture.id) {
         value = Font();
     }
-    value.runeSpacing = runeSpacing;
-    value.lineSpacing = lineSpacing;
+    if (runeSpacing >= 0) value.runeSpacing = runeSpacing;
+    else value.runeSpacing = 1;
+    if (lineSpacing >= 0) value.lineSpacing = lineSpacing;
+    else value.lineSpacing = value.data.baseSize;
     value.setFilter(engineState.defaultFilter);
     value.setWrap(engineState.defaultWrap);
     return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
@@ -391,7 +393,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing, int lineSpacing, I
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "") {
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
     auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
     if (resource.isNone) return FontId();
     return resource.get().toFontId();
@@ -2527,7 +2529,7 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 
 /// Draws a 9-patch texture from the specified texture area at the given target area.
 extern(C)
-void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
+void drawTexturePatchX(Texture texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
             auto rect = target.area(options.hook);
@@ -2553,7 +2555,7 @@ void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, Dr
     // 2
     partPosition.x += tileSize.x * options.scale.x;
     partArea.position.x += tileSize.x;
-    if (isTiled) {
+    if (canRepeat) {
         foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.x += i * tileSize.x * options.scale.x;
@@ -2571,7 +2573,7 @@ void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, Dr
     partPosition.y += tileSize.y * options.scale.y;
     partArea.position.x = area.position.x;
     partArea.position.y += tileSize.y;
-    if (isTiled) {
+    if (canRepeat) {
         foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.y += i * tileSize.y * options.scale.y;
@@ -2587,7 +2589,7 @@ void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, Dr
     // 6
     partPosition.x += tileSize.x * hOptions.scale.x;
     partArea.position.x += tileSize.x;
-    if (isTiled) {
+    if (canRepeat) {
         foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.y += i * tileSize.y * options.scale.y;
@@ -2605,7 +2607,7 @@ void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, Dr
     // 8
     partPosition.x += tileSize.x * options.scale.x;
     partArea.position.x += tileSize.x;
-    if (isTiled) {
+    if (canRepeat) {
         foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
             auto tempPartPosition = partPosition;
             tempPartPosition.x += i * tileSize.x * options.scale.x;
@@ -2622,8 +2624,8 @@ void drawTexturePatchX(Texture texture, Rect area, Rect target, bool isTiled, Dr
 
 /// Draws a 9-patch texture from the specified texture area at the given target area.
 extern(C)
-void drawTexturePatch(TextureId texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions()) {
-    drawTexturePatchX(texture.getOr(), area, target, isTiled, options);
+void drawTexturePatch(TextureId texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions()) {
+    drawTexturePatchX(texture.getOr(), area, target, canRepeat, options);
 }
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.

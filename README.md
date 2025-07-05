@@ -18,8 +18,9 @@ Parin is designed to make game development fun — it's easy to set up and lets 
 * Intuitive immediate mode UI
 * Atlas-based animation library
 * Pixel-perfect physics engine
-* Cross-language support
 * Cross-platform (Windows, Linux, macOS, Web)
+* Small C interface for cross-language use
+* BetterC support
 
 ## Hello World Example
 
@@ -92,6 +93,23 @@ Most ideas are welcome, except ECS.
 
 ## Frequently Asked Questions
 
+### How can I build without DUB?
+
+1. Download [raylib](https://github.com/raysan5/raylib/releases).
+2. Download Parin and Joka.
+
+    ```sh
+    git clone --branch v0.0.50 --depth 1 https://github.com/Kapendev/parin
+    git clone --branch v0.0.29 --depth 1 https://github.com/Kapendev/joka
+    ```
+
+3. Compile with DMD or LDC using something like:
+
+    ```sh
+    # On Linux, you may also need: -L=-rpath='$ORIGIN'
+    ldc2 app.d -i -I=joka_source_path -I=parin_source_path -J=parin_source_path -L=-L. -L=-lraylib
+    ```
+
 ### Is Parin a raylib wrapper?
 
 No. Raylib is just the current backend.
@@ -113,17 +131,6 @@ Call `setIsUsingAssetsPath(false)` to disable the default behavior.
 
 Asset hot reloading is not supported out of the box.
 The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
-
-### How can I build without DUB?
-
-Follow these steps:
-
-1. Download [Joka](https://github.com/Kapendev/joka) and [raylib](https://github.com/raysan5/raylib).
-2. Compile your game using the DMD compiler with a command like:
-
-```cmd
-dmd -i -I=joka_path -I=parin_path -J=parin_path -L=-lraylib game.d
-```
 
 ### Are the Parin assets free to use?
 

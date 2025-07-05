@@ -215,7 +215,7 @@ void drawLine(Line area, float size, Rgba color = white);
 
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-void drawTexturePatch(TextureId texture, Rect area, Rect target, bool isTiled, DrawOptions options = DrawOptions());
+void drawTexturePatch(TextureId texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions());
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
@@ -328,7 +328,7 @@ These include:
 
 ```d
 TextureId loadTexture(IStr path);
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "");
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
 
