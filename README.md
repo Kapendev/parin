@@ -95,6 +95,8 @@ Most ideas are welcome, except ECS.
 
 ### How can I build without DUB?
 
+This is the no-slop way of building a game. Just you, the compiler, and the code.
+
 1. Download [raylib](https://github.com/raysan5/raylib/releases).
 2. Download Parin and Joka.
 

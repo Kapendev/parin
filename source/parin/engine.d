@@ -55,7 +55,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     // Load debug font.
     auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
-    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toParin();
+    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
     engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
     rl.UnloadImage(monogramImage);
 }
@@ -107,7 +107,7 @@ bool updateWindowLoop() {
                     floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
                 );
             } else {
-                engineState.mouseBuffer = rl.GetTouchPosition(0).toParin();
+                engineState.mouseBuffer = rl.GetTouchPosition(0).toPr();
             }
             engineState.wasdBuffer = Vec2(
                 (d.isDown || right.isDown) - (a.isDown || left.isDown),
@@ -355,7 +355,7 @@ Result!IStr loadTempText(IStr path) {
 extern(C)
 Result!Texture loadRawTexture(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toParin();
+    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toPr();
     value.setFilter(engineState.defaultFilter);
     value.setWrap(engineState.defaultWrap);
     return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
@@ -376,7 +376,7 @@ TextureId loadTexture(IStr path) {
 extern(C)
 Result!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toParin();
+    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toPr();
     if (value.data.texture.id == rl.GetFontDefault().texture.id) {
         value = Font();
     }
@@ -636,6 +636,66 @@ enum Gamepad : ushort {
     start = rl.GAMEPAD_BUTTON_MIDDLE_RIGHT,    /// The start button.
     middle = rl.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
 }
+
+/// A set of 4 integer margins.
+struct Margin {
+    int left;   /// The left side.
+    int top;    /// The top side.
+    int right;  /// The right side.
+    int bottom; /// The bottom side.
+
+    @safe nothrow @nogc:
+
+    this(int left, int top, int right, int bottom) {
+        this.left = left;
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
+    }
+
+    this(int left) {
+        this(left, left, left, left);
+    }
+
+    IStr toStr() {
+        return "l={} t={} r={} b={}".fmt(left, top, right, bottom);
+    }
+
+    IStr toString() {
+        return toStr();
+    }
+}
+
+/// A part of a 9-slice.
+struct SlicePart {
+    IRect source;    /// The source area on the atlas texture.
+    IRect target;    /// The target area on the canvas.
+    IVec2 tileCount; /// The number of source tiles that fit inside the target.
+    bool isCorner;   /// True if the part is a corner.
+    bool canTile;    /// True if the part is an edge or the center.
+
+    @safe nothrow @nogc:
+
+    IStr toStr() {
+        return "x={{}:{}} y={{}:{}} w={{}:{}} h={{}:{}}".fmt(
+            source.position.x,
+            target.position.x,
+            source.position.y,
+            target.position.y,
+            source.size.x,
+            target.size.x,
+            source.size.y,
+            target.size.y,
+        );
+    }
+
+    IStr toString() {
+        return toStr();
+    }
+}
+
+/// The parts of a 9-slice.
+alias SliceParts = Array!(SlicePart, 9);
 
 /// Options for configuring drawing parameters.
 struct DrawOptions {
@@ -1409,105 +1469,75 @@ struct EngineState {
     LStr assetsPath;
 }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Rgba toParin(rl.Color from) {
-    return Rgba(from.r, from.g, from.b, from.a);
-}
+pragma(inline, true) private @safe nothrow @nogc {
+    Rgba toPr(rl.Color from) {
+        return Rgba(from.r, from.g, from.b, from.a);
+    }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Vec2 toParin(rl.Vector2 from) {
-    return Vec2(from.x, from.y);
-}
+    Vec2 toPr(rl.Vector2 from) {
+        return Vec2(from.x, from.y);
+    }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Vec3 toParin(rl.Vector3 from) {
-    return Vec3(from.x, from.y, from.z);
-}
+    Vec3 toPr(rl.Vector3 from) {
+        return Vec3(from.x, from.y, from.z);
+    }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Vec4 toParin(rl.Vector4 from) {
-    return Vec4(from.x, from.y, from.z, from.w);
-}
+    Vec4 toPr(rl.Vector4 from) {
+        return Vec4(from.x, from.y, from.z, from.w);
+    }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Rect toParin(rl.Rectangle from) {
-    return Rect(from.x, from.y, from.width, from.height);
-}
+    Rect toPr(rl.Rectangle from) {
+        return Rect(from.x, from.y, from.width, from.height);
+    }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Texture toParin(rl.Texture2D from) {
-    return Texture(from);
-}
+    Texture toPr(rl.Texture2D from) {
+        return Texture(from);
+    }
 
-/// Converts a raylib type to a Parin type.
-pragma(inline, true)
-private Font toParin(rl.Font from) {
-    return Font(from);
-}
+    Font toPr(rl.Font from) {
+        return Font(from);
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Color toRl(Rgba from) {
-    return rl.Color(from.r, from.g, from.b, from.a);
-}
+    rl.Color toRl(Rgba from) {
+        return rl.Color(from.r, from.g, from.b, from.a);
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Vector2 toRl(Vec2 from) {
-    return rl.Vector2(from.x, from.y);
-}
+    rl.Vector2 toRl(Vec2 from) {
+        return rl.Vector2(from.x, from.y);
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Vector3 toRl(Vec3 from) {
-    return rl.Vector3(from.x, from.y, from.z);
-}
+    rl.Vector3 toRl(Vec3 from) {
+        return rl.Vector3(from.x, from.y, from.z);
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Vector4 toRl(Vec4 from) {
-    return rl.Vector4(from.x, from.y, from.z, from.w);
-}
+    rl.Vector4 toRl(Vec4 from) {
+        return rl.Vector4(from.x, from.y, from.z, from.w);
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Rectangle toRl(Rect from) {
-    return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
-}
+    rl.Rectangle toRl(Rect from) {
+        return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Texture2D toRl(Texture from) {
-    return from.data;
-}
+    rl.Texture2D toRl(Texture from) {
+        return from.data;
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Font toRl(Font from) {
-    return from.data;
-}
+    rl.Font toRl(Font from) {
+        return from.data;
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.RenderTexture2D toRl(Viewport from) {
-    return from.data;
-}
+    rl.RenderTexture2D toRl(Viewport from) {
+        return from.data;
+    }
 
-/// Converts a Parin type to a raylib type.
-pragma(inline, true)
-private rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
-    return rl.Camera2D(
-        Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
-        from.position.toRl(),
-        from.rotation,
-        from.scale,
-    );
+    rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
+        return rl.Camera2D(
+            Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
+            from.position.toRl(),
+            from.rotation,
+            from.scale,
+        );
+    }
 }
 
 /// C wrapper over the method with the same name.
@@ -1560,6 +1590,96 @@ Flip oppositeFlip(Flip flip, Flip fallback) {
     return flip == fallback ? Flip.none : fallback;
 }
 
+/// Computes the parts of a 9-slice.
+extern(C)
+SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
+    SliceParts result;
+    if (!source.hasSize || !target.hasSize) return result;
+    auto canClipW = target.w - source.w < -margin.left - margin.right;
+    auto canClipH = target.h - source.h < -margin.top - margin.bottom;
+
+    // -- 1
+    result[0].source.x  = source.x;                                              result[0].source.y = source.y;
+    result[0].source.w  = margin.left;                                           result[0].source.h = margin.top;
+    result[0].target.x  = target.x;                                              result[0].target.y = target.y;
+    result[0].target.w  = margin.left;                                           result[0].target.h = margin.top;
+    result[0].isCorner = true;
+
+    result[1].source.x  = source.x + result[0].source.w;                         result[1].source.y = result[0].source.y;
+    result[1].source.w  = source.w - margin.left - margin.right;                 result[1].source.h = result[0].source.h;
+    result[1].target.x  = target.x + margin.left;                                result[1].target.y = result[0].target.y;
+    result[1].target.w  = target.w - margin.left - margin.right;                 result[1].target.h = result[0].target.h;
+    result[1].canTile = true;
+
+    result[2].source.x  = source.x + result[0].source.w + result[1].source.w;    result[2].source.y = result[0].source.y;
+    result[2].source.w  = margin.right;                                          result[2].source.h = result[0].source.h;
+    result[2].target.x  = target.x + target.w - margin.right;                    result[2].target.y = result[0].target.y;
+    result[2].target.w  = margin.right;                                          result[2].target.h = result[0].target.h;
+    result[2].isCorner = true;
+
+    // -- 2
+    result[3].source.x  = result[0].source.x;                                    result[3].source.y = source.y + margin.top;
+    result[3].source.w  = result[0].source.w;                                    result[3].source.h = source.h - margin.top - margin.bottom;
+    result[3].target.x  = result[0].target.x;                                    result[3].target.y = target.y + margin.top;
+    result[3].target.w  = result[0].target.w;                                    result[3].target.h = target.h - margin.top - margin.bottom;
+    result[3].canTile = true;
+
+    result[4].source.x  = result[1].source.x;                                    result[4].source.y = result[3].source.y;
+    result[4].source.w  = result[1].source.w;                                    result[4].source.h = result[3].source.h;
+    result[4].target.x  = result[1].target.x;                                    result[4].target.y = result[3].target.y;
+    result[4].target.w  = result[1].target.w;                                    result[4].target.h = result[3].target.h;
+    result[4].canTile = true;
+
+    result[5].source.x  = result[2].source.x;                                    result[5].source.y = result[3].source.y;
+    result[5].source.w  = result[2].source.w;                                    result[5].source.h = result[3].source.h;
+    result[5].target.x  = result[2].target.x;                                    result[5].target.y = result[3].target.y;
+    result[5].target.w  = result[2].target.w;                                    result[5].target.h = result[3].target.h;
+    result[5].canTile = true;
+
+    // -- 3
+    result[6].source.x  = result[0].source.x;                                    result[6].source.y = source.y + margin.top + result[3].source.h;
+    result[6].source.w  = result[0].source.w;                                    result[6].source.h = margin.bottom;
+    result[6].target.x  = result[0].target.x;                                    result[6].target.y = target.y + margin.top + result[3].target.h;
+    result[6].target.w  = result[0].target.w;                                    result[6].target.h = margin.bottom;
+    result[6].isCorner = true;
+
+    result[7].source.x  = result[1].source.x;                                    result[7].source.y = result[6].source.y;
+    result[7].source.w  = result[1].source.w;                                    result[7].source.h = result[6].source.h;
+    result[7].target.x  = result[1].target.x;                                    result[7].target.y = result[6].target.y;
+    result[7].target.w  = result[1].target.w;                                    result[7].target.h = result[6].target.h;
+    result[7].canTile = true;
+
+    result[8].source.x  = result[2].source.x;                                    result[8].source.y = result[6].source.y;
+    result[8].source.w  = result[2].source.w;                                    result[8].source.h = result[6].source.h;
+    result[8].target.x  = result[2].target.x;                                    result[8].target.y = result[6].target.y;
+    result[8].target.w  = result[2].target.w;                                    result[8].target.h = result[6].target.h;
+    result[8].isCorner = true;
+
+    if (canClipW) {
+        foreach (ref item; result) {
+            item.target.x = target.x;
+            item.target.w = target.w;
+        }
+    }
+    if (canClipH) {
+        foreach (ref item; result) {
+            item.target.y = target.y;
+            item.target.h = target.h;
+        }
+    }
+    result[1].tileCount.x = result[1].source.w ? result[1].target.w / result[1].source.w + 1 : 0;
+    result[1].tileCount.y = result[1].source.h ? result[1].target.h / result[1].source.h + 1 : 0;
+    result[3].tileCount.x = result[3].source.w ? result[3].target.w / result[3].source.w + 1 : 0;
+    result[3].tileCount.y = result[3].source.h ? result[3].target.h / result[3].source.h + 1 : 0;
+    result[4].tileCount.x = result[4].source.w ? result[4].target.w / result[4].source.w + 1 : 0;
+    result[4].tileCount.y = result[4].source.h ? result[4].target.h / result[4].source.h + 1 : 0;
+    result[5].tileCount.x = result[5].source.w ? result[5].target.w / result[5].source.w + 1 : 0;
+    result[5].tileCount.y = result[5].source.h ? result[5].target.h / result[5].source.h + 1 : 0;
+    result[7].tileCount.x = result[7].source.w ? result[7].target.w / result[7].source.w + 1 : 0;
+    result[7].tileCount.y = result[7].source.h ? result[7].target.h / result[7].source.h + 1 : 0;
+    return result;
+}
+
 /// Returns the arguments that this application was started with.
 IStr[] envArgs() {
     return engineState.envArgsBuffer[];
@@ -1592,13 +1712,13 @@ void randomize() {
 /// Converts a world point to a screen point based on the given camera.
 extern(C)
 Vec2 toScreenPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
-    return toParin(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
+    return toPr(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Converts a screen point to a world point based on the given camera.
 extern(C)
 Vec2 toWorldPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
-    return toParin(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
+    return toPr(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Returns the path of the assets folder.
@@ -1992,7 +2112,7 @@ float deltaTime() {
 /// Returns the change in mouse position since the last frame.
 extern(C)
 Vec2 deltaMouse() {
-    return rl.GetMouseDelta().toParin();
+    return rl.GetMouseDelta().toPr();
 }
 
 /// Returns the change in mouse wheel position since the last frame.
@@ -2527,7 +2647,51 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
     drawTextureX(texture.getOr(), position, options);
 }
 
-/// Draws a 9-patch texture from the specified texture area at the given target area.
+/// Draws a 9-slice from the specified texture area at the given target area.
+extern(C)
+void drawTextureSliceX(Texture texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
+    // NOTE: New rule for options. Functions are allowed to ignore values. Should they handle bad values? Maybe.
+    // NOTE: If we ever change options to pointers, remember to remove this part.
+    options.hook = Hook.topLeft;
+    options.origin = Vec2(0);
+    foreach (part; computeSliceParts(area.floor().toIRect(), target.floor().toIRect(), margin)) {
+        if (canRepeat && part.canTile) {
+            options.scale = Vec2(1);
+            foreach (y; 0 .. part.tileCount.y) { foreach (x; 0 .. part.tileCount.x) {
+                auto sourceW = (x != part.tileCount.x - 1) ? part.source.w : max(0, part.target.w - x * part.source.w);
+                auto sourceH = (y != part.tileCount.y - 1) ? part.source.h : max(0, part.target.h - y * part.source.h);
+                drawTextureAreaX(
+                    texture,
+                    Rect(part.source.x, part.source.y, sourceW, sourceH),
+                    Vec2(part.target.x + x * part.source.w, part.target.y + y * part.source.h),
+                    options,
+                );
+            }}
+        } else {
+            options.scale = Vec2(
+                part.target.w / cast(float) part.source.w,
+                part.target.h / cast(float) part.source.h,
+            );
+            drawTextureAreaX(
+                texture,
+                Rect(part.source.x, part.source.y, part.source.w, part.source.h),
+                Vec2(part.target.x, part.target.y),
+                options,
+            );
+        }
+    }
+}
+
+/// Draws a 9-slice from the specified texture area at the given target area.
+extern(C)
+void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
+    drawTextureSliceX(texture.getOr(), area, target, margin, canRepeat, options);
+}
+
+/// Draws a 9-patch from the specified texture area at the given target area.
+/// It assumes the given texture area is evenly divisible by 3.
+/// Even though they are not the same, prefer using `drawTextureSliceX` when possible.
+deprecated("Use drawTextureSliceX.")
 extern(C)
 void drawTexturePatchX(Texture texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions()) {
     if (texture.isEmpty) {
@@ -2622,7 +2786,10 @@ void drawTexturePatchX(Texture texture, Rect area, Rect target, bool canRepeat, 
     drawTextureAreaX(texture, partArea, partPosition, options);
 }
 
-/// Draws a 9-patch texture from the specified texture area at the given target area.
+/// Draws a 9-patch from the specified texture area at the given target area.
+/// It assumes the given texture area is evenly divisible by 3.
+/// Even though they are not the same, prefer using `drawTextureSlice` when possible.
+deprecated("Use drawTextureSlice.")
 extern(C)
 void drawTexturePatch(TextureId texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions()) {
     drawTexturePatchX(texture.getOr(), area, target, canRepeat, options);
@@ -2638,7 +2805,7 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
         case Flip.y: options.flip = Flip.none; break;
         case Flip.xy: options.flip = Flip.x; break;
     }
-    drawTextureAreaX(viewport.data.texture.toParin(), area, position, options);
+    drawTextureAreaX(viewport.data.texture.toPr(), area, position, options);
 }
 
 /// Draws the viewport at the given position with the specified draw options.
@@ -2651,7 +2818,7 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 extern(C)
 void drawRuneX(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) return;
-    auto rect = toParin(rl.GetGlyphAtlasRec(font.data, rune));
+    auto rect = toPr(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
     if (isPixelSnapped) {
