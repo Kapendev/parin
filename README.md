@@ -98,9 +98,10 @@ Most ideas are welcome, except ECS.
 This is the no-slop way of building a game. Just you, the compiler, and the code.
 
 1. Download [raylib](https://github.com/raysan5/raylib/releases).
-2. Download Parin and Joka.
+2. Download [Parin](https://github.com/Kapendev/parin/tags) and [Joka](https://github.com/Kapendev/joka/tags) using something like:
 
     ```sh
+    # The versions below are just examples. Check the repos for the latest tags.
     git clone --branch v0.0.50 --depth 1 https://github.com/Kapendev/parin
     git clone --branch v0.0.29 --depth 1 https://github.com/Kapendev/joka
     ```

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
-// Version: v0.0.50
 // ---
 
 /// The `palettes` module offers a collection of predefined colors.

@@ -101,6 +101,7 @@ dub run
 And that's it for the basics.
 As a fun exercise, try changing the message to "DVD" and make it bounce inside the window.
 The engine font has characters that have a size of 6x12.
+An example of this can be found in the [examples](examples/basics/_003_dvd.d).
 
 ## Modules
 
@@ -321,7 +322,7 @@ Below are examples showing how to use these sound functions.
     }
     ```
 
-## Loading and Saving Resources
+## Loading & Saving
 
 Parin provides a set of loading and saving functions inside the `parin.engine` module.
 These include:

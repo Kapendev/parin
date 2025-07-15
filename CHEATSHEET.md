@@ -122,11 +122,11 @@ void toggleSoundIsActive(SoundId sound);
 void toggleSoundIsPaused(SoundId sound);
 ```
 
-### 💾 Loading and Saving
+### 💾 Loading & Saving
 
 ```d
 TextureId loadTexture(IStr path);
-FontId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes = "");
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "");
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
 
