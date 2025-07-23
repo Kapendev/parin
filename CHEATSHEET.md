@@ -141,8 +141,8 @@ Fault saveText(IStr path, IStr text);
 ```d
 int randi();
 float randf();
-void randomizeSeed(int seed);
 void randomize();
+void setRandomSeed(int value);
 ```
 
 ### 🧺 Data Structures
@@ -175,7 +175,7 @@ struct TextOptions {
 }
 
 struct TextureId {
-    GenerationalIndex data;
+    GenIndex data;
 
     int width();
     int height();
@@ -190,7 +190,7 @@ struct TextureId {
 }
 
 struct FontId {
-    GenerationalIndex data;
+    GenIndex data;
 
     int runeSpacing();
     int lineSpacing();
@@ -205,7 +205,7 @@ struct FontId {
 }
 
 struct SoundId {
-    GenerationalIndex data;
+    GenIndex data;
 
     float pitchVariance();
     void setPitchVariance(float value);

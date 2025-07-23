@@ -102,9 +102,9 @@ struct StoryValue {
     @trusted
     IStr toStr() {
         if (data.isType!StoryNumber) {
-            return fmt("{}", data.get!StoryNumber());
+            return fmt("{}", data.as!StoryNumber());
         } else {
-            auto temp = data.get!(StoryWord)()[];
+            auto temp = data.as!(StoryWord)()[];
             return fmt("{}", temp[0 .. temp.findStart(char.init)]);
         }
     }
@@ -255,7 +255,7 @@ struct Story {
 
     @nogc
     void jumpLineIndex(StoryNumber labelIndex) {
-        lineIndex = labels[labelIndex].value.get!StoryNumber();
+        lineIndex = labels[labelIndex].value.as!StoryNumber();
         setNextLabelIndex(labelIndex + 1);
     }
 
@@ -354,8 +354,8 @@ struct Story {
                         auto db = stack.pop();
                         auto da = stack.pop();
                         if (!da.isType!StoryNumber || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryNumber;
-                        auto b = db.get!StoryNumber;
+                        auto a = da.as!StoryNumber;
+                        auto b = db.as!StoryNumber;
                         auto c = StoryNumber.init;
                         switch (op) {
                             case ADD: c = a + b; break;
@@ -376,7 +376,7 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        stack.append(StoryValue(!da.get!StoryNumber));
+                        stack.append(StoryValue(!da.as!StoryNumber));
                         break;
                     case POP:
                         stack.pop();
@@ -406,16 +406,16 @@ struct Story {
                         auto db = stack.pop();
                         auto da = stack.pop();
                         if (!da.isType!StoryNumber || !db.isType!StoryNumber || !dc.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryNumber();
-                        auto b = db.get!StoryNumber();
-                        auto c = dc.get!StoryNumber();
+                        auto a = da.as!StoryNumber();
+                        auto b = db.as!StoryNumber();
+                        auto c = dc.as!StoryNumber();
                         stack.append(StoryValue(a >= b && a <= c));
                         break;
                     case IF:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        if (!da.get!StoryNumber) ifCounter += 1;
+                        if (!da.as!StoryNumber) ifCounter += 1;
                         break;
                     case ELSE:
                         ifCounter += 1;
@@ -440,8 +440,8 @@ struct Story {
                         if (stack.length < 2) return throwOpFault(op, tokenCount);
                         auto db = stack.pop();
                         auto da = stack.pop();
-                        auto a = da.get!StoryWord;
-                        auto b = db.get!StoryWord;
+                        auto a = da.as!StoryWord;
+                        auto b = db.as!StoryWord;
                         stack.append(StoryValue(a == b));
                         break;
                     case WORD:
@@ -466,7 +466,7 @@ struct Story {
                     case ASSERT:
                         if (stack.length) {
                             auto da = stack.pop();
-                            if (da.isType!StoryWord || (da.isType!StoryNumber && !da.get!StoryNumber())) return Fault.assertion;
+                            if (da.isType!StoryWord || (da.isType!StoryNumber && !da.as!StoryNumber())) return Fault.assertion;
                         } else {
                             return Fault.assertion;
                         }
@@ -511,14 +511,14 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         stack.append(StoryValue(findVariable(a) != -1));
                         break;
                     case GET:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             stack.append(variables[aIndex].value);
@@ -531,8 +531,8 @@ struct Story {
                         auto db = stack.pop();
                         auto da = stack.pop();
                         if (!da.isType!StoryWord || !db.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
-                        auto b = db.get!StoryWord();
+                        auto a = da.as!StoryWord();
+                        auto b = db.as!StoryWord();
                         auto aIndex = findVariable(a);
                         auto bIndex = findVariable(b);
                         if (aIndex != -1 && bIndex != -1) {
@@ -547,7 +547,7 @@ struct Story {
                         auto db = stack.pop();
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             variables[aIndex].value = db;
@@ -559,7 +559,7 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             variables[aIndex].value = StoryValue(0);
@@ -571,7 +571,7 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             variables.remove(aIndex);
@@ -585,11 +585,11 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             if (variables[aIndex].value.isType!StoryNumber) {
-                                variables[aIndex].value.get!StoryNumber() += (op == INC ? 1 : -1);
+                                variables[aIndex].value.as!StoryNumber() += (op == INC ? 1 : -1);
                                 stack.append(variables[aIndex].value);
                             } else {
                                 return throwOpFault(op, tokenCount);
@@ -604,12 +604,12 @@ struct Story {
                         auto db = stack.pop();
                         auto da = stack.pop();
                         if (!da.isType!StoryWord || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
-                        auto b = db.get!StoryNumber();
+                        auto a = da.as!StoryWord();
+                        auto b = db.as!StoryNumber();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             if (variables[aIndex].value.isType!StoryNumber) {
-                                variables[aIndex].value.get!StoryNumber() += b * (op == INCN ? 1 : -1);
+                                variables[aIndex].value.as!StoryNumber() += b * (op == INCN ? 1 : -1);
                                 stack.append(variables[aIndex].value);
                             } else {
                                 return throwOpFault(op, tokenCount);
@@ -622,11 +622,11 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
                         if (aIndex != -1) {
                             if (variables[aIndex].value.isType!StoryNumber) {
-                                variables[aIndex].value.get!StoryNumber() = !variables[aIndex].value.get!StoryNumber();
+                                variables[aIndex].value.as!StoryNumber() = !variables[aIndex].value.as!StoryNumber();
                                 stack.append(variables[aIndex].value);
                             } else {
                                 return throwOpFault(op, tokenCount);
@@ -651,7 +651,7 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryNumber();
+                        auto a = da.as!StoryNumber();
                         if (a == 0) break;
                         if (linearMode) break;
                         auto target = nextLabelIndex + (a > 0 ? a - 1 : a);
@@ -665,7 +665,7 @@ struct Story {
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
                         auto da = stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.get!StoryWord();
+                        auto a = da.as!StoryWord();
                         auto aIndex = findLabel(a);
                         if (aIndex != -1) {
                             if (linearMode) break;

@@ -17,9 +17,9 @@ If everything is set up correctly,
 there should be some new files inside the folder.
 Three of them are particularly important:
 
-* `source`: Contains the source code of the game.
-* `assets`: Contains the assets of the game.
-* `web`: Used for exporting the game to the web.
+* `source`: Contains the source code
+* `assets`: Contains the game assets
+* `web`: Used for exporting to the web
 
 Additionally, an app.d file is inside the source folder that looks like this:
 
@@ -118,12 +118,11 @@ Parin consists of the following modules:
 
 The `parin.engine` module is the only mandatory module for creating a game.
 All other modules are optional and can be included as needed.
-The `import parin;` statement in the example above is a convenience import that includes all modules.
+The `import parin` statement in the example above is a convenience import that includes all modules.
 
 ## Input
 
-Parin provides a set of input functions inside the `parin.engine` module.
-These include:
+Parin provides a set of input functions. These include:
 
 ```d
 bool isDown(char key);
@@ -203,8 +202,7 @@ Below are examples showing how to use these input functions to move text.
 
 ## Drawing
 
-Parin provides a set of drawing functions inside the `parin.engine` module.
-These include:
+Parin provides a set of drawing functions. These include:
 
 ```d
 void drawRect(Rect area, Rgba color = white);
@@ -297,7 +295,7 @@ Below are examples showing how to use these options to change how text looks.
 
 ## Sound
 
-Parin provides a set of sound functions inside the `parin.engine` module.
+Parin provides a set of sound functions. These include:
 
 ```d
 void playSound(SoundId sound);
@@ -324,8 +322,7 @@ Below are examples showing how to use these sound functions.
 
 ## Loading & Saving
 
-Parin provides a set of loading and saving functions inside the `parin.engine` module.
-These include:
+Parin provides a set of loading and saving functions. These include:
 
 ```d
 TextureId loadTexture(IStr path);
@@ -349,14 +346,14 @@ Raw resources are managed directly by the user.
 
 ### Managed Resources
 
-Managed resources are managed by the engine, meaning that they can be safely shared throughout the code and are automatically invalidated when freed.
+Managed resources are managed by the engine, meaning they get updated every frame when necessary (e.g. sounds) and can be safely shared throughout the code. These resources use something known as [generational indices](https://lucassardois.medium.com/generational-indices-guide-8e3c5f7fd594).
 
 ### Temporary Resources
 
 Temporary resources are only valid until the function that provided them is called again.
 
-## Sprites and Tile Maps
+## Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
 To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
-Parin provides a sprite utilities inside the `parin.sprite` module and a map utilities inside the `parin.map` module.
+Parin provides a sprite utilities inside the `parin.sprite` module and map utilities inside the `parin.map` module.

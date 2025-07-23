@@ -230,8 +230,8 @@ void drawSpriteX(Texture texture, Sprite sprite, DrawOptions options = DrawOptio
     }
 
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
-    auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width;
-    auto gridHeight = max(texture.height - top, 0) / sprite.height;
+    auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width; // NOTE: Could be saved maybe.
+    auto gridHeight = max(texture.height - top, 0) / sprite.height; // NOTE: Could be saved maybe.
     if (gridWidth == 0 || gridHeight == 0) return;
 
     auto row = sprite.frame / gridWidth;

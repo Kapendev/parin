@@ -981,9 +981,9 @@ struct Sound {
     /// Checks if the sound is not loaded.
     bool isEmpty() {
         if (data.isType!(rl.Sound)) {
-            return data.get!(rl.Sound)().stream.sampleRate == 0;
+            return data.as!(rl.Sound)().stream.sampleRate == 0;
         } else {
-            return data.get!(rl.Music)().stream.sampleRate == 0;
+            return data.as!(rl.Music)().stream.sampleRate == 0;
         }
     }
 
@@ -992,7 +992,7 @@ struct Sound {
         if (data.isType!(rl.Sound)) {
             return 0.0f;
         } else {
-            return rl.GetMusicTimePlayed(data.get!(rl.Music)());
+            return rl.GetMusicTimePlayed(data.as!(rl.Music)());
         }
     }
 
@@ -1001,7 +1001,7 @@ struct Sound {
         if (data.isType!(rl.Sound)) {
             return 0.0f;
         } else {
-            return rl.GetMusicTimeLength(data.get!(rl.Music)());
+            return rl.GetMusicTimeLength(data.as!(rl.Music)());
         }
     }
 
@@ -1014,9 +1014,9 @@ struct Sound {
     /// Sets the volume level for the sound. One is the default value.
     void setVolume(float value) {
         if (data.isType!(rl.Sound)) {
-            rl.SetSoundVolume(data.get!(rl.Sound)(), value);
+            rl.SetSoundVolume(data.as!(rl.Sound)(), value);
         } else {
-            rl.SetMusicVolume(data.get!(rl.Music)(), value);
+            rl.SetMusicVolume(data.as!(rl.Music)(), value);
         }
     }
 
@@ -1025,18 +1025,18 @@ struct Sound {
         pitch = value;
         if (canUpdatePitchVarianceBase) pitchVarianceBase = value;
         if (data.isType!(rl.Sound)) {
-            rl.SetSoundPitch(data.get!(rl.Sound)(), value);
+            rl.SetSoundPitch(data.as!(rl.Sound)(), value);
         } else {
-            rl.SetMusicPitch(data.get!(rl.Music)(), value);
+            rl.SetMusicPitch(data.as!(rl.Music)(), value);
         }
     }
 
     /// Sets the stereo panning of the sound. One is the default value.
     void setPan(float value) {
         if (data.isType!(rl.Sound)) {
-            rl.SetSoundPan(data.get!(rl.Sound)(), value);
+            rl.SetSoundPan(data.as!(rl.Sound)(), value);
         } else {
-            rl.SetMusicPan(data.get!(rl.Music)(), value);
+            rl.SetMusicPan(data.as!(rl.Music)(), value);
         }
     }
 
@@ -1044,9 +1044,9 @@ struct Sound {
     void free() {
         if (isEmpty) return;
         if (data.isType!(rl.Sound)) {
-            rl.UnloadSound(data.get!(rl.Sound)());
+            rl.UnloadSound(data.as!(rl.Sound)());
         } else {
-            rl.UnloadMusicStream(data.get!(rl.Music)());
+            rl.UnloadMusicStream(data.as!(rl.Music)());
         }
         this = Sound();
     }
@@ -1698,14 +1698,17 @@ float randf() {
 
 /// Sets the seed of the random number generator to the given value.
 extern(C)
-void randomizeSeed(int seed) {
-    rl.SetRandomSeed(seed);
+void setRandomSeed(int value) {
+    rl.SetRandomSeed(value);
 }
+
+deprecated("Will be renamed to setRandomSeed.")
+alias randomizeSeed = setRandomSeed;
 
 /// Randomizes the seed of the random number generator.
 extern(C)
 void randomize() {
-    randomizeSeed(randi);
+    setRandomSeed(randi);
 }
 
 /// Converts a world point to a screen point based on the given camera.
@@ -2381,9 +2384,9 @@ void playSoundX(ref Sound sound) {
         sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
     }
     if (sound.data.isType!(rl.Sound)) {
-        rl.PlaySound(sound.data.get!(rl.Sound)());
+        rl.PlaySound(sound.data.as!(rl.Sound)());
     } else {
-        rl.PlayMusicStream(sound.data.get!(rl.Music)());
+        rl.PlayMusicStream(sound.data.as!(rl.Music)());
     }
 }
 
@@ -2400,9 +2403,9 @@ void stopSoundX(ref Sound sound) {
     sound.isActive = false;
     resumeSoundX(sound);
     if (sound.data.isType!(rl.Sound)) {
-        rl.StopSound(sound.data.get!(rl.Sound)());
+        rl.StopSound(sound.data.as!(rl.Sound)());
     } else {
-        rl.StopMusicStream(sound.data.get!(rl.Music)());
+        rl.StopMusicStream(sound.data.as!(rl.Music)());
     }
 }
 
@@ -2418,9 +2421,9 @@ void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused) return;
     sound.isPaused = true;
     if (sound.data.isType!(rl.Sound)) {
-        rl.PauseSound(sound.data.get!(rl.Sound)());
+        rl.PauseSound(sound.data.as!(rl.Sound)());
     } else {
-        rl.PauseMusicStream(sound.data.get!(rl.Music)());
+        rl.PauseMusicStream(sound.data.as!(rl.Music)());
     }
 }
 
@@ -2436,9 +2439,9 @@ void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty || !sound.isPaused) return;
     sound.isPaused = false;
     if (sound.data.isType!(rl.Sound)) {
-        rl.ResumeSound(sound.data.get!(rl.Sound)());
+        rl.ResumeSound(sound.data.as!(rl.Sound)());
     } else {
-        rl.ResumeMusicStream(sound.data.get!(rl.Music)());
+        rl.ResumeMusicStream(sound.data.as!(rl.Music)());
     }
 }
 
@@ -2492,11 +2495,11 @@ extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused || !sound.isActive) return;
     if (sound.data.isType!(rl.Sound)) {
-        if (rl.IsSoundPlaying(sound.data.get!(rl.Sound)())) return;
+        if (rl.IsSoundPlaying(sound.data.as!(rl.Sound)())) return;
         sound.isActive = false;
         if (sound.canRepeat) playSoundX(sound);
     } else {
-        auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.get!(rl.Music)());
+        auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.as!(rl.Music)());
         auto hasLoopedInternally = sound.duration - sound.time < 0.1f;
         if (hasLoopedInternally) {
             if (sound.canRepeat) {
@@ -2509,7 +2512,7 @@ void updateSoundX(ref Sound sound) {
                 isPlayingInternally = false;
             }
         }
-        if (isPlayingInternally) rl.UpdateMusicStream(sound.data.get!(rl.Music)());
+        if (isPlayingInternally) rl.UpdateMusicStream(sound.data.as!(rl.Music)());
     }
 }
 
@@ -2579,17 +2582,16 @@ void drawLine(Line area, float size, Rgba color = white) {
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 extern(C)
 void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto isAreaEmpty = !area.hasSize;
     if (texture.isEmpty) {
-        if (area.size.x <= 0.0f || area.size.y <= 0.0f) area.size = Vec2(64);
         if (isEmptyTextureVisible) {
-            auto rect = Rect(position, area.size * options.scale).area(options.hook);
+            auto rect = Rect(position, (isAreaEmpty ? Vec2(64) : area.size) * options.scale).area(options.hook);
             drawRect(rect, defaultEngineEmptyTextureColor);
             drawHollowRect(rect, 1, black);
         }
         return;
-    } else {
-        if (area.size.x <= 0.0f || area.size.y <= 0.0f) return;
     }
+    if (isAreaEmpty) return;
 
     auto target = Rect(position, area.size * options.scale.abs());
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
