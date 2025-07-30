@@ -227,6 +227,39 @@ struct SoundId {
     Sound getOr();
     void free();
 }
+
+struct Camera {
+    Vec2 position;
+    Vec2 offset;
+    float rotation;
+    float scale;
+    bool isCentered;
+    bool isAttached;
+
+    this(Vec2 position, bool isCentered = false);
+    this(float x, float y, bool isCentered = false);
+    ref float x();
+    ref float y();
+    Vec2 sum();
+    Hook hook();
+    Vec2 origin(Viewport viewport = Viewport());
+    Rect area(Viewport viewport = Viewport());
+    Vec2 topLeftPoint();
+    Vec2 topPoint();
+    Vec2 topRightPoint();
+    Vec2 leftPoint();
+    Vec2 centerPoint();
+    Vec2 rightPoint();
+    Vec2 bottomLeftPoint();
+    Vec2 bottomPoint();
+    Vec2 bottomRightPoint();
+    void followPosition(Vec2 target, float speed);
+    void followPositionWithSlowdown(Vec2 target, float slowdown);
+    void followScale(float target, float speed);
+    void followScaleWithSlowdown(float target, float slowdown);
+    void attach();
+    void detach();
+}
 ```
 
 ### 📌 Constants
