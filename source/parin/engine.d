@@ -335,7 +335,7 @@ Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
 /// Loads a text file from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-Result!LStr loadRawText(IStr path) {
+Maybe!LStr loadRawText(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     return readText(targetPath);
 }
@@ -344,20 +344,20 @@ Result!LStr loadRawText(IStr path) {
 /// The resource remains valid until this function is called again.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-Result!IStr loadTempText(IStr path) {
+Maybe!IStr loadTempText(IStr path) {
     auto fault = loadRawTextIntoBuffer(path, engineState.loadTextBuffer);
-    return Result!IStr(engineState.loadTextBuffer.items, fault);
+    return Maybe!IStr(engineState.loadTextBuffer.items, fault);
 }
 
 /// Loads a texture file (PNG) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-Result!Texture loadRawTexture(IStr path) {
+Maybe!Texture loadRawTexture(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toPr();
     value.setFilter(engineState.defaultFilter);
     value.setWrap(engineState.defaultWrap);
-    return Result!Texture(value, value.isEmpty.toFault(Fault.cantFind));
+    return Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Loads a texture file (PNG) from the assets folder.
@@ -373,7 +373,7 @@ TextureId loadTexture(IStr path) {
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-Result!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
+Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toPr();
     if (value.data.texture.id == rl.GetFontDefault().texture.id) {
@@ -385,7 +385,7 @@ Result!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpaci
     else value.lineSpacing = value.data.baseSize;
     value.setFilter(engineState.defaultFilter);
     value.setWrap(engineState.defaultWrap);
-    return Result!Font(value, value.isEmpty.toFault(Fault.cantFind));
+    return Maybe!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
@@ -402,9 +402,9 @@ FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1,
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 extern(C)
-Result!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
+Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
     auto value = loadRawTexture(path).getOr();
-    return Result!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+    return Maybe!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
@@ -421,7 +421,7 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
-Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
+Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
@@ -430,13 +430,13 @@ Result!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat =
         value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
     }
     if (value.isEmpty) {
-        return Result!Sound();
+        return Maybe!Sound();
     } else {
         value.setVolume(volume);
         value.setPitch(pitch, true);
         value.canRepeat = canRepeat;
         value.pitchVariance = pitchVariance;
-        return Result!Sound(value);
+        return Maybe!Sound(value);
     }
 }
 
@@ -1265,7 +1265,8 @@ struct Viewport {
 
 /// A camera.
 struct Camera {
-    Vec2 position;         /// The position of the cammera.
+    Vec2 position;         /// The position of the camera.
+    Vec2 offset;           /// The offset of the view area of the camera.
     float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
     float scale = 1.0f;    /// The zoom level of the camera.
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
@@ -1287,10 +1288,12 @@ struct Camera {
     /// The X position of the camera.
     pragma(inline, true)
     ref float x() => position.x;
-
     /// The Y position of the camera.
     pragma(inline, true)
     ref float y() => position.y;
+    /// The sum of the position and the offset of the camera.
+    pragma(inline, true)
+    Vec2 sum() => position + offset;
 
     /// Returns the current hook associated with the camera.
     Hook hook() {
@@ -1309,9 +1312,9 @@ struct Camera {
     /// Returns the area covered by the camera.
     Rect area(Viewport viewport = Viewport()) {
         if (viewport.isEmpty) {
-            return Rect(position, resolution / Vec2(scale)).area(hook);
+            return Rect(sum, resolution / Vec2(scale)).area(hook);
         } else {
-            return Rect(position, viewport.size / Vec2(scale)).area(hook);
+            return Rect(sum, viewport.size / Vec2(scale)).area(hook);
         }
     }
 
@@ -1387,7 +1390,7 @@ struct Camera {
         }
         isAttached = true;
         engineState.userCamera = this;
-        auto temp = this.toRl(engineState.userViewport);
+        auto temp = toRl(this, engineState.userViewport);
         if (isPixelSnapped) {
             temp.target.x = temp.target.x.floor();
             temp.target.y = temp.target.y.floor();
@@ -1532,7 +1535,7 @@ pragma(inline, true) private @safe nothrow @nogc {
     rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
         return rl.Camera2D(
             Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
-            from.position.toRl(),
+            (from.position + from.offset).toRl(),
             from.rotation,
             from.scale,
         );

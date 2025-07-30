@@ -331,8 +331,8 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
 
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
-Result!LStr loadRawText(IStr path);
-Result!IStr loadTempText(IStr path);
+Maybe!LStr loadRawText(IStr path);
+Maybe!IStr loadTempText(IStr path);
 Fault saveText(IStr path, IStr text);
 ```
 

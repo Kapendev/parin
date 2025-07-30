@@ -771,36 +771,36 @@ bool isMaybeStoryWord(IStr value) {
 }
 
 @nogc
-Result!StoryLineKind toStoryLineKind(char value) {
-    switch (value) with (StoryLineKind) {
-        case ' ': return Result!StoryLineKind(empty);
-        case '#': return Result!StoryLineKind(comment);
-        case '*': return Result!StoryLineKind(label);
-        case '|': return Result!StoryLineKind(text);
-        case '.': return Result!StoryLineKind(pause);
-        case '^': return Result!StoryLineKind(menu);
-        case '$': return Result!StoryLineKind(expression);
-        case '!': return Result!StoryLineKind(procedure);
-        default: return Result!StoryLineKind(Fault.cantParse);
+Maybe!StoryLineKind toStoryLineKind(char from) {
+    with (Maybe!StoryLineKind) with (StoryLineKind) switch (from) {
+        case ' ': return some(empty);
+        case '#': return some(comment);
+        case '*': return some(label);
+        case '|': return some(text);
+        case '.': return some(pause);
+        case '^': return some(menu);
+        case '$': return some(expression);
+        case '!': return some(procedure);
+        default: return none(Fault.cantParse);
     }
 }
 
 @nogc
-Result!StoryOp toStoryOp(IStr value) {
-    switch (value) with (StoryOp) {
-        case "+": return Result!StoryOp(ADD);
-        case "-": return Result!StoryOp(SUB);
-        case "*": return Result!StoryOp(MUL);
-        case "/": return Result!StoryOp(DIV);
-        case "%": return Result!StoryOp(MOD);
-        case "&": return Result!StoryOp(AND);
-        case "|": return Result!StoryOp(OR);
-        case "<": return Result!StoryOp(LESS);
-        case ">": return Result!StoryOp(GREATER);
-        case "=": return Result!StoryOp(EQUAL);
-        case "!": return Result!StoryOp(NOT);
-        case "~": return Result!StoryOp(POP);
+Maybe!StoryOp toStoryOp(IStr from) {
+    with (Maybe!StoryOp) with (StoryOp) switch (from) {
+        case "+": return some(ADD);
+        case "-": return some(SUB);
+        case "*": return some(MUL);
+        case "/": return some(DIV);
+        case "%": return some(MOD);
+        case "&": return some(AND);
+        case "|": return some(OR);
+        case "<": return some(LESS);
+        case ">": return some(GREATER);
+        case "=": return some(EQUAL);
+        case "!": return some(NOT);
+        case "~": return some(POP);
         default: break;
     }
-    return toEnum!StoryOp(value);
+    return toEnum!StoryOp(from);
 }
