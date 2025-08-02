@@ -76,8 +76,8 @@ struct Tile {
 // NOTE: Things like changing the grid row count might be interesting.
 struct TileMap {
     Grid!short data;
-    Sz softRowCount;
-    Sz softColCount;
+    Sz rowCount;
+    Sz colCount;
     int tileWidth;
     int tileHeight;
     Vec2 position;
@@ -162,7 +162,7 @@ struct TileMap {
 
     @nogc
     bool has(Sz row, Sz col) {
-        return row < softRowCount && col < softColCount;
+        return row < rowCount && col < colCount;
     }
 
     @nogc
@@ -183,19 +183,25 @@ struct TileMap {
     void resizeHard(Sz newHardRowCount, Sz newHardColCount) {
         data.resizeBlank(newHardRowCount, newHardColCount);
         data.fill(-1);
-        softRowCount = newHardRowCount;
-        softColCount = newHardColCount;
+        rowCount = newHardRowCount;
+        colCount = newHardColCount;
     }
 
     deprecated("Will be replaced with resize.")
     alias resizeSoft = resize;
 
-    void resize(Sz newSoftRowCount, Sz newSoftColCount) {
-        if (newSoftRowCount > hardRowCount || newSoftColCount > hardColCount) {
+    @nogc
+    void resize(Sz newRowCount, Sz newColCount) {
+        if (newRowCount > hardRowCount || newColCount > hardColCount) {
             assert(0, "Soft count must be smaller than hard count.");
         }
-        softRowCount = newSoftRowCount;
-        softColCount = newSoftColCount;
+        rowCount = newRowCount;
+        colCount = newColCount;
+    }
+
+    void resizeTileSize(int newTileWidth, int newTileHeight) {
+        tileWidth = newTileWidth;
+        tileHeight = newTileHeight;
     }
 
     @nogc
@@ -208,8 +214,8 @@ struct TileMap {
 
     @nogc
     void fill(short value) {
-        foreach (row; 0 .. softRowCount) {
-            foreach (col; 0 .. softColCount) {
+        foreach (row; 0 .. rowCount) {
+            foreach (col; 0 .. colCount) {
                 data[row, col] = value;
             }
         }
@@ -234,12 +240,12 @@ struct TileMap {
 
     @nogc
     int width() {
-        return cast(int) (softColCount * tileWidth);
+        return cast(int) (colCount * tileWidth);
     }
 
     @nogc
     int height() {
-        return cast(int) (softRowCount * tileHeight);
+        return cast(int) (rowCount * tileHeight);
     }
 
     /// Returns the size of the tile map.
@@ -311,20 +317,20 @@ struct TileMap {
             }
         }
 
-        if (softRowCount == 0 || softColCount == 0) return Range();
+        if (rowCount == 0 || colCount == 0) return Range();
         auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
         auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
         auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
         auto firstGridPoint = IVec2(
-            cast(int) clamp((topLeftWorldPoint.x - position.x) / targetTileWidth, 0, softColCount - 1),
-            cast(int) clamp((topLeftWorldPoint.y - position.y) / targetTileHeight, 0, softRowCount - 1),
+            cast(int) clamp((topLeftWorldPoint.x - position.x) / targetTileWidth, 0, colCount - 1),
+            cast(int) clamp((topLeftWorldPoint.y - position.y) / targetTileHeight, 0, rowCount - 1),
         );
         auto lastGridPoint = IVec2(
-            cast(int) clamp((bottomRightWorldPoint.x - position.x) / targetTileWidth + extraTileCount, 0, softColCount - 1),
-            cast(int) clamp((bottomRightWorldPoint.y - position.y) / targetTileHeight + extraTileCount, 0, softRowCount - 1),
+            cast(int) clamp((bottomRightWorldPoint.x - position.x) / targetTileWidth + extraTileCount, 0, colCount - 1),
+            cast(int) clamp((bottomRightWorldPoint.y - position.y) / targetTileHeight + extraTileCount, 0, rowCount - 1),
         );
         return Range(
-            softColCount,
+            colCount,
             firstGridPoint,
             lastGridPoint,
             firstGridPoint,
@@ -336,42 +342,78 @@ struct TileMap {
         return gridPoints(worldArea.topLeftPoint, worldArea.bottomRightPoint, options);
     }
 
-    Fault parse(IStr csv, int newTileWidth, int newTileHeight) {
-        resize(0, 0);
-        if (csv.length == 0) return Fault.invalid;
+    deprecated("Will be replaced with `parseCsv`.")
+    alias parse = parseCsv;
+
+    Fault parseCsv(IStr csv, int newTileWidth, int newTileHeight, bool zeroMode = false) {
+        if (csv.length == 0) return Fault.cantParse;
         if (data.isEmpty) data.resizeBlank(128, 128);
-        tileWidth = newTileWidth;
-        tileHeight = newTileHeight;
-        while (csv.length != 0) {
-            softRowCount += 1;
-            softColCount = 0;
-            if (softRowCount > data.rowCount) return Fault.invalid;
-            auto line = csv.skipLine();
-            while (line.length != 0) {
-                softColCount += 1;
-                if (softColCount > data.colCount) return Fault.invalid;
+        resize(0, 0);
+        resizeTileSize(newTileWidth, newTileHeight);
+        auto view = csv;
+        while (view.length) {
+            rowCount += 1;
+            colCount = 0;
+            if (rowCount > data.rowCount) return Fault.cantParse;
+            auto line = view.skipLine();
+            while (line.length) {
+                colCount += 1;
                 auto tile = line.skipValue(',').toSigned();
-                if (tile.isNone) {
-                    resize(0, 0);
-                    return Fault.invalid;
-                }
-                data[softRowCount - 1, softColCount - 1] = cast(short) tile.value;
+                if (tile.isNone || colCount > data.colCount) return Fault.cantParse;
+                data[rowCount - 1, colCount - 1] = cast(short) (tile.value - zeroMode);
             }
         }
         return Fault.none;
     }
 
-    Fault parse(IStr csv) {
-        return parse(csv, tileWidth, tileHeight);
+    Fault parseCsv(IStr csv, bool zeroMode = false) {
+        return parseCsv(csv, tileWidth, tileHeight, zeroMode);
+    }
+
+    // TODO: NEEDS A COMMENT ABOUT ONLY PARSING THE FIRST DATA PART.
+    @trusted
+    Fault parseTmx(IStr tmx) {
+        Sz csvStart, csvEnd;
+        auto view = tmx;
+        while (view.length) {
+            auto line = view.skipLine().trim();
+            auto isMapLine = line.startsWith("<map");
+            auto isDataStartLine = isMapLine ? false : line.startsWith("<data");
+            if (isMapLine) {
+                while (line.length && (tileWidth == 0 || tileHeight == 0)) {
+                    auto word = line.skipValue(" ").trim();
+                    auto isWidthWord = word.startsWith("tilewidth");
+                    auto isHeightWord = word.startsWith("tileheight");
+                    if (!isWidthWord && !isHeightWord) continue;
+                    auto value = word.split("=")[1][1 .. $ - 1].toSigned(); // NOTE: Removes `"` with `[1 .. $ - 1]`.
+                    if (value.isNone) return Fault.cantParse;
+                    if (isWidthWord) tileWidth = cast(int) value.value;
+                    if (isHeightWord) tileHeight = cast(int) value.value;
+                }
+            } else if (isDataStartLine) {
+                line = view.skipLine();
+                csvStart = line.ptr - tmx.ptr; // NOTE: I think there should be a way to have better access to the index. Maybe a range? I kinda hate that idea.
+                while (view.length) {
+                    line = view.skipLine(); // NOTE: No trim because it's already trimmed.
+                    if (line.startsWith("</")) {
+                        csvEnd = line.ptr - tmx.ptr;
+                        break;
+                    }
+                }
+                return parseCsv(tmx[csvStart .. csvEnd], true);
+            }
+        }
+        return Fault.none;
     }
 }
 
+// TODO: MAYBE I SHOULD ALSO KINDA TELL THAT THIS IS A CSV THINGY!!!
 Fault saveTileMap(IStr path, TileMap map) {
     auto csv = prepareTempText();
-    foreach (row; 0 .. map.softRowCount) {
-        foreach (col; 0 .. map.softColCount) {
+    foreach (row; 0 .. map.rowCount) {
+        foreach (col; 0 .. map.colCount) {
             csv.append(map[row, col].toStr());
-            if (col != map.softColCount - 1) csv.append(',');
+            if (col != map.colCount - 1) csv.append(',');
         }
         csv.append('\n');
     }
@@ -397,9 +439,10 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
     drawTileX(texture.getOr(), tile, options);
 }
 
+// TODO: CLEAN CLEAN CLEAN BROOOOO TOOO COMPLEX OR SOMETHING
 @nogc
 void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
-    if (map.softRowCount == 0 || map.softColCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
+    if (map.rowCount == 0 || map.colCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
             auto rect = Rect(map.position, map.size * options.scale).area(options.hook);
@@ -415,13 +458,13 @@ void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOp
     auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
     auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
     auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-    auto colRow1 = IVec2(
-        cast(int) clamp((topLeftWorldPoint.x - map.position.x) / targetTileWidth, 0, map.softColCount - 1),
-        cast(int) clamp((topLeftWorldPoint.y - map.position.y) / targetTileHeight, 0, map.softRowCount - 1),
+    auto colRow1 = !camera.isAttached ? IVec2() : IVec2(
+        cast(int) clamp((topLeftWorldPoint.x - map.position.x) / targetTileWidth, 0, map.colCount - 1),
+        cast(int) clamp((topLeftWorldPoint.y - map.position.y) / targetTileHeight, 0, map.rowCount - 1),
     );
-    auto colRow2 = IVec2(
-        cast(int) clamp((bottomRightWorldPoint.x - map.position.x) / targetTileWidth + extraTileCount, 0, map.softColCount - 1),
-        cast(int) clamp((bottomRightWorldPoint.y - map.position.y) / targetTileHeight + extraTileCount, 0, map.softRowCount - 1),
+    auto colRow2 = !camera.isAttached ? IVec2(cast(int) map.colCount - 1, cast(int) map.rowCount - 1) : IVec2(
+        cast(int) clamp((bottomRightWorldPoint.x - map.position.x) / targetTileWidth + extraTileCount, 0, map.colCount - 1),
+        cast(int) clamp((bottomRightWorldPoint.y - map.position.y) / targetTileHeight + extraTileCount, 0, map.rowCount - 1),
     );
     auto textureArea = Rect(map.tileWidth, map.tileHeight);
     foreach (row; colRow1.y .. colRow2.y + 1) {

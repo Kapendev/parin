@@ -12,7 +12,7 @@ void ready() {
     lockResolution(320, 180);
     atlas = loadTexture("parin_atlas.png");
     // Parse a CSV, where each tile is 16x16 in size.
-    map.parse("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55\n", 16, 16);
+    map.parseCsv("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55\n", 16, 16);
 }
 
 bool update(float dt) {

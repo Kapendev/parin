@@ -65,25 +65,25 @@ Some libraries for sound, graphics, and input handling are required before using
 
 **Ubuntu**:
 
-```cmd
+```sh
 sudo apt install libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
 **Fedora**:
 
-```cmd
+```sh
 sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel libatomic
 ```
 
 **Arch**:
 
-```cmd
+```sh
 sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ```
 
 ## Documentation
 
-Start with the [examples](./examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
+Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
 For more details, check the [tour page](TOUR.md).
 
 ## Ideas
@@ -94,8 +94,6 @@ Most ideas are welcome, except ECS.
 ## Frequently Asked Questions
 
 ### How can I build without DUB?
-
-This is the no-slop way of building a game. Just you, the compiler, and the code.
 
 1. Download [raylib](https://github.com/raysan5/raylib/releases).
 2. Download [Parin](https://github.com/Kapendev/parin/tags) and [Joka](https://github.com/Kapendev/joka/tags) using something like:
@@ -112,6 +110,40 @@ This is the no-slop way of building a game. Just you, the compiler, and the code
     # On Linux, you may also need: -L=-rpath='$ORIGIN'
     ldc2 app.d -i -I=joka_source_path -I=parin_source_path -J=parin_source_path -L=-L. -L=-lraylib
     ```
+
+### How do I make a web build?
+
+Like other special platforms (e.g. Android), Parin includes a build script for the web in the [packages](packages/) folder. To build for the web, you will need two additional things:
+
+1. [Emscripten](https://emscripten.org/)
+2. [WebAssembly build of raylib](https://github.com/raysan5/raylib/releases)
+
+To run the build script with DUB, use:
+
+```sh
+dub run parin:web
+```
+
+Below are installation commands for some Linux distributions for Emscripten.
+
+**Ubuntu**:
+
+```sh
+sudo apt install emscripten
+```
+
+**Fedora**:
+
+```sh
+sudo dnf install emscripten
+```
+
+**Arch**:
+
+```sh
+# Or maybe: sudo pacman -S emscripten
+yay -S emscripten
+```
 
 ### Is Parin a raylib wrapper?
 
