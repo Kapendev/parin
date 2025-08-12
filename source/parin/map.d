@@ -6,7 +6,7 @@
 // ---
 
 // TODO: Update all the doc comments here.
-// NOTE: Maybe the map could return `Tile` as info for something.
+// NOTE: Tiles can't be scaled. Maybe a bad idea, but who cares. I do the same for 9-slices too and it works fine.
 
 /// The `map` module provides a simple and fast tile map.
 module parin.map;
@@ -127,8 +127,10 @@ struct TileMap {
         bool has(IVec2 position) => has(position.y, position.x);
         bool hasTileSize() => tileWidth != 0 && tileHeight != 0;
         bool hasSize() => hasTileSize && rowCount != 0 && colCount != 0;
-        Vec2 worldPointAt(Sz row, Sz col) => Vec2(position.x + col * tileWidth, position.y + row * tileHeight);
-        Vec2 worldPointAt(IVec2 gridPosition) => worldPointAt(gridPosition.y, gridPosition.x);
+        Vec2 worldPointAt(int gridX, int gridY) => Vec2(position.x + gridX * tileWidth, position.y + gridY * tileHeight);
+        Vec2 worldPointAt(IVec2 gridPoint) => worldPointAt(gridPoint.x, gridPoint.y);
+        IVec2 gridPointAt(float worldX, float worldY) => IVec2(cast(int) floor((worldX - position.x) / tileWidth), cast(int) floor((worldY - position.y) / tileHeight));
+        IVec2 gridPointAt(Vec2 worldPoint) => gridPointAt(worldPoint.x, worldPoint.y);
     }
 
     @nogc
@@ -177,7 +179,7 @@ struct TileMap {
     }
 
     @nogc
-    auto gridPoints(Vec2 topLeftPoint, Vec2 bottomRightPoint) {
+    auto gridPoints(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint) {
         alias T = ushort;
         static struct Range {
             T colCount;
@@ -204,12 +206,12 @@ struct TileMap {
 
         if (!hasSize) return Range();
         auto firstGridPoint = GVec2!T(
-            cast(T) clamp((topLeftPoint.x - position.x) / tileWidth, 0, colCount - 1),
-            cast(T) clamp((topLeftPoint.y - position.y) / tileHeight, 0, rowCount - 1),
+            cast(T) clamp((topLeftViewPoint.x - position.x) / tileWidth, 0, colCount - 1),
+            cast(T) clamp((topLeftViewPoint.y - position.y) / tileHeight, 0, rowCount - 1),
         );
         auto lastGridPoint = GVec2!T(
-            cast(T) clamp((bottomRightPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
-            cast(T) clamp((bottomRightPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
+            cast(T) clamp((bottomRightViewPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
+            cast(T) clamp((bottomRightViewPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
         );
         return Range(
             cast(T) colCount,
@@ -220,12 +222,12 @@ struct TileMap {
     }
 
     @nogc
-    auto gridPoints(Rect area) {
-        return gridPoints(area.topLeftPoint, area.bottomRightPoint);
+    auto gridPoints(Rect viewArea) {
+        return gridPoints(viewArea.topLeftPoint, viewArea.bottomRightPoint);
     }
 
     @nogc
-    auto tiles(Vec2 topLeftPoint, Vec2 bottomRightPoint, Sz layerId = 0) {
+    auto tiles(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint, Sz layerId = 0) {
         alias T = ushort;
         static struct Range {
             T colCount;
@@ -255,12 +257,12 @@ struct TileMap {
 
         if (!hasSize) return Range();
         auto firstGridPoint = GVec2!T(
-            cast(T) clamp((topLeftPoint.x - position.x) / tileWidth, 0, colCount - 1),
-            cast(T) clamp((topLeftPoint.y - position.y) / tileHeight, 0, rowCount - 1),
+            cast(T) clamp((topLeftViewPoint.x - position.x) / tileWidth, 0, colCount - 1),
+            cast(T) clamp((topLeftViewPoint.y - position.y) / tileHeight, 0, rowCount - 1),
         );
         auto lastGridPoint = GVec2!T(
-            cast(T) clamp((bottomRightPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
-            cast(T) clamp((bottomRightPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
+            cast(T) clamp((bottomRightViewPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
+            cast(T) clamp((bottomRightViewPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
         );
         return Range(
             cast(T) colCount,
@@ -274,11 +276,11 @@ struct TileMap {
     }
 
     @nogc
-    auto tiles(Rect area, Sz layerId = 0) {
-        return tiles(area.topLeftPoint, area.bottomRightPoint, layerId);
+    auto tiles(Rect viewArea, Sz layerId = 0) {
+        return tiles(viewArea.topLeftPoint, viewArea.bottomRightPoint, layerId);
     }
 
-    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool zeroMode = false) {
+    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false) {
         if (csv.length == 0) return Fault.cantParse;
         if (layerId >= layers.length) {
             foreach (i; 0 .. layerId - layers.length + 1) layers.append(TileMapLayer());
@@ -296,16 +298,17 @@ struct TileMap {
                 colCount += 1;
                 auto tile = line.skipValue(',').toSigned();
                 if (tile.isNone || colCount > hardColCount) return Fault.cantParse;
-                layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.value - zeroMode);
+                layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.value - isMinZero);
             }
         }
         return Fault.none;
     }
 
-    Fault parseCsv(IStr csv, Sz layerId = 0, bool zeroMode = false) {
-        return parseCsv(csv, tileWidth, tileHeight, layerId, zeroMode);
+    Fault parseCsv(IStr csv, Sz layerId = 0, bool isMinZero = false) {
+        return parseCsv(csv, tileWidth, tileHeight, layerId, isMinZero);
     }
 
+    // NOTE: Doesn't support inf maps.
     @trusted
     Fault parseTmx(IStr tmx) {
         auto layerId = 0;
@@ -328,7 +331,7 @@ struct TileMap {
             } else if (isDataStartLine) {
                 Sz csvStart, csvEnd;
                 line = view.skipLine();
-                csvStart = line.ptr - tmx.ptr; // NOTE: I think there should be a way to have better access to the index. Maybe a range? I kinda hate that idea.
+                csvStart = line.ptr - tmx.ptr;
                 while (view.length) {
                     line = view.skipLine(); // NOTE: No trim because it's already trimmed by Tiled.
                     if (line.startsWith("</")) {
@@ -336,8 +339,7 @@ struct TileMap {
                         break;
                     }
                 }
-                auto fault = parseCsv(tmx[csvStart .. csvEnd], layerId, true);
-                if (fault) return fault;
+                if (parseCsv(tmx[csvStart .. csvEnd], layerId, true)) return Fault.cantParse;
                 layerId += 1;
             }
         }
@@ -348,14 +350,6 @@ struct TileMap {
 @nogc {
     void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
         if (!tile.hasId || !tile.hasSize) return;
-        if (texture.isEmpty) {
-            if (isEmptyTextureVisible) {
-                auto rect = tile.area;
-                drawRect(rect, defaultEngineEmptyTextureColor);
-                drawHollowRect(rect, 1, black);
-            }
-            return;
-        }
         drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
     }
 
@@ -363,7 +357,7 @@ struct TileMap {
         drawTileX(texture.getOr(), tile, options);
     }
 
-    void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
+    void drawTileMapX(Texture texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
         if (!map.hasSize) return;
         if (texture.isEmpty) {
             if (isEmptyTextureVisible) {
@@ -374,21 +368,22 @@ struct TileMap {
             return;
         }
 
-        auto topLeftPoint = camera.topLeftPoint;
-        auto bottomRightPoint = camera.bottomRightPoint;
+        auto hasAreaSize = viewArea.hasSize;
+        auto topLeftPoint = viewArea.topLeftPoint;
+        auto bottomRightPoint = viewArea.bottomRightPoint;
         auto textureColCount = texture.width / map.tileWidth;
         auto textureArea = Rect(map.tileWidth, map.tileHeight);
-        auto colRow1 = !camera.isAttached ? IVec2() : IVec2(
+        auto colRow1 = !hasAreaSize ? IVec2() : IVec2(
             cast(int) clamp((topLeftPoint.x - map.position.x) / map.tileWidth, 0, map.colCount - 1),
             cast(int) clamp((topLeftPoint.y - map.position.y) / map.tileHeight, 0, map.rowCount - 1),
         );
-        auto colRow2 = !camera.isAttached ? IVec2(cast(int) map.colCount - 1, cast(int) map.rowCount - 1) : IVec2(
+        auto colRow2 = !hasAreaSize ? IVec2(cast(int) map.colCount - 1, cast(int) map.rowCount - 1) : IVec2(
             cast(int) clamp((bottomRightPoint.x - map.position.x) / map.tileWidth + map.extraTileCount, 0, map.colCount - 1),
             cast(int) clamp((bottomRightPoint.y - map.position.y) / map.tileHeight + map.extraTileCount, 0, map.rowCount - 1),
         );
-        foreach (row; colRow1.y .. colRow2.y + 1) {
-            foreach (col; colRow1.x .. colRow2.x + 1) {
-                foreach (layer; map.layers) {
+        foreach (layer; map.layers) {
+            foreach (row; colRow1.y .. colRow2.y + 1) {
+                foreach (col; colRow1.x .. colRow2.x + 1) {
                     auto id = layer[row, col];
                     if (id < 0) continue;
                     textureArea.position.x = (id % textureColCount) * map.tileWidth;
@@ -404,7 +399,7 @@ struct TileMap {
         }
     }
 
-    void drawTileMap(TextureId texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
-        drawTileMapX(texture.getOr(), map, camera, options);
+    void drawTileMap(TextureId texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+        drawTileMapX(texture.getOr(), map, viewArea, options);
     }
 }
