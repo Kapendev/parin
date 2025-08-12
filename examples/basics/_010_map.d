@@ -6,7 +6,7 @@ auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true); // Create a centered camera at position (0, 0).
 auto tile = Tile(16, 16, 145);        // Create a 16x16 tile that has the ID 145.
-auto tileFlip = Flip.none;
+auto tileOptions = DrawOptions();
 
 void ready() {
     lockResolution(320, 180);
@@ -17,22 +17,21 @@ void ready() {
 
 bool update(float dt) {
     // Update the tile and camera.
-    tileFlip = wasd.x ? (wasd.x > 0 ? Flip.x : Flip.none) : tileFlip;
+    tileOptions.flip = wasd.x ? (wasd.x > 0 ? Flip.x : Flip.none) : tileOptions.flip;
     tile.position += wasd * Vec2(120 * dt);
     camera.position = tile.position + tile.size * Vec2(0.5);
     // Check for collisions with the map and resolve them.
-    foreach (point; map.gridPoints(camera.area)) {
-        if (map[point] < 0) continue;
-        auto area = Rect(map.toWorldPoint(point), map.tileSize);
-        while (area.hasIntersection(Rect(tile.position, tile.size))) {
+    foreach (t; map.tiles(camera.area)) {
+        if (t.id < 0) continue;
+        while (t.area.hasIntersection(tile.area)) {
             tile.position -= wasd * Vec2(dt);
             camera.position = tile.position + tile.size * Vec2(0.5);
         }
     }
     // Draw the world.
     camera.attach();
-    drawTileMap(atlas, map, camera);
-    drawTile(atlas, tile, DrawOptions(tileFlip));
+    drawTileMap(atlas, map);
+    drawTile(atlas, tile, tileOptions);
     camera.detach();
     drawDebugText("Move with arrow keys.", Vec2(8));
     return false;

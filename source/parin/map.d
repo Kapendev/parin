@@ -6,7 +6,6 @@
 // ---
 
 // TODO: Update all the doc comments here.
-// TODO: Try to make some stuff simpler maybe.
 // NOTE: Maybe the map could return `Tile` as info for something.
 
 /// The `map` module provides a simple and fast tile map.
@@ -16,6 +15,9 @@ import joka.ascii;
 import parin.engine;
 
 @safe nothrow:
+
+alias TileMapLayer = Grid!short;
+alias TileMapLayers = List!TileMapLayer;
 
 struct Tile {
     short width;
@@ -37,29 +39,16 @@ struct Tile {
         this(width, height, id, Vec2(x, y));
     }
 
-    deprecated("Will be replaced with width and height.")
-    int widthHeight() => width;
-
-    /// The X position of the tile.
-    pragma(inline, true) @trusted
-    ref float x() => position.x;
-
-    /// The Y position of the tile.
-    pragma(inline, true) @trusted
-    ref float y() => position.y;
-
-    /// The size of the tile.
-    pragma(inline, true)
-    Vec2 size() => Vec2(width, height);
-
-    pragma(inline, true)
-    Sz row(Sz colCount) => (id + idOffset) / colCount;
-
-    pragma(inline, true)
-    Sz col(Sz colCount) => (id + idOffset) % colCount;
-
-    Rect textureArea(Sz colCount) {
-        return Rect(col(colCount) * width, row(colCount) * height, width, height);
+    pragma(inline, true) {
+        @trusted ref float x() => position.x;
+        @trusted ref float y() => position.y;
+        Sz row(Sz colCount) => (id + idOffset) / colCount;
+        Sz col(Sz colCount) => (id + idOffset) % colCount;
+        Vec2 size() => Vec2(width, height);
+        Rect area() => Rect(position, width, height);
+        Rect textureArea(Sz colCount) => Rect(col(colCount) * width, row(colCount) * height, width, height);
+        bool hasId() => id + idOffset >= 0;
+        bool hasSize() => width != 0 && height != 0;
     }
 
     /// Moves the tile to follow the target position at the specified speed.
@@ -73,239 +62,135 @@ struct Tile {
     }
 }
 
-// NOTE: Things like changing the grid row count might be interesting.
 struct TileMap {
-    Grid!short data;
+    TileMapLayers layers;
     Sz rowCount;
     Sz colCount;
-    int tileWidth;
-    int tileHeight;
+    short tileWidth;
+    short tileHeight;
     Vec2 position;
+
+    enum defaultRowColCount = 256;
+    enum extraTileCount = 1;
 
     @safe nothrow:
 
-    this(Sz rowCount, Sz colCount, int tileWidth, int tileHeight) {
+    this(Sz rowCount, Sz colCount, short tileWidth, short tileHeight) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
         resizeHard(rowCount, colCount);
     }
 
-    this(int tileWidth, int tileHeight) {
-        this(128, 128, tileWidth, tileHeight);
+    this(short tileWidth, short tileHeight) {
+        this(defaultRowColCount, defaultRowColCount, tileWidth, tileHeight);
     }
 
-    @nogc
-    ref short opIndex(Sz row, Sz col) {
-        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        return data[row, col];
-    }
-
-    @nogc
-    ref short opIndex(IVec2 position) {
-        return opIndex(position.y, position.x);
-    }
-
-    @nogc
-    void opIndexAssign(short rhs, Sz row, Sz col) {
-        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        data[row, col] = rhs;
-    }
-
-    @nogc
-    void opIndexAssign(short rhs, IVec2 position) {
-        return opIndexAssign(rhs, position.y, position.x);
-    }
-
-    @nogc
-    void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
-        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        mixin("data[colCount * row + col]", op, "= rhs;");
-    }
-
-    @nogc
-    void opIndexOpAssign(IStr op)(T rhs, IVec2 position) {
-        return opIndexOpAssign!(op)(rhs, position.y, position.x);
-    }
-
-    @nogc
-    Sz opDollar(Sz dim)() {
-        return data.opDollar!dim();
-    }
-
-    /// The X position of the map.
-    pragma(inline, true) @trusted @nogc
-    ref float x() => position.x;
-
-    /// The Y position of the map.
-    pragma(inline, true) @trusted @nogc
-    ref float y() => position.y;
-
-    @nogc
-    Sz length() {
-        return data.length;
-    }
-
-    @nogc
-    short* ptr() {
-        return data.ptr;
-    }
-
-    @nogc
-    Sz capacity() {
-        return data.capacity;
-    }
-
-    @nogc
-    bool isEmpty() {
-        return data.isEmpty;
-    }
-
-    @nogc
-    bool has(Sz row, Sz col) {
-        return row < rowCount && col < colCount;
-    }
-
-    @nogc
-    bool has(IVec2 position) {
-        return has(position.y, position.x);
-    }
-
-    @nogc
-    Sz hardRowCount() {
-        return data.rowCount;
-    }
-
-    @nogc
-    Sz hardColCount() {
-        return data.colCount;
-    }
-
-    void resizeHard(Sz newHardRowCount, Sz newHardColCount) {
-        data.resizeBlank(newHardRowCount, newHardColCount);
-        data.fill(-1);
-        rowCount = newHardRowCount;
-        colCount = newHardColCount;
-    }
-
-    deprecated("Will be replaced with resize.")
-    alias resizeSoft = resize;
-
-    @nogc
-    void resize(Sz newRowCount, Sz newColCount) {
-        if (newRowCount > hardRowCount || newColCount > hardColCount) {
-            assert(0, "Soft count must be smaller than hard count.");
+    pragma(inline, true) @nogc {
+        ref short opIndex(Sz row, Sz col, Sz layerId = 0) {
+            if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+            return layers[layerId][row, col];
         }
-        rowCount = newRowCount;
-        colCount = newColCount;
+
+        ref short opIndex(IVec2 position, Sz layerId = 0) {
+            return opIndex(position.y, position.x, layerId);
+        }
+
+        void opIndexAssign(short rhs, Sz row, Sz col, Sz layerId = 0) {
+            if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+            layers[layerId][row, col] = rhs;
+        }
+
+        void opIndexAssign(short rhs, IVec2 position, Sz layerId = 0) {
+            return opIndexAssign(rhs, position.y, position.x, layerId);
+        }
+
+        void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col, Sz layerId = 0) {
+            if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+            mixin("layers[layerId][colCount * row + col]", op, "= rhs;");
+        }
+
+        void opIndexOpAssign(IStr op)(T rhs, IVec2 position, Sz layerId = 0) {
+            return opIndexOpAssign!(op)(rhs, position.y, position.x, layerId);
+        }
+
+        @trusted ref float x() => position.x;
+        @trusted ref float y() => position.y;
+        int width() => cast(int) (colCount * tileWidth);
+        int height() => cast(int) (rowCount * tileHeight);
+        Vec2 size() => Vec2(width, height);
+        Vec2 tileSize() => Vec2(tileWidth, tileHeight);
+        Sz hardRowCount() => layers[0].rowCount;
+        Sz hardColCount() => layers[0].colCount;
+
+        bool isEmpty() => layers.isEmpty;
+        bool has(Sz row, Sz col) => row < rowCount && col < colCount;
+        bool has(IVec2 position) => has(position.y, position.x);
+        bool hasTileSize() => tileWidth != 0 && tileHeight != 0;
+        bool hasSize() => hasTileSize && rowCount != 0 && colCount != 0;
+        Vec2 worldPointAt(Sz row, Sz col) => Vec2(position.x + col * tileWidth, position.y + row * tileHeight);
+        Vec2 worldPointAt(IVec2 gridPosition) => worldPointAt(gridPosition.y, gridPosition.x);
     }
 
-    void resizeTileSize(int newTileWidth, int newTileHeight) {
+    @nogc
+    void resizeTileSize(short newTileWidth, short newTileHeight) {
         tileWidth = newTileWidth;
         tileHeight = newTileHeight;
     }
 
-    @nogc
-    void fillHard(short value) {
-        data.fill(value);
-    }
-
-    deprecated("Will be replaced with fill.")
-    alias fillSoft = fill;
-
-    @nogc
-    void fill(short value) {
-        foreach (row; 0 .. rowCount) {
-            foreach (col; 0 .. colCount) {
-                data[row, col] = value;
-            }
-        }
+    void resizeHard(Sz newHardRowCount, Sz newHardColCount) {
+        if (isEmpty) layers.append(TileMapLayer());
+        rowCount = newHardRowCount;
+        colCount = newHardColCount;
+        foreach (ref layer; layers) layer.resizeBlank(newHardRowCount, newHardColCount);
     }
 
     @nogc
-    void clearHard() {
-        fillHard(-1);
+    void resize(Sz newRowCount, Sz newColCount) {
+        if (newRowCount > hardRowCount || newColCount > hardColCount) assert(0, "Count must be smaller than hard count.");
+        rowCount = newRowCount;
+        colCount = newColCount;
     }
-
-    deprecated("Will be replaced with clear.")
-    alias clearSoft = clear;
 
     @nogc
     void clear() {
-        fill(-1);
+        foreach (ref layer; layers) layer.fill(-1);
+    }
+
+    @nogc
+    void clear(Sz layerId) {
+        layers[layerId].fill(-1);
     }
 
     void free() {
-        data.free();
+        foreach (ref layer; layers) layer.free();
+        layers.free();
     }
 
-    @nogc
-    int width() {
-        return cast(int) (colCount * tileWidth);
-    }
-
-    @nogc
-    int height() {
-        return cast(int) (rowCount * tileHeight);
-    }
-
-    /// Returns the size of the tile map.
-    @nogc
-    Vec2 size() {
-        return Vec2(width, height);
-    }
-
-    /// Returns the tile size of the tile map.
-    @nogc
-    Vec2 tileSize() {
-        return Vec2(tileWidth, tileHeight);
-    }
-
-    /// Moves the tile map to follow the target position at the specified speed.
     @nogc
     void followPosition(Vec2 target, float speed) {
         position = position.moveTo(target, Vec2(speed));
     }
 
-    /// Moves the tile map to follow the target position with gradual slowdown.
     @nogc
     void followPositionWithSlowdown(Vec2 target, float slowdown) {
         position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
     }
 
-    /// Returns the top left world position of a grid position.
     @nogc
-    Vec2 toWorldPoint(Sz row, Sz col, DrawOptions options = DrawOptions()) {
-        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
-        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        auto temp = Rect(
-            position.x + col * targetTileWidth,
-            position.y + row * targetTileHeight,
-            targetTileWidth,
-            targetTileHeight,
-        );
-        return temp.area(options.hook).position;
-    }
-
-    /// Returns the top left world position of a grid position.
-    @nogc
-    Vec2 toWorldPoint(IVec2 gridPosition, DrawOptions options = DrawOptions()) {
-        return toWorldPoint(gridPosition.y, gridPosition.x, options);
-    }
-
-    @nogc
-    auto gridPoints(Vec2 topLeftWorldPoint, Vec2 bottomRightWorldPoint, DrawOptions options = DrawOptions()) {
+    auto gridPoints(Vec2 topLeftPoint, Vec2 bottomRightPoint) {
+        alias T = ushort;
         static struct Range {
-            Sz colCount;
-            IVec2 first;
-            IVec2 last;
-            IVec2 position;
+            T colCount;
+            GVec2!T first;
+            GVec2!T last;
+            GVec2!T position;
 
             bool empty() {
                 return position.x > last.x || position.y > last.y;
             }
 
             IVec2 front() {
-                return position;
+                return IVec2(position.x, position.y);
             }
 
             void popFront() {
@@ -317,20 +202,17 @@ struct TileMap {
             }
         }
 
-        if (rowCount == 0 || colCount == 0) return Range();
-        auto targetTileWidth = cast(int) (tileWidth * options.scale.x);
-        auto targetTileHeight = cast(int) (tileHeight * options.scale.y);
-        auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-        auto firstGridPoint = IVec2(
-            cast(int) clamp((topLeftWorldPoint.x - position.x) / targetTileWidth, 0, colCount - 1),
-            cast(int) clamp((topLeftWorldPoint.y - position.y) / targetTileHeight, 0, rowCount - 1),
+        if (!hasSize) return Range();
+        auto firstGridPoint = GVec2!T(
+            cast(T) clamp((topLeftPoint.x - position.x) / tileWidth, 0, colCount - 1),
+            cast(T) clamp((topLeftPoint.y - position.y) / tileHeight, 0, rowCount - 1),
         );
-        auto lastGridPoint = IVec2(
-            cast(int) clamp((bottomRightWorldPoint.x - position.x) / targetTileWidth + extraTileCount, 0, colCount - 1),
-            cast(int) clamp((bottomRightWorldPoint.y - position.y) / targetTileHeight + extraTileCount, 0, rowCount - 1),
+        auto lastGridPoint = GVec2!T(
+            cast(T) clamp((bottomRightPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
+            cast(T) clamp((bottomRightPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
         );
         return Range(
-            colCount,
+            cast(T) colCount,
             firstGridPoint,
             lastGridPoint,
             firstGridPoint,
@@ -338,42 +220,95 @@ struct TileMap {
     }
 
     @nogc
-    auto gridPoints(Rect worldArea, DrawOptions options = DrawOptions()) {
-        return gridPoints(worldArea.topLeftPoint, worldArea.bottomRightPoint, options);
+    auto gridPoints(Rect area) {
+        return gridPoints(area.topLeftPoint, area.bottomRightPoint);
     }
 
-    deprecated("Will be replaced with `parseCsv`.")
-    alias parse = parseCsv;
+    @nogc
+    auto tiles(Vec2 topLeftPoint, Vec2 bottomRightPoint, Sz layerId = 0) {
+        alias T = ushort;
+        static struct Range {
+            T colCount;
+            GVec2!T first;
+            GVec2!T last;
+            GVec2!T position;
+            short width;
+            short height;
+            TileMapLayer* layer;
 
-    Fault parseCsv(IStr csv, int newTileWidth, int newTileHeight, bool zeroMode = false) {
+            bool empty() {
+                return position.x > last.x || position.y > last.y;
+            }
+
+            Tile front() {
+                return Tile(width, height, (*layer)[position.y, position.x], Vec2(position.x * width, position.y * height));
+            }
+
+            void popFront() {
+                position.x += 1;
+                if (position.x >= colCount) {
+                    position.x = first.x;
+                    position.y += 1;
+                }
+            }
+        }
+
+        if (!hasSize) return Range();
+        auto firstGridPoint = GVec2!T(
+            cast(T) clamp((topLeftPoint.x - position.x) / tileWidth, 0, colCount - 1),
+            cast(T) clamp((topLeftPoint.y - position.y) / tileHeight, 0, rowCount - 1),
+        );
+        auto lastGridPoint = GVec2!T(
+            cast(T) clamp((bottomRightPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
+            cast(T) clamp((bottomRightPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
+        );
+        return Range(
+            cast(T) colCount,
+            firstGridPoint,
+            lastGridPoint,
+            firstGridPoint,
+            tileWidth,
+            tileHeight,
+            &layers[layerId],
+        );
+    }
+
+    @nogc
+    auto tiles(Rect area, Sz layerId = 0) {
+        return tiles(area.topLeftPoint, area.bottomRightPoint, layerId);
+    }
+
+    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool zeroMode = false) {
         if (csv.length == 0) return Fault.cantParse;
-        if (data.isEmpty) data.resizeBlank(128, 128);
+        if (layerId >= layers.length) {
+            foreach (i; 0 .. layerId - layers.length + 1) layers.append(TileMapLayer());
+            resizeHard(defaultRowColCount, defaultRowColCount);
+        }
         resize(0, 0);
         resizeTileSize(newTileWidth, newTileHeight);
         auto view = csv;
         while (view.length) {
             rowCount += 1;
             colCount = 0;
-            if (rowCount > data.rowCount) return Fault.cantParse;
+            if (rowCount > hardRowCount) return Fault.cantParse;
             auto line = view.skipLine();
             while (line.length) {
                 colCount += 1;
                 auto tile = line.skipValue(',').toSigned();
-                if (tile.isNone || colCount > data.colCount) return Fault.cantParse;
-                data[rowCount - 1, colCount - 1] = cast(short) (tile.value - zeroMode);
+                if (tile.isNone || colCount > hardColCount) return Fault.cantParse;
+                layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.value - zeroMode);
             }
         }
         return Fault.none;
     }
 
-    Fault parseCsv(IStr csv, bool zeroMode = false) {
-        return parseCsv(csv, tileWidth, tileHeight, zeroMode);
+    Fault parseCsv(IStr csv, Sz layerId = 0, bool zeroMode = false) {
+        return parseCsv(csv, tileWidth, tileHeight, layerId, zeroMode);
     }
 
-    // TODO: NEEDS A COMMENT ABOUT ONLY PARSING THE FIRST DATA PART.
     @trusted
     Fault parseTmx(IStr tmx) {
-        Sz csvStart, csvEnd;
+        auto layerId = 0;
         auto view = tmx;
         while (view.length) {
             auto line = view.skipLine().trim();
@@ -387,103 +322,89 @@ struct TileMap {
                     if (!isWidthWord && !isHeightWord) continue;
                     auto value = word.split("=")[1][1 .. $ - 1].toSigned(); // NOTE: Removes `"` with `[1 .. $ - 1]`.
                     if (value.isNone) return Fault.cantParse;
-                    if (isWidthWord) tileWidth = cast(int) value.value;
-                    if (isHeightWord) tileHeight = cast(int) value.value;
+                    if (isWidthWord) tileWidth = cast(short) value.value;
+                    if (isHeightWord) tileHeight = cast(short) value.value;
                 }
             } else if (isDataStartLine) {
+                Sz csvStart, csvEnd;
                 line = view.skipLine();
                 csvStart = line.ptr - tmx.ptr; // NOTE: I think there should be a way to have better access to the index. Maybe a range? I kinda hate that idea.
                 while (view.length) {
-                    line = view.skipLine(); // NOTE: No trim because it's already trimmed.
+                    line = view.skipLine(); // NOTE: No trim because it's already trimmed by Tiled.
                     if (line.startsWith("</")) {
                         csvEnd = line.ptr - tmx.ptr;
                         break;
                     }
                 }
-                return parseCsv(tmx[csvStart .. csvEnd], true);
+                auto fault = parseCsv(tmx[csvStart .. csvEnd], layerId, true);
+                if (fault) return fault;
+                layerId += 1;
             }
         }
         return Fault.none;
     }
 }
 
-// TODO: MAYBE I SHOULD ALSO KINDA TELL THAT THIS IS A CSV THINGY!!!
-Fault saveTileMap(IStr path, TileMap map) {
-    auto csv = prepareTempText();
-    foreach (row; 0 .. map.rowCount) {
-        foreach (col; 0 .. map.colCount) {
-            csv.append(map[row, col].toStr());
-            if (col != map.colCount - 1) csv.append(',');
+@nogc {
+    void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
+        if (!tile.hasId || !tile.hasSize) return;
+        if (texture.isEmpty) {
+            if (isEmptyTextureVisible) {
+                auto rect = tile.area;
+                drawRect(rect, defaultEngineEmptyTextureColor);
+                drawHollowRect(rect, 1, black);
+            }
+            return;
         }
-        csv.append('\n');
-    }
-    return saveText(path, csv.items);
-}
-
-@nogc
-void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-    if (tile.id < 0 || tile.width <= 0 || tile.height <= 0) return;
-    if (texture.isEmpty) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(tile.position, tile.size * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
-        }
-        return;
-    }
-    drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
-}
-
-@nogc
-void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
-    drawTileX(texture.getOr(), tile, options);
-}
-
-// TODO: CLEAN CLEAN CLEAN BROOOOO TOOO COMPLEX OR SOMETHING
-@nogc
-void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
-    if (map.rowCount == 0 || map.colCount == 0 || map.tileWidth <= 0 || map.tileHeight <= 0) return;
-    if (texture.isEmpty) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(map.position, map.size * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
-        }
-        return;
+        drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
     }
 
-    auto topLeftWorldPoint = camera.topLeftPoint;
-    auto bottomRightWorldPoint = camera.bottomRightPoint;
-    auto textureColCount = texture.width / map.tileWidth;
-    auto targetTileWidth = cast(int) (map.tileWidth * options.scale.x);
-    auto targetTileHeight = cast(int) (map.tileHeight * options.scale.y);
-    auto extraTileCount = options.hook == Hook.topLeft ? 1 : 2;
-    auto colRow1 = !camera.isAttached ? IVec2() : IVec2(
-        cast(int) clamp((topLeftWorldPoint.x - map.position.x) / targetTileWidth, 0, map.colCount - 1),
-        cast(int) clamp((topLeftWorldPoint.y - map.position.y) / targetTileHeight, 0, map.rowCount - 1),
-    );
-    auto colRow2 = !camera.isAttached ? IVec2(cast(int) map.colCount - 1, cast(int) map.rowCount - 1) : IVec2(
-        cast(int) clamp((bottomRightWorldPoint.x - map.position.x) / targetTileWidth + extraTileCount, 0, map.colCount - 1),
-        cast(int) clamp((bottomRightWorldPoint.y - map.position.y) / targetTileHeight + extraTileCount, 0, map.rowCount - 1),
-    );
-    auto textureArea = Rect(map.tileWidth, map.tileHeight);
-    foreach (row; colRow1.y .. colRow2.y + 1) {
-        foreach (col; colRow1.x .. colRow2.x + 1) {
-            auto id = map[row, col];
-            if (id < 0) continue;
-            textureArea.position.x = (id % textureColCount) * map.tileWidth;
-            textureArea.position.y = (id / textureColCount) * map.tileHeight;
-            drawTextureAreaX(
-                texture,
-                textureArea,
-                map.position + Vec2(col * targetTileWidth, row * targetTileHeight),
-                options,
-            );
+    void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
+        drawTileX(texture.getOr(), tile, options);
+    }
+
+    void drawTileMapX(Texture texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
+        if (!map.hasSize) return;
+        if (texture.isEmpty) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(map.position, map.size);
+                drawRect(rect, defaultEngineEmptyTextureColor);
+                drawHollowRect(rect, 1, black);
+            }
+            return;
+        }
+
+        auto topLeftPoint = camera.topLeftPoint;
+        auto bottomRightPoint = camera.bottomRightPoint;
+        auto textureColCount = texture.width / map.tileWidth;
+        auto textureArea = Rect(map.tileWidth, map.tileHeight);
+        auto colRow1 = !camera.isAttached ? IVec2() : IVec2(
+            cast(int) clamp((topLeftPoint.x - map.position.x) / map.tileWidth, 0, map.colCount - 1),
+            cast(int) clamp((topLeftPoint.y - map.position.y) / map.tileHeight, 0, map.rowCount - 1),
+        );
+        auto colRow2 = !camera.isAttached ? IVec2(cast(int) map.colCount - 1, cast(int) map.rowCount - 1) : IVec2(
+            cast(int) clamp((bottomRightPoint.x - map.position.x) / map.tileWidth + map.extraTileCount, 0, map.colCount - 1),
+            cast(int) clamp((bottomRightPoint.y - map.position.y) / map.tileHeight + map.extraTileCount, 0, map.rowCount - 1),
+        );
+        foreach (row; colRow1.y .. colRow2.y + 1) {
+            foreach (col; colRow1.x .. colRow2.x + 1) {
+                foreach (layer; map.layers) {
+                    auto id = layer[row, col];
+                    if (id < 0) continue;
+                    textureArea.position.x = (id % textureColCount) * map.tileWidth;
+                    textureArea.position.y = (id / textureColCount) * map.tileHeight;
+                    drawTextureAreaX(
+                        texture,
+                        textureArea,
+                        map.position + Vec2(col * map.tileWidth, row * map.tileHeight),
+                        options,
+                    );
+                }
+            }
         }
     }
-}
 
-@nogc
-void drawTileMap(TextureId texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
-    drawTileMapX(texture.getOr(), map, camera, options);
+    void drawTileMap(TextureId texture, TileMap map, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
+        drawTileMapX(texture.getOr(), map, camera, options);
+    }
 }
