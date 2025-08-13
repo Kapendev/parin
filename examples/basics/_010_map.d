@@ -5,7 +5,7 @@ import parin;
 auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true); // Create a centered camera at position (0, 0).
-auto tile = Tile(16, 16, 145);        // Create a 16x16 tile that has the ID 145.
+auto tile = Tile(16, 16, 145);    // Create a 16x16 tile that has the ID 145.
 auto tileOptions = DrawOptions();
 
 void ready() {
@@ -22,8 +22,8 @@ bool update(float dt) {
     camera.position = tile.position + tile.size * Vec2(0.5);
     // Check for collisions with the map and resolve them.
     foreach (t; map.tiles(camera.area)) {
-        if (!t.hasId) continue;
-        while (t.area.hasIntersection(tile.area)) {
+        if (t.isEmpty) continue;
+        while (t.hasIntersection(tile)) {
             tile.position -= wasd * Vec2(dt);
             camera.position = tile.position + tile.size * Vec2(0.5);
         }

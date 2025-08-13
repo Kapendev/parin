@@ -47,8 +47,17 @@ struct Tile {
         Vec2 size() => Vec2(width, height);
         Rect area() => Rect(position, width, height);
         Rect textureArea(Sz colCount) => Rect(col(colCount) * width, row(colCount) * height, width, height);
+        bool isEmpty() => !hasId;
         bool hasId() => id + idOffset >= 0;
         bool hasSize() => width != 0 && height != 0;
+        bool hasIntersection(Rect otherArea) => area.hasIntersection(otherArea);
+        bool hasIntersection(Tile otherTile) => hasIntersection(otherTile.area);
+        bool hasIntersectionInclusive(Rect otherArea) => area.hasIntersectionInclusive(otherArea);
+        bool hasIntersectionInclusive(Tile otherTile) => hasIntersectionInclusive(otherTile.area);
+        Rect intersection(Rect otherArea) => area.intersection(otherArea);
+        Rect intersection(Tile otherTile) => intersection(otherTile.area);
+        Rect merger(Rect otherArea) => area.merger(otherArea);
+        Rect merger(Tile otherTile) => merger(otherTile.area);
     }
 
     /// Moves the tile to follow the target position at the specified speed.
