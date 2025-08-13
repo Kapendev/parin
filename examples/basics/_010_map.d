@@ -21,7 +21,7 @@ bool update(float dt) {
     tile.position += wasd * Vec2(120 * dt);
     camera.position = tile.position + tile.size * Vec2(0.5);
     // Check for collisions with the map and resolve them.
-    foreach (t; map.tiles(camera.area)) {
+    foreach (t; map.tiles(camera)) {
         if (t.isEmpty) continue;
         while (t.hasIntersection(tile)) {
             tile.position -= wasd * Vec2(dt);
@@ -30,7 +30,7 @@ bool update(float dt) {
     }
     // Draw the world.
     camera.attach();
-    drawTileMap(atlas, map);
+    drawTileMap(atlas, map, camera);
     drawTile(atlas, tile, tileOptions);
     camera.detach();
     drawDebugText("Move with arrow keys.", Vec2(8));

@@ -7,6 +7,7 @@
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
+pragma(lib, "raylib");
 
 import rl = parin.rl;
 import joka.ascii;
@@ -22,10 +23,14 @@ alias EngineUpdateFunc      = extern(C) bool function(float dt);
 alias EngineReadyFinishFunc = extern(C) void function();
 alias EngineFlags           = ushort;
 
+@trusted:
+
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 extern(C)
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
+    enum monogramPath = "monogram.png";
+
     if (rl.IsWindowReady) return;
     // Raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
@@ -52,7 +57,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     engineState.sounds.reserve(defaultEngineSoundsCapacity);
     engineState.fonts.reserve(defaultEngineFontsCapacity);
     // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import("parin/monogram.png");
+    auto monogramData = cast(const(ubyte)[]) import(monogramPath);
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
     engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));

@@ -99,16 +99,16 @@ Most ideas are welcome, except ECS.
 2. Download [Parin](https://github.com/Kapendev/parin/tags) and [Joka](https://github.com/Kapendev/joka/tags) using something like:
 
     ```sh
-    # The versions below are just examples. Check the repos for the latest tags.
-    git clone --branch v0.0.50 --depth 1 https://github.com/Kapendev/parin
-    git clone --branch v0.0.29 --depth 1 https://github.com/Kapendev/joka
+    git clone --depth 1 https://github.com/Kapendev/parin temp_parin && mv temp_parin/source/parin .
+    git clone --depth 1 https://github.com/Kapendev/joka temp_joka && mv temp_joka/source/joka .
+    rm -rf temp_parin temp_joka
     ```
 
 3. Compile with DMD or LDC using something like:
 
     ```sh
     # On Linux, you may also need: -L=-rpath='$ORIGIN'
-    ldc2 app.d -i -I=joka_source_path -I=parin_source_path -J=parin_source_path -L=-L. -L=-lraylib
+    ldc2 app.d -L=-L. -J=parin -i
     ```
 
 ### How do I make a web build?

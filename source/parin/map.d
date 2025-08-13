@@ -236,6 +236,11 @@ struct TileMap {
     }
 
     @nogc
+    auto gridPoints(Camera camera) {
+        return gridPoints(camera.area);
+    }
+
+    @nogc
     auto tiles(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint, Sz layerId = 0) {
         alias T = ushort;
         static struct Range {
@@ -287,6 +292,11 @@ struct TileMap {
     @nogc
     auto tiles(Rect viewArea, Sz layerId = 0) {
         return tiles(viewArea.topLeftPoint, viewArea.bottomRightPoint, layerId);
+    }
+
+    @nogc
+    auto tiles(Camera camera, Sz layerId = 0) {
+        return tiles(camera.area, layerId);
     }
 
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false) {
@@ -410,5 +420,9 @@ struct TileMap {
 
     void drawTileMap(TextureId texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
         drawTileMapX(texture.getOr(), map, viewArea, options);
+    }
+
+    void drawTileMap(TextureId texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+        drawTileMapX(texture.getOr(), map, camera.area, options);
     }
 }
