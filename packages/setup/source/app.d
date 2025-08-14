@@ -16,7 +16,6 @@ This game was created with [Parin](https://github.com/Kapendev/parin).
 To compile and play, run:
 
 ```cmd
-dub run parin:setup -- -y
 dub run
 ```
 "[1 .. $];
@@ -66,7 +65,7 @@ enum dubFileContent = `
     "name" : "game",
     "description" : "A game made with Parin.",
     "authors" : ["Name"],
-    "copyright" : "Copyright © 2024, Name",
+    "copyright" : "Copyright © 2025, Name",
     "license" : "proprietary",
     "dependencies": {
         "joka": "*",
@@ -74,41 +73,13 @@ enum dubFileContent = `
     },
     "configurations": [
         {
-            "name": "linux",
-            "targetType": "executable",
-            "platforms": ["linux"],
-            "lflags": ["-L.", "-rpath=$$ORIGIN"],
-            "libs": [
-                "raylib",
-                "GL",
-                "m",
-                "pthread",
-                "dl",
-                "rt",
-                "X11"
-            ]
+            "name": "default",
+            "targetType": "executable"
         },
         {
-            "name": "windows",
-            "targetType": "executable",
-            "platforms": ["windows"],
-            "libs": [
-                "raylib"
-            ]
-        },
-        {
-            "name": "osx",
-            "targetType": "executable",
-            "platforms": ["osx"],
-            "lflags": ["-L.", "-rpath", "@executable_path/"],
-            "libs": [
-                "raylib"
-            ]
-        },
-        {
-            "name": "web",
-            "targetType": "staticLibrary",
-            "targetName": "webgame",
+            "name": "wasm",
+            "targetType": "library",
+            "targetName": "game_wasm",
             "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "-i", "--release"]
         }
     ]
@@ -147,23 +118,6 @@ int runDubSetup(string[] args, bool isFirstRun) {
     auto appFile = join(appDir, "main.d");
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);
-    // Get a yes or no and download the raylib libraries.
-    auto userInput = args.length >= 2 ? args[1] : "?";
-    if (userInput[0] == '-') userInput = userInput[1 .. $];
-    if (readYesNo("Would you like to download the required engine DLLs?", userInput).isYes) {
-        echo("Downloading required engine DLLs...");
-        auto hasDubLockFileNow = dubLockFile.isX;
-        auto dub1 = cmd("dub", "add", "raylib-d", "--verror");
-        auto dub2 = cmd("dub", "run", "raylib-d:install", "--verror", "--yes", "--", "-q", "-u=no");
-        // Remove the lock file from the install script.
-        if (hasDubLockFileNow != dubLockFile.isX) rm(dubLockFile);
-        // Remove the backup copies if something failed.
-        if (dub1 || dub2) {
-            restore(dubFile);
-            restore(dubLockFile);
-            return 1;
-        }
-    }
     // Clean stuff.
     if (isFirstRun) paste(dubFile, dubFileContent);
     restore(dubFile);

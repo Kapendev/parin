@@ -1,4 +1,4 @@
-# Mapy
+# Mapy (WIP!!!)
 
 A tile map editor for Parin.
 

@@ -10,7 +10,7 @@ To begin, make a new folder and run inside the following commands to create a ne
 
 ```cmd
 dub init -n
-dub run parin:setup -- -y
+dub run parin:setup
 ```
 
 If everything is set up correctly,

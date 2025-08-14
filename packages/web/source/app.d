@@ -16,8 +16,8 @@ enum outputFile  = join("web", "index.html");
 enum libFile     = join("web", "libraylib.a");
 enum shellFile   = ".__default_shell__.html";
 enum dubFile     = "dub.json";
-enum dubConfig   = "web";
-enum dubLibName  = "webgame";
+enum dubConfig   = "wasm";
+enum dubLibName  = "game_wasm";
 enum dflags      = ["-i", "-betterC", "--release"];
 
 enum shellFileContent = `

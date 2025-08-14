@@ -16,5 +16,35 @@
 		"packages/rin",
 		"packages/setup",
 		"packages/web"
-	]
+	],
+	"libs": [
+		"raylib"
+	],
+	"configurations": [
+        {
+            "name": "linux-x86_64",
+			"platforms": ["linux-x86_64"],
+            "targetType": "library",
+			"lflags": ["-L$PACKAGE_DIR/vendor/linux_x86_64"]
+        },
+        {
+            "name": "windows-x86_64",
+			"platforms": ["windows-x86_64"],
+            "targetType": "library",
+			"preBuildCommands": ["cmd.exe /c copy $PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.dll $ROOT_PACKAGE_DIR\\raylib.dll"],
+			"lflags": ["-L$PACKAGE_DIR\\vendor\\windows_x86_64"]
+        },
+        {
+            "name": "osx-aarch64",
+			"platforms": ["osx-aarch64"],
+            "targetType": "library",
+			"lflags": ["-L$PACKAGE_DIR/vendor/macos_arm64"]
+        },
+        {
+			"name": "wasm",
+			"targetType": "library",
+			"targetName": "game_wasm",
+			"lflags": ["-L$PACKAGE_DIR/vendor/wasm"]
+        }
+    ]
 }

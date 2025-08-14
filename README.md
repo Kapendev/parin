@@ -48,12 +48,12 @@ mixin runGame!(ready, update, finish);
 
 ## Quick Start
 
-This guide shows how to install Parin and its dependencies using [DUB](https://dub.pm/).
+This guide shows how to install Parin using [DUB](https://dub.pm/).
 Create a new folder and run inside the following commands:
 
-```cmd
+```sh
 dub init -n
-dub run parin:setup -- -y
+dub run parin:setup
 dub run
 ```
 
@@ -95,36 +95,26 @@ Most ideas are welcome, except ECS.
 
 ### How can I build without DUB?
 
-1. Download [raylib](https://github.com/raysan5/raylib/releases).
-2. Download [Parin](https://github.com/Kapendev/parin/tags) and [Joka](https://github.com/Kapendev/joka/tags) using something like:
+Create a new folder and run inside the following commands:
 
-    ```sh
-    git clone --depth 1 https://github.com/Kapendev/parin temp_parin && mv temp_parin/source/parin .
-    git clone --depth 1 https://github.com/Kapendev/joka temp_joka && mv temp_joka/source/joka .
-    rm -rf temp_parin temp_joka
-    ```
-
-3. Compile with DMD or LDC using something like:
-
-    ```sh
-    # On Linux, you may also need: -L=-rpath='$ORIGIN'
-    ldc2 app.d -L=-L. -J=parin -i
-    ```
+```sh
+git clone --depth 1 https://github.com/Kapendev/parin parin_package && cp -r parin_package/source/parin .
+git clone --depth 1 https://github.com/Kapendev/joka joka_package && cp -r joka_package/source/joka .
+cp parin_package/examples/basics/_001_hello.d app.d
+# Use windows_x86_64 or another folder for a different platform. For Windows also copy the DLL in the current folder maybe.
+ldc2 app.d -L=-Lparin_package/vendor/linux_x86_64 -J=parin -i
+```
 
 ### How do I make a web build?
 
-Like other special platforms (e.g. Android), Parin includes a build script for the web in the [packages](packages/) folder. To build for the web, you will need two additional things:
-
-1. [Emscripten](https://emscripten.org/)
-2. [WebAssembly build of raylib](https://github.com/raysan5/raylib/releases)
-
-To run the build script with DUB, use:
+Parin includes a build script for the web in the [packages](packages/) folder. Building for the web also requires [Emscripten](https://emscripten.org/). To run the build script with DUB, use:
 
 ```sh
 dub run parin:web
+# TODO: Try to use the lib in vendor by defalt.
 ```
 
-Below are installation commands for some Linux distributions for Emscripten.
+Below are installation commands for Emscripten for some Linux distributions.
 
 **Ubuntu**:
 
@@ -141,8 +131,8 @@ sudo dnf install emscripten
 **Arch**:
 
 ```sh
-# Or maybe: sudo pacman -S emscripten
 yay -S emscripten
+# Or maybe: sudo pacman -S emscripten
 ```
 
 ### Is Parin a raylib wrapper?
