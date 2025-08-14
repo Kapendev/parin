@@ -105,15 +105,19 @@ enum shellFileContent = `
 int main() {
     auto isSimpProject = !dubFile.isX;
     // Check if the files that are needed exist.
-    if (!sourceDir.isX) { echof("Folder `%s` doesn't exist. Create one.", sourceDir); return 1; }
+    if (!isSimpProject) { if (!sourceDir.isX) { echof("Folder `%s` doesn't exist. Create one.", sourceDir); return 1; } }
     if (!assetsDir.isX) { echof("Folder `%s` doesn't exist. Create one.", assetsDir); return 1; }
-    if (!libFile.isX)   { echof("File `%s` doesn't exist. Download it from raylib releases.", libFile); return 1; }
+    if (!libFile.isX)   { echof("File `%s` doesn't exist. Download it from: https://github.com/Kapendev/parin/blob/main/vendor/wasm/libraylib.a.", libFile); return 1; }
     clear(".", ".o");
     // Compile the game.
     if (isSimpProject) {
-        IStr[] args = ["ldc2", "-c", "-checkaction=halt", "-mtriple=wasm32-unknown-unknown-wasm", "I" ~ sourceDir];
+        IStr[] args = ["ldc2", "-c", "-checkaction=halt", "-mtriple=wasm32-unknown-unknown-wasm", "-J=parin"];
         args ~= dflags;
-        foreach (path; ls(sourceDir)) if (path.endsWith(".d")) args ~= path;
+        if (isSimpProject) foreach (path; ls) if (path.endsWith(".d")) args ~= path;
+        if (sourceDir.isX) {
+            args ~= "-I" ~ sourceDir;
+            foreach (path; ls(sourceDir)) if (path.endsWith(".d")) args ~= path;
+        }
         if (cmd(args)) return 1;
     } else {
         if (cmd("dub", "build", "--compiler", "ldc2", "--build", "release", "--config", dubConfig)) return 1;

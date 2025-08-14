@@ -97,21 +97,40 @@ Most ideas are welcome, except ECS.
 
 Create a new folder and run inside the following commands:
 
+**Prepare folder**:
+
 ```sh
-git clone --depth 1 https://github.com/Kapendev/parin parin_package && cp -r parin_package/source/parin .
-git clone --depth 1 https://github.com/Kapendev/joka joka_package && cp -r joka_package/source/joka .
+git clone --depth 1 https://github.com/Kapendev/parin parin_package
+git clone --depth 1 https://github.com/Kapendev/joka joka_package
+cp -r parin_package/source/parin .
+cp -r joka_package/source/joka .
 cp parin_package/examples/basics/_001_hello.d app.d
-# Use windows_x86_64 or another folder for a different platform. For Windows also copy the DLL in the current folder maybe.
-ldc2 app.d -L=-Lparin_package/vendor/linux_x86_64 -J=parin -i
+# On Windows: cp parin_package/vendor/windows_x86_64/*.dll .
+```
+
+**Compile & run**:
+
+```sh
+# Use `windows_x86_64` or another folder for a different platform.
+ldc2 -L=-Lparin_package/vendor/linux_x86_64 -J=parin -i -run app.d
+# Or: opend -L=-Lparin_package/vendor/linux_x86_64 -run app.d
 ```
 
 ### How do I make a web build?
 
-Parin includes a build script for the web in the [packages](packages/) folder. Building for the web also requires [Emscripten](https://emscripten.org/). To run the build script with DUB, use:
+Parin includes a build script for the web in the [packages](packages/) folder. Building for the web also requires [Emscripten](https://emscripten.org/).
+
+**Running the script with DUB**:
 
 ```sh
 dub run parin:web
-# TODO: Try to use the lib in vendor by defalt.
+```
+
+**Without DUB**:
+
+```sh
+ldc2 -run parin_package/packages/web/source/app.d
+# Or: opend -run parin_package/packages/web/source/app.d
 ```
 
 Below are installation commands for Emscripten for some Linux distributions.
@@ -132,7 +151,7 @@ sudo dnf install emscripten
 
 ```sh
 yay -S emscripten
-# Or maybe: sudo pacman -S emscripten
+# Or: sudo pacman -S emscripten
 ```
 
 ### Is Parin a raylib wrapper?
