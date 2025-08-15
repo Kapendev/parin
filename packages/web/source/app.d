@@ -37,7 +37,7 @@ int main() {
 
     // Compile the game.
     if (isSimpProject) {
-        IStr[] args = ["ldc2", "-c", "-checkaction=halt", "-mtriple=wasm32-unknown-unknown-wasm", "-J=parin"];
+        IStr[] args = ["ldc2", "-c", "--mtriple=wasm32-emscripten", "-J=parin"];
         args ~= dflags;
         if (isSimpProject) foreach (path; ls) if (path.endsWith(".d")) args ~= path;
         if (sourceDir.isX) {
