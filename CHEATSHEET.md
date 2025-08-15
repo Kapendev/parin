@@ -260,6 +260,25 @@ struct Camera {
     void attach();
     void detach();
 }
+
+struct Viewport {
+    rl.RenderTexture2D data;
+    Rgba color;
+    Blend blend;
+    bool isAttached;
+
+    this(Rgba color, Blend blend = Blend.alpha);
+    bool isEmpty();
+    int width();
+    int height();
+    Vec2 size();
+    void resize(int newWidth, int newHeight);
+    void attach();
+    void detach();
+    void setFilter(Filter value);
+    void setWrap(Wrap value);
+    void free();
+}
 ```
 
 ### 📌 Constants

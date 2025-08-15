@@ -30,9 +30,9 @@ int main() {
     if (!sourceDir.isX) sourceDir = "source";
 
     // Check if the files that are needed exist.
-    if (!assetsDir.isX) { echof("Folder `%s` doesn't exist. Create one.", assetsDir); return 1; }
-    if (!webDir.isX)    { echof("Folder `%s` doesn't exist. Create one.", webDir); return 1; }
-    if (!libFile.isX)   { stdfile.write(libFile, libFileData); }
+    if (!assetsDir.isX) mkdir(assetsDir);
+    if (!webDir.isX) mkdir(webDir);
+    if (!libFile.isX) stdfile.write(libFile, libFileData);
     clear(".", ".o");
 
     // Compile the game.

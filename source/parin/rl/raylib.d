@@ -8,6 +8,13 @@
 /// The `rayib` module provides access to the raylib.h functions.
 module parin.rl.raylib;
 
+version (WebAssembly) {
+    @nogc nothrow extern(C):
+
+    void emscripten_set_main_loop(void* ptr, int fps, bool loop);
+    void emscripten_cancel_main_loop();
+}
+
 @nogc nothrow extern(C):
 
 enum RAYLIB_VERSION_MAJOR = 5;
