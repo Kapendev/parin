@@ -10,105 +10,31 @@ version (Windows) {
     enum emccName = "emcc";
 }
 
-enum sourceDir   = "source";
 enum assetsDir   = "assets";
-enum outputFile  = join("web", "index.html");
-enum libFile     = join("web", "libraylib.a");
+enum webDir      = "web";
+enum outputFile  = join(webDir, "index.html");
+enum libFile     = join(webDir, ".libraylib.a");
 enum shellFile   = ".__default_shell__.html";
 enum dubFile     = "dub.json";
 enum dubConfig   = "wasm";
 enum dubLibName  = "game_wasm";
 enum dflags      = ["-i", "-betterC", "--release"];
 
-enum shellFileContent = `
-<!doctype html>
-<html lang="EN-us">
-<head>
-    <title>game</title>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="width=device-width">
-    <style>
-        body { margin: 0px; overflow: hidden; }
-        canvas.emscripten { border: 0px none; background-color: black; }
-
-        loading {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex; /* Center content horizontally and vertically */
-            justify-content: center;
-            align-items: center;
-            background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
-            z-index: 100; /* Ensure loading indicator sits above content */
-        }
-
-        .spinner {
-            border: 16px solid #c0c0c0; /* Big */
-            border-top: 16px solid #343434; /* Small */
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 2s linear infinite;
-        }
-
-        .center {
-            position: fixed;
-            inset: 0px;
-            width: 120px;
-            height: 120px;
-            margin: auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        canvas {
-            display: none; /* Initially hide the canvas */
-        }
-    </style>
-</head>
-<body>
-    <div id="loading">
-        <div class="center">
-            <div class="spinner"></div>
-        </div>
-    </div>
-    <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
-    <p id="output" />
-    <script>
-        var Module = {
-            canvas: (function() {
-                var canvas = document.getElementById('canvas');
-                return canvas;
-            })(),
-            preRun: [function() {
-                // Show loading indicator
-                document.getElementById("loading").style.display = "block";
-            }],
-            postRun: [function() {
-                // Hide loading indicator and show canvas
-                document.getElementById("loading").style.display = "none";
-                document.getElementById("canvas").style.display = "block";
-            }]
-        };
-    </script>
-    {{{ SCRIPT }}}
-</body>
-</html>
-`[1 .. $];
-
 int main() {
+    import stdfile = std.file;
+
+    auto libFileData = cast(const(ubyte)[]) import("libraylib.a");
+    auto shellFileData = cast(const(char)[]) import("emscripten_shell.html");
     auto isSimpProject = !dubFile.isX;
+    auto sourceDir = "src";
+    if (!sourceDir.isX) sourceDir = "source";
+
     // Check if the files that are needed exist.
-    if (!isSimpProject) { if (!sourceDir.isX) { echof("Folder `%s` doesn't exist. Create one.", sourceDir); return 1; } }
     if (!assetsDir.isX) { echof("Folder `%s` doesn't exist. Create one.", assetsDir); return 1; }
-    if (!libFile.isX)   { echof("File `%s` doesn't exist. Download it from: https://github.com/Kapendev/parin/blob/main/vendor/wasm/libraylib.a.", libFile); return 1; }
+    if (!webDir.isX)    { echof("Folder `%s` doesn't exist. Create one.", webDir); return 1; }
+    if (!libFile.isX)   { stdfile.write(libFile, libFileData); }
     clear(".", ".o");
+
     // Compile the game.
     if (isSimpProject) {
         IStr[] args = ["ldc2", "-c", "-checkaction=halt", "-mtriple=wasm32-unknown-unknown-wasm", "-J=parin"];
@@ -116,14 +42,14 @@ int main() {
         if (isSimpProject) foreach (path; ls) if (path.endsWith(".d")) args ~= path;
         if (sourceDir.isX) {
             args ~= "-I" ~ sourceDir;
-            foreach (path; ls(sourceDir)) if (path.endsWith(".d")) args ~= path;
+            foreach (path; ls(sourceDir, true)) if (path.endsWith(".d")) args ~= path;
         }
         if (cmd(args)) return 1;
     } else {
         if (cmd("dub", "build", "--compiler", "ldc2", "--build", "release", "--config", dubConfig)) return 1;
     }
     // Check if the assets folder is empty because emcc will cry about it.
-    paste(shellFile, shellFileContent);
+    paste(shellFile, shellFileData);
     bool isAssetsDirEmpty = true;
     foreach (path; ls(assetsDir)) {
         if (path.isF) { isAssetsDirEmpty = false; break; }

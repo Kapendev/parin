@@ -39,12 +39,6 @@
 			"platforms": ["osx-aarch64"],
             "targetType": "library",
 			"lflags": ["-L$PACKAGE_DIR/vendor/macos_arm64"]
-        },
-        {
-			"name": "wasm",
-			"targetType": "library",
-			"targetName": "game_wasm",
-			"lflags": ["-L$PACKAGE_DIR/vendor/wasm"]
         }
     ]
 }

@@ -1,9 +1,17 @@
 # Web
 
 A helper script to assist with the web export process.
-It supports both DUB and non-DUB projects and requires Emscripten.
+Building for the web also requires [Emscripten](https://emscripten.org/).
 
-## Usage
+**Running the script with DUB**:
 
-* With DUB: `dub run parin:web`
-* Without DUB: `dmd -run source/app.d`
+```sh
+dub run parin:web
+```
+
+**Without DUB**:
+
+```sh
+ldc2 -J=parin_package/packages/web/source -run parin_package/packages/web/source/app.d
+# Or: opend -run parin_package/packages/web/source/app.d
+```

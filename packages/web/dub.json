@@ -5,5 +5,8 @@
 	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
 	"description": "A helper script to assist with the web export process.",
 	"license": "MIT",
-	"name": "web"
+	"name": "web",
+	"stringImportPaths": [
+		"source"
+	]
 }

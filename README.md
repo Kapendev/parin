@@ -129,7 +129,7 @@ dub run parin:web
 **Without DUB**:
 
 ```sh
-ldc2 -run parin_package/packages/web/source/app.d
+ldc2 -J=parin_package/packages/web/source -run parin_package/packages/web/source/app.d
 # Or: opend -run parin_package/packages/web/source/app.d
 ```
 

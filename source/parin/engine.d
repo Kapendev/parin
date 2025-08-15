@@ -1476,7 +1476,7 @@ struct EngineState {
     LStr assetsPath;
 }
 
-pragma(inline, true) private @safe nothrow @nogc {
+pragma(inline, true) @safe nothrow @nogc {
     Rgba toPr(rl.Color from) {
         return Rgba(from.r, from.g, from.b, from.a);
     }
