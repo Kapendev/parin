@@ -1,0 +1,13 @@
+#!/bin/env sh
+
+app_path='./app.d'
+parin_package_path='./parin_package'
+joka_package_path='./joka_package'
+version='linux_x86_64'
+compiler='ldc2'
+
+[ -n "$1" ] && compiler="$1"
+$compiler \
+    -L=-L$parin_package_path/vendor/$version \
+    -J=parin -i \
+    -run $app_path

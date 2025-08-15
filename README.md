@@ -95,6 +95,11 @@ Most ideas are welcome, except ECS.
 
 ### How can I build without DUB?
 
+> [!NOTE]
+> Equivalent scripts for these steps are available in the scripts folder.
+> Run `scripts/prepare` or `scripts\prepare.bat` to prepare the project.
+> Run `scripts/run` or `scripts\run.bat` to compile and run it.
+
 Create a new folder and run inside the following commands:
 
 **Prepare folder**:
@@ -117,6 +122,10 @@ ldc2 -L=-Lparin_package/vendor/linux_x86_64 -J=parin -i -run app.d
 ```
 
 ### How do I make a web build?
+
+> [!NOTE]
+> Equivalent scripts for these steps are available in the scripts folder.
+> Run `scripts/web` or `scripts\web.bat` to create a web build.
 
 Parin includes a build script for the web in the [packages](packages/) folder. Building for the web also requires [Emscripten](https://emscripten.org/).
 
