@@ -102,7 +102,6 @@ Create a new folder and run inside the following commands:
 ```sh
 git clone --depth 1 https://github.com/Kapendev/parin parin_package
 git clone --depth 1 https://github.com/Kapendev/joka joka_package
-
 ./parin_package/scripts/prepare
 # Or: .\parin_package\scripts\prepare.bat
 ```
