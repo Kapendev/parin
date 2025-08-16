@@ -47,13 +47,15 @@ bool isEmptyTextureVisible();
 void setIsEmptyTextureVisible(bool value);
 bool isEmptyFontVisible();
 void setIsEmptyFontVisible(bool value);
+
 bool isUsingAssetsPath();
 void setIsUsingAssetsPath(bool value);
+IStr assetsPath();
+IStr toAssetsPath(IStr path);
+void setAssetsPath(IStr path);
 
 IStr[] envArgs();
 IStr[] droppedFilePaths();
-IStr assetsPath();
-IStr toAssetsPath(IStr path);
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
 void freeEngineResources();
 ```
@@ -148,6 +150,17 @@ void setRandomSeed(int value);
 ### 🧺 Data Structures
 
 ```d
+struct Margin {
+    int left;
+    int top;
+    int right;
+    int bottom;
+
+    this(int left, int top, int right, int bottom);
+    this(int left);
+    IStr toStr();
+}
+
 struct DrawOptions {
     Vec2 origin;
     Vec2 scale;
