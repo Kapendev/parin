@@ -3,11 +3,13 @@
 app_path='./app.d'
 parin_package_path='./parin_package'
 joka_package_path='./joka_package'
-version='linux_x86_64'
 compiler='ldc2'
+version='linux_x86_64'
+extra_flags=''
 
 [ -n "$1" ] && compiler="$1"
+[ -n "$2" ] && version="$2"
 $compiler \
     -L=-L$parin_package_path/vendor/$version \
-    -J=parin -i \
+    -J=parin -i $extra_flags \
     -run $app_path

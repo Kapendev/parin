@@ -95,11 +95,6 @@ Most ideas are welcome, except ECS.
 
 ### How can I build without DUB?
 
-> [!NOTE]
-> Equivalent scripts for these steps are available in the scripts folder.
-> Run `scripts/prepare` or `scripts\prepare.bat` to prepare the project.
-> Run `scripts/run` or `scripts\run.bat` to compile and run it.
-
 Create a new folder and run inside the following commands:
 
 **Prepare folder**:
@@ -107,25 +102,21 @@ Create a new folder and run inside the following commands:
 ```sh
 git clone --depth 1 https://github.com/Kapendev/parin parin_package
 git clone --depth 1 https://github.com/Kapendev/joka joka_package
-cp -r parin_package/source/parin .
-cp -r joka_package/source/joka .
-cp parin_package/examples/basics/_001_hello.d app.d
-# On Windows: cp parin_package/vendor/windows_x86_64/*.dll .
+
+./parin_package/scripts/prepare
+# Or: .\parin_package\scripts\prepare.bat
 ```
 
 **Compile & run**:
 
 ```sh
-# Use `windows_x86_64` or another folder for a different platform.
-ldc2 -L=-Lparin_package/vendor/linux_x86_64 -J=parin -i -run app.d
-# Or: opend -L=-Lparin_package/vendor/linux_x86_64 -run app.d
+./parin_package/scripts/run
+# Or: .\parin_package\scripts\run.bat
+# Or: ./parin_package/scripts/run ldc2 macos
+# Or: ./parin_package/scripts/run opend
 ```
 
 ### How do I make a web build?
-
-> [!NOTE]
-> Equivalent scripts for these steps are available in the scripts folder.
-> Run `scripts/web` or `scripts\web.bat` to create a web build.
 
 Parin includes a build script for the web in the [packages](packages/) folder. Building for the web also requires [Emscripten](https://emscripten.org/).
 
@@ -138,8 +129,8 @@ dub run parin:web
 **Without DUB**:
 
 ```sh
-ldc2 -J=parin_package/packages/web/source -run parin_package/packages/web/source/app.d
-# Or: opend -run parin_package/packages/web/source/app.d
+./parin_package/scripts/web
+# Or: .\parin_package\scripts\web.bat
 ```
 
 Below are installation commands for Emscripten for some Linux distributions.

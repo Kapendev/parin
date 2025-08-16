@@ -19,6 +19,7 @@ enum dubFile     = "dub.json";
 enum dubConfig   = "wasm";
 enum dubLibName  = "game_wasm";
 enum dflags      = ["-i", "-betterC", "--release"];
+enum cflags      = ["-DPLATFORM_WEB", "-sEXPORTED_RUNTIME_METHODS=HEAPF32", "-sUSE_GLFW=3", "-sERROR_ON_UNDEFINED_SYMBOLS=0"];
 
 int main() {
     import stdfile = std.file;
@@ -59,7 +60,8 @@ int main() {
     foreach (path; ls) {
         if (path.findStart(dubLibName) != -1) { dubLibFile = path; break; }
     }
-    IStr[] args = [emccName, "-o", outputFile, libFile, "-DPLATFORM_WEB", "-s", "USE_GLFW=3", "-s", "ERROR_ON_UNDEFINED_SYMBOLS=0", "--shell-file", shellFile];
+    IStr[] args = [emccName, "-o", outputFile, libFile, "--shell-file", shellFile];
+    args ~= cflags;
     if (!isAssetsDirEmpty) { args ~= "--preload-file"; args ~= assetsDir; }
     if (isSimpProject) {
         foreach (path; ls) if (path.endsWith(".o")) args ~= path;

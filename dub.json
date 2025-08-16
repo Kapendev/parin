@@ -35,10 +35,10 @@
 			"lflags": ["-L$PACKAGE_DIR\\vendor\\windows_x86_64"]
         },
         {
-            "name": "osx-aarch64",
-			"platforms": ["osx-aarch64"],
+            "name": "osx",
+			"platforms": ["osx"],
             "targetType": "library",
-			"lflags": ["-L$PACKAGE_DIR/vendor/macos_arm64"]
+			"lflags": ["-L$PACKAGE_DIR/vendor/macos"]
         }
     ]
 }
