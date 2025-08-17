@@ -170,6 +170,7 @@ An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) us
 ### How can I load an asset outside of the assets folder?
 
 Call `setIsUsingAssetsPath(false)` to disable the default behavior.
+Or call `setAssetsPath(assetsPath.pathDirName)` to load assets from the executable's folder (e.g. `./exe ./file` instead of `./exe ./assets/file`).
 
 ### How can I hot reload assets?
 
