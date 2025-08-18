@@ -17,7 +17,7 @@ public import joka.containers;
 public import joka.math;
 public import joka.types;
 
-extern(C) __gshared EngineState* engineState;
+extern(C) __gshared EngineState* _engineState;
 
 alias EngineUpdateFunc      = extern(C) bool function(float dt);
 alias EngineReadyFinishFunc = extern(C) void function();
@@ -42,25 +42,25 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     rl.SetWindowMinSize(240, 135);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
     // Engine stuff.
-    engineState = jokaMake!EngineState();
-    engineState.fullscreenState.previousWindowWidth = width;
-    engineState.fullscreenState.previousWindowHeight = height;
-    engineState.viewport.data.color = gray;
+    _engineState = jokaMake!EngineState();
+    _engineState.fullscreenState.previousWindowWidth = width;
+    _engineState.fullscreenState.previousWindowHeight = height;
+    _engineState.viewport.data.color = gray;
     if (args.length) {
-        foreach (arg; args) engineState.envArgsBuffer.append(arg);
-        engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+        foreach (arg; args) _engineState.envArgsBuffer.append(arg);
+        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
     }
-    engineState.loadTextBuffer.reserve(8192);
-    engineState.saveTextBuffer.reserve(8192);
-    engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
-    engineState.textures.reserve(defaultEngineTexturesCapacity);
-    engineState.sounds.reserve(defaultEngineSoundsCapacity);
-    engineState.fonts.reserve(defaultEngineFontsCapacity);
+    _engineState.loadTextBuffer.reserve(8192);
+    _engineState.saveTextBuffer.reserve(8192);
+    _engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
+    _engineState.textures.reserve(defaultEngineTexturesCapacity);
+    _engineState.sounds.reserve(defaultEngineSoundsCapacity);
+    _engineState.fonts.reserve(defaultEngineFontsCapacity);
     // Load debug font.
     auto monogramData = cast(const(ubyte)[]) import(monogramPath);
     auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
-    engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
+    _engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
     rl.UnloadImage(monogramImage);
 }
 
@@ -69,8 +69,8 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
 extern(C)
 void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) engineState.envArgsBuffer.append(argv[i].cStrToStr());
-    if (engineState.envArgsBuffer.length) engineState.assetsPath.append(pathConcat(engineState.envArgsBuffer[0].pathDirName, "assets"));
+    foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
+    if (_engineState.envArgsBuffer.length) _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
 }
 
 /// Use by the `updateWindow` function.
@@ -79,7 +79,7 @@ extern(C)
 bool updateWindowLoop() {
     // Update buffers and resources.
     {
-        auto info = &engineState.viewportInfoBuffer;
+        auto info = &_engineState.viewportInfoBuffer;
         if (isResolutionLocked) {
             info.minSize = resolution;
             info.maxSize = windowSize;
@@ -106,60 +106,60 @@ bool updateWindowLoop() {
         with (Keyboard) {
             if (isResolutionLocked) {
                 auto rlMouse = rl.GetTouchPosition(0);
-                engineState.mouseBuffer = Vec2(
+                _engineState.mouseBuffer = Vec2(
                     floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
                     floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
                 );
             } else {
-                engineState.mouseBuffer = rl.GetTouchPosition(0).toPr();
+                _engineState.mouseBuffer = rl.GetTouchPosition(0).toPr();
             }
-            engineState.wasdBuffer = Vec2(
+            _engineState.wasdBuffer = Vec2(
                 (d.isDown || right.isDown) - (a.isDown || left.isDown),
                 (s.isDown || down.isDown) - (w.isDown || up.isDown),
             );
-            engineState.wasdPressedBuffer = Vec2(
+            _engineState.wasdPressedBuffer = Vec2(
                 (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
                 (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
             );
-            engineState.wasdReleasedBuffer = Vec2(
+            _engineState.wasdReleasedBuffer = Vec2(
                 (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
                 (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
             );
         }
-        foreach (ref sound; engineState.sounds.items) {
+        foreach (ref sound; _engineState.sounds.items) {
             updateSoundX(sound);
         }
         if (rl.IsFileDropped) {
             auto list = rl.LoadDroppedFiles();
             foreach (i; 0 .. list.count) {
-                engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
+                _engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
             }
         }
     }
 
     // Begin drawing.
     if (isResolutionLocked) {
-        rl.BeginTextureMode(engineState.viewport.data.toRl());
+        rl.BeginTextureMode(_engineState.viewport.data.toRl());
     } else {
         rl.BeginDrawing();
     }
-    rl.ClearBackground(engineState.viewport.data.color.toRl());
+    rl.ClearBackground(_engineState.viewport.data.color.toRl());
     // Update the game.
-    auto result = engineState.updateFunc(deltaTime);
-    engineState.tickCount = (engineState.tickCount + 1) % engineState.tickCount.max;
+    auto result = _engineState.updateFunc(deltaTime);
+    _engineState.tickCount = (_engineState.tickCount + 1) % _engineState.tickCount.max;
     if (rl.IsFileDropped) {
         // NOTE: LoadDroppedFiles just returns a global variable.
         rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-        engineState.droppedFilePathsBuffer.clear();
+        _engineState.droppedFilePathsBuffer.clear();
     }
     // End drawing.
     if (isResolutionLocked) {
         auto info = engineViewportInfo;
         rl.EndTextureMode();
         rl.BeginDrawing();
-        rl.ClearBackground(engineState.borderColor.toRl());
+        rl.ClearBackground(_engineState.borderColor.toRl());
         rl.DrawTexturePro(
-            engineState.viewport.data.toRl().texture,
+            _engineState.viewport.data.toRl().texture,
             rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
             info.area.toRl(),
             rl.Vector2(0.0f, 0.0f),
@@ -172,35 +172,35 @@ bool updateWindowLoop() {
     }
 
     // Viewport code.
-    if (engineState.viewport.isChanging) {
-        if (engineState.viewport.isLocking) {
-            engineState.viewport.data.resize(engineState.viewport.lockWidth, engineState.viewport.lockHeight);
+    if (_engineState.viewport.isChanging) {
+        if (_engineState.viewport.isLocking) {
+            _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
         } else {
-            auto temp = engineState.viewport.data.color;
-            engineState.viewport.data.free();
-            engineState.viewport.data.color = temp;
+            auto temp = _engineState.viewport.data.color;
+            _engineState.viewport.data.free();
+            _engineState.viewport.data.color = temp;
         }
-        engineState.viewport.isChanging = false;
+        _engineState.viewport.isChanging = false;
     }
     // Fullscreen code.
-    if (engineState.fullscreenState.isChanging) {
-        engineState.fullscreenState.changeTime += deltaTime;
-        if (engineState.fullscreenState.changeTime >= engineState.fullscreenState.changeDuration) {
+    if (_engineState.fullscreenState.isChanging) {
+        _engineState.fullscreenState.changeTime += deltaTime;
+        if (_engineState.fullscreenState.changeTime >= _engineState.fullscreenState.changeDuration) {
             if (rl.IsWindowFullscreen()) {
                 rl.ToggleFullscreen();
                 // Size is first because raylib likes that. I will make raylib happy.
                 rl.SetWindowSize(
-                    engineState.fullscreenState.previousWindowWidth,
-                    engineState.fullscreenState.previousWindowHeight,
+                    _engineState.fullscreenState.previousWindowWidth,
+                    _engineState.fullscreenState.previousWindowHeight,
                 );
                 rl.SetWindowPosition(
-                    cast(int) (screenWidth * 0.5f - engineState.fullscreenState.previousWindowWidth * 0.5f),
-                    cast(int) (screenHeight * 0.5f - engineState.fullscreenState.previousWindowHeight * 0.5f),
+                    cast(int) (screenWidth * 0.5f - _engineState.fullscreenState.previousWindowWidth * 0.5f),
+                    cast(int) (screenHeight * 0.5f - _engineState.fullscreenState.previousWindowHeight * 0.5f),
                 );
             } else {
                 rl.ToggleFullscreen();
             }
-            engineState.fullscreenState.isChanging = false;
+            _engineState.fullscreenState.isChanging = false;
         }
     }
     return result;
@@ -221,14 +221,14 @@ version (WebAssembly) {
 extern(C)
 void updateWindow(EngineUpdateFunc updateFunc) {
     // Maybe bad idea, but makes life of no-attribute people easier.
-    engineState.updateFunc = updateFunc;
-    engineState.flags |= EngineFlag.isUpdating;
+    _engineState.updateFunc = updateFunc;
+    _engineState.flags |= EngineFlag.isUpdating;
     version (WebAssembly) {
         rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
     } else {
         while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
     }
-    engineState.flags &= ~EngineFlag.isUpdating;
+    _engineState.flags &= ~EngineFlag.isUpdating;
 }
 
 /// Closes the window.
@@ -237,7 +237,7 @@ extern(C)
 void closeWindow() {
     if (!rl.IsWindowReady()) return;
     // NOTE: This leaks. Someone call the memory police!!!
-    engineState = null;
+    _engineState = null;
     rl.CloseAudioDevice();
     rl.CloseWindow();
 }
@@ -273,7 +273,7 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
 extern(C)
 TextureId toTextureId(Texture from) {
     if (from.isEmpty) return TextureId();
-    auto id = TextureId(engineState.textures.append(from));
+    auto id = TextureId(_engineState.textures.append(from));
     id.data.value += 1;
     return id;
 }
@@ -283,7 +283,7 @@ TextureId toTextureId(Texture from) {
 extern(C)
 FontId toFontId(Font from) {
     if (from.isEmpty) return FontId();
-    auto id = FontId(engineState.fonts.append(from));
+    auto id = FontId(_engineState.fonts.append(from));
     id.data.value += 1;
     return id;
 }
@@ -293,7 +293,7 @@ FontId toFontId(Font from) {
 extern(C)
 SoundId toSoundId(Sound from) {
     if (from.isEmpty) return SoundId();
-    auto id = SoundId(engineState.sounds.append(from));
+    auto id = SoundId(_engineState.sounds.append(from));
     id.data.value += 1;
     return id;
 }
@@ -350,8 +350,8 @@ Maybe!LStr loadRawText(IStr path) {
 /// Supports both forward slashes and backslashes in file paths.
 extern(C)
 Maybe!IStr loadTempText(IStr path) {
-    auto fault = loadRawTextIntoBuffer(path, engineState.loadTextBuffer);
-    return Maybe!IStr(engineState.loadTextBuffer.items, fault);
+    auto fault = loadRawTextIntoBuffer(path, _engineState.loadTextBuffer);
+    return Maybe!IStr(_engineState.loadTextBuffer.items, fault);
 }
 
 /// Loads a texture file (PNG) from the assets folder.
@@ -360,8 +360,8 @@ extern(C)
 Maybe!Texture loadRawTexture(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toPr();
-    value.setFilter(engineState.defaultFilter);
-    value.setWrap(engineState.defaultWrap);
+    value.setFilter(_engineState.defaultFilter);
+    value.setWrap(_engineState.defaultWrap);
     return Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -388,8 +388,8 @@ Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacin
     else value.runeSpacing = 1;
     if (lineSpacing >= 0) value.lineSpacing = lineSpacing;
     else value.lineSpacing = value.data.baseSize;
-    value.setFilter(engineState.defaultFilter);
-    value.setWrap(engineState.defaultWrap);
+    value.setFilter(_engineState.defaultFilter);
+    value.setWrap(_engineState.defaultWrap);
     return Maybe!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -466,8 +466,8 @@ Fault saveText(IStr path, IStr text) {
 /// Sets the path of the assets folder.
 extern(C)
 void setAssetsPath(IStr path) {
-    engineState.assetsPath.clear();
-    engineState.assetsPath.append(path);
+    _engineState.assetsPath.clear();
+    _engineState.assetsPath.append(path);
 }
 
 @trusted nothrow @nogc:
@@ -841,7 +841,7 @@ struct TextureId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value && engineState.textures.has(GenIndex(data.value - 1, data.generation));
+        return data.value && _engineState.textures.has(GenIndex(data.value - 1, data.generation));
     }
 
     /// Checks if the resource identifier is valid and asserts if it is not.
@@ -853,17 +853,17 @@ struct TextureId {
     /// Retrieves the texture associated with the resource identifier.
     ref Texture get() {
         if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return engineState.textures[GenIndex(data.value - 1, data.generation)];
+        return _engineState.textures[GenIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the texture associated with the resource identifier or returns a default value if invalid.
     Texture getOr() {
-        return isValid ? engineState.textures[GenIndex(data.value - 1, data.generation)] : Texture();
+        return isValid ? _engineState.textures[GenIndex(data.value - 1, data.generation)] : Texture();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.textures.remove(GenIndex(data.value - 1, data.generation));
+        if (isValid) _engineState.textures.remove(GenIndex(data.value - 1, data.generation));
     }
 }
 
@@ -940,7 +940,7 @@ struct FontId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value && engineState.fonts.has(GenIndex(data.value - 1, data.generation));
+        return data.value && _engineState.fonts.has(GenIndex(data.value - 1, data.generation));
     }
 
     /// Checks if the resource identifier is valid and asserts if it is not.
@@ -952,17 +952,17 @@ struct FontId {
     /// Retrieves the font associated with the resource identifier.
     ref Font get() {
         if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return engineState.fonts[GenIndex(data.value - 1, data.generation)];
+        return _engineState.fonts[GenIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the font associated with the resource identifier or returns a default value if invalid.
     Font getOr() {
-        return isValid ? engineState.fonts[GenIndex(data.value - 1, data.generation)] : Font();
+        return isValid ? _engineState.fonts[GenIndex(data.value - 1, data.generation)] : Font();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid && this != engineFont) engineState.fonts.remove(GenIndex(data.value - 1, data.generation));
+        if (isValid && this != engineFont) _engineState.fonts.remove(GenIndex(data.value - 1, data.generation));
     }
 }
 
@@ -1144,7 +1144,7 @@ struct SoundId {
 
     /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
     bool isValid() {
-        return data.value && engineState.sounds.has(GenIndex(data.value - 1, data.generation));
+        return data.value && _engineState.sounds.has(GenIndex(data.value - 1, data.generation));
     }
 
     /// Checks if the resource identifier is valid and asserts if it is not.
@@ -1156,17 +1156,17 @@ struct SoundId {
     /// Retrieves the sound associated with the resource identifier.
     ref Sound get() {
         if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return engineState.sounds[GenIndex(data.value - 1, data.generation)];
+        return _engineState.sounds[GenIndex(data.value - 1, data.generation)];
     }
 
     /// Retrieves the sound associated with the resource identifier or returns a default value if invalid.
     Sound getOr() {
-        return isValid ? engineState.sounds[GenIndex(data.value - 1, data.generation)] : Sound();
+        return isValid ? _engineState.sounds[GenIndex(data.value - 1, data.generation)] : Sound();
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) engineState.sounds.remove(GenIndex(data.value - 1, data.generation));
+        if (isValid) _engineState.sounds.remove(GenIndex(data.value - 1, data.generation));
     }
 }
 
@@ -1215,19 +1215,19 @@ struct Viewport {
             return;
         }
         data = rl.LoadRenderTexture(newWidth, newHeight);
-        setFilter(engineState.defaultFilter);
-        setWrap(engineState.defaultWrap);
+        setFilter(_engineState.defaultFilter);
+        setWrap(_engineState.defaultWrap);
     }
 
     /// Attaches the viewport, making it active.
     // NOTE: The engine viewport should not use this function.
     void attach() {
         if (isEmpty) return;
-        if (engineState.userViewport.isAttached) {
+        if (_engineState.userViewport.isAttached) {
             assert(0, "Cannot attach viewport because another viewport is already attached.");
         }
         isAttached = true;
-        engineState.userViewport = this;
+        _engineState.userViewport = this;
         if (isResolutionLocked) rl.EndTextureMode();
         rl.BeginTextureMode(data);
         rl.ClearBackground(color.toRl());
@@ -1242,10 +1242,10 @@ struct Viewport {
             assert(0, "Cannot detach viewport because it is not the attached viewport.");
         }
         isAttached = false;
-        engineState.userViewport = Viewport();
+        _engineState.userViewport = Viewport();
         rl.EndBlendMode();
         rl.EndTextureMode();
-        if (isResolutionLocked) rl.BeginTextureMode(engineState.viewport.data.toRl());
+        if (isResolutionLocked) rl.BeginTextureMode(_engineState.viewport.data.toRl());
     }
 
     /// Sets the filter mode of the viewport.
@@ -1390,12 +1390,12 @@ struct Camera {
 
     /// Attaches the camera, making it active.
     void attach() {
-        if (engineState.userCamera.isAttached) {
+        if (_engineState.userCamera.isAttached) {
             assert(0, "Cannot attach camera because another camera is already attached.");
         }
         isAttached = true;
-        engineState.userCamera = this;
-        auto temp = toRl(this, engineState.userViewport);
+        _engineState.userCamera = this;
+        auto temp = toRl(this, _engineState.userViewport);
         if (isPixelSnapped) {
             temp.target.x = temp.target.x.floor();
             temp.target.y = temp.target.y.floor();
@@ -1411,7 +1411,7 @@ struct Camera {
             assert(0, "Cannot detach camera because it is not the attached camera.");
         }
         isAttached = false;
-        engineState.userCamera = Camera();
+        _engineState.userCamera = Camera();
         rl.EndMode2D();
     }
 }
@@ -1689,23 +1689,20 @@ SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
 
 /// Returns the arguments that this application was started with.
 IStr[] envArgs() {
-    return engineState.envArgsBuffer[];
+    return _engineState.envArgsBuffer[];
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
-extern(C)
 int randi() {
     return rl.GetRandomValue(0, int.max);
 }
 
 /// Returns a random floating point number between 0.0 and 1.0 (inclusive).
-extern(C)
 float randf() {
     return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
 /// Sets the seed of the random number generator to the given value.
-extern(C)
 void setRandomSeed(int value) {
     rl.SetRandomSeed(value);
 }
@@ -1714,232 +1711,210 @@ deprecated("Will be renamed to setRandomSeed.")
 alias randomizeSeed = setRandomSeed;
 
 /// Randomizes the seed of the random number generator.
-extern(C)
 void randomize() {
     setRandomSeed(randi);
 }
 
 /// Converts a world point to a screen point based on the given camera.
-extern(C)
 Vec2 toScreenPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
     return toPr(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Converts a screen point to a world point based on the given camera.
-extern(C)
 Vec2 toWorldPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
     return toPr(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Returns the path of the assets folder.
-extern(C)
 IStr assetsPath() {
-    return engineState.assetsPath.items;
+    return _engineState.assetsPath.items;
 }
 
 /// Converts a path to a path within the assets folder.
-extern(C)
 IStr toAssetsPath(IStr path) {
     if (!isUsingAssetsPath) return path;
     return pathConcat(assetsPath, path).pathFormat();
 }
 
 /// Returns the dropped file paths of the current frame.
-extern(C)
 IStr[] droppedFilePaths() {
-    return engineState.droppedFilePathsBuffer[];
+    return _engineState.droppedFilePathsBuffer[];
 }
 
 /// Returns a reference to a cleared temporary text container.
 /// The resource remains valid until this function is called again.
 ref LStr prepareTempText() {
-    engineState.saveTextBuffer.clear();
-    return engineState.saveTextBuffer;
+    _engineState.saveTextBuffer.clear();
+    return _engineState.saveTextBuffer;
 }
 
 /// Frees all managed engine resources.
-extern(C)
 void freeEngineResources() {
-    foreach (ref item; engineState.textures.items) item.free();
-    engineState.textures.clear();
-    foreach (ref item; engineState.sounds.items) item.free();
-    engineState.sounds.clear();
+    foreach (ref item; _engineState.textures.items) item.free();
+    _engineState.textures.clear();
+    foreach (ref item; _engineState.sounds.items) item.free();
+    _engineState.sounds.clear();
     // The engine font in stored with the user fonts, so it needs to be skipped.
     auto engineFontItemId = engineFont.data;
     engineFontItemId.value -= 1;
-    foreach (id; engineState.fonts.ids) {
+    foreach (id; _engineState.fonts.ids) {
         if (id == engineFontItemId) continue;
-        engineState.fonts[id].free();
-        engineState.fonts.remove(id);
+        _engineState.fonts[id].free();
+        _engineState.fonts.remove(id);
     }
 }
 
 /// Opens a URL in the default web browser (if available).
 /// Redirect to Parin's GitHub when no URL is provided.
-extern(C)
 void openUrl(IStr url = "https://github.com/Kapendev/parin") {
     rl.OpenURL(url.toCStr().getOr());
 }
 
 /// Returns true if the assets path is currently in use when loading.
-extern(C)
 bool isUsingAssetsPath() {
-    return cast(bool) (engineState.flags & EngineFlag.isUsingAssetsPath);
+    return cast(bool) (_engineState.flags & EngineFlag.isUsingAssetsPath);
 }
 
 /// Sets whether the assets path should be in use when loading.
-extern(C)
 void setIsUsingAssetsPath(bool value) {
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isUsingAssetsPath
-        : engineState.flags & ~EngineFlag.isUsingAssetsPath;
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isUsingAssetsPath
+        : _engineState.flags & ~EngineFlag.isUsingAssetsPath;
 }
 
 /// Returns true if the drawing is snapped to pixel coordinates.
 extern(C)
 bool isPixelSnapped() {
-    return cast(bool) (engineState.flags & EngineFlag.isPixelSnapped);
+    return cast(bool) (_engineState.flags & EngineFlag.isPixelSnapped);
 }
 
 /// Sets whether drawing should be snapped to pixel coordinates.
 extern(C)
 void setIsPixelSnapped(bool value) {
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isPixelSnapped
-        : engineState.flags & ~EngineFlag.isPixelSnapped;
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isPixelSnapped
+        : _engineState.flags & ~EngineFlag.isPixelSnapped;
 }
 
 /// Returns true if the drawing is done in a pixel perfect way.
 extern(C)
 bool isPixelPerfect() {
-    return cast(bool) (engineState.flags & EngineFlag.isPixelPerfect);
+    return cast(bool) (_engineState.flags & EngineFlag.isPixelPerfect);
 }
 
 /// Sets whether drawing should be done in a pixel-perfect way.
 extern(C)
 void setIsPixelPerfect(bool value) {
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isPixelPerfect
-        : engineState.flags & ~EngineFlag.isPixelPerfect;
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isPixelPerfect
+        : _engineState.flags & ~EngineFlag.isPixelPerfect;
 }
 
 /// Returns true if drawing is done when an empty texture is used.
 extern(C)
 bool isEmptyTextureVisible() {
-    return cast(bool) (engineState.flags & EngineFlag.isEmptyTextureVisible);
+    return cast(bool) (_engineState.flags & EngineFlag.isEmptyTextureVisible);
 }
 
 /// Sets whether drawing should be done when an empty texture is used.
 extern(C)
 void setIsEmptyTextureVisible(bool value) {
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isEmptyTextureVisible
-        : engineState.flags & ~EngineFlag.isEmptyTextureVisible;
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isEmptyTextureVisible
+        : _engineState.flags & ~EngineFlag.isEmptyTextureVisible;
 }
 
 /// Returns true if drawing is done when an empty font is used.
 extern(C)
 bool isEmptyFontVisible() {
-    return cast(bool) (engineState.flags & EngineFlag.isEmptyFontVisible);
+    return cast(bool) (_engineState.flags & EngineFlag.isEmptyFontVisible);
 }
 
 /// Sets whether drawing should be done when an empty font is used.
 extern(C)
 void setIsEmptyFontVisible(bool value) {
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isEmptyFontVisible
-        : engineState.flags & ~EngineFlag.isEmptyFontVisible;
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isEmptyFontVisible
+        : _engineState.flags & ~EngineFlag.isEmptyFontVisible;
 }
 
 /// Returns true if the application is currently in fullscreen mode.
 // NOTE: There is a conflict between the flag and real-window-state, which could potentially cause issues for some users.
-extern(C)
 bool isFullscreen() {
-    return cast(bool) (engineState.flags & EngineFlag.isFullscreen);
+    return cast(bool) (_engineState.flags & EngineFlag.isFullscreen);
 }
 
 /// Sets whether the application should be in fullscreen mode.
 // NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
-extern(C)
 void setIsFullscreen(bool value) {
     version (WebAssembly) {
     } else {
-        if (value == isFullscreen || engineState.fullscreenState.isChanging) return;
-        engineState.flags = value
-            ? engineState.flags | EngineFlag.isFullscreen
-            : engineState.flags & ~EngineFlag.isFullscreen;
+        if (value == isFullscreen || _engineState.fullscreenState.isChanging) return;
+        _engineState.flags = value
+            ? _engineState.flags | EngineFlag.isFullscreen
+            : _engineState.flags & ~EngineFlag.isFullscreen;
         if (value) {
-            engineState.fullscreenState.previousWindowWidth = rl.GetScreenWidth();
-            engineState.fullscreenState.previousWindowHeight = rl.GetScreenHeight();
+            _engineState.fullscreenState.previousWindowWidth = rl.GetScreenWidth();
+            _engineState.fullscreenState.previousWindowHeight = rl.GetScreenHeight();
             rl.SetWindowPosition(0, 0);
             rl.SetWindowSize(screenWidth, screenHeight);
         }
-        engineState.fullscreenState.changeTime = 0.0f;
-        engineState.fullscreenState.isChanging = true;
+        _engineState.fullscreenState.changeTime = 0.0f;
+        _engineState.fullscreenState.isChanging = true;
     }
 }
 
 /// Toggles the fullscreen mode on or off.
-extern(C)
 void toggleIsFullscreen() {
     setIsFullscreen(!isFullscreen);
 }
 
 /// Returns true if the cursor is currently visible.
-extern(C)
 bool isCursorVisible() {
-    return cast(bool) (engineState.flags & EngineFlag.isCursorVisible);
+    return cast(bool) (_engineState.flags & EngineFlag.isCursorVisible);
 }
 
 /// Sets whether the cursor should be visible or hidden.
-extern(C)
 void setIsCursorVisible(bool value) {
-    engineState.flags = value
-        ? engineState.flags | EngineFlag.isCursorVisible
-        : engineState.flags & ~EngineFlag.isCursorVisible;
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isCursorVisible
+        : _engineState.flags & ~EngineFlag.isCursorVisible;
     if (value) rl.ShowCursor();
     else rl.HideCursor();
 }
 
 /// Toggles the visibility of the cursor.
-extern(C)
 void toggleIsCursorVisible() {
     setIsCursorVisible(!isCursorVisible);
 }
 
 /// Returns true if the windows was resized.
-extern(C)
 bool isWindowResized() {
     return rl.IsWindowResized();
 }
 
 /// Sets the background color to the specified value.
-extern(C)
 void setBackgroundColor(Rgba value) {
-    engineState.viewport.data.color = value;
+    _engineState.viewport.data.color = value;
 }
 
 /// Sets the border color to the specified value.
-extern(C)
 void setBorderColor(Rgba value) {
-    engineState.borderColor = value;
+    _engineState.borderColor = value;
 }
 
 /// Sets the minimum size of the window to the specified value.
-extern(C)
 void setWindowMinSize(int width, int height) {
     rl.SetWindowMinSize(width, height);
 }
 
 /// Sets the maximum size of the window to the specified value.
-extern(C)
 void setWindowMaxSize(int width, int height) {
     rl.SetWindowMaxSize(width, height);
 }
 
 /// Sets the window icon to the specified image that will be loaded from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-extern(C)
 Fault setWindowIconFromFiles(IStr path) {
     auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto image = rl.LoadImage(targetPath.toCStr().getOr());
@@ -1952,41 +1927,35 @@ Fault setWindowIconFromFiles(IStr path) {
 /// Returns information about the engine viewport, including its area.
 extern(C)
 EngineViewportInfo engineViewportInfo() {
-    return engineState.viewportInfoBuffer;
+    return _engineState.viewportInfoBuffer;
 }
 
 /// Returns the default filter mode.
-extern(C)
 Filter defaultFilter() {
-    return engineState.defaultFilter;
+    return _engineState.defaultFilter;
 }
 
 /// Returns the default wrap mode.
-extern(C)
 Wrap defaultWrap() {
-    return engineState.defaultWrap;
+    return _engineState.defaultWrap;
 }
 
 /// Sets the default filter mode to the specified value.
-extern(C)
 void setDefaultFilter(Filter value) {
-    engineState.defaultFilter = value;
+    _engineState.defaultFilter = value;
 }
 
 /// Sets the default wrap mode to the specified value.
-extern(C)
 void setDefaultWrap(Wrap value) {
-    engineState.defaultWrap = value;
+    _engineState.defaultWrap = value;
 }
 
 /// Returns the current master volume level.
-extern(C)
 float masterVolume() {
     return rl.GetMasterVolume();
 }
 
 /// Sets the master volume level to the specified value.
-extern(C)
 void setMasterVolume(float value) {
     rl.SetMasterVolume(value);
 }
@@ -1994,32 +1963,32 @@ void setMasterVolume(float value) {
 /// Returns true if the resolution is locked and cannot be changed.
 extern(C)
 bool isResolutionLocked() {
-    return !engineState.viewport.data.isEmpty;
+    return !_engineState.viewport.data.isEmpty;
 }
 
 /// Locks the resolution to the specified width and height.
 extern(C)
 void lockResolution(int width, int height) {
-    engineState.viewport.lockWidth = width;
-    engineState.viewport.lockHeight = height;
-    if (engineState.flags & EngineFlag.isUpdating) {
-        engineState.viewport.isChanging = true;
-        engineState.viewport.isLocking = true;
+    _engineState.viewport.lockWidth = width;
+    _engineState.viewport.lockHeight = height;
+    if (_engineState.flags & EngineFlag.isUpdating) {
+        _engineState.viewport.isChanging = true;
+        _engineState.viewport.isLocking = true;
     } else {
-        engineState.viewport.data.resize(width, height);
+        _engineState.viewport.data.resize(width, height);
     }
 }
 
 /// Unlocks the resolution, allowing it to be changed.
 extern(C)
 void unlockResolution() {
-    if (engineState.flags & EngineFlag.isUpdating) {
-        engineState.viewport.isChanging = true;
-        engineState.viewport.isLocking = false;
+    if (_engineState.flags & EngineFlag.isUpdating) {
+        _engineState.viewport.isChanging = true;
+        _engineState.viewport.isLocking = false;
     } else {
-        auto temp = engineState.viewport.data.color;
-        engineState.viewport.data.free();
-        engineState.viewport.data.color = temp;
+        auto temp = _engineState.viewport.data.color;
+        _engineState.viewport.data.free();
+        _engineState.viewport.data.color = temp;
     }
 }
 
@@ -2031,102 +2000,86 @@ void toggleResolution(int width, int height) {
 }
 
 /// Returns the current screen width.
-extern(C)
 int screenWidth() {
     return rl.GetMonitorWidth(rl.GetCurrentMonitor());
 }
 
 /// Returns the current screen height.
-extern(C)
 int screenHeight() {
     return rl.GetMonitorHeight(rl.GetCurrentMonitor());
 }
 
 /// Returns the current screen size.
-extern(C)
 Vec2 screenSize() {
     return Vec2(screenWidth, screenHeight);
 }
 
 /// Returns the current window width.
-extern(C)
 int windowWidth() {
     if (isFullscreen) return screenWidth;
     else return rl.GetScreenWidth();
 }
 
 /// Returns the current window height.
-extern(C)
 int windowHeight() {
     if (isFullscreen) return screenHeight;
     else return rl.GetScreenHeight();
 }
 
 /// Returns the current window size.
-extern(C)
 Vec2 windowSize() {
     return Vec2(windowWidth, windowHeight);
 }
 
 /// Returns the current resolution width.
-extern(C)
 int resolutionWidth() {
-    if (isResolutionLocked) return engineState.viewport.data.width;
+    if (isResolutionLocked) return _engineState.viewport.data.width;
     else return windowWidth;
 }
 
 /// Returns the current resolution height.
-extern(C)
 int resolutionHeight() {
-    if (isResolutionLocked) return engineState.viewport.data.height;
+    if (isResolutionLocked) return _engineState.viewport.data.height;
     else return windowHeight;
 }
 
 /// Returns the current resolution size.
-extern(C)
 Vec2 resolution() {
     return Vec2(resolutionWidth, resolutionHeight);
 }
 
 /// Returns the current position of the mouse on the screen.
 pragma(inline, true)
-extern(C)
 Vec2 mouse() {
-    return engineState.mouseBuffer;
+    return _engineState.mouseBuffer;
 }
 
 /// Returns the current frames per second (FPS).
-extern(C)
 int fps() {
     return rl.GetFPS();
 }
 
 /// Returns the total elapsed time since the application started.
-extern(C)
 double elapsedTime() {
     return rl.GetTime();
 }
 
 /// Returns the total number of ticks elapsed since the application started.
-extern(C)
 long elapsedTickCount() {
-    return engineState.tickCount;
+    return _engineState.tickCount;
 }
 
 /// Returns the time elapsed since the last frame.
-extern(C)
 float deltaTime() {
     return rl.GetFrameTime();
 }
 
 /// Returns the change in mouse position since the last frame.
-extern(C)
 Vec2 deltaMouse() {
     return rl.GetMouseDelta().toPr();
 }
 
 /// Returns the change in mouse wheel position since the last frame.
-extern(C)
 float deltaWheel() {
     auto result = 0.0f;
     version (WebAssembly) {
@@ -2363,7 +2316,7 @@ dchar dequeuePressedRune() {
 pragma(inline, true)
 extern(C)
 Vec2 wasd() {
-    return engineState.wasdBuffer;
+    return _engineState.wasdBuffer;
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are pressed.
@@ -2371,7 +2324,7 @@ Vec2 wasd() {
 pragma(inline, true)
 extern(C)
 Vec2 wasdPressed() {
-    return engineState.wasdPressedBuffer;
+    return _engineState.wasdPressedBuffer;
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are released.
@@ -2379,11 +2332,10 @@ Vec2 wasdPressed() {
 pragma(inline, true)
 extern(C)
 Vec2 wasdReleased() {
-    return engineState.wasdReleasedBuffer;
+    return _engineState.wasdReleasedBuffer;
 }
 
 /// Plays the specified sound.
-extern(C)
 void playSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isActive) return;
     sound.isActive = true;
@@ -2399,13 +2351,11 @@ void playSoundX(ref Sound sound) {
 }
 
 /// Plays the specified sound.
-extern(C)
 void playSound(SoundId sound) {
     if (sound.isValid) playSoundX(sound.get());
 }
 
 /// Stops playback of the specified sound.
-extern(C)
 void stopSoundX(ref Sound sound) {
     if (sound.isEmpty || !sound.isActive) return;
     sound.isActive = false;
@@ -2418,13 +2368,11 @@ void stopSoundX(ref Sound sound) {
 }
 
 /// Stops playback of the specified sound.
-extern(C)
 void stopSound(SoundId sound) {
     if (sound.isValid) stopSoundX(sound.get());
 }
 
 /// Pauses playback of the specified sound.
-extern(C)
 void pauseSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused) return;
     sound.isPaused = true;
@@ -2436,13 +2384,11 @@ void pauseSoundX(ref Sound sound) {
 }
 
 /// Pauses playback of the specified sound.
-extern(C)
 void pauseSound(SoundId sound) {
     if (sound.isValid) pauseSoundX(sound.get());
 }
 
 /// Resumes playback of the specified paused sound.
-extern(C)
 void resumeSoundX(ref Sound sound) {
     if (sound.isEmpty || !sound.isPaused) return;
     sound.isPaused = false;
@@ -2454,52 +2400,44 @@ void resumeSoundX(ref Sound sound) {
 }
 
 /// Resumes playback of the specified paused sound.
-extern(C)
 void resumeSound(SoundId sound) {
     if (sound.isValid) resumeSoundX(sound.get());
 }
 
 /// Resets and plays the specified sound.
-extern(C)
 void startSoundX(ref Sound sound) {
     stopSoundX(sound);
     playSoundX(sound);
 }
 
 /// Resets and plays the specified sound.
-extern(C)
 void startSound(SoundId sound) {
     if (sound.isValid) startSoundX(sound.get());
 }
 
 /// Toggles the active state of the sound.
-extern(C)
 void toggleSoundIsActiveX(ref Sound sound) {
     if (sound.isActive) stopSoundX(sound);
     else playSoundX(sound);
 }
 
 /// Toggles the active state of the sound.
-extern(C)
 void toggleSoundIsActive(SoundId sound) {
     if (sound.isValid) toggleSoundIsActiveX(sound.get());
 }
 
 /// Toggles the paused state of the sound.
-extern(C)
 void toggleSoundIsPausedX(ref Sound sound) {
     if (sound.isPaused) resumeSoundX(sound);
     else pauseSoundX(sound);
 }
 
 /// Toggles the paused state of the sound.
-extern(C)
 void toggleSoundIsPaused(SoundId sound) {
     if (sound.isValid) toggleSoundIsPausedX(sound.get());
 }
 
 /// Updates the playback state of the specified sound.
-extern(C)
 void updateSoundX(ref Sound sound) {
     if (sound.isEmpty || sound.isPaused || !sound.isActive) return;
     if (sound.data.isType!(rl.Sound)) {
@@ -2526,7 +2464,6 @@ void updateSoundX(ref Sound sound) {
 
 /// This function does nothing because managed resources are updated by the engine.
 /// It only exists to make it easier to swap between resource types.
-extern(C)
 void updateSound(SoundId sound) {
     // if (sound.isValid) updateSoundX(sound.get());
 }
@@ -3019,9 +2956,9 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         s = b - a;
         text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
-            engineState.textures.length,
-            engineState.fonts.length - 1,
-            engineState.sounds.length,
+            _engineState.textures.length,
+            _engineState.fonts.length - 1,
+            _engineState.sounds.length,
             cast(int) a.x,
             cast(int) a.y,
             cast(int) b.x,
@@ -3033,18 +2970,18 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         if (s.isZero) {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
                 fps,
-                engineState.textures.length,
-                engineState.fonts.length - 1,
-                engineState.sounds.length,
+                _engineState.textures.length,
+                _engineState.fonts.length - 1,
+                _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
             );
         } else {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
                 fps,
-                engineState.textures.length,
-                engineState.fonts.length - 1,
-                engineState.sounds.length,
+                _engineState.textures.length,
+                _engineState.fonts.length - 1,
+                _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
                 cast(int) a.x,

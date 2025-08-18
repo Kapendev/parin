@@ -4,6 +4,7 @@
 -o=../example
 -I=../source
 -L=-lraylib
+-J=../../parin/source/parin
 # Those lines work for me. Use -s=custom to fix any errors.
 -I=../../joka/source
 -L=-L../../raylib/lib
@@ -12,6 +13,7 @@
 -o=./example
 -I=../source
 -L=-lraylib
+-J=../../parin/source/parin
 # Those lines work for me. Use -s=custom to fix any errors.
 -I=../../joka/source
 -L=-L../../raylib/lib
