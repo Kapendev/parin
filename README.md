@@ -63,19 +63,19 @@ If everything is set up correctly, a window will appear showing the message "Hel
 
 Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.
 
-**Ubuntu**:
+#### Ubuntu
 
 ```sh
 sudo apt install libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
-**Fedora**:
+#### Fedora
 
 ```sh
 sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel libatomic
 ```
 
-**Arch**:
+#### Arch
 
 ```sh
 sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
@@ -97,7 +97,7 @@ Most ideas are welcome, except ECS.
 
 Create a new folder and run inside the following commands:
 
-**Prepare folder**:
+#### Prepare folder
 
 ```sh
 git clone --depth 1 https://github.com/Kapendev/parin parin_package
@@ -106,7 +106,7 @@ git clone --depth 1 https://github.com/Kapendev/joka joka_package
 # Or: .\parin_package\scripts\prepare.bat
 ```
 
-**Compile & run**:
+#### Compile & run
 
 ```sh
 ./parin_package/scripts/run
@@ -117,36 +117,55 @@ git clone --depth 1 https://github.com/Kapendev/joka joka_package
 
 ### How do I make a web build?
 
-Parin includes a build script for the web in the [packages](packages/) folder. Building for the web also requires [Emscripten](https://emscripten.org/).
+Parin includes a build script for the web in the [packages](packages/) folder.
+Building for the web also requires [Emscripten](https://emscripten.org/).
 
-**Running the script with DUB**:
+#### Running the script with DUB
 
 ```sh
 dub run parin:web
 ```
 
-**Without DUB**:
+#### Without DUB
 
 ```sh
 ./parin_package/scripts/web
 # Or: .\parin_package\scripts\web.bat
 ```
 
+By default, Parin's web builds use the BetterC flag, meaning only projects compatible with BetterC can be compiled.
+Projects requiring the full D runtime can be built using the GC flag.
+This flag supports both DUB and non-DUB projects, but it also requires [OpenD](https://opendlang.org/index.html) and the latest version of Emscripten.
+Note that exceptions are not supported and that some DUB related limitations apply.
+
+#### Using the flag with DUB
+
+```sh
+dub run parin:web -- gc
+```
+
+#### Without DUB
+
+```sh
+./parin_package/scripts/web gc
+# Or: .\parin_package\scripts\web.bat gc
+```
+
 Below are installation commands for Emscripten for some Linux distributions.
 
-**Ubuntu**:
+#### Ubuntu
 
 ```sh
 sudo apt install emscripten
 ```
 
-**Fedora**:
+#### Fedora
 
 ```sh
 sudo dnf install emscripten
 ```
 
-**Arch**:
+#### Arch
 
 ```sh
 yay -S emscripten

@@ -10,15 +10,17 @@ version (Windows) {
     enum emccName = "emcc";
 }
 
+enum libFileData = cast(const(ubyte)[]) import("libraylib.a");
+enum shellFileData = cast(const(char)[]) import("emscripten_shell.html");
 enum assetsDir   = "assets";
 enum webDir      = "web";
 enum outputFile  = join(webDir, "index.html");
-enum libFile     = join(webDir, ".libraylib.a");
-enum shellFile   = ".__default_shell__.html";
+enum libFile     = join(webDir, "libraylib.a");
+enum shellFile   = join(webDir, "emscripten_shell.html");
+enum faviconFile = join(webDir, "favicon.ico");
 enum dubFile     = "dub.json";
 enum dubConfig   = "wasm";
 enum dubLibName  = "game_wasm";
-enum dflags      = ["-i", "-betterC", "--release"];
 enum cflags      = [
     "-DPLATFORM_WEB",
     "-sEXPORTED_RUNTIME_METHODS=HEAPF32,requestFullscreen",
@@ -26,63 +28,128 @@ enum cflags      = [
     "-sERROR_ON_UNDEFINED_SYMBOLS=0"
 ];
 
-int main() {
-    import stdfile = std.file;
-
-    auto libFileData = cast(const(ubyte)[]) import("libraylib.a");
-    auto shellFileData = cast(const(char)[]) import("emscripten_shell.html");
-    auto isSimpProject = !dubFile.isX;
-    auto sourceDir = "src";
-    if (!sourceDir.isX) sourceDir = "source";
-
-    // Check if the files that are needed exist.
-    if (!assetsDir.isX) mkdir(assetsDir);
-    if (!webDir.isX) mkdir(webDir);
-    if (!libFile.isX) stdfile.write(libFile, libFileData);
-    clear(".", ".o");
-
+int doDefaultProject(IStr sourceDir, bool isSimpProject) {
     // Compile the game.
     if (isSimpProject) {
-        IStr[] args = ["ldc2", "-c", "--mtriple=wasm32-emscripten", "-J=parin"];
-        args ~= dflags;
-        if (isSimpProject) foreach (path; ls) if (path.endsWith(".d")) args ~= path;
-        if (sourceDir.isX) {
-            args ~= "-I" ~ sourceDir;
-            foreach (path; ls(sourceDir, true)) if (path.endsWith(".d")) args ~= path;
-        }
+        IStr[] args = ["ldc2", "-i", "-c", "-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release"];
+        args ~= "-I=" ~ sourceDir;
+        args ~= "-J=" ~ join(sourceDir, "parin");
+        foreach (path; ls(sourceDir)) if (path.endsWith(".d")) { args ~= path; }
         if (cmd(args)) return 1;
     } else {
         if (cmd("dub", "build", "--compiler", "ldc2", "--build", "release", "--config", dubConfig)) return 1;
     }
-    // Check if the assets folder is empty because emcc will cry about it.
-    paste(shellFile, shellFileData);
-    bool isAssetsDirEmpty = true;
-    foreach (path; ls(assetsDir)) {
-        if (path.isF) { isAssetsDirEmpty = false; break; }
-    }
     // Build the web app.
     IStr dubLibFile = "";
-    foreach (path; ls) {
-        if (path.findStart(dubLibName) != -1) { dubLibFile = path; break; }
-    }
     IStr[] args = [emccName, "-o", outputFile, libFile];
     args ~= "--shell-file";
     args ~= shellFile;
     args ~= cflags;
-    if (!isAssetsDirEmpty) { args ~= "--preload-file"; args ~= assetsDir; }
+    // Check if the assets folder is empty because emcc will cry about it.
+    if (assetsDir.isX) {
+        foreach (path; ls(assetsDir)) {
+            if (path.isF) {
+                args ~= "--preload-file";
+                args ~= assetsDir;
+                break;
+            }
+        }
+    }
     if (isSimpProject) {
         foreach (path; ls) if (path.endsWith(".o")) args ~= path;
     } else {
+        foreach (path; ls) if (path.findStart(dubLibName) != -1) { dubLibFile = path; break; }
         args ~= dubLibFile;
     }
-    if (cmd(args)) {
-        rm(shellFile);
-        rm(dubLibFile);
-        clear(".", ".o");
-        return 1;
-    }
-    rm(shellFile);
+    auto result = cmd(args);
+    clear(".", ".o");
     rm(dubLibFile);
+    return result;
+}
+
+int doGcProject(IStr sourceDir, bool isSimpProject) {
+    // Both DUB and no-DUB projects work the same because I don't care and you should vendor things anyway imo lololol.
+    // The are some hacks here. One of them is that we need to have the package folders of parin and joka.
+
+    IStr parinPackagePath = "parin_package";
+    if (!parinPackagePath.isX) parinPackagePath = join(webDir, "parin_package");
+    auto parinPackageSourcePath = join(parinPackagePath, "source");
+
+    IStr jokaPackagePath = "joka_package";
+    if (!jokaPackagePath.isX) jokaPackagePath = join(webDir, "joka_package");
+    auto jokaPackageSourcePath = join(jokaPackagePath, "source");
+
+    auto webPackagePath = join(parinPackagePath, "packages", "web");
+    auto webPackageSourcePath = join(webPackagePath, "source");
+
+    // Could be removed, but I think most poeple don't care and just want to build something.
+    if (!parinPackagePath.isX) cmd("git", "clone", "--depth", "1", "https://github.com/Kapendev/parin", parinPackagePath);
+    if (!jokaPackagePath.isX) cmd("git", "clone", "--depth", "1", "https://github.com/Kapendev/joka", jokaPackagePath);
+
+    auto hasParinInSource = false;
+    auto hasJokaInSource = false;
+    IStr[] files;
+    foreach (path; ls(sourceDir, true)) {
+        if (path.findStart("parin_package") != -1 || path.findStart("joka_package") != -1) continue;
+        if (path.findStart("parin") != -1 && path.endsWith(".d")) {
+            hasParinInSource = true;
+            files ~= path;
+            continue;
+        }
+        if (path.findStart("joka") != -1 && path.endsWith(".d")) {
+            hasJokaInSource = true;
+            files ~= path;
+            continue;
+        }
+        if (path.endsWith(".d")) files ~= path;
+    }
+    if (!hasParinInSource) {
+        foreach (path; ls(parinPackageSourcePath, true)) if (path.endsWith(".d")) files ~= path;
+    }
+    if (!hasJokaInSource) {
+        foreach (path; ls(jokaPackageSourcePath, true)) if (path.endsWith(".d")) files ~= path;
+    }
+
+    IStr[] args = ["opend", "--target=emscripten", "-of" ~ outputFile];
+    // The hack part.
+    args ~= files;
+    args ~= "-I=" ~ sourceDir;
+    if (!isSimpProject) {
+        args ~= "-I=" ~ parinPackageSourcePath;
+        args ~= "-I=" ~ jokaPackageSourcePath;
+    }
+    // The good part.
+    args ~= "-L=" ~ libFile;
+    args ~= "-L=-L" ~ webPackageSourcePath;
+    args ~= "-L=-sEXPORTED_RUNTIME_METHODS=HEAPF32,requestFullscreen";
+    args ~= "-L=-DPLATFORM_WEB";
+    args ~= "-L=-sUSE_GLFW=3";
+    args ~= "-L=-sERROR_ON_UNDEFINED_SYMBOLS=0";
+    args ~= "-L=--shell-file";
+    args ~= "-L=" ~ shellFile;
+    auto result = cmd(args);
+    clear(".", ".o");
+    return result;
+}
+
+int main(string[] mainArgs) {
+    import stdfile = std.file; // Hack import because nob.d is bad and should be rewritten in Rust.
+
+    auto isGcProject = mainArgs.length > 1 && (mainArgs[1] == "gc" || mainArgs[1] == "-gc" || mainArgs[1] == "--gc");
+    auto isSimpProject = !dubFile.isX;
+    auto sourceDir = "source";
+    if (!sourceDir.isX) sourceDir = "src";
+    if (!sourceDir.isX) sourceDir = ".";
+    if (!webDir.isX) mkdir(webDir);
+    if (!libFile.isX) stdfile.write(libFile, libFileData);
+    if (!shellFile.isX) stdfile.write(shellFile, shellFileData);
+    if (!faviconFile.isX) stdfile.write(faviconFile, ""); // Don't ask.
+    clear(".", ".o");
+    if (isGcProject) {
+        if (doGcProject(sourceDir, isSimpProject)) return 1;
+    } else {
+        if (doDefaultProject(sourceDir, isSimpProject)) return 1;
+    }
     clear(".", ".o");
     // Run the web app.
     return cmd(emrunName, outputFile);

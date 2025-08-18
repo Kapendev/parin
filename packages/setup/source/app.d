@@ -80,7 +80,33 @@ enum dubFileContent = `
             "name": "wasm",
             "targetType": "library",
             "targetName": "game_wasm",
-            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "-i", "--release"]
+            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-i", "--release", "-betterC"]
+        }
+    ]
+}
+`[1 .. $];
+
+enum dubFileContentForMeTheDev = `
+{
+    "name" : "game",
+    "description" : "A game made with Parin.",
+    "authors" : ["Name"],
+    "copyright" : "Copyright © 2025, Name",
+    "license" : "proprietary",
+    "dependencies": {
+        "joka": {"path": "../joka"},
+        "parin": {"path": "../parin"}
+    },
+    "configurations": [
+        {
+            "name": "default",
+            "targetType": "executable"
+        },
+        {
+            "name": "wasm",
+            "targetType": "library",
+            "targetName": "game_wasm",
+            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-i", "--release", "-betterC"]
         }
     ]
 }
@@ -104,6 +130,7 @@ int runSimpSetup(string[] args, bool isFirstRun) {
 
 /// The setup code for dub projects.
 int runDubSetup(string[] args, bool isFirstRun) {
+    auto isForMeTheDev = args.length > 1 && args[1] == "dev";
     // Create basic stuff and clone the dub files.
     if (isFirstRun) {
         rm(gitFile);
@@ -119,7 +146,10 @@ int runDubSetup(string[] args, bool isFirstRun) {
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);
     // Clean stuff.
-    if (isFirstRun) paste(dubFile, dubFileContent);
+    if (isFirstRun) {
+        if (isForMeTheDev) paste(dubFile, dubFileContentForMeTheDev);
+        else paste(dubFile, dubFileContent);
+    }
     restore(dubFile);
     restore(dubLockFile);
     return 0;
