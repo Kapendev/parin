@@ -119,6 +119,7 @@ git clone --depth 1 https://github.com/Kapendev/joka joka_package
 
 Parin includes a build script for the web in the [packages](packages/) folder.
 Building for the web also requires [Emscripten](https://emscripten.org/).
+By default, Parin's web builds use the BetterC flag, meaning only projects compatible with BetterC can be compiled.
 
 #### Running the script with DUB
 
@@ -133,10 +134,10 @@ dub run parin:web
 # Or: .\parin_package\scripts\web.bat
 ```
 
-By default, Parin's web builds use the BetterC flag, meaning only projects compatible with BetterC can be compiled.
 Projects requiring the full D runtime can be built using the GC flag.
-This flag supports both DUB and non-DUB projects, but it also requires [OpenD](https://opendlang.org/index.html) and the latest version of Emscripten.
-Note that exceptions are not supported and that some DUB related limitations apply.
+This flag also requires [OpenD](https://opendlang.org/index.html) and the latest version of Emscripten.
+Note that exceptions are not supported and that some DUB related limitations apply like having to include all dependencies inside the source folder.
+Before using the GC flag, make sure `opend install xpack-emscripten` has been run at least once.
 
 #### Using the flag with DUB
 

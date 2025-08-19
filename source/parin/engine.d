@@ -5,6 +5,10 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: Think about the wasm callbacks again.
+//  The structure of them could be better.
+//  I just made some changes to make the mouse input work. Only mouse stuff works. No touch stuff.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 pragma(lib, "raylib");
@@ -25,11 +29,52 @@ alias EngineFlags           = ushort;
 
 @trusted:
 
+nothrow @nogc
+void _setEngineMouseBuffer(Vec2 value) {
+    auto info = &_engineState.viewportInfoBuffer;
+    if (isResolutionLocked) {
+        _engineState.mouseBuffer = Vec2(
+            floor((value.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
+            floor((value.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+        );
+    } else {
+        _engineState.mouseBuffer = value;
+    }
+}
+
+nothrow @nogc
+void _engineMouseCallback() {
+    version (WebAssembly) {
+        // Emscripten will do it for us. Check the `_engineMouseCallbackWeb` function.
+    } else {
+        _setEngineMouseBuffer(rl.GetTouchPosition(0).toPr());
+    }
+}
+
+nothrow @nogc
+void _engineWasdCallback() {
+    with (Keyboard) {
+        _engineState.wasdBuffer = Vec2(
+            (d.isDown || right.isDown) - (a.isDown || left.isDown),
+            (s.isDown || down.isDown) - (w.isDown || up.isDown),
+        );
+        _engineState.wasdPressedBuffer = Vec2(
+            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
+            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+        );
+        _engineState.wasdReleasedBuffer = Vec2(
+            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
+            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+        );
+    }
+}
+
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 extern(C)
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     enum monogramPath = "monogram.png";
+    enum targetHtmlElementId = "canvas";
 
     if (rl.IsWindowReady) return;
     // Raylib stuff.
@@ -62,6 +107,10 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
     _engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
     rl.UnloadImage(monogramImage);
+
+    version (WebAssembly) {
+        rl.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, false, &_engineMouseCallbackWeb);
+    }
 }
 
 /// Opens a window with the specified size and title, using C strings.
@@ -103,29 +152,8 @@ bool updateWindowLoop() {
             info.minRatio = 1.0f;
             info.area = Rect(info.minSize);
         }
-        with (Keyboard) {
-            if (isResolutionLocked) {
-                auto rlMouse = rl.GetTouchPosition(0);
-                _engineState.mouseBuffer = Vec2(
-                    floor((rlMouse.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
-                    floor((rlMouse.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
-                );
-            } else {
-                _engineState.mouseBuffer = rl.GetTouchPosition(0).toPr();
-            }
-            _engineState.wasdBuffer = Vec2(
-                (d.isDown || right.isDown) - (a.isDown || left.isDown),
-                (s.isDown || down.isDown) - (w.isDown || up.isDown),
-            );
-            _engineState.wasdPressedBuffer = Vec2(
-                (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
-                (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
-            );
-            _engineState.wasdReleasedBuffer = Vec2(
-                (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
-                (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
-            );
-        }
+        _engineMouseCallback();
+        _engineWasdCallback();
         foreach (ref sound; _engineState.sounds.items) {
             updateSoundX(sound);
         }
@@ -212,6 +240,19 @@ version (WebAssembly) {
     extern(C)
     void updateWindowLoopWeb() {
         if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
+    }
+
+    /// Use by Emscripten to update the mouse.
+    /// You should avoid calling this function manually.
+    extern(C) nothrow @nogc
+    bool _engineMouseCallbackWeb(int eventType, const(rl.EmscriptenMouseEvent)* mouseEvent, void* userData) {
+        switch (eventType) {
+            case rl.EMSCRIPTEN_EVENT_MOUSEMOVE:
+                _setEngineMouseBuffer(Vec2(mouseEvent.clientX, mouseEvent.clientY));
+                return true;
+            default:
+                return false;
+        }
     }
 }
 
