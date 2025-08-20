@@ -5,8 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `rl` module provides access to the raylib library.
-module parin.rl;
+/// The `c` module provides a C API for parin.
+module parin.c;
 
-public import parin.rl.raylib;
-public import parin.rl.rlgl;
+public import parin.c.engine;

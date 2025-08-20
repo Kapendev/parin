@@ -89,6 +89,7 @@ For more details, check the [tour page](TOUR.md).
 ## Ideas
 
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
+You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except ECS.
 
 ## Frequently Asked Questions
@@ -196,6 +197,10 @@ Or call `setAssetsPath(assetsPath.pathDirName)` to load assets from the executab
 
 Asset hot reloading is not supported out of the box.
 The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
+
+### Does Parin have other UI libraries?
+
+* [microui-d](https://github.com/Kapendev/microui-d/blob/main/examples/_02_parin.d)
 
 ### Are the Parin assets free to use?
 

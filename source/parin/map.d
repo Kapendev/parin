@@ -1,5 +1,5 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
@@ -367,16 +367,16 @@ struct TileMap {
 }
 
 @nogc {
-    void drawTileX(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
+    void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
         if (!tile.hasId || !tile.hasSize) return;
-        drawTextureAreaX(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
+        drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
     }
 
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
-        drawTileX(texture.getOr(), tile, options);
+        drawTile(texture.getOr(), tile, options);
     }
 
-    void drawTileMapX(Texture texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+    void drawTileMap(Texture texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
         if (!map.hasSize) return;
         if (texture.isEmpty) {
             if (isEmptyTextureVisible) {
@@ -407,7 +407,7 @@ struct TileMap {
                     if (id < 0) continue;
                     textureArea.position.x = (id % textureColCount) * map.tileWidth;
                     textureArea.position.y = (id / textureColCount) * map.tileHeight;
-                    drawTextureAreaX(
+                    drawTextureArea(
                         texture,
                         textureArea,
                         map.position + Vec2(col * map.tileWidth, row * map.tileHeight),
@@ -419,10 +419,10 @@ struct TileMap {
     }
 
     void drawTileMap(TextureId texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-        drawTileMapX(texture.getOr(), map, viewArea, options);
+        drawTileMap(texture.getOr(), map, viewArea, options);
     }
 
     void drawTileMap(TextureId texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-        drawTileMapX(texture.getOr(), map, camera.area, options);
+        drawTileMap(texture.getOr(), map, camera.area, options);
     }
 }

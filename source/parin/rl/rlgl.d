@@ -1,5 +1,5 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
@@ -8,7 +8,7 @@
 /// The `rlgl` module provides access to the rlgl.h functions.
 module parin.rl.rlgl;
 
-@nogc nothrow extern(C):
+nothrow @nogc extern(C):
 
 enum RLGL_VERSION = "4.5";
 

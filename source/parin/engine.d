@@ -1,517 +1,33 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Think about the wasm callbacks again.
-//  The structure of them could be better.
-//  I just made some changes to make the mouse input work. Only mouse stuff works. No touch stuff.
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
-pragma(lib, "raylib");
 
 import rl = parin.rl;
 import joka.ascii;
 import joka.io;
 import joka.memory;
+
 public import joka.containers;
 public import joka.math;
 public import joka.types;
 
-extern(C) __gshared EngineState* _engineState;
+version (WebAssembly) {
+    import em = parin.em;
+}
 
-alias EngineUpdateFunc      = extern(C) bool function(float dt);
-alias EngineReadyFinishFunc = extern(C) void function();
+__gshared EngineState* _engineState;
+
+alias EngineUpdateFunc      = bool function(float dt);
+alias EngineReadyFinishFunc = void function();
 alias EngineFlags           = ushort;
 
 @trusted:
-
-nothrow @nogc
-void _setEngineMouseBuffer(Vec2 value) {
-    auto info = &_engineState.viewportInfoBuffer;
-    if (isResolutionLocked) {
-        _engineState.mouseBuffer = Vec2(
-            floor((value.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
-            floor((value.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
-        );
-    } else {
-        _engineState.mouseBuffer = value;
-    }
-}
-
-nothrow @nogc
-void _engineMouseCallback() {
-    version (WebAssembly) {
-        // Emscripten will do it for us. Check the `_engineMouseCallbackWeb` function.
-    } else {
-        _setEngineMouseBuffer(rl.GetTouchPosition(0).toPr());
-    }
-}
-
-nothrow @nogc
-void _engineWasdCallback() {
-    with (Keyboard) {
-        _engineState.wasdBuffer = Vec2(
-            (d.isDown || right.isDown) - (a.isDown || left.isDown),
-            (s.isDown || down.isDown) - (w.isDown || up.isDown),
-        );
-        _engineState.wasdPressedBuffer = Vec2(
-            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
-            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
-        );
-        _engineState.wasdReleasedBuffer = Vec2(
-            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
-            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
-        );
-    }
-}
-
-/// Opens a window with the specified size and title.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
-    enum monogramPath = "monogram.png";
-    enum targetHtmlElementId = "canvas";
-
-    if (rl.IsWindowReady) return;
-    // Raylib stuff.
-    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
-    rl.SetTraceLogLevel(rl.LOG_ERROR);
-    rl.InitWindow(width, height, title.toCStr().getOr());
-    rl.InitAudioDevice();
-    rl.SetExitKey(rl.KEY_NULL);
-    rl.SetTargetFPS(60);
-    rl.SetWindowMinSize(240, 135);
-    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-    // Engine stuff.
-    _engineState = jokaMake!EngineState();
-    _engineState.fullscreenState.previousWindowWidth = width;
-    _engineState.fullscreenState.previousWindowHeight = height;
-    _engineState.viewport.data.color = gray;
-    if (args.length) {
-        foreach (arg; args) _engineState.envArgsBuffer.append(arg);
-        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
-    }
-    _engineState.loadTextBuffer.reserve(8192);
-    _engineState.saveTextBuffer.reserve(8192);
-    _engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
-    _engineState.textures.reserve(defaultEngineTexturesCapacity);
-    _engineState.sounds.reserve(defaultEngineSoundsCapacity);
-    _engineState.fonts.reserve(defaultEngineFontsCapacity);
-    // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import(monogramPath);
-    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
-    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
-    _engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
-    rl.UnloadImage(monogramImage);
-
-    version (WebAssembly) {
-        rl.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, false, &_engineMouseCallbackWeb);
-    }
-}
-
-/// Opens a window with the specified size and title, using C strings.
-/// You should avoid calling this function manually.
-extern(C)
-void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
-    openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
-    if (_engineState.envArgsBuffer.length) _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
-}
-
-/// Use by the `updateWindow` function.
-/// You should avoid calling this function manually.
-extern(C)
-bool updateWindowLoop() {
-    // Update buffers and resources.
-    {
-        auto info = &_engineState.viewportInfoBuffer;
-        if (isResolutionLocked) {
-            info.minSize = resolution;
-            info.maxSize = windowSize;
-            auto ratio = info.maxSize / info.minSize;
-            info.minRatio = min(ratio.x, ratio.y);
-            if (isPixelPerfect) {
-                auto roundMinRatio = info.minRatio.round();
-                auto floorMinRation = info.minRatio.floor();
-                info.minRatio = info.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
-            }
-            auto targetSize = info.minSize * Vec2(info.minRatio);
-            auto targetPosition = info.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-            info.area = Rect(
-                targetPosition.floor(),
-                ratio.x == info.minRatio ? targetSize.x : floor(targetSize.x),
-                ratio.y == info.minRatio ? targetSize.y : floor(targetSize.y),
-            );
-        } else {
-            info.minSize = windowSize;
-            info.maxSize = info.minSize;
-            info.minRatio = 1.0f;
-            info.area = Rect(info.minSize);
-        }
-        _engineMouseCallback();
-        _engineWasdCallback();
-        foreach (ref sound; _engineState.sounds.items) {
-            updateSoundX(sound);
-        }
-        if (rl.IsFileDropped) {
-            auto list = rl.LoadDroppedFiles();
-            foreach (i; 0 .. list.count) {
-                _engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
-            }
-        }
-    }
-
-    // Begin drawing.
-    if (isResolutionLocked) {
-        rl.BeginTextureMode(_engineState.viewport.data.toRl());
-    } else {
-        rl.BeginDrawing();
-    }
-    rl.ClearBackground(_engineState.viewport.data.color.toRl());
-    // Update the game.
-    auto result = _engineState.updateFunc(deltaTime);
-    _engineState.tickCount = (_engineState.tickCount + 1) % _engineState.tickCount.max;
-    if (rl.IsFileDropped) {
-        // NOTE: LoadDroppedFiles just returns a global variable.
-        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-        _engineState.droppedFilePathsBuffer.clear();
-    }
-    // End drawing.
-    if (isResolutionLocked) {
-        auto info = engineViewportInfo;
-        rl.EndTextureMode();
-        rl.BeginDrawing();
-        rl.ClearBackground(_engineState.borderColor.toRl());
-        rl.DrawTexturePro(
-            _engineState.viewport.data.toRl().texture,
-            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
-            info.area.toRl(),
-            rl.Vector2(0.0f, 0.0f),
-            0.0f,
-            rl.Color(255, 255, 255, 255),
-        );
-        rl.EndDrawing();
-    } else {
-        rl.EndDrawing();
-    }
-
-    // Viewport code.
-    if (_engineState.viewport.isChanging) {
-        if (_engineState.viewport.isLocking) {
-            _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
-        } else {
-            auto temp = _engineState.viewport.data.color;
-            _engineState.viewport.data.free();
-            _engineState.viewport.data.color = temp;
-        }
-        _engineState.viewport.isChanging = false;
-    }
-    // Fullscreen code.
-    if (_engineState.fullscreenState.isChanging) {
-        _engineState.fullscreenState.changeTime += deltaTime;
-        if (_engineState.fullscreenState.changeTime >= _engineState.fullscreenState.changeDuration) {
-            if (rl.IsWindowFullscreen()) {
-                rl.ToggleFullscreen();
-                // Size is first because raylib likes that. I will make raylib happy.
-                rl.SetWindowSize(
-                    _engineState.fullscreenState.previousWindowWidth,
-                    _engineState.fullscreenState.previousWindowHeight,
-                );
-                rl.SetWindowPosition(
-                    cast(int) (screenWidth * 0.5f - _engineState.fullscreenState.previousWindowWidth * 0.5f),
-                    cast(int) (screenHeight * 0.5f - _engineState.fullscreenState.previousWindowHeight * 0.5f),
-                );
-            } else {
-                rl.ToggleFullscreen();
-            }
-            _engineState.fullscreenState.isChanging = false;
-        }
-    }
-    return result;
-}
-
-version (WebAssembly) {
-    /// Use by the `updateWindow` function.
-    /// You should avoid calling this function manually.
-    extern(C)
-    void updateWindowLoopWeb() {
-        if (updateWindowLoop()) rl.emscripten_cancel_main_loop();
-    }
-
-    /// Use by Emscripten to update the mouse.
-    /// You should avoid calling this function manually.
-    extern(C) nothrow @nogc
-    bool _engineMouseCallbackWeb(int eventType, const(rl.EmscriptenMouseEvent)* mouseEvent, void* userData) {
-        switch (eventType) {
-            case rl.EMSCRIPTEN_EVENT_MOUSEMOVE:
-                _setEngineMouseBuffer(Vec2(mouseEvent.clientX, mouseEvent.clientY));
-                return true;
-            default:
-                return false;
-        }
-    }
-}
-
-/// Updates the window every frame with the given function.
-/// This function will return when the given function returns true.
-/// You should avoid calling this function manually.
-extern(C)
-void updateWindow(EngineUpdateFunc updateFunc) {
-    // Maybe bad idea, but makes life of no-attribute people easier.
-    _engineState.updateFunc = updateFunc;
-    _engineState.flags |= EngineFlag.isUpdating;
-    version (WebAssembly) {
-        rl.emscripten_set_main_loop(&updateWindowLoopWeb, 0, true);
-    } else {
-        while (true) if (rl.WindowShouldClose() || updateWindowLoop()) break;
-    }
-    _engineState.flags &= ~EngineFlag.isUpdating;
-}
-
-/// Closes the window.
-/// You should avoid calling this function manually.
-extern(C)
-void closeWindow() {
-    if (!rl.IsWindowReady()) return;
-    // NOTE: This leaks. Someone call the memory police!!!
-    _engineState = null;
-    rl.CloseAudioDevice();
-    rl.CloseWindow();
-}
-
-/// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
-mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
-    version (D_BetterC) {
-        extern(C)
-        int main(int argc, const(char)** argv) {
-            openWindowC(width, height, argc, argv, title);
-            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(EngineUpdateFunc) &updateFunc);
-            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-            closeWindow();
-            return 0;
-        }
-    } else {
-        int main(immutable(char)[][] args) {
-            openWindow(width, height, args, title);
-            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-            static if (__traits(isStaticFunction, updateFunc)) updateWindow(cast(EngineUpdateFunc) &updateFunc);
-            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-            closeWindow();
-            return 0;
-        }
-    }
-}
-
-@trusted nothrow:
-
-/// Converts a texture into a managed engine resource.
-/// The texture will be freed when the resource is freed.
-extern(C)
-TextureId toTextureId(Texture from) {
-    if (from.isEmpty) return TextureId();
-    auto id = TextureId(_engineState.textures.append(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts a font into a managed engine resource.
-/// The font will be freed when the resource is freed.
-extern(C)
-FontId toFontId(Font from) {
-    if (from.isEmpty) return FontId();
-    auto id = FontId(_engineState.fonts.append(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts a sound into a managed engine resource.
-/// The sound will be freed when the resource is freed.
-extern(C)
-SoundId toSoundId(Sound from) {
-    if (from.isEmpty) return SoundId();
-    auto id = SoundId(_engineState.sounds.append(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts an ASCII bitmap font texture into a font.
-/// The texture will be freed when the font is freed.
-// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
-// NOTE: It uses the raylib allocator.
-extern(C)
-Font toAsciiFont(Texture from, int tileWidth, int tileHeight) {
-    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
-    auto result = Font();
-    result.lineSpacing = tileHeight;
-    auto rowCount = from.height / tileHeight;
-    auto colCount = from.width / tileWidth;
-    auto maxCount = rowCount * colCount;
-    result.data.baseSize = tileHeight;
-    result.data.glyphCount = maxCount;
-    result.data.glyphPadding = 0;
-    result.data.texture = from.data;
-    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.recs[i].x = (i % colCount) * tileWidth;
-        result.data.recs[i].y = (i / colCount) * tileHeight;
-        result.data.recs[i].width = tileWidth;
-        result.data.recs[i].height = tileHeight;
-    }
-    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.glyphs[i] = rl.GlyphInfo();
-        result.data.glyphs[i].value = i + 32;
-    }
-    return result;
-}
-
-/// Loads a text file from the assets folder and saves the content into the given buffer.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return readTextIntoBuffer(targetPath, buffer);
-}
-
-/// Loads a text file from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Maybe!LStr loadRawText(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return readText(targetPath);
-}
-
-/// Loads a text file from the assets folder.
-/// The resource remains valid until this function is called again.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Maybe!IStr loadTempText(IStr path) {
-    auto fault = loadRawTextIntoBuffer(path, _engineState.loadTextBuffer);
-    return Maybe!IStr(_engineState.loadTextBuffer.items, fault);
-}
-
-/// Loads a texture file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Maybe!Texture loadRawTexture(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toPr();
-    value.setFilter(_engineState.defaultFilter);
-    value.setWrap(_engineState.defaultWrap);
-    return Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
-}
-
-/// Loads a texture file (PNG) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-TextureId loadTexture(IStr path) {
-    auto resource = loadRawTexture(path);
-    if (resource.isNone) return TextureId();
-    return resource.get().toTextureId();
-}
-
-/// Loads a font file (TTF, OTF) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toPr();
-    if (value.data.texture.id == rl.GetFontDefault().texture.id) {
-        value = Font();
-    }
-    if (runeSpacing >= 0) value.runeSpacing = runeSpacing;
-    else value.runeSpacing = 1;
-    if (lineSpacing >= 0) value.lineSpacing = lineSpacing;
-    else value.lineSpacing = value.data.baseSize;
-    value.setFilter(_engineState.defaultFilter);
-    value.setWrap(_engineState.defaultWrap);
-    return Maybe!Font(value, value.isEmpty.toFault(Fault.cantFind));
-}
-
-/// Loads a font file (TTF, OTF) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
-    auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
-    if (resource.isNone) return FontId();
-    return resource.get().toFontId();
-}
-
-/// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-extern(C)
-Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    auto value = loadRawTexture(path).getOr();
-    return Maybe!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
-}
-
-/// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-extern(C)
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight);
-    if (resource.isNone) return FontId();
-    return resource.get().toFontId();
-}
-
-/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = Sound();
-    if (path.endsWith(".wav")) {
-        value.data = rl.LoadSound(targetPath.toCStr().getOr());
-    } else {
-        value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
-    }
-    if (value.isEmpty) {
-        return Maybe!Sound();
-    } else {
-        value.setVolume(volume);
-        value.setPitch(pitch, true);
-        value.canRepeat = canRepeat;
-        value.pitchVariance = pitchVariance;
-        return Maybe!Sound(value);
-    }
-}
-
-/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
-    if (resource.isNone) return SoundId();
-    return resource.get().toSoundId();
-}
-
-/// Saves a text file to the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-extern(C)
-Fault saveText(IStr path, IStr text) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return writeText(targetPath, text);
-}
-
-/// Sets the path of the assets folder.
-extern(C)
-void setAssetsPath(IStr path) {
-    _engineState.assetsPath.clear();
-    _engineState.assetsPath.append(path);
-}
-
-@trusted nothrow @nogc:
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
 enum defaultEngineTexturesCapacity     = 128;
@@ -1517,7 +1033,414 @@ struct EngineState {
     LStr assetsPath;
 }
 
-pragma(inline, true) @safe nothrow @nogc {
+/// Opens a window with the specified size and title.
+/// You should avoid calling this function manually.
+void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
+    enum monogramPath = "monogram.png";
+    enum targetHtmlElementId = "canvas";
+
+    if (rl.IsWindowReady) return;
+    // Raylib stuff.
+    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
+    rl.SetTraceLogLevel(rl.LOG_ERROR);
+    rl.InitWindow(width, height, title.toCStr().getOr());
+    rl.InitAudioDevice();
+    rl.SetExitKey(rl.KEY_NULL);
+    rl.SetTargetFPS(60);
+    rl.SetWindowMinSize(240, 135);
+    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+    // Engine stuff.
+    _engineState = jokaMake!EngineState();
+    _engineState.fullscreenState.previousWindowWidth = width;
+    _engineState.fullscreenState.previousWindowHeight = height;
+    _engineState.viewport.data.color = gray;
+    if (args.length) {
+        foreach (arg; args) _engineState.envArgsBuffer.append(arg);
+        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+    }
+    _engineState.loadTextBuffer.reserve(8192);
+    _engineState.saveTextBuffer.reserve(8192);
+    _engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
+    _engineState.textures.reserve(defaultEngineTexturesCapacity);
+    _engineState.sounds.reserve(defaultEngineSoundsCapacity);
+    _engineState.fonts.reserve(defaultEngineFontsCapacity);
+    // Load debug font.
+    auto monogramData = cast(const(ubyte)[]) import(monogramPath);
+    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
+    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
+    _engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
+    rl.UnloadImage(monogramImage);
+
+    version (WebAssembly) {
+        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, false, &_engineMouseCallbackWeb);
+    }
+}
+
+/// Opens a window with the specified size and title, using C strings.
+/// You should avoid calling this function manually.
+void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
+    _openWindow(width, height, null, title.cStrToStr());
+    foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
+    if (_engineState.envArgsBuffer.length) _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
+}
+
+/// Use by the `updateWindow` function.
+/// You should avoid calling this function manually.
+bool _updateWindowLoop() {
+    { // Update buffers and resources.
+        auto info = &_engineState.viewportInfoBuffer;
+        if (isResolutionLocked) {
+            info.minSize = resolution;
+            info.maxSize = windowSize;
+            auto ratio = info.maxSize / info.minSize;
+            info.minRatio = min(ratio.x, ratio.y);
+            if (isPixelPerfect) {
+                auto roundMinRatio = info.minRatio.round();
+                auto floorMinRation = info.minRatio.floor();
+                info.minRatio = info.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
+            }
+            auto targetSize = info.minSize * Vec2(info.minRatio);
+            auto targetPosition = info.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+            info.area = Rect(
+                targetPosition.floor(),
+                ratio.x == info.minRatio ? targetSize.x : floor(targetSize.x),
+                ratio.y == info.minRatio ? targetSize.y : floor(targetSize.y),
+            );
+        } else {
+            info.minSize = windowSize;
+            info.maxSize = info.minSize;
+            info.minRatio = 1.0f;
+            info.area = Rect(info.minSize);
+        }
+        _engineMouseCallback();
+        _engineWasdCallback();
+        foreach (ref sound; _engineState.sounds.items) {
+            updateSound(sound);
+        }
+        if (rl.IsFileDropped) {
+            auto list = rl.LoadDroppedFiles();
+            foreach (i; 0 .. list.count) {
+                _engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
+            }
+        }
+    }
+
+    // Begin drawing.
+    if (isResolutionLocked) {
+        rl.BeginTextureMode(_engineState.viewport.data.toRl());
+    } else {
+        rl.BeginDrawing();
+    }
+    rl.ClearBackground(_engineState.viewport.data.color.toRl());
+    // Update the game.
+    auto result = _engineState.updateFunc(deltaTime);
+    _engineState.tickCount = (_engineState.tickCount + 1) % _engineState.tickCount.max;
+    if (rl.IsFileDropped) {
+        // NOTE: LoadDroppedFiles just returns a global variable.
+        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
+        _engineState.droppedFilePathsBuffer.clear();
+    }
+    // End drawing.
+    if (isResolutionLocked) {
+        auto info = engineViewportInfo;
+        rl.EndTextureMode();
+        rl.BeginDrawing();
+        rl.ClearBackground(_engineState.borderColor.toRl());
+        rl.DrawTexturePro(
+            _engineState.viewport.data.toRl().texture,
+            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
+            info.area.toRl(),
+            rl.Vector2(0.0f, 0.0f),
+            0.0f,
+            rl.Color(255, 255, 255, 255),
+        );
+        rl.EndDrawing();
+    } else {
+        rl.EndDrawing();
+    }
+
+    // Viewport code.
+    if (_engineState.viewport.isChanging) {
+        if (_engineState.viewport.isLocking) {
+            _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
+        } else {
+            auto temp = _engineState.viewport.data.color;
+            _engineState.viewport.data.free();
+            _engineState.viewport.data.color = temp;
+        }
+        _engineState.viewport.isChanging = false;
+    }
+    // Fullscreen code.
+    if (_engineState.fullscreenState.isChanging) {
+        _engineState.fullscreenState.changeTime += deltaTime;
+        if (_engineState.fullscreenState.changeTime >= _engineState.fullscreenState.changeDuration) {
+            if (rl.IsWindowFullscreen()) {
+                rl.ToggleFullscreen();
+                // Size is first because raylib likes that. I will make raylib happy.
+                rl.SetWindowSize(
+                    _engineState.fullscreenState.previousWindowWidth,
+                    _engineState.fullscreenState.previousWindowHeight,
+                );
+                rl.SetWindowPosition(
+                    cast(int) (screenWidth * 0.5f - _engineState.fullscreenState.previousWindowWidth * 0.5f),
+                    cast(int) (screenHeight * 0.5f - _engineState.fullscreenState.previousWindowHeight * 0.5f),
+                );
+            } else {
+                rl.ToggleFullscreen();
+            }
+            _engineState.fullscreenState.isChanging = false;
+        }
+    }
+    return result;
+}
+
+version (WebAssembly) {
+    /// Use by the `updateWindow` function.
+    /// You should avoid calling this function manually.
+    void _updateWindowLoopWeb() {
+        if (_updateWindowLoop()) em.emscripten_cancel_main_loop();
+    }
+}
+
+/// Updates the window every frame with the given function.
+/// This function will return when the given function returns true.
+/// You should avoid calling this function manually.
+void _updateWindow(EngineUpdateFunc updateFunc) {
+    // Maybe bad idea, but makes life of no-attribute people easier.
+    _engineState.updateFunc = updateFunc;
+    _engineState.flags |= EngineFlag.isUpdating;
+    version (WebAssembly) {
+        em.emscripten_set_main_loop(&_updateWindowLoopWeb, 0, true);
+    } else {
+        while (true) if (rl.WindowShouldClose() || _updateWindowLoop()) break;
+    }
+    _engineState.flags &= ~EngineFlag.isUpdating;
+}
+
+/// Closes the window.
+/// You should avoid calling this function manually.
+void _closeWindow() {
+    if (!rl.IsWindowReady()) return;
+    // NOTE: This leaks. Someone call the memory police!!!
+    _engineState = null;
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
+}
+
+/// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
+mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
+    version (D_BetterC) {
+        extern(C)
+        int main(int argc, const(char)** argv) {
+            _openWindowC(width, height, argc, argv, title);
+            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+            static if (__traits(isStaticFunction, updateFunc)) _updateWindow(&updateFunc);
+            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
+            _closeWindow();
+            return 0;
+        }
+    } else {
+        int main(immutable(char)[][] args) {
+            _openWindow(width, height, args, title);
+            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+            static if (__traits(isStaticFunction, updateFunc)) _updateWindow(&updateFunc);
+            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
+            _closeWindow();
+            return 0;
+        }
+    }
+}
+
+@trusted nothrow:
+
+/// Converts a texture into a managed engine resource.
+/// The texture will be freed when the resource is freed.
+TextureId toTextureId(Texture from) {
+    if (from.isEmpty) return TextureId();
+    auto id = TextureId(_engineState.textures.append(from));
+    id.data.value += 1;
+    return id;
+}
+
+/// Converts a font into a managed engine resource.
+/// The font will be freed when the resource is freed.
+FontId toFontId(Font from) {
+    if (from.isEmpty) return FontId();
+    auto id = FontId(_engineState.fonts.append(from));
+    id.data.value += 1;
+    return id;
+}
+
+/// Converts a sound into a managed engine resource.
+/// The sound will be freed when the resource is freed.
+SoundId toSoundId(Sound from) {
+    if (from.isEmpty) return SoundId();
+    auto id = SoundId(_engineState.sounds.append(from));
+    id.data.value += 1;
+    return id;
+}
+
+/// Converts an ASCII bitmap font texture into a font.
+/// The texture will be freed when the font is freed.
+// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
+// NOTE: It uses the raylib allocator.
+Font toAsciiFont(Texture from, int tileWidth, int tileHeight) {
+    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
+    auto result = Font();
+    result.lineSpacing = tileHeight;
+    auto rowCount = from.height / tileHeight;
+    auto colCount = from.width / tileWidth;
+    auto maxCount = rowCount * colCount;
+    result.data.baseSize = tileHeight;
+    result.data.glyphCount = maxCount;
+    result.data.glyphPadding = 0;
+    result.data.texture = from.data;
+    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
+    foreach (i; 0 .. maxCount) {
+        result.data.recs[i].x = (i % colCount) * tileWidth;
+        result.data.recs[i].y = (i / colCount) * tileHeight;
+        result.data.recs[i].width = tileWidth;
+        result.data.recs[i].height = tileHeight;
+    }
+    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
+    foreach (i; 0 .. maxCount) {
+        result.data.glyphs[i] = rl.GlyphInfo();
+        result.data.glyphs[i].value = i + 32;
+    }
+    return result;
+}
+
+/// Loads a text file from the assets folder and saves the content into the given buffer.
+/// Supports both forward slashes and backslashes in file paths.
+Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    return readTextIntoBuffer(targetPath, buffer);
+}
+
+/// Loads a text file from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+Maybe!LStr loadRawText(IStr path) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    return readText(targetPath);
+}
+
+/// Loads a text file from the assets folder.
+/// The resource remains valid until this function is called again.
+/// Supports both forward slashes and backslashes in file paths.
+Maybe!IStr loadTempText(IStr path) {
+    auto fault = loadRawTextIntoBuffer(path, _engineState.loadTextBuffer);
+    return Maybe!IStr(_engineState.loadTextBuffer.items, fault);
+}
+
+/// Loads a texture file (PNG) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+Maybe!Texture loadRawTexture(IStr path) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toPr();
+    value.setFilter(_engineState.defaultFilter);
+    value.setWrap(_engineState.defaultWrap);
+    return Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads a texture file (PNG) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+TextureId loadTexture(IStr path) {
+    auto resource = loadRawTexture(path);
+    if (resource.isNone) return TextureId();
+    return resource.get().toTextureId();
+}
+
+/// Loads a font file (TTF, OTF) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toPr();
+    if (value.data.texture.id == rl.GetFontDefault().texture.id) {
+        value = Font();
+    }
+    if (runeSpacing >= 0) value.runeSpacing = runeSpacing;
+    else value.runeSpacing = 1;
+    if (lineSpacing >= 0) value.lineSpacing = lineSpacing;
+    else value.lineSpacing = value.data.baseSize;
+    value.setFilter(_engineState.defaultFilter);
+    value.setWrap(_engineState.defaultWrap);
+    return Maybe!Font(value, value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads a font file (TTF, OTF) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
+    auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
+    if (resource.isNone) return FontId();
+    return resource.get().toFontId();
+}
+
+/// Loads an ASCII bitmap font file (PNG) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
+    auto value = loadRawTexture(path).getOr();
+    return Maybe!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+}
+
+/// Loads an ASCII bitmap font file (PNG) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
+    auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight);
+    if (resource.isNone) return FontId();
+    return resource.get().toFontId();
+}
+
+/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    auto value = Sound();
+    if (path.endsWith(".wav")) {
+        value.data = rl.LoadSound(targetPath.toCStr().getOr());
+    } else {
+        value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
+    }
+    if (value.isEmpty) {
+        return Maybe!Sound();
+    } else {
+        value.setVolume(volume);
+        value.setPitch(pitch, true);
+        value.canRepeat = canRepeat;
+        value.pitchVariance = pitchVariance;
+        return Maybe!Sound(value);
+    }
+}
+
+/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
+/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
+/// Supports both forward slashes and backslashes in file paths.
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
+    auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
+    if (resource.isNone) return SoundId();
+    return resource.get().toSoundId();
+}
+
+/// Saves a text file to the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+Fault saveText(IStr path, IStr text) {
+    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
+    return writeText(targetPath, text);
+}
+
+/// Sets the path of the assets folder.
+void setAssetsPath(IStr path) {
+    _engineState.assetsPath.clear();
+    _engineState.assetsPath.append(path);
+}
+
+@trusted nothrow @nogc:
+
+pragma(inline, true) {
     Rgba toPr(rl.Color from) {
         return Rgba(from.r, from.g, from.b, from.a);
     }
@@ -1588,58 +1511,66 @@ pragma(inline, true) @safe nothrow @nogc {
     }
 }
 
-/// C wrapper over the method with the same name.
-extern(C)
-ref Texture getTextureData(TextureId id) {
-    return id.get();
+void _setEngineMouseBuffer(Vec2 value) {
+    auto info = &_engineState.viewportInfoBuffer;
+    if (isResolutionLocked) {
+        _engineState.mouseBuffer = Vec2(
+            floor((value.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
+            floor((value.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+        );
+    } else {
+        _engineState.mouseBuffer = value;
+    }
 }
 
-/// C wrapper over the method with the same name.
-extern(C)
-ref Font getFontData(FontId id) {
-    return id.get();
+void _engineMouseCallback() {
+    version (WebAssembly) {
+        // Emscripten will do it for us. Check the `_engineMouseCallbackWeb` function.
+    } else {
+        _setEngineMouseBuffer(rl.GetTouchPosition(0).toPr());
+    }
 }
 
-/// C wrapper over the method with the same name.
-extern(C)
-ref Sound getSoundData(SoundId id) {
-    return id.get();
+version (WebAssembly) {
+    /// Use by Emscripten to update the mouse.
+    /// You should avoid calling this function manually.
+    nothrow @nogc extern(C):
+    bool _engineMouseCallbackWeb(int eventType, const(em.EmscriptenMouseEvent)* mouseEvent, void* userData) {
+        switch (eventType) {
+            case em.EMSCRIPTEN_EVENT_MOUSEMOVE:
+                _setEngineMouseBuffer(Vec2(mouseEvent.clientX, mouseEvent.clientY));
+                return true;
+            default:
+                return false;
+        }
+    }
 }
 
-/// C wrapper over the method with the same name.
-extern(C)
-void attachCamera(ref Camera camera) {
-    camera.attach();
-}
-
-/// C wrapper over the method with the same name.
-extern(C)
-void detachCamera(ref Camera camera) {
-    camera.detach();
-}
-
-/// C wrapper over the method with the same name.
-extern(C)
-void attachViewport(ref Viewport viewport) {
-    viewport.attach();
-}
-
-/// C wrapper over the method with the same name.
-extern(C)
-void detachViewport(ref Viewport viewport) {
-    viewport.detach();
+void _engineWasdCallback() {
+    with (Keyboard) {
+        _engineState.wasdBuffer = Vec2(
+            (d.isDown || right.isDown) - (a.isDown || left.isDown),
+            (s.isDown || down.isDown) - (w.isDown || up.isDown),
+        );
+        _engineState.wasdPressedBuffer = Vec2(
+            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
+            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+        );
+        _engineState.wasdReleasedBuffer = Vec2(
+            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
+            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+        );
+    }
 }
 
 /// Returns the opposite flip value.
 /// The opposite of every flip value except none is none.
 /// The fallback value is returned if the flip value is none.
-extern(C)
 Flip oppositeFlip(Flip flip, Flip fallback) {
     return flip == fallback ? Flip.none : fallback;
 }
 
 /// Computes the parts of a 9-slice.
-extern(C)
 SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
     SliceParts result;
     if (!source.hasSize || !target.hasSize) return result;
@@ -1824,13 +1755,11 @@ void setIsUsingAssetsPath(bool value) {
 }
 
 /// Returns true if the drawing is snapped to pixel coordinates.
-extern(C)
 bool isPixelSnapped() {
     return cast(bool) (_engineState.flags & EngineFlag.isPixelSnapped);
 }
 
 /// Sets whether drawing should be snapped to pixel coordinates.
-extern(C)
 void setIsPixelSnapped(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isPixelSnapped
@@ -1838,13 +1767,11 @@ void setIsPixelSnapped(bool value) {
 }
 
 /// Returns true if the drawing is done in a pixel perfect way.
-extern(C)
 bool isPixelPerfect() {
     return cast(bool) (_engineState.flags & EngineFlag.isPixelPerfect);
 }
 
 /// Sets whether drawing should be done in a pixel-perfect way.
-extern(C)
 void setIsPixelPerfect(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isPixelPerfect
@@ -1852,13 +1779,11 @@ void setIsPixelPerfect(bool value) {
 }
 
 /// Returns true if drawing is done when an empty texture is used.
-extern(C)
 bool isEmptyTextureVisible() {
     return cast(bool) (_engineState.flags & EngineFlag.isEmptyTextureVisible);
 }
 
 /// Sets whether drawing should be done when an empty texture is used.
-extern(C)
 void setIsEmptyTextureVisible(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isEmptyTextureVisible
@@ -1866,13 +1791,11 @@ void setIsEmptyTextureVisible(bool value) {
 }
 
 /// Returns true if drawing is done when an empty font is used.
-extern(C)
 bool isEmptyFontVisible() {
     return cast(bool) (_engineState.flags & EngineFlag.isEmptyFontVisible);
 }
 
 /// Sets whether drawing should be done when an empty font is used.
-extern(C)
 void setIsEmptyFontVisible(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isEmptyFontVisible
@@ -1966,7 +1889,6 @@ Fault setWindowIconFromFiles(IStr path) {
 }
 
 /// Returns information about the engine viewport, including its area.
-extern(C)
 EngineViewportInfo engineViewportInfo() {
     return _engineState.viewportInfoBuffer;
 }
@@ -2002,13 +1924,11 @@ void setMasterVolume(float value) {
 }
 
 /// Returns true if the resolution is locked and cannot be changed.
-extern(C)
 bool isResolutionLocked() {
     return !_engineState.viewport.data.isEmpty;
 }
 
 /// Locks the resolution to the specified width and height.
-extern(C)
 void lockResolution(int width, int height) {
     _engineState.viewport.lockWidth = width;
     _engineState.viewport.lockHeight = height;
@@ -2021,7 +1941,6 @@ void lockResolution(int width, int height) {
 }
 
 /// Unlocks the resolution, allowing it to be changed.
-extern(C)
 void unlockResolution() {
     if (_engineState.flags & EngineFlag.isUpdating) {
         _engineState.viewport.isChanging = true;
@@ -2034,7 +1953,6 @@ void unlockResolution() {
 }
 
 /// Toggles between the current resolution and the specified width and height.
-extern(C)
 void toggleResolution(int width, int height) {
     if (isResolutionLocked) unlockResolution();
     else lockResolution(width, height);
@@ -2089,12 +2007,6 @@ Vec2 resolution() {
     return Vec2(resolutionWidth, resolutionHeight);
 }
 
-/// Returns the current position of the mouse on the screen.
-pragma(inline, true)
-Vec2 mouse() {
-    return _engineState.mouseBuffer;
-}
-
 /// Returns the current frames per second (FPS).
 int fps() {
     return rl.GetFPS();
@@ -2115,6 +2027,12 @@ float deltaTime() {
     return rl.GetFrameTime();
 }
 
+/// Returns the current position of the mouse on the screen.
+pragma(inline, true)
+Vec2 mouse() {
+    return _engineState.mouseBuffer;
+}
+
 /// Returns the change in mouse position since the last frame.
 Vec2 deltaMouse() {
     return rl.GetMouseDelta().toPr();
@@ -2133,9 +2051,261 @@ float deltaWheel() {
     return result;
 }
 
+/// Returns true if the specified key is currently pressed.
+bool isDown(char key) {
+    return rl.IsKeyDown(toUpper(key));
+}
+
+/// Returns true if the specified key is currently pressed.
+bool isDown(Keyboard key) {
+    if (key == Keyboard.shift) {
+        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_SHIFT);
+    } else if (key == Keyboard.ctrl) {
+        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_CONTROL);
+    } else if (key == Keyboard.alt) {
+        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_ALT);
+    } else {
+        return rl.IsKeyDown(key);
+    }
+}
+
+/// Returns true if the specified key is currently pressed.
+bool isDown(Mouse key) {
+    if (key) return rl.IsMouseButtonDown(key - 1);
+    else return false;
+}
+
+/// Returns true if the specified key is currently pressed.
+bool isDown(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonDown(id, key);
+}
+
+/// Returns true if the specified key was pressed.
+bool isPressed(char key) {
+    return rl.IsKeyPressed(toUpper(key));
+}
+
+/// Returns true if the specified key was pressed.
+bool isPressed(Keyboard key) {
+    if (key == Keyboard.shift) {
+        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_SHIFT);
+    } else if (key == Keyboard.ctrl) {
+        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_CONTROL);
+    } else if (key == Keyboard.alt) {
+        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_ALT);
+    } else {
+        return rl.IsKeyPressed(key);
+    }
+}
+
+/// Returns true if the specified key was pressed.
+bool isPressed(Mouse key) {
+    if (key) return rl.IsMouseButtonPressed(key - 1);
+    else return false;
+}
+
+/// Returns true if the specified key was pressed.
+bool isPressed(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonPressed(id, key);
+}
+
+/// Returns true if the specified key was released.
+bool isReleased(char key) {
+    return rl.IsKeyReleased(toUpper(key));
+}
+
+/// Returns true if the specified key was released.
+bool isReleased(Keyboard key) {
+    if (key == Keyboard.shift) {
+        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_SHIFT);
+    } else if (key == Keyboard.ctrl) {
+        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_CONTROL);
+    } else if (key == Keyboard.alt) {
+        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_ALT);
+    } else {
+        return rl.IsKeyReleased(key);
+    }
+}
+
+/// Returns true if the specified key was released.
+bool isReleased(Mouse key) {
+    if (key) return rl.IsMouseButtonReleased(key - 1);
+    else return false;
+}
+
+/// Returns true if the specified key was released.
+bool isReleased(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonReleased(id, key);
+}
+
+/// Returns the recently pressed keyboard key.
+/// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
+/// A none key is returned when the queue is empty.
+Keyboard dequeuePressedKey() {
+    return cast(Keyboard) rl.GetKeyPressed();
+}
+
+/// Returns the recently pressed character.
+/// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
+/// A none character is returned when the queue is empty.
+dchar dequeuePressedRune() {
+    return rl.GetCharPressed();
+}
+
+/// Returns the directional input based on the WASD and arrow keys when they are down.
+/// The vector is not normalized.
+pragma(inline, true)
+Vec2 wasd() {
+    return _engineState.wasdBuffer;
+}
+
+/// Returns the directional input based on the WASD and arrow keys when they are pressed.
+/// The vector is not normalized.
+pragma(inline, true)
+Vec2 wasdPressed() {
+    return _engineState.wasdPressedBuffer;
+}
+
+/// Returns the directional input based on the WASD and arrow keys when they are released.
+/// The vector is not normalized.
+pragma(inline, true)
+Vec2 wasdReleased() {
+    return _engineState.wasdReleasedBuffer;
+}
+
+/// Plays the specified sound.
+void playSound(ref Sound sound) {
+    if (sound.isEmpty || sound.isActive) return;
+    sound.isActive = true;
+    resumeSound(sound);
+    if (sound.pitchVariance != 1.0f) {
+        sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
+    }
+    if (sound.data.isType!(rl.Sound)) {
+        rl.PlaySound(sound.data.as!(rl.Sound)());
+    } else {
+        rl.PlayMusicStream(sound.data.as!(rl.Music)());
+    }
+}
+
+/// Plays the specified sound.
+void playSound(SoundId sound) {
+    if (sound.isValid) playSound(sound.get());
+}
+
+/// Stops playback of the specified sound.
+void stopSound(ref Sound sound) {
+    if (sound.isEmpty || !sound.isActive) return;
+    sound.isActive = false;
+    resumeSound(sound);
+    if (sound.data.isType!(rl.Sound)) {
+        rl.StopSound(sound.data.as!(rl.Sound)());
+    } else {
+        rl.StopMusicStream(sound.data.as!(rl.Music)());
+    }
+}
+
+/// Stops playback of the specified sound.
+void stopSound(SoundId sound) {
+    if (sound.isValid) stopSound(sound.get());
+}
+
+/// Pauses playback of the specified sound.
+void pauseSound(ref Sound sound) {
+    if (sound.isEmpty || sound.isPaused) return;
+    sound.isPaused = true;
+    if (sound.data.isType!(rl.Sound)) {
+        rl.PauseSound(sound.data.as!(rl.Sound)());
+    } else {
+        rl.PauseMusicStream(sound.data.as!(rl.Music)());
+    }
+}
+
+/// Pauses playback of the specified sound.
+void pauseSound(SoundId sound) {
+    if (sound.isValid) pauseSound(sound.get());
+}
+
+/// Resumes playback of the specified paused sound.
+void resumeSound(ref Sound sound) {
+    if (sound.isEmpty || !sound.isPaused) return;
+    sound.isPaused = false;
+    if (sound.data.isType!(rl.Sound)) {
+        rl.ResumeSound(sound.data.as!(rl.Sound)());
+    } else {
+        rl.ResumeMusicStream(sound.data.as!(rl.Music)());
+    }
+}
+
+/// Resumes playback of the specified paused sound.
+void resumeSound(SoundId sound) {
+    if (sound.isValid) resumeSound(sound.get());
+}
+
+/// Resets and plays the specified sound.
+void startSound(ref Sound sound) {
+    stopSound(sound);
+    playSound(sound);
+}
+
+/// Resets and plays the specified sound.
+void startSound(SoundId sound) {
+    if (sound.isValid) startSound(sound.get());
+}
+
+/// Toggles the active state of the sound.
+void toggleSoundIsActive(ref Sound sound) {
+    if (sound.isActive) stopSound(sound);
+    else playSound(sound);
+}
+
+/// Toggles the active state of the sound.
+void toggleSoundIsActive(SoundId sound) {
+    if (sound.isValid) toggleSoundIsActive(sound.get());
+}
+
+/// Toggles the paused state of the sound.
+void toggleSoundIsPaused(ref Sound sound) {
+    if (sound.isPaused) resumeSound(sound);
+    else pauseSound(sound);
+}
+
+/// Toggles the paused state of the sound.
+void toggleSoundIsPaused(SoundId sound) {
+    if (sound.isValid) toggleSoundIsPaused(sound.get());
+}
+
+/// Updates the playback state of the specified sound.
+void updateSound(ref Sound sound) {
+    if (sound.isEmpty || sound.isPaused || !sound.isActive) return;
+    if (sound.data.isType!(rl.Sound)) {
+        if (rl.IsSoundPlaying(sound.data.as!(rl.Sound)())) return;
+        sound.isActive = false;
+        if (sound.canRepeat) playSound(sound);
+    } else {
+        auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.as!(rl.Music)());
+        auto hasLoopedInternally = sound.duration - sound.time < 0.1f;
+        if (hasLoopedInternally) {
+            if (sound.canRepeat) {
+                // Copy-paste from `playSound`. Maybe make that a function.
+                if (sound.pitchVariance != 1.0f) {
+                    sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
+                }
+            } else {
+                stopSound(sound);
+                isPlayingInternally = false;
+            }
+        }
+        if (isPlayingInternally) rl.UpdateMusicStream(sound.data.as!(rl.Music)());
+    }
+}
+
+/// This function does nothing because managed resources are updated by the engine.
+/// It only exists to make it easier to swap between resource types.
+void updateSound(SoundId sound) {}
+
 /// Measures the size of the specified text when rendered with the given font and draw options.
-extern(C)
-Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
     auto lineCodepointCount = 0;
@@ -2170,347 +2340,11 @@ Vec2 measureTextSizeX(Font font, IStr text, DrawOptions options = DrawOptions(),
 }
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
-extern(C)
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    return measureTextSizeX(font.getOr(), text, options, extra);
-}
-
-/// Returns true if the specified key is currently pressed.
-bool isDown(char key) {
-    return rl.IsKeyDown(toUpper(key));
-}
-
-/// Returns true if the specified key is currently pressed.
-extern(C)
-bool isDownChar(char key) {
-    return isDown(key);
-}
-
-/// Returns true if the specified key is currently pressed.
-bool isDown(Keyboard key) {
-    if (key == Keyboard.shift) {
-        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_SHIFT);
-    } else if (key == Keyboard.ctrl) {
-        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_CONTROL);
-    } else if (key == Keyboard.alt) {
-        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_ALT);
-    } else {
-        return rl.IsKeyDown(key);
-    }
-}
-
-/// Returns true if the specified key is currently pressed.
-extern(C)
-bool isDownKeyboard(Keyboard key) {
-    return isDown(key);
-}
-
-/// Returns true if the specified key is currently pressed.
-bool isDown(Mouse key) {
-    if (key) return rl.IsMouseButtonDown(key - 1);
-    else return false;
-}
-
-
-/// Returns true if the specified key is currently pressed.
-extern(C)
-bool isDownMouse(Mouse key) {
-    return isDown(key);
-}
-
-/// Returns true if the specified key is currently pressed.
-bool isDown(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonDown(id, key);
-}
-
-/// Returns true if the specified key is currently pressed.
-extern(C)
-bool isDownGamepad(Gamepad key, int id = 0) {
-    return isDown(key, id);
-}
-
-/// Returns true if the specified key was pressed.
-bool isPressed(char key) {
-    return rl.IsKeyPressed(toUpper(key));
-}
-
-/// Returns true if the specified key was pressed.
-extern(C)
-bool isPressedChar(char key) {
-    return isPressed(key);
-}
-
-/// Returns true if the specified key was pressed.
-bool isPressed(Keyboard key) {
-    if (key == Keyboard.shift) {
-        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_SHIFT);
-    } else if (key == Keyboard.ctrl) {
-        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_CONTROL);
-    } else if (key == Keyboard.alt) {
-        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_ALT);
-    } else {
-        return rl.IsKeyPressed(key);
-    }
-}
-
-
-/// Returns true if the specified key was pressed.
-extern(C)
-bool isPressedKeyboard(Keyboard key) {
-    return isPressed(key);
-}
-
-/// Returns true if the specified key was pressed.
-bool isPressed(Mouse key) {
-    if (key) return rl.IsMouseButtonPressed(key - 1);
-    else return false;
-}
-
-/// Returns true if the specified key was pressed.
-extern(C)
-bool isPressedMouse(Mouse key) {
-    return isPressed(key);
-}
-
-/// Returns true if the specified key was pressed.
-bool isPressed(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonPressed(id, key);
-}
-
-/// Returns true if the specified key was pressed.
-extern(C)
-bool isPressedGamepad(Gamepad key, int id = 0) {
-    return isPressed(key, id);
-}
-
-/// Returns true if the specified key was released.
-bool isReleased(char key) {
-    return rl.IsKeyReleased(toUpper(key));
-}
-
-/// Returns true if the specified key was released.
-extern(C)
-bool isReleasedChar(char key) {
-    return isReleased(key);
-}
-
-/// Returns true if the specified key was released.
-bool isReleased(Keyboard key) {
-    if (key == Keyboard.shift) {
-        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_SHIFT);
-    } else if (key == Keyboard.ctrl) {
-        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_CONTROL);
-    } else if (key == Keyboard.alt) {
-        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_ALT);
-    } else {
-        return rl.IsKeyReleased(key);
-    }
-}
-
-/// Returns true if the specified key was released.
-extern(C)
-bool isReleasedKeyboard(Keyboard key) {
-    return isReleased(key);
-}
-
-/// Returns true if the specified key was released.
-bool isReleased(Mouse key) {
-    if (key) return rl.IsMouseButtonReleased(key - 1);
-    else return false;
-}
-
-/// Returns true if the specified key was released.
-extern(C)
-bool isReleasedMouse(Mouse key) {
-    return isReleased(key);
-}
-
-/// Returns true if the specified key was released.
-bool isReleased(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonReleased(id, key);
-}
-
-/// Returns true if the specified key was released.
-extern(C)
-bool isReleasedGamepad(Gamepad key, int id = 0) {
-    return isReleased(key);
-}
-
-/// Returns the recently pressed keyboard key.
-/// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
-/// A none key is returned when the queue is empty.
-extern(C)
-Keyboard dequeuePressedKey() {
-    return cast(Keyboard) rl.GetKeyPressed();
-}
-
-/// Returns the recently pressed character.
-/// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
-/// A none character is returned when the queue is empty.
-extern(C)
-dchar dequeuePressedRune() {
-    return rl.GetCharPressed();
-}
-
-/// Returns the directional input based on the WASD and arrow keys when they are down.
-/// The vector is not normalized.
-pragma(inline, true)
-extern(C)
-Vec2 wasd() {
-    return _engineState.wasdBuffer;
-}
-
-/// Returns the directional input based on the WASD and arrow keys when they are pressed.
-/// The vector is not normalized.
-pragma(inline, true)
-extern(C)
-Vec2 wasdPressed() {
-    return _engineState.wasdPressedBuffer;
-}
-
-/// Returns the directional input based on the WASD and arrow keys when they are released.
-/// The vector is not normalized.
-pragma(inline, true)
-extern(C)
-Vec2 wasdReleased() {
-    return _engineState.wasdReleasedBuffer;
-}
-
-/// Plays the specified sound.
-void playSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isActive) return;
-    sound.isActive = true;
-    resumeSoundX(sound);
-    if (sound.pitchVariance != 1.0f) {
-        sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
-    }
-    if (sound.data.isType!(rl.Sound)) {
-        rl.PlaySound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.PlayMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Plays the specified sound.
-void playSound(SoundId sound) {
-    if (sound.isValid) playSoundX(sound.get());
-}
-
-/// Stops playback of the specified sound.
-void stopSoundX(ref Sound sound) {
-    if (sound.isEmpty || !sound.isActive) return;
-    sound.isActive = false;
-    resumeSoundX(sound);
-    if (sound.data.isType!(rl.Sound)) {
-        rl.StopSound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.StopMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Stops playback of the specified sound.
-void stopSound(SoundId sound) {
-    if (sound.isValid) stopSoundX(sound.get());
-}
-
-/// Pauses playback of the specified sound.
-void pauseSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused) return;
-    sound.isPaused = true;
-    if (sound.data.isType!(rl.Sound)) {
-        rl.PauseSound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.PauseMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Pauses playback of the specified sound.
-void pauseSound(SoundId sound) {
-    if (sound.isValid) pauseSoundX(sound.get());
-}
-
-/// Resumes playback of the specified paused sound.
-void resumeSoundX(ref Sound sound) {
-    if (sound.isEmpty || !sound.isPaused) return;
-    sound.isPaused = false;
-    if (sound.data.isType!(rl.Sound)) {
-        rl.ResumeSound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.ResumeMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Resumes playback of the specified paused sound.
-void resumeSound(SoundId sound) {
-    if (sound.isValid) resumeSoundX(sound.get());
-}
-
-/// Resets and plays the specified sound.
-void startSoundX(ref Sound sound) {
-    stopSoundX(sound);
-    playSoundX(sound);
-}
-
-/// Resets and plays the specified sound.
-void startSound(SoundId sound) {
-    if (sound.isValid) startSoundX(sound.get());
-}
-
-/// Toggles the active state of the sound.
-void toggleSoundIsActiveX(ref Sound sound) {
-    if (sound.isActive) stopSoundX(sound);
-    else playSoundX(sound);
-}
-
-/// Toggles the active state of the sound.
-void toggleSoundIsActive(SoundId sound) {
-    if (sound.isValid) toggleSoundIsActiveX(sound.get());
-}
-
-/// Toggles the paused state of the sound.
-void toggleSoundIsPausedX(ref Sound sound) {
-    if (sound.isPaused) resumeSoundX(sound);
-    else pauseSoundX(sound);
-}
-
-/// Toggles the paused state of the sound.
-void toggleSoundIsPaused(SoundId sound) {
-    if (sound.isValid) toggleSoundIsPausedX(sound.get());
-}
-
-/// Updates the playback state of the specified sound.
-void updateSoundX(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isActive) return;
-    if (sound.data.isType!(rl.Sound)) {
-        if (rl.IsSoundPlaying(sound.data.as!(rl.Sound)())) return;
-        sound.isActive = false;
-        if (sound.canRepeat) playSoundX(sound);
-    } else {
-        auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.as!(rl.Music)());
-        auto hasLoopedInternally = sound.duration - sound.time < 0.1f;
-        if (hasLoopedInternally) {
-            if (sound.canRepeat) {
-                // Copy-paste from `playSound`. Maybe make that a function.
-                if (sound.pitchVariance != 1.0f) {
-                    sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
-                }
-            } else {
-                stopSoundX(sound);
-                isPlayingInternally = false;
-            }
-        }
-        if (isPlayingInternally) rl.UpdateMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// This function does nothing because managed resources are updated by the engine.
-/// It only exists to make it easier to swap between resource types.
-void updateSound(SoundId sound) {
-    // if (sound.isValid) updateSoundX(sound.get());
+    return measureTextSize(font.getOr(), text, options, extra);
 }
 
 /// Draws a rectangle with the specified area and color.
-extern(C)
 void drawRect(Rect area, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawRectanglePro(area.floor().toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
@@ -2520,7 +2354,6 @@ void drawRect(Rect area, Rgba color = white) {
 }
 
 /// Draws a hollow rectangle with the specified area and color.
-extern(C)
 void drawHollowRect(Rect area, float thickness, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawRectangleLinesEx(area.floor().toRl(), thickness, color.toRl());
@@ -2530,13 +2363,11 @@ void drawHollowRect(Rect area, float thickness, Rgba color = white) {
 }
 
 /// Draws a point at the specified location with the given size and color.
-extern(C)
 void drawVec2(Vec2 point, float size, Rgba color = white) {
     drawRect(Rect(point, size, size).centerArea, color);
 }
 
 /// Draws a circle with the specified area and color.
-extern(C)
 void drawCirc(Circ area, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
@@ -2546,7 +2377,6 @@ void drawCirc(Circ area, Rgba color = white) {
 }
 
 /// Draws a hollow circle with the specified area and color.
-extern(C)
 void drawHollowCirc(Circ area, float thickness, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawRing(area.position.floor().toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
@@ -2556,7 +2386,6 @@ void drawHollowCirc(Circ area, float thickness, Rgba color = white) {
 }
 
 /// Draws a line with the specified area, thickness, and color.
-extern(C)
 void drawLine(Line area, float size, Rgba color = white) {
     if (isPixelSnapped) {
         rl.DrawLineEx(area.a.floor().toRl(), area.b.floor().toRl(), size, color.toRl());
@@ -2566,8 +2395,7 @@ void drawLine(Line area, float size, Rgba color = white) {
 }
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
-extern(C)
-void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     auto isAreaEmpty = !area.hasSize;
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
@@ -2617,26 +2445,22 @@ void drawTextureAreaX(Texture texture, Rect area, Vec2 position, DrawOptions opt
 }
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
-extern(C)
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureAreaX(texture.getOr(), area, position, options);
+    drawTextureArea(texture.getOr(), area, position, options);
 }
 
 /// Draws the texture at the given position with the specified draw options.
-extern(C)
-void drawTextureX(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureAreaX(texture, Rect(texture.size), position, options);
+void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTextureArea(texture, Rect(texture.size), position, options);
 }
 
 /// Draws the texture at the given position with the specified draw options.
-extern(C)
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureX(texture.getOr(), position, options);
+    drawTexture(texture.getOr(), position, options);
 }
 
 /// Draws a 9-slice from the specified texture area at the given target area.
-extern(C)
-void drawTextureSliceX(Texture texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
+void drawTextureSlice(Texture texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
     // NOTE: New rule for options. Functions are allowed to ignore values. Should they handle bad values? Maybe.
     // NOTE: If we ever change options to pointers, remember to remove this part.
     options.hook = Hook.topLeft;
@@ -2647,7 +2471,7 @@ void drawTextureSliceX(Texture texture, Rect area, Rect target, Margin margin, b
             foreach (y; 0 .. part.tileCount.y) { foreach (x; 0 .. part.tileCount.x) {
                 auto sourceW = (x != part.tileCount.x - 1) ? part.source.w : max(0, part.target.w - x * part.source.w);
                 auto sourceH = (y != part.tileCount.y - 1) ? part.source.h : max(0, part.target.h - y * part.source.h);
-                drawTextureAreaX(
+                drawTextureArea(
                     texture,
                     Rect(part.source.x, part.source.y, sourceW, sourceH),
                     Vec2(part.target.x + x * part.source.w, part.target.y + y * part.source.h),
@@ -2659,7 +2483,7 @@ void drawTextureSliceX(Texture texture, Rect area, Rect target, Margin margin, b
                 part.target.w / cast(float) part.source.w,
                 part.target.h / cast(float) part.source.h,
             );
-            drawTextureAreaX(
+            drawTextureArea(
                 texture,
                 Rect(part.source.x, part.source.y, part.source.w, part.source.h),
                 Vec2(part.target.x, part.target.y),
@@ -2670,120 +2494,11 @@ void drawTextureSliceX(Texture texture, Rect area, Rect target, Margin margin, b
 }
 
 /// Draws a 9-slice from the specified texture area at the given target area.
-extern(C)
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    drawTextureSliceX(texture.getOr(), area, target, margin, canRepeat, options);
-}
-
-/// Draws a 9-patch from the specified texture area at the given target area.
-/// It assumes the given texture area is evenly divisible by 3.
-/// Even though they are not the same, prefer using `drawTextureSliceX` when possible.
-deprecated("Use drawTextureSliceX.")
-extern(C)
-void drawTexturePatchX(Texture texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions()) {
-    if (texture.isEmpty) {
-        if (isEmptyTextureVisible) {
-            auto rect = target.area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
-        }
-        return;
-    }
-
-    auto tileSize = (area.size / Vec2(3.0f)).floor();
-    auto hOptions = options;
-    auto vOptions = options;
-    auto cOptions = options;
-    auto cleanScaleX = (target.size.x - 2.0f * tileSize.x) / tileSize.x;
-    auto cleanScaleY = (target.size.y - 2.0f * tileSize.y) / tileSize.y;
-    hOptions.scale.x *= cleanScaleX;
-    vOptions.scale.y *= cleanScaleY;
-    cOptions.scale = Vec2(hOptions.scale.x, vOptions.scale.y);
-    // 1
-    auto partPosition = target.position;
-    auto partArea = Rect(area.position, tileSize);
-    drawTextureAreaX(texture, partArea, partPosition, options);
-    // 2
-    partPosition.x += tileSize.x * options.scale.x;
-    partArea.position.x += tileSize.x;
-    if (canRepeat) {
-        foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
-            auto tempPartPosition = partPosition;
-            tempPartPosition.x += i * tileSize.x * options.scale.x;
-            drawTextureAreaX(texture, partArea, tempPartPosition, options);
-        }
-    } else {
-        drawTextureAreaX(texture, partArea, partPosition, hOptions);
-    }
-    // 3
-    partPosition.x += tileSize.x * hOptions.scale.x;
-    partArea.position.x += tileSize.x;
-    drawTextureAreaX(texture, partArea, partPosition, options);
-    // 4
-    partPosition.x = target.position.x;
-    partPosition.y += tileSize.y * options.scale.y;
-    partArea.position.x = area.position.x;
-    partArea.position.y += tileSize.y;
-    if (canRepeat) {
-        foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
-            auto tempPartPosition = partPosition;
-            tempPartPosition.y += i * tileSize.y * options.scale.y;
-            drawTextureAreaX(texture, partArea, tempPartPosition, options);
-        }
-    } else {
-        drawTextureAreaX(texture, partArea, partPosition, vOptions);
-    }
-    // 5
-    partPosition.x += tileSize.x * options.scale.x;
-    partArea.position.x += tileSize.x;
-    drawTextureAreaX(texture, partArea, partPosition, cOptions);
-    // 6
-    partPosition.x += tileSize.x * hOptions.scale.x;
-    partArea.position.x += tileSize.x;
-    if (canRepeat) {
-        foreach (i; 0 .. cast(int) cleanScaleY.ceil()) {
-            auto tempPartPosition = partPosition;
-            tempPartPosition.y += i * tileSize.y * options.scale.y;
-            drawTextureAreaX(texture, partArea, tempPartPosition, options);
-        }
-    } else {
-        drawTextureAreaX(texture, partArea, partPosition, vOptions);
-    }
-    // 7
-    partPosition.x = target.position.x;
-    partPosition.y += tileSize.y * vOptions.scale.y;
-    partArea.position.x = area.position.x;
-    partArea.position.y += tileSize.y;
-    drawTextureAreaX(texture, partArea, partPosition, options);
-    // 8
-    partPosition.x += tileSize.x * options.scale.x;
-    partArea.position.x += tileSize.x;
-    if (canRepeat) {
-        foreach (i; 0 .. cast(int) cleanScaleX.ceil()) {
-            auto tempPartPosition = partPosition;
-            tempPartPosition.x += i * tileSize.x * options.scale.x;
-            drawTextureAreaX(texture, partArea, tempPartPosition, options);
-        }
-    } else {
-        drawTextureAreaX(texture, partArea, partPosition, hOptions);
-    }
-    // 9
-    partPosition.x += tileSize.x * hOptions.scale.x;
-    partArea.position.x += tileSize.x;
-    drawTextureAreaX(texture, partArea, partPosition, options);
-}
-
-/// Draws a 9-patch from the specified texture area at the given target area.
-/// It assumes the given texture area is evenly divisible by 3.
-/// Even though they are not the same, prefer using `drawTextureSlice` when possible.
-deprecated("Use drawTextureSlice.")
-extern(C)
-void drawTexturePatch(TextureId texture, Rect area, Rect target, bool canRepeat, DrawOptions options = DrawOptions()) {
-    drawTexturePatchX(texture.getOr(), area, target, canRepeat, options);
+    drawTextureSlice(texture.getOr(), area, target, margin, canRepeat, options);
 }
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
-extern(C)
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     // Some basic rules to make viewports noob friendly.
     final switch (options.flip) {
@@ -2792,18 +2507,16 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
         case Flip.y: options.flip = Flip.none; break;
         case Flip.xy: options.flip = Flip.x; break;
     }
-    drawTextureAreaX(viewport.data.texture.toPr(), area, position, options);
+    drawTextureArea(viewport.data.texture.toPr(), area, position, options);
 }
 
 /// Draws the viewport at the given position with the specified draw options.
-extern(C)
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions()) {
     drawViewportArea(viewport, Rect(viewport.size), position, options);
 }
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
-extern(C)
-void drawRuneX(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (font.isEmpty) return;
     auto rect = toPr(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
@@ -2821,15 +2534,13 @@ void drawRuneX(Font font, dchar rune, Vec2 position, DrawOptions options = DrawO
 }
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
-extern(C)
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawRuneX(font.getOr(), rune, position, options);
+    drawRune(font.getOr(), rune, position, options);
 }
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
-extern(C)
-void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
 
@@ -2853,7 +2564,7 @@ void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOp
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.append(cast(ushort) (measureTextSizeX(font, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.append(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
                 if (codepoint == '\n') textHeight += font.lineSpacing;
                 lineCodepointIndex = cast(ushort) (textCodepointIndex + 1);
@@ -2954,13 +2665,11 @@ void drawTextX(Font font, IStr text, Vec2 position, DrawOptions options = DrawOp
 }
 
 /// Draws text with the given font at the given position using the provided draw options.
-extern(C)
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    drawTextX(font.getOr(), text, position, options, extra);
+    drawText(font.getOr(), text, position, options, extra);
 }
 
 /// Draws debug text at the given position with the provided draw options.
-extern(C)
 void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     drawText(engineFont, text, position, options, extra);
 }
@@ -2969,7 +2678,6 @@ void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions()
 /// Hold the left mouse button to create and resize a debug area.
 /// Hold the right mouse button to move the debug area.
 /// Press the middle mouse button to clear the debug area.
-extern(C)
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     static clickPoint = Vec2();
     static clickOffset = Vec2();
@@ -3037,24 +2745,20 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor2);
     drawHollowRect(Rect(a.toScreenPoint(camera), s), 1, defaultEngineDebugColor1);
     drawDebugText(text, screenPoint, options);
-    version (WebAssembly) {
-    } else {
-        if (Mouse.left.isReleased || Mouse.right.isReleased) {
-            printfln(
-                "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})",
-                cast(int) a.x,
-                cast(int) a.y,
-                cast(int) b.x,
-                cast(int) b.y,
-                cast(int) s.x,
-                cast(int) s.y,
-            );
-        }
+    if (Mouse.left.isReleased || Mouse.right.isReleased) {
+        printfln(
+            "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})",
+            cast(int) a.x,
+            cast(int) a.y,
+            cast(int) b.x,
+            cast(int) b.y,
+            cast(int) s.x,
+            cast(int) s.y,
+        );
     }
 }
 
 /// Draws debug tile information at the given position with the provided draw options.
-extern(C)
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions()) {
     auto mouse = mouse.toWorldPoint(camera);
     auto gridPoint = Vec2(mouse.x / tileWidth, mouse.y / tileHeight).floor();

@@ -1,5 +1,5 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/parin
@@ -218,7 +218,7 @@ struct Sprite {
     }
 }
 
-void drawSpriteX(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
+void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     if (sprite.width == 0 || sprite.height == 0) return;
     if (texture.isEmpty) {
         if (isEmptyTextureVisible) {
@@ -237,9 +237,9 @@ void drawSpriteX(Texture texture, Sprite sprite, DrawOptions options = DrawOptio
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;
     auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
-    drawTextureAreaX(texture, area, sprite.position, options);
+    drawTextureArea(texture, area, sprite.position, options);
 }
 
 void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
-    drawSpriteX(texture.getOr(), sprite, options);
+    drawSprite(texture.getOr(), sprite, options);
 }
