@@ -12,6 +12,7 @@ import rl = parin.rl;
 import joka.ascii;
 import joka.io;
 import joka.memory;
+import parin.c.engine; // Don't ask.
 
 public import joka.containers;
 public import joka.math;
