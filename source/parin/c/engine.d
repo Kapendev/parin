@@ -120,8 +120,7 @@ void prCameraAttach(Camera* self) => self.attach();
 void prCameraDetach(Camera* self) => self.detach();
 
 // --- Functions
-void prOpenWindow(int width, int height, const(IStr)[] args, IStr title) => _openWindow(width, height, args, title);
-void prOpenWindowC(int width, int height, int argc, ICStr* argv, ICStr title) => _openWindowC(width, height, argc, argv, title);
+void prOpenWindow(int width, int height, int argc, ICStr* argv, ICStr title) => _openWindowC(width, height, argc, argv, title);
 void prUpdateWindow(EngineUpdateFunc updateFunc) => _updateWindow(updateFunc);
 void prCloseWindow() => _closeWindow();
 

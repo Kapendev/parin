@@ -6,7 +6,7 @@ set app_path=.\app.d
 set parin_package_path=.\parin_package
 set joka_package_path=.\joka_package
 set version=windows_x86_64
-set compiler=ldc2
+set compiler=dmd
 set "extra_flags="
 
 if not "%~1"=="" set compiler=%~1

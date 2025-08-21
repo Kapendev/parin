@@ -4,7 +4,7 @@ exe_path='./app'
 app_path='./app.d'
 parin_package_path='./parin_package'
 joka_package_path='./joka_package'
-compiler='ldc2'
+compiler='dmd'
 version='linux_x86_64'
 extra_flags=''
 
