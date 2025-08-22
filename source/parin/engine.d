@@ -2015,6 +2015,11 @@ int fps() {
     return rl.GetFPS();
 }
 
+/// Returns the maximum frames per second (FPS).
+int fpsMax() {
+    return _engineState.fpsMax;
+}
+
 /// Sets the maximum number of frames that can be rendered every second (FPS).
 void setFpsMax(int value) {
     _engineState.fpsMax = value;
