@@ -287,7 +287,7 @@ struct Story {
                     faultPrepareIndex = prepareIndex;
                     return kind.fault;
                 }
-                if (kind.value == StoryLineKind.label) {
+                if (kind.xx == StoryLineKind.label) {
                     auto name = line[1 .. $].trimStart();
                     auto word = StoryWord.init;
                     auto wordRef = word[];
@@ -338,7 +338,7 @@ struct Story {
                     faultTokenPosition = tokenCount;
                     return tempOp.fault;
                 }
-                auto op = tempOp.value;
+                auto op = tempOp.xx;
                 final switch (op) {
                     case ADD:
                     case SUB:
@@ -681,7 +681,7 @@ struct Story {
                     faultTokenPosition = tokenCount;
                     return number.fault;
                 }
-                stack.append(StoryValue(cast(StoryNumber) number.value));
+                stack.append(StoryValue(cast(StoryNumber) number.xx));
             } else if (token.isMaybeStoryWord) {
                 auto word = StoryWord.init;
                 auto wordRef = word[];

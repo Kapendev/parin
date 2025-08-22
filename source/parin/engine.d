@@ -31,6 +31,7 @@ alias EngineFlags           = ushort;
 @trusted:
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
+enum defaultEngineFpsMax               = 60;
 enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
@@ -1016,6 +1017,7 @@ struct EngineState {
     Vec2 wasdPressedBuffer;
     Vec2 wasdReleasedBuffer;
 
+    int fpsMax = defaultEngineFpsMax;
     Sz tickCount;
     Rgba borderColor = black;
     Filter defaultFilter;
@@ -1047,10 +1049,10 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     rl.InitWindow(width, height, title.toCStr().getOr());
     rl.InitAudioDevice();
     rl.SetExitKey(rl.KEY_NULL);
-    rl.SetTargetFPS(60);
+    rl.SetTargetFPS(defaultEngineFpsMax);
     rl.SetWindowMinSize(240, 135);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-    // Engine stuff.
+    // Parin stuff.
     _engineState = jokaMake!EngineState();
     _engineState.fullscreenState.previousWindowWidth = width;
     _engineState.fullscreenState.previousWindowHeight = height;
@@ -2011,6 +2013,12 @@ Vec2 resolution() {
 /// Returns the current frames per second (FPS).
 int fps() {
     return rl.GetFPS();
+}
+
+/// Sets the maximum number of frames that can be rendered every second (FPS).
+void setFpsMax(int value) {
+    _engineState.fpsMax = value;
+    rl.SetTargetFPS(value); // NOTE: Don't need to check because raylib does it.
 }
 
 /// Returns the total elapsed time since the application started.

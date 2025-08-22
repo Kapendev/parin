@@ -12,11 +12,11 @@ import parin.engine;
 
 @safe extern(C):
 
-// --- Margin & SlicePart
+// -- Margin & SlicePart
 IStr prMarginToStr(Margin* self) => self.toStr();
 IStr prSlicePartToStr(SlicePart* self) => self.toStr();
 
-// --- Texture
+// -- Texture
 bool prTextureIsEmpty(Texture* self) => self.isEmpty;
 int prTextureWidth(Texture* self) => self.width;
 int prTextureHeight(Texture* self) => self.height;
@@ -25,7 +25,7 @@ void prTextureSetFilter(Texture* self, Filter value) => self.setFilter(value);
 void prTextureSetWrap(Texture* self, Wrap value) => self.setWrap(value);
 void prTextureFree(Texture* self) => self.free();
 
-// --- TextureId
+// -- TextureId
 int prTextureIdWidth(TextureId* self) => self.width;
 int prTextureIdHeight(TextureId* self) => self.height;
 Vec2 prTextureIdSize(TextureId* self) => self.size;
@@ -37,14 +37,14 @@ Texture* prTextureIdGet(TextureId* self) => &self.get();
 Texture prTextureIdGetOr(TextureId* self) => self.getOr();
 void prTextureIdFree(TextureId* self) => self.free();
 
-// --- Font
+// -- Font
 bool prFontIsEmpty(Font* self) => self.isEmpty;
 int prFontSize(Font* self) => self.size;
 void prFontSetFilter(Font* self, Filter value) => self.setFilter(value);
 void prFontSetWrap(Font* self, Wrap value) => self.setWrap(value);
 void prFontFree(Font* self) => self.free();
 
-// --- FontId
+// -- FontId
 int prFontIdRuneSpacing(FontId* self) => self.runeSpacing;
 int prFontIdLineSpacing(FontId* self) => self.lineSpacing;
 int prFontIdSize(FontId* self) => self.size;
@@ -56,7 +56,7 @@ Font* prFontIdGet(FontId* self) => &self.get();
 Font prFontIdGetOr(FontId* self) => self.getOr();
 void prFontIdFree(FontId* self) => self.free();
 
-// --- Sound
+// -- Sound
 bool prSoundIsEmpty(Sound* self) => self.isEmpty;
 float prSoundTime(Sound* self) => self.time;
 float prSoundDuration(Sound* self) => self.duration;
@@ -66,7 +66,7 @@ void prSoundSetPitch(Sound* self, float value, bool canUpdatePitchVarianceBase) 
 void prSoundSetPan(Sound* self, float value) => self.setPan(value);
 void prSoundFree(Sound* self) => self.free();
 
-// --- SoundId
+// -- SoundId
 float prSoundIdPitchVariance(SoundId* self) => self.pitchVariance;
 void prSoundIdSetPitchVariance(SoundId* self, float value) => self.setPitchVariance(value);
 float prSoundIdPitchVarianceBase(SoundId* self) => self.pitchVarianceBase;
@@ -87,7 +87,7 @@ Sound* prSoundIdGet(SoundId* self) => &self.get();
 Sound prSoundIdGetOr(SoundId* self) => self.getOr();
 void prSoundIdFree(SoundId* self) => self.free();
 
-// --- Viewport
+// -- Viewport
 bool prViewportIsEmpty(Viewport* self) => self.isEmpty;
 int prViewportWidth(Viewport* self) => self.width;
 int prViewportHeight(Viewport* self) => self.height;
@@ -99,7 +99,7 @@ void prViewportSetFilter(Viewport* self, Filter value) => self.setFilter(value);
 void prViewportSetWrap(Viewport* self, Wrap value) => self.setWrap(value);
 void prViewportFree(Viewport* self) => self.free();
 
-// --- Camera
+// -- Camera
 Hook prCameraHook(Camera* self) => self.hook;
 Vec2 prCameraOrigin(Camera* self, Viewport viewport) => self.origin(viewport);
 Rect prCameraArea(Camera* self, Viewport viewport) => self.area(viewport);
@@ -119,7 +119,7 @@ void prCameraFollowScaleWithSlowdown(Camera* self, float target, float slowdown)
 void prCameraAttach(Camera* self) => self.attach();
 void prCameraDetach(Camera* self) => self.detach();
 
-// --- Functions
+// -- Functions
 void prOpenWindow(int width, int height, int argc, ICStr* argv, ICStr title) => _openWindowC(width, height, argc, argv, title);
 void prUpdateWindow(EngineUpdateFunc updateFunc) => _updateWindow(updateFunc);
 void prCloseWindow() => _closeWindow();

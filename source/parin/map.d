@@ -317,7 +317,7 @@ struct TileMap {
                 colCount += 1;
                 auto tile = line.skipValue(',').toSigned();
                 if (tile.isNone || colCount > hardColCount) return Fault.cantParse;
-                layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.value - isMinZero);
+                layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.xx - isMinZero);
             }
         }
         return Fault.none;
@@ -344,8 +344,8 @@ struct TileMap {
                     if (!isWidthWord && !isHeightWord) continue;
                     auto value = word.split("=")[1][1 .. $ - 1].toSigned(); // NOTE: Removes `"` with `[1 .. $ - 1]`.
                     if (value.isNone) return Fault.cantParse;
-                    if (isWidthWord) tileWidth = cast(short) value.value;
-                    if (isHeightWord) tileHeight = cast(short) value.value;
+                    if (isWidthWord) tileWidth = cast(short) value.xx;
+                    if (isHeightWord) tileHeight = cast(short) value.xx;
                 }
             } else if (isDataStartLine) {
                 Sz csvStart, csvEnd;

@@ -232,7 +232,7 @@ struct BoxWorld {
                     walls.clear();
                     return Fault.invalid;
                 }
-                if (tile.value <= -1) continue;
+                if (tile.xx <= -1) continue;
                 appendWall(IRect((colCount - 1) * tileWidth, (rowCount - 1) * tileHeight, tileWidth, tileHeight));
             }
         }
