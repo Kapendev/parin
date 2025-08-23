@@ -116,6 +116,15 @@ git clone --depth 1 https://github.com/Kapendev/joka joka_package
 # Or: ./parin_package/scripts/run opend
 ```
 
+Alternatively, there's another script that prepares the current folder in a style closer to the DUB setup.
+It's written in D and you can run it with:
+
+```sh
+dmd -run ./parin_package/packages/setup/source/app.d
+# Or: dmd -run .\parin_package\packages\setup\source\app.d
+# Or: ldc2 -run ./parin_package/packages/setup/source/app.d
+```
+
 ### How do I make a web build?
 
 Parin includes a build script for the web in the [packages](packages/) folder.

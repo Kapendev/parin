@@ -15,7 +15,8 @@ if not "%~2"=="" set version=%~2
 %compiler% ^
     -of=%exe_path% ^
     -L=-L%parin_package_path%\vendor\%version% ^
-    -J=%parin_package_path%\source\parin -I=%source_path% -i %extra_flags% ^
+    -J=%parin_package_path%\source\parin -I=%source_path% -i ^
+    -J=.\assets %extra_flags% ^
     %app_path%
 
 endlocal

@@ -11,5 +11,6 @@ xcopy %parin_package_path%\source\parin .\parin /E /I /Y
 xcopy %joka_package_path%\source\joka .\joka /E /I /Y
 copy %parin_package_path%\examples\basics\_001_hello.d %app_path%
 copy %parin_package_path%\vendor\windows_x86_64\*.dll .\
+mkdir .\assets
 
 endlocal

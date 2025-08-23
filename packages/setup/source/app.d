@@ -131,6 +131,13 @@ void makeBasicSetup() {
 /// The setup code for simple projects.
 int runSimpSetup(string[] args, bool isFirstRun) {
     makeBasicSetup();
+    // Find the main file and replace its content.
+    auto appDir = "src";
+    if (!appDir.isX) appDir = "source";
+    mkdir(appDir);
+    auto appFile = join(appDir, "main.d");
+    if (!appFile.isX) appFile = join(appDir, "app.d");
+    paste(appFile, appFileContent, !isFirstRun);
     return 0;
 }
 

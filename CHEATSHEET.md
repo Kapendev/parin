@@ -123,6 +123,9 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
 ### 🔊 Sound
 
 ```d
+float masterVolume();
+void setMasterVolume(float value);
+
 void playSound(SoundId sound);
 void stopSound(SoundId sound);
 void pauseSound(SoundId sound);
@@ -136,7 +139,7 @@ void toggleSoundIsPaused(SoundId sound);
 
 ```d
 TextureId loadTexture(IStr path);
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "");
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null);
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
 Fault lastLoadFault();

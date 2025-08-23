@@ -1714,9 +1714,6 @@ void setRandomSeed(int value) {
     rl.SetRandomSeed(value);
 }
 
-deprecated("Will be renamed to setRandomSeed.")
-alias randomizeSeed = setRandomSeed;
-
 /// Randomizes the seed of the random number generator.
 void randomize() {
     setRandomSeed(randi);
