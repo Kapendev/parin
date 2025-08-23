@@ -128,6 +128,7 @@ Font prToFontAscii(Texture from, int tileWidth, int tileHeight) => toFontAscii(f
 TextureId prToTextureId(Texture from) => toTextureId(from);
 FontId prToFontId(Font from) => toFontId(from);
 SoundId prToSoundId(Sound from) => toSoundId(from);
+Fault prLastLoadFault() => lastLoadFault;
 
 Fault prLoadRawTextIntoBuffer(IStr path, LStr* buffer) => loadRawTextIntoBuffer(path, *buffer);
 TextureId prLoadTexture(IStr path) => loadTexture(path);

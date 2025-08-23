@@ -60,9 +60,12 @@ IStr[] envArgs();
 IStr[] droppedFilePaths();
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
 
-Maybe!Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
-Maybe!Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
+Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
+Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
 Font toFontAscii(Texture from, int tileWidth, int tileHeight);
+TextureId toTextureId(Texture from);
+FontId toFontId(Font from);
+SoundId toSoundId(Sound from);
 ```
 
 ### 🎮 Input
@@ -136,10 +139,11 @@ TextureId loadTexture(IStr path);
 FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "");
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
+Fault lastLoadFault();
 
-Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
-Maybe!LStr loadRawText(IStr path);
 Maybe!IStr loadTempText(IStr path);
+Maybe!LStr loadRawText(IStr path);
+Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
 Fault saveText(IStr path, IStr text);
 ```
 

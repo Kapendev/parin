@@ -1,44 +1,44 @@
 {
-	"authors": [
-		"Alexandros F. G. Kapretsos"
-	],
-	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
-	"description": "A delightfully simple 2D game engine.",
-	"license": "MIT",
-	"name": "parin",
-	"dependencies": {
-		"joka": "*"
-	},
-	"stringImportPaths": [
-		"source/parin"
-	],
-	"subPackages" : [
-		"packages/rin",
-		"packages/setup",
-		"packages/web"
-	],
-	"libs": [
-		"raylib"
-	],
-	"configurations": [
+    "authors": [
+        "Alexandros F. G. Kapretsos"
+    ],
+    "copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
+    "description": "A delightfully simple 2D game engine.",
+    "license": "MIT",
+    "name": "parin",
+    "stringImportPaths": [
+        "source/parin"
+    ],
+    "subPackages" : [
+        "packages/rin",
+        "packages/setup",
+        "packages/web"
+    ],
+    "dependencies": {
+        "joka": "*"
+    },
+    "libs": [
+        "raylib"
+    ],
+    "configurations": [
         {
             "name": "linux-x86_64",
-			"platforms": ["linux-x86_64"],
+            "platforms": ["linux-x86_64"],
             "targetType": "library",
-			"lflags": ["-L$PACKAGE_DIR/vendor/linux_x86_64"]
+            "lflags": ["-L$PACKAGE_DIR/vendor/linux_x86_64"]
         },
         {
             "name": "windows-x86_64",
-			"platforms": ["windows-x86_64"],
+            "platforms": ["windows-x86_64"],
             "targetType": "library",
-			"preBuildCommands": ["cmd.exe /c copy $PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.dll $ROOT_PACKAGE_DIR\\raylib.dll"],
-			"lflags": ["-L$PACKAGE_DIR\\vendor\\windows_x86_64"]
+            "preBuildCommands": ["cmd.exe /c copy $PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.dll $ROOT_PACKAGE_DIR\\raylib.dll"],
+            "lflags": ["-L$PACKAGE_DIR\\vendor\\windows_x86_64"]
         },
         {
             "name": "osx",
-			"platforms": ["osx"],
+            "platforms": ["osx"],
             "targetType": "library",
-			"lflags": ["-L$PACKAGE_DIR/vendor/macos"]
+            "lflags": ["-L$PACKAGE_DIR/vendor/macos"]
         }
     ]
 }

@@ -62,11 +62,14 @@ mixin runGame!(ready, update, finish);
 
 enum dubFileContent = `
 {
-    "name" : "game",
-    "description" : "A game made with Parin.",
     "authors" : ["Name"],
     "copyright" : "Copyright © 2025, Name",
+    "description" : "A game made with Parin.",
     "license" : "proprietary",
+    "name" : "game",
+    "stringImportPaths": [
+        "assets"
+    ],
     "dependencies": {
         "joka": "*",
         "parin": "*"
@@ -88,11 +91,14 @@ enum dubFileContent = `
 
 enum dubFileContentForMeTheDev = `
 {
-    "name" : "game",
-    "description" : "A game made with Parin.",
     "authors" : ["Name"],
     "copyright" : "Copyright © 2025, Name",
+    "description" : "A game made with Parin.",
     "license" : "proprietary",
+    "name" : "game",
+    "stringImportPaths": [
+        "assets"
+    ],
     "dependencies": {
         "joka": {"path": "../joka"},
         "parin": {"path": "../parin"}

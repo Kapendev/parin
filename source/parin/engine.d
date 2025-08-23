@@ -387,7 +387,7 @@ struct Texture {
 }
 
 /// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
+/// To free these resources, use the `freeManagedEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct TextureId {
     GenIndex data;
@@ -486,7 +486,7 @@ struct Font {
 }
 
 /// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
+/// To free these resources, use the `freeManagedEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct FontId {
     GenIndex data;
@@ -638,7 +638,7 @@ struct Sound {
 }
 
 /// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeEngineResources` function or the `free` method on the identifier.
+/// To free these resources, use the `freeManagedEngineResources` function or the `free` method on the identifier.
 /// The identifier is automatically invalidated when the resource is freed.
 struct SoundId {
     GenIndex data;
@@ -1046,6 +1046,7 @@ struct EngineState {
     Camera userCamera;
     Viewport userViewport;
 
+    Fault lastLoadFault;
     EngineViewport viewport;
     GenList!Texture textures;
     GenList!Sound sounds;
@@ -1088,7 +1089,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
-    import(monogramPath).toTexture().getOr().toFontAscii(6, 12).toFontId();
+    import(monogramPath).toTexture().toFontAscii(6, 12).toFontId();
     // Wasm stuff.
     version (WebAssembly) {
         em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_engineMouseCallbackWeb);
@@ -1272,30 +1273,22 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
 
 @trusted nothrow:
 
-/// Converts bytes into a texture.
-Maybe!Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
+/// Converts bytes into a texture. Returns an empty texture on error.
+Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
     auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length);
     auto value = rl.LoadTextureFromImage(image).toPr();
     rl.UnloadImage(image);
-    if (value.isEmpty) {
-        return Maybe!Texture(Fault.invalid);
-    } else {
-        value.setFilter(_engineState.defaultFilter);
-        value.setWrap(_engineState.defaultWrap);
-        return Maybe!Texture(value);
-    }
+    value.setFilter(_engineState.defaultFilter);
+    value.setWrap(_engineState.defaultWrap);
+    return value;
 }
 
-/// Converts bytes into a font.
-Maybe!Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf") {
+/// Converts bytes into a font. Returns an empty font on error.
+Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf") {
     auto value = rl.LoadFontFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length, size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
-    if (value.isEmpty) {
-        return Maybe!Font(Fault.invalid);
-    } else {
-        value.setFilter(_engineState.defaultFilter);
-        value.setWrap(_engineState.defaultWrap);
-        return Maybe!Font(value);
-    }
+    value.setFilter(_engineState.defaultFilter);
+    value.setWrap(_engineState.defaultWrap);
+    return value;
 }
 
 /// Converts an ASCII bitmap font texture into a font.
@@ -1358,6 +1351,11 @@ SoundId toSoundId(Sound from) {
     return id;
 }
 
+/// Returns the fault from the last managed engine resource load call.
+Fault lastLoadFault() {
+    return _engineState.lastLoadFault;
+}
+
 /// Loads a text file from the assets folder and saves the content into the given buffer.
 /// Supports both forward slashes and backslashes in file paths.
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
@@ -1391,9 +1389,7 @@ Maybe!Texture loadRawTexture(IStr path) {
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 TextureId loadTexture(IStr path) {
-    auto resource = loadRawTexture(path);
-    if (resource.isNone) return TextureId();
-    return resource.get().toTextureId();
+    return loadRawTexture(path).get(_engineState.lastLoadFault).toTextureId();
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
@@ -1413,9 +1409,7 @@ Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacin
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
-    auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
-    if (resource.isNone) return FontId();
-    return resource.get().toFontId();
+    return loadRawFont(path, size, runeSpacing, lineSpacing, runes).get(_engineState.lastLoadFault).toFontId();
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
@@ -1431,9 +1425,7 @@ Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    auto resource = loadRawFontFromTexture(path, tileWidth, tileHeight);
-    if (resource.isNone) return FontId();
-    return resource.get().toFontId();
+    return loadRawFontFromTexture(path, tileWidth, tileHeight).get(_engineState.lastLoadFault).toFontId();
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
@@ -1460,9 +1452,7 @@ Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = 
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    auto resource = loadRawSound(path, volume, pitch, canRepeat, pitchVariance);
-    if (resource.isNone) return SoundId();
-    return resource.get().toSoundId();
+    return loadRawSound(path, volume, pitch, canRepeat, pitchVariance).get(_engineState.lastLoadFault).toSoundId();
 }
 
 /// Saves a text file to the assets folder.
@@ -1781,7 +1771,7 @@ void freeManagedEngineResources() {
     }
 }
 
-deprecated("Was meh so it's `freeManagedEngineResources` now.")
+deprecated("Was too generic. Use `freeManagedEngineResources` now.")
 alias freeEngineResources = freeManagedEngineResources;
 
 /// Opens a URL in the default web browser (if available).
