@@ -90,84 +90,105 @@ enum Blend : ubyte {
 
 /// A limited set of keyboard keys.
 enum Keyboard : ushort {
-    none = rl.KEY_NULL,           /// Not a key.
-    a = rl.KEY_A,                 /// The A key.
-    b = rl.KEY_B,                 /// The B key.
-    c = rl.KEY_C,                 /// The C key.
-    d = rl.KEY_D,                 /// The D key.
-    e = rl.KEY_E,                 /// The E key.
-    f = rl.KEY_F,                 /// The F key.
-    g = rl.KEY_G,                 /// The G key.
-    h = rl.KEY_H,                 /// The H key.
-    i = rl.KEY_I,                 /// The I key.
-    j = rl.KEY_J,                 /// The J key.
-    k = rl.KEY_K,                 /// The K key.
-    l = rl.KEY_L,                 /// The L key.
-    m = rl.KEY_M,                 /// The M key.
-    n = rl.KEY_N,                 /// The N key.
-    o = rl.KEY_O,                 /// The O key.
-    p = rl.KEY_P,                 /// The P key.
-    q = rl.KEY_Q,                 /// The Q key.
-    r = rl.KEY_R,                 /// The R key.
-    s = rl.KEY_S,                 /// The S key.
-    t = rl.KEY_T,                 /// The T key.
-    u = rl.KEY_U,                 /// The U key.
-    v = rl.KEY_V,                 /// The V key.
-    w = rl.KEY_W,                 /// The W key.
-    x = rl.KEY_X,                 /// The X key.
-    y = rl.KEY_Y,                 /// The Y key.
-    z = rl.KEY_Z,                 /// The Z key.
-    n0 = rl.KEY_ZERO,             /// The 0 key.
-    n1 = rl.KEY_ONE,              /// The 1 key.
-    n2 = rl.KEY_TWO,              /// The 2 key.
-    n3 = rl.KEY_THREE,            /// The 3 key.
-    n4 = rl.KEY_FOUR,             /// The 4 key.
-    n5 = rl.KEY_FIVE,             /// The 5 key.
-    n6 = rl.KEY_SIX,              /// The 6 key.
-    n7 = rl.KEY_SEVEN,            /// The 7 key.
-    n8 = rl.KEY_EIGHT,            /// The 8 key.
-    n9 = rl.KEY_NINE,             /// The 9 key.
-    nn0 = rl.KEY_KP_0,            /// The 0 key on the numpad.
-    nn1 = rl.KEY_KP_1,            /// The 1 key on the numpad.
-    nn2 = rl.KEY_KP_2,            /// The 2 key on the numpad.
-    nn3 = rl.KEY_KP_3,            /// The 3 key on the numpad.
-    nn4 = rl.KEY_KP_4,            /// The 4 key on the numpad.
-    nn5 = rl.KEY_KP_5,            /// The 5 key on the numpad.
-    nn6 = rl.KEY_KP_6,            /// The 6 key on the numpad.
-    nn7 = rl.KEY_KP_7,            /// The 7 key on the numpad.
-    nn8 = rl.KEY_KP_8,            /// The 8 key on the numpad.
-    nn9 = rl.KEY_KP_9,            /// The 9 key on the numpad.
-    f1 = rl.KEY_F1,               /// The f1 key.
-    f2 = rl.KEY_F2,               /// The f2 key.
-    f3 = rl.KEY_F3,               /// The f3 key.
-    f4 = rl.KEY_F4,               /// The f4 key.
-    f5 = rl.KEY_F5,               /// The f5 key.
-    f6 = rl.KEY_F6,               /// The f6 key.
-    f7 = rl.KEY_F7,               /// The f7 key.
-    f8 = rl.KEY_F8,               /// The f8 key.
-    f9 = rl.KEY_F9,               /// The f9 key.
-    f10 = rl.KEY_F10,             /// The f10 key.
-    f11 = rl.KEY_F11,             /// The f11 key.
-    f12 = rl.KEY_F12,             /// The f12 key.
-    left = rl.KEY_LEFT,           /// The left arrow key.
-    right = rl.KEY_RIGHT,         /// The right arrow key.
-    up = rl.KEY_UP,               /// The up arrow key.
-    down = rl.KEY_DOWN,           /// The down arrow key.
-    esc = rl.KEY_ESCAPE,          /// The escape key.
-    enter = rl.KEY_ENTER,         /// The enter key.
-    tab = rl.KEY_TAB,             /// The tab key.
-    space = rl.KEY_SPACE,         /// The space key.
-    backspace = rl.KEY_BACKSPACE, /// THe backspace key.
-    shift = rl.KEY_LEFT_SHIFT,    /// The left shift key.
-    ctrl = rl.KEY_LEFT_CONTROL,   /// The left control key.
-    alt = rl.KEY_LEFT_ALT,        /// The left alt key.
-    win = rl.KEY_LEFT_SUPER,      /// The left windows/super/command key.
-    insert = rl.KEY_INSERT,       /// The insert key.
-    del = rl.KEY_DELETE,          /// The delete key.
-    home = rl.KEY_HOME,           /// The home key.
-    end = rl.KEY_END,             /// The end key.
-    pageUp = rl.KEY_PAGE_UP,      /// The page up key.
-    pageDown = rl.KEY_PAGE_DOWN,  /// The page down key.
+    none = rl.KEY_NULL,                  /// Not a key.
+    apostrophe = rl.KEY_APOSTROPHE,      /// The `'` key.
+    comma = rl.KEY_COMMA,                /// The `,` key.
+    minus = rl.KEY_MINUS,                /// The `-` key.
+    period = rl.KEY_PERIOD,              /// The `.` key.
+    slash = rl.KEY_SLASH,                /// The `/` key.
+    n0 = rl.KEY_ZERO,                    /// The 0 key.
+    n1 = rl.KEY_ONE,                     /// The 1 key.
+    n2 = rl.KEY_TWO,                     /// The 2 key.
+    n3 = rl.KEY_THREE,                   /// The 3 key.
+    n4 = rl.KEY_FOUR,                    /// The 4 key.
+    n5 = rl.KEY_FIVE,                    /// The 5 key.
+    n6 = rl.KEY_SIX,                     /// The 6 key.
+    n7 = rl.KEY_SEVEN,                   /// The 7 key.
+    n8 = rl.KEY_EIGHT,                   /// The 8 key.
+    n9 = rl.KEY_NINE,                    /// The 9 key.
+    nn0 = rl.KEY_KP_0,                   /// The 0 key on the numpad.
+    nn1 = rl.KEY_KP_1,                   /// The 1 key on the numpad.
+    nn2 = rl.KEY_KP_2,                   /// The 2 key on the numpad.
+    nn3 = rl.KEY_KP_3,                   /// The 3 key on the numpad.
+    nn4 = rl.KEY_KP_4,                   /// The 4 key on the numpad.
+    nn5 = rl.KEY_KP_5,                   /// The 5 key on the numpad.
+    nn6 = rl.KEY_KP_6,                   /// The 6 key on the numpad.
+    nn7 = rl.KEY_KP_7,                   /// The 7 key on the numpad.
+    nn8 = rl.KEY_KP_8,                   /// The 8 key on the numpad.
+    nn9 = rl.KEY_KP_9,                   /// The 9 key on the numpad.
+    semicolon = rl.KEY_SEMICOLON,        /// The `;` key.
+    equal = rl.KEY_EQUAL,                /// The `=` key.
+    a = rl.KEY_A,                        /// The A key.
+    b = rl.KEY_B,                        /// The B key.
+    c = rl.KEY_C,                        /// The C key.
+    d = rl.KEY_D,                        /// The D key.
+    e = rl.KEY_E,                        /// The E key.
+    f = rl.KEY_F,                        /// The F key.
+    g = rl.KEY_G,                        /// The G key.
+    h = rl.KEY_H,                        /// The H key.
+    i = rl.KEY_I,                        /// The I key.
+    j = rl.KEY_J,                        /// The J key.
+    k = rl.KEY_K,                        /// The K key.
+    l = rl.KEY_L,                        /// The L key.
+    m = rl.KEY_M,                        /// The M key.
+    n = rl.KEY_N,                        /// The N key.
+    o = rl.KEY_O,                        /// The O key.
+    p = rl.KEY_P,                        /// The P key.
+    q = rl.KEY_Q,                        /// The Q key.
+    r = rl.KEY_R,                        /// The R key.
+    s = rl.KEY_S,                        /// The S key.
+    t = rl.KEY_T,                        /// The T key.
+    u = rl.KEY_U,                        /// The U key.
+    v = rl.KEY_V,                        /// The V key.
+    w = rl.KEY_W,                        /// The W key.
+    x = rl.KEY_X,                        /// The X key.
+    y = rl.KEY_Y,                        /// The Y key.
+    z = rl.KEY_Z,                        /// The Z key.
+    bracketLeft = rl.KEY_LEFT_BRACKET,   /// The `[` key.
+    bracketRight = rl.KEY_RIGHT_BRACKET, /// The `]` key.
+    backslash = rl.KEY_BACKSLASH,        /// The `\` key.
+    grave = rl.KEY_GRAVE,                /// The `` ` `` key.
+    space = rl.KEY_SPACE,                /// The space key.
+    esc = rl.KEY_ESCAPE,                 /// The escape key.
+    enter = rl.KEY_ENTER,                /// The enter key.
+    tab = rl.KEY_TAB,                    /// The tab key.
+    backspace = rl.KEY_BACKSPACE,        /// THe backspace key.
+    insert = rl.KEY_INSERT,              /// The insert key.
+    del = rl.KEY_DELETE,                 /// The delete key.
+    right = rl.KEY_RIGHT,                /// The right arrow key.
+    left = rl.KEY_LEFT,                  /// The left arrow key.
+    down = rl.KEY_DOWN,                  /// The down arrow key.
+    up = rl.KEY_UP,                      /// The up arrow key.
+    pageUp = rl.KEY_PAGE_UP,             /// The page up key.
+    pageDown = rl.KEY_PAGE_DOWN,         /// The page down key.
+    home = rl.KEY_HOME,                  /// The home key.
+    end = rl.KEY_END,                    /// The end key.
+    capsLock = rl.KEY_CAPS_LOCK,         /// The caps lock key.
+    scrollLock = rl.KEY_SCROLL_LOCK,     /// The scroll lock key.
+    numLock = rl.KEY_NUM_LOCK,           /// The num lock key.
+    printScreen = rl.KEY_PRINT_SCREEN,   /// The print screen key.
+    pause = rl.KEY_PAUSE,                /// The pause/break key.
+    shift = rl.KEY_LEFT_SHIFT,           /// The left shift key.
+    shiftRight = rl.KEY_RIGHT_SHIFT,     /// The right shift key.
+    ctrl = rl.KEY_LEFT_CONTROL,          /// The left control key.
+    ctrlRight = rl.KEY_RIGHT_CONTROL,    /// The right control key.
+    alt = rl.KEY_LEFT_ALT,               /// The left alt key.
+    altRight = rl.KEY_RIGHT_ALT,         /// The right alt key.
+    win = rl.KEY_LEFT_SUPER,             /// The left windows/super/command key.
+    winRight = rl.KEY_RIGHT_SUPER,       /// The right windows/super/command key.
+    menu = rl.KEY_KB_MENU,               /// The menu key.
+    f1 = rl.KEY_F1,                      /// The f1 key.
+    f2 = rl.KEY_F2,                      /// The f2 key.
+    f3 = rl.KEY_F3,                      /// The f3 key.
+    f4 = rl.KEY_F4,                      /// The f4 key.
+    f5 = rl.KEY_F5,                      /// The f5 key.
+    f6 = rl.KEY_F6,                      /// The f6 key.
+    f7 = rl.KEY_F7,                      /// The f7 key.
+    f8 = rl.KEY_F8,                      /// The f8 key.
+    f9 = rl.KEY_F9,                      /// The f9 key.
+    f10 = rl.KEY_F10,                    /// The f10 key.
+    f11 = rl.KEY_F11,                    /// The f11 key.
+    f12 = rl.KEY_F12,                    /// The f12 key.
 }
 
 /// A limited set of mouse keys.
@@ -2022,8 +2043,8 @@ int fpsMax() {
 
 /// Sets the maximum number of frames that can be rendered every second (FPS).
 void setFpsMax(int value) {
-    _engineState.fpsMax = value;
-    rl.SetTargetFPS(value); // NOTE: Don't need to check because raylib does it.
+    _engineState.fpsMax = value > 0 ? value : 0;
+    rl.SetTargetFPS(_engineState.fpsMax);
 }
 
 /// Returns the total elapsed time since the application started.
@@ -2053,14 +2074,15 @@ Vec2 deltaMouse() {
 }
 
 /// Returns the change in mouse wheel position since the last frame.
+// TODO: The value still depends on target. Fix that one day?
 float deltaWheel() {
-    auto result = 0.0f;
+    float result = void;
     version (WebAssembly) {
-        result = -rl.GetMouseWheelMove();
-    } version (OSX) {
-        result = -rl.GetMouseWheelMove();
-    } else {
         result = rl.GetMouseWheelMove();
+    } else version (OSX) {
+        result = rl.GetMouseWheelMove();
+    } else {
+        result = -rl.GetMouseWheelMove();
     }
     return result;
 }
@@ -2072,15 +2094,7 @@ bool isDown(char key) {
 
 /// Returns true if the specified key is currently pressed.
 bool isDown(Keyboard key) {
-    if (key == Keyboard.shift) {
-        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_SHIFT);
-    } else if (key == Keyboard.ctrl) {
-        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_CONTROL);
-    } else if (key == Keyboard.alt) {
-        return rl.IsKeyDown(key) || rl.IsKeyDown(rl.KEY_RIGHT_ALT);
-    } else {
-        return rl.IsKeyDown(key);
-    }
+    return rl.IsKeyDown(key);
 }
 
 /// Returns true if the specified key is currently pressed.
@@ -2101,15 +2115,7 @@ bool isPressed(char key) {
 
 /// Returns true if the specified key was pressed.
 bool isPressed(Keyboard key) {
-    if (key == Keyboard.shift) {
-        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_SHIFT);
-    } else if (key == Keyboard.ctrl) {
-        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_CONTROL);
-    } else if (key == Keyboard.alt) {
-        return rl.IsKeyPressed(key) || rl.IsKeyPressed(rl.KEY_RIGHT_ALT);
-    } else {
-        return rl.IsKeyPressed(key);
-    }
+    return rl.IsKeyPressed(key);
 }
 
 /// Returns true if the specified key was pressed.
@@ -2130,15 +2136,7 @@ bool isReleased(char key) {
 
 /// Returns true if the specified key was released.
 bool isReleased(Keyboard key) {
-    if (key == Keyboard.shift) {
-        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_SHIFT);
-    } else if (key == Keyboard.ctrl) {
-        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_CONTROL);
-    } else if (key == Keyboard.alt) {
-        return rl.IsKeyReleased(key) || rl.IsKeyReleased(rl.KEY_RIGHT_ALT);
-    } else {
-        return rl.IsKeyReleased(key);
-    }
+    return rl.IsKeyReleased(key);
 }
 
 /// Returns true if the specified key was released.
@@ -2156,6 +2154,8 @@ bool isReleased(Gamepad key, int id = 0) {
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
 /// A none key is returned when the queue is empty.
 Keyboard dequeuePressedKey() {
+    // TODO: This is not always correct because they don't share the same values. Needs a table, but maybe later.
+    // NOTE: The `enumToStr` function can be used to check if the value is valid.
     return cast(Keyboard) rl.GetKeyPressed();
 }
 

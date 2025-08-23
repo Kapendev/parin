@@ -1,17 +1,18 @@
 #!/bin/env sh
 
-exe_path='./app'
-app_path='./app.d'
-parin_package_path='./parin_package'
-joka_package_path='./joka_package'
-compiler='dmd'
-version='linux_x86_64'
-extra_flags=''
+extra_flags=
+source_path=.
+app_path=$source_path/app.d
+exe_path=./app
+parin_package_path=./parin_package
+joka_package_path=./joka_package
+compiler=dmd
+version=linux_x86_64
 
-[ -n "$1" ] && compiler="$1"
-[ -n "$2" ] && version="$2"
+[ -n "$1" ] && compiler=$1
+[ -n "$2" ] && version=$2
 $compiler \
     -of=$exe_path \
     -L=-L$parin_package_path/vendor/$version \
-    -J=parin -i $extra_flags \
+    -J=$parin_package_path/source/parin -I=$source_path -i $extra_flags \
     -run $app_path

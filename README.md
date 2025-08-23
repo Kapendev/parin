@@ -176,7 +176,7 @@ yay -S emscripten
 
 ### Is Parin a raylib wrapper?
 
-No. Raylib is just the current backend.
+No. Raylib is the current backend.
 A custom backend may be added in the future, but it's not a priority.
 
 ### What are Parin's priorities?

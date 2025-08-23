@@ -1,19 +1,21 @@
 @echo off
 setlocal
 
+set "extra_flags="
+set source_path=.
+set app_path=%source_path%\app.d
 set exe_path=.\app.exe
-set app_path=.\app.d
 set parin_package_path=.\parin_package
 set joka_package_path=.\joka_package
-set version=windows_x86_64
 set compiler=dmd
-set "extra_flags="
+set version=windows_x86_64
 
 if not "%~1"=="" set compiler=%~1
+if not "%~2"=="" set version=%~2
 %compiler% ^
     -of=%exe_path% ^
     -L=-L%parin_package_path%\vendor\%version% ^
-    -J=parin -i %extra_flags% ^
+    -J=%parin_package_path%\source\parin -I=%source_path% -i %extra_flags% ^
     %app_path%
 
 endlocal
