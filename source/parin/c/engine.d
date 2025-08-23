@@ -124,10 +124,10 @@ void prOpenWindow(int width, int height, int argc, ICStr* argv, ICStr title) => 
 void prUpdateWindow(EngineUpdateFunc updateFunc) => _updateWindow(updateFunc);
 void prCloseWindow() => _closeWindow();
 
+Font prToFontAscii(Texture from, int tileWidth, int tileHeight) => toFontAscii(from, tileWidth, tileHeight);
 TextureId prToTextureId(Texture from) => toTextureId(from);
 FontId prToFontId(Font from) => toFontId(from);
 SoundId prToSoundId(Sound from) => toSoundId(from);
-Font prToAsciiFont(Texture from, int tileWidth, int tileHeight) => toAsciiFont(from, tileWidth, tileHeight);
 
 Fault prLoadRawTextIntoBuffer(IStr path, LStr* buffer) => loadRawTextIntoBuffer(path, *buffer);
 TextureId prLoadTexture(IStr path) => loadTexture(path);

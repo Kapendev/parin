@@ -1060,7 +1060,7 @@ struct EngineState {
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
-    enum monogramPath = "monogram.png";
+    enum monogramPath = "parin_monogram.png";
     enum targetHtmlElementId = "canvas";
 
     if (rl.IsWindowReady) return;
@@ -1088,15 +1088,10 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
-    // Load debug font.
-    auto monogramData = cast(const(ubyte)[]) import(monogramPath);
-    auto monogramImage = rl.LoadImageFromMemory(".png", monogramData.ptr, cast(int) monogramData.length);
-    auto monogramTexture = rl.LoadTextureFromImage(monogramImage).toPr();
-    _engineState.fonts.append(monogramTexture.toAsciiFont(6, 12));
-    rl.UnloadImage(monogramImage);
-
+    import(monogramPath).toTexture().getOr().toFontAscii(6, 12).toFontId();
+    // Wasm stuff.
     version (WebAssembly) {
-        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, false, &_engineMouseCallbackWeb);
+        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_engineMouseCallbackWeb);
     }
 }
 
@@ -1277,6 +1272,65 @@ mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int 
 
 @trusted nothrow:
 
+/// Converts bytes into a texture.
+Maybe!Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
+    auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length);
+    auto value = rl.LoadTextureFromImage(image).toPr();
+    rl.UnloadImage(image);
+    if (value.isEmpty) {
+        return Maybe!Texture(Fault.invalid);
+    } else {
+        value.setFilter(_engineState.defaultFilter);
+        value.setWrap(_engineState.defaultWrap);
+        return Maybe!Texture(value);
+    }
+}
+
+/// Converts bytes into a font.
+Maybe!Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf") {
+    auto value = rl.LoadFontFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length, size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
+    if (value.isEmpty) {
+        return Maybe!Font(Fault.invalid);
+    } else {
+        value.setFilter(_engineState.defaultFilter);
+        value.setWrap(_engineState.defaultWrap);
+        return Maybe!Font(value);
+    }
+}
+
+/// Converts an ASCII bitmap font texture into a font.
+/// The texture will be freed when the font is freed.
+// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
+// NOTE: It uses the raylib allocator.
+Font toFontAscii(Texture from, int tileWidth, int tileHeight) {
+    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
+    auto result = Font();
+    result.lineSpacing = tileHeight;
+    auto rowCount = from.height / tileHeight;
+    auto colCount = from.width / tileWidth;
+    auto maxCount = rowCount * colCount;
+    result.data.baseSize = tileHeight;
+    result.data.glyphCount = maxCount;
+    result.data.glyphPadding = 0;
+    result.data.texture = from.data;
+    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
+    foreach (i; 0 .. maxCount) {
+        result.data.recs[i].x = (i % colCount) * tileWidth;
+        result.data.recs[i].y = (i / colCount) * tileHeight;
+        result.data.recs[i].width = tileWidth;
+        result.data.recs[i].height = tileHeight;
+    }
+    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
+    foreach (i; 0 .. maxCount) {
+        result.data.glyphs[i] = rl.GlyphInfo();
+        result.data.glyphs[i].value = i + 32;
+    }
+    return result;
+}
+
+deprecated("Will be renamed to toFontAscii.")
+alias toAsciiFont = toFontAscii;
+
 /// Converts a texture into a managed engine resource.
 /// The texture will be freed when the resource is freed.
 TextureId toTextureId(Texture from) {
@@ -1304,48 +1358,16 @@ SoundId toSoundId(Sound from) {
     return id;
 }
 
-/// Converts an ASCII bitmap font texture into a font.
-/// The texture will be freed when the font is freed.
-// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
-// NOTE: It uses the raylib allocator.
-Font toAsciiFont(Texture from, int tileWidth, int tileHeight) {
-    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
-    auto result = Font();
-    result.lineSpacing = tileHeight;
-    auto rowCount = from.height / tileHeight;
-    auto colCount = from.width / tileWidth;
-    auto maxCount = rowCount * colCount;
-    result.data.baseSize = tileHeight;
-    result.data.glyphCount = maxCount;
-    result.data.glyphPadding = 0;
-    result.data.texture = from.data;
-    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.recs[i].x = (i % colCount) * tileWidth;
-        result.data.recs[i].y = (i / colCount) * tileHeight;
-        result.data.recs[i].width = tileWidth;
-        result.data.recs[i].height = tileHeight;
-    }
-    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.glyphs[i] = rl.GlyphInfo();
-        result.data.glyphs[i].value = i + 32;
-    }
-    return result;
-}
-
 /// Loads a text file from the assets folder and saves the content into the given buffer.
 /// Supports both forward slashes and backslashes in file paths.
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return readTextIntoBuffer(targetPath, buffer);
+    return readTextIntoBuffer(path.toAssetsPath(), buffer);
 }
 
 /// Loads a text file from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!LStr loadRawText(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return readText(targetPath);
+    return readText(path.toAssetsPath());
 }
 
 /// Loads a text file from the assets folder.
@@ -1359,8 +1381,7 @@ Maybe!IStr loadTempText(IStr path) {
 /// Loads a texture file (PNG) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!Texture loadRawTexture(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadTexture(targetPath.toCStr().getOr()).toPr();
+    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPr();
     value.setFilter(_engineState.defaultFilter);
     value.setWrap(_engineState.defaultWrap);
     return Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
@@ -1377,25 +1398,21 @@ TextureId loadTexture(IStr path) {
 
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto value = rl.LoadFontEx(targetPath.toCStr().getOr(), size, runes == "" ? null : cast(int*) runes.ptr, cast(int) runes.length).toPr();
-    if (value.data.texture.id == rl.GetFontDefault().texture.id) {
-        value = Font();
+Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
+    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
+    if (value.isEmpty) {
+        return Maybe!Font(Fault.cantFind);
+    } else {
+        value.setFilter(_engineState.defaultFilter);
+        value.setWrap(_engineState.defaultWrap);
+        return Maybe!Font(value);
     }
-    if (runeSpacing >= 0) value.runeSpacing = runeSpacing;
-    else value.runeSpacing = 1;
-    if (lineSpacing >= 0) value.lineSpacing = lineSpacing;
-    else value.lineSpacing = value.data.baseSize;
-    value.setFilter(_engineState.defaultFilter);
-    value.setWrap(_engineState.defaultWrap);
-    return Maybe!Font(value, value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "") {
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
     auto resource = loadRawFont(path, size, runeSpacing, lineSpacing, runes);
     if (resource.isNone) return FontId();
     return resource.get().toFontId();
@@ -1406,7 +1423,7 @@ FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1,
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
 Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
     auto value = loadRawTexture(path).getOr();
-    return Maybe!Font(value.toAsciiFont(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+    return Maybe!Font(value.toFontAscii(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
@@ -1422,12 +1439,11 @@ FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
     auto value = Sound();
     if (path.endsWith(".wav")) {
-        value.data = rl.LoadSound(targetPath.toCStr().getOr());
+        value.data = rl.LoadSound(path.toAssetsPath().toCStr().getOr());
     } else {
-        value.data = rl.LoadMusicStream(targetPath.toCStr().getOr());
+        value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
     }
     if (value.isEmpty) {
         return Maybe!Sound();
@@ -1452,8 +1468,7 @@ SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, 
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    return writeText(targetPath, text);
+    return writeText(path.toAssetsPath(), text);
 }
 
 /// Sets the path of the assets folder.
@@ -1489,8 +1504,14 @@ pragma(inline, true) {
         return Texture(from);
     }
 
-    Font toPr(rl.Font from) {
-        return Font(from);
+    Font toPr(rl.Font from, int runeSpacing, int lineSpacing) {
+        return from.texture.id == rl.GetFontDefault().texture.id
+            ? Font()
+            : Font(
+                from,
+                runeSpacing >= 0 ? runeSpacing : 0,
+                lineSpacing >= 0 ? lineSpacing : from.baseSize,
+            );
     }
 
     rl.Color toRl(Rgba from) {
@@ -1745,7 +1766,7 @@ ref LStr prepareTempText() {
 }
 
 /// Frees all managed engine resources.
-void freeEngineResources() {
+void freeManagedEngineResources() {
     foreach (ref item; _engineState.textures.items) item.free();
     _engineState.textures.clear();
     foreach (ref item; _engineState.sounds.items) item.free();
@@ -1759,6 +1780,9 @@ void freeEngineResources() {
         _engineState.fonts.remove(id);
     }
 }
+
+deprecated("Was meh so it's `freeManagedEngineResources` now.")
+alias freeEngineResources = freeManagedEngineResources;
 
 /// Opens a URL in the default web browser (if available).
 /// Redirect to Parin's GitHub when no URL is provided.
@@ -1904,8 +1928,7 @@ void setWindowMaxSize(int width, int height) {
 /// Sets the window icon to the specified image that will be loaded from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault setWindowIconFromFiles(IStr path) {
-    auto targetPath = isUsingAssetsPath ? path.toAssetsPath() : path;
-    auto image = rl.LoadImage(targetPath.toCStr().getOr());
+    auto image = rl.LoadImage(path.toAssetsPath().toCStr().getOr());
     if (image.data == null) return Fault.cantFind;
     rl.SetWindowIcon(image);
     rl.UnloadImage(image);

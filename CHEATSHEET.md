@@ -59,7 +59,10 @@ void setAssetsPath(IStr path);
 IStr[] envArgs();
 IStr[] droppedFilePaths();
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
-void freeEngineResources();
+
+Maybe!Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
+Maybe!Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
+Font toFontAscii(Texture from, int tileWidth, int tileHeight);
 ```
 
 ### 🎮 Input
