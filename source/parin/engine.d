@@ -1089,7 +1089,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
-    import(monogramPath).toTexture().toFontAscii(6, 12).toFontId();
+    toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
     // Wasm stuff.
     version (WebAssembly) {
         em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_engineMouseCallbackWeb);
