@@ -12,3 +12,4 @@ This folder provides example projects to help you get started.
 * [Basics](basics): Basic examples to get familiar with Parin.
 * [Games](games): Examples focused on making simple games with Parin.
 * [UI](ui): Examples demonstrating how to use the Parin UI library.
+* [Integrations](integrations): Examples using Parin with other libraries.

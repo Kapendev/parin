@@ -183,15 +183,6 @@ yay -S emscripten
 # Or: sudo pacman -S emscripten
 ```
 
-### Is Parin a raylib wrapper?
-
-No. Raylib is the current backend.
-A custom backend may be added in the future, but it's not a priority.
-
-### What are Parin's priorities?
-
-The goal is a smooth experience, similar to Godot or Unity.
-
 ### Where does `Vec2` come from?
 
 `Vec2` is a type provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
@@ -200,7 +191,7 @@ An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) us
 ### How can I load an asset outside of the assets folder?
 
 Call `setIsUsingAssetsPath(false)` to disable the default behavior.
-Or call `setAssetsPath(assetsPath.pathDirName)` to load assets from the executable's folder (e.g. `./exe ./file` instead of `./exe ./assets/file`).
+Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
 
 ### How can I hot reload assets?
 
@@ -209,8 +200,18 @@ The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
 ### Does Parin have other UI libraries?
 
-* [microui-d](https://github.com/Kapendev/microui-d/blob/main/examples/_02_parin.d)
+* [microui-d](examples/integrations/microui.d)
+* [Fluid](examples/integrations/fluid.d)
 
 ### Are the Parin assets free to use?
 
 Yes. Be sure to check the associated [README](assets/README.md) for any licensing notes.
+
+### Is Parin a raylib wrapper?
+
+No. Raylib is the current backend.
+A custom backend may be added in the future, but it's not a priority.
+
+### What are Parin's priorities?
+
+The goal is a smooth experience, similar to Godot or Unity.
