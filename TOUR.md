@@ -5,7 +5,7 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 
 ## Getting Started
 
-This section shows how to install Parin and its dependencies using [DUB](https://dub.pm/).
+This section shows how to install Parin using [DUB](https://dub.pm/).
 To begin, make a new folder and run inside the following commands to create a new project:
 
 ```cmd
@@ -13,8 +13,7 @@ dub init -n
 dub run parin:setup
 ```
 
-If everything is set up correctly,
-there should be some new files inside the folder.
+If everything is set up correctly, there should be some new files inside the folder.
 Three of them are particularly important:
 
 * `source`: Contains the source code
@@ -355,6 +354,21 @@ Managed resources are managed by the engine, meaning they get updated every fram
 ### Temporary Resources
 
 Temporary resources are only valid until the function that provided them is called again.
+
+## Embedding Assets
+
+Assets can be embedded into the binary with D's `import` feature.
+DUB projects already pass `-J=assets` to the compiler, so everything in the assets folder is available automatically.
+Example:
+
+```d
+auto atlas = Texture();
+
+void ready() {
+    atlas = toTexture(cast(ubyte[]) import("atlas.png"));
+    // Or add `.toTextureId()` at the end if atlas is a TextureId.
+}
+```
 
 ## Sprites & Tile Maps
 

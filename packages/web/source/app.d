@@ -2,6 +2,11 @@
 
 // [Noby Script]
 
+// I need to rewrite this one day, but eeehhhhh.
+// The problem is that things are not consistent between diffrent modes.
+// And the script is a little hard to read.
+// Maybe make nob better too.
+
 version (Windows) {
     enum emrunName = "emrun.bat";
     enum emccName = "emcc.bat";
