@@ -4,25 +4,33 @@
 import parin;
 import mupr; // Equivalent to `import microuid`, with additional helper functions for Parin.
 
-char[512] buffer = '\0';
-auto number = 0.0f;
-auto font = engineFont;
+Game game;
+
+struct Game {
+    FontId font = engineFont;
+    bool secretBool;
+
+    @UiMember          int   size = 32;
+    @UiMember(0, 640)  float worldX = 52;
+    @UiMember(0, 320)  float worldY = 52;
+    @UiMember("Debug") bool  debugMode;
+}
 
 void ready() {
-    // Create the UI context.
-    readyUi(&font);
+    readyUi(&game.font, 2);
 }
 
 bool update(float dt) {
-    // Update and draw the UI.
     beginUi();
-    if (beginWindow("The Window", UiRect(40, 40, 300, 200))) {
-        button("My Button");
-        slider(number, 0, 100);
-        textbox(buffer);
+    if (beginWindow("Game", UiRect(160, 80, 400, 300))) {
+        headerAndMembers(game, 200);
         endWindow();
     }
     endUi();
+    drawRect(
+        Rect(game.worldX, game.worldY, game.size, game.size),
+        game.debugMode ? green : white,
+    );
     return false;
 }
 
