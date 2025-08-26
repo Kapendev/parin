@@ -5,35 +5,40 @@ import parin;
 import mupr; // Equivalent to `import microuid`, with additional helper functions for Parin.
 
 Game game;
+FontId font = engineFont;
 
 struct Game {
-    FontId font = engineFont;
-    bool secretBool;
+    int width = 50;
+    int height = 50;
 
-    @UiMember          int   size = 45;
-    @UiMember(0, 255)  float color = 0;
-    @UiMember(1)       Vec2  world = Vec2(70, 50);
-    @UiMember("debug") bool  debugMode;
+    @UiMember(0, 255) float color = 0;
+    @UiMember(1)      Vec2  world = Vec2(70, 50);
+    @UiMember("flag") bool  reallyCoolFlag;
+
+    @UiPrivate:
+    bool secret1;
+    bool secret2;
 }
 
 void ready() {
-    readyUi(&game.font, 2);
+    readyUi(&font, 2);
+    toggleIsDebugMode();
 }
 
 bool update(float dt) {
-    beginUi();
-    if (beginWindow("Window", UiRect(200, 80, 350, 300))) {
-        headerAndMembers(game, 125); // You can also shift+click to edit a member.
-        endWindow();
-    }
-    endUi();
-
     setBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
     drawRect(
-        Rect(game.world.x, game.world.y, game.size, game.size),
-        game.debugMode ? green : white,
+        Rect(game.world, game.width, game.height),
+        game.reallyCoolFlag ? green : white,
     );
     return false;
 }
 
-mixin runGame!(ready, update, null);
+void inspect() {
+    if (beginWindow("Window", UiRect(200, 80, 350, 370), UiOptFlag.noClose | UiOptFlag.alignCenter)) {
+        headerAndMembers(game, 125);
+        endWindow();
+    }
+}
+
+mixin runGame!(ready, update, null, 960, 540, "Parin", inspect, beginUi, endUi);

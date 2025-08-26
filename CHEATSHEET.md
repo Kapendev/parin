@@ -45,20 +45,22 @@ void toggleIsFullscreen();
 bool isCursorVisible();
 void setIsCursorVisible(bool value);
 void toggleIsCursorVisible();
+
 bool isEmptyTextureVisible();
 void setIsEmptyTextureVisible(bool value);
 bool isEmptyFontVisible();
 void setIsEmptyFontVisible(bool value);
+
+bool isDebugMode();
+void setIsDebugMode(bool value);
+void toggleIsDebugMode();
+void setDebugModeKey(Keyboard value);
 
 bool isUsingAssetsPath();
 void setIsUsingAssetsPath(bool value);
 IStr assetsPath();
 IStr toAssetsPath(IStr path);
 void setAssetsPath(IStr path);
-
-IStr[] envArgs();
-IStr[] droppedFilePaths();
-void openUrl(IStr url = "https://github.com/Kapendev/parin");
 
 Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
 Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
@@ -73,6 +75,10 @@ void setDefaultFilter(Filter value);
 void setDefaultWrap(Wrap value);
 Flip oppositeFlip(Flip flip, Flip fallback);
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+
+IStr[] envArgs();
+IStr[] droppedFilePaths();
+void openUrl(IStr url = "https://github.com/Kapendev/parin");
 ```
 
 ### 🎮 Input

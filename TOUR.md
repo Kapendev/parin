@@ -370,8 +370,35 @@ void ready() {
 }
 ```
 
+## Debug Mode
+
+Parin has a debug mode that toggles with the **F3** key by default.
+When it's on, an `inspect` function runs after `update` and can be used for creating debug tools and inspectors.
+Example:
+
+```d
+// It assumes you are using: https://github.com/Kapendev/microui-d
+void inspect() {
+    if (beginWindow("Window", UiRect(200, 80, 350, 370))) {
+        headerAndMembers(game, 125);
+        endWindow();
+    }
+}
+mixin runGame!(ready, update, finish, 960, 540, "Parin", inspect, beginUi, endUi);
+```
+
+A full example of this can be found in the [examples](examples/integrations/microui.d).
+Additionally, a set of debug mode functions is provided. These include:
+
+```d
+bool isDebugMode();
+void setIsDebugMode(bool value);
+void toggleIsDebugMode();
+void setDebugModeKey(Keyboard value);
+```
+
 ## Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
 To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
-Parin provides a sprite utilities inside the `parin.sprite` module and map utilities inside the `parin.map` module.
+Parin provides sprite utilities inside the `parin.sprite` module and map utilities inside the `parin.map` module.

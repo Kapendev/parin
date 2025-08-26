@@ -24,13 +24,18 @@ version (WebAssembly) {
 
 __gshared EngineState* _engineState;
 
-alias EngineUpdateFunc      = bool function(float dt);
-alias EngineReadyFinishFunc = void function();
-alias EngineFlags           = ushort;
+alias EngineUpdateFunc = bool function(float dt);
+alias EngineFunc       = void function();
+alias EngineFlags      = uint;
 
 @trusted:
 
+enum defaultEngineWidth                = 960;
+enum defaultEngineHeight               = 540;
+enum defaultEngineTitle                = "Parin";
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
+enum defaultEngineDebugModeKey         = Keyboard.f3;
+enum defaultEngineFlags                = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible | EngineFlag.isEmptyFontVisible;
 enum defaultEngineFpsMax               = 60;
 enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
@@ -41,15 +46,16 @@ enum defaultEngineDebugColor2          = white.alpha(140);
 enum engineFont                        = FontId(GenIndex(1)); /// The default engine font. This font should not be freed.
 
 enum EngineFlag : EngineFlags {
-    none                  = 0x0000,
-    isUpdating            = 0x0001,
-    isUsingAssetsPath     = 0x0002,
-    isPixelSnapped        = 0x0004,
-    isPixelPerfect        = 0x0008,
-    isEmptyTextureVisible = 0x0010,
-    isEmptyFontVisible    = 0x0020,
-    isFullscreen          = 0x0040,
-    isCursorVisible       = 0x0080,
+    none                  = 0x000000,
+    isUpdating            = 0x000001,
+    isUsingAssetsPath     = 0x000002,
+    isPixelSnapped        = 0x000004,
+    isPixelPerfect        = 0x000008,
+    isFullscreen          = 0x000010,
+    isCursorVisible       = 0x000020,
+    isEmptyTextureVisible = 0x000040,
+    isEmptyFontVisible    = 0x000080,
+    isDebugMode           = 0x000100,
 }
 
 /// Flipping orientations.
@@ -1025,12 +1031,13 @@ struct EngineFullscreenState {
 
 /// The engine state.
 struct EngineState {
-    EngineFlags flags =
-        EngineFlag.isUsingAssetsPath |
-        EngineFlag.isEmptyTextureVisible |
-        EngineFlag.isEmptyFontVisible;
-
+    EngineFlags flags = defaultEngineFlags;
     EngineUpdateFunc updateFunc;
+    EngineFunc debugModeFunc;
+    EngineFunc debugModeBeginFunc;
+    EngineFunc debugModeEndFunc;
+    Keyboard debugModeKey = defaultEngineDebugModeKey;
+
     EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
     Vec2 mouseBuffer;
@@ -1154,7 +1161,13 @@ bool _updateWindowLoop() {
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
     // Update the game.
     auto result = _engineState.updateFunc(deltaTime);
-    _engineState.tickCount = (_engineState.tickCount + 1) % _engineState.tickCount.max;
+    if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
+    if (isDebugMode) {
+        if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
+        if (_engineState.debugModeFunc) _engineState.debugModeFunc();
+        if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
+    }
+    _engineState.tickCount += 1;
     if (rl.IsFileDropped) {
         // NOTE: LoadDroppedFiles just returns a global variable.
         rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
@@ -1225,9 +1238,12 @@ version (WebAssembly) {
 /// Updates the window every frame with the given function.
 /// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
-void _updateWindow(EngineUpdateFunc updateFunc) {
-    // Maybe bad idea, but makes life of no-attribute people easier.
+void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null, EngineFunc debugModeBeginFunc = null, EngineFunc debugModeEndFunc = null) {
     _engineState.updateFunc = updateFunc;
+    _engineState.debugModeFunc = debugModeFunc;
+    _engineState.debugModeBeginFunc = debugModeBeginFunc;
+    _engineState.debugModeEndFunc = debugModeEndFunc;
+
     _engineState.flags |= EngineFlag.isUpdating;
     version (WebAssembly) {
         em.emscripten_set_main_loop(&_updateWindowLoopWeb, 0, true);
@@ -1248,25 +1264,42 @@ void _closeWindow() {
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
-mixin template runGame(alias readyFunc, alias updateFunc, alias finishFunc, int width = 960, int height = 540, IStr title = "Parin") {
+mixin template runGame(
+    alias readyFunc,
+    alias updateFunc,
+    alias finishFunc,
+    int width = defaultEngineWidth,
+    int height = defaultEngineHeight,
+    IStr title = defaultEngineTitle,
+    alias debugModeFunc = null,
+    alias debugModeBeginFunc = null,
+    alias debugModeEndFunc = null
+) {
+    int _runGame() {
+        static if (__traits(isStaticFunction, debugModeFunc)) enum debugMode1 = &debugModeFunc;
+        else enum debugMode1 = null;
+        static if (__traits(isStaticFunction, debugModeBeginFunc)) enum debugMode2 = &debugModeBeginFunc;
+        else enum debugMode2 = null;
+        static if (__traits(isStaticFunction, debugModeEndFunc)) enum debugMode3 = &debugModeEndFunc;
+        else enum debugMode3 = null;
+
+        static if (__traits(isStaticFunction, readyFunc)) readyFunc();
+        static if (__traits(isStaticFunction, updateFunc)) _updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
+        static if (__traits(isStaticFunction, finishFunc)) finishFunc();
+        _closeWindow();
+        return 0;
+    }
+
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
             _openWindowC(width, height, argc, argv, title);
-            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-            static if (__traits(isStaticFunction, updateFunc)) _updateWindow(&updateFunc);
-            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-            _closeWindow();
-            return 0;
+            return _runGame();
         }
     } else {
         int main(immutable(char)[][] args) {
             _openWindow(width, height, args, title);
-            static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-            static if (__traits(isStaticFunction, updateFunc)) _updateWindow(&updateFunc);
-            static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-            _closeWindow();
-            return 0;
+            return _runGame();
         }
     }
 }
@@ -1835,6 +1868,28 @@ void setIsEmptyFontVisible(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isEmptyFontVisible
         : _engineState.flags & ~EngineFlag.isEmptyFontVisible;
+}
+
+/// Returns true if debug mode is active.
+bool isDebugMode() {
+    return cast(bool) (_engineState.flags & EngineFlag.isDebugMode);
+}
+
+/// Sets whether debug mode should be active.
+void setIsDebugMode(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isDebugMode
+        : _engineState.flags & ~EngineFlag.isDebugMode;
+}
+
+/// Toggles the debug mode on or off.
+void toggleIsDebugMode() {
+    setIsDebugMode(!isDebugMode);
+}
+
+/// Sets the key that will toggle the debug mode on or off.
+void setDebugModeKey(Keyboard value) {
+    _engineState.debugModeKey = value;
 }
 
 /// Returns true if the application is currently in fullscreen mode.
