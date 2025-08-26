@@ -10,10 +10,10 @@ struct Game {
     FontId font = engineFont;
     bool secretBool;
 
-    @UiMember          int   size = 32;
-    @UiMember(0, 640)  float worldX = 52;
-    @UiMember(0, 320)  float worldY = 52;
-    @UiMember("Debug") bool  debugMode;
+    @UiMember          int   size = 45;
+    @UiMember(0, 255)  float color = 0;
+    @UiMember(1)       Vec2  world = Vec2(70, 50);
+    @UiMember("debug") bool  debugMode;
 }
 
 void ready() {
@@ -22,13 +22,15 @@ void ready() {
 
 bool update(float dt) {
     beginUi();
-    if (beginWindow("Game", UiRect(160, 80, 400, 300))) {
-        headerAndMembers(game, 200);
+    if (beginWindow("Window", UiRect(200, 80, 350, 300))) {
+        headerAndMembers(game, 125); // You can also shift+click to edit a member.
         endWindow();
     }
     endUi();
+
+    setBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
     drawRect(
-        Rect(game.worldX, game.worldY, game.size, game.size),
+        Rect(game.world.x, game.world.y, game.size, game.size),
         game.debugMode ? green : white,
     );
     return false;
