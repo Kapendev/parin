@@ -186,7 +186,6 @@ struct Margin {
 
     this(int left, int top, int right, int bottom);
     this(int left);
-    IStr toStr();
 }
 
 struct DrawOptions {

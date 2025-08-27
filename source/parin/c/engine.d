@@ -12,10 +12,6 @@ import parin.engine;
 
 @safe extern(C):
 
-// -- Margin & SlicePart
-IStr prMarginToStr(Margin* self) => self.toStr();
-IStr prSlicePartToStr(SlicePart* self) => self.toStr();
-
 // -- Texture
 bool prTextureIsEmpty(Texture* self) => self.isEmpty;
 int prTextureWidth(Texture* self) => self.width;

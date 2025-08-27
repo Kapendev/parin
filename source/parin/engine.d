@@ -30,20 +30,27 @@ alias EngineFlags      = uint;
 
 @trusted:
 
-enum defaultEngineWidth                = 960;
-enum defaultEngineHeight               = 540;
-enum defaultEngineTitle                = "Parin";
+// ---------- Config
+enum defaultEngineTitle        = "Parin";
+enum defaultEngineWidth        = 960;
+enum defaultEngineHeight       = 540;
+enum defaultEngineFpsMax       = 60;
+enum defaultEngineFlags        = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible | EngineFlag.isEmptyFontVisible;
+enum defaultEngineDebugModeKey = Keyboard.f3;
+
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
-enum defaultEngineDebugModeKey         = Keyboard.f3;
-enum defaultEngineFlags                = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible | EngineFlag.isEmptyFontVisible;
-enum defaultEngineFpsMax               = 60;
 enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
-enum defaultEngineEmptyTextureColor    = white;
-enum defaultEngineDebugColor1          = black.alpha(140);
-enum defaultEngineDebugColor2          = white.alpha(140);
-enum engineFont                        = FontId(GenIndex(1)); /// The default engine font. This font should not be freed.
+enum defaultEngineTasksCapacity        = 64;
+
+enum defaultEngineEmptyTextureColor = white;
+enum defaultEngineDebugColor1       = black.alpha(140);
+enum defaultEngineDebugColor2       = white.alpha(140);
+// ----------
+
+/// The default engine font. This font should not be freed.
+enum engineFont = FontId(GenIndex(1));
 
 enum EngineFlag : EngineFlags {
     none                  = 0x000000,
@@ -245,14 +252,6 @@ struct Margin {
 
     this(int left) {
         this(left, left, left, left);
-    }
-
-    IStr toStr() {
-        return "l={} t={} r={} b={}".fmt(left, top, right, bottom);
-    }
-
-    IStr toString() {
-        return toStr();
     }
 }
 
@@ -1128,7 +1127,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
-    _engineState.tasks.reserve(16);
+    _engineState.tasks.reserve(defaultEngineTasksCapacity);
     toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
     // Wasm stuff.
     version (WebAssembly) {
@@ -1194,7 +1193,7 @@ bool _updateWindowLoop() {
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
     // Update the game.
     auto dt = deltaTime;
-    foreach (ref id; _engineState.tasks.ids) {
+    foreach (id; _engineState.tasks.ids) {
         if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
     }
     auto result = _engineState.updateFunc(dt);
@@ -2267,9 +2266,9 @@ bool isReleased(Gamepad key, int id = 0) {
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
 /// A none key is returned when the queue is empty.
 Keyboard dequeuePressedKey() {
-    // TODO: This is not always correct because they don't share the same values. Needs a table, but maybe later.
-    // NOTE: The `enumToStr` function can be used to check if the value is valid.
-    return cast(Keyboard) rl.GetKeyPressed();
+    auto result = cast(Keyboard) rl.GetKeyPressed();
+    if (result.toStr() == "?") return Keyboard.none; // NOTE: Could maybe be better, but who cares.
+    return result;
 }
 
 /// Returns the recently pressed character.
