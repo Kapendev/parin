@@ -1002,6 +1002,37 @@ struct Camera {
     }
 }
 
+/// Represents a scheduled task with interval, repeat count, and callback function.
+struct Task {
+    float interval = 0.0f;  /// The interval of the task, in seconds.
+    float time = 0.0f;      /// The current time of the task.
+    EngineUpdateFunc func;  /// The callback function of the task.
+    byte count;             /// Number of times the task will run, with -1 indicating it runs forever.
+
+    @trusted:
+
+    /// Updates the task, similar to the main update function.
+    bool update(float dt) {
+        if (count == 0) return true;
+        time += dt;
+        if (time >= interval) {
+            auto status = func(interval);
+            time -= interval;
+            if (count > 0) {
+                count -= 1;
+                if (count == 0) return true;
+            }
+            if (status) return true;
+        }
+        return false;
+    }
+}
+
+/// A container holding scheduled tasks.
+alias Tasks = SparseList!Task;
+/// An identifier for a scheduled task.
+alias TaskId = uint;
+
 /// Information about the engine viewport, including its area.
 struct EngineViewportInfo {
     Rect area;             /// The area covered by the viewport.
@@ -1063,6 +1094,7 @@ struct EngineState {
     LStr loadTextBuffer;
     LStr saveTextBuffer;
     LStr assetsPath;
+    Tasks tasks;
 }
 
 /// Opens a window with the specified size and title.
@@ -1096,6 +1128,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
+    _engineState.tasks.reserve(16);
     toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
     // Wasm stuff.
     version (WebAssembly) {
@@ -1160,7 +1193,11 @@ bool _updateWindowLoop() {
     }
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
     // Update the game.
-    auto result = _engineState.updateFunc(deltaTime);
+    auto dt = deltaTime;
+    foreach (ref id; _engineState.tasks.ids) {
+        if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
+    }
+    auto result = _engineState.updateFunc(dt);
     if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
     if (isDebugMode) {
         if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
@@ -1205,7 +1242,7 @@ bool _updateWindowLoop() {
     }
     // Fullscreen code.
     if (_engineState.fullscreenState.isChanging) {
-        _engineState.fullscreenState.changeTime += deltaTime;
+        _engineState.fullscreenState.changeTime += dt;
         if (_engineState.fullscreenState.changeTime >= _engineState.fullscreenState.changeDuration) {
             if (rl.IsWindowFullscreen()) {
                 rl.ToggleFullscreen();
@@ -1302,6 +1339,17 @@ mixin template runGame(
             return _runGame();
         }
     }
+}
+
+/// Schedule a function (task) to run every interval, optionally limited by count.
+TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false) {
+    _engineState.tasks.append(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
+    return cast(TaskId) (_engineState.tasks.length - 1);
+}
+
+/// Cancel a scheduled task by its ID.
+void cancel(TaskId id) {
+    _engineState.tasks.remove(id);
 }
 
 @trusted nothrow:

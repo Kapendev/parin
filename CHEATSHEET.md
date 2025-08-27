@@ -56,18 +56,14 @@ void setIsDebugMode(bool value);
 void toggleIsDebugMode();
 void setDebugModeKey(Keyboard value);
 
+TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
+void cancel(TaskId id);
+
 bool isUsingAssetsPath();
 void setIsUsingAssetsPath(bool value);
 IStr assetsPath();
 IStr toAssetsPath(IStr path);
 void setAssetsPath(IStr path);
-
-Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
-Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
-Font toFontAscii(Texture from, int tileWidth, int tileHeight);
-TextureId toTextureId(Texture from);
-FontId toFontId(Font from);
-SoundId toSoundId(Sound from);
 
 Filter defaultFilter();
 Wrap defaultWrap();
@@ -79,6 +75,13 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
 IStr[] envArgs();
 IStr[] droppedFilePaths();
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
+
+Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
+Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
+Font toFontAscii(Texture from, int tileWidth, int tileHeight);
+TextureId toTextureId(Texture from);
+FontId toFontId(Font from);
+SoundId toSoundId(Sound from);
 ```
 
 ### 🎮 Input

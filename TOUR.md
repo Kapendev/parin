@@ -397,6 +397,43 @@ void toggleIsDebugMode();
 void setDebugModeKey(Keyboard value);
 ```
 
+## Scheduling
+
+A simple scheduling system exists for running functions later or at intervals.
+This is useful for timers and background tasks.
+Scheduled functions run before `update`.
+Example:
+
+```d
+import parin;
+
+auto text = "GNU!";
+
+bool updateText(float dt) {
+    text ~= '!';
+    return false;
+}
+
+void ready() {
+    lockResolution(320, 180);
+    every(1, &updateText);
+}
+
+bool update(float dt) {
+    drawDebugText(text, Vec2(8));
+    return false;
+}
+
+mixin runGame!(ready, update, null);
+```
+
+Available functions:
+
+```d
+TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
+void cancel(TaskId id);
+```
+
 ## Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
