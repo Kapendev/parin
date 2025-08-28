@@ -8,6 +8,8 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 ### 🚀 Basic
 
 ```d
+bool vsync();
+void setVsync(bool value);
 int fps();
 int fpsMax();
 void setFpsMax(int value);

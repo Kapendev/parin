@@ -9,6 +9,8 @@
 module parin.engine;
 
 import rl = parin.rl;
+import gf = parin.gf;
+
 import joka.ascii;
 import joka.io;
 import joka.memory;
@@ -35,6 +37,7 @@ enum defaultEngineTitle        = "Parin";
 enum defaultEngineWidth        = 960;
 enum defaultEngineHeight       = 540;
 enum defaultEngineFpsMax       = 60;
+enum defaultEngineVsync        = true;
 enum defaultEngineFlags        = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible | EngineFlag.isEmptyFontVisible;
 enum defaultEngineDebugModeKey = Keyboard.f3;
 
@@ -1076,6 +1079,7 @@ struct EngineState {
     Vec2 wasdReleasedBuffer;
 
     int fpsMax = defaultEngineFpsMax;
+    bool vsync = defaultEngineVsync;
     Sz tickCount;
     Rgba borderColor = black;
     Filter defaultFilter;
@@ -1104,7 +1108,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 
     if (rl.IsWindowReady) return;
     // Raylib stuff.
-    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | rl.FLAG_VSYNC_HINT);
+    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | (defaultEngineVsync ? rl.FLAG_VSYNC_HINT : 0));
     rl.SetTraceLogLevel(rl.LOG_ERROR);
     rl.InitWindow(width, height, title.toCStr().getOr());
     rl.InitAudioDevice();
@@ -1184,6 +1188,8 @@ bool _updateWindowLoop() {
         }
     }
 
+    // Get some data before doing the game loop.
+    auto loopVsync = vsync;
     // Begin drawing.
     if (isResolutionLocked) {
         rl.BeginTextureMode(_engineState.viewport.data.toRl());
@@ -1228,6 +1234,11 @@ bool _updateWindowLoop() {
         rl.EndDrawing();
     }
 
+    // VSync code.
+    // NOTE: Could copy this style for viewport and fullscreen. They do have other problems though.
+    if (_engineState.vsync != loopVsync) {
+        gf.glfwSwapInterval(_engineState.vsync);
+    }
     // Viewport code.
     if (_engineState.viewport.isChanging) {
         if (_engineState.viewport.isLocking) {
@@ -2141,6 +2152,23 @@ int resolutionHeight() {
 /// Returns the current resolution size.
 Vec2 resolution() {
     return Vec2(resolutionWidth, resolutionHeight);
+}
+
+/// Returns the vertical synchronization state (VSync).
+bool vsync() {
+    return _engineState.vsync;
+}
+
+/// Sets the vertical synchronization state (VSync).
+void setVsync(bool value) {
+    version (WebAssembly) {
+    } else {
+        _engineState.vsync = value;
+        if (_engineState.flags & EngineFlag.isUpdating) {
+        } else {
+            gf.glfwSwapInterval(value);
+        }
+    }
 }
 
 /// Returns the current frames per second (FPS).
