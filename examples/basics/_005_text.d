@@ -18,9 +18,9 @@ bool update(float dt) {
     extra.visibilityRatio = fmod(elapsedTime * 0.3, 1.5);
     extra.isRightToLeft = true;
     // Draw the text with the engine font.
-    auto textArea = Rect(textPosition, measureTextSize(engineFont, text));
+    auto textArea = Rect(textPosition, measureTextSize(defaultFont, text));
     drawRect(textArea, black);
-    drawText(engineFont, text, textPosition, options, extra);
+    drawText(text, textPosition, options, extra);
     return false;
 }
 

@@ -58,6 +58,7 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
+For instructions on building without DUB, see [How can I build without DUB?](#how-can-i-build-without-dub).
 
 ### Required Libraries on Linux
 
