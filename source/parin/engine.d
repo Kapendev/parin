@@ -1239,7 +1239,8 @@ bool _updateWindowLoop() {
     // VSync code.
     // NOTE: Could copy this style for viewport and fullscreen. They do have other problems though.
     if (_engineState.vsync != loopVsync) {
-        gf.glfwSwapInterval(_engineState.vsync);
+        // TODO: The comment will be removed when we replace raylib lol.
+        // gf.glfwSwapInterval(_engineState.vsync);
     }
     // Viewport code.
     if (_engineState.viewport.isChanging) {
@@ -2188,7 +2189,8 @@ void setVsync(bool value) {
         _engineState.vsync = value;
         if (_engineState.flags & EngineFlag.isUpdating) {
         } else {
-            gf.glfwSwapInterval(value);
+            // TODO: Check the comment in the window loop function.
+            // gf.glfwSwapInterval(value);
         }
     }
 }

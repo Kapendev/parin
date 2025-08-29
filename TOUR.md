@@ -229,6 +229,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 ```
 
+Functions such as `drawTextureArea(Rect area, ...)` that don't receive a texture or font will use `defaultTexture` and `defaultFont` for drawing.
+
 ### Draw Options
 
 Draw options are used for configuring drawing parameters.
