@@ -1085,6 +1085,7 @@ struct EngineState {
     Filter defaultFilter;
     Wrap defaultWrap;
     FontId defaultFont = engineFont;
+    TextureId defaultTexture;
     Camera userCamera;
     Viewport userViewport;
 
@@ -2061,6 +2062,16 @@ void setDefaultWrap(Wrap value) {
     _engineState.defaultWrap = value;
 }
 
+/// Returns the default texture.
+TextureId defaultTexture() {
+    return _engineState.defaultTexture;
+}
+
+/// Sets the default texture to the specified value.
+void setDefaultTexture(TextureId value) {
+    _engineState.defaultTexture = value;
+}
+
 /// Returns the default font.
 FontId defaultFont() {
     return _engineState.defaultFont;
@@ -2614,6 +2625,12 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
     drawTextureArea(texture.getOr(), area, position, options);
 }
 
+/// Draws a portion of the default texture at the given position with the specified draw options.
+/// Use the `setDefaultTexture` function before using this function.
+void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTextureArea(_engineState.defaultTexture.getOr(), area, position, options);
+}
+
 /// Draws the texture at the given position with the specified draw options.
 void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(texture, Rect(texture.size), position, options);
@@ -2663,6 +2680,12 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
     drawTextureSlice(texture.getOr(), area, target, margin, canRepeat, options);
 }
 
+/// Draws a 9-slice from the default texture area at the given target area.
+/// Use the `setDefaultTexture` function before using this function.
+void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
+    drawTextureSlice(_engineState.defaultTexture.getOr(), area, target, margin, canRepeat, options);
+}
+
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     // Some basic rules to make viewports noob friendly.
@@ -2701,6 +2724,12 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
 /// Draws a single character from the specified font at the given position with the specified draw options.
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     drawRune(font.getOr(), rune, position, options);
+}
+
+/// Draws a single character from the default font at the given position with the specified draw options.
+/// Check the `setDefaultFont` function before using this function.
+void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawRune(_engineState.defaultFont, rune, position, options);
 }
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
@@ -2835,6 +2864,7 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 }
 
 /// Draws text with the default font at the given position with the provided draw options.
+/// Check the `setDefaultFont` function before using this function.
 void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     drawText(_engineState.defaultFont, text, position, options, extra);
 }

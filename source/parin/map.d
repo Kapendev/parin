@@ -369,11 +369,15 @@ struct TileMap {
 @nogc {
     void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
         if (!tile.hasId || !tile.hasSize) return;
-        drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
+        drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
     }
 
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
         drawTile(texture.getOr(), tile, options);
+    }
+
+    void drawTile(Tile tile, DrawOptions options = DrawOptions()) {
+        drawTile(defaultTexture.getOr(), tile, options);
     }
 
     void drawTileMap(Texture texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
@@ -422,7 +426,19 @@ struct TileMap {
         drawTileMap(texture.getOr(), map, viewArea, options);
     }
 
+    void drawTileMap(TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+        drawTileMap(defaultTexture.getOr(), map, viewArea, options);
+    }
+
+    void drawTileMap(Texture texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+        drawTileMap(texture, map, camera.area, options);
+    }
+
     void drawTileMap(TextureId texture, TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
         drawTileMap(texture.getOr(), map, camera.area, options);
+    }
+
+    void drawTileMap(TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+        drawTileMap(defaultTexture.getOr(), map, camera.area, options);
     }
 }
