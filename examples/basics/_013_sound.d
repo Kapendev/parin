@@ -15,7 +15,7 @@ bool update(float dt) {
     if (Keyboard.space.isPressed) toggleSoundIsActive(sound);
     if (Keyboard.esc.isPressed) toggleSoundIsPaused(sound);
     // Draw info about the sound.
-    drawDebugText(text.fmt(sound.isActive, sound.isPaused), Vec2(8));
+    drawText(text.fmt(sound.isActive, sound.isPaused), Vec2(8));
     return false;
 }
 

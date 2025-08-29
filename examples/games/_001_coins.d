@@ -36,7 +36,7 @@ bool update(float dt) {
     }
     // Draw text about the game.
     auto text = coins.length == 0 ? "You collected all the coins!" : "Coins: {}/{}\nMove with arrow keys.".fmt(coinCount - coins.length, coinCount);
-    drawDebugText(text, Vec2(8), DrawOptions(Pico8.white));
+    drawText(text, Vec2(8), DrawOptions(Pico8.white));
     return false;
 }
 

@@ -5,7 +5,7 @@ import parin;
 
 bool update(float dt) {
     lockResolution(320, 180);
-    drawDebugText("Hello world!", Vec2(8));
+    drawText("Hello world!", Vec2(8));
     return false;
 }
 

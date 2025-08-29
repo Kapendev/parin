@@ -183,6 +183,6 @@ void prDrawRune(Font font, dchar rune, Vec2 position, DrawOptions options) => dr
 void prDrawRuneId(FontId font, dchar rune, Vec2 position, DrawOptions options) => drawRune(font, rune, position, options);
 void prDrawText(Font font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
 void prDrawTextId(FontId font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
-void prDrawDebugText(IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawDebugText(text, position, options, extra);
+void prDrawTextDf(IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(text, position, options, extra);
 void prDrawDebugEngineInfo(Vec2 screenPoint, Camera camera, DrawOptions options) => drawDebugEngineInfo(screenPoint, camera, options);
 void prDrawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera, DrawOptions options) => drawDebugTileInfo(tileWidth, tileHeight, screenPoint, camera, options);

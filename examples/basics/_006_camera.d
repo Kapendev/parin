@@ -15,13 +15,13 @@ bool update(float dt) {
     camera.followPositionWithSlowdown(cameraTarget, 0.15);
     // Draw the world.
     camera.attach();
-    drawDebugText("Move with arrow keys.", Vec2(8));
+    drawText("Move with arrow keys.", Vec2(8));
     drawRect(camera.area.subAll(3), Color(50, 50, 40, 130));
     camera.detach();
     // Draw the UI.
-    drawDebugText("I am UI!", Vec2(8));
-    drawDebugText("+", resolution * Vec2(0.5));
-    drawDebugText("+", resolution * Vec2(0.5) + (cameraTarget - camera.position));
+    drawText("I am UI!", Vec2(8));
+    drawText("+", resolution * Vec2(0.5));
+    drawText("+", resolution * Vec2(0.5) + (cameraTarget - camera.position));
     return false;
 }
 

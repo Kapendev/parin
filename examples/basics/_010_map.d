@@ -33,7 +33,7 @@ bool update(float dt) {
     drawTileMap(atlas, map, camera);
     drawTile(atlas, tile, tileOptions);
     camera.detach();
-    drawDebugText("Move with arrow keys.", Vec2(8));
+    drawText("Move with arrow keys.", Vec2(8));
     return false;
 }
 

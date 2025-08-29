@@ -17,7 +17,7 @@ bool update(float dt) {
     if (Keyboard.esc.isPressed) timer.toggleIsPaused();
     // Check if the timer has stopped and add 1 to the counter.
     if (timer.hasStopped) counter += 1;
-    drawDebugText(text.fmt(counter, timer.duration, timer.time, timer.timeLeft), Vec2(8));
+    drawText(text.fmt(counter, timer.duration, timer.time, timer.timeLeft), Vec2(8));
     return false;
 }
 

@@ -1084,6 +1084,7 @@ struct EngineState {
     Rgba borderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
+    FontId defaultFont = engineFont;
     Camera userCamera;
     Viewport userViewport;
 
@@ -2045,19 +2046,29 @@ Filter defaultFilter() {
     return _engineState.defaultFilter;
 }
 
-/// Returns the default wrap mode.
-Wrap defaultWrap() {
-    return _engineState.defaultWrap;
-}
-
 /// Sets the default filter mode to the specified value.
 void setDefaultFilter(Filter value) {
     _engineState.defaultFilter = value;
 }
 
+/// Returns the default wrap mode.
+Wrap defaultWrap() {
+    return _engineState.defaultWrap;
+}
+
 /// Sets the default wrap mode to the specified value.
 void setDefaultWrap(Wrap value) {
     _engineState.defaultWrap = value;
+}
+
+/// Returns the default font.
+FontId defaultFont() {
+    return _engineState.defaultFont;
+}
+
+/// Sets the default font to the specified value.
+void setDefaultFont(FontId value) {
+    _engineState.defaultFont = value;
 }
 
 /// Returns the current master volume level.
@@ -2823,10 +2834,13 @@ void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     drawText(font.getOr(), text, position, options, extra);
 }
 
-/// Draws debug text at the given position with the provided draw options.
-void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    drawText(engineFont, text, position, options, extra);
+/// Draws text with the default font at the given position with the provided draw options.
+void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+    drawText(_engineState.defaultFont, text, position, options, extra);
 }
+
+deprecated("Use `drawText(text, ...)`. It works the same, but you can also call `setDefaultFont` to change the font.")
+alias drawDebugText = drawText;
 
 /// Draws debug engine information at the given position with the provided draw options.
 /// Hold the left mouse button to create and resize a debug area.
@@ -2898,7 +2912,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     }
     drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor2);
     drawHollowRect(Rect(a.toScreenPoint(camera), s), 1, defaultEngineDebugColor1);
-    drawDebugText(text, screenPoint, options);
+    drawText(text, screenPoint, options);
     if (Mouse.left.isReleased || Mouse.right.isReleased) {
         printfln(
             "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})",
@@ -2925,7 +2939,7 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
     );
     drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor2);
     drawHollowRect(Rect(tile.position.toScreenPoint(camera), tile.size), 1, defaultEngineDebugColor1);
-    drawDebugText(text, screenPoint, options);
+    drawText(text, screenPoint, options);
     version (WebAssembly) {
     } else {
         if (Mouse.left.isReleased || Mouse.right.isReleased) {

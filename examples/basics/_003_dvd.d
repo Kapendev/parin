@@ -13,7 +13,7 @@ bool update(float dt) {
     if (dvd.x < 0.0f || dvd.x > resolution.x - dvd.w) dvdDirection.x *= -1;
     if (dvd.y < 0.0f || dvd.y > resolution.y - dvd.h) dvdDirection.y *= -1;
     dvd.position += dvdDirection;
-    drawDebugText("DVD", dvd.position);
+    drawText("DVD", dvd.position);
     return false;
 }
 

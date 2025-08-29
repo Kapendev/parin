@@ -30,7 +30,7 @@ bool update(float dt) {
     }
     // Draw the world.
     drawDebugBoxWorld(world);
-    drawDebugText("Move with arrow keys.", Vec2(8));
+    drawText("Move with arrow keys.", Vec2(8));
     return false;
 }
 

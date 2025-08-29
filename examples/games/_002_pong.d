@@ -63,7 +63,7 @@ bool update(float dt) {
     options.color = Pico8.white;
     options.hook = Hook.center;
     options.scale = Vec2(2);
-    drawDebugText("[ {} ]".fmt(gameCounter), Vec2(resolutionWidth * 0.5, 16), options);
+    drawText("[ {} ]".fmt(gameCounter), Vec2(resolutionWidth * 0.5, 16), options);
     return false;
 }
 

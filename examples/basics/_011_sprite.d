@@ -40,7 +40,7 @@ bool update(float dt) {
     options.flip = spriteFlip;
     options.scale = Vec2(2);
     drawSprite(atlas, sprite, options);
-    drawDebugText("Move the mouse.\nPress 1, 2 or 3 to change the character.", Vec2(8));
+    drawText("Move the mouse.\nPress 1, 2 or 3 to change the character.", Vec2(8));
     return false;
 }
 

@@ -47,15 +47,15 @@ bool update(float dt) {
         }
     }
     // Draw the story.
-    if (story.hasText) drawDebugText(story.text, Vec2(8));
+    if (story.hasText) drawText(story.text, Vec2(8));
     if (story.hasMenu) {
         foreach (i, option; story.menu) {
-            drawDebugText("{} | {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
+            drawText("{} | {}".fmt(i + 1, option), Vec2(8, 8 + i * 14));
         }
     }
-    if (story.hasPause) drawDebugText("The story is paused.", Vec2(8));
+    if (story.hasPause) drawText("The story is paused.", Vec2(8));
     drawRect(infoArea, gray1);
-    drawDebugText(infoText, infoArea.centerPoint, DrawOptions(Hook.center), TextOptions(Alignment.left, 320 - 16));
+    drawText(infoText, infoArea.centerPoint, DrawOptions(Hook.center), TextOptions(Alignment.left, 320 - 16));
     return false;
 }
 

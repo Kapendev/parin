@@ -68,15 +68,11 @@ IStr toAssetsPath(IStr path);
 void setAssetsPath(IStr path);
 
 Filter defaultFilter();
-Wrap defaultWrap();
 void setDefaultFilter(Filter value);
+Wrap defaultWrap();
 void setDefaultWrap(Wrap value);
-Flip oppositeFlip(Flip flip, Flip fallback);
-Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
-
-IStr[] envArgs();
-IStr[] droppedFilePaths();
-void openUrl(IStr url = "https://github.com/Kapendev/parin");
+FontId defaultFont();
+void setDefaultFont(FontId value);
 
 Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
 Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
@@ -84,6 +80,12 @@ Font toFontAscii(Texture from, int tileWidth, int tileHeight);
 TextureId toTextureId(Texture from);
 FontId toFontId(Font from);
 SoundId toSoundId(Sound from);
+
+Flip oppositeFlip(Flip flip, Flip fallback);
+Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+IStr[] envArgs();
+IStr[] droppedFilePaths();
+void openUrl(IStr url = "https://github.com/Kapendev/parin");
 ```
 
 ### 🎮 Input
@@ -130,10 +132,10 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
-void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 ```

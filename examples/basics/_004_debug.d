@@ -29,7 +29,7 @@ bool update(float dt) {
             drawDebugTileInfo(16, 16, Vec2(8, 20));
             break;
     }
-    drawDebugText("Press SPACE to toggle the debug mode.", Vec2(8));
+    drawText("Press SPACE to toggle the debug mode.", Vec2(8));
     return false;
 }
 

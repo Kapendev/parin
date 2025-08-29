@@ -30,7 +30,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    drawDebugText("Hello world!", Vec2(8));
+    drawText("Hello world!", Vec2(8));
     return false;
 }
 
@@ -57,7 +57,7 @@ Here is a breakdown of how it works:
 
     ```d
     bool update(float dt) {
-        drawDebugText("Hello world!", Vec2(8));
+        drawText("Hello world!", Vec2(8));
         return false;
     }
     ```
@@ -156,7 +156,7 @@ Below are examples showing how to use these input functions to move text.
 
     ```d
     bool update(float dt) {
-        drawDebugText("Text", mouse);
+        drawText("Text", mouse);
         return false;
     }
     ```
@@ -169,7 +169,7 @@ Below are examples showing how to use these input functions to move text.
     bool update(float dt) {
         position.x += Keyboard.right.isDown - Keyboard.left.isDown;
         position.y += Keyboard.down.isDown - Keyboard.up.isDown;
-        drawDebugText("Text", position);
+        drawText("Text", position);
         return false;
     }
     ```
@@ -182,7 +182,7 @@ Below are examples showing how to use these input functions to move text.
     bool update(float dt) {
         position.x += 'd'.isDown - 'a'.isDown;
         position.y += 's'.isDown - 'w'.isDown;
-        drawDebugText("Text", position);
+        drawText("Text", position);
         return false;
     }
     ```
@@ -194,7 +194,7 @@ Below are examples showing how to use these input functions to move text.
 
     bool update(float dt) {
         position += wasd;
-        drawDebugText("Text", position);
+        drawText("Text", position);
         return false;
     }
     ```
@@ -216,10 +216,10 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
 void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
-void drawDebugText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 ```
@@ -276,7 +276,7 @@ Below are examples showing how to use these options to change how text looks.
     bool update(float dt) {
         auto options = DrawOptions(Hook.center);
         options.scale = Vec2(4 + sin(elapsedTime * 4));
-        drawDebugText("Text", resolution * Vec2(0.5), options);
+        drawText("Text", resolution * Vec2(0.5), options);
         return false;
     }
     ```
@@ -287,7 +287,7 @@ Below are examples showing how to use these options to change how text looks.
     bool update(float dt) {
         auto options = DrawOptions(Hook.center);
         auto extra = TextOptions(fmod(elapsedTime, 2.0));
-        drawDebugText("Hello.\nThis is some text.", resolution * Vec2(0.5), options, extra);
+        drawText("Hello.\nThis is some text.", resolution * Vec2(0.5), options, extra);
         return false;
     }
     ```
@@ -420,7 +420,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    drawDebugText(text, Vec2(8));
+    drawText(text, Vec2(8));
     return false;
 }
 
