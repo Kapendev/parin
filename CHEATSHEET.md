@@ -5,7 +5,7 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 
 ## 📦 `parin.engine`
 
-### 🚀 Basic
+### Basic
 
 ```d
 bool vsync();
@@ -90,7 +90,7 @@ IStr[] droppedFilePaths();
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
 ```
 
-### 🎮 Input
+### Input
 
 ```d
 bool isDown(char key);
@@ -119,7 +119,7 @@ Keyboard dequeuePressedKey();
 dchar dequeuePressedRune();
 ```
 
-### 🖼️ Drawing
+### Drawing
 
 ```d
 void drawRect(Rect area, Rgba color = white);
@@ -147,7 +147,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions());
 ```
 
-### 🔊 Sound
+### Sound
 
 ```d
 float masterVolume();
@@ -162,7 +162,7 @@ void toggleSoundIsActive(SoundId sound);
 void toggleSoundIsPaused(SoundId sound);
 ```
 
-### 💾 Loading & Saving
+### Loading & Saving
 
 ```d
 TextureId loadTexture(IStr path);
@@ -177,7 +177,7 @@ Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
 Fault saveText(IStr path, IStr text);
 ```
 
-### 🎲 Randomness
+### Randomness
 
 ```d
 int randi();
@@ -186,7 +186,7 @@ void randomize();
 void setRandomSeed(int value);
 ```
 
-### 🧺 Data Structures
+### Data Structures
 
 ```d
 struct Margin {
@@ -332,7 +332,7 @@ struct Viewport {
 }
 ```
 
-### 📌 Constants
+### Constants
 
 ```d
 enum Flip : ubyte {
@@ -499,7 +499,7 @@ enum Gamepad : ushort {
 
 ## 📦 `parin.timer`
 
-### 🧺 Data Structures
+### Data Structures
 
 ```d
 struct Timer {
@@ -528,7 +528,7 @@ struct Timer {
 
 ## 📦 `parin.palettes`
 
-### 📌 Constants
+### Constants
 
 ```d
 enum Wisp2 : Rgba {
