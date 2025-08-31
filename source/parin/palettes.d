@@ -24,6 +24,15 @@ enum Wisp2 : Rgba {
     white = toRgb(wisp2[1]),
 }
 
+/// This palette includes a 4-color set inspired by the Game Boy handheld console.
+/// Link: https://lospec.com/palette-list/2-bit-matrix
+enum Gb4 : Rgba {
+    black     = toRgb(gb4[0]),
+    darkGray  = toRgb(gb4[1]),
+    lightGray = toRgb(gb4[2]),
+    white     = toRgb(gb4[3]),
+}
+
 /// This palette includes the 16-color set used by the PICO-8 fantasy console.
 /// Link: https://lospec.com/palette-list/pico-8
 enum Pico8 : Rgba {
@@ -49,6 +58,14 @@ enum Pico8 : Rgba {
 immutable HexPalette!2 wisp2 = [
     0x322F29,
     0xDAD6D0,
+];
+
+/// Link: https://lospec.com/palette-list/2-bit-matrix
+immutable HexPalette!4 gb4 = [
+    0x343434,
+    0x5b8c7c,
+    0xadd9bc,
+    0xf2fff2,
 ];
 
 /// Link: https://lospec.com/palette-list/pico-8
