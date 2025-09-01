@@ -15,7 +15,7 @@ auto paddle2 = Rect(2, 30);
 
 void ready() {
     lockResolution(320, 180);
-    setBackgroundColor(Pico8.darkGray);
+    setBackgroundColor(Nes8.black);
     // Place the game objects.
     auto center = resolution * Vec2(0.5);
     auto offset = Vec2(resolutionWidth * 0.47, 0);
@@ -56,11 +56,11 @@ bool update(float dt) {
     }
 
     // Draw the game.
-    drawRect(ball.centerArea, Pico8.white);
-    drawRect(paddle1.centerArea, Pico8.white);
-    drawRect(paddle2.centerArea, Pico8.white);
+    drawRect(ball.centerArea, Nes8.yellow);
+    drawRect(paddle1.centerArea, Nes8.blue);
+    drawRect(paddle2.centerArea, Nes8.red);
     auto options = DrawOptions();
-    options.color = Pico8.white;
+    options.color = Nes8.white;
     options.hook = Hook.center;
     options.scale = Vec2(2);
     drawText("[ {} ]".fmt(gameCounter), Vec2(resolutionWidth * 0.5, 16), options);

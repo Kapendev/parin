@@ -9,7 +9,7 @@ auto coinCount = 8;
 
 void ready() {
     lockResolution(320, 180);
-    setBackgroundColor(Pico8.darkGray);
+    setBackgroundColor(Nes8.black);
     // Place the player at the center of the window.
     player.position = resolution * Vec2(0.5);
     // Create the coins. Every coin will have a random starting position.
@@ -28,15 +28,15 @@ void ready() {
 bool update(float dt) {
     // Move and draw the player.
     player.position += wasd * Vec2(120 * dt);
-    drawRect(player, Pico8.blue);
+    drawRect(player, Nes8.blue);
     // Collect and draw the coins.
     foreach (id; coins.ids) {
-        drawRect(coins[id], Pico8.yellow);
+        drawRect(coins[id], Nes8.yellow);
         if (coins[id].hasIntersection(player)) coins.remove(id);
     }
     // Draw text about the game.
     auto text = coins.length == 0 ? "You collected all the coins!" : "Coins: {}/{}\nMove with arrow keys.".fmt(coinCount - coins.length, coinCount);
-    drawText(text, Vec2(8), DrawOptions(Pico8.white));
+    drawText(text, Vec2(8), DrawOptions(Nes8.white));
     return false;
 }
 

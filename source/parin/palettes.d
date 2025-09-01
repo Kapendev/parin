@@ -17,14 +17,14 @@ import joka.types;
 alias Palette(Sz N) = Array!(Rgba, N); /// A generic color palette of RGBA colors.
 alias HexPalette(Sz N) = uint[N];      /// A generic color palette of hexadecimal numbers.
 
-/// This palette includes a 2-color set inspired by the Playdate handheld console.
+/// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
 enum Wisp2 : Rgba {
     black = toRgb(wisp2[0]),
     white = toRgb(wisp2[1]),
 }
 
-/// This palette includes a 4-color set inspired by the Game Boy handheld console.
+/// A 4-color palette inspired by the Game Boy.
 /// Link: https://lospec.com/palette-list/2-bit-matrix
 enum Gb4 : Rgba {
     black     = toRgb(gb4[0]),
@@ -33,7 +33,20 @@ enum Gb4 : Rgba {
     white     = toRgb(gb4[3]),
 }
 
-/// This palette includes the 16-color set used by the PICO-8 fantasy console.
+/// An 8-color palette inspired by the NES.
+/// Link: https://lospec.com/palette-list/mf-8
+enum Nes8 : Rgba {
+    black  = toRgb(nes8[0]),
+    brown  = toRgb(nes8[1]),
+    purple = toRgb(nes8[2]),
+    red    = toRgb(nes8[3]),
+    green  = toRgb(nes8[4]),
+    blue   = toRgb(nes8[5]),
+    yellow = toRgb(nes8[6]),
+    white  = toRgb(nes8[7]),
+}
+
+/// A 16-color palette used by the PICO-8.
 /// Link: https://lospec.com/palette-list/pico-8
 enum Pico8 : Rgba {
     black      = toRgb(pico8[0]),
@@ -66,6 +79,18 @@ immutable HexPalette!4 gb4 = [
     0x5b8c7c,
     0xadd9bc,
     0xf2fff2,
+];
+
+/// Link: https://lospec.com/palette-list/mf-8
+immutable HexPalette!8 nes8 = [
+    0x292320,
+    0xa7763e,
+    0x7f339a,
+    0xe04113,
+    0x32a75c,
+    0x1ac1fe,
+    0xfdd156,
+    0xfcf8ea,
 ];
 
 /// Link: https://lospec.com/palette-list/pico-8
@@ -170,6 +195,48 @@ immutable HexPalette!16 oneLight = [
     0x4078f2,
     0xa626a4,
     0x986801,
+];
+
+/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
+/// Link: https://ethanschoonover.com/solarized/
+immutable HexPalette!16 solarizedDark = [
+    0x002b36,
+    0x073642,
+    0x586e75,
+    0x657b83,
+    0x839496,
+    0x93a1a1,
+    0xeee8d5,
+    0xfdf6e3,
+    0xdc322f,
+    0xcb4b16,
+    0xb58900,
+    0x859900,
+    0x2aa198,
+    0x268bd2,
+    0x6c71c4,
+    0xd33682,
+];
+
+/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
+/// Link: https://ethanschoonover.com/solarized/
+immutable HexPalette!16 solarizedLight = [
+    0xfdf6e3,
+    0xeee8d5,
+    0x93a1a1,
+    0x839496,
+    0x657b83,
+    0x586e75,
+    0x073642,
+    0x002b36,
+    0xdc322f,
+    0xcb4b16,
+    0xb58900,
+    0x859900,
+    0x2aa198,
+    0x268bd2,
+    0x6c71c4,
+    0xd33682,
 ];
 
 /// Converts a CSV row to a color palette.
