@@ -70,7 +70,7 @@ Here is a breakdown of how it works:
 3. The Finish Function
 
     ```d
-    void finish() { }
+    void finish() {}
     ```
 
     This function is the ending point of the game.
@@ -230,6 +230,8 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
 ```
 
 Functions such as `drawTextureArea(Rect area, ...)` that don't receive a texture or font will use `defaultTexture` and `defaultFont` for drawing.
+
+By default, safety checks are performed during drawing to catch errors and prevent crashes. This makes development safer and easier, while still keeping performance reasonable. For maximum performance, these checks can be skipped with the `ParinSkipDrawChecks` version.
 
 ### Draw Options
 

@@ -223,20 +223,27 @@ struct Sprite {
 void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     options.hook = sprite.hook; // NOTE: Might be a bad idea in the future.
     options.flip = sprite.flip; // NOTE: Might be a bad idea in the future.
-    if (!sprite.hasSize) return;
-    if (texture.isEmpty) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
+
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (texture.isEmpty) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
+                drawRect(rect, defaultEngineEmptyTextureColor);
+                drawHollowRect(rect, 1, black);
+            }
+            return;
         }
-        return;
+        if (!sprite.hasSize) return;
     }
 
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
     auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width; // NOTE: Could be saved maybe.
-    auto gridHeight = max(texture.height - top, 0) / sprite.height; // NOTE: Could be saved maybe.
-    if (gridWidth == 0 || gridHeight == 0) return;
+
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (gridWidth == 0) return;
+    }
 
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;

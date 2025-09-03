@@ -368,8 +368,12 @@ struct TileMap {
 
 @nogc {
     void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
-        if (!tile.hasId || !tile.hasSize) return;
-        drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
+        version (ParinSkipDrawChecks) {
+            drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
+        } else {
+            if (!tile.hasId || !tile.hasSize) return;
+            drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
+        }
     }
 
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
@@ -381,14 +385,17 @@ struct TileMap {
     }
 
     void drawTileMap(Texture texture, TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-        if (!map.hasSize) return;
-        if (texture.isEmpty) {
-            if (isEmptyTextureVisible) {
-                auto rect = Rect(map.position, map.size);
-                drawRect(rect, defaultEngineEmptyTextureColor);
-                drawHollowRect(rect, 1, black);
+        version (ParinSkipDrawChecks) {
+        } else {
+            if (texture.isEmpty) {
+                if (isEmptyTextureVisible) {
+                    auto rect = Rect(map.position, map.size);
+                    drawRect(rect, defaultEngineEmptyTextureColor);
+                    drawHollowRect(rect, 1, black);
+                }
+                return;
             }
-            return;
+            if (!map.hasSize) return;
         }
 
         auto hasAreaSize = viewArea.hasSize;

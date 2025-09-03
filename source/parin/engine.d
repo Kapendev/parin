@@ -5,11 +5,21 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: Add a Parin frame allocator maybe.
+//  This would make things like `loadTempText` safer by changing
+//  it's lifetime from "call lifetime" to "frame lifetime."
+//  Maybe this one could also stay the same, no idea.
+//  The frame allocator would also be another tool users can use. Well, I would use it.
+//  Might need to make a linked list of arenas.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
+version (ParinSkipDrawChecks) {
+    pragma(msg, "Parin: Draw checks disabled. Invalid values may crash your game.");
+}
+
 import rl = parin.rl;
-import gf = parin.gf;
 
 import joka.ascii;
 import joka.io;
@@ -2574,28 +2584,22 @@ void drawLine(Line area, float size, Rgba color = white) {
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto isAreaEmpty = !area.hasSize;
-    if (texture.isEmpty) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(position, (isAreaEmpty ? Vec2(64) : area.size) * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (texture.isEmpty) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+                drawRect(rect, defaultEngineEmptyTextureColor);
+                drawHollowRect(rect, 1, black);
+            }
+            return;
         }
-        return;
+        if (!area.hasSize) return;
     }
-    if (isAreaEmpty) return;
 
-    auto target = Rect(position, area.size * options.scale.abs());
+    auto target = Rect(position, area.size * options.scale);
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
-    auto flip = options.flip;
-    if (options.scale.x < 0.0f && options.scale.y < 0.0f) {
-        flip = oppositeFlip(flip, Flip.xy);
-    } else if (options.scale.x < 0.0f) {
-        flip = oppositeFlip(flip, Flip.x);
-    } else if (options.scale.y < 0.0f) {
-        flip = oppositeFlip(flip, Flip.y);
-    }
-    final switch (flip) {
+    final switch (options.flip) {
         case Flip.none: break;
         case Flip.x: area.size.x *= -1.0f; break;
         case Flip.y: area.size.y *= -1.0f; break;
@@ -2707,7 +2711,14 @@ void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOp
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (font.isEmpty) return;
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (font.isEmpty) {
+            if (isEmptyFontVisible) font = engineFont.get();
+            else return;
+        }
+    }
+
     auto rect = toPr(rl.GetGlyphAtlasRec(font.data, rune));
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
@@ -2740,11 +2751,15 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     static FixedList!(IStr, 128) linesBuffer = void;
     static FixedList!(short, 128) linesWidthBuffer = void;
 
-    if (text.length == 0) return;
-    if (font.isEmpty) {
-        if (isEmptyFontVisible) font = engineFont.get();
-        else return;
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (font.isEmpty) {
+            if (isEmptyFontVisible) font = engineFont.get();
+            else return;
+        }
+        if (text.length == 0) return;
     }
+
     linesBuffer.clear();
     linesWidthBuffer.clear();
     // Get some info about the text.
