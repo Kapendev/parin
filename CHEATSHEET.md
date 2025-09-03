@@ -52,6 +52,8 @@ bool isEmptyTextureVisible();
 void setIsEmptyTextureVisible(bool value);
 bool isEmptyFontVisible();
 void setIsEmptyFontVisible(bool value);
+bool isLoggingLoadSaveFaults();
+void setIsLoggingLoadSaveFaults(bool value);
 
 bool isDebugMode();
 void setIsDebugMode(bool value);

@@ -48,10 +48,17 @@ enum defaultEngineWidth        = 960;
 enum defaultEngineHeight       = 540;
 enum defaultEngineFpsMax       = 60;
 enum defaultEngineVsync        = true;
-enum defaultEngineFlags        = EngineFlag.isUsingAssetsPath | EngineFlag.isEmptyTextureVisible | EngineFlag.isEmptyFontVisible;
 enum defaultEngineDebugModeKey = Keyboard.f3;
 
+enum defaultEngineFlags =
+    EngineFlag.isUsingAssetsPath |
+    EngineFlag.isEmptyTextureVisible |
+    EngineFlag.isEmptyFontVisible |
+    EngineFlag.isLoggingLoadSaveFaults;
+
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
+enum defaultEngineLoadErrorMessage     = "Could not load file: \"{}\"";
+enum defaultEngineSaveErrorMessage     = "Could not save file: \"{}\"";
 enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
@@ -66,16 +73,17 @@ enum defaultEngineDebugColor2       = white.alpha(140);
 enum engineFont = FontId(GenIndex(1));
 
 enum EngineFlag : EngineFlags {
-    none                  = 0x000000,
-    isUpdating            = 0x000001,
-    isUsingAssetsPath     = 0x000002,
-    isPixelSnapped        = 0x000004,
-    isPixelPerfect        = 0x000008,
-    isFullscreen          = 0x000010,
-    isCursorVisible       = 0x000020,
-    isEmptyTextureVisible = 0x000040,
-    isEmptyFontVisible    = 0x000080,
-    isDebugMode           = 0x000100,
+    none                    = 0x000000,
+    isUpdating              = 0x000001,
+    isUsingAssetsPath       = 0x000002,
+    isPixelSnapped          = 0x000004,
+    isPixelPerfect          = 0x000008,
+    isFullscreen            = 0x000010,
+    isCursorVisible         = 0x000020,
+    isEmptyTextureVisible   = 0x000040,
+    isEmptyFontVisible      = 0x000080,
+    isLoggingLoadSaveFaults = 0x000100,
+    isDebugMode             = 0x000200,
 }
 
 /// Flipping orientations.
@@ -1463,7 +1471,9 @@ Fault lastLoadFault() {
 /// Loads a text file from the assets folder and saves the content into the given buffer.
 /// Supports both forward slashes and backslashes in file paths.
 Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
-    return readTextIntoBuffer(path.toAssetsPath(), buffer);
+    auto result = readTextIntoBuffer(path.toAssetsPath(), buffer);
+    if (isLoggingLoadSaveFaults && result) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    return result;
 }
 
 /// Loads a text file from the assets folder.
@@ -1486,7 +1496,9 @@ Maybe!Texture loadRawTexture(IStr path) {
     auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPr();
     value.setFilter(_engineState.defaultFilter);
     value.setWrap(_engineState.defaultWrap);
-    return Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
+    auto result = Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
+    if (isLoggingLoadSaveFaults && result.isNone) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    return result;
 }
 
 /// Loads a texture file (PNG) from the assets folder.
@@ -1500,6 +1512,7 @@ TextureId loadTexture(IStr path) {
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
+    if (isLoggingLoadSaveFaults && value.isEmpty) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Font(Fault.cantFind);
     } else {
@@ -1541,6 +1554,7 @@ Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = 
     } else {
         value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
     }
+    if (isLoggingLoadSaveFaults && value.isEmpty) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Sound();
     } else {
@@ -1562,7 +1576,9 @@ SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, 
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
-    return writeText(path.toAssetsPath(), text);
+    auto result = writeText(path.toAssetsPath(), text);
+    if (isLoggingLoadSaveFaults && result) printfln(defaultEngineSaveErrorMessage, path.toAssetsPath());
+    return result;
 }
 
 /// Sets the path of the assets folder.
@@ -1939,6 +1955,18 @@ void setIsEmptyFontVisible(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isEmptyFontVisible
         : _engineState.flags & ~EngineFlag.isEmptyFontVisible;
+}
+
+/// Returns true if loading should log on fault.
+bool isLoggingLoadSaveFaults() {
+    return cast(bool) (_engineState.flags & EngineFlag.isLoggingLoadSaveFaults);
+}
+
+/// Sets whether loading should log on fault.
+void setIsLoggingLoadSaveFaults(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isLoggingLoadSaveFaults
+        : _engineState.flags & ~EngineFlag.isLoggingLoadSaveFaults;
 }
 
 /// Returns true if debug mode is active.
