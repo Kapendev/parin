@@ -187,5 +187,5 @@ void prDrawRuneDf(dchar rune, Vec2 position, DrawOptions options) => drawRune(ru
 void prDrawText(Font font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
 void prDrawTextId(FontId font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
 void prDrawTextDf(IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(text, position, options, extra);
-void prDrawDebugEngineInfo(Vec2 screenPoint, Camera camera, DrawOptions options) => drawDebugEngineInfo(screenPoint, camera, options);
-void prDrawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera, DrawOptions options) => drawDebugTileInfo(tileWidth, tileHeight, screenPoint, camera, options);
+void prDrawDebugEngineInfo(Vec2 screenPoint, Camera camera, DrawOptions options, bool isLogging = false) => drawDebugEngineInfo(screenPoint, camera, options, isLogging);
+void prDrawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera, DrawOptions options, bool isLogging = false) => drawDebugTileInfo(tileWidth, tileHeight, screenPoint, camera, options, isLogging);
