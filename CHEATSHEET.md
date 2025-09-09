@@ -209,11 +209,11 @@ struct DrawOptions {
     Hook hook;
     Flip flip;
 
-    this(float rotation);
-    this(Vec2 scale);
-    this(Rgba color);
+    this(float rotation, Hook hook = Hook.topLeft);
+    this(Vec2 scale, Hook hook = Hook.topLeft);
+    this(Rgba color, Hook hook = Hook.topLeft);
+    this(Flip flip, Hook hook = Hook.topLeft);
     this(Hook hook);
-    this(Flip flip);
 }
 
 struct TextOptions {

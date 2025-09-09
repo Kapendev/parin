@@ -72,10 +72,10 @@ enum defaultEngineDebugColor2       = white.alpha(140);
 /// The default engine font. This font should not be freed.
 enum engineFont = FontId(GenIndex(1));
 
-enum _d = DrawOptions(); /// Default draw options (shorthand for `DrawOptions()`).
-enum _t = TextOptions(); /// Default text options (shorthand for `TextOptions()`).
-enum _c = Camera();      /// Default camera (shorthand for `Camera()`).
-enum _v = Viewport();    /// Default viewport (shorthand for `Viewport()`).
+alias _D = DrawOptions; /// Draw options (shorthand for `DrawOptions`).
+alias _T = TextOptions; /// Text options (shorthand for `TextOptions`).
+alias _C = Camera;      /// Camera (shorthand for `Camera`).
+alias _V = Viewport;    /// Viewport (shorthand for `Viewport`).
 
 enum EngineFlag : EngineFlags {
     none                    = 0x000000,
@@ -324,28 +324,32 @@ struct DrawOptions {
     @trusted nothrow @nogc:
 
     /// Initializes the options with the given rotation.
-    this(float rotation) {
+    this(float rotation, Hook hook = Hook.topLeft) {
         this.rotation = rotation;
+        this.hook = hook;
     }
 
     /// Initializes the options with the given scale.
-    this(Vec2 scale) {
+    this(Vec2 scale, Hook hook = Hook.topLeft) {
         this.scale = scale;
+        this.hook = hook;
     }
 
     /// Initializes the options with the given color.
-    this(Rgba color) {
+    this(Rgba color, Hook hook = Hook.topLeft) {
         this.color = color;
+        this.hook = hook;
+    }
+
+    /// Initializes the options with the given flip.
+    this(Flip flip, Hook hook = Hook.topLeft) {
+        this.flip = flip;
+        this.hook = hook;
     }
 
     /// Initializes the options with the given hook.
     this(Hook hook) {
         this.hook = hook;
-    }
-
-    /// Initializes the options with the given flip.
-    this(Flip flip) {
-        this.flip = flip;
     }
 }
 
