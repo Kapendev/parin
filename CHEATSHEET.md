@@ -90,6 +90,13 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
 IStr[] envArgs();
 IStr[] droppedFilePaths();
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
+
+void* frameMalloc(Sz size, Sz alignment);
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+T* frameMakeBlank(T)();
+T* frameMake(T)(const(T) value = T.init);
+T[] frameMakeSliceBlank(T)(Sz length);
+T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
 ```
 
 ### Input

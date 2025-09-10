@@ -443,6 +443,23 @@ TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCall
 void cancel(TaskId id);
 ```
 
+## Frame Allocator
+
+The engine provides a frame allocator for temporary memory.
+Allocations from it only live for the current frame and are automatically cleared at the end.
+This is useful for scratch data like strings or small objects created every frame without worrying about freeing them.
+
+Available functions:
+
+```d
+void* frameMalloc(Sz size, Sz alignment);
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+T* frameMakeBlank(T)();
+T* frameMake(T)(const(T) value = T.init);
+T[] frameMakeSliceBlank(T)(Sz length);
+T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
+```
+
 ## Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.

@@ -63,6 +63,7 @@ enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
 enum defaultEngineTasksCapacity        = 64;
+enum defaultEngineArenaCapacity        = 1024 * 64;
 
 enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineDebugColor1       = black.alpha(140);
@@ -1127,6 +1128,7 @@ struct EngineState {
     LStr saveTextBuffer;
     LStr assetsPath;
     Tasks tasks;
+    GrowingArena arena;
 }
 
 /// Opens a window with the specified size and title.
@@ -1161,6 +1163,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
     _engineState.tasks.reserve(defaultEngineTasksCapacity);
+    _engineState.arena.ready(defaultEngineArenaCapacity);
     toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
     // Wasm stuff.
     version (WebAssembly) {
@@ -1227,6 +1230,7 @@ bool _updateWindowLoop() {
     }
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
     // Update the game.
+    _engineState.arena.clear();
     auto dt = deltaTime;
     foreach (id; _engineState.tasks.ids) {
         if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
@@ -1393,6 +1397,36 @@ void cancel(TaskId id) {
 }
 
 @trusted nothrow:
+
+/// Allocates raw memory from the frame arena.
+void* frameMalloc(Sz size, Sz alignment) {
+    return _engineState.arena.malloc(size, alignment);
+}
+
+/// Reallocates memory from the frame arena.
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment) {
+    return _engineState.arena.realloc(ptr, oldSize, newSize, alignment);
+}
+
+/// Allocates uninitialized memory for a single value of type T from the frame arena.
+T* frameMakeBlank(T)() {
+    return _engineState.arena.makeBlank!T();
+}
+
+/// Allocates and initializes a single value of type T from the frame arena.
+T* frameMake(T)(const(T) value = T.init) {
+    return _engineState.arena.make!T(value);
+}
+
+/// Allocates uninitialized memory for an array of T with the given length.
+T[] frameMakeSliceBlank(T)(Sz length) {
+    return _engineState.arena.makeSliceBlank!T(length);
+}
+
+/// Allocates and initializes an array of T with the given length.
+T[] frameMakeSlice(T)(Sz length, const(T) value = T.init) {
+    return _engineState.arena.makeSlice!T(length, value);
+}
 
 /// Converts bytes into a texture. Returns an empty texture on error.
 Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
