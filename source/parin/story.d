@@ -260,7 +260,7 @@ struct Story {
     }
 
     @trusted
-    Fault prepare() {
+    Fault prepare(IStr file = __FILE__, Sz line = __LINE__) {
         previousMenuResult = 0;
         resetLineIndex();
         pairs.clear();
@@ -271,16 +271,16 @@ struct Story {
         foreach (i, c; script) {
             if (c == '\n') {
                 auto pair = StoryStartEndPair(cast(uint) startIndex, cast(uint) i);
-                auto line = script[pair.a .. pair.b + 1];
-                pair.a += line.length - line.trimStart().length;
+                auto scriptLine = script[pair.a .. pair.b + 1];
+                pair.a += scriptLine.length - scriptLine.trimStart().length;
                 if (pair.a > pair.b) {
                     pair.a = pair.b;
-                    line = script[pair.a .. pair.b];
+                    scriptLine = script[pair.a .. pair.b];
                 } else {
-                    pair.b -= line.length - line.trimEnd().length;
-                    line = script[pair.a .. pair.b + 1];
+                    pair.b -= scriptLine.length - scriptLine.trimEnd().length;
+                    scriptLine = script[pair.a .. pair.b + 1];
                 }
-                auto kind = toStoryLineKind(line.length ? script[pair.a] : StoryLineKind.empty);
+                auto kind = toStoryLineKind(scriptLine.length ? script[pair.a] : StoryLineKind.empty);
                 if (kind.isNone) {
                     pairs.clear();
                     labels.clear();
@@ -288,7 +288,7 @@ struct Story {
                     return kind.fault;
                 }
                 if (kind.xx == StoryLineKind.label) {
-                    auto name = line[1 .. $].trimStart();
+                    auto name = scriptLine[1 .. $].trimStart();
                     auto word = StoryWord.init;
                     auto wordRef = word[];
                     if (auto fault = wordRef.copyChars(name)) {
@@ -297,9 +297,9 @@ struct Story {
                         faultPrepareIndex = prepareIndex;
                         return fault;
                     }
-                    labels.append(StoryVariable(word, StoryValue(cast(StoryNumber) pairs.length)));
+                    labels.appendSource(file, line, StoryVariable(word, StoryValue(cast(StoryNumber) pairs.length)));
                 }
-                pairs.append(pair);
+                pairs.appendSource(file, line, pair);
                 prepareIndex += 1;
                 startIndex = cast(StoryNumber) (i + 1);
             }
@@ -308,14 +308,14 @@ struct Story {
         return Fault.none;
     }
 
-    Fault parse(IStr text) {
+    Fault parse(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
         script.clear();
-        script.append(text);
+        script.appendSource(file, line, text);
         return prepare();
     }
 
     @trusted
-    Fault execute(IStr expression) {
+    Fault execute(IStr expression, IStr file = __FILE__, Sz line = __LINE__) {
         static FixedList!(StoryValue, defaultStoryFixedListCapacity) stack;
 
         stack.clear();
@@ -552,7 +552,7 @@ struct Story {
                         if (aIndex != -1) {
                             variables[aIndex].value = db;
                         } else {
-                            variables.append(StoryVariable(a, db));
+                            variables.appendSource(file, line, StoryVariable(a, db));
                         }
                         break;
                     case INIT:
@@ -564,7 +564,7 @@ struct Story {
                         if (aIndex != -1) {
                             variables[aIndex].value = StoryValue(0);
                         } else {
-                            variables.append(StoryVariable(a, StoryValue(0)));
+                            variables.appendSource(file, line, StoryVariable(a, StoryValue(0)));
                         }
                         break;
                     case DROP:

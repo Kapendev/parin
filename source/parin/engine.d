@@ -48,7 +48,7 @@ enum defaultEngineFlags =
     EngineFlag.isEmptyTextureVisible |
     EngineFlag.isEmptyFontVisible |
     EngineFlag.isLoggingLoadSaveFaults |
-    EngineFlag.isLoggingMemoryTracking;
+    EngineFlag.isLoggingMemoryTrackingInfo;
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
 enum defaultEngineLoadErrorMessage     = "Could not load file: \"{}\"";
@@ -73,18 +73,18 @@ alias _C = Camera;      /// Camera (shorthand for `Camera`).
 alias _V = Viewport;    /// Viewport (shorthand for `Viewport`).
 
 enum EngineFlag : EngineFlags {
-    none                    = 0x000000,
-    isUpdating              = 0x000001,
-    isUsingAssetsPath       = 0x000002,
-    isPixelSnapped          = 0x000004,
-    isPixelPerfect          = 0x000008,
-    isFullscreen            = 0x000010,
-    isCursorVisible         = 0x000020,
-    isEmptyTextureVisible   = 0x000040,
-    isEmptyFontVisible      = 0x000080,
-    isLoggingLoadSaveFaults = 0x000100,
-    isLoggingMemoryTracking = 0x000200,
-    isDebugMode             = 0x000400,
+    none                        = 0x000000,
+    isUpdating                  = 0x000001,
+    isUsingAssetsPath           = 0x000002,
+    isPixelSnapped              = 0x000004,
+    isPixelPerfect              = 0x000008,
+    isFullscreen                = 0x000010,
+    isCursorVisible             = 0x000020,
+    isEmptyTextureVisible       = 0x000040,
+    isEmptyFontVisible          = 0x000080,
+    isLoggingLoadSaveFaults     = 0x000100,
+    isLoggingMemoryTrackingInfo = 0x000200,
+    isDebugMode                 = 0x000400,
 }
 
 /// Flipping orientations.
@@ -1123,6 +1123,7 @@ struct EngineState {
     Camera userCamera;
     Viewport userViewport;
     Fault lastLoadFault;
+    IStr memoryTrackingInfoFilter;
 
     EngineViewport viewport;
     GenList!Texture textures;
@@ -1159,8 +1160,8 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.fullscreenState.previousWindowHeight = height;
     _engineState.viewport.data.color = gray;
     if (args.length) {
-        foreach (arg; args) _engineState.envArgsBuffer.debugAppend(arg);
-        _engineState.assetsPath._debugAppend(__FILE__, __LINE__, pathConcat(args[0].pathDirName, "assets"));
+        foreach (arg; args) _engineState.envArgsBuffer.appendSource(__FILE__, __LINE__, arg);
+        _engineState.assetsPath.appendSource(__FILE__, __LINE__, pathConcat(args[0].pathDirName, "assets"));
     }
     _engineState.loadTextBuffer.reserve(8192);
     _engineState.saveTextBuffer.reserve(8192);
@@ -1181,8 +1182,8 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 /// You should avoid calling this function manually.
 void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     _openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) _engineState.envArgsBuffer._debugAppend(__FILE__, __LINE__, argv[i].cStrToStr());
-    if (_engineState.envArgsBuffer.length) _engineState.assetsPath._debugAppend(__FILE__, __LINE__, pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
+    foreach (i; 0 .. argc) _engineState.envArgsBuffer.appendSource(__FILE__, __LINE__, argv[i].cStrToStr());
+    if (_engineState.envArgsBuffer.length) _engineState.assetsPath.appendSource(__FILE__, __LINE__, pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
 }
 
 /// Use by the `updateWindow` function.
@@ -1344,7 +1345,8 @@ void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null,
 /// You should avoid calling this function manually.
 void _closeWindow() {
     if (!rl.IsWindowReady()) return;
-    auto isLogging = isLoggingMemoryTracking;
+    auto isLogging = isLoggingMemoryTrackingInfo;
+    auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: Yeah, I know.
 
     _engineState.viewport.free();
     _engineState.textures.freeWithItems();
@@ -1362,7 +1364,7 @@ void _closeWindow() {
 
     rl.CloseAudioDevice();
     rl.CloseWindow();
-    if (isLogging) printMemoryTrackingInfo();
+    if (isLogging) printMemoryTrackingInfo(filter);
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
@@ -2034,15 +2036,16 @@ void setIsLoggingLoadSaveFaults(bool value) {
 }
 
 /// Returns true if memory tracking logs are enabled.
-bool isLoggingMemoryTracking() {
-    return cast(bool) (_engineState.flags & EngineFlag.isLoggingMemoryTracking);
+bool isLoggingMemoryTrackingInfo() {
+    return cast(bool) (_engineState.flags & EngineFlag.isLoggingMemoryTrackingInfo);
 }
 
 /// Enables or disables memory tracking logs.
-void setIsLoggingMemoryTracking(bool value) {
+void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "") {
     _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isLoggingMemoryTracking
-        : _engineState.flags & ~EngineFlag.isLoggingMemoryTracking;
+        ? _engineState.flags | EngineFlag.isLoggingMemoryTrackingInfo
+        : _engineState.flags & ~EngineFlag.isLoggingMemoryTrackingInfo;
+    _engineState.memoryTrackingInfoFilter = filter;
 }
 
 /// Returns true if debug mode is active.

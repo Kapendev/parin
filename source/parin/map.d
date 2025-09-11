@@ -79,19 +79,19 @@ struct TileMap {
     short tileHeight;
     Vec2 position;
 
-    enum defaultRowColCount = 256;
+    enum defaultRowColCount = 128;
     enum extraTileCount = 1;
 
     @safe nothrow:
 
-    this(Sz rowCount, Sz colCount, short tileWidth, short tileHeight) {
+    this(Sz rowCount, Sz colCount, short tileWidth, short tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
         this.tileWidth = tileWidth;
         this.tileHeight = tileHeight;
-        resizeHard(rowCount, colCount);
+        resizeHard(rowCount, colCount, file, line);
     }
 
-    this(short tileWidth, short tileHeight) {
-        this(defaultRowColCount, defaultRowColCount, tileWidth, tileHeight);
+    this(short tileWidth, short tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
+        this(defaultRowColCount, defaultRowColCount, tileWidth, tileHeight, file, line);
     }
 
     pragma(inline, true) @nogc {
@@ -148,11 +148,11 @@ struct TileMap {
         tileHeight = newTileHeight;
     }
 
-    void resizeHard(Sz newHardRowCount, Sz newHardColCount) {
-        if (isEmpty) layers.append(TileMapLayer());
+    void resizeHard(Sz newHardRowCount, Sz newHardColCount, IStr file = __FILE__, Sz line = __LINE__) {
+        if (isEmpty) layers.appendSource(file, line, TileMapLayer());
         rowCount = newHardRowCount;
         colCount = newHardColCount;
-        foreach (ref layer; layers) layer.resizeBlank(newHardRowCount, newHardColCount);
+        foreach (ref layer; layers) layer.resizeBlank(newHardRowCount, newHardColCount, file, line);
     }
 
     @nogc
@@ -172,9 +172,10 @@ struct TileMap {
         layers[layerId].fill(-1);
     }
 
-    void free() {
-        foreach (ref layer; layers) layer.free();
-        layers.free();
+    @nogc
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        foreach (ref layer; layers) layer.free(file, line);
+        layers.free(file, line);
     }
 
     @nogc
@@ -299,11 +300,11 @@ struct TileMap {
         return tiles(camera.area, layerId);
     }
 
-    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false) {
+    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
         if (csv.length == 0) return Fault.cantParse;
         if (layerId >= layers.length) {
-            foreach (i; 0 .. layerId - layers.length + 1) layers.append(TileMapLayer());
-            resizeHard(defaultRowColCount, defaultRowColCount);
+            foreach (i; 0 .. layerId - layers.length + 1) layers.appendSource(file, line, TileMapLayer());
+            resizeHard(defaultRowColCount, defaultRowColCount, file, line);
         }
         resize(0, 0);
         resizeTileSize(newTileWidth, newTileHeight);
@@ -312,10 +313,10 @@ struct TileMap {
             rowCount += 1;
             colCount = 0;
             if (rowCount > hardRowCount) return Fault.cantParse;
-            auto line = view.skipLine();
-            while (line.length) {
+            auto csvLine = view.skipLine();
+            while (csvLine.length) {
                 colCount += 1;
-                auto tile = line.skipValue(',').toSigned();
+                auto tile = csvLine.skipValue(',').toSigned();
                 if (tile.isNone || colCount > hardColCount) return Fault.cantParse;
                 layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.xx - isMinZero);
             }
