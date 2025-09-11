@@ -5,13 +5,6 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Add a Parin frame allocator maybe.
-//  This would make things like `loadTempText` safer by changing
-//  it's lifetime from "call lifetime" to "frame lifetime."
-//  Maybe this one could also stay the same, no idea.
-//  The frame allocator would also be another tool users can use. Well, I would use it.
-//  Might need to make a linked list of arenas.
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -54,7 +47,8 @@ enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
     EngineFlag.isEmptyTextureVisible |
     EngineFlag.isEmptyFontVisible |
-    EngineFlag.isLoggingLoadSaveFaults;
+    EngineFlag.isLoggingLoadSaveFaults |
+    EngineFlag.isLoggingMemoryTracking;
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
 enum defaultEngineLoadErrorMessage     = "Could not load file: \"{}\"";
@@ -63,7 +57,7 @@ enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
 enum defaultEngineTasksCapacity        = 64;
-enum defaultEngineArenaCapacity        = 1024 * 64;
+enum defaultEngineArenaCapacity        = 64 * kilobyte;
 
 enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineDebugColor1       = black.alpha(140);
@@ -89,7 +83,8 @@ enum EngineFlag : EngineFlags {
     isEmptyTextureVisible   = 0x000040,
     isEmptyFontVisible      = 0x000080,
     isLoggingLoadSaveFaults = 0x000100,
-    isDebugMode             = 0x000200,
+    isLoggingMemoryTracking = 0x000200,
+    isDebugMode             = 0x000400,
 }
 
 /// Flipping orientations.
@@ -1153,8 +1148,8 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.fullscreenState.previousWindowHeight = height;
     _engineState.viewport.data.color = gray;
     if (args.length) {
-        foreach (arg; args) _engineState.envArgsBuffer.append(arg);
-        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+        foreach (arg; args) _engineState.envArgsBuffer.debugAppend(arg);
+        _engineState.assetsPath._debugAppend(__FILE__, __LINE__, pathConcat(args[0].pathDirName, "assets"));
     }
     _engineState.loadTextBuffer.reserve(8192);
     _engineState.saveTextBuffer.reserve(8192);
@@ -1175,8 +1170,8 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 /// You should avoid calling this function manually.
 void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     _openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
-    if (_engineState.envArgsBuffer.length) _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
+    foreach (i; 0 .. argc) _engineState.envArgsBuffer._debugAppend(__FILE__, __LINE__, argv[i].cStrToStr());
+    if (_engineState.envArgsBuffer.length) _engineState.assetsPath._debugAppend(__FILE__, __LINE__, pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
 }
 
 /// Use by the `updateWindow` function.
@@ -1338,6 +1333,9 @@ void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null,
 /// You should avoid calling this function manually.
 void _closeWindow() {
     if (!rl.IsWindowReady()) return;
+
+    if (isLoggingMemoryTracking) printMemoryTrackingInfo();
+
     // NOTE: This leaks. Someone call the memory police!!!
     _engineState = null;
     rl.CloseAudioDevice();
@@ -2010,6 +2008,18 @@ void setIsLoggingLoadSaveFaults(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isLoggingLoadSaveFaults
         : _engineState.flags & ~EngineFlag.isLoggingLoadSaveFaults;
+}
+
+/// Returns true if memory tracking logs are enabled.
+bool isLoggingMemoryTracking() {
+    return cast(bool) (_engineState.flags & EngineFlag.isLoggingMemoryTracking);
+}
+
+/// Enables or disables memory tracking logs.
+void setIsLoggingMemoryTracking(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isLoggingMemoryTracking
+        : _engineState.flags & ~EngineFlag.isLoggingMemoryTracking;
 }
 
 /// Returns true if debug mode is active.
