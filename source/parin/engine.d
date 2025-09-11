@@ -1073,6 +1073,17 @@ struct EngineViewport {
     int lockHeight;  /// The target lock height.
     bool isChanging; /// The flag that triggers the new lock state.
     bool isLocking;  /// The flag that tells what the new lock state is.
+
+    @trusted nothrow @nogc:
+
+    /// Frees the loaded viewport.
+    void free() {
+        lockWidth = 0;
+        lockHeight = 0;
+        isChanging = false;
+        isLocking = false;
+        data.free();
+    }
 }
 
 /// The engine fullscreen state.
@@ -1111,8 +1122,8 @@ struct EngineState {
     TextureId defaultTexture;
     Camera userCamera;
     Viewport userViewport;
-
     Fault lastLoadFault;
+
     EngineViewport viewport;
     GenList!Texture textures;
     GenList!Sound sounds;
@@ -1333,13 +1344,25 @@ void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null,
 /// You should avoid calling this function manually.
 void _closeWindow() {
     if (!rl.IsWindowReady()) return;
+    auto isLogging = isLoggingMemoryTracking;
 
-    if (isLoggingMemoryTracking) printMemoryTrackingInfo();
-
-    // NOTE: This leaks. Someone call the memory police!!!
+    _engineState.viewport.free();
+    _engineState.textures.freeWithItems();
+    _engineState.sounds.freeWithItems();
+    _engineState.fonts.freeWithItems();
+    _engineState.envArgsBuffer.free();
+    _engineState.droppedFilePathsBuffer.free();
+    _engineState.loadTextBuffer.free();
+    _engineState.saveTextBuffer.free();
+    _engineState.assetsPath.free();
+    _engineState.tasks.free();
+    _engineState.arena.free();
+    jokaFree(_engineState);
     _engineState = null;
+
     rl.CloseAudioDevice();
     rl.CloseWindow();
+    if (isLogging) printMemoryTrackingInfo();
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
