@@ -548,6 +548,24 @@ enum Wisp2 : Rgba {
     white,
 }
 
+enum Gb4 : Rgba {
+    black,
+    darkGray,
+    lightGray,
+    white,
+}
+
+enum Nes8 : Rgba {
+    black,
+    brown,
+    purple,
+    red,
+    green,
+    blue,
+    yellow,
+    white,
+}
+
 enum Pico8 : Rgba {
     black,
     navy,
