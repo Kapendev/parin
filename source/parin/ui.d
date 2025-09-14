@@ -102,8 +102,8 @@ struct UiState {
 void prepareUi() {
     if (_uiState == null) {
         // NOTE: This leaks. THIS IS SO BAD WHERE IS `Box::leak` IN THIS CODEBASE???
-        _uiState = jokaMake!UiState();
-        _uiPreviousState = jokaMake!UiState();
+        _uiState = jokaMake!UiState().ignoreLeak();
+        _uiPreviousState = jokaMake!UiState().ignoreLeak();
     }
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     _uiState.itemId = 0;

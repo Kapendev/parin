@@ -460,6 +460,30 @@ T[] frameMakeSliceBlank(T)(Sz length);
 T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
 ```
 
+## Memory Tracking
+
+Parin includes a lightweight memory tracking system that can detect leaks in debug builds. By default, leaks will be printed at shutdown
+only if they are detected.
+
+Available functions:
+
+```d
+bool isLoggingMemoryTracking();
+void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
+```
+
+Example output:
+
+```
+Memory Leaks: 4 (total 699 bytes, 5 ignored)
+  1 leak, 20 bytes, source/app.d:24
+  1 leak, 53 bytes, source/app.d:31
+  2 leak, 32 bytes, source/app.d:123
+```
+
+This summary is normal in debug builds and does not indicate an error.
+Some leaks can be ignored with the `ignoreLeak` function.
+
 ## Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.

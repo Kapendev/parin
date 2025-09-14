@@ -6,6 +6,7 @@
 // ---
 
 // TODO: Update all the doc comments here.
+// TODO: Needs a simple rewrite. Nothing crazy, just some clean code tm stuff.
 
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
@@ -297,9 +298,9 @@ struct Story {
                         faultPrepareIndex = prepareIndex;
                         return fault;
                     }
-                    labels.appendSource(file, line, StoryVariable(word, StoryValue(cast(StoryNumber) pairs.length)));
+                    labels.push(StoryVariable(word, StoryValue(cast(StoryNumber) pairs.length)), file, line);
                 }
-                pairs.appendSource(file, line, pair);
+                pairs.push(pair, file, line);
                 prepareIndex += 1;
                 startIndex = cast(StoryNumber) (i + 1);
             }
@@ -552,7 +553,7 @@ struct Story {
                         if (aIndex != -1) {
                             variables[aIndex].value = db;
                         } else {
-                            variables.appendSource(file, line, StoryVariable(a, db));
+                            variables.push(StoryVariable(a, db));
                         }
                         break;
                     case INIT:
@@ -564,7 +565,7 @@ struct Story {
                         if (aIndex != -1) {
                             variables[aIndex].value = StoryValue(0);
                         } else {
-                            variables.appendSource(file, line, StoryVariable(a, StoryValue(0)));
+                            variables.push(StoryVariable(a, StoryValue(0)));
                         }
                         break;
                     case DROP:
@@ -698,16 +699,16 @@ struct Story {
         return Fault.none;
     }
 
-    Fault update() {
+    Fault update(IStr file = __FILE__, Sz line = __LINE__) {
         if (lineCount == 0) return Fault.none;
         setLineIndex(lineIndex + 1);
         while (lineIndex < lineCount && !hasPause && !hasProcedure && !hasMenu && !hasText) {
-            auto line = opIndex(lineIndex);
-            if (line.length) {
-                if (line[0] == StoryLineKind.expression) {
-                    auto fault = execute(line[1 .. $].trimStart());
+            auto scriptLine = opIndex(lineIndex);
+            if (scriptLine.length) {
+                if (scriptLine[0] == StoryLineKind.expression) {
+                    auto fault = execute(scriptLine[1 .. $].trimStart(), file, line);
                     if (fault) return fault;
-                } else if (line[0] == StoryLineKind.label) {
+                } else if (scriptLine[0] == StoryLineKind.label) {
                     setNextLabelIndex(nextLabelIndex + 1);
                 }
             }
@@ -717,25 +718,34 @@ struct Story {
         return Fault.none;
     }
 
-    Fault select(Sz i) {
+    Fault select(Sz i, IStr file = __FILE__, Sz line = __LINE__) {
         previousMenuResult = cast(StoryNumber) (i + 1);
-        return update();
+        return update(file, line);
     }
 
-    void reserve(Sz capacity) {
-        script.reserve(capacity);
-        pairs.reserve(capacity);
-        labels.reserve(capacity);
-        variables.reserve(capacity);
+    void reserve(Sz capacity, IStr file = __FILE__, Sz line = __LINE__) {
+        script.reserve(capacity, file, line);
+        pairs.reserve(capacity, file, line);
+        labels.reserve(capacity, file, line);
+        variables.reserve(capacity, file, line);
     }
 
     @nogc
-    void free() {
-        script.free();
-        pairs.free();
-        labels.free();
-        variables.free();
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        script.free(file, line);
+        pairs.free(file, line);
+        labels.free(file, line);
+        variables.free(file, line);
         this = Story();
+    }
+
+    @nogc
+    void ignoreLeak() {
+        // TODO: Maybe think about using an arena for the story stuct.
+        script.ignoreLeak();
+        pairs.ignoreLeak();
+        labels.ignoreLeak();
+        variables.ignoreLeak();
     }
 }
 

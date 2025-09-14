@@ -50,14 +50,17 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingLoadSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
-enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage     = "Could not load file: \"{}\"";
-enum defaultEngineSaveErrorMessage     = "Could not save file: \"{}\"";
-enum defaultEngineTexturesCapacity     = 128;
-enum defaultEngineSoundsCapacity       = 128;
-enum defaultEngineFontsCapacity        = 16;
-enum defaultEngineTasksCapacity        = 64;
-enum defaultEngineArenaCapacity        = 32 * kilobyte;
+enum defaultEngineValidateErrorMessage            = "Resource is invalid or was never assigned.";
+enum defaultEngineLoadErrorMessage                = "Could not load file: \"{}\"";
+enum defaultEngineSaveErrorMessage                = "Could not save file: \"{}\"";
+enum defaultEngineAssetsPathCapacity              = 8 * kilobyte;
+enum defaultEngineTexturesCapacity                = 128;
+enum defaultEngineSoundsCapacity                  = 128;
+enum defaultEngineFontsCapacity                   = 16;
+enum defaultEngineEnvArgsDroppedFilePathsCapacity = 64;
+enum defaultEngineLoadSaveTextCapacity            = 8 * kilobyte;
+enum defaultEngineTasksCapacity                   = 64;
+enum defaultEngineArenaCapacity                   = 32 * kilobyte;
 
 enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineDebugColor1       = black.alpha(140);
@@ -1124,16 +1127,16 @@ struct EngineState {
     Viewport userViewport;
     Fault lastLoadFault;
     IStr memoryTrackingInfoFilter;
+    Sz envArgsLength;
+    FStr!defaultEngineAssetsPathCapacity assetsPath;
 
     EngineViewport viewport;
     GenList!Texture textures;
     GenList!Sound sounds;
     GenList!Font fonts;
-    List!IStr envArgsBuffer;
-    List!IStr droppedFilePathsBuffer;
+    List!IStr envArgsDroppedFilePathsBuffer;
     LStr loadTextBuffer;
     LStr saveTextBuffer;
-    LStr assetsPath;
     Tasks tasks;
     GrowingArena arena;
 }
@@ -1145,6 +1148,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     enum targetHtmlElementId = "canvas";
 
     if (rl.IsWindowReady) return;
+
     // Raylib stuff.
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | (defaultEngineVsync ? rl.FLAG_VSYNC_HINT : 0));
     rl.SetTraceLogLevel(rl.LOG_ERROR);
@@ -1154,24 +1158,28 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     rl.SetTargetFPS(defaultEngineFpsMax);
     rl.SetWindowMinSize(240, 135);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+
     // Parin stuff.
     _engineState = jokaMake!EngineState();
     _engineState.fullscreenState.previousWindowWidth = width;
     _engineState.fullscreenState.previousWindowHeight = height;
     _engineState.viewport.data.color = gray;
-    if (args.length) {
-        foreach (arg; args) _engineState.envArgsBuffer.appendSource(__FILE__, __LINE__, arg);
-        _engineState.assetsPath.appendSource(__FILE__, __LINE__, pathConcat(args[0].pathDirName, "assets"));
-    }
-    _engineState.loadTextBuffer.reserve(8192);
-    _engineState.saveTextBuffer.reserve(8192);
-    _engineState.droppedFilePathsBuffer.reserve(defaultEngineFontsCapacity);
+
     _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
+    _engineState.envArgsDroppedFilePathsBuffer.reserve(defaultEngineEnvArgsDroppedFilePathsCapacity);
+    _engineState.loadTextBuffer.reserve(defaultEngineLoadSaveTextCapacity);
+    _engineState.saveTextBuffer.reserve(defaultEngineLoadSaveTextCapacity);
     _engineState.tasks.reserve(defaultEngineTasksCapacity);
     _engineState.arena.ready(defaultEngineArenaCapacity);
     toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
+    if (args.length) {
+        foreach (arg; args) _engineState.envArgsDroppedFilePathsBuffer.appendSource(__FILE__, __LINE__, arg);
+        _engineState.envArgsLength = args.length;
+        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+    }
+
     // Wasm stuff.
     version (WebAssembly) {
         em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_engineMouseCallbackWeb);
@@ -1182,8 +1190,13 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 /// You should avoid calling this function manually.
 void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     _openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) _engineState.envArgsBuffer.appendSource(__FILE__, __LINE__, argv[i].cStrToStr());
-    if (_engineState.envArgsBuffer.length) _engineState.assetsPath.appendSource(__FILE__, __LINE__, pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
+    foreach (i; 0 .. argc) {
+        _engineState.envArgsDroppedFilePathsBuffer.append(argv[i].cStrToStr());
+    }
+    _engineState.envArgsLength = argc;
+    if (_engineState.envArgsDroppedFilePathsBuffer.length) {
+        _engineState.assetsPath.append(pathConcat(_engineState.envArgsDroppedFilePathsBuffer[0].pathDirName, "assets"));
+    }
 }
 
 /// Use by the `updateWindow` function.
@@ -1222,7 +1235,7 @@ bool _updateWindowLoop() {
         if (rl.IsFileDropped) {
             auto list = rl.LoadDroppedFiles();
             foreach (i; 0 .. list.count) {
-                _engineState.droppedFilePathsBuffer.append(list.paths[i].toStr());
+                _engineState.envArgsDroppedFilePathsBuffer.appendSource(__FILE__, __LINE__, list.paths[i].toStr());
             }
         }
     }
@@ -1253,7 +1266,7 @@ bool _updateWindowLoop() {
     if (rl.IsFileDropped) {
         // NOTE: LoadDroppedFiles just returns a global variable.
         rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-        _engineState.droppedFilePathsBuffer.clear();
+        _engineState.envArgsDroppedFilePathsBuffer.resize(_engineState.envArgsLength);
     }
     // End drawing.
     if (isResolutionLocked) {
@@ -1345,18 +1358,17 @@ void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null,
 /// You should avoid calling this function manually.
 void _closeWindow() {
     if (!rl.IsWindowReady()) return;
+    // NOTE: I assume `filter` is a static string or managed by the user.
+    auto filter = _engineState.memoryTrackingInfoFilter;
     auto isLogging = isLoggingMemoryTrackingInfo;
-    auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: Yeah, I know.
 
     _engineState.viewport.free();
     _engineState.textures.freeWithItems();
     _engineState.sounds.freeWithItems();
     _engineState.fonts.freeWithItems();
-    _engineState.envArgsBuffer.free();
-    _engineState.droppedFilePathsBuffer.free();
+    _engineState.envArgsDroppedFilePathsBuffer.free();
     _engineState.loadTextBuffer.free();
     _engineState.saveTextBuffer.free();
-    _engineState.assetsPath.free();
     _engineState.tasks.free();
     _engineState.arena.free();
     jokaFree(_engineState);
@@ -1364,7 +1376,9 @@ void _closeWindow() {
 
     rl.CloseAudioDevice();
     rl.CloseWindow();
-    if (isLogging) printMemoryTrackingInfo(filter);
+    static if (isTrackingMemory) {
+        if (isLogging) printMemoryTrackingInfo(filter);
+    }
 }
 
 /// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
@@ -1410,7 +1424,7 @@ mixin template runGame(
 
 /// Schedule a function (task) to run every interval, optionally limited by count.
 TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false) {
-    _engineState.tasks.append(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
+    _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
     return cast(TaskId) (_engineState.tasks.length - 1);
 }
 
@@ -1506,7 +1520,7 @@ alias toAsciiFont = toFontAscii;
 /// The texture will be freed when the resource is freed.
 TextureId toTextureId(Texture from) {
     if (from.isEmpty) return TextureId();
-    auto id = TextureId(_engineState.textures.append(from));
+    auto id = TextureId(_engineState.textures.push(from));
     id.data.value += 1;
     return id;
 }
@@ -1515,7 +1529,7 @@ TextureId toTextureId(Texture from) {
 /// The font will be freed when the resource is freed.
 FontId toFontId(Font from) {
     if (from.isEmpty) return FontId();
-    auto id = FontId(_engineState.fonts.append(from));
+    auto id = FontId(_engineState.fonts.push(from));
     id.data.value += 1;
     return id;
 }
@@ -1524,7 +1538,7 @@ FontId toFontId(Font from) {
 /// The sound will be freed when the resource is freed.
 SoundId toSoundId(Sound from) {
     if (from.isEmpty) return SoundId();
-    auto id = SoundId(_engineState.sounds.append(from));
+    auto id = SoundId(_engineState.sounds.push(from));
     id.data.value += 1;
     return id;
 }
@@ -1882,7 +1896,7 @@ SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
 
 /// Returns the arguments that this application was started with.
 IStr[] envArgs() {
-    return _engineState.envArgsBuffer[];
+    return _engineState.envArgsDroppedFilePathsBuffer[0 .. _engineState.envArgsLength];
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
@@ -1928,7 +1942,7 @@ IStr toAssetsPath(IStr path) {
 
 /// Returns the dropped file paths of the current frame.
 IStr[] droppedFilePaths() {
-    return _engineState.droppedFilePathsBuffer[];
+    return _engineState.envArgsDroppedFilePathsBuffer[_engineState.envArgsLength .. $];
 }
 
 /// Returns a reference to a cleared temporary text container.
@@ -2882,7 +2896,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.append(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.push(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
                 if (codepoint == '\n') textHeight += font.lineSpacing;
                 lineCodepointIndex = cast(ushort) (textCodepointIndex + 1);
