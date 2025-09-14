@@ -56,7 +56,7 @@ void setIsEmptyFontVisible(bool value);
 bool isLoggingLoadSaveFaults();
 void setIsLoggingLoadSaveFaults(bool value);
 bool isLoggingMemoryTracking();
-void setIsLoggingMemoryTracking(bool value);
+void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
 
 bool isDebugMode();
 void setIsDebugMode(bool value);
