@@ -484,7 +484,7 @@ Memory Leaks: 4 (total 699 bytes, 5 ignored)
 This summary is normal in debug builds and does not indicate an error.
 Some leaks can be ignored with the `ignoreLeak` function like this:
 
-```
+```d
 // struct Game { int hp; int mp; }
 // Game* game;
 game = jokaMake!Game().ignoreLeak();
