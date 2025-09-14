@@ -57,7 +57,7 @@ enum defaultEngineTexturesCapacity     = 128;
 enum defaultEngineSoundsCapacity       = 128;
 enum defaultEngineFontsCapacity        = 16;
 enum defaultEngineTasksCapacity        = 64;
-enum defaultEngineArenaCapacity        = 64 * kilobyte;
+enum defaultEngineArenaCapacity        = 32 * kilobyte;
 
 enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineDebugColor1       = black.alpha(140);
