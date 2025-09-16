@@ -12,10 +12,10 @@ auto groundY = 140;
 void ready() {
     lockResolution(320, 180);
     // Add walls to the world.
-    platformBoxId = world.appendWall(IRect(140, groundY - 20, 64, 16));
-    groundBoxId = world.appendWall(IRect(0, groundY, resolutionWidth, resolutionHeight - groundY));
+    platformBoxId = world.appendWall(Box(140, groundY - 20, 64, 16));
+    groundBoxId = world.appendWall(Box(0, groundY, resolutionWidth, resolutionHeight - groundY));
     // Add an actor to the world. The `BoxSide.top` allows the actor to ride moving walls.
-    playerBoxId = world.appendActor(IRect(80, groundY - 16, 16, 16), BoxSide.top);
+    playerBoxId = world.appendActor(Box(80, groundY - 16, 16, 16), BoxSide.top);
 }
 
 bool update(float dt) {

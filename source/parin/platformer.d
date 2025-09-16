@@ -28,7 +28,6 @@ enum boxNoneId        = 0;
 enum boxUnionTypeBit  = 1 << 31;
 enum boxErrorMessage  = "Box is invalid or was never assigned.";
 
-alias Box                = IRect;
 alias BoxId              = ushort;
 alias BoxIdPair          = GVec2!BoxId;
 alias BoxFlags           = ushort;
@@ -61,6 +60,8 @@ enum BoxSide : ubyte {
     right,
     bottom,
 }
+
+alias Box = GRect!(int, short);
 
 struct BoxProperties {
     Vec2 remainder;
@@ -212,7 +213,7 @@ struct BoxWorld {
                     return Fault.invalid;
                 }
                 if (tile.xx <= -1) continue;
-                pushWall(Box((colCount - 1) * tileWidth, (rowCount - 1) * tileHeight, tileWidth, tileHeight), BoxSide.none, file, line);
+                pushWall(Box((colCount - 1) * tileWidth, (rowCount - 1) * tileHeight, cast(Box.Size) tileWidth, cast(Box.Size) tileHeight), BoxSide.none, file, line);
             }
         }
         return Fault.none;
