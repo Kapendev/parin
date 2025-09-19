@@ -1394,6 +1394,7 @@ mixin template runGame(
     alias debugModeEndFunc = null
 ) {
     int _runGame() {
+        import _pr = parin.engine;
         static if (__traits(isStaticFunction, debugModeFunc)) enum debugMode1 = &debugModeFunc;
         else enum debugMode1 = null;
         static if (__traits(isStaticFunction, debugModeBeginFunc)) enum debugMode2 = &debugModeBeginFunc;
@@ -1402,21 +1403,23 @@ mixin template runGame(
         else enum debugMode3 = null;
 
         static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) _updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
+        static if (__traits(isStaticFunction, updateFunc)) _pr._updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
         static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        _closeWindow();
+        _pr._closeWindow();
         return 0;
     }
 
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
-            _openWindowC(width, height, argc, argv, title);
+            import _pr = parin.engine;
+            _pr._openWindowC(width, height, argc, argv, title);
             return _runGame();
         }
     } else {
         int main(immutable(char)[][] args) {
-            _openWindow(width, height, args, title);
+            import _pr = parin.engine;
+            _pr._openWindow(width, height, args, title);
             return _runGame();
         }
     }
@@ -3009,6 +3012,23 @@ void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), Tex
 
 deprecated("Use `drawText(text, ...)`. It works the same, but you can also call `setDefaultFont` to change the font.")
 alias drawDebugText = drawText;
+
+alias draw = drawRect;
+alias draw = drawHollowRect;
+alias draw = drawCirc;
+alias draw = drawHollowCirc;
+alias draw = drawVec2;
+alias draw = drawLine;
+
+alias draw = drawTexture;
+alias draw = drawTextureArea;
+alias draw = drawTextureSlice;
+
+alias draw = drawRune;
+alias draw = drawText;
+
+alias draw = drawViewport;
+alias draw = drawViewportArea;
 
 /// Draws debug engine information at the given position with the provided draw options.
 /// Hold the left mouse button to create and resize a debug area.
