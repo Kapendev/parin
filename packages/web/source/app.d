@@ -52,7 +52,7 @@ int doDefaultProject(IStr sourceDir, bool isSimpProject) {
     args ~= cflags;
     // Check if the assets folder is empty because emcc will cry about it.
     if (assetsDir.isX) {
-        foreach (path; ls(assetsDir)) {
+        foreach (path; ls(assetsDir, true)) {
             if (path.isF) {
                 args ~= "--preload-file";
                 args ~= assetsDir;
