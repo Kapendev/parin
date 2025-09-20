@@ -229,9 +229,21 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 ```
 
-Functions such as `drawTextureArea(Rect area, ...)` that don't receive a texture or font will use `defaultTexture` and `defaultFont` for drawing.
+Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions.
 
-By default, safety checks are performed during drawing to catch errors and prevent crashes. This makes development safer and easier, while still keeping performance reasonable. For maximum performance, these checks can be skipped with the `ParinSkipDrawChecks` version.
+To change the default filtering mode for new textures, fonts or viewports, call `setDefaultFilter`.
+
+The base draw functions from `parin.engine` can also be used with the `draw` alias, which is convenient when you don't want to type a specific function name. This may produce less explicit error messages, so use it with that in mind.
+
+```d
+draw(Rect(8, 24, 64, 64), cyan);     // Same as: drawRect(Rect(8, 24, 64, 64), cyan);
+draw(Rect(8, 24, 64, 64), 2, black); // Same as: drawHollowRect(Rect(8, 24, 64, 64), 2, black);
+draw("Hello", Vec2(8));              // Same as: drawText("Hello", Vec2(8));
+```
+
+> [!NOTE]
+> Drawing checks are enabled by default to catch errors.
+> For maximum speed, compile with the `ParinSkipDrawChecks` version to skip them, but this can cause crashes if drawing errors occur.
 
 ### Draw Options
 
