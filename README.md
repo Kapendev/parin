@@ -13,11 +13,13 @@ Parin is designed to make game development fun — it's easy to set up and lets 
 
 ## Major Features
 
-* Efficient tile map structures
-* Flexible dialogue system
-* Intuitive immediate mode UI
+* Efficient map structures
 * Atlas-based animation library
 * Pixel-perfect physics engine
+* Flexible dialogue system
+* Intuitive immediate mode UI
+* Modular design where only `engine.d` is required
+* Additional extras such as microui are included
 * Cross-platform (Windows, Linux, macOS, Web)
 * Small C interface for cross-language use
 * BetterC support

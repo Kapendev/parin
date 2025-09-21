@@ -12,7 +12,7 @@
 /// The `ui` module functions as a immediate mode UI library.
 module parin.ui;
 
-import rl = parin.rl;
+import rl = parin.bindings.rl;
 import joka.ascii;
 import joka.memory;
 import parin.engine;

@@ -6,6 +6,6 @@
 // ---
 
 /// The `gf` module provides access to the GLFW library.
-module parin.gf;
+module parin.bindings.gf;
 
-public import parin.gf.glfw3;
+public import parin.bindings.gf.glfw3;

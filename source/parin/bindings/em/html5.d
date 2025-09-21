@@ -6,7 +6,7 @@
 // ---
 
 /// The `html5` module provides access to the html5.h functions.
-module parin.em.html5;
+module parin.bindings.em.html5;
 
 import joka.types;
 

@@ -6,7 +6,7 @@
 // ---
 
 /// The `rlgl` module provides access to the rlgl.h functions.
-module parin.rl.rlgl;
+module parin.bindings.rl.rlgl;
 
 nothrow @nogc extern(C):
 

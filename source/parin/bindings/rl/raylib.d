@@ -6,7 +6,7 @@
 // ---
 
 /// The `rayib` module provides access to the raylib.h functions.
-module parin.rl.raylib;
+module parin.bindings.rl.raylib;
 pragma(lib, "raylib");
 
 nothrow @nogc extern(C):

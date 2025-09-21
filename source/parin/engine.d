@@ -12,7 +12,10 @@ version (ParinSkipDrawChecks) {
     pragma(msg, "Parin: Draw checks disabled. Invalid values may crash your game.");
 }
 
-import rl = parin.rl;
+import rl = parin.bindings.rl;
+version (WebAssembly) {
+    import em = parin.bindings.em;
+}
 
 import joka.ascii;
 import joka.io;
@@ -22,10 +25,6 @@ import parin.c.engine; // Don't ask.
 public import joka.containers;
 public import joka.math;
 public import joka.types;
-
-version (WebAssembly) {
-    import em = parin.em;
-}
 
 __gshared EngineState* _engineState;
 

@@ -5,9 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `glfw3` module provides access to the glfw3.h functions.
-module parin.gf.glfw3;
+module parin.extra.microui;
 
-nothrow @nogc extern(C):
-
-void glfwSwapInterval(int interval);
+public import parin.extra.microui.wrapper;
+public import parin.extra.microui.helper;

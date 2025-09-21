@@ -5,8 +5,9 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `rl` module provides access to the raylib library.
-module parin.rl;
+/// The `glfw3` module provides access to the glfw3.h functions.
+module parin.bindings.gf.glfw3;
 
-public import parin.rl.raylib;
-public import parin.rl.rlgl;
+nothrow @nogc extern(C):
+
+void glfwSwapInterval(int interval);

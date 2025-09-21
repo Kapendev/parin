@@ -394,7 +394,7 @@ void ready() {
 ## Debug Mode
 
 Parin has a debug mode that toggles with the **F3** key by default.
-When it's on, an `inspect` function runs after `update` and can be used for creating debug tools and inspectors.
+When it's on, an optional `inspect` function runs after `update` and can be used for creating debug tools and inspectors.
 Example:
 
 ```d

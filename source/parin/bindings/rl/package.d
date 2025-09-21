@@ -5,7 +5,8 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `em` module provides access to the Emscripten library.
-module parin.em;
+/// The `rl` module provides access to the raylib library.
+module parin.bindings.rl;
 
-public import parin.em.html5;
+public import parin.bindings.rl.raylib;
+public import parin.bindings.rl.rlgl;

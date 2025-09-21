@@ -1,8 +1,9 @@
 /// This example shows how to use Parin with microui.
-/// Repository: https://github.com/Kapendev/microui-d
+/// Parin ships microui under `parin.extra.microui`.
+/// Original repository: https://github.com/Kapendev/microui-d
 
 import parin;
-import mupr; // Equivalent to `import microuid`, with additional helper functions for Parin.
+import parin.extra.microui;
 
 Game game;
 FontId font = engineFont;

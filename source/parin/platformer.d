@@ -86,7 +86,7 @@ struct BoxMover {
 
     @safe nothrow @nogc:
 
-    this(float speed, float acceleration, float gravity = 0.0f, float jump = 0.0f) {
+    this(float speed, float acceleration = 0.0f, float gravity = 0.0f, float jump = 0.0f) {
         this.speed = speed;
         this.acceleration = acceleration;
         this.gravity = gravity;
