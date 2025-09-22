@@ -1,6 +1,7 @@
 // PARIN CHANGES:
 //   Removed `extern(C)` to avoid collisions.
 //   Renamed module names.
+//   Changed one public import to normal import.
 
 // ---
 // Copyright 2025 Alexandros F. G. Kapretsos
@@ -35,7 +36,7 @@
 // TODO: work on attributes maybe.
 
 /// A tiny immediate-mode UI library.
-module parin.extra.microui.core;
+module parin.extras.microui.core;
 
 private extern(C) nothrow @nogc {
     // External dependencies required by microui.

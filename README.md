@@ -19,7 +19,7 @@ Parin is designed to make game development fun — it's easy to set up and lets 
 * Flexible dialogue system
 * Intuitive immediate mode UI
 * Modular design where only `engine.d` is required
-* Additional extras such as microui are included
+* Extras such as microui are included
 * Cross-platform (Windows, Linux, macOS, Web)
 * Small C interface for cross-language use
 * BetterC support

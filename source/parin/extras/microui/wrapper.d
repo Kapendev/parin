@@ -10,9 +10,9 @@
 
 /// High-level wrapper around the low-level `core` module.
 /// Provides helper functions that use a global context and follow D naming conventions.
-module parin.extra.microui.wrapper;
+module parin.extras.microui.wrapper;
 
-import parin.extra.microui.core;
+import parin.extras.microui.core;
 
 __gshared UiContext uiContext;
 

@@ -8,10 +8,10 @@
 // TODO: work on attributes maybe.
 
 /// Equivalent to `import wrapper`, with additional helper functions for Parin.
-module parin.extra.microui.helper;
+module parin.extras.microui.helper;
 
-import parin.extra.microui.core; // Used because there are some symbols that I haven't removed yet.
-import parin.extra.microui.wrapper;
+import parin.extras.microui.core; // Used because there are some symbols that I haven't removed yet.
+import parin.extras.microui.wrapper;
 
 private extern(C) nothrow @nogc {
     enum MOUSE_BUTTON_LEFT   = 0;

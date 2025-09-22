@@ -3,7 +3,7 @@
 /// Original repository: https://github.com/Kapendev/microui-d
 
 import parin;
-import parin.extra.microui;
+import parin.extras.microui;
 
 Game game;
 FontId font = engineFont;

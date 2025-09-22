@@ -263,7 +263,9 @@ struct BoxWorld {
         return point.x >= 0 && point.y >= 0 && grid.has(point.y, point.x);
     }
 
-    IVec2 getGridPoint(Box box) {
+    alias getGridPoint = gridPoint;
+
+    IVec2 gridPoint(Box box) {
         if (!grid.length) assert(0, "Can't get a grid point from a disabled grid.");
         return IVec2(
             box.position.x / gridTileWidth - (box.position.x < 0),
@@ -271,28 +273,38 @@ struct BoxWorld {
         );
     }
 
-    ref Box getWall(BoxWallId id) {
+    alias getWall = wall;
+
+    ref Box wall(BoxWallId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return walls[id - 1].area;
     }
 
-    ref BoxProperties getWallProperties(BoxWallId id) {
+    alias getWallProperties = wallProperties;
+
+    ref BoxProperties wallProperties(BoxWallId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return walls[id - 1].properties;
     }
 
-    ref Box getActor(BoxActorId id) {
+    alias getActor = actor;
+
+    ref Box actor(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return actors[id - 1].area;
     }
 
-    ref BoxProperties getActorProperties(BoxActorId id) {
+    alias getActorProperties = actorProperties;
+
+    ref BoxProperties actorProperties(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         return actors[id - 1].properties;
     }
 
+    alias getWallCollisions = wallCollisions;
+
     @trusted
-    BoxWallId[] getWallCollisions(Box box, bool canStopAtFirst = false) {
+    BoxWallId[] wallCollisions(Box box, bool canStopAtFirst = false) {
         collisionIdsBuffer.clear();
         if (grid.length) {
             auto point = getGridPoint(box);
@@ -333,8 +345,10 @@ struct BoxWorld {
         return getWall(id1).hasIntersection(getWall(id2)) ? id2 : 0;
     }
 
+    alias getActorCollisions = actorCollisions;
+
     @trusted
-    BoxActorId[] getActorCollisions(Box box, bool canStopAtFirst = false) {
+    BoxActorId[] actorCollisions(Box box, bool canStopAtFirst = false) {
         collisionIdsBuffer.clear();
         if (grid.length) {
             auto point = getGridPoint(box);
