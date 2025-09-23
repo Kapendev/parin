@@ -24,6 +24,7 @@ import parin.c.engine; // Don't ask.
 
 public import joka.containers;
 public import joka.math;
+public import joka.memory;
 public import joka.types;
 
 __gshared EngineState* _engineState;

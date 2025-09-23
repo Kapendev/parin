@@ -16,8 +16,9 @@ import parin.engine;
 
 @safe nothrow:
 
-alias TileMapLayer = Grid!short;
-alias TileMapLayers = FixedList!(TileMapLayer, 8);
+alias TileMapLayerData = FixedList!(short, 192 * 192);
+alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData);
+alias TileMapLayers = List!TileMapLayer;
 
 struct Tile {
     short width;
@@ -71,6 +72,8 @@ struct Tile {
     }
 }
 
+// TODO: Think about object layer.
+//   Idea: Have an object map struct that just parses the csv again. Doing that is not slow anyway and keeps the TileMap focused.
 struct TileMap {
     TileMapLayers layers;
     Sz rowCount;
@@ -95,6 +98,7 @@ struct TileMap {
     }
 
     pragma(inline, true) @nogc {
+        @trusted
         ref short opIndex(Sz row, Sz col, Sz layerId = 0) {
             if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
             return layers[layerId][row, col];
@@ -104,6 +108,7 @@ struct TileMap {
             return opIndex(position.y, position.x, layerId);
         }
 
+        @trusted
         void opIndexAssign(short rhs, Sz row, Sz col, Sz layerId = 0) {
             if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
             layers[layerId][row, col] = rhs;
@@ -113,6 +118,7 @@ struct TileMap {
             return opIndexAssign(rhs, position.y, position.x, layerId);
         }
 
+        @trusted
         void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col, Sz layerId = 0) {
             if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
             mixin("layers[layerId][colCount * row + col]", op, "= rhs;");
@@ -145,7 +151,8 @@ struct TileMap {
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
         if (csv.length == 0) return Fault.cantParse;
         if (layerId >= layers.length) {
-            layers.length = layerId + 1;
+            layers.appendBlank();
+            layers[$ - 1].clear();
             resizeHard(defaultRowColCount, defaultRowColCount, file, line);
         }
         resize(0, 0);
@@ -209,7 +216,10 @@ struct TileMap {
     }
 
     void resizeHard(Sz newHardRowCount, Sz newHardColCount, IStr file = __FILE__, Sz line = __LINE__) {
-        if (isEmpty) layers.length = 1;
+        if (isEmpty) {
+            layers.appendBlank();
+            layers[$ - 1].clear();
+        }
         rowCount = newHardRowCount;
         colCount = newHardColCount;
         foreach (ref layer; layers) layer.resizeBlank(newHardRowCount, newHardColCount, file, line);
@@ -237,11 +247,11 @@ struct TileMap {
     }
 
     void free(IStr file = __FILE__, Sz line = __LINE__) {
-        layers.freeOnlyItems(file, line);
+        layers.free(file, line);
     }
 
     void ignoreLeak() {
-        foreach (ref layer; layers.data.items) layer.ignoreLeak();
+        layers.ignoreLeak();
     }
 
     void followPosition(Vec2 target, float speed) {

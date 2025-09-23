@@ -167,9 +167,9 @@ void ready() {
             appState.mapFile = arg;
         } else {
             if (appState.map.tileWidth) {
-                appState.map.tileHeight = cast(int) arg.toSigned().getOr(16);
+                appState.map.tileHeight = cast(short) arg.toSigned().getOr(16);
             } else {
-                appState.map.tileWidth = cast(int) arg.toSigned().getOr(16);
+                appState.map.tileWidth = cast(short) arg.toSigned().getOr(16);
                 appState.map.tileHeight = appState.map.tileWidth;
             }
         }
@@ -184,7 +184,7 @@ void ready() {
     }
     auto value = loadTempText(appState.mapFile);
     if (value.isSome) {
-        appState.map.parse(value.get());
+        appState.map.parseCsv(value.get());
         appState.map.resize(appState.map.hardColCount, appState.map.hardRowCount);
     } else {
         appState.mapFile = "";
@@ -208,10 +208,10 @@ bool update(float dt) {
     } else if (canvasMouse.y >= windowHeight - defaultPanelHeight) {
         canvasMouse.y = 100000.0f;
     }
-    editMouseInfo.update(canvasMouse, appState.camera, appState.map.softRowCount, appState.map.softColCount, appState.map.tileSize);
+    editMouseInfo.update(canvasMouse, appState.camera, appState.map.rowCount, appState.map.colCount, appState.map.tileSize);
     selectMouseInfo.update(canvasMouse, appState.atlasCamera, atlasRowCount, atlasColCount, appState.map.tileSize);
-    appState.camera.update(wasd * Vec2(appState.mode == AppMode.edit), deltaWheel * (appState.mode == AppMode.edit), dt);
-    appState.atlasCamera.update(wasd * Vec2(appState.mode == AppMode.select), deltaWheel * (appState.mode == AppMode.select), dt);
+    appState.camera.update(wasd * Vec2(appState.mode == AppMode.edit), -deltaWheel * (appState.mode == AppMode.edit), dt);
+    appState.atlasCamera.update(wasd * Vec2(appState.mode == AppMode.select), -deltaWheel * (appState.mode == AppMode.select), dt);
 
     with (AppMode) final switch (appState.mode) {
         case edit:
