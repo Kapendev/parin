@@ -4,8 +4,13 @@ A delightfully simple 2D game engine for the [D programming language](https://dl
 Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.
 
 <div align="center">
-<p><strong>Worms Within</strong><br>A bite-sized escape room game.</p>
-<a href="https://kapendev.itch.io/worms-within"><img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png"></a>
+<p>
+    <strong>Worms Within</strong>
+    <br>A bite-sized escape room game.
+</p>
+<a href="https://kapendev.itch.io/worms-within">
+    <img alt="Game 1" width="460px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
+</a>
 <br>
 <br>
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
@@ -13,16 +18,17 @@ Parin is designed to make game development fun — it's easy to set up and lets 
 
 ## Major Features
 
-* Efficient map structures
+* Focused 2D engine — not an everything engine
+* Cross-platform (Windows, Linux, macOS, Web)
+* Efficient tile map structures
 * Atlas-based animation library
 * Pixel-perfect physics engine
 * Flexible dialogue system
-* Intuitive immediate mode UI
-* Modular design where only `engine.d` is required
-* Extras such as microui are included
-* Cross-platform (Windows, Linux, macOS, Web)
-* Small C interface for cross-language use
-* BetterC support
+* Intuitive immediate-mode UI
+* Includes extras like [microui](examples/integrations/microui.d)
+* Modular design where only `import parin.engine` is required
+* Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
+* Minimal C [API](source/parin/c/engine.d) for cross-language use
 
 ## Hello World Example
 

@@ -16,7 +16,10 @@ import parin.engine;
 
 @safe nothrow:
 
-alias TileMapLayerData = FixedList!(short, 192 * 192);
+enum maxTileMapLayerRowColCount = 192;
+enum maxTileMapLayerCapacity = maxTileMapLayerRowColCount * maxTileMapLayerRowColCount;
+
+alias TileMapLayerData = FixedList!(short, maxTileMapLayerCapacity);
 alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData);
 alias TileMapLayers = List!TileMapLayer;
 
@@ -82,7 +85,6 @@ struct TileMap {
     short tileHeight;
     Vec2 position;
 
-    enum defaultRowColCount = 128;
     enum extraTileCount = 1;
 
     @safe nothrow:
@@ -94,7 +96,7 @@ struct TileMap {
     }
 
     this(short tileWidth, short tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
-        this(defaultRowColCount, defaultRowColCount, tileWidth, tileHeight, file, line);
+        this(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, tileWidth, tileHeight, file, line);
     }
 
     pragma(inline, true) @nogc {
@@ -153,7 +155,7 @@ struct TileMap {
         if (layerId >= layers.length) {
             layers.appendBlank();
             layers[$ - 1].clear();
-            resizeHard(defaultRowColCount, defaultRowColCount, file, line);
+            resizeHard(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, file, line);
         }
         resize(0, 0);
         resizeTileSize(newTileWidth, newTileHeight);
