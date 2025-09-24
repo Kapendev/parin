@@ -70,10 +70,10 @@ enum defaultEngineDebugColor2       = white.alpha(140);
 /// The default engine font. This font should not be freed.
 enum engineFont = FontId(GenIndex(1));
 
-alias _D = DrawOptions; /// Draw options (shorthand for `DrawOptions`).
-alias _T = TextOptions; /// Text options (shorthand for `TextOptions`).
-alias _C = Camera;      /// Camera (shorthand for `Camera`).
-alias _V = Viewport;    /// Viewport (shorthand for `Viewport`).
+alias D_ = DrawOptions; /// Draw options (shorthand for `DrawOptions`).
+alias T_ = TextOptions; /// Text options (shorthand for `TextOptions`).
+alias C_ = Camera;      /// Camera (shorthand for `Camera`).
+alias V_ = Viewport;    /// Viewport (shorthand for `Viewport`).
 
 enum EngineFlag : EngineFlags {
     none                        = 0x000000,

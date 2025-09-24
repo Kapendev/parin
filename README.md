@@ -1,7 +1,7 @@
 # 🦆 Parin
 
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
-Parin is designed to make game development fun — it's easy to set up and lets you jump right into making things.
+Parin is designed to make game development fun — it's easy to set up, hackable, and comes with the essentials built in.
 
 <div align="center">
 <p>
@@ -19,16 +19,17 @@ Parin is designed to make game development fun — it's easy to set up and lets 
 ## Major Features
 
 * Focused 2D engine — not an everything engine
-* Cross-platform (Windows, Linux, macOS, Web)
-* Efficient tile map structures
-* Atlas-based animation library
 * Pixel-perfect physics engine
 * Flexible dialogue system
+* Atlas-based animation library
+* Efficient tile map structures
 * Intuitive immediate-mode UI
-* Includes extras like [microui](examples/integrations/microui.d)
-* Modular design where only `import parin.engine` is required
+* Optional garbage collection (compile-time choice)
 * Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
 * Minimal C [API](source/parin/c/engine.d) for cross-language use
+* Modular design — just `import parin.engine`
+* Includes extras like [microui](examples/integrations/microui.d)
+* Cross-platform (Windows, Linux, macOS, Web)
 
 ## Hello World Example
 

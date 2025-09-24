@@ -152,11 +152,12 @@ struct TileMap {
 
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
         if (csv.length == 0) return Fault.cantParse;
-        if (layerId >= layers.length) {
+        bool canResizeHard = layerId >= layers.length;
+        while (layerId >= layers.length) {
             layers.appendBlank();
             layers[$ - 1].clear();
-            resizeHard(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, file, line);
         }
+        if (canResizeHard) resizeHard(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, file, line);
         resize(0, 0);
         resizeTileSize(newTileWidth, newTileHeight);
         auto view = csv;
@@ -204,7 +205,7 @@ struct TileMap {
                 tmxLine = view.skipLine();
                 csvStart = tmxLine.ptr - tmx.ptr;
                 while (view.length) {
-                    tmxLine = view.skipLine(); // NOTE: No trim because it's already trimmed by Tiled.
+                    tmxLine = view.skipLine().trimStart();
                     if (tmxLine.startsWith("</")) {
                         csvEnd = tmxLine.ptr - tmx.ptr;
                         break;
