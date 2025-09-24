@@ -185,8 +185,10 @@ Fault lastLoadFault();
 
 Maybe!IStr loadTempText(IStr path);
 Maybe!LStr loadRawText(IStr path);
-Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
+Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 Fault saveText(IStr path, IStr text);
+
+BStr prepareTempText();
 ```
 
 ### Randomness

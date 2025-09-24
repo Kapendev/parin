@@ -356,8 +356,10 @@ Fault lastLoadFault();
 
 Maybe!IStr loadTempText(IStr path);
 Maybe!LStr loadRawText(IStr path);
-Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer);
+Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 Fault saveText(IStr path, IStr text);
+
+BStr prepareTempText();
 ```
 
 Functions that start with the word load or save will always try to read/write resources from/to the assets folder.
@@ -374,7 +376,7 @@ Managed resources are managed by the engine, meaning they get updated every fram
 
 ### Temporary Resources
 
-Temporary resources are only valid until the function that provided them is called again.
+Temporary resources are only valid for the duration of the current frame.
 
 ## Embedding Assets
 

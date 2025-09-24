@@ -58,9 +58,9 @@ enum defaultEngineTexturesCapacity                = 128;
 enum defaultEngineSoundsCapacity                  = 128;
 enum defaultEngineFontsCapacity                   = 16;
 enum defaultEngineEnvArgsDroppedFilePathsCapacity = 64;
-enum defaultEngineLoadSaveTextCapacity            = 8 * kilobyte;
-enum defaultEngineTasksCapacity                   = 64;
-enum defaultEngineArenaCapacity                   = 32 * kilobyte;
+enum defaultEngineLoadSaveTextCapacity            = 16 * kilobyte;
+enum defaultEngineTasksCapacity                   = 256;
+enum defaultEngineArenaCapacity                   = 4 * megabyte;
 
 enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineDebugColor1       = black.alpha(140);
@@ -1057,7 +1057,7 @@ struct Task {
 }
 
 /// A container holding scheduled tasks.
-alias Tasks = SparseList!Task;
+alias Tasks = SparseList!(Task, FixedList!(SparseListItem!Task, 255));
 /// An identifier for a scheduled task.
 alias TaskId = uint;
 
@@ -1129,15 +1129,13 @@ struct EngineState {
     IStr memoryTrackingInfoFilter;
     Sz envArgsLength;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
+    Tasks tasks;
 
     EngineViewport viewport;
     GenList!Texture textures;
     GenList!Sound sounds;
     GenList!Font fonts;
     List!IStr envArgsDroppedFilePathsBuffer;
-    LStr loadTextBuffer;
-    LStr saveTextBuffer;
-    Tasks tasks;
     GrowingArena arena;
 }
 
@@ -1169,9 +1167,6 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.fonts.reserve(defaultEngineFontsCapacity);
     _engineState.envArgsDroppedFilePathsBuffer.reserve(defaultEngineEnvArgsDroppedFilePathsCapacity);
-    _engineState.loadTextBuffer.reserve(defaultEngineLoadSaveTextCapacity);
-    _engineState.saveTextBuffer.reserve(defaultEngineLoadSaveTextCapacity);
-    _engineState.tasks.reserve(defaultEngineTasksCapacity);
     _engineState.arena.ready(defaultEngineArenaCapacity);
     toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
     if (args.length) {
@@ -1367,9 +1362,6 @@ void _closeWindow() {
     _engineState.sounds.freeWithItems();
     _engineState.fonts.freeWithItems();
     _engineState.envArgsDroppedFilePathsBuffer.free();
-    _engineState.loadTextBuffer.free();
-    _engineState.saveTextBuffer.free();
-    _engineState.tasks.free();
     _engineState.arena.free();
     jokaFree(_engineState);
     _engineState = null;
@@ -1553,8 +1545,8 @@ Fault lastLoadFault() {
 
 /// Loads a text file from the assets folder and saves the content into the given buffer.
 /// Supports both forward slashes and backslashes in file paths.
-Fault loadRawTextIntoBuffer(IStr path, ref LStr buffer) {
-    auto result = readTextIntoBuffer(path.toAssetsPath(), buffer);
+Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
+    auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
     if (isLoggingLoadSaveFaults && result) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
     return result;
 }
@@ -1566,11 +1558,12 @@ Maybe!LStr loadRawText(IStr path) {
 }
 
 /// Loads a text file from the assets folder.
-/// The resource remains valid until this function is called again.
+/// The resource remains valid for the duration of the current frame.
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!IStr loadTempText(IStr path) {
-    auto fault = loadRawTextIntoBuffer(path, _engineState.loadTextBuffer);
-    return Maybe!IStr(_engineState.loadTextBuffer.items, fault);
+    auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadSaveTextCapacity));
+    auto fault = loadRawTextIntoBuffer(path, tempText);
+    return Maybe!IStr(tempText.items, fault);
 }
 
 /// Loads a texture file (PNG) from the assets folder.
@@ -1662,6 +1655,12 @@ Fault saveText(IStr path, IStr text) {
     auto result = writeText(path.toAssetsPath(), text);
     if (isLoggingLoadSaveFaults && result) printfln(defaultEngineSaveErrorMessage, path.toAssetsPath());
     return result;
+}
+
+/// Returns a temporary text container.
+/// The resource remains valid for the duration of the current frame.
+BStr prepareTempText() {
+    return BStr(frameMakeSliceBlank!char(defaultEngineLoadSaveTextCapacity));
 }
 
 /// Sets the path of the assets folder.
@@ -1946,13 +1945,6 @@ IStr toAssetsPath(IStr path) {
 /// Returns the dropped file paths of the current frame.
 IStr[] droppedFilePaths() {
     return _engineState.envArgsDroppedFilePathsBuffer[_engineState.envArgsLength .. $];
-}
-
-/// Returns a reference to a cleared temporary text container.
-/// The resource remains valid until this function is called again.
-ref LStr prepareTempText() {
-    _engineState.saveTextBuffer.clear();
-    return _engineState.saveTextBuffer;
 }
 
 /// Frees all managed engine resources.
