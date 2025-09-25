@@ -102,6 +102,11 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except ECS.
 
+## Devlogs
+
+- Latest: [Parin Game Engine Devlog – September 2025](https://dev.to/kapendev/parin-game-engine-devlog-september-2025-517o)
+- More: [dev.to/kapendev](https://dev.to/kapendev)
+
 ## Frequently Asked Questions
 
 ### How can I build without DUB?

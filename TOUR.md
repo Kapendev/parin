@@ -476,8 +476,8 @@ T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
 
 ## Memory Tracking
 
-Parin includes a lightweight memory tracking system that can detect leaks in debug builds. By default, leaks will be printed at shutdown
-only if they are detected.
+Parin includes a lightweight memory tracking system that can detect leaks or invalid frees in debug builds.
+By default, leaks will be printed at shutdown only if they are detected.
 
 Available functions:
 
@@ -495,7 +495,16 @@ Memory Leaks: 4 (total 699 bytes, 5 ignored)
   2 leak, 32 bytes, source/app.d:123
 ```
 
-This summary is normal in debug builds and does not indicate an error.
+
+This isn't strictly a Parin feature.
+It comes from [Joka](https://github.com/Kapendev/joka), the library Parin uses for memory allocations.
+Anything allocated through Joka is automatically tracked.
+You can check whether memory tracking is active with `static if (isTrackingMemory)`, and if it is, you can inspect the current tracking state via `_memoryTrackingState`.
+
+`_memoryTrackingState` is thread-local, so each thread has its own separate tracking state.
+When you look at the state or summary, remember that it's primarily a debug tool.
+In general, this information is normal in debug builds and doesn't indicate an error.
+
 Some leaks can be ignored with the `ignoreLeak` function like this:
 
 ```d
