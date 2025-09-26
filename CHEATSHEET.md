@@ -157,6 +157,13 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
 
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+
+void dprintPosition(Vec2 value);
+void dprintOptions(DrawOptions value);
+void dprintf(A...)(IStr fmtStr, A args);
+void dprintfln(A...)(IStr fmtStr, A args);
+void dprint(A...)(A args);
+void dprintln(A...)(A args);
 ```
 
 ### Sound

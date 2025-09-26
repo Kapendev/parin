@@ -1131,6 +1131,10 @@ struct EngineState {
     FStr!defaultEngineAssetsPathCapacity assetsPath;
     Tasks tasks;
 
+    BStr dprintBuffer;
+    Vec2 dprintPosition = Vec2(8);
+    DrawOptions dprintOptions;
+
     EngineViewport viewport;
     GenList!Texture textures;
     GenList!Sound sounds;
@@ -1246,11 +1250,13 @@ bool _updateWindowLoop() {
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
     // Update the game.
     _engineState.arena.clear();
+    _engineState.dprintBuffer = prepareTempText(); // NOTE: Yeah, I should have one place to update buffers and variables before the update function, but ehhhhhhhhhhhhhhhhhh.
     auto dt = deltaTime;
     foreach (id; _engineState.tasks.ids) {
         if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
     }
     auto result = _engineState.updateFunc(dt);
+    if (_engineState.dprintBuffer.length) drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
     if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
     if (isDebugMode) {
         if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
@@ -1547,7 +1553,7 @@ Fault lastLoadFault() {
 /// Supports both forward slashes and backslashes in file paths.
 Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
     auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
-    if (isLoggingLoadSaveFaults && result) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
     return result;
 }
 
@@ -1573,7 +1579,7 @@ Maybe!Texture loadRawTexture(IStr path) {
     value.setFilter(_engineState.defaultFilter);
     value.setWrap(_engineState.defaultWrap);
     auto result = Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
-    if (isLoggingLoadSaveFaults && result.isNone) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result.isNone) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
     return result;
 }
 
@@ -1588,7 +1594,7 @@ TextureId loadTexture(IStr path) {
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
-    if (isLoggingLoadSaveFaults && value.isEmpty) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Font(Fault.cantFind);
     } else {
@@ -1630,7 +1636,7 @@ Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = 
     } else {
         value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
     }
-    if (isLoggingLoadSaveFaults && value.isEmpty) printfln(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Sound();
     } else {
@@ -1653,7 +1659,7 @@ SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, 
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text) {
     auto result = writeText(path.toAssetsPath(), text);
-    if (isLoggingLoadSaveFaults && result) printfln(defaultEngineSaveErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, path.toAssetsPath());
     return result;
 }
 
@@ -2864,8 +2870,9 @@ void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    static FixedList!(IStr, 128) linesBuffer = void;
-    static FixedList!(short, 128) linesWidthBuffer = void;
+    enum lineCountOfBuffers = 1024;
+    static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
+    static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
     version (ParinSkipDrawChecks) {
     } else {
@@ -3033,7 +3040,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     static b = Vec2();
     static s = Vec2();
 
-    auto text = "OwO".fmt();
+    IStr text;
     auto mouse = mouse.toWorldPoint(camera);
     if (Mouse.middle.isPressed) s = Vec2();
     if (Mouse.right.isDown) {
@@ -3129,4 +3136,28 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
             cast(int) tile.y,
         );
     }
+}
+
+void dprintPosition(Vec2 value) {
+    _engineState.dprintPosition = value;
+}
+
+void dprintOptions(DrawOptions value) {
+    _engineState.dprintOptions = value;
+}
+
+void dprintf(A...)(IStr fmtStr, A args) {
+    sprintf(_engineState.dprintBuffer, fmtStr, args);
+}
+
+void dprintfln(A...)(IStr fmtStr, A args) {
+    sprintfln(_engineState.dprintBuffer, fmtStr, args);
+}
+
+void dprint(A...)(A args) {
+    sprint(_engineState.dprintBuffer, args);
+}
+
+void dprintln(A...)(A args) {
+    sprintln(_engineState.dprintBuffer, args);
 }
