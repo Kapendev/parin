@@ -58,9 +58,13 @@ enum defaultEngineTexturesCapacity                = 128;
 enum defaultEngineSoundsCapacity                  = 128;
 enum defaultEngineFontsCapacity                   = 16;
 enum defaultEngineEnvArgsDroppedFilePathsCapacity = 64;
-enum defaultEngineLoadSaveTextCapacity            = 16 * kilobyte;
+enum defaultEngineLoadSaveTextCapacity            = 14 * kilobyte;
 enum defaultEngineTasksCapacity                   = 256;
 enum defaultEngineArenaCapacity                   = 4 * megabyte;
+
+enum defaultEngineDprintCapacity       = 8 * kilobyte;
+enum defaultEngineDprintPosition       = Vec2(8, 6);
+enum defaultEngineDprintLineCountLimit = 14;
 
 enum defaultEngineEmptyTextureColor = white;
 enum defaultEngineDebugColor1       = black.alpha(140);
@@ -1131,9 +1135,11 @@ struct EngineState {
     FStr!defaultEngineAssetsPathCapacity assetsPath;
     Tasks tasks;
 
-    BStr dprintBuffer;
-    Vec2 dprintPosition = Vec2(8);
+    FStr!defaultEngineDprintCapacity dprintBuffer;
+    Vec2 dprintPosition = defaultEngineDprintPosition;
     DrawOptions dprintOptions;
+    Sz dprintLineCount;
+    Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
 
     EngineViewport viewport;
     GenList!Texture textures;
@@ -1248,15 +1254,17 @@ bool _updateWindowLoop() {
         rl.BeginDrawing();
     }
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
+
     // Update the game.
     _engineState.arena.clear();
-    _engineState.dprintBuffer = prepareTempText(); // NOTE: Yeah, I should have one place to update buffers and variables before the update function, but ehhhhhhhhhhhhhhhhhh.
     auto dt = deltaTime;
     foreach (id; _engineState.tasks.ids) {
         if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
     }
     auto result = _engineState.updateFunc(dt);
-    if (_engineState.dprintBuffer.length) drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
+    if (_engineState.dprintBuffer.length) {
+        drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
+    }
     if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
     if (isDebugMode) {
         if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
@@ -1264,6 +1272,7 @@ bool _updateWindowLoop() {
         if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
     }
     _engineState.tickCount += 1;
+
     if (rl.IsFileDropped) {
         // NOTE: LoadDroppedFiles just returns a global variable.
         rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
@@ -3138,26 +3147,50 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
     }
 }
 
-void dprintPosition(Vec2 value) {
+/// Sets the position of debug text.
+void setDprintPosition(Vec2 value) {
     _engineState.dprintPosition = value;
 }
 
-void dprintOptions(DrawOptions value) {
+/// Sets the drawing options for debug text.
+void setDprintOptions(DrawOptions value) {
     _engineState.dprintOptions = value;
 }
 
-void dprintf(A...)(IStr fmtStr, A args) {
-    sprintf(_engineState.dprintBuffer, fmtStr, args);
+/// Sets the maximum number of debug lines.
+/// Older lines are removed once this limit is reached. Use 0 for unlimited.
+void setDprintLineCountLimit(Sz value) {
+    _engineState.dprintLineCountLimit = value;
 }
 
+/// Clears all debug text.
+void clearDprintBuffer() {
+    _engineState.dprintBuffer.clear();
+    _engineState.dprintLineCount = 0;
+}
+
+/// Adds a formatted line to the debug text.
 void dprintfln(A...)(IStr fmtStr, A args) {
+    if (_engineState.dprintLineCountLimit != 0) {
+        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
+            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
+            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
+            _engineState.dprintLineCount -= 1;
+        }
+    }
     sprintfln(_engineState.dprintBuffer, fmtStr, args);
+    _engineState.dprintLineCount += 1;
 }
 
-void dprint(A...)(A args) {
-    sprint(_engineState.dprintBuffer, args);
-}
-
+/// Adds a line to the debug text.
 void dprintln(A...)(A args) {
+    if (_engineState.dprintLineCountLimit != 0) {
+        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
+            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
+            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
+            _engineState.dprintLineCount -= 1;
+        }
+    }
     sprintln(_engineState.dprintBuffer, args);
+    _engineState.dprintLineCount += 1;
 }
