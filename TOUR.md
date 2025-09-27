@@ -142,6 +142,7 @@ bool isReleased(Gamepad key, int id = 0);
 Vec2 wasd();
 Vec2 wasdPressed();
 Vec2 wasdReleased();
+
 Vec2 mouse();
 Vec2 deltaMouse();
 float deltaWheel();
@@ -228,32 +229,26 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 
+void dprintfln(A...)(IStr fmtStr, A args);
+void dprintln(A...)(A args);
+IStr dprintBuffer();
 void setDprintPosition(Vec2 value);
 void setDprintOptions(DrawOptions value);
 void setDprintLineCountLimit(Sz value);
 void setDprintVisibility(bool value);
 void toggleDprintVisibility();
 void clearDprintBuffer();
-IStr dprintBuffer();
-void dprintfln(A...)(IStr fmtStr, A args);
-void dprintln(A...)(A args);
 ```
 
-Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions.
+Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions. To change the default filtering mode for new textures, fonts or viewports, call `setDefaultFilter`.
 
-To change the default filtering mode for new textures, fonts or viewports, call `setDefaultFilter`.
-
-The base draw functions from `parin.engine` can also be used with the `draw` alias, which is convenient when you don't want to type a specific function name. This may produce less explicit error messages, so use it with that in mind.
+The base draw functions from `parin.engine` can also be used with the `draw` alias, which is convenient when you don't want to type a specific function name. This may produce less explicit error messages, so use it with that in mind. For example:
 
 ```d
 draw(Rect(8, 24, 64, 64), cyan);     // Same as: drawRect(Rect(8, 24, 64, 64), cyan);
 draw(Rect(8, 24, 64, 64), 2, black); // Same as: drawHollowRect(Rect(8, 24, 64, 64), 2, black);
 draw("Hello", Vec2(8));              // Same as: drawText("Hello", Vec2(8));
 ```
-
-> [!NOTE]
-> Drawing checks are enabled by default to catch errors.
-> For maximum speed, compile with the `ParinSkipDrawChecks` version to skip them, but this can cause crashes if drawing errors occur.
 
 ### Draw Options
 
@@ -323,14 +318,17 @@ Below are examples showing how to use these options to change how text looks.
     }
     ```
 
+## Sprites & Tile Maps
+
+Sprites and tile maps can be implemented in various ways.
+To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
+Parin provides sprite utilities inside the `parin.sprite` module and map utilities inside the `parin.map` module.
+
 ## Sound
 
 Parin provides a set of sound functions. These include:
 
 ```d
-float masterVolume();
-void setMasterVolume(float value);
-
 void playSound(SoundId sound);
 void stopSound(SoundId sound);
 void pauseSound(SoundId sound);
@@ -338,6 +336,9 @@ void resumeSound(SoundId sound);
 void startSound(SoundId sound);
 void toggleSoundIsActive(SoundId sound);
 void toggleSoundIsPaused(SoundId sound);
+
+float masterVolume();
+void setMasterVolume(float value);
 ```
 
 Below are examples showing how to use these sound functions.
@@ -391,8 +392,7 @@ Temporary resources are only valid for the duration of the current frame.
 ## Embedding Assets
 
 Assets can be embedded into the binary with D's `import` feature.
-DUB projects already pass `-J=assets` to the compiler, so everything in the assets folder is available automatically.
-Example:
+DUB projects already pass `-J=assets` to the compiler, so everything in the assets folder is available automatically. For example:
 
 ```d
 auto atlas = Texture();
@@ -403,11 +403,70 @@ void ready() {
 }
 ```
 
+## Frame Allocator
+
+The engine provides a frame allocator for temporary memory.
+Allocations from it only live for the current frame and are automatically cleared at the end.
+This is useful for short-lived data such as strings or small objects that only need to exist for one frame.
+
+```d
+void* frameMalloc(Sz size, Sz alignment);
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+T* frameMakeBlank(T)();
+T* frameMake(T)(const(T) value = T.init);
+T[] frameMakeSliceBlank(T)(Sz length);
+T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
+```
+
+The engine uses this allocator internally for functions like `loadTempText` and `prepareTempText`.
+
+## Memory Tracking
+
+Parin includes a lightweight memory tracking system that can detect leaks or invalid frees in debug builds.
+By default, leaks will be printed when the game ends only if they are detected.
+
+```d
+bool isLoggingMemoryTrackingInfo();
+void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
+```
+
+Example output:
+
+```
+Memory Leaks: 4 (total 699 bytes, 5 ignored)
+  1 leak, 20 bytes, source/app.d:24
+  1 leak, 53 bytes, source/app.d:31
+  2 leak, 32 bytes, source/app.d:123
+```
+
+You can filter the leak summary: only leaks with paths containing the filter string are shown.
+For example, `setIsLoggingMemoryTrackingInfo(true, "app.d")` shows only leaks with `"app.d"` in the path.
+You can also ignore specific allocations with `ignoreLeak` like this:
+
+```d
+// struct Game { int hp; int mp; }
+// Game* game;
+game = jokaMake!Game().ignoreLeak();
+```
+
+This isn't strictly a Parin feature.
+It comes from [Joka](https://github.com/Kapendev/joka), the library Parin uses for memory allocations.
+Anything allocated through Joka is automatically tracked.
+You can check whether memory tracking is active with `static if (isTrackingMemory)`, and if it is, you can inspect the current tracking state via `_memoryTrackingState`.
+`_memoryTrackingState` is thread-local, so each thread has its own separate tracking state.
+
 ## Debug Mode
 
 Parin has a debug mode that toggles with the **F3** key by default.
-When it's on, an optional `inspect` function runs after `update` and can be used for creating debug tools and inspectors.
-Example:
+
+```d
+bool isDebugMode();
+void setIsDebugMode(bool value);
+void toggleIsDebugMode();
+void setDebugModeKey(Keyboard value);
+```
+
+Additionally, you can pass an `inspect` function to `runGame`. When debug mode is on, this function runs after `update` and can used for debug tools. For example:
 
 ```d
 // It assumes you are using: https://github.com/Kapendev/microui-d
@@ -420,21 +479,19 @@ void inspect() {
 mixin runGame!(ready, update, finish, 960, 540, "Parin", inspect, beginUi, endUi);
 ```
 
-A full example of this can be found in the [examples](examples/integrations/microui.d).
-Additionally, a set of debug mode functions is provided. These include:
-
-```d
-bool isDebugMode();
-void setIsDebugMode(bool value);
-void toggleIsDebugMode();
-void setDebugModeKey(Keyboard value);
-```
+The above code is part of a full example in the [examples](examples/integrations/microui.d).
 
 ## Scheduling
 
 A simple scheduling system exists for running functions later or at intervals.
 This is useful for timers and background tasks.
 Scheduled functions run before `update`.
+
+```d
+TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
+void cancel(TaskId id);
+```
+
 Example:
 
 ```d
@@ -459,72 +516,3 @@ bool update(float dt) {
 
 mixin runGame!(ready, update, null);
 ```
-
-Available functions:
-
-```d
-TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
-void cancel(TaskId id);
-```
-
-## Frame Allocator
-
-The engine provides a frame allocator for temporary memory.
-Allocations from it only live for the current frame and are automatically cleared at the end.
-This is useful for scratch data like strings or small objects created every frame without worrying about freeing them.
-
-Available functions:
-
-```d
-void* frameMalloc(Sz size, Sz alignment);
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
-T* frameMakeBlank(T)();
-T* frameMake(T)(const(T) value = T.init);
-T[] frameMakeSliceBlank(T)(Sz length);
-T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
-```
-
-## Memory Tracking
-
-Parin includes a lightweight memory tracking system that can detect leaks or invalid frees in debug builds.
-By default, leaks will be printed at shutdown only if they are detected.
-
-Available functions:
-
-```d
-bool isLoggingMemoryTrackingInfo();
-void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
-```
-
-Example output:
-
-```
-Memory Leaks: 4 (total 699 bytes, 5 ignored)
-  1 leak, 20 bytes, source/app.d:24
-  1 leak, 53 bytes, source/app.d:31
-  2 leak, 32 bytes, source/app.d:123
-```
-
-
-This isn't strictly a Parin feature.
-It comes from [Joka](https://github.com/Kapendev/joka), the library Parin uses for memory allocations.
-Anything allocated through Joka is automatically tracked.
-You can check whether memory tracking is active with `static if (isTrackingMemory)`, and if it is, you can inspect the current tracking state via `_memoryTrackingState`.
-
-`_memoryTrackingState` is thread-local, so each thread has its own separate tracking state.
-When you look at the state or summary, remember that it's primarily a debug tool.
-In general, this information is normal in debug builds and doesn't indicate an error.
-
-Some leaks can be ignored with the `ignoreLeak` function like this:
-
-```d
-// struct Game { int hp; int mp; }
-// Game* game;
-game = jokaMake!Game().ignoreLeak();
-```
-
-## Sprites & Tile Maps
-
-Sprites and tile maps can be implemented in various ways.
-To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
-Parin provides sprite utilities inside the `parin.sprite` module and map utilities inside the `parin.map` module.

@@ -8,6 +8,7 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 ### Basic
 
 ```d
+// Time-related functions
 bool vsync();
 void setVsync(bool value);
 int fps();
@@ -17,30 +18,21 @@ float deltaTime();
 double elapsedTime();
 long elapsedTickCount();
 
+// Screen-related functions
 int screenWidth();
 int screenHeight();
 Vec2 screenSize();
+
+// Window-related functions
 int windowWidth();
 int windowHeight();
 Vec2 windowSize();
-int resolutionWidth();
-int resolutionHeight();
-Vec2 resolution();
-
-void setBackgroundColor(Rgba value);
-void setBorderColor(Rgba value);
-void lockResolution(int width, int height);
-void unlockResolution();
-void toggleResolution(int width, int height);
 bool isWindowResized();
 void setWindowMinSize(int width, int height);
 void setWindowMaxSize(int width, int height);
 Fault setWindowIconFromFiles(IStr path);
-
-bool isPixelSnapped();
-void setIsPixelSnapped(bool value);
-bool isPixelPerfect();
-void setIsPixelPerfect(bool value);
+void setBackgroundColor(Rgba value);
+void setBorderColor(Rgba value);
 bool isFullscreen();
 void setIsFullscreen(bool value);
 void toggleIsFullscreen();
@@ -48,30 +40,23 @@ bool isCursorVisible();
 void setIsCursorVisible(bool value);
 void toggleIsCursorVisible();
 
+// Resolution-related functions
+int resolutionWidth();
+int resolutionHeight();
+Vec2 resolution();
+void lockResolution(int width, int height);
+void unlockResolution();
+void toggleResolution(int width, int height);
+
+// Drawing-related functions
+bool isPixelSnapped();
+void setIsPixelSnapped(bool value);
+bool isPixelPerfect();
+void setIsPixelPerfect(bool value);
 bool isEmptyTextureVisible();
 void setIsEmptyTextureVisible(bool value);
 bool isEmptyFontVisible();
 void setIsEmptyFontVisible(bool value);
-
-bool isLoggingLoadSaveFaults();
-void setIsLoggingLoadSaveFaults(bool value);
-bool isLoggingMemoryTrackingInfo();
-void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
-
-bool isDebugMode();
-void setIsDebugMode(bool value);
-void toggleIsDebugMode();
-void setDebugModeKey(Keyboard value);
-
-TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
-void cancel(TaskId id);
-
-bool isUsingAssetsPath();
-void setIsUsingAssetsPath(bool value);
-IStr assetsPath();
-IStr toAssetsPath(IStr path);
-void setAssetsPath(IStr path);
-
 Filter defaultFilter();
 void setDefaultFilter(Filter value);
 Wrap defaultWrap();
@@ -81,6 +66,42 @@ void setDefaultTexture(TextureId value);
 FontId defaultFont();
 void setDefaultFont(FontId value);
 
+// Randomness-related functions
+int randi();
+float randf();
+void randomize();
+void setRandomSeed(int value);
+
+// Frame allocator functions
+void* frameMalloc(Sz size, Sz alignment);
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+T* frameMakeBlank(T)();
+T* frameMake(T)(const(T) value = T.init);
+T[] frameMakeSliceBlank(T)(Sz length);
+T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
+
+// Debug-related functions
+bool isLoggingLoadSaveFaults();
+void setIsLoggingLoadSaveFaults(bool value);
+bool isLoggingMemoryTrackingInfo();
+void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
+bool isDebugMode();
+void setIsDebugMode(bool value);
+void toggleIsDebugMode();
+void setDebugModeKey(Keyboard value);
+
+// Scheduling-related functions
+TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
+void cancel(TaskId id);
+
+// Path-related functions
+bool isUsingAssetsPath();
+void setIsUsingAssetsPath(bool value);
+IStr assetsPath();
+IStr toAssetsPath(IStr path);
+void setAssetsPath(IStr path);
+
+// Resource-related functions
 Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
 Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
 Font toFontAscii(Texture from, int tileWidth, int tileHeight);
@@ -88,18 +109,12 @@ TextureId toTextureId(Texture from);
 FontId toFontId(Font from);
 SoundId toSoundId(Sound from);
 
+// Other
 Flip oppositeFlip(Flip flip, Flip fallback);
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 IStr[] envArgs();
 IStr[] droppedFilePaths();
 void openUrl(IStr url = "https://github.com/Kapendev/parin");
-
-void* frameMalloc(Sz size, Sz alignment);
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
-T* frameMakeBlank(T)();
-T* frameMake(T)(const(T) value = T.init);
-T[] frameMakeSliceBlank(T)(Sz length);
-T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
 ```
 
 ### Input
@@ -123,6 +138,7 @@ bool isReleased(Gamepad key, int id = 0);
 Vec2 wasd();
 Vec2 wasdPressed();
 Vec2 wasdReleased();
+
 Vec2 mouse();
 Vec2 deltaMouse();
 float deltaWheel();
@@ -158,23 +174,20 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 
+void dprintfln(A...)(IStr fmtStr, A args);
+void dprintln(A...)(A args);
+IStr dprintBuffer();
 void setDprintPosition(Vec2 value);
 void setDprintOptions(DrawOptions value);
 void setDprintLineCountLimit(Sz value);
 void setDprintVisibility(bool value);
 void toggleDprintVisibility();
 void clearDprintBuffer();
-IStr dprintBuffer();
-void dprintfln(A...)(IStr fmtStr, A args);
-void dprintln(A...)(A args);
 ```
 
 ### Sound
 
 ```d
-float masterVolume();
-void setMasterVolume(float value);
-
 void playSound(SoundId sound);
 void stopSound(SoundId sound);
 void pauseSound(SoundId sound);
@@ -182,6 +195,9 @@ void resumeSound(SoundId sound);
 void startSound(SoundId sound);
 void toggleSoundIsActive(SoundId sound);
 void toggleSoundIsPaused(SoundId sound);
+
+float masterVolume();
+void setMasterVolume(float value);
 ```
 
 ### Loading & Saving
@@ -199,15 +215,6 @@ Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 Fault saveText(IStr path, IStr text);
 
 BStr prepareTempText();
-```
-
-### Randomness
-
-```d
-int randi();
-float randf();
-void randomize();
-void setRandomSeed(int value);
 ```
 
 ### Data Structures

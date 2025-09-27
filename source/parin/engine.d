@@ -51,15 +51,15 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingMemoryTrackingInfo;
 
 enum defaultEngineValidateErrorMessage            = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage                = "Could not load file: \"{}\"";
-enum defaultEngineSaveErrorMessage                = "Could not save file: \"{}\"";
+enum defaultEngineLoadErrorMessage                = "ERROR({}:{}): Could not load file \"{}\".";
+enum defaultEngineSaveErrorMessage                = "ERROR({}:{}): Could not save file \"{}\".";
 enum defaultEngineAssetsPathCapacity              = 8 * kilobyte;
 enum defaultEngineTexturesCapacity                = 128;
 enum defaultEngineSoundsCapacity                  = 128;
 enum defaultEngineFontsCapacity                   = 16;
 enum defaultEngineEnvArgsDroppedFilePathsCapacity = 64;
 enum defaultEngineLoadSaveTextCapacity            = 14 * kilobyte;
-enum defaultEngineTasksCapacity                   = 256;
+enum defaultEngineTasksCapacity                   = 255;
 enum defaultEngineArenaCapacity                   = 4 * megabyte;
 
 enum defaultEngineDprintCapacity       = 8 * kilobyte;
@@ -1061,7 +1061,7 @@ struct Task {
 }
 
 /// A container holding scheduled tasks.
-alias Tasks = SparseList!(Task, FixedList!(SparseListItem!Task, 255));
+alias Tasks = SparseList!(Task, FixedList!(SparseListItem!Task, defaultEngineTasksCapacity));
 /// An identifier for a scheduled task.
 alias TaskId = uint;
 
@@ -1140,7 +1140,7 @@ struct EngineState {
     DrawOptions dprintOptions;
     Sz dprintLineCount;
     Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
-    bool dprintIsVisible;
+    bool dprintIsVisible = true;
 
     EngineViewport viewport;
     GenList!Texture textures;
@@ -1561,50 +1561,52 @@ Fault lastLoadFault() {
 
 /// Loads a text file from the assets folder and saves the content into the given buffer.
 /// Supports both forward slashes and backslashes in file paths.
-Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
+Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
-    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
     return result;
 }
 
 /// Loads a text file from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!LStr loadRawText(IStr path) {
-    return readText(path.toAssetsPath());
+Maybe!LStr loadRawText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = readText(path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result.isNone) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
+    return result;
 }
 
 /// Loads a text file from the assets folder.
 /// The resource remains valid for the duration of the current frame.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!IStr loadTempText(IStr path) {
+Maybe!IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadSaveTextCapacity));
-    auto fault = loadRawTextIntoBuffer(path, tempText);
+    auto fault = loadRawTextIntoBuffer(path, tempText, file, line);
     return Maybe!IStr(tempText.items, fault);
 }
 
 /// Loads a texture file (PNG) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!Texture loadRawTexture(IStr path) {
+Maybe!Texture loadRawTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPr();
     value.setFilter(_engineState.defaultFilter);
     value.setWrap(_engineState.defaultWrap);
     auto result = Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
-    if (isLoggingLoadSaveFaults && result.isNone) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result.isNone) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
     return result;
 }
 
 /// Loads a texture file (PNG) from the assets folder.
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
-TextureId loadTexture(IStr path) {
-    return loadRawTexture(path).get(_engineState.lastLoadFault).toTextureId();
+TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    return loadRawTexture(path, file, line).get(_engineState.lastLoadFault).toTextureId();
 }
 
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
+Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr file = __FILE__, Sz line = __LINE__) {
     auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
-    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Font(Fault.cantFind);
     } else {
@@ -1617,15 +1619,15 @@ Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacin
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null) {
-    return loadRawFont(path, size, runeSpacing, lineSpacing, runes).get(_engineState.lastLoadFault).toFontId();
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr file = __FILE__, Sz line = __LINE__) {
+    return loadRawFont(path, size, runeSpacing, lineSpacing, runes, file, line).get(_engineState.lastLoadFault).toFontId();
 }
 
 /// Loads an ASCII bitmap font file (PNG) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    auto value = loadRawTexture(path).getOr();
+Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
+    auto value = loadRawTexture(path, file, line).getOr();
     return Maybe!Font(value.toFontAscii(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
 }
 
@@ -1633,20 +1635,20 @@ Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight) {
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 // NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight) {
-    return loadRawFontFromTexture(path, tileWidth, tileHeight).get(_engineState.lastLoadFault).toFontId();
+FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
+    return loadRawFontFromTexture(path, tileWidth, tileHeight, file, line).get(_engineState.lastLoadFault).toFontId();
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
+Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
     auto value = Sound();
     if (path.endsWith(".wav")) {
         value.data = rl.LoadSound(path.toAssetsPath().toCStr().getOr());
     } else {
         value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
     }
-    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Sound();
     } else {
@@ -1661,15 +1663,15 @@ Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f) {
-    return loadRawSound(path, volume, pitch, canRepeat, pitchVariance).get(_engineState.lastLoadFault).toSoundId();
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
+    return loadRawSound(path, volume, pitch, canRepeat, pitchVariance, file, line).get(_engineState.lastLoadFault).toSoundId();
 }
 
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Fault saveText(IStr path, IStr text) {
+Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = writeText(path.toAssetsPath(), text);
-    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, path.toAssetsPath());
+    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, file, line, path.toAssetsPath());
     return result;
 }
 
