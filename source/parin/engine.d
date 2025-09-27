@@ -1140,6 +1140,7 @@ struct EngineState {
     DrawOptions dprintOptions;
     Sz dprintLineCount;
     Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
+    bool dprintIsVisible;
 
     EngineViewport viewport;
     GenList!Texture textures;
@@ -1262,7 +1263,7 @@ bool _updateWindowLoop() {
         if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
     }
     auto result = _engineState.updateFunc(dt);
-    if (_engineState.dprintBuffer.length) {
+    if (_engineState.dprintIsVisible) {
         drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
     }
     if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
@@ -2889,9 +2890,9 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             if (isEmptyFontVisible) font = engineFont.get();
             else return;
         }
-        if (text.length == 0) return;
     }
 
+    if (text.length == 0) return;
     linesBuffer.clear();
     linesWidthBuffer.clear();
     // Get some info about the text.
@@ -3147,29 +3148,45 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
     }
 }
 
-/// Sets the position of debug text.
+/// Sets the position of `dprint*` text.
 void setDprintPosition(Vec2 value) {
     _engineState.dprintPosition = value;
 }
 
-/// Sets the drawing options for debug text.
+/// Sets the drawing options for `dprint*` text.
 void setDprintOptions(DrawOptions value) {
     _engineState.dprintOptions = value;
 }
 
-/// Sets the maximum number of debug lines.
+/// Sets the maximum number of `dprint*` lines.
 /// Older lines are removed once this limit is reached. Use 0 for unlimited.
 void setDprintLineCountLimit(Sz value) {
     _engineState.dprintLineCountLimit = value;
 }
 
-/// Clears all debug text.
+/// Sets the visibility state of `dprint*` text.
+void setDprintVisibility(bool value) {
+    _engineState.dprintIsVisible = value;
+}
+
+/// Toggles the visibility state of `dprint*` text.
+void toggleDprintVisibility() {
+    setDprintVisibility(!_engineState.dprintIsVisible);
+}
+
+/// Clears all `dprint*` text.
 void clearDprintBuffer() {
     _engineState.dprintBuffer.clear();
     _engineState.dprintLineCount = 0;
 }
 
-/// Adds a formatted line to the debug text.
+/// Returns the contents of the `dprint*` buffer as an `IStr`.
+/// The returned string references the internal buffer and may change if more text is printed.
+IStr dprintBuffer() {
+    return _engineState.dprintBuffer[];
+}
+
+/// Adds a formatted line to the `dprint*` text.
 void dprintfln(A...)(IStr fmtStr, A args) {
     if (_engineState.dprintLineCountLimit != 0) {
         while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
@@ -3182,7 +3199,7 @@ void dprintfln(A...)(IStr fmtStr, A args) {
     _engineState.dprintLineCount += 1;
 }
 
-/// Adds a line to the debug text.
+/// Adds a line to the `dprint*` text.
 void dprintln(A...)(A args) {
     if (_engineState.dprintLineCountLimit != 0) {
         while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {

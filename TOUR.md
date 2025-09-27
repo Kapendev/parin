@@ -231,7 +231,10 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
 void setDprintPosition(Vec2 value);
 void setDprintOptions(DrawOptions value);
 void setDprintLineCountLimit(Sz value);
+void setDprintVisibility(bool value);
+void toggleDprintVisibility();
 void clearDprintBuffer();
+IStr dprintBuffer();
 void dprintfln(A...)(IStr fmtStr, A args);
 void dprintln(A...)(A args);
 ```

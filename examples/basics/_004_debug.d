@@ -2,9 +2,11 @@
 
 import parin;
 
-auto mode = Mode.engineInfo;
+auto mode = Mode.printInfo;
+auto hasPressedSpace = false;
 
 enum Mode {
+    printInfo,
     engineInfo,
     tileInfo,
 }
@@ -14,22 +16,31 @@ void ready() {
 }
 
 bool update(float dt) {
-    // Toggle the current debug mode.
-    if (Keyboard.space.isPressed) {
-        mode = cast(Mode) !mode;
-        trace(mode);
+    with (Keyboard) {
+        // Change debug mode.
+        if (space.isPressed) {
+            mode = cast(Mode) wrap(mode + 1, Mode.min, Mode.max + 1);
+            dprintln("Mode: ", mode);
+            hasPressedSpace = true;
+        }
+        // Print things on the window.
+        if (enter.isPressed) dprintln("ENTER!");
+        if (backspace.isPressed) dprintln("BACKSPACE!");
+        if (shift.isPressed || shiftRight.isPressed) dprintln("SHIFT!");
+        if (ctrl.isPressed || ctrlRight.isPressed) dprintln("CTRL!");
+        // Print the print buffer if needed.
+        if (esc.isPressed && dprintBuffer.length) print("---\n", dprintBuffer);
     }
-    // Draw the current debug information.
-    with (Mode) final switch (mode) {
-        case engineInfo:
-            // Left mouse button to create an area, right to move the area and middle to remove the area.
-            drawDebugEngineInfo(Vec2(8, 20));
-            break;
-        case tileInfo:
-            drawDebugTileInfo(16, 16, Vec2(8, 20));
-            break;
+    with (Mode) {
+        // Hide the print output if mode is not `printInfo`.
+        setDprintVisibility(mode == printInfo);
+        final switch (mode) {
+            case printInfo : break;
+            case engineInfo: drawDebugEngineInfo(defaultEngineDprintPosition); break;
+            case tileInfo  : drawDebugTileInfo(16, 16, defaultEngineDprintPosition); break;
+        }
     }
-    drawText("Press SPACE to toggle the debug mode.", Vec2(8));
+    if (!hasPressedSpace) drawText("Press SPACE to change mode.", resolution * Vec2(0.5), DrawOptions(Hook.center));
     return false;
 }
 
