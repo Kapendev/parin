@@ -168,8 +168,8 @@ void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
-void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
+void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
@@ -324,8 +324,10 @@ struct Camera {
     ref float y();
     Vec2 sum();
     Hook hook();
-    Vec2 origin(Viewport viewport = Viewport());
-    Rect area(Viewport viewport = Viewport());
+    Vec2 origin();
+    Vec2 origin(ref Viewport viewport);
+    Rect area();
+    Rect area(ref Viewport viewport);
     Vec2 topLeftPoint();
     Vec2 topPoint();
     Vec2 topRightPoint();

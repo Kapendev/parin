@@ -8,10 +8,13 @@
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
+// NOTE: This is just a hint and does not remove all checks. Functions can ignore it if needed.
+//   The `drawText` functions ignore it for example.
 version (ParinSkipDrawChecks) {
     pragma(msg, "Parin: Draw checks disabled. Invalid values may crash your game.");
 }
 
+import parin.c.engine; // Don't ask.
 import rl = parin.bindings.rl;
 version (WebAssembly) {
     import em = parin.bindings.em;
@@ -20,7 +23,6 @@ version (WebAssembly) {
 import joka.ascii;
 import joka.io;
 import joka.memory;
-import parin.c.engine; // Don't ask.
 
 public import joka.containers;
 public import joka.math;
@@ -791,7 +793,7 @@ struct SoundId {
 /// A viewing area for rendering.
 struct Viewport {
     rl.RenderTexture2D data;
-    Rgba color;     /// The background color of the viewport.
+    Rgba color;      /// The background color of the viewport.
     Blend blend;     /// A value representing blending modes.
     bool isAttached; /// Indicates whether the viewport is currently in use.
 
@@ -924,7 +926,12 @@ struct Camera {
     }
 
     /// Returns the origin of the camera.
-    Vec2 origin(Viewport viewport = Viewport()) {
+    Vec2 origin() {
+        return Rect(resolution / Vec2(scale)).origin(hook);
+    }
+
+    /// Returns the origin of the camera.
+    Vec2 origin(ref Viewport viewport) {
         if (viewport.isEmpty) {
             return Rect(resolution / Vec2(scale)).origin(hook);
         } else {
@@ -933,7 +940,12 @@ struct Camera {
     }
 
     /// Returns the area covered by the camera.
-    Rect area(Viewport viewport = Viewport()) {
+    Rect area() {
+        return Rect(sum, resolution / Vec2(scale)).area(hook);
+    }
+
+    /// Returns the area covered by the camera.
+    Rect area(ref Viewport viewport) {
         if (viewport.isEmpty) {
             return Rect(sum, resolution / Vec2(scale)).area(hook);
         } else {
@@ -1488,7 +1500,8 @@ Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
 
 /// Converts bytes into a font. Returns an empty font on error.
 Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf") {
-    auto value = rl.LoadFontFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length, size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
+    auto valueData = rl.LoadFontFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length, size, cast(int*) runes.ptr, cast(int) runes.length);
+    auto value = valueData.toPr(runeSpacing, lineSpacing);
     value.setFilter(_engineState.defaultFilter);
     value.setWrap(_engineState.defaultWrap);
     return value;
@@ -1538,6 +1551,7 @@ TextureId toTextureId(Texture from) {
 
 /// Converts a font into a managed engine resource.
 /// The font will be freed when the resource is freed.
+// NOTE: We avoid passing fonts by value, but it's fine here because this function will not be called every frame.
 FontId toFontId(Font from) {
     if (from.isEmpty) return FontId();
     auto id = FontId(_engineState.fonts.push(from));
@@ -1547,6 +1561,7 @@ FontId toFontId(Font from) {
 
 /// Converts a sound into a managed engine resource.
 /// The sound will be freed when the resource is freed.
+// NOTE: We avoid passing sounds by value, but it's fine here because this function will not be called every frame.
 SoundId toSoundId(Sound from) {
     if (from.isEmpty) return SoundId();
     auto id = SoundId(_engineState.sounds.push(from));
@@ -1605,7 +1620,8 @@ TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
 /// Loads a font file (TTF, OTF) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr file = __FILE__, Sz line = __LINE__) {
-    auto value = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length).toPr(runeSpacing, lineSpacing);
+    auto valueData = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length);
+    auto value = valueData.toPr(runeSpacing, lineSpacing);
     if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Font(Fault.cantFind);
@@ -1689,6 +1705,7 @@ void setAssetsPath(IStr path) {
 
 @trusted nothrow @nogc:
 
+// NOTE: Internal stuff that you should not really use outside of `engine.d`.
 pragma(inline, true) {
     Rgba toPr(rl.Color from) {
         return Rgba(from.r, from.g, from.b, from.a);
@@ -1714,7 +1731,7 @@ pragma(inline, true) {
         return Texture(from);
     }
 
-    Font toPr(rl.Font from, int runeSpacing, int lineSpacing) {
+    Font toPr(ref rl.Font from, int runeSpacing, int lineSpacing) {
         return from.texture.id == rl.GetFontDefault().texture.id
             ? Font()
             : Font(
@@ -1748,15 +1765,24 @@ pragma(inline, true) {
         return from.data;
     }
 
-    rl.Font toRl(Font from) {
+    rl.Font toRl(ref Font from) {
         return from.data;
     }
 
-    rl.RenderTexture2D toRl(Viewport from) {
+    rl.RenderTexture2D toRl(ref Viewport from) {
         return from.data;
     }
 
-    rl.Camera2D toRl(Camera from, Viewport viewport = Viewport()) {
+    rl.Camera2D toRl(Camera from) {
+        return rl.Camera2D(
+            Rect(resolution).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
+            (from.position + from.offset).toRl(),
+            from.rotation,
+            from.scale,
+        );
+    }
+
+    rl.Camera2D toRl(Camera from, ref Viewport viewport) {
         return rl.Camera2D(
             Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
             (from.position + from.offset).toRl(),
@@ -1940,12 +1966,22 @@ void randomize() {
 }
 
 /// Converts a world point to a screen point based on the given camera.
-Vec2 toScreenPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
+Vec2 toScreenPoint(Vec2 position, Camera camera) {
+    return toPr(rl.GetWorldToScreen2D(position.toRl(), camera.toRl()));
+}
+
+/// Converts a world point to a screen point based on the given camera.
+Vec2 toScreenPoint(Vec2 position, Camera camera, ref Viewport viewport) {
     return toPr(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
 }
 
 /// Converts a screen point to a world point based on the given camera.
-Vec2 toWorldPoint(Vec2 position, Camera camera, Viewport viewport = Viewport()) {
+Vec2 toWorldPoint(Vec2 position, Camera camera) {
+    return toPr(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
+}
+
+/// Converts a screen point to a world point based on the given camera.
+Vec2 toWorldPoint(Vec2 position, Camera camera, ref Viewport viewport) {
     return toPr(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
 }
 
@@ -2627,7 +2663,7 @@ void updateSound(ref Sound sound) {
 void updateSound(SoundId sound) {}
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
-Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 measureTextSize(ref Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     if (font.isEmpty || text.length == 0) return Vec2();
 
     auto lineCodepointCount = 0;
@@ -2663,7 +2699,8 @@ Vec2 measureTextSize(Font font, IStr text, DrawOptions options = DrawOptions(), 
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    return measureTextSize(font.getOr(), text, options, extra);
+    if (!font.isValid) return Vec2();
+    return measureTextSize(font.get(), text, options, extra);
 }
 
 /// Draws a rectangle with the specified area and color.
@@ -2827,7 +2864,7 @@ void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, Dra
 }
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
-void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     // Some basic rules to make viewports noob friendly.
     final switch (options.flip) {
         case Flip.none: options.flip = Flip.y; break;
@@ -2839,21 +2876,19 @@ void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions o
 }
 
 /// Draws the viewport at the given position with the specified draw options.
-void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions()) {
     drawViewportArea(viewport, Rect(viewport.size), position, options);
 }
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
-void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (font.isEmpty) {
-            if (isEmptyFontVisible) font = engineFont.get();
-            else return;
-        }
+void drawRune(ref Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto fontData = font.data;
+    if (font.isEmpty) {
+        if (isEmptyFontVisible) fontData = engineFont.get().data;
+        else return;
     }
 
-    auto rect = toPr(rl.GetGlyphAtlasRec(font.data, rune));
+    auto rect = toPr(rl.GetGlyphAtlasRec(fontData, rune));
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
     if (isPixelSnapped) {
@@ -2864,13 +2899,15 @@ void drawRune(Font font, dchar rune, Vec2 position, DrawOptions options = DrawOp
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
-    rl.DrawTextCodepoint(font.data, rune, rl.Vector2(0.0f, 0.0f), font.size, options.color.toRl());
+    rl.DrawTextCodepoint(fontData, rune, rl.Vector2(0.0f, 0.0f), fontData.baseSize, options.color.toRl());
     rl.rlPopMatrix();
 }
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawRune(font.getOr(), rune, position, options);
+    auto fontData = Font();
+    if (font.isValid) fontData = font.get();
+    drawRune(fontData, rune, position, options);
 }
 
 /// Draws a single character from the default font at the given position with the specified draw options.
@@ -2881,17 +2918,15 @@ void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
-void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+void drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 1024;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (font.isEmpty) {
-            if (isEmptyFontVisible) font = engineFont.get();
-            else return;
-        }
+    auto fontData = font;
+    if (font.isEmpty) {
+        if (isEmptyFontVisible) fontData = engineFont.get();
+        else return;
     }
 
     if (text.length == 0) return;
@@ -2900,7 +2935,7 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
     // Get some info about the text.
     auto textCodepointCount = 0;
     auto textMaxLineWidth = 0;
-    auto textHeight = font.size;
+    auto textHeight = fontData.size;
     {
         auto lineCodepointIndex = 0;
         auto textCodepointIndex = 0;
@@ -2910,9 +2945,9 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.push(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.push(cast(ushort) (measureTextSize(fontData, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
-                if (codepoint == '\n') textHeight += font.lineSpacing;
+                if (codepoint == '\n') textHeight += fontData.lineSpacing;
                 lineCodepointIndex = cast(ushort) (textCodepointIndex + 1);
             }
             textCodepointIndex += codepointSize;
@@ -2962,49 +2997,49 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
                 auto codepoint = rl.GetCodepointPrevious(&line.ptr[lineCodepointIndex], &codepointSize);
-                auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+                auto glyphIndex = rl.GetGlyphIndex(fontData.data, codepoint);
                 if (lineCodepointIndex == line.length) {
-                    if (font.data.glyphs[glyphIndex].advanceX) {
-                        textOffsetX -= font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
+                    if (fontData.data.glyphs[glyphIndex].advanceX) {
+                        textOffsetX -= fontData.data.glyphs[glyphIndex].advanceX + fontData.runeSpacing;
                     } else {
-                        textOffsetX -= cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
+                        textOffsetX -= cast(int) (fontData.data.recs[glyphIndex].width + fontData.runeSpacing);
                     }
                 } else {
                     auto temp = 0;
-                    auto nextRightToLeftGlyphIndex = rl.GetGlyphIndex(font.data, rl.GetCodepointPrevious(&line[lineCodepointIndex], &temp));
-                    if (font.data.glyphs[nextRightToLeftGlyphIndex].advanceX) {
-                        textOffsetX -= font.data.glyphs[nextRightToLeftGlyphIndex].advanceX + font.runeSpacing;
+                    auto nextRightToLeftGlyphIndex = rl.GetGlyphIndex(fontData.data, rl.GetCodepointPrevious(&line[lineCodepointIndex], &temp));
+                    if (fontData.data.glyphs[nextRightToLeftGlyphIndex].advanceX) {
+                        textOffsetX -= fontData.data.glyphs[nextRightToLeftGlyphIndex].advanceX + fontData.runeSpacing;
                     } else {
-                        textOffsetX -= cast(int) (font.data.recs[nextRightToLeftGlyphIndex].width + font.runeSpacing);
+                        textOffsetX -= cast(int) (fontData.data.recs[nextRightToLeftGlyphIndex].width + fontData.runeSpacing);
                     }
                 }
                 if (codepoint != ' ' && codepoint != '\t') {
-                    rl.DrawTextCodepoint(font.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), font.size, options.color.toRl());
+                    rl.DrawTextCodepoint(fontData.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), fontData.size, options.color.toRl());
                 }
                 drawCodepointCounter += 1;
                 lineCodepointIndex -= codepointSize;
             }
             drawCodepointCounter += 1;
-            textOffsetY += font.lineSpacing;
+            textOffsetY += fontData.lineSpacing;
         } else {
             while (lineCodepointIndex < line.length) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
                 auto codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointSize);
-                auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+                auto glyphIndex = rl.GetGlyphIndex(fontData.data, codepoint);
                 if (codepoint != ' ' && codepoint != '\t') {
-                    rl.DrawTextCodepoint(font.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), font.size, options.color.toRl());
+                    rl.DrawTextCodepoint(fontData.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), fontData.size, options.color.toRl());
                 }
-                if (font.data.glyphs[glyphIndex].advanceX) {
-                    textOffsetX += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
+                if (fontData.data.glyphs[glyphIndex].advanceX) {
+                    textOffsetX += fontData.data.glyphs[glyphIndex].advanceX + fontData.runeSpacing;
                 } else {
-                    textOffsetX += cast(int) (font.data.recs[glyphIndex].width + font.runeSpacing);
+                    textOffsetX += cast(int) (fontData.data.recs[glyphIndex].width + fontData.runeSpacing);
                 }
                 drawCodepointCounter += 1;
                 lineCodepointIndex += codepointSize;
             }
             drawCodepointCounter += 1;
-            textOffsetY += font.lineSpacing;
+            textOffsetY += fontData.lineSpacing;
         }
     }
     rl.rlPopMatrix();
@@ -3012,7 +3047,9 @@ void drawText(Font font, IStr text, Vec2 position, DrawOptions options = DrawOpt
 
 /// Draws text with the given font at the given position using the provided draw options.
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    drawText(font.getOr(), text, position, options, extra);
+    auto fontData = Font();
+    if (font.isValid) fontData = font.get();
+    drawText(fontData, text, position, options, extra);
 }
 
 /// Draws text with the default font at the given position with the provided draw options.

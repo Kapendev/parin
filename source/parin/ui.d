@@ -5,6 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: NEEDS A REWRITEEEEE.
 // TODO: Add some helper function for arcade-like menus.
 //  Example: https://x.com/hiulit/status/1930230660242747554/photo/3
 //  This example is also nice because it changes some stuff based on the game resolution.
@@ -41,6 +42,8 @@ enum UiDragLimit: ubyte {
     customAndY,   /// Limited to custom limits and on the Y-axis.
 }
 
+// TODO: Have to think what to do with it when I rewrite things. Pointer or global thing like microui.
+//   Probably microui thing because I want to keep the options structs values.
 struct UiOptions {
     FontId font = engineFont;
     Rgba fontColor = white;
@@ -101,7 +104,6 @@ struct UiState {
 @trusted
 void prepareUi() {
     if (_uiState == null) {
-        // NOTE: This leaks. THIS IS SO BAD WHERE IS `Box::leak` IN THIS CODEBASE???
         _uiState = jokaMake!UiState().ignoreLeak();
         _uiPreviousState = jokaMake!UiState().ignoreLeak();
     }

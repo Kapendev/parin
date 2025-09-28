@@ -223,8 +223,8 @@ void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-void drawViewport(Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
-void drawViewportArea(Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
+void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
@@ -466,7 +466,7 @@ void toggleIsDebugMode();
 void setDebugModeKey(Keyboard value);
 ```
 
-Additionally, you can pass an `inspect` function to `runGame`. When debug mode is on, this function runs after `update` and can used for debug tools. For example:
+Additionally, you can pass an `inspect` function to `runGame`. When debug mode is on, this function runs after `update` and can be used for debug tools. For example:
 
 ```d
 // It assumes you are using: https://github.com/Kapendev/microui-d
