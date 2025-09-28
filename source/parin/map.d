@@ -154,7 +154,7 @@ struct TileMap {
         if (csv.length == 0) return Fault.cantParse;
         bool canResizeHard = layerId >= layers.length;
         while (layerId >= layers.length) {
-            layers.appendBlank();
+            layers.appendBlank(file, line);
             layers[$ - 1].clear();
         }
         if (canResizeHard) resizeHard(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, file, line);
@@ -220,7 +220,7 @@ struct TileMap {
 
     void resizeHard(Sz newHardRowCount, Sz newHardColCount, IStr file = __FILE__, Sz line = __LINE__) {
         if (isEmpty) {
-            layers.appendBlank();
+            layers.appendBlank(file, line);
             layers[$ - 1].clear();
         }
         rowCount = newHardRowCount;
