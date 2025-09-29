@@ -15,6 +15,7 @@ version (ParinSkipDrawChecks) {
 }
 
 import parin.c.engine; // Don't ask.
+import bk = parin.backend;
 import rl = parin.bindings.rl;
 version (WebAssembly) {
     import em = parin.bindings.em;
@@ -28,22 +29,20 @@ public import joka.containers;
 public import joka.math;
 public import joka.memory;
 public import joka.types;
+public import parin.types;
 
 __gshared EngineState* _engineState;
 
-alias EngineUpdateFunc = bool function(float dt);
-alias EngineFunc       = void function();
-alias EngineFlags      = uint;
-
-@trusted:
-
 // ---------- Config
-enum defaultEngineTitle        = "Parin";
-enum defaultEngineWidth        = 960;
-enum defaultEngineHeight       = 540;
-enum defaultEngineFpsMax       = 60;
-enum defaultEngineVsync        = true;
-enum defaultEngineDebugModeKey = Keyboard.f3;
+enum defaultEngineTitle           = "Parin";
+enum defaultEngineWidth           = 960;
+enum defaultEngineHeight          = 540;
+enum defaultEngineVsync           = true;
+enum defaultEngineFpsMax          = 60;
+enum defaultEngineWindowMinWidth  = 240;
+enum defaultEngineWindowMinHeight = 135;
+enum defaultEngineWindowMinSize   = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
+enum defaultEngineDebugModeKey    = Keyboard.f3;
 
 enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
@@ -76,6 +75,12 @@ enum defaultEngineDebugColor2       = white.alpha(140);
 /// The default engine font. This font should not be freed.
 enum engineFont = FontId(GenIndex(1));
 
+alias EngineUpdateFunc = bool function(float dt);
+alias EngineFunc       = void function();
+alias EngineFlags      = uint;
+
+@trusted:
+
 alias D_ = DrawOptions; /// Draw options (shorthand for `DrawOptions`).
 alias T_ = TextOptions; /// Text options (shorthand for `TextOptions`).
 alias C_ = Camera;      /// Camera (shorthand for `Camera`).
@@ -94,290 +99,6 @@ enum EngineFlag : EngineFlags {
     isLoggingLoadSaveFaults     = 0x000100,
     isLoggingMemoryTrackingInfo = 0x000200,
     isDebugMode                 = 0x000400,
-}
-
-/// Flipping orientations.
-enum Flip : ubyte {
-    none, /// No flipping.
-    x,    /// Flipped along the X-axis.
-    y,    /// Flipped along the Y-axis.
-    xy,   /// Flipped along both X and Y axes.
-}
-
-/// Alignment orientations.
-enum Alignment : ubyte {
-    left,   /// Align to the left.
-    center, /// Align to the center.
-    right,  /// Align to the right.
-}
-
-/// Texture filtering modes.
-enum Filter : ubyte {
-    nearest = rl.TEXTURE_FILTER_POINT,    /// Nearest neighbor filtering (blocky).
-    linear  = rl.TEXTURE_FILTER_BILINEAR, /// Bilinear filtering (smooth).
-}
-
-/// Texture wrapping modes.
-enum Wrap : ubyte {
-    clamp  = rl.TEXTURE_WRAP_CLAMP,  /// Clamps texture.
-    repeat = rl.TEXTURE_WRAP_REPEAT, /// Repeats texture.
-}
-
-/// Texture blending modes.
-enum Blend : ubyte {
-    alpha      = rl.BLEND_CUSTOM_SEPARATE, /// Standard alpha blending.
-    additive   = rl.BLEND_ADDITIVE,        /// Adds colors for light effects.
-    multiplied = rl.BLEND_MULTIPLIED,      /// Multiplies colors for shadows.
-    add        = rl.BLEND_ADD_COLORS,      /// Simply adds colors.
-    sub        = rl.BLEND_SUBTRACT_COLORS, /// Simply subtracts colors.
-}
-
-/// A limited set of keyboard keys.
-enum Keyboard : ushort {
-    none = rl.KEY_NULL,                  /// Not a key.
-    apostrophe = rl.KEY_APOSTROPHE,      /// The `'` key.
-    comma = rl.KEY_COMMA,                /// The `,` key.
-    minus = rl.KEY_MINUS,                /// The `-` key.
-    period = rl.KEY_PERIOD,              /// The `.` key.
-    slash = rl.KEY_SLASH,                /// The `/` key.
-    n0 = rl.KEY_ZERO,                    /// The 0 key.
-    n1 = rl.KEY_ONE,                     /// The 1 key.
-    n2 = rl.KEY_TWO,                     /// The 2 key.
-    n3 = rl.KEY_THREE,                   /// The 3 key.
-    n4 = rl.KEY_FOUR,                    /// The 4 key.
-    n5 = rl.KEY_FIVE,                    /// The 5 key.
-    n6 = rl.KEY_SIX,                     /// The 6 key.
-    n7 = rl.KEY_SEVEN,                   /// The 7 key.
-    n8 = rl.KEY_EIGHT,                   /// The 8 key.
-    n9 = rl.KEY_NINE,                    /// The 9 key.
-    nn0 = rl.KEY_KP_0,                   /// The 0 key on the numpad.
-    nn1 = rl.KEY_KP_1,                   /// The 1 key on the numpad.
-    nn2 = rl.KEY_KP_2,                   /// The 2 key on the numpad.
-    nn3 = rl.KEY_KP_3,                   /// The 3 key on the numpad.
-    nn4 = rl.KEY_KP_4,                   /// The 4 key on the numpad.
-    nn5 = rl.KEY_KP_5,                   /// The 5 key on the numpad.
-    nn6 = rl.KEY_KP_6,                   /// The 6 key on the numpad.
-    nn7 = rl.KEY_KP_7,                   /// The 7 key on the numpad.
-    nn8 = rl.KEY_KP_8,                   /// The 8 key on the numpad.
-    nn9 = rl.KEY_KP_9,                   /// The 9 key on the numpad.
-    semicolon = rl.KEY_SEMICOLON,        /// The `;` key.
-    equal = rl.KEY_EQUAL,                /// The `=` key.
-    a = rl.KEY_A,                        /// The A key.
-    b = rl.KEY_B,                        /// The B key.
-    c = rl.KEY_C,                        /// The C key.
-    d = rl.KEY_D,                        /// The D key.
-    e = rl.KEY_E,                        /// The E key.
-    f = rl.KEY_F,                        /// The F key.
-    g = rl.KEY_G,                        /// The G key.
-    h = rl.KEY_H,                        /// The H key.
-    i = rl.KEY_I,                        /// The I key.
-    j = rl.KEY_J,                        /// The J key.
-    k = rl.KEY_K,                        /// The K key.
-    l = rl.KEY_L,                        /// The L key.
-    m = rl.KEY_M,                        /// The M key.
-    n = rl.KEY_N,                        /// The N key.
-    o = rl.KEY_O,                        /// The O key.
-    p = rl.KEY_P,                        /// The P key.
-    q = rl.KEY_Q,                        /// The Q key.
-    r = rl.KEY_R,                        /// The R key.
-    s = rl.KEY_S,                        /// The S key.
-    t = rl.KEY_T,                        /// The T key.
-    u = rl.KEY_U,                        /// The U key.
-    v = rl.KEY_V,                        /// The V key.
-    w = rl.KEY_W,                        /// The W key.
-    x = rl.KEY_X,                        /// The X key.
-    y = rl.KEY_Y,                        /// The Y key.
-    z = rl.KEY_Z,                        /// The Z key.
-    bracketLeft = rl.KEY_LEFT_BRACKET,   /// The `[` key.
-    bracketRight = rl.KEY_RIGHT_BRACKET, /// The `]` key.
-    backslash = rl.KEY_BACKSLASH,        /// The `\` key.
-    grave = rl.KEY_GRAVE,                /// The `` ` `` key.
-    space = rl.KEY_SPACE,                /// The space key.
-    esc = rl.KEY_ESCAPE,                 /// The escape key.
-    enter = rl.KEY_ENTER,                /// The enter key.
-    tab = rl.KEY_TAB,                    /// The tab key.
-    backspace = rl.KEY_BACKSPACE,        /// THe backspace key.
-    insert = rl.KEY_INSERT,              /// The insert key.
-    del = rl.KEY_DELETE,                 /// The delete key.
-    right = rl.KEY_RIGHT,                /// The right arrow key.
-    left = rl.KEY_LEFT,                  /// The left arrow key.
-    down = rl.KEY_DOWN,                  /// The down arrow key.
-    up = rl.KEY_UP,                      /// The up arrow key.
-    pageUp = rl.KEY_PAGE_UP,             /// The page up key.
-    pageDown = rl.KEY_PAGE_DOWN,         /// The page down key.
-    home = rl.KEY_HOME,                  /// The home key.
-    end = rl.KEY_END,                    /// The end key.
-    capsLock = rl.KEY_CAPS_LOCK,         /// The caps lock key.
-    scrollLock = rl.KEY_SCROLL_LOCK,     /// The scroll lock key.
-    numLock = rl.KEY_NUM_LOCK,           /// The num lock key.
-    printScreen = rl.KEY_PRINT_SCREEN,   /// The print screen key.
-    pause = rl.KEY_PAUSE,                /// The pause/break key.
-    shift = rl.KEY_LEFT_SHIFT,           /// The left shift key.
-    shiftRight = rl.KEY_RIGHT_SHIFT,     /// The right shift key.
-    ctrl = rl.KEY_LEFT_CONTROL,          /// The left control key.
-    ctrlRight = rl.KEY_RIGHT_CONTROL,    /// The right control key.
-    alt = rl.KEY_LEFT_ALT,               /// The left alt key.
-    altRight = rl.KEY_RIGHT_ALT,         /// The right alt key.
-    win = rl.KEY_LEFT_SUPER,             /// The left windows/super/command key.
-    winRight = rl.KEY_RIGHT_SUPER,       /// The right windows/super/command key.
-    menu = rl.KEY_KB_MENU,               /// The menu key.
-    f1 = rl.KEY_F1,                      /// The f1 key.
-    f2 = rl.KEY_F2,                      /// The f2 key.
-    f3 = rl.KEY_F3,                      /// The f3 key.
-    f4 = rl.KEY_F4,                      /// The f4 key.
-    f5 = rl.KEY_F5,                      /// The f5 key.
-    f6 = rl.KEY_F6,                      /// The f6 key.
-    f7 = rl.KEY_F7,                      /// The f7 key.
-    f8 = rl.KEY_F8,                      /// The f8 key.
-    f9 = rl.KEY_F9,                      /// The f9 key.
-    f10 = rl.KEY_F10,                    /// The f10 key.
-    f11 = rl.KEY_F11,                    /// The f11 key.
-    f12 = rl.KEY_F12,                    /// The f12 key.
-}
-
-/// A limited set of mouse keys.
-enum Mouse : ushort {
-    none = 0,                            /// Not a button.
-    left = rl.MOUSE_BUTTON_LEFT + 1,     /// The left mouse button.
-    right = rl.MOUSE_BUTTON_RIGHT + 1,   /// The right mouse button.
-    middle = rl.MOUSE_BUTTON_MIDDLE + 1, /// The middle mouse button.
-}
-
-/// A limited set of gamepad buttons.
-enum Gamepad : ushort {
-    none = rl.GAMEPAD_BUTTON_UNKNOWN,          /// Not a button.
-    left = rl.GAMEPAD_BUTTON_LEFT_FACE_LEFT,   /// The left button.
-    right = rl.GAMEPAD_BUTTON_LEFT_FACE_RIGHT, /// The right button.
-    up = rl.GAMEPAD_BUTTON_LEFT_FACE_UP,       /// The up button.
-    down = rl.GAMEPAD_BUTTON_LEFT_FACE_DOWN,   /// The down button.
-    y = rl.GAMEPAD_BUTTON_RIGHT_FACE_UP,       /// The Xbox y, PlayStation triangle and Nintendo x button.
-    x = rl.GAMEPAD_BUTTON_RIGHT_FACE_RIGHT,    /// The Xbox x, PlayStation square and Nintendo y button.
-    a = rl.GAMEPAD_BUTTON_RIGHT_FACE_DOWN,     /// The Xbox a, PlayStation cross and Nintendo b button.
-    b = rl.GAMEPAD_BUTTON_RIGHT_FACE_LEFT,     /// The Xbox b, PlayStation circle and Nintendo a button.
-    lt = rl.GAMEPAD_BUTTON_LEFT_TRIGGER_2,     /// The left trigger button.
-    lb = rl.GAMEPAD_BUTTON_LEFT_TRIGGER_1,     /// The left bumper button.
-    lsb = rl.GAMEPAD_BUTTON_LEFT_THUMB,        /// The left stick button.
-    rt = rl.GAMEPAD_BUTTON_RIGHT_TRIGGER_2,    /// The right trigger button.
-    rb = rl.GAMEPAD_BUTTON_RIGHT_TRIGGER_1,    /// The right bumper button.
-    rsb = rl.GAMEPAD_BUTTON_RIGHT_THUMB,       /// The right stick button.
-    back = rl.GAMEPAD_BUTTON_MIDDLE_LEFT,      /// The back button.
-    start = rl.GAMEPAD_BUTTON_MIDDLE_RIGHT,    /// The start button.
-    middle = rl.GAMEPAD_BUTTON_MIDDLE,         /// The middle button.
-}
-
-/// A set of 4 integer margins.
-struct Margin {
-    int left;   /// The left side.
-    int top;    /// The top side.
-    int right;  /// The right side.
-    int bottom; /// The bottom side.
-
-    @safe nothrow @nogc:
-
-    this(int left, int top, int right, int bottom) {
-        this.left = left;
-        this.top = top;
-        this.right = right;
-        this.bottom = bottom;
-    }
-
-    this(int left) {
-        this(left, left, left, left);
-    }
-}
-
-/// A part of a 9-slice.
-struct SlicePart {
-    IRect source;    /// The source area on the atlas texture.
-    IRect target;    /// The target area on the canvas.
-    IVec2 tileCount; /// The number of source tiles that fit inside the target.
-    bool isCorner;   /// True if the part is a corner.
-    bool canTile;    /// True if the part is an edge or the center.
-
-    @safe nothrow @nogc:
-
-    IStr toStr() {
-        return "x={{}:{}} y={{}:{}} w={{}:{}} h={{}:{}}".fmt(
-            source.position.x,
-            target.position.x,
-            source.position.y,
-            target.position.y,
-            source.size.x,
-            target.size.x,
-            source.size.y,
-            target.size.y,
-        );
-    }
-
-    IStr toString() {
-        return toStr();
-    }
-}
-
-/// The parts of a 9-slice.
-alias SliceParts = Array!(SlicePart, 9);
-
-/// Options for configuring drawing parameters.
-struct DrawOptions {
-    Vec2 origin    = Vec2(0.0f);   /// The origin point of the drawn object. This value can be used to force a specific origin.
-    Vec2 scale     = Vec2(1.0f);   /// The scale of the drawn object.
-    float rotation = 0.0f;         /// The rotation of the drawn object, in degrees.
-    Rgba color     = white;        /// The color of the drawn object, in RGBA.
-    Hook hook      = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
-    Flip flip      = Flip.none;    /// A value representing flipping orientations.
-
-    @trusted nothrow @nogc:
-
-    /// Initializes the options with the given rotation.
-    this(float rotation, Hook hook = Hook.topLeft) {
-        this.rotation = rotation;
-        this.hook = hook;
-    }
-
-    /// Initializes the options with the given scale.
-    this(Vec2 scale, Hook hook = Hook.topLeft) {
-        this.scale = scale;
-        this.hook = hook;
-    }
-
-    /// Initializes the options with the given color.
-    this(Rgba color, Hook hook = Hook.topLeft) {
-        this.color = color;
-        this.hook = hook;
-    }
-
-    /// Initializes the options with the given flip.
-    this(Flip flip, Hook hook = Hook.topLeft) {
-        this.flip = flip;
-        this.hook = hook;
-    }
-
-    /// Initializes the options with the given hook.
-    this(Hook hook) {
-        this.hook = hook;
-    }
-}
-
-/// Options for configuring extra drawing parameters for text.
-struct TextOptions {
-    float visibilityRatio  = 1.0f;           /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
-    int alignmentWidth     = 0;              /// The width of the aligned text. It is used as a hint and is not enforced.
-    ushort visibilityCount = 0;              /// Controls the visibility count of the text. This value can be used to force a specific character count.
-    Alignment alignment    = Alignment.left; /// A value represeting alignment orientations.
-    bool isRightToLeft     = false;          /// Indicates whether the content of the text flows in a right-to-left direction.
-
-    @trusted nothrow @nogc:
-
-    /// Initializes the options with the given visibility ratio.
-    this(float visibilityRatio) {
-        this.visibilityRatio = visibilityRatio;
-    }
-
-    /// Initializes the options with the given alignment.
-    this(Alignment alignment, int alignmentWidth = 0) {
-        this.alignment = alignment;
-        this.alignmentWidth = alignmentWidth;
-    }
 }
 
 /// A texture resource.
@@ -409,13 +130,13 @@ struct Texture {
     /// Sets the filter mode of the texture.
     void setFilter(Filter value) {
         if (isEmpty) return;
-        rl.SetTextureFilter(data, value);
+        rl.SetTextureFilter(data, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
     }
 
     /// Sets the wrap mode of the texture.
     void setWrap(Wrap value) {
         if (isEmpty) return;
-        rl.SetTextureWrap(data, value);
+        rl.SetTextureWrap(data, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
     }
 
     /// Frees the loaded texture.
@@ -508,13 +229,13 @@ struct Font {
     /// Sets the filter mode of the font.
     void setFilter(Filter value) {
         if (isEmpty) return;
-        rl.SetTextureFilter(data.texture, value);
+        rl.SetTextureFilter(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
     }
 
     /// Sets the wrap mode of the font.
     void setWrap(Wrap value) {
         if (isEmpty) return;
-        rl.SetTextureWrap(data.texture, value);
+        rl.SetTextureWrap(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
     }
 
     /// Frees the loaded font.
@@ -851,7 +572,7 @@ struct Viewport {
         if (isResolutionLocked) rl.EndTextureMode();
         rl.BeginTextureMode(data);
         rl.ClearBackground(color.toRl());
-        rl.BeginBlendMode(blend);
+        bk.beginBlend(blend);
     }
 
     /// Detaches the viewport, making it inactive.
@@ -863,7 +584,7 @@ struct Viewport {
         }
         isAttached = false;
         _engineState.userViewport = Viewport();
-        rl.EndBlendMode();
+        bk.endBlend();
         rl.EndTextureMode();
         if (isResolutionLocked) rl.BeginTextureMode(_engineState.viewport.data.toRl());
     }
@@ -871,13 +592,13 @@ struct Viewport {
     /// Sets the filter mode of the viewport.
     void setFilter(Filter value) {
         if (isEmpty) return;
-        rl.SetTextureFilter(data.texture, value);
+        rl.SetTextureFilter(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
     }
 
     /// Sets the wrap mode of the viewport.
     void setWrap(Wrap value) {
         if (isEmpty) return;
-        rl.SetTextureWrap(data.texture, value);
+        rl.SetTextureWrap(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
     }
 
     /// Frees the loaded viewport.
@@ -1168,19 +889,8 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     enum monogramPath = "parin_monogram.png";
     enum targetHtmlElementId = "canvas";
 
-    if (rl.IsWindowReady) return;
+    bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
 
-    // Raylib stuff.
-    rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | (defaultEngineVsync ? rl.FLAG_VSYNC_HINT : 0));
-    rl.SetTraceLogLevel(rl.LOG_ERROR);
-    rl.InitWindow(width, height, title.toCStr().getOr());
-    rl.InitAudioDevice();
-    rl.SetExitKey(rl.KEY_NULL);
-    rl.SetTargetFPS(defaultEngineFpsMax);
-    rl.SetWindowMinSize(240, 135);
-    rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
-
-    // Parin stuff.
     _engineState = jokaMake!EngineState();
     _engineState.fullscreenState.previousWindowWidth = width;
     _engineState.fullscreenState.previousWindowHeight = height;
@@ -1198,7 +908,6 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
         _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
     }
 
-    // Wasm stuff.
     version (WebAssembly) {
         em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_engineMouseCallbackWeb);
     }
@@ -1394,8 +1103,7 @@ void _closeWindow() {
     jokaFree(_engineState);
     _engineState = null;
 
-    rl.CloseAudioDevice();
-    rl.CloseWindow();
+    bk.finishBackend();
     static if (isTrackingMemory) {
         if (isLogging) printMemoryTrackingInfo(filter);
     }
@@ -1488,6 +1196,7 @@ T[] frameMakeSlice(T)(Sz length, const(T) value = T.init) {
     return _engineState.arena.makeSlice!T(length, value);
 }
 
+// TODO: LAST TIME !@ GOT STUCK HERE!!!!!! MAYBE START BY CHANGING HOW THE TEXTURE WORKS
 /// Converts bytes into a texture. Returns an empty texture on error.
 Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
     auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length);
@@ -2432,67 +2141,31 @@ float deltaWheel() {
 }
 
 /// Returns true if the specified key is currently pressed.
-bool isDown(char key) {
-    return rl.IsKeyDown(toUpper(key));
-}
-
+bool isDown(char key) => key ? bk.isDown(key) : false;
 /// Returns true if the specified key is currently pressed.
-bool isDown(Keyboard key) {
-    return rl.IsKeyDown(key);
-}
-
+bool isDown(Keyboard key) => key ? bk.isDown(key) : false;
 /// Returns true if the specified key is currently pressed.
-bool isDown(Mouse key) {
-    if (key) return rl.IsMouseButtonDown(key - 1);
-    else return false;
-}
-
+bool isDown(Mouse key) => key ? bk.isDown(key) : false;
 /// Returns true if the specified key is currently pressed.
-bool isDown(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonDown(id, key);
-}
+bool isDown(Gamepad key, int id = 0) => key ? bk.isDown(key, id) : false;
 
 /// Returns true if the specified key was pressed.
-bool isPressed(char key) {
-    return rl.IsKeyPressed(toUpper(key));
-}
-
+bool isPressed(char key) => key ? bk.isPressed(key) : false;
 /// Returns true if the specified key was pressed.
-bool isPressed(Keyboard key) {
-    return rl.IsKeyPressed(key);
-}
-
+bool isPressed(Keyboard key) => key ? bk.isPressed(key) : false;
 /// Returns true if the specified key was pressed.
-bool isPressed(Mouse key) {
-    if (key) return rl.IsMouseButtonPressed(key - 1);
-    else return false;
-}
-
+bool isPressed(Mouse key) => key ? bk.isPressed(key) : false;
 /// Returns true if the specified key was pressed.
-bool isPressed(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonPressed(id, key);
-}
+bool isPressed(Gamepad key, int id = 0) => key ? bk.isPressed(key, id) : false;
 
 /// Returns true if the specified key was released.
-bool isReleased(char key) {
-    return rl.IsKeyReleased(toUpper(key));
-}
-
+bool isReleased(char key) => key ? bk.isReleased(key) : false;
 /// Returns true if the specified key was released.
-bool isReleased(Keyboard key) {
-    return rl.IsKeyReleased(key);
-}
-
+bool isReleased(Keyboard key) => key ? bk.isReleased(key) : false;
 /// Returns true if the specified key was released.
-bool isReleased(Mouse key) {
-    if (key) return rl.IsMouseButtonReleased(key - 1);
-    else return false;
-}
-
+bool isReleased(Mouse key) => key ? bk.isReleased(key) : false;
 /// Returns true if the specified key was released.
-bool isReleased(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonReleased(id, key);
-}
+bool isReleased(Gamepad key, int id = 0) => key ? bk.isReleased(key, id) : false;
 
 /// Returns the recently pressed keyboard key.
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
@@ -2918,18 +2591,19 @@ void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
-void drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 1024;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
+    auto result = Vec2();
     auto fontData = font;
     if (font.isEmpty) {
         if (isEmptyFontVisible) fontData = engineFont.get();
-        else return;
+        else return Vec2();
     }
 
-    if (text.length == 0) return;
+    if (text.length == 0) return Vec2();
     linesBuffer.clear();
     linesWidthBuffer.clear();
     // Get some info about the text.
@@ -2954,6 +2628,8 @@ void drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = Dra
         }
         if (textMaxLineWidth < extra.alignmentWidth) textMaxLineWidth = extra.alignmentWidth;
     }
+    result.x = textMaxLineWidth; // I kinda hate the names lol.
+    result.y = textHeight;
 
     // Prepare the the text for drawing.
     auto origin = Rect(textMaxLineWidth, textHeight).origin(options.hook);
@@ -3043,19 +2719,20 @@ void drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = Dra
         }
     }
     rl.rlPopMatrix();
+    return result;
 }
 
 /// Draws text with the given font at the given position using the provided draw options.
-void drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     auto fontData = Font();
     if (font.isValid) fontData = font.get();
-    drawText(fontData, text, position, options, extra);
+    return drawText(fontData, text, position, options, extra);
 }
 
 /// Draws text with the default font at the given position with the provided draw options.
 /// Check the `setDefaultFont` function before using this function.
-void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    drawText(_engineState.defaultFont, text, position, options, extra);
+Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+    return drawText(_engineState.defaultFont, text, position, options, extra);
 }
 
 deprecated("Use `drawText(text, ...)`. It works the same, but you can also call `setDefaultFont` to change the font.")

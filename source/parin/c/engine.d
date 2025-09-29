@@ -184,8 +184,8 @@ void prDrawViewport(Viewport viewport, Vec2 position, DrawOptions options) => dr
 void prDrawRune(Font font, dchar rune, Vec2 position, DrawOptions options) => drawRune(font, rune, position, options);
 void prDrawRuneId(FontId font, dchar rune, Vec2 position, DrawOptions options) => drawRune(font, rune, position, options);
 void prDrawRuneDf(dchar rune, Vec2 position, DrawOptions options) => drawRune(rune, position, options);
-void prDrawText(Font font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
-void prDrawTextId(FontId font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
-void prDrawTextDf(IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(text, position, options, extra);
+Vec2 prDrawText(Font font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
+Vec2 prDrawTextId(FontId font, IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(font, text, position, options, extra);
+Vec2 prDrawTextDf(IStr text, Vec2 position, DrawOptions options, TextOptions extra) => drawText(text, position, options, extra);
 void prDrawDebugEngineInfo(Vec2 screenPoint, Camera camera, DrawOptions options, bool isLogging = false) => drawDebugEngineInfo(screenPoint, camera, options, isLogging);
 void prDrawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera, DrawOptions options, bool isLogging = false) => drawDebugTileInfo(tileWidth, tileHeight, screenPoint, camera, options, isLogging);

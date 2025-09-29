@@ -13,14 +13,13 @@ bool update(float dt) {
     // Set the alignment of the text, how many characters are visible this frame
     // and whether the content of the text flows in a right-to-left direction.
     auto options = DrawOptions(Hook.topLeft);
-    auto extra = TextOptions();
-    extra.alignment = Alignment.center;
+    auto extra = TextOptions(Alignment.center);
     extra.visibilityRatio = fmod(elapsedTime * 0.3, 1.5);
     extra.isRightToLeft = true;
-    // Draw the text with the engine font.
-    auto textArea = Rect(textPosition, measureTextSize(defaultFont, text));
-    drawRect(textArea, black);
-    drawText(text, textPosition, options, extra);
+    drawRect(
+        Rect(textPosition, drawText(text, textPosition, options, extra)),
+        black.alpha(80),
+    );
     return false;
 }
 
