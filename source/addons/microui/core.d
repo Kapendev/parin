@@ -36,7 +36,7 @@
 // TODO: work on attributes maybe.
 
 /// A tiny immediate-mode UI library.
-module parin.extras.microui.core;
+module addons.microui.core;
 
 private extern(C) nothrow @nogc {
     // External dependencies required by microui.

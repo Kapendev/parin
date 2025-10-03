@@ -373,7 +373,7 @@ struct TileMap {
 }
 
 @nogc {
-    void drawTile(Texture texture, Tile tile, DrawOptions options = DrawOptions()) {
+    void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
         version (ParinSkipDrawChecks) {
             drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
         } else {
@@ -382,18 +382,14 @@ struct TileMap {
         }
     }
 
-    void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
-        drawTile(texture.getOr(), tile, options);
-    }
-
     void drawTile(Tile tile, DrawOptions options = DrawOptions()) {
-        drawTile(defaultTexture.getOr(), tile, options);
+        drawTile(defaultTexture, tile, options);
     }
 
-    void drawTileMap(Texture texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+    void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
         version (ParinSkipDrawChecks) {
         } else {
-            if (texture.isEmpty) {
+            if (!texture.isValid) {
                 if (isEmptyTextureVisible) {
                     auto rect = Rect(map.position, map.size);
                     drawRect(rect, defaultEngineEmptyTextureColor);
@@ -435,23 +431,15 @@ struct TileMap {
         }
     }
 
-    void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-        drawTileMap(texture.getOr(), map, viewArea, options);
-    }
-
     void drawTileMap(ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-        drawTileMap(defaultTexture.getOr(), map, viewArea, options);
-    }
-
-    void drawTileMap(Texture texture, ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-        drawTileMap(texture, map, camera.area, options);
+        drawTileMap(defaultTexture, map, viewArea, options);
     }
 
     void drawTileMap(TextureId texture, ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-        drawTileMap(texture.getOr(), map, camera.area, options);
+        drawTileMap(texture, map, camera.area, options);
     }
 
     void drawTileMap(ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-        drawTileMap(defaultTexture.getOr(), map, camera.area, options);
+        drawTileMap(defaultTexture, map, camera.area, options);
     }
 }

@@ -1,0 +1,87 @@
+{
+  "version": "0.9.0",
+  "pan": {
+    "X": 214.17822,
+    "Y": 41.18817
+  },
+  "zoom": 1,
+  "currentPage": 0,
+  "properties": {
+    "CacheDirectory": ""
+  },
+  "pages": [
+    {
+      "id": 0,
+      "pan": {
+        "X": 214.2018,
+        "Y": 41.173912
+      },
+      "zoom": 1,
+      "cards": [
+        {
+          "id": 1,
+          "rect": {
+            "X": 0,
+            "Y": -64,
+            "W": 192,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Note",
+          "properties": {
+            "description": "D Roks!!!",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 4,
+          "rect": {
+            "X": 0,
+            "Y": -32,
+            "W": 544,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Note",
+          "properties": {
+            "description": "This is the Parin MasterPlan Muahaha!",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 5,
+          "rect": {
+            "X": 64,
+            "Y": 64,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Backend API",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 6,
+          "rect": {
+            "X": 64,
+            "Y": 96,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Make big game",
+            "filepath": ""
+          }
+        }
+      ]
+    }
+  ],
+  "savedimages": {}
+}

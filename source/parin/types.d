@@ -9,8 +9,9 @@ module parin.types;
 
 public import joka.math;
 public import joka.types;
+public import joka.containers;
 
-alias Resource = uint;
+alias ResourceId = GenIndex;
 
 /// Flipping orientations.
 enum Flip : ubyte {
@@ -213,6 +214,14 @@ struct SlicePart {
 
 /// The parts of a 9-slice.
 alias SliceParts = Array!(SlicePart, 9);
+
+// Font glyph info.
+struct GlyphInfo {
+    int value;    // Character value.
+    IVec2 offset; // Character offset when drawing.
+    int advanceX; // Character advance position X.
+    IRect rect;   // Character rectangle.
+}
 
 /// Options for configuring drawing parameters.
 struct DrawOptions {

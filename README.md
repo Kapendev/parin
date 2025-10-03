@@ -16,6 +16,9 @@ Parin is designed to make game development fun — it's easy to set up, hackable
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
 </div>
 
+> [!NOTE]  
+> 🚧 The `main` branch is currently unstable. Please check out a tagged commit.
+
 ## Major Features
 
 * Focused 2D engine — not an everything engine
@@ -26,7 +29,6 @@ Parin is designed to make game development fun — it's easy to set up, hackable
 * Intuitive immediate-mode UI
 * Optional garbage collection (compile-time choice)
 * Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
-* Minimal C [API](source/parin/c/engine.d) for cross-language use
 * Modular design — just `import parin.engine`
 * Includes extras like [microui](examples/integrations/microui.d)
 * Cross-platform (Windows, Linux, macOS, Web)

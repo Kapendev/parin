@@ -7,7 +7,6 @@
 	"license": "MIT",
 	"name": "mapy",
 	"dependencies": {
-		"joka": "*",
 		"parin": {"path": ".."}
-	},
+	}
 }

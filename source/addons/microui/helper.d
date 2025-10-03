@@ -8,10 +8,11 @@
 // TODO: work on attributes maybe.
 
 /// Equivalent to `import wrapper`, with additional helper functions for Parin.
-module parin.extras.microui.helper;
-
-import parin.extras.microui.core; // Used because there are some symbols that I haven't removed yet.
-import parin.extras.microui.wrapper;
+module addons.microui.helper;
+/* TODO: JUST INGORE UNTIL PARIN WORKS AGAIN
+import parin.engine;
+import addons.microui.core; // TODO: Used because there are some symbols that I haven't removed yet.
+import addons.microui.wrapper;
 
 private extern(C) nothrow @nogc {
     enum MOUSE_BUTTON_LEFT   = 0;
@@ -85,77 +86,6 @@ private extern(C) nothrow @nogc {
     void EndScissorMode();
     void DrawTextEx(Font font, const(char)* text, Vector2 position, float fontSize, float spacing, Color tint);
     void DrawRectangleRec(Rectangle rec, Color color);
-
-    // Parin part...
-
-    alias IStr = const(char)[];
-    alias Sz = size_t;
-
-    struct GenIndex {
-        uint value;
-        uint generation;
-    }
-
-    alias Rect = Rectangle;
-    alias Vec2 = Vector2;
-    alias Rgba = Color;
-    alias Hook = ubyte;
-    alias Flip = ubyte;
-    alias Alignment = ubyte;
-
-    enum Mouse : ushort {
-        none = 0,
-        left = MOUSE_BUTTON_LEFT + 1,
-        right = MOUSE_BUTTON_RIGHT + 1,
-        middle = MOUSE_BUTTON_MIDDLE + 1,
-    }
-
-    struct DrawOptions {
-        Vec2 origin    = Vec2(0.0f, 0.0f);
-        Vec2 scale     = Vec2(1.0f, 1.0f);
-        float rotation = 0.0f;
-        Rgba color     = Rgba(255, 255, 255, 255);
-        Hook hook      = 0;
-        Flip flip      = 0;
-    }
-
-    struct TextOptions {
-        float visibilityRatio  = 1.0f;
-        int alignmentWidth     = 0;
-        ushort visibilityCount = 0;
-        Alignment alignment    = 0;
-        bool isRightToLeft     = false;
-    }
-
-    struct PTexture {
-        Texture data;
-    }
-
-    struct PTextureId {
-        GenIndex data;
-    }
-
-    struct PFont {
-        Font data;
-        int runeSpacing;
-        int lineSpacing;
-    }
-
-    struct PFontId {
-        GenIndex data;
-    }
-
-    PFont* prFontIdGet(PFontId* self);
-    int prWindowWidth();
-    int prWindowHeight();
-    Vec2 prMouse();
-    float prDeltaWheel();
-    bool prIsPressedMouse(Mouse key);
-    bool prIsReleasedMouse(Mouse key);
-    Vec2 prMeasureTextSizeId(PFontId font, IStr text, DrawOptions options, TextOptions extra);
-    void prDrawTextureAreaId(PTextureId texture, Rect area, Vec2 position, DrawOptions options);
-    void prDrawTextId(PFontId font, IStr text, Vec2 position, DrawOptions options, TextOptions extra);
-    void prDrawRect(Rect area, Rgba color);
 }
 
 @trusted:
@@ -405,3 +335,4 @@ void endUi() {
     endUiCore();
     drawUi();
 }
+*/

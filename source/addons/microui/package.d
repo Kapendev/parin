@@ -5,7 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `c` module provides a C API for parin.
-module parin.c;
+module addons.microui;
 
-public import parin.c.engine;
+public import addons.microui.wrapper;
+public import addons.microui.helper;

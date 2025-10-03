@@ -5,6 +5,10 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: Viewports and sounds use raylib types instead of the generic ones. Change that.
+// TODO: Replace the `rl.` calls with `.bk` calls.
+// TODO: Fix microui lol.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -14,7 +18,6 @@ version (ParinSkipDrawChecks) {
     pragma(msg, "Parin: Draw checks disabled. Invalid values may crash your game.");
 }
 
-import parin.c.engine; // Don't ask.
 import bk = parin.backend;
 import rl = parin.bindings.rl;
 version (WebAssembly) {
@@ -44,22 +47,25 @@ enum defaultEngineWindowMinHeight = 135;
 enum defaultEngineWindowMinSize   = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
 enum defaultEngineDebugModeKey    = Keyboard.f3;
 
+enum defaultEngineFontRuneWidth  = 6;
+enum defaultEngineFontRuneHeight = 12;
+
 enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
     EngineFlag.isEmptyTextureVisible |
     EngineFlag.isEmptyFontVisible |
-    EngineFlag.isLoggingLoadSaveFaults |
+    EngineFlag.isLoggingLoadOrSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
 enum defaultEngineValidateErrorMessage            = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage                = "ERROR({}:{}): Could not load file \"{}\".";
-enum defaultEngineSaveErrorMessage                = "ERROR({}:{}): Could not save file \"{}\".";
+enum defaultEngineLoadErrorMessage                = "ERROR({}:{}): Could not load {} from \"{}\".";
+enum defaultEngineSaveErrorMessage                = "ERROR({}:{}): Could not save {} from \"{}\".";
 enum defaultEngineAssetsPathCapacity              = 8 * kilobyte;
 enum defaultEngineTexturesCapacity                = 128;
 enum defaultEngineSoundsCapacity                  = 128;
 enum defaultEngineFontsCapacity                   = 16;
 enum defaultEngineEnvArgsDroppedFilePathsCapacity = 64;
-enum defaultEngineLoadSaveTextCapacity            = 14 * kilobyte;
+enum defaultEngineLoadOrSaveTextCapacity          = 14 * kilobyte;
 enum defaultEngineTasksCapacity                   = 255;
 enum defaultEngineArenaCapacity                   = 4 * megabyte;
 
@@ -72,8 +78,8 @@ enum defaultEngineDebugColor1       = black.alpha(140);
 enum defaultEngineDebugColor2       = white.alpha(140);
 // ----------
 
-/// The default engine font. This font should not be freed.
-enum engineFont = FontId(GenIndex(1));
+/// The default engine font.
+enum engineFont = FontId(GenIndex(1), 0, defaultEngineFontRuneHeight);
 
 alias EngineUpdateFunc = bool function(float dt);
 alias EngineFunc       = void function();
@@ -81,10 +87,10 @@ alias EngineFlags      = uint;
 
 @trusted:
 
-alias D_ = DrawOptions; /// Draw options (shorthand for `DrawOptions`).
-alias T_ = TextOptions; /// Text options (shorthand for `TextOptions`).
-alias C_ = Camera;      /// Camera (shorthand for `Camera`).
-alias V_ = Viewport;    /// Viewport (shorthand for `Viewport`).
+alias D_ = DrawOptions; /// Shorthand for `DrawOptions`.
+alias T_ = TextOptions; /// Shorthand for `TextOptions`.
+alias C_ = Camera;      /// Shorthand for `Camera`.
+alias V_ = Viewport;    /// Shorthand for `Viewport`.
 
 enum EngineFlag : EngineFlags {
     none                        = 0x000000,
@@ -96,214 +102,112 @@ enum EngineFlag : EngineFlags {
     isCursorVisible             = 0x000020,
     isEmptyTextureVisible       = 0x000040,
     isEmptyFontVisible          = 0x000080,
-    isLoggingLoadSaveFaults     = 0x000100,
+    isLoggingLoadOrSaveFaults   = 0x000100,
     isLoggingMemoryTrackingInfo = 0x000200,
     isDebugMode                 = 0x000400,
 }
 
-/// A texture resource.
-struct Texture {
-    rl.Texture2D data;
+/// A texture identifier.
+struct TextureId {
+    alias Self = TextureId;
 
-    @trusted nothrow @nogc:
+    ResourceId data;
 
-    /// Checks if the texture is not loaded.
-    bool isEmpty() {
-        return data.id <= 0;
+    pragma(inline, true) @trusted nothrow @nogc:
+
+    /// Checks if the texture is null (default value).
+    bool isNull() {
+        return bk.resourceIsNull(data);
+    }
+
+    /// Checks if the texture is valid (loaded). Null is invalid.
+    bool isValid() {
+        return bk.textureIsValid(data);
+    }
+
+    /// Checks if the texture is valid (loaded) and asserts if it is not.
+    Self validate(IStr message = defaultEngineValidateErrorMessage) {
+        return isValid ? this : assert(0, message);
     }
 
     /// Returns the width of the texture.
     int width() {
-        return data.width;
+        return bk.textureWidth(data);
     }
 
     /// Returns the height of the texture.
     int height() {
-        return data.height;
+        return bk.textureHeight(data);
     }
 
     /// Returns the size of the texture.
     Vec2 size() {
-        return Vec2(width, height);
+        return bk.textureSize(data);
     }
 
     /// Sets the filter mode of the texture.
     void setFilter(Filter value) {
-        if (isEmpty) return;
-        rl.SetTextureFilter(data, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
+        bk.textureSetFilter(data, value);
     }
 
     /// Sets the wrap mode of the texture.
     void setWrap(Wrap value) {
-        if (isEmpty) return;
-        rl.SetTextureWrap(data, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
+        bk.textureSetWrap(data, value);
     }
 
     /// Frees the loaded texture.
     void free() {
-        if (isEmpty) return;
-        rl.UnloadTexture(data);
-        this = Texture();
+        bk.textureFree(data);
     }
 }
 
-/// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeManagedEngineResources` function or the `free` method on the identifier.
-/// The identifier is automatically invalidated when the resource is freed.
-struct TextureId {
-    GenIndex data;
+/// A font identifier.
+struct FontId {
+    alias Self = FontId;
 
-    @trusted nothrow @nogc:
-
-    /// Returns the width of the texture associated with the resource identifier.
-    int width() {
-        return getOr().width;
-    }
-
-    /// Returns the height of the texture associated with the resource identifier.
-    int height() {
-        return getOr().height;
-    }
-
-    /// Returns the size of the texture associated with the resource identifier.
-    Vec2 size() {
-        return getOr().size;
-    }
-
-    /// Sets the filter mode of the texture associated with the resource identifier.
-    void setFilter(Filter value) {
-        getOr().setFilter(value);
-    }
-
-    /// Sets the wrap mode of the texture associated with the resource identifier.
-    void setWrap(Wrap value) {
-        getOr().setWrap(value);
-    }
-
-    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
-    bool isValid() {
-        return data.value && _engineState.textures.has(GenIndex(data.value - 1, data.generation));
-    }
-
-    /// Checks if the resource identifier is valid and asserts if it is not.
-    TextureId validate(IStr message = defaultEngineValidateErrorMessage) {
-        if (!isValid) assert(0, message);
-        return this;
-    }
-
-    /// Retrieves the texture associated with the resource identifier.
-    ref Texture get() {
-        if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return _engineState.textures[GenIndex(data.value - 1, data.generation)];
-    }
-
-    /// Retrieves the texture associated with the resource identifier or returns a default value if invalid.
-    Texture getOr() {
-        return isValid ? _engineState.textures[GenIndex(data.value - 1, data.generation)] : Texture();
-    }
-
-    /// Frees the resource associated with the identifier.
-    void free() {
-        if (isValid) _engineState.textures.remove(GenIndex(data.value - 1, data.generation));
-    }
-}
-
-/// A font resource.
-struct Font {
-    rl.Font data;
+    ResourceId data;
     int runeSpacing; /// The spacing between individual characters.
     int lineSpacing; /// The spacing between lines of text.
 
-    @trusted nothrow @nogc:
+    pragma(inline, true) @trusted nothrow @nogc:
 
-    /// Checks if the font is not loaded.
-    bool isEmpty() {
-        return data.texture.id <= 0;
+    /// Checks if the font is null (default value).
+    bool isNull() {
+        return bk.resourceIsNull(data);
+    }
+
+    /// Checks if the font is valid (loaded). Null is invalid.
+    bool isValid() {
+        return bk.fontIsValid(data);
+    }
+
+    /// Checks if the font is valid (loaded) and asserts if it is not.
+    Self validate(IStr message = defaultEngineValidateErrorMessage) {
+        return isValid ? this : assert(0, message);
     }
 
     /// Returns the size of the font.
     int size() {
-        return data.baseSize;
+        return bk.fontSize(data);
     }
 
     /// Sets the filter mode of the font.
     void setFilter(Filter value) {
-        if (isEmpty) return;
-        rl.SetTextureFilter(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
+        bk.fontSetFilter(data, value);
     }
 
     /// Sets the wrap mode of the font.
     void setWrap(Wrap value) {
-        if (isEmpty) return;
-        rl.SetTextureWrap(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
+        bk.fontSetWrap(data, value);
+    }
+
+    GlyphInfo glyphInfo(int rune) {
+        return bk.fontGlyphInfo(data, rune);
     }
 
     /// Frees the loaded font.
     void free() {
-        if (isEmpty) return;
-        rl.UnloadFont(data);
-        this = Font();
-    }
-}
-
-/// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeManagedEngineResources` function or the `free` method on the identifier.
-/// The identifier is automatically invalidated when the resource is freed.
-struct FontId {
-    GenIndex data;
-
-    @trusted nothrow @nogc:
-
-    /// Returns the spacing between individual characters of the font associated with the resource identifier.
-    int runeSpacing() {
-        return getOr().runeSpacing;
-    }
-
-    /// Returns the spacing between lines of text of the font associated with the resource identifier.
-    int lineSpacing() {
-        return getOr().lineSpacing;
-    };
-
-    /// Returns the size of the font associated with the resource identifier.
-    int size() {
-        return getOr().size;
-    }
-
-    /// Sets the filter mode of the font associated with the resource identifier.
-    void setFilter(Filter value) {
-        getOr().setFilter(value);
-    }
-
-    /// Sets the wrap mode of the font associated with the resource identifier.
-    void setWrap(Wrap value) {
-        getOr().setWrap(value);
-    }
-
-    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
-    bool isValid() {
-        return data.value && _engineState.fonts.has(GenIndex(data.value - 1, data.generation));
-    }
-
-    /// Checks if the resource identifier is valid and asserts if it is not.
-    FontId validate(IStr message = defaultEngineValidateErrorMessage) {
-        if (!isValid) assert(0, message);
-        return this;
-    }
-
-    /// Retrieves the font associated with the resource identifier.
-    ref Font get() {
-        if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return _engineState.fonts[GenIndex(data.value - 1, data.generation)];
-    }
-
-    /// Retrieves the font associated with the resource identifier or returns a default value if invalid.
-    Font getOr() {
-        return isValid ? _engineState.fonts[GenIndex(data.value - 1, data.generation)] : Font();
-    }
-
-    /// Frees the resource associated with the identifier.
-    void free() {
-        if (isValid && this != engineFont) _engineState.fonts.remove(GenIndex(data.value - 1, data.generation));
+        bk.fontFree(data);
     }
 }
 
@@ -862,7 +766,7 @@ struct EngineState {
     TextureId defaultTexture;
     Camera userCamera;
     Viewport userViewport;
-    Fault lastLoadFault;
+    Fault lastLoadOrSaveFault;
     IStr memoryTrackingInfoFilter;
     Sz envArgsLength;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
@@ -876,9 +780,7 @@ struct EngineState {
     bool dprintIsVisible = true;
 
     EngineViewport viewport;
-    GenList!Texture textures;
     GenList!Sound sounds;
-    GenList!Font fonts;
     List!IStr envArgsDroppedFilePathsBuffer;
     GrowingArena arena;
 }
@@ -896,12 +798,11 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     _engineState.fullscreenState.previousWindowHeight = height;
     _engineState.viewport.data.color = gray;
 
-    _engineState.textures.reserve(defaultEngineTexturesCapacity);
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
-    _engineState.fonts.reserve(defaultEngineFontsCapacity);
     _engineState.envArgsDroppedFilePathsBuffer.reserve(defaultEngineEnvArgsDroppedFilePathsCapacity);
     _engineState.arena.ready(defaultEngineArenaCapacity);
-    toTexture(cast(const(ubyte)[]) import(monogramPath)).toFontAscii(6, 12).toFontId();
+    // TODO: will have to remove the id thing and also change the toTexure names to load maybe.
+    loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
     if (args.length) {
         foreach (arg; args) _engineState.envArgsDroppedFilePathsBuffer.appendSource(__FILE__, __LINE__, arg);
         _engineState.envArgsLength = args.length;
@@ -1019,12 +920,9 @@ bool _updateWindowLoop() {
         rl.EndDrawing();
     }
 
-    // VSync code.
     // NOTE: Could copy this style for viewport and fullscreen. They do have other problems though.
-    if (_engineState.vsync != loopVsync) {
-        // TODO: The comment will be removed when we replace raylib lol.
-        // gf.glfwSwapInterval(_engineState.vsync);
-    }
+    // VSync code.
+    if (_engineState.vsync != loopVsync) bk.setVsync(_engineState.vsync);
     // Viewport code.
     if (_engineState.viewport.isChanging) {
         if (_engineState.viewport.isLocking) {
@@ -1095,15 +993,13 @@ void _closeWindow() {
     auto isLogging = isLoggingMemoryTrackingInfo;
 
     _engineState.viewport.free();
-    _engineState.textures.freeWithItems();
     _engineState.sounds.freeWithItems();
-    _engineState.fonts.freeWithItems();
     _engineState.envArgsDroppedFilePathsBuffer.free();
     _engineState.arena.free();
     jokaFree(_engineState);
     _engineState = null;
 
-    bk.finishBackend();
+    bk.freeBackend();
     static if (isTrackingMemory) {
         if (isLogging) printMemoryTrackingInfo(filter);
     }
@@ -1196,78 +1092,6 @@ T[] frameMakeSlice(T)(Sz length, const(T) value = T.init) {
     return _engineState.arena.makeSlice!T(length, value);
 }
 
-// TODO: LAST TIME !@ GOT STUCK HERE!!!!!! MAYBE START BY CHANGING HOW THE TEXTURE WORKS
-/// Converts bytes into a texture. Returns an empty texture on error.
-Texture toTexture(const(ubyte)[] from, IStr ext = ".png") {
-    auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length);
-    auto value = rl.LoadTextureFromImage(image).toPr();
-    rl.UnloadImage(image);
-    value.setFilter(_engineState.defaultFilter);
-    value.setWrap(_engineState.defaultWrap);
-    return value;
-}
-
-/// Converts bytes into a font. Returns an empty font on error.
-Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf") {
-    auto valueData = rl.LoadFontFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length, size, cast(int*) runes.ptr, cast(int) runes.length);
-    auto value = valueData.toPr(runeSpacing, lineSpacing);
-    value.setFilter(_engineState.defaultFilter);
-    value.setWrap(_engineState.defaultWrap);
-    return value;
-}
-
-/// Converts an ASCII bitmap font texture into a font.
-/// The texture will be freed when the font is freed.
-// NOTE: The number of items allocated is calculated as: (font width / tile width) * (font height / tile height)
-// NOTE: It uses the raylib allocator.
-Font toFontAscii(Texture from, int tileWidth, int tileHeight) {
-    if (from.isEmpty || tileWidth <= 0|| tileHeight <= 0) return Font();
-    auto result = Font();
-    result.lineSpacing = tileHeight;
-    auto rowCount = from.height / tileHeight;
-    auto colCount = from.width / tileWidth;
-    auto maxCount = rowCount * colCount;
-    result.data.baseSize = tileHeight;
-    result.data.glyphCount = maxCount;
-    result.data.glyphPadding = 0;
-    result.data.texture = from.data;
-    result.data.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.recs[i].x = (i % colCount) * tileWidth;
-        result.data.recs[i].y = (i / colCount) * tileHeight;
-        result.data.recs[i].width = tileWidth;
-        result.data.recs[i].height = tileHeight;
-    }
-    result.data.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
-    foreach (i; 0 .. maxCount) {
-        result.data.glyphs[i] = rl.GlyphInfo();
-        result.data.glyphs[i].value = i + 32;
-    }
-    return result;
-}
-
-deprecated("Will be renamed to toFontAscii.")
-alias toAsciiFont = toFontAscii;
-
-/// Converts a texture into a managed engine resource.
-/// The texture will be freed when the resource is freed.
-TextureId toTextureId(Texture from) {
-    if (from.isEmpty) return TextureId();
-    auto id = TextureId(_engineState.textures.push(from));
-    id.data.value += 1;
-    return id;
-}
-
-/// Converts a font into a managed engine resource.
-/// The font will be freed when the resource is freed.
-// NOTE: We avoid passing fonts by value, but it's fine here because this function will not be called every frame.
-FontId toFontId(Font from) {
-    if (from.isEmpty) return FontId();
-    auto id = FontId(_engineState.fonts.push(from));
-    id.data.value += 1;
-    return id;
-}
-
 /// Converts a sound into a managed engine resource.
 /// The sound will be freed when the resource is freed.
 // NOTE: We avoid passing sounds by value, but it's fine here because this function will not be called every frame.
@@ -1278,90 +1102,94 @@ SoundId toSoundId(Sound from) {
     return id;
 }
 
-/// Returns the fault from the last managed engine resource load call.
-Fault lastLoadFault() {
-    return _engineState.lastLoadFault;
+/// Returns a temporary text container.
+/// The resource remains valid for the duration of the current frame.
+BStr prepareTempText() {
+    return BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
 }
 
 /// Loads a text file from the assets folder and saves the content into the given buffer.
 /// Supports both forward slashes and backslashes in file paths.
-Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
+Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
-    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
+    didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()));
     return result;
 }
 
 /// Loads a text file from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!LStr loadRawText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readText(path.toAssetsPath());
-    if (isLoggingLoadSaveFaults && result.isNone) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
-    return result;
+    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()))) return result.get();
+    return LStr();
 }
 
 /// Loads a text file from the assets folder.
 /// The resource remains valid for the duration of the current frame.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
-    auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadSaveTextCapacity));
-    auto fault = loadRawTextIntoBuffer(path, tempText, file, line);
-    return Maybe!IStr(tempText.items, fault);
+IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
+    loadTextIntoBuffer(path, tempText, file, line);
+    return tempText.items;
 }
 
 /// Loads a texture file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-Maybe!Texture loadRawTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
-    auto value = rl.LoadTexture(path.toAssetsPath().toCStr().getOr()).toPr();
-    value.setFilter(_engineState.defaultFilter);
-    value.setWrap(_engineState.defaultWrap);
-    auto result = Maybe!Texture(value, value.isEmpty.toFault(Fault.cantFind));
-    if (isLoggingLoadSaveFaults && result.isNone) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
-    return result;
-}
-
-/// Loads a texture file (PNG) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
-    return loadRawTexture(path, file, line).get(_engineState.lastLoadFault).toTextureId();
-}
-
-/// Loads a font file (TTF, OTF) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-Maybe!Font loadRawFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr file = __FILE__, Sz line = __LINE__) {
-    auto valueData = rl.LoadFontEx(path.toAssetsPath().toCStr().getOr(), size, cast(int*) runes.ptr, cast(int) runes.length);
-    auto value = valueData.toPr(runeSpacing, lineSpacing);
-    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
-    if (value.isEmpty) {
-        return Maybe!Font(Fault.cantFind);
-    } else {
-        value.setFilter(_engineState.defaultFilter);
-        value.setWrap(_engineState.defaultWrap);
-        return Maybe!Font(value);
+    auto trap = Fault.none;
+    auto data = bk.loadTexture(toAssetsPath(path)).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "texture", path.toAssetsPath()))) {
+        bk.textureSetFilter(data, _engineState.defaultFilter);
+        bk.textureSetWrap(data, _engineState.defaultWrap);
+        return TextureId(data);
     }
+    return TextureId();
 }
 
-/// Loads a font file (TTF, OTF) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr file = __FILE__, Sz line = __LINE__) {
-    return loadRawFont(path, size, runeSpacing, lineSpacing, runes, file, line).get(_engineState.lastLoadFault).toFontId();
+/// Loads a texture file (PNG) from the given bytes.
+TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadTexture(memory, ext).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "texture", "[MEMORY]"))) {
+        bk.textureSetFilter(data, _engineState.defaultFilter);
+        bk.textureSetWrap(data, _engineState.defaultWrap);
+        return TextureId(data);
+    }
+    return TextureId();
 }
 
-/// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-Maybe!Font loadRawFontFromTexture(IStr path, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
-    auto value = loadRawTexture(path, file, line).getOr();
-    return Maybe!Font(value.toFontAscii(tileWidth, tileHeight), value.isEmpty.toFault(Fault.cantFind));
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadFont(toAssetsPath(path), size, runes).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", path.toAssetsPath()))) {
+        bk.fontSetFilter(data, _engineState.defaultFilter);
+        bk.fontSetWrap(data, _engineState.defaultWrap);
+        return FontId(data, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size);
+    }
+    return FontId();
 }
 
-/// Loads an ASCII bitmap font file (PNG) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-// NOTE: The number of items allocated for this font is calculated as: (font width / tile width) * (font height / tile height)
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
-    return loadRawFontFromTexture(path, tileWidth, tileHeight, file, line).get(_engineState.lastLoadFault).toFontId();
+/// Converts bytes into a font. Returns an empty font on error.
+FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf", IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadFont(memory, size, runes, ext).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", "[MEMORY]"))) {
+        bk.fontSetFilter(data, _engineState.defaultFilter);
+        bk.fontSetWrap(data, _engineState.defaultWrap);
+        return FontId(data, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size);
+    }
+    return FontId();
+}
+
+FontId loadFont(TextureId texture, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadFont(texture.data, tileWidth, tileHeight).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", "[TEXTURE]"))) {
+        bk.fontSetFilter(data, _engineState.defaultFilter);
+        bk.fontSetWrap(data, _engineState.defaultWrap);
+        return FontId(data, 0, tileHeight);
+    }
+    return FontId();
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
@@ -1373,7 +1201,7 @@ Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = 
     } else {
         value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
     }
-    if (isLoggingLoadSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, path.toAssetsPath());
+    if (isLoggingLoadOrSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, "sound", path.toAssetsPath());
     if (value.isEmpty) {
         return Maybe!Sound();
     } else {
@@ -1389,21 +1217,20 @@ Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = 
 /// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
 /// Supports both forward slashes and backslashes in file paths.
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
-    return loadRawSound(path, volume, pitch, canRepeat, pitchVariance, file, line).get(_engineState.lastLoadFault).toSoundId();
+    return loadRawSound(path, volume, pitch, canRepeat, pitchVariance, file, line).get(_engineState.lastLoadOrSaveFault).toSoundId();
 }
 
 /// Saves a text file to the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = writeText(path.toAssetsPath(), text);
-    if (isLoggingLoadSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, file, line, path.toAssetsPath());
+    if (isLoggingLoadOrSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, file, line, "text", path.toAssetsPath());
     return result;
 }
 
-/// Returns a temporary text container.
-/// The resource remains valid for the duration of the current frame.
-BStr prepareTempText() {
-    return BStr(frameMakeSliceBlank!char(defaultEngineLoadSaveTextCapacity));
+/// Returns the fault from the last load or save call.
+Fault lastLoadOrSaveFault() {
+    return _engineState.lastLoadOrSaveFault;
 }
 
 /// Sets the path of the assets folder.
@@ -1413,6 +1240,15 @@ void setAssetsPath(IStr path) {
 }
 
 @trusted nothrow @nogc:
+
+bool didLoadOrSaveSucceed(Fault fault, IStr message) {
+    if (fault) {
+        _engineState.lastLoadOrSaveFault = fault;
+        if (isLoggingLoadOrSaveFaults) println!(StdStream.error)(message);
+        return false;
+    }
+    return true;
+}
 
 // NOTE: Internal stuff that you should not really use outside of `engine.d`.
 pragma(inline, true) {
@@ -1436,47 +1272,27 @@ pragma(inline, true) {
         return Rect(from.x, from.y, from.width, from.height);
     }
 
-    Texture toPr(rl.Texture2D from) {
-        return Texture(from);
-    }
+    // --- copy pasted to bk.
+        rl.Color toRl(Rgba from) {
+            return rl.Color(from.r, from.g, from.b, from.a);
+        }
 
-    Font toPr(ref rl.Font from, int runeSpacing, int lineSpacing) {
-        return from.texture.id == rl.GetFontDefault().texture.id
-            ? Font()
-            : Font(
-                from,
-                runeSpacing >= 0 ? runeSpacing : 0,
-                lineSpacing >= 0 ? lineSpacing : from.baseSize,
-            );
-    }
+        rl.Vector2 toRl(Vec2 from) {
+            return rl.Vector2(from.x, from.y);
+        }
 
-    rl.Color toRl(Rgba from) {
-        return rl.Color(from.r, from.g, from.b, from.a);
-    }
+        rl.Vector3 toRl(Vec3 from) {
+            return rl.Vector3(from.x, from.y, from.z);
+        }
 
-    rl.Vector2 toRl(Vec2 from) {
-        return rl.Vector2(from.x, from.y);
-    }
+        rl.Vector4 toRl(Vec4 from) {
+            return rl.Vector4(from.x, from.y, from.z, from.w);
+        }
 
-    rl.Vector3 toRl(Vec3 from) {
-        return rl.Vector3(from.x, from.y, from.z);
-    }
-
-    rl.Vector4 toRl(Vec4 from) {
-        return rl.Vector4(from.x, from.y, from.z, from.w);
-    }
-
-    rl.Rectangle toRl(Rect from) {
-        return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
-    }
-
-    rl.Texture2D toRl(Texture from) {
-        return from.data;
-    }
-
-    rl.Font toRl(ref Font from) {
-        return from.data;
-    }
+        rl.Rectangle toRl(Rect from) {
+            return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
+        }
+    // ---
 
     rl.RenderTexture2D toRl(ref Viewport from) {
         return from.data;
@@ -1701,7 +1517,7 @@ IStr assetsPath() {
 
 /// Converts a path to a path within the assets folder.
 IStr toAssetsPath(IStr path) {
-    if (!isUsingAssetsPath) return path;
+    if (path.startsWith(pathSep) || !isUsingAssetsPath) return path;
     return pathConcat(assetsPath, path).pathFormat();
 }
 
@@ -1712,18 +1528,9 @@ IStr[] droppedFilePaths() {
 
 /// Frees all managed engine resources.
 void freeManagedEngineResources() {
-    foreach (ref item; _engineState.textures.items) item.free();
-    _engineState.textures.clear();
+    bk.freeAllTextures();
     foreach (ref item; _engineState.sounds.items) item.free();
     _engineState.sounds.clear();
-    // The engine font in stored with the user fonts, so it needs to be skipped.
-    auto engineFontItemId = engineFont.data;
-    engineFontItemId.value -= 1;
-    foreach (id; _engineState.fonts.ids) {
-        if (id == engineFontItemId) continue;
-        _engineState.fonts[id].free();
-        _engineState.fonts.remove(id);
-    }
 }
 
 deprecated("Was too generic. Use `freeManagedEngineResources` now.")
@@ -1795,16 +1602,16 @@ void setIsEmptyFontVisible(bool value) {
         : _engineState.flags & ~EngineFlag.isEmptyFontVisible;
 }
 
-/// Returns true if loading should log on fault.
-bool isLoggingLoadSaveFaults() {
-    return cast(bool) (_engineState.flags & EngineFlag.isLoggingLoadSaveFaults);
+/// Returns true if loading or saving should log on fault.
+bool isLoggingLoadOrSaveFaults() {
+    return cast(bool) (_engineState.flags & EngineFlag.isLoggingLoadOrSaveFaults);
 }
 
-/// Sets whether loading should log on fault.
-void setIsLoggingLoadSaveFaults(bool value) {
+/// Sets whether loading or saving should log on fault.
+void setIsLoggingLoadOrSaveFaults(bool value) {
     _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isLoggingLoadSaveFaults
-        : _engineState.flags & ~EngineFlag.isLoggingLoadSaveFaults;
+        ? _engineState.flags | EngineFlag.isLoggingLoadOrSaveFaults
+        : _engineState.flags & ~EngineFlag.isLoggingLoadOrSaveFaults;
 }
 
 /// Returns true if memory tracking logs are enabled.
@@ -2336,8 +2143,8 @@ void updateSound(ref Sound sound) {
 void updateSound(SoundId sound) {}
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
-Vec2 measureTextSize(ref Font font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    if (font.isEmpty || text.length == 0) return Vec2();
+Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+    if (!font.isValid || text.length == 0) return Vec2();
 
     auto lineCodepointCount = 0;
     auto lineMaxCodepointCount = 0;
@@ -2348,13 +2155,13 @@ Vec2 measureTextSize(ref Font font, IStr text, DrawOptions options = DrawOptions
     while (textCodepointIndex < text.length) {
         lineCodepointCount += 1;
         auto codepointByteCount = 0;
-        auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointByteCount);
-        auto glyphIndex = rl.GetGlyphIndex(font.data, codepoint);
+        auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
+        auto glyphInfo = font.glyphInfo(codepoint);
         if (codepoint != '\n') {
-            if (font.data.glyphs[glyphIndex].advanceX) {
-                textWidth += font.data.glyphs[glyphIndex].advanceX + font.runeSpacing;
+            if (glyphInfo.advanceX) {
+                textWidth += glyphInfo.advanceX + font.runeSpacing;
             } else {
-                textWidth += cast(int) (font.data.recs[glyphIndex].width + font.data.glyphs[glyphIndex].offsetX + font.runeSpacing);
+                textWidth += glyphInfo.rect.w + glyphInfo.offset.x + font.runeSpacing;
             }
         } else {
             if (textMaxWidth < textWidth) textMaxWidth = textWidth;
@@ -2368,12 +2175,6 @@ Vec2 measureTextSize(ref Font font, IStr text, DrawOptions options = DrawOptions
     if (textMaxWidth < textWidth) textMaxWidth = textWidth;
     if (textMaxWidth < extra.alignmentWidth) textMaxWidth = extra.alignmentWidth;
     return Vec2(textMaxWidth * options.scale.x, textHeight * options.scale.y).floor();
-}
-
-/// Measures the size of the specified text when rendered with the given font and draw options.
-Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    if (!font.isValid) return Vec2();
-    return measureTextSize(font.get(), text, options, extra);
 }
 
 /// Draws a rectangle with the specified area and color.
@@ -2427,19 +2228,16 @@ void drawLine(Line area, float size, Rgba color = white) {
 }
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
-void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (texture.isEmpty) {
-            if (isEmptyTextureVisible) {
-                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-                drawRect(rect, defaultEngineEmptyTextureColor);
-                drawHollowRect(rect, 1, black);
-            }
-            return;
+void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    if (!texture.isValid) {
+        if (isEmptyTextureVisible) {
+            auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+            drawRect(rect, defaultEngineEmptyTextureColor);
+            drawHollowRect(rect, 1, black);
         }
-        if (!area.hasSize) return;
+        return;
     }
+    if (!area.hasSize) return;
 
     auto target = Rect(position, area.size * options.scale);
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
@@ -2450,53 +2248,54 @@ void drawTextureArea(Texture texture, Rect area, Vec2 position, DrawOptions opti
         case Flip.xy: area.size *= Vec2(-1.0f); break;
     }
     if (isPixelSnapped) {
-        rl.DrawTexturePro(
+        bk.drawTexture(
             texture.data,
-            area.floor().toRl(),
-            target.floor().toRl(),
-            origin.floor().toRl(),
+            area.floor(),
+            target.floor(),
+            origin.floor(),
             options.rotation,
-            options.color.toRl(),
+            options.color,
         );
     } else {
-        rl.DrawTexturePro(
+        bk.drawTexture(
             texture.data,
-            area.toRl(),
-            target.toRl(),
-            origin.toRl(),
+            area,
+            target,
+            origin,
             options.rotation,
-            options.color.toRl(),
+            options.color,
         );
     }
-}
-
-/// Draws a portion of the specified texture at the given position with the specified draw options.
-void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(texture.getOr(), area, position, options);
 }
 
 /// Draws a portion of the default texture at the given position with the specified draw options.
 /// Use the `setDefaultTexture` function before using this function.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(_engineState.defaultTexture.getOr(), area, position, options);
-}
-
-/// Draws the texture at the given position with the specified draw options.
-void drawTexture(Texture texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(texture, Rect(texture.size), position, options);
+    drawTextureArea(_engineState.defaultTexture, area, position, options);
 }
 
 /// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTexture(texture.getOr(), position, options);
+    drawTextureArea(texture, Rect(texture.size), position, options);
 }
 
 /// Draws a 9-slice from the specified texture area at the given target area.
-void drawTextureSlice(Texture texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
+void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
+    // TODO: Could maybe be made into a function???
+    if (!texture.isValid) {
+        if (isEmptyTextureVisible) {
+            drawRect(target, defaultEngineEmptyTextureColor);
+            drawHollowRect(target, 1, black);
+        }
+        return;
+    }
+    if (!area.hasSize) return;
+
     // NOTE: New rule for options. Functions are allowed to ignore values. Should they handle bad values? Maybe.
     // NOTE: If we ever change options to pointers, remember to remove this part.
     options.hook = Hook.topLeft;
     options.origin = Vec2(0);
+    options.scale = Vec2(1);
     foreach (part; computeSliceParts(area.floor().toIRect(), target.floor().toIRect(), margin)) {
         if (canRepeat && part.canTile) {
             options.scale = Vec2(1);
@@ -2525,17 +2324,13 @@ void drawTextureSlice(Texture texture, Rect area, Rect target, Margin margin, bo
     }
 }
 
-/// Draws a 9-slice from the specified texture area at the given target area.
-void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    drawTextureSlice(texture.getOr(), area, target, margin, canRepeat, options);
-}
-
 /// Draws a 9-slice from the default texture area at the given target area.
 /// Use the `setDefaultTexture` function before using this function.
 void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    drawTextureSlice(_engineState.defaultTexture.getOr(), area, target, margin, canRepeat, options);
+    drawTextureSlice(_engineState.defaultTexture, area, target, margin, canRepeat, options);
 }
 
+/* TODO
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     // Some basic rules to make viewports noob friendly.
@@ -2552,16 +2347,16 @@ void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptio
 void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions()) {
     drawViewportArea(viewport, Rect(viewport.size), position, options);
 }
+*/
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
-void drawRune(ref Font font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto fontData = font.data;
-    if (font.isEmpty) {
-        if (isEmptyFontVisible) fontData = engineFont.get().data;
+void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+    if (!font.isValid) {
+        if (isEmptyFontVisible) font = engineFont;
         else return;
     }
 
-    auto rect = toPr(rl.GetGlyphAtlasRec(fontData, rune));
+    auto rect = font.glyphInfo(rune).rect.toRect(); // TODO
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
     rl.rlPushMatrix();
     if (isPixelSnapped) {
@@ -2572,15 +2367,8 @@ void drawRune(ref Font font, dchar rune, Vec2 position, DrawOptions options = Dr
     rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
     rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
     rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
-    rl.DrawTextCodepoint(fontData, rune, rl.Vector2(0.0f, 0.0f), fontData.baseSize, options.color.toRl());
+    bk.drawRune(font.data, rune, Vec2(), 1, options.color);
     rl.rlPopMatrix();
-}
-
-/// Draws a single character from the specified font at the given position with the specified draw options.
-void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    auto fontData = Font();
-    if (font.isValid) fontData = font.get();
-    drawRune(fontData, rune, position, options);
 }
 
 /// Draws a single character from the default font at the given position with the specified draw options.
@@ -2591,15 +2379,15 @@ void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
-Vec2 drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 1024;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
     auto result = Vec2();
     auto fontData = font;
-    if (font.isEmpty) {
-        if (isEmptyFontVisible) fontData = engineFont.get();
+    if (!font.isValid) {
+        if (isEmptyFontVisible) fontData = engineFont;
         else return Vec2();
     }
 
@@ -2673,24 +2461,24 @@ Vec2 drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = Dra
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
                 auto codepoint = rl.GetCodepointPrevious(&line.ptr[lineCodepointIndex], &codepointSize);
-                auto glyphIndex = rl.GetGlyphIndex(fontData.data, codepoint);
+                auto glyphInfo = font.glyphInfo(codepoint);
                 if (lineCodepointIndex == line.length) {
-                    if (fontData.data.glyphs[glyphIndex].advanceX) {
-                        textOffsetX -= fontData.data.glyphs[glyphIndex].advanceX + fontData.runeSpacing;
+                    if (glyphInfo.advanceX) {
+                        textOffsetX -= glyphInfo.advanceX + font.runeSpacing;
                     } else {
-                        textOffsetX -= cast(int) (fontData.data.recs[glyphIndex].width + fontData.runeSpacing);
+                        textOffsetX -= glyphInfo.rect.w + font.runeSpacing;
                     }
                 } else {
                     auto temp = 0;
-                    auto nextRightToLeftGlyphIndex = rl.GetGlyphIndex(fontData.data, rl.GetCodepointPrevious(&line[lineCodepointIndex], &temp));
-                    if (fontData.data.glyphs[nextRightToLeftGlyphIndex].advanceX) {
-                        textOffsetX -= fontData.data.glyphs[nextRightToLeftGlyphIndex].advanceX + fontData.runeSpacing;
+                    auto nextRightToLeftGlyphInfo = font.glyphInfo(rl.GetCodepointPrevious(&line[lineCodepointIndex], &temp));
+                    if (nextRightToLeftGlyphInfo.advanceX) {
+                        textOffsetX -= nextRightToLeftGlyphInfo.advanceX + font.runeSpacing;
                     } else {
-                        textOffsetX -= cast(int) (fontData.data.recs[nextRightToLeftGlyphIndex].width + fontData.runeSpacing);
+                        textOffsetX -= nextRightToLeftGlyphInfo.rect.w + font.runeSpacing;
                     }
                 }
                 if (codepoint != ' ' && codepoint != '\t') {
-                    rl.DrawTextCodepoint(fontData.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), fontData.size, options.color.toRl());
+                    bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), 1, options.color);
                 }
                 drawCodepointCounter += 1;
                 lineCodepointIndex -= codepointSize;
@@ -2702,14 +2490,14 @@ Vec2 drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = Dra
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
                 auto codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointSize);
-                auto glyphIndex = rl.GetGlyphIndex(fontData.data, codepoint);
+                auto glyphInfo = font.glyphInfo(codepoint);
                 if (codepoint != ' ' && codepoint != '\t') {
-                    rl.DrawTextCodepoint(fontData.data, codepoint, rl.Vector2(textOffsetX, textOffsetY), fontData.size, options.color.toRl());
+                    bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), 1, options.color);
                 }
-                if (fontData.data.glyphs[glyphIndex].advanceX) {
-                    textOffsetX += fontData.data.glyphs[glyphIndex].advanceX + fontData.runeSpacing;
+                if (glyphInfo.advanceX) {
+                    textOffsetX += glyphInfo.advanceX + fontData.runeSpacing;
                 } else {
-                    textOffsetX += cast(int) (fontData.data.recs[glyphIndex].width + fontData.runeSpacing);
+                    textOffsetX += glyphInfo.rect.w + fontData.runeSpacing;
                 }
                 drawCodepointCounter += 1;
                 lineCodepointIndex += codepointSize;
@@ -2722,38 +2510,11 @@ Vec2 drawText(ref Font font, IStr text, Vec2 position, DrawOptions options = Dra
     return result;
 }
 
-/// Draws text with the given font at the given position using the provided draw options.
-Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    auto fontData = Font();
-    if (font.isValid) fontData = font.get();
-    return drawText(fontData, text, position, options, extra);
-}
-
 /// Draws text with the default font at the given position with the provided draw options.
 /// Check the `setDefaultFont` function before using this function.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
-
-deprecated("Use `drawText(text, ...)`. It works the same, but you can also call `setDefaultFont` to change the font.")
-alias drawDebugText = drawText;
-
-alias draw = drawRect;
-alias draw = drawHollowRect;
-alias draw = drawCirc;
-alias draw = drawHollowCirc;
-alias draw = drawVec2;
-alias draw = drawLine;
-
-alias draw = drawTexture;
-alias draw = drawTextureArea;
-alias draw = drawTextureSlice;
-
-alias draw = drawRune;
-alias draw = drawText;
-
-alias draw = drawViewport;
-alias draw = drawViewportArea;
 
 /// Draws debug engine information at the given position with the provided draw options.
 /// Hold the left mouse button to create and resize a debug area.
@@ -2786,8 +2547,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         s = b - a;
         text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
-            _engineState.textures.length,
-            _engineState.fonts.length - 1,
+            bk.texturesCount - 1,
+            bk.fontsCount - 1,
             _engineState.sounds.length,
             cast(int) a.x,
             cast(int) a.y,
@@ -2800,8 +2561,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         if (s.isZero) {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
                 fps,
-                _engineState.textures.length,
-                _engineState.fonts.length - 1,
+                bk.texturesCount - 1,
+                bk.fontsCount - 1,
                 _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
@@ -2809,8 +2570,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         } else {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
                 fps,
-                _engineState.textures.length,
-                _engineState.fonts.length - 1,
+                bk.texturesCount - 1,
+                bk.fontsCount - 1,
                 _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
@@ -2899,7 +2660,7 @@ void clearDprintBuffer() {
 /// Returns the contents of the `dprint*` buffer as an `IStr`.
 /// The returned string references the internal buffer and may change if more text is printed.
 IStr dprintBuffer() {
-    return _engineState.dprintBuffer[];
+    return _engineState.dprintBuffer.items;
 }
 
 /// Adds a formatted line to the `dprint*` text.

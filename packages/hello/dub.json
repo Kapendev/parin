@@ -3,9 +3,9 @@
 		"Alexandros F. G. Kapretsos"
 	],
 	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
-	"description": "A script interpreter for Rin.",
+	"description": "A hello world made with Parin.",
 	"license": "MIT",
-	"name": "rin",
+	"name": "hello",
 	"dependencies": {
 		"parin": {"path": ".."}
 	}

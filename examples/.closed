@@ -1,24 +1,25 @@
 # This file is used by: https://github.com/Kapendev/closed
 
-[default]
+[lin]
 -o=../example
 -I=../source
--L=-lraylib
 -J=../../parin/source/parin
-# Those lines work for me. Use -s=custom to fix any errors.
--I=../../joka/source
--L=-L../../raylib/lib
+# Would be nice to have something like [default:windows]
+# And maybe an variables thing. Like the only thing we want to change here is -L.
+# And maybe have an OS variable that we can concat with paths. For example: ./vendor/$os
+# Btw I always get the paths mixed and stuff. Maybe fix that? Feels weird how it is not the same with the others.
+-L=-L../vendor/linux_x86_64
+# This is just for me.
+-D=-betterC
 
-[default2]
--o=./example
--I=../source
--L=-lraylib
--J=../../parin/source/parin
-# Those lines work for me. Use -s=custom to fix any errors.
--I=../../joka/source
--L=-L../../raylib/lib
-
-[custom]
+[mac]
 -o=../example
 -I=../source
--L=-lraylib
+-J=../../parin/source/parin
+-L=-L../vendor/macos
+
+[win]
+-o=../example
+-I=../source
+-J=../../parin/source/parin
+-L=-L../vendor/windows_x86_64

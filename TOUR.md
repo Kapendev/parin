@@ -242,14 +242,6 @@ void clearDprintBuffer();
 
 Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions. To change the default filtering mode for new textures, fonts or viewports, call `setDefaultFilter`.
 
-The base draw functions from `parin.engine` can also be used with the `draw` alias, which is convenient when you don't want to type a specific function name. This may produce less explicit error messages, so use it with that in mind. For example:
-
-```d
-draw(Rect(8, 24, 64, 64), cyan);     // Same as: drawRect(Rect(8, 24, 64, 64), cyan);
-draw(Rect(8, 24, 64, 64), 2, black); // Same as: drawHollowRect(Rect(8, 24, 64, 64), 2, black);
-draw("Hello", Vec2(8));              // Same as: drawText("Hello", Vec2(8));
-```
-
 ### Draw Options
 
 Draw options are used for configuring drawing parameters.

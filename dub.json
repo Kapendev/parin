@@ -12,11 +12,10 @@
     "subPackages" : [
         "packages/rin",
         "packages/setup",
-        "packages/web"
+        "packages/web",
+        "packages/mapy",
+        "packages/hello"
     ],
-    "dependencies": {
-        "joka": "*"
-    },
     "libs": [
         "raylib"
     ],

@@ -220,13 +220,13 @@ struct Sprite {
     }
 }
 
-void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOptions()) {
+void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
     options.hook = sprite.hook; // NOTE: Might be a bad idea in the future.
     options.flip = sprite.flip; // NOTE: Might be a bad idea in the future.
 
     version (ParinSkipDrawChecks) {
     } else {
-        if (texture.isEmpty) {
+        if (!texture.isValid) {
             if (isEmptyTextureVisible) {
                 auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
                 drawRect(rect, defaultEngineEmptyTextureColor);
@@ -251,10 +251,6 @@ void drawSprite(Texture texture, Sprite sprite, DrawOptions options = DrawOption
     drawTextureArea(texture, area, sprite.position, options);
 }
 
-void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
-    drawSprite(texture.getOr(), sprite, options);
-}
-
 void drawSprite(Sprite sprite, DrawOptions options = DrawOptions()) {
-    drawSprite(defaultTexture.getOr(), sprite, options);
+    drawSprite(defaultTexture, sprite, options);
 }

@@ -19,7 +19,7 @@ __gshared BackendState* _backendState;
 version (WebAssembly) {
     enum defaultBackendResourcesCapacity = 256;
 } else {
-    enum defaultBackendResourcesCapacity = 1024;
+    enum defaultBackendResourcesCapacity = 1536;
 }
 // ----------
 
@@ -31,19 +31,83 @@ alias RlBlend  = int;
 alias RlKey    = int;
 
 struct BackendState {
-    alias TexturesData = FixedList!(SparseListItem!(rl.Texture2D), defaultBackendResourcesCapacity);
-    alias SoundsData   = FixedList!(SparseListItem!(rl.Sound), defaultBackendResourcesCapacity);
-    alias MusicData    = FixedList!(SparseListItem!(rl.Music), defaultBackendResourcesCapacity);
-    alias FontsData    = FixedList!(SparseListItem!(rl.Font), defaultBackendResourcesCapacity);
+    alias BasicContainer(T)  = FixedList!(T, defaultBackendResourcesCapacity);
+    alias SparseContainer(T) = FixedList!(SparseListItem!T, defaultBackendResourcesCapacity);
+    alias TexturesData       = SparseList!(rl.Texture, SparseContainer!(rl.Texture2D));
+    alias FontsData          = SparseList!(rl.Font, SparseContainer!(rl.Font));
+    alias SoundsData         = SparseList!(rl.Sound, SparseContainer!(rl.Sound));
+    alias MusicData          = SparseList!(rl.Music, SparseContainer!(rl.Music));
+    alias GenData            = BasicContainer!(Gen);
 
-    SparseList!(TexturesData.Item.Item, TexturesData) textures;
-    SparseList!(SoundsData.Item.Item, SoundsData) sounds;
-    SparseList!(MusicData.Item.Item, MusicData) music;
-    SparseList!(FontsData.Item.Item, FontsData) fonts;
+    GenList!(TexturesData.Item.Item, TexturesData, GenData) textures;
+    GenList!(FontsData.Item.Item, FontsData, GenData) fonts;
+    GenList!(SoundsData.Item.Item, SoundsData, GenData) sounds;
+    GenList!(MusicData.Item.Item, MusicData, GenData) music;
+}
+
+Maybe!ResourceId loadTexture(IStr path) {
+    auto resource = rl.LoadTexture(path.toCStr().getOr());
+    if (resource.id == 0) return Maybe!ResourceId(Fault.cantFind);
+    return Maybe!ResourceId(_backendState.textures.append(resource));
+}
+
+Maybe!ResourceId loadTexture(const(ubyte)[] memory, IStr ext = ".png") {
+    auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), memory.ptr, cast(int) memory.length);
+    if (image.data == null) return Maybe!ResourceId(Fault.cantParse);
+    auto resource = rl.LoadTextureFromImage(image);
+    rl.UnloadImage(image);
+    if (resource.id == 0) return Maybe!ResourceId(Fault.cantFind);
+    return Maybe!ResourceId(_backendState.textures.append(resource));
+}
+
+Maybe!ResourceId loadFont(IStr path, int size, IStr32 runes) {
+    auto resource = rl.LoadFontEx(path.toCStr().getOr(), size, runes.length ? cast(int*) runes.ptr : null, cast(int) runes.length);
+    if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cantFind);
+    return Maybe!ResourceId(_backendState.fonts.push(resource));
+}
+
+Maybe!ResourceId loadFont(const(ubyte)[] memory, int size, IStr32 runes, IStr ext = ".ttf") {
+    auto resource = rl.LoadFontFromMemory(ext.toCStr().getOr(), memory.ptr, cast(int) memory.length, size, runes.length ? cast(int*) runes.ptr : null, cast(int) runes.length);
+    if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cantParse);
+    return Maybe!ResourceId(_backendState.fonts.append(resource));
+}
+
+Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
+    if (!textureIsValid(texture) || tileWidth <= 0|| tileHeight <= 0) return Maybe!ResourceId(Fault.invalid);
+    auto oldResource = &_backendState.textures[texture];
+    auto newResource = rl.Font();
+    auto rowCount = textureHeight(texture) / tileHeight;
+    auto colCount = textureWidth(texture) / tileWidth;
+    auto maxCount = rowCount * colCount;
+    newResource.baseSize = tileHeight;
+    newResource.glyphCount = maxCount;
+    newResource.glyphPadding = 0;
+    newResource.texture = *oldResource;
+    newResource.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
+    foreach (i; 0 .. maxCount) {
+        newResource.recs[i].x = (i % colCount) * tileWidth;
+        newResource.recs[i].y = (i / colCount) * tileHeight;
+        newResource.recs[i].width = tileWidth;
+        newResource.recs[i].height = tileHeight;
+    }
+    newResource.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
+    foreach (i; 0 .. maxCount) {
+        newResource.glyphs[i] = rl.GlyphInfo();
+        newResource.glyphs[i].value = i + 32;
+    }
+    // We remove the ID, but not the resource. We need the resource.
+    _backendState.textures.remove(texture);
+    return Maybe!ResourceId(_backendState.fonts.push(newResource));
 }
 
 void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
     _backendState = jokaMake!BackendState();
+    // These make the zero value invalid.
+    _backendState.textures.push(rl.Texture());
+    _backendState.fonts.push(rl.Font());
+    _backendState.sounds.push(rl.Sound());
+    _backendState.music.push(rl.Music());
+
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | (vsync ? rl.FLAG_VSYNC_HINT : 0));
     rl.SetTraceLogLevel(rl.LOG_ERROR);
     rl.InitWindow(width, height, title.toCStr().getOr());
@@ -54,21 +118,206 @@ void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
 }
 
-void finishBackend() {
+@trusted nothrow @nogc:
+
+void freeAllTextures() {
+    foreach (id; _backendState.textures.ids) textureFree(id);
+}
+
+void freeAllFonts() {
+    foreach (id; _backendState.fonts.ids) fontFree(id);
+}
+
+void freeBackend() {
+    freeAllTextures();
+    freeAllFonts();
     jokaFree(_backendState);
     rl.CloseAudioDevice();
     rl.CloseWindow();
 }
 
-Resource loadTexture(const(ubyte)[] from, IStr ext = ".png") {
-    auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), from.ptr, cast(int) from.length);
-    auto texture = rl.LoadTextureFromImage(image);
-    rl.UnloadImage(image);
-    _backendState.textures.append(texture);
-    return cast(Resource) _backendState.textures.hotIndex;
+Sz texturesCount() => _backendState.textures.length;
+Sz fontsCount()    => _backendState.fonts.length;
+Sz soundsCount()   => _backendState.sounds.length;
+Sz musicCount()    => _backendState.music.length;
+
+/// Checks if the texture is null (default value).
+bool resourceIsNull(ResourceId id) {
+    return id.value == 0;
 }
 
-@trusted nothrow @nogc:
+// --- Texture
+
+/// Checks if the texture is valid (loaded). Null is invalid.
+bool textureIsValid(ResourceId id) {
+    return !resourceIsNull(id) && _backendState.textures.has(id);
+}
+
+/// Returns the width of the texture.
+/// Will return `0` for null and asserts for other invalid IDs.
+int textureWidth(ResourceId id) {
+    auto resource = &_backendState.textures[id];
+    return resource.width;
+}
+
+/// Returns the height of the texture.
+/// Will return `0` for null and asserts for other invalid IDs.
+int textureHeight(ResourceId id) {
+    auto resource = &_backendState.textures[id];
+    return resource.height;
+}
+
+/// Returns the size of the texture.
+/// Will return `Vec2(0)` for null and asserts for other invalid IDs.
+Vec2 textureSize(ResourceId id) {
+    auto resource = &_backendState.textures[id];
+    return Vec2(resource.width, resource.height);
+}
+
+/// Sets the filter mode of the texture.
+void textureSetFilter(ResourceId id, Filter value) {
+    auto resource = &_backendState.textures[id];
+    rl.SetTextureFilter(*resource, toRl(value));
+}
+
+/// Sets the wrap mode of the texture.
+void textureSetWrap(ResourceId id, Wrap value) {
+    auto resource = &_backendState.textures[id];
+    rl.SetTextureWrap(*resource, toRl(value));
+}
+
+/// Frees the loaded texture.
+void textureFree(ResourceId id) {
+    if (!textureIsValid(id)) return;
+    auto resource = &_backendState.textures[id];
+    rl.UnloadTexture(*resource);
+    _backendState.textures.remove(id);
+}
+
+// --- Font
+
+/// Checks if the font is not loaded.
+bool fontIsValid(ResourceId id) {
+    return !resourceIsNull(id) && _backendState.fonts.has(id);
+}
+
+/// Returns the size of the font.
+int fontSize(ResourceId id) {
+    auto resource = &_backendState.fonts[id];
+    return resource.baseSize;
+}
+
+/// Sets the filter mode of the font.
+void fontSetFilter(ResourceId id, Filter value) {
+    auto resource = &_backendState.fonts[id];
+    rl.SetTextureFilter(resource.texture, toRl(value));
+}
+
+/// Sets the wrap mode of the font.
+void fontSetWrap(ResourceId id, Wrap value) {
+    auto resource = &_backendState.fonts[id];
+    rl.SetTextureWrap(resource.texture, toRl(value));
+}
+
+GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
+    auto resource = &_backendState.fonts[id];
+    auto glyphIndex = rl.GetGlyphIndex(*resource, rune);
+    auto info = resource.glyphs[glyphIndex];
+    auto rect = resource.recs[glyphIndex];
+    // "Why are you not using named thingy magingykdopwjopjw!??"
+    auto result = GlyphInfo();
+    result.value = info.value;
+    result.offset = IVec2(info.offsetX, info.offsetY);
+    result.advanceX = info.advanceX;
+    result.rect = IRect(cast(int) rect.x, cast(int) rect.y, cast(int) rect.width, cast(int) rect.height);
+    return result;
+}
+
+/// Frees the loaded font.
+void fontFree(ResourceId id) {
+    if (!fontIsValid(id)) return;
+    auto resource = &_backendState.fonts[id];
+    rl.UnloadFont(*resource);
+    _backendState.fonts.remove(id);
+}
+
+// --- Stuff
+
+// raylib does not let you do that.
+void setVsync(bool value) {}
+
+// raylib does stuff internally.
+// NOTE: No idea if this is a good name.
+void pumpEvents() {}
+
+/// Begin blending mode.
+void beginBlend(Blend blend) => rl.BeginBlendMode(toRl(blend));
+/// End blending mode.
+void endBlend() => rl.EndBlendMode();
+
+/// Returns true if the specified key is currently pressed.
+bool isDown(char key) => rl.IsKeyDown(toRl(key));
+/// Returns true if the specified key is currently pressed.
+bool isDown(Keyboard key) => rl.IsKeyDown(toRl(key));
+/// Returns true if the specified key is currently pressed.
+bool isDown(Mouse key) => rl.IsMouseButtonDown(toRl(key));
+/// Returns true if the specified key is currently pressed.
+bool isDown(Gamepad key, int id = 0) => rl.IsGamepadButtonDown(id, toRl(key));
+
+/// Returns true if the specified key was pressed.
+bool isPressed(char key) => rl.IsKeyPressed(toRl(key));
+/// Returns true if the specified key was pressed.
+bool isPressed(Keyboard key) => rl.IsKeyPressed(toRl(key));
+/// Returns true if the specified key was pressed.
+bool isPressed(Mouse key) => rl.IsMouseButtonPressed(toRl(key));
+/// Returns true if the specified key was pressed.
+bool isPressed(Gamepad key, int id = 0) => rl.IsGamepadButtonPressed(id, toRl(key));
+
+/// Returns true if the specified key was released.
+bool isReleased(char key) => rl.IsKeyReleased(toRl(key));
+/// Returns true if the specified key was released.
+bool isReleased(Keyboard key) => rl.IsKeyReleased(toRl(key));
+/// Returns true if the specified key was released.
+bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
+/// Returns true if the specified key was released.
+bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
+
+void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
+    auto resource = &_backendState.textures[id];
+    rl.DrawTexturePro(
+        *resource,
+        toRl(area),
+        toRl(target),
+        toRl(origin),
+        rotation,
+        toRl(color),
+    );
+}
+
+void drawRune(ResourceId id, int rune, Vec2 position, float scale, Rgba color) {
+    auto resource = &_backendState.fonts[id];
+    rl.DrawTextCodepoint(*resource, rune, toRl(position), resource.baseSize * scale, toRl(color));
+}
+
+rl.Color toRl(Rgba from) {
+    return rl.Color(from.r, from.g, from.b, from.a);
+}
+
+rl.Vector2 toRl(Vec2 from) {
+    return rl.Vector2(from.x, from.y);
+}
+
+rl.Vector3 toRl(Vec3 from) {
+    return rl.Vector3(from.x, from.y, from.z);
+}
+
+rl.Vector4 toRl(Vec4 from) {
+    return rl.Vector4(from.x, from.y, from.z, from.w);
+}
+
+rl.Rectangle toRl(Rect from) {
+    return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
+}
 
 RlFilter toRl(Filter from) {
     with (Filter) final switch (from) {
@@ -233,50 +482,3 @@ RlKey toRl(Gamepad from) {
         case middle: return rl.GAMEPAD_BUTTON_MIDDLE;
     }
 }
-
-// raylib does stuff internally.
-// NOTE: No idea if this is a good name.
-void pumpEvents() {}
-
-void setTextureFilter(Resource resource, Filter filter) {
-    // TODO
-}
-
-void setTextureWrap(Resource resource, Wrap wrap) {
-    // TODO
-}
-
-void beginBlend(Blend blend) {
-    rl.BeginBlendMode(toRl(blend));
-}
-
-void endBlend() {
-    rl.EndBlendMode();
-}
-
-/// Returns true if the specified key is currently pressed.
-bool isDown(char key) => rl.IsKeyDown(toRl(key));
-/// Returns true if the specified key is currently pressed.
-bool isDown(Keyboard key) => rl.IsKeyDown(toRl(key));
-/// Returns true if the specified key is currently pressed.
-bool isDown(Mouse key) => rl.IsMouseButtonDown(toRl(key));
-/// Returns true if the specified key is currently pressed.
-bool isDown(Gamepad key, int id = 0) => rl.IsGamepadButtonDown(id, toRl(key));
-
-/// Returns true if the specified key was pressed.
-bool isPressed(char key) => rl.IsKeyPressed(toRl(key));
-/// Returns true if the specified key was pressed.
-bool isPressed(Keyboard key) => rl.IsKeyPressed(toRl(key));
-/// Returns true if the specified key was pressed.
-bool isPressed(Mouse key) => rl.IsMouseButtonPressed(toRl(key));
-/// Returns true if the specified key was pressed.
-bool isPressed(Gamepad key, int id = 0) => rl.IsGamepadButtonPressed(id, toRl(key));
-
-/// Returns true if the specified key was released.
-bool isReleased(char key) => rl.IsKeyReleased(toRl(key));
-/// Returns true if the specified key was released.
-bool isReleased(Keyboard key) => rl.IsKeyReleased(toRl(key));
-/// Returns true if the specified key was released.
-bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
-/// Returns true if the specified key was released.
-bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
