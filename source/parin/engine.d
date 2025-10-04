@@ -8,15 +8,12 @@
 // TODO: Viewports and sounds use raylib types instead of the generic ones. Change that.
 // TODO: Replace the `rl.` calls with `.bk` calls.
 // TODO: Fix microui lol.
+// TODO: The smooth follow funcs should follow this style now.
+//   void followScaleWithSlowdown(float target, float delta, float slowdown);
+//   Camera already does this.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
-
-// NOTE: This is just a hint and does not remove all checks. Functions can ignore it if needed.
-//   The `drawText` functions ignore it for example.
-version (ParinSkipDrawChecks) {
-    pragma(msg, "Parin: Draw checks disabled. Invalid values may crash your game.");
-}
 
 import bk = parin.backend;
 import rl = parin.bindings.rl;
@@ -64,7 +61,7 @@ enum defaultEngineAssetsPathCapacity              = 8 * kilobyte;
 enum defaultEngineTexturesCapacity                = 128;
 enum defaultEngineSoundsCapacity                  = 128;
 enum defaultEngineFontsCapacity                   = 16;
-enum defaultEngineEnvArgsDroppedFilePathsCapacity = 64;
+enum defaultEngineEnvArgsCapacity                 = 64;
 enum defaultEngineLoadOrSaveTextCapacity          = 14 * kilobyte;
 enum defaultEngineTasksCapacity                   = 255;
 enum defaultEngineArenaCapacity                   = 4 * megabyte;
@@ -513,162 +510,18 @@ struct Viewport {
     }
 }
 
-/// A camera.
-struct Camera {
-    Vec2 position;         /// The position of the camera.
-    Vec2 offset;           /// The offset of the view area of the camera.
-    float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
-    float scale = 1.0f;    /// The zoom level of the camera.
-    bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
-    bool isAttached;       /// Indicates whether the camera is currently in use.
+/// Attaches the camera, making it active.
+void attach(ref Camera camera, Rounding type = Rounding.none) {
+    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
+    bk.cameraAttach(camera, resolution, isPixelSnapped ? Rounding.floor : type);
+    _engineState.userCamera = camera;
+}
 
-    @trusted nothrow @nogc:
-
-    /// Initializes the camera with the given position and optional centering.
-    this(Vec2 position, bool isCentered = false) {
-        this.position = position;
-        this.isCentered = isCentered;
-    }
-
-    /// Initializes the camera with the given position and optional centering.
-    this(float x, float y, bool isCentered = false) {
-        this(Vec2(x, y), isCentered);
-    }
-
-    /// The X position of the camera.
-    pragma(inline, true)
-    ref float x() => position.x;
-    /// The Y position of the camera.
-    pragma(inline, true)
-    ref float y() => position.y;
-    /// The sum of the position and the offset of the camera.
-    pragma(inline, true)
-    Vec2 sum() => position + offset;
-
-    /// Returns the current hook associated with the camera.
-    Hook hook() {
-        return isCentered ? Hook.center : Hook.topLeft;
-    }
-
-    /// Returns the origin of the camera.
-    Vec2 origin() {
-        return Rect(resolution / Vec2(scale)).origin(hook);
-    }
-
-    /// Returns the origin of the camera.
-    Vec2 origin(ref Viewport viewport) {
-        if (viewport.isEmpty) {
-            return Rect(resolution / Vec2(scale)).origin(hook);
-        } else {
-            return Rect(viewport.size / Vec2(scale)).origin(hook);
-        }
-    }
-
-    /// Returns the area covered by the camera.
-    Rect area() {
-        return Rect(sum, resolution / Vec2(scale)).area(hook);
-    }
-
-    /// Returns the area covered by the camera.
-    Rect area(ref Viewport viewport) {
-        if (viewport.isEmpty) {
-            return Rect(sum, resolution / Vec2(scale)).area(hook);
-        } else {
-            return Rect(sum, viewport.size / Vec2(scale)).area(hook);
-        }
-    }
-
-    /// Returns the top left point of the camera.
-    Vec2 topLeftPoint() {
-        return area.topLeftPoint;
-    }
-
-    /// Returns the top point of the camera.
-    Vec2 topPoint() {
-        return area.topPoint;
-    }
-
-    /// Returns the top right point of the camera.
-    Vec2 topRightPoint() {
-        return area.topRightPoint;
-    }
-
-    /// Returns the left point of the camera.
-    Vec2 leftPoint() {
-        return area.leftPoint;
-    }
-
-    /// Returns the center point of the camera.
-    Vec2 centerPoint() {
-        return area.centerPoint;
-    }
-
-    /// Returns the right point of the camera.
-    Vec2 rightPoint() {
-        return area.rightPoint;
-    }
-
-    /// Returns the bottom left point of the camera.
-    Vec2 bottomLeftPoint() {
-        return area.bottomLeftPoint;
-    }
-
-    /// Returns the bottom point of the camera.
-    Vec2 bottomPoint() {
-        return area.bottomPoint;
-    }
-
-    /// Returns the bottom right point of the camera.
-    Vec2 bottomRightPoint() {
-        return area.bottomRightPoint;
-    }
-
-    /// Moves the camera to follow the target position at the specified speed.
-    void followPosition(Vec2 target, float speed) {
-        position = position.moveTo(target, Vec2(speed));
-    }
-
-    /// Moves the camera to follow the target position with gradual slowdown.
-    void followPositionWithSlowdown(Vec2 target, float slowdown) {
-        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
-    }
-
-    /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
-    void followScale(float target, float speed) {
-        scale = scale.moveTo(target, speed);
-    }
-
-    /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
-    void followScaleWithSlowdown(float target, float slowdown) {
-        scale = scale.moveToWithSlowdown(target, deltaTime, slowdown);
-    }
-
-    /// Attaches the camera, making it active.
-    void attach() {
-        if (_engineState.userCamera.isAttached) {
-            assert(0, "Cannot attach camera because another camera is already attached.");
-        }
-        isAttached = true;
-        _engineState.userCamera = this;
-        auto temp = toRl(this, _engineState.userViewport);
-        if (isPixelSnapped) {
-            temp.target.x = temp.target.x.floor();
-            temp.target.y = temp.target.y.floor();
-            temp.offset.x = temp.offset.x.floor();
-            temp.offset.y = temp.offset.y.floor();
-        }
-        rl.BeginMode2D(temp);
-    }
-
-    /// Detaches the camera, making it inactive.
-    void detach() {
-        if (!isAttached) {
-            assert(0, "Cannot detach camera because it is not the attached camera.");
-        }
-        isAttached = false;
-        _engineState.userCamera = Camera();
-        rl.EndMode2D();
-    }
+/// Detaches the camera, making it inactive.
+void detach(ref Camera camera) {
+    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
+    bk.cameraDetach(camera);
+    _engineState.userCamera = Camera();
 }
 
 /// Represents a scheduled task with interval, repeat count, and callback function.
@@ -768,7 +621,6 @@ struct EngineState {
     Viewport userViewport;
     Fault lastLoadOrSaveFault;
     IStr memoryTrackingInfoFilter;
-    Sz envArgsLength;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
     Tasks tasks;
 
@@ -781,7 +633,7 @@ struct EngineState {
 
     EngineViewport viewport;
     GenList!Sound sounds;
-    List!IStr envArgsDroppedFilePathsBuffer;
+    FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
     GrowingArena arena;
 }
 
@@ -792,20 +644,16 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     enum targetHtmlElementId = "canvas";
 
     bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
-
     _engineState = jokaMake!EngineState();
     _engineState.fullscreenState.previousWindowWidth = width;
     _engineState.fullscreenState.previousWindowHeight = height;
     _engineState.viewport.data.color = gray;
-
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
-    _engineState.envArgsDroppedFilePathsBuffer.reserve(defaultEngineEnvArgsDroppedFilePathsCapacity);
     _engineState.arena.ready(defaultEngineArenaCapacity);
     // TODO: will have to remove the id thing and also change the toTexure names to load maybe.
     loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
     if (args.length) {
-        foreach (arg; args) _engineState.envArgsDroppedFilePathsBuffer.appendSource(__FILE__, __LINE__, arg);
-        _engineState.envArgsLength = args.length;
+        foreach (arg; args) _engineState.envArgsBuffer.append(arg);
         _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
     }
 
@@ -818,12 +666,9 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 /// You should avoid calling this function manually.
 void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
     _openWindow(width, height, null, title.cStrToStr());
-    foreach (i; 0 .. argc) {
-        _engineState.envArgsDroppedFilePathsBuffer.append(argv[i].cStrToStr());
-    }
-    _engineState.envArgsLength = argc;
-    if (_engineState.envArgsDroppedFilePathsBuffer.length) {
-        _engineState.assetsPath.append(pathConcat(_engineState.envArgsDroppedFilePathsBuffer[0].pathDirName, "assets"));
+    if (argc) {
+        foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
+        _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
     }
 }
 
@@ -860,12 +705,6 @@ bool _updateWindowLoop() {
         foreach (ref sound; _engineState.sounds.items) {
             updateSound(sound);
         }
-        if (rl.IsFileDropped) {
-            auto list = rl.LoadDroppedFiles();
-            foreach (i; 0 .. list.count) {
-                _engineState.envArgsDroppedFilePathsBuffer.appendSource(__FILE__, __LINE__, list.paths[i].toStr());
-            }
-        }
     }
 
     // Get some data before doing the game loop.
@@ -879,6 +718,7 @@ bool _updateWindowLoop() {
     rl.ClearBackground(_engineState.viewport.data.color.toRl());
 
     // Update the game.
+    bk.beginDroppedPaths();
     _engineState.arena.clear();
     auto dt = deltaTime;
     foreach (id; _engineState.tasks.ids) {
@@ -895,12 +735,8 @@ bool _updateWindowLoop() {
         if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
     }
     _engineState.tickCount += 1;
+    bk.endDroppedPaths();
 
-    if (rl.IsFileDropped) {
-        // NOTE: LoadDroppedFiles just returns a global variable.
-        rl.UnloadDroppedFiles(rl.LoadDroppedFiles());
-        _engineState.envArgsDroppedFilePathsBuffer.resize(_engineState.envArgsLength);
-    }
     // End drawing.
     if (isResolutionLocked) {
         auto info = engineViewportInfo;
@@ -994,7 +830,6 @@ void _closeWindow() {
 
     _engineState.viewport.free();
     _engineState.sounds.freeWithItems();
-    _engineState.envArgsDroppedFilePathsBuffer.free();
     _engineState.arena.free();
     jokaFree(_engineState);
     _engineState = null;
@@ -1467,7 +1302,7 @@ SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
 
 /// Returns the arguments that this application was started with.
 IStr[] envArgs() {
-    return _engineState.envArgsDroppedFilePathsBuffer[0 .. _engineState.envArgsLength];
+    return _engineState.envArgsBuffer.items;
 }
 
 /// Returns a random integer between 0 and int.max (inclusive).
@@ -1521,9 +1356,9 @@ IStr toAssetsPath(IStr path) {
     return pathConcat(assetsPath, path).pathFormat();
 }
 
-/// Returns the dropped file paths of the current frame.
-IStr[] droppedFilePaths() {
-    return _engineState.envArgsDroppedFilePathsBuffer[_engineState.envArgsLength .. $];
+/// Returns the dropped paths of the current frame.
+IStr[] droppedPaths() {
+    return bk.droppedPaths;
 }
 
 /// Frees all managed engine resources.
@@ -2547,8 +2382,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         s = b - a;
         text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
-            bk.texturesCount - 1,
-            bk.fontsCount - 1,
+            bk.backendTextureCount,
+            bk.backendFontCount,
             _engineState.sounds.length,
             cast(int) a.x,
             cast(int) a.y,
@@ -2561,8 +2396,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         if (s.isZero) {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
                 fps,
-                bk.texturesCount - 1,
-                bk.fontsCount - 1,
+                bk.backendTextureCount,
+                bk.backendFontCount,
                 _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
@@ -2570,8 +2405,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         } else {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
                 fps,
-                bk.texturesCount - 1,
-                bk.fontsCount - 1,
+                bk.backendTextureCount,
+                bk.backendFontCount,
                 _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,

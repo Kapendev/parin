@@ -312,7 +312,7 @@ struct TileMap {
     }
 
     auto gridPoints(Camera camera) {
-        return gridPoints(camera.area);
+        return gridPoints(camera.area(resolution));
     }
 
     auto tiles(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint, Sz layerId = 0) {
@@ -368,18 +368,14 @@ struct TileMap {
     }
 
     auto tiles(Camera camera, Sz layerId = 0) {
-        return tiles(camera.area, layerId);
+        return tiles(camera.area(resolution), layerId);
     }
 }
 
 @nogc {
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
-        version (ParinSkipDrawChecks) {
-            drawTextureArea(texture, tile.textureArea(texture.width / tile.width), tile.position, options);
-        } else {
-            if (!tile.hasId || !tile.hasSize) return;
-            drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
-        }
+        if (!tile.hasId || !tile.hasSize) return;
+        drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
     }
 
     void drawTile(Tile tile, DrawOptions options = DrawOptions()) {
@@ -387,18 +383,15 @@ struct TileMap {
     }
 
     void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-        version (ParinSkipDrawChecks) {
-        } else {
-            if (!texture.isValid) {
-                if (isEmptyTextureVisible) {
-                    auto rect = Rect(map.position, map.size);
-                    drawRect(rect, defaultEngineEmptyTextureColor);
-                    drawHollowRect(rect, 1, black);
-                }
-                return;
+        if (!texture.isValid) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(map.position, map.size);
+                drawRect(rect, defaultEngineEmptyTextureColor);
+                drawHollowRect(rect, 1, black);
             }
-            if (!map.hasSize) return;
+            return;
         }
+        if (!map.hasSize) return;
 
         auto hasAreaSize = viewArea.hasSize;
         auto topLeftPoint = viewArea.topLeftPoint;
@@ -436,10 +429,10 @@ struct TileMap {
     }
 
     void drawTileMap(TextureId texture, ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-        drawTileMap(texture, map, camera.area, options);
+        drawTileMap(texture, map, camera.area(resolution), options);
     }
 
     void drawTileMap(ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
-        drawTileMap(defaultTexture, map, camera.area, options);
+        drawTileMap(defaultTexture, map, camera.area(resolution), options);
     }
 }

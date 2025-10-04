@@ -98,10 +98,23 @@ alias DTween2 = GTween!DVec2; /// A tween using 2D vectors with doubles.
 alias DTween3 = GTween!DVec3; /// A tween using 3D vectors with doubles.
 alias DTween4 = GTween!DVec4; /// A tween using 4D vectors with doubles.
 
-alias EaseFunc = float function(float x); /// A function used for easing.
+/// A function used for rounding.
+alias RoundingFunc = float function(float x);
+/// A function used for rounding.
+alias Rounding64Func = double function(double x);
+/// A function used for easing.
+alias EasingFunc = float function(float x);
+
+/// A type representing rounding functions.
+enum Rounding : ubyte {
+    none,
+    floor,
+    round,
+    ceil,
+}
 
 /// A type representing easing functions.
-enum Ease : ubyte {
+enum Easing : ubyte {
     linear,
     inSine,
     outSine,
@@ -275,6 +288,18 @@ struct GVec2(T) {
             }
         }
 
+        GVec2!T round() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                static if (is64) {
+                    return GVec2!T(x.round64, y.round64);
+                } else {
+                    return GVec2!T(x.round, y.round);
+                }
+            }
+        }
+
         GVec2!T ceil() {
             static if (isIntegerType!T) {
                 return this;
@@ -287,15 +312,12 @@ struct GVec2(T) {
             }
         }
 
-        GVec2!T round() {
-            static if (isIntegerType!T) {
-                return this;
-            } else {
-                static if (is64) {
-                    return GVec2!T(x.round64, y.round64);
-                } else {
-                    return GVec2!T(x.round, y.round);
-                }
+        GVec2!T applyRounding(Rounding type) {
+            final switch (type) {
+                case Rounding.none: return this;
+                case Rounding.floor: return floor();
+                case Rounding.round: return round();
+                case Rounding.ceil: return ceil();
             }
         }
 
@@ -461,6 +483,18 @@ struct GVec3(T) {
             }
         }
 
+        GVec3!T round() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                static if (is64) {
+                    return GVec3!T(x.round64, y.round64, z.round64);
+                } else {
+                    return GVec3!T(x.round, y.round, z.round);
+                }
+            }
+        }
+
         GVec3!T ceil() {
             static if (isIntegerType!T) {
                 return this;
@@ -473,15 +507,12 @@ struct GVec3(T) {
             }
         }
 
-        GVec3!T round() {
-            static if (isIntegerType!T) {
-                return this;
-            } else {
-                static if (is64) {
-                    return GVec3!T(x.round64, y.round64, z.round64);
-                } else {
-                    return GVec3!T(x.round, y.round, z.round);
-                }
+        GVec3!T applyRounding(Rounding type) {
+            final switch (type) {
+                case Rounding.none: return this;
+                case Rounding.floor: return floor();
+                case Rounding.round: return round();
+                case Rounding.ceil: return ceil();
             }
         }
 
@@ -645,6 +676,18 @@ struct GVec4(T) {
             }
         }
 
+        GVec4!T round() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                static if (is64) {
+                    return GVec4!T(x.round64, y.round64, z.round64, w.round64);
+                } else {
+                    return GVec4!T(x.round, y.round, z.round, w.round);
+                }
+            }
+        }
+
         GVec4!T ceil() {
             static if (isIntegerType!T) {
                 return this;
@@ -657,15 +700,12 @@ struct GVec4(T) {
             }
         }
 
-        GVec4!T round() {
-            static if (isIntegerType!T) {
-                return this;
-            } else {
-                static if (is64) {
-                    return GVec4!T(x.round64, y.round64, z.round64, w.round64);
-                } else {
-                    return GVec4!T(x.round, y.round, z.round, w.round);
-                }
+        GVec4!T applyRounding(Rounding type) {
+            final switch (type) {
+                case Rounding.none: return this;
+                case Rounding.floor: return floor();
+                case Rounding.round: return round();
+                case Rounding.ceil: return ceil();
             }
         }
 
@@ -860,6 +900,14 @@ struct GRect(P, S = P) {
             }
         }
 
+        Self round() {
+            static if (isIntegerType!P) {
+                return this;
+            } else {
+                return Self(position.round, size.round);
+            }
+        }
+
         Self ceil() {
             static if (isIntegerType!P) {
                 return this;
@@ -868,11 +916,12 @@ struct GRect(P, S = P) {
             }
         }
 
-        Self round() {
-            static if (isIntegerType!P) {
-                return this;
-            } else {
-                return Self(position.round, size.round);
+        Self applyRounding(Rounding type) {
+            final switch (type) {
+                case Rounding.none: return this;
+                case Rounding.floor: return floor();
+                case Rounding.round: return round();
+                case Rounding.ceil: return ceil();
             }
         }
 
@@ -1238,13 +1287,13 @@ struct GTween(T) {
     float time = 0.0f;     /// The current time, in seconds.
     float duration = 0.0f; /// The duration, in seconds.
     TweenMode mode;        /// The mode of the animation.
-    Ease type;             /// The function used to ease from the first to the last value.
+    Easing type;             /// The function used to ease from the first to the last value.
     bool isYoyoing;        /// Controls if the delta given to the update function is reversed.
 
     @safe nothrow @nogc pure:
 
     /// Creates a new tween.
-    this(T a, T b, float duration, TweenMode mode = TweenMode.bomb, Ease type = Ease.linear) {
+    this(T a, T b, float duration, TweenMode mode = TweenMode.bomb, Easing type = Easing.linear) {
         this.a = a;
         this.b = b;
         this.duration = duration;
@@ -1272,7 +1321,7 @@ struct GTween(T) {
         } else if (time >= duration) {
             return b;
         } else {
-            return a.lerp(b, ease(type)(progress));
+            return a.lerp(b, easing(type)(progress));
         }
     }
 
@@ -1540,6 +1589,14 @@ pragma(inline, true) @trusted {
         return stdc.cbrt(x);
     }
 
+    float roundNothing(float x) {
+        return x;
+    }
+
+    double roundNothing64(double x) {
+        return x;
+    }
+
     float floorX(float x) {
         return (x <= 0.0f && (cast(float) cast(int) x) != x)
             ? (cast(float) cast(int) x) - 1.0f
@@ -1558,6 +1615,26 @@ pragma(inline, true) @trusted {
 
     double floor64(double  x) {
         return stdc.floor(x);
+    }
+
+    float roundX(float x) {
+        return (x <= 0.0f)
+            ? cast(float) cast(int) (x - 0.5f)
+            : cast(float) cast(int) (x + 0.5f);
+    }
+
+    double roundX64(double x) {
+        return (x <= 0.0)
+            ? cast(double) cast(long) (x - 0.5)
+            : cast(double) cast(long) (x + 0.5);
+    }
+
+    float round(float x) {
+        return stdc.roundf(x);
+    }
+
+    double round64(double x) {
+        return stdc.round(x);
     }
 
     float ceilX(float x) {
@@ -1580,24 +1657,30 @@ pragma(inline, true) @trusted {
         return stdc.ceil(x);
     }
 
-    float roundX(float x) {
-        return (x <= 0.0f)
-            ? cast(float) cast(int) (x - 0.5f)
-            : cast(float) cast(int) (x + 0.5f);
+    RoundingFunc rounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return &roundNothing;
+            case Rounding.floor: return &floor;
+            case Rounding.round: return &round;
+            case Rounding.ceil: return &ceil;
+        }
     }
 
-    double roundX64(double x) {
-        return (x <= 0.0)
-            ? cast(double) cast(long) (x - 0.5)
-            : cast(double) cast(long) (x + 0.5);
+    Rounding64Func rounding64(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return &roundNothing64;
+            case Rounding.floor: return &floor64;
+            case Rounding.round: return &round64;
+            case Rounding.ceil: return &ceil64;
+        }
     }
 
-    float round(float x) {
-        return stdc.roundf(x);
+    float applyRounding(float x, Rounding type) {
+        return rounding(type)(x);
     }
 
-    double round64(double x) {
-        return stdc.round(x);
+    double applyRounding64(double x, Rounding type) {
+        return rounding64(type)(x);
     }
 
     float sqrt(float x) {
@@ -1905,39 +1988,39 @@ pragma(inline, true) @trusted {
             : (1.0f + easeOutBounce(2.0f * x - 1.0f)) / 2.0f;
     }
 
-    EaseFunc ease(Ease type) {
+    EasingFunc easing(Easing type) {
         final switch (type) {
-            case Ease.linear: return &easeLinear;
-            case Ease.inSine: return &easeInSine;
-            case Ease.outSine: return &easeOutSine;
-            case Ease.inOutSine: return &easeInOutSine;
-            case Ease.inCubic: return &easeInCubic;
-            case Ease.outCubic: return &easeOutCubic;
-            case Ease.inOutCubic: return &easeInOutCubic;
-            case Ease.inQuint: return &easeInQuint;
-            case Ease.outQuint: return &easeOutQuint;
-            case Ease.inOutQuint: return &easeInOutQuint;
-            case Ease.inCirc: return &easeInCirc;
-            case Ease.outCirc: return &easeOutCirc;
-            case Ease.inOutCirc: return &easeInOutCirc;
-            case Ease.inElastic: return &easeInElastic;
-            case Ease.outElastic: return &easeOutElastic;
-            case Ease.inOutElastic: return &easeInOutElastic;
-            case Ease.inQuad: return &easeInQuad;
-            case Ease.outQuad: return &easeOutQuad;
-            case Ease.inOutQuad: return &easeInOutQuad;
-            case Ease.inQuart: return &easeInQuart;
-            case Ease.outQuart: return &easeOutQuart;
-            case Ease.inOutQuart: return &easeInOutQuart;
-            case Ease.inExpo: return &easeInExpo;
-            case Ease.outExpo: return &easeOutExpo;
-            case Ease.inOutExpo: return &easeInOutExpo;
-            case Ease.inBack: return &easeInBack;
-            case Ease.outBack: return &easeOutBack;
-            case Ease.inOutBack: return &easeInOutBack;
-            case Ease.inBounce: return &easeInBounce;
-            case Ease.outBounce: return &easeOutBounce;
-            case Ease.inOutBounce: return &easeInOutBounce;
+            case Easing.linear: return &easeLinear;
+            case Easing.inSine: return &easeInSine;
+            case Easing.outSine: return &easeOutSine;
+            case Easing.inOutSine: return &easeInOutSine;
+            case Easing.inCubic: return &easeInCubic;
+            case Easing.outCubic: return &easeOutCubic;
+            case Easing.inOutCubic: return &easeInOutCubic;
+            case Easing.inQuint: return &easeInQuint;
+            case Easing.outQuint: return &easeOutQuint;
+            case Easing.inOutQuint: return &easeInOutQuint;
+            case Easing.inCirc: return &easeInCirc;
+            case Easing.outCirc: return &easeOutCirc;
+            case Easing.inOutCirc: return &easeInOutCirc;
+            case Easing.inElastic: return &easeInElastic;
+            case Easing.outElastic: return &easeOutElastic;
+            case Easing.inOutElastic: return &easeInOutElastic;
+            case Easing.inQuad: return &easeInQuad;
+            case Easing.outQuad: return &easeOutQuad;
+            case Easing.inOutQuad: return &easeInOutQuad;
+            case Easing.inQuart: return &easeInQuart;
+            case Easing.outQuart: return &easeOutQuart;
+            case Easing.inOutQuart: return &easeInOutQuart;
+            case Easing.inExpo: return &easeInExpo;
+            case Easing.outExpo: return &easeOutExpo;
+            case Easing.inOutExpo: return &easeInOutExpo;
+            case Easing.inBack: return &easeInBack;
+            case Easing.outBack: return &easeOutBack;
+            case Easing.inOutBack: return &easeInOutBack;
+            case Easing.inBounce: return &easeInBounce;
+            case Easing.outBounce: return &easeOutBounce;
+            case Easing.inOutBounce: return &easeInOutBounce;
         }
     }
 

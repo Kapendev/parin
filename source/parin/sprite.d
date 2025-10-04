@@ -224,26 +224,19 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
     options.hook = sprite.hook; // NOTE: Might be a bad idea in the future.
     options.flip = sprite.flip; // NOTE: Might be a bad idea in the future.
 
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (!texture.isValid) {
-            if (isEmptyTextureVisible) {
-                auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
-                drawRect(rect, defaultEngineEmptyTextureColor);
-                drawHollowRect(rect, 1, black);
-            }
-            return;
+    if (!texture.isValid) {
+        if (isEmptyTextureVisible) {
+            auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
+            drawRect(rect, defaultEngineEmptyTextureColor);
+            drawHollowRect(rect, 1, black);
         }
-        if (!sprite.hasSize) return;
+        return;
     }
+    if (!sprite.hasSize) return;
 
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
     auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width; // NOTE: Could be saved maybe.
-
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (gridWidth == 0) return;
-    }
+    if (gridWidth == 0) return;
 
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;

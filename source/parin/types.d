@@ -285,3 +285,93 @@ struct TextOptions {
         this.alignmentWidth = alignmentWidth;
     }
 }
+
+/// A camera.
+struct Camera {
+    Vec2 position;         /// The position of the camera.
+    Vec2 offset;           /// The offset of the view area of the camera.
+    float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
+    float scale = 1.0f;    /// The zoom level of the camera.
+    bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
+    bool isAttached;       /// Indicates whether the camera is currently in use.
+
+    @trusted nothrow @nogc:
+
+    /// Initializes the camera with the given position and optional centering.
+    this(Vec2 position, bool isCentered = false) {
+        this.position = position;
+        this.isCentered = isCentered;
+    }
+
+    /// Initializes the camera with the given position and optional centering.
+    this(float x, float y, bool isCentered = false) {
+        this(Vec2(x, y), isCentered);
+    }
+
+    /// The X position of the camera.
+    ref float x() => position.x;
+    /// The Y position of the camera.
+    ref float y() => position.y;
+    /// The sum of the position and the offset of the camera.
+    Vec2 sum() => position + offset;
+    /// Returns the current hook associated with the camera.
+    Hook hook() => isCentered ? Hook.center : Hook.topLeft;
+    /// Returns the origin of the camera.
+    Vec2 origin(Vec2 canvasSize) => Rect(canvasSize / Vec2(scale)).origin(hook);
+    /// Returns the area covered by the camera.
+    Rect area(Vec2 canvasSize) => Rect(sum, canvasSize / Vec2(scale)).area(hook);
+
+    /// Returns the top left point of the camera.
+    Vec2 topLeftPoint(Vec2 canvasSize) => area(canvasSize).topLeftPoint;
+    /// Returns the top point of the camera.
+    Vec2 topPoint(Vec2 canvasSize) => area(canvasSize).topPoint;
+    /// Returns the top right point of the camera.
+    Vec2 topRightPoint(Vec2 canvasSize) => area(canvasSize).topRightPoint;
+    /// Returns the left point of the camera.
+    Vec2 leftPoint(Vec2 canvasSize) => area(canvasSize).leftPoint;
+    /// Returns the center point of the camera.
+    Vec2 centerPoint(Vec2 canvasSize) => area(canvasSize).centerPoint;
+    /// Returns the right point of the camera.
+    Vec2 rightPoint(Vec2 canvasSize) => area(canvasSize).rightPoint;
+    /// Returns the bottom left point of the camera.
+    Vec2 bottomLeftPoint(Vec2 canvasSize) => area(canvasSize).bottomLeftPoint;
+    /// Returns the bottom point of the camera.
+    Vec2 bottomPoint(Vec2 canvasSize) => area(canvasSize).bottomPoint;
+    /// Returns the bottom right point of the camera.
+    Vec2 bottomRightPoint(Vec2 canvasSize) => area(canvasSize).bottomRightPoint;
+
+    void floor() {
+        position = position.floor();
+        offset = offset.floor();
+    }
+
+    void ceil() {
+        position = position.ceil();
+        offset = offset.ceil();
+    }
+
+    void round() {
+        position = position.round();
+        offset = offset.round();
+    }
+
+    /// Moves the camera to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float delta) {
+        position = position.moveTo(target, Vec2(delta));
+    }
+
+    /// Moves the camera to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown) {
+        position = position.moveToWithSlowdown(target, Vec2(delta), slowdown);
+    }
+
+    /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
+    void followScale(float target, float delta) {
+        scale = scale.moveTo(target, delta);
+    }
+
+    /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
+    void followScaleWithSlowdown(float target, float delta, float slowdown) {
+        scale = scale.moveToWithSlowdown(target, delta, slowdown);
+    }
+}

@@ -83,11 +83,6 @@ IStr toStr(T)(T value) {
     }
 }
 
-deprecated("Use `fmtIntoBuffer` instead. All `format*` functions in Joka will be renamed to `fmt*` to avoid collisions with `std.format`.")
-alias formatIntoBuffer = fmtIntoBuffer;
-deprecated("Use `fmt` instead. All `format*` functions in Joka will be renamed to `fmt*` to avoid collisions with `std.format`.")
-alias format = fmt;
-
 /// Formats the given string by replacing `{}` placeholders with argument values in order.
 /// Options within placeholders are not supported.
 /// For custom formatting use a wrapper type with a `toStr` method.

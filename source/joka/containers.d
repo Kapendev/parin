@@ -1206,9 +1206,6 @@ Sz jokaFindGridCol(Sz gridIndex, Sz colCount) {
     return gridIndex / colCount;
 }
 
-deprecated("Use `fmtIntoList` instead. All `format*` functions in Joka will be renamed to `fmt*` to avoid collisions with `std.format`.")
-alias formatIntoList = fmtIntoList;
-
 /// Formats a string using a list and returns the resulting formatted string.
 /// The list is cleared before writing.
 /// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
