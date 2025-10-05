@@ -1,16 +1,16 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
 // ---
 
 /// The `math` module provides mathematical data structures and functions.
-module joka.math;
+module parin.joka.math;
 
-import joka.ascii;
-import joka.types;
-import stdc = joka.stdc.math;
+import parin.joka.ascii;
+import parin.joka.types;
+import stdc = parin.joka.stdc.math;
 
 // I don't care about `pure`, but I'm a nice person.
 @safe nothrow @nogc pure:
@@ -51,52 +51,67 @@ enum gray3   = Rgba(159, 159, 159); /// Gray 333.
 enum gray4   = Rgba(223, 223, 223); /// Gray 4444.
 enum gray    = gray2;               /// Gray gray.
 
-alias Color = Rgba;         /// The common color type.
+/// The common color type.
+alias Color = Rgba;
 
+/*
 alias BVec2 = GVec2!byte;   /// A 2D vector using bytes.
-alias IVec2 = GVec2!int;    /// A 2D vector using ints.
 alias UVec2 = GVec2!uint;   /// A 2D vector using uints.
-alias Vec2 = GVec2!float;   /// A 2D vector using floats.
+*/
+alias IVec2 = GVec2!int;    /// A 2D vector using ints.
+alias Vec2  = GVec2!float;  /// A 2D vector using floats.
 alias DVec2 = GVec2!double; /// A 2D vector using doubles.
 
+/*
 alias BVec3 = GVec3!byte;   /// A 3D vector using bytes.
-alias IVec3 = GVec3!int;    /// A 3D vector using ints.
 alias UVec3 = GVec3!uint;   /// A 3D vector using uints.
-alias Vec3 = GVec3!float;   /// A 3D vector using floats.
+*/
+alias IVec3 = GVec3!int;    /// A 3D vector using ints.
+alias Vec3  = GVec3!float;  /// A 3D vector using floats.
 alias DVec3 = GVec3!double; /// A 3D vector using doubles.
 
+/*
 alias BVec4 = GVec4!byte;   /// A 4D vector using bytes.
-alias IVec4 = GVec4!int;    /// A 4D vector using ints.
 alias UVec4 = GVec4!uint;   /// A 4D vector using uints.
-alias Vec4 = GVec4!float;   /// A 4D vector using floats.
+*/
+alias IVec4 = GVec4!int;    /// A 4D vector using ints.
+alias Vec4  = GVec4!float;  /// A 4D vector using floats.
 alias DVec4 = GVec4!double; /// A 4D vector using doubles.
 
+/*
 alias BRect = GRect!byte;   /// A 2D rectangle using bytes.
-alias IRect = GRect!int;    /// A 2D rectangle using ints.
 alias URect = GRect!uint;   /// A 2D rectangle using uints.
-alias Rect = GRect!float;   /// A 2D rectangle using floats.
 alias DRect = GRect!double; /// A 2D rectangle using doubles.
+*/
+alias IRect = GRect!int;    /// A 2D rectangle using ints.
+alias Rect  = GRect!float;  /// A 2D rectangle using floats.
 
+/*
 alias BCirc = GCirc!byte;   /// A 2D circle using bytes.
 alias ICirc = GCirc!int;    /// A 2D circle using ints.
 alias UCirc = GCirc!uint;   /// A 2D circle using uints.
-alias Circ = GCirc!float;   /// A 2D circle using floats.
 alias DCirc = GCirc!double; /// A 2D circle using doubles.
+*/
+alias Circ  = GCirc!float;  /// A 2D circle using floats.
 
+/*
 alias BLine = GLine!byte;   /// A 2D line using bytes.
 alias ILine = GLine!int;    /// A 2D line using ints.
 alias ULine = GLine!uint;   /// A 2D line using uints.
-alias Line = GLine!float;   /// A 2D line using floats.
 alias DLine = GLine!double; /// A 2D line using doubles.
+*/
+alias Line  = GLine!float;  /// A 2D line using floats.
 
-alias Tween = GTween!float;   /// A tween using floats.
-alias Tween2 = GTween!Vec2;   /// A tween using 2D vectors.
-alias Tween3 = GTween!Vec3;   /// A tween using 3D vectors.
-alias Tween4 = GTween!Vec4;   /// A tween using 4D vectors.
-alias DTween = GTween!double; /// A tween using doubles.
-alias DTween2 = GTween!DVec2; /// A tween using 2D vectors with doubles.
-alias DTween3 = GTween!DVec3; /// A tween using 3D vectors with doubles.
-alias DTween4 = GTween!DVec4; /// A tween using 4D vectors with doubles.
+/*
+alias DTween  = GTween!double; /// A tween using doubles.
+alias DTween2 = GTween!DVec2;  /// A tween using 2D vectors with doubles.
+alias DTween3 = GTween!DVec3;  /// A tween using 3D vectors with doubles.
+alias DTween4 = GTween!DVec4;  /// A tween using 4D vectors with doubles.
+*/
+alias Tween   = GTween!float;  /// A tween using floats.
+alias Tween2  = GTween!Vec2;   /// A tween using 2D vectors.
+alias Tween3  = GTween!Vec3;   /// A tween using 3D vectors.
+alias Tween4  = GTween!Vec4;   /// A tween using 4D vectors.
 
 /// A function used for rounding.
 alias RoundingFunc = float function(float x);
@@ -107,45 +122,45 @@ alias EasingFunc = float function(float x);
 
 /// A type representing rounding functions.
 enum Rounding : ubyte {
-    none,
-    floor,
-    round,
-    ceil,
+    none,  /// No rounding.
+    floor, /// Round down.
+    round, /// Round to nearest.
+    ceil,  /// Round up.
 }
 
 /// A type representing easing functions.
 enum Easing : ubyte {
-    linear,
-    inSine,
-    outSine,
-    inOutSine,
-    inCubic,
-    outCubic,
-    inOutCubic,
-    inQuint,
-    outQuint,
-    inOutQuint,
-    inCirc,
-    outCirc,
-    inOutCirc,
-    inElastic,
-    outElastic,
-    inOutElastic,
-    inQuad,
-    outQuad,
-    inOutQuad,
-    inQuart,
-    outQuart,
-    inOutQuart,
-    inExpo,
-    outExpo,
-    inOutExpo,
-    inBack,
-    outBack,
-    inOutBack,
-    inBounce,
-    outBounce,
-    inOutBounce,
+    linear,       /// Constant speed.
+    inSine,       /// Slow start.
+    outSine,      /// Slow end.
+    inOutSine,    /// Slow start and end.
+    inCubic,      /// Cubic in.
+    outCubic,     /// Cubic out.
+    inOutCubic,   /// Cubic in-out.
+    inQuint,      /// Quintic in.
+    outQuint,     /// Quintic out.
+    inOutQuint,   /// Quintic in-out.
+    inCirc,       /// Circular in.
+    outCirc,      /// Circular out.
+    inOutCirc,    /// Circular in-out.
+    inElastic,    /// Elastic in.
+    outElastic,   /// Elastic out.
+    inOutElastic, /// Elastic in-out.
+    inQuad,       /// Quadratic in.
+    outQuad,      /// Quadratic out.
+    inOutQuad,    /// Quadratic in-out.
+    inQuart,      /// Quartic in.
+    outQuart,     /// Quartic out.
+    inOutQuart,   /// Quartic in-out.
+    inExpo,       /// Exponential in.
+    outExpo,      /// Exponential out.
+    inOutExpo,    /// Exponential in-out.
+    inBack,       /// Back in.
+    outBack,      /// Back out.
+    inOutBack,    /// Back in-out.
+    inBounce,     /// Bounce in.
+    outBounce,    /// Bounce out.
+    inOutBounce,  /// Bounce in-out.
 }
 
 /// A type that describes how a tween should update.
@@ -194,37 +209,24 @@ struct Rgba {
 
     mixin addXyzwOps!(Rgba, ubyte, length, form);
 
-    pragma(inline, true)
-    this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-    }
+    pragma(inline, true) {
+        this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
+        }
 
-    pragma(inline, true)
-    this(ubyte r) {
-        this(r, r, r, 255);
-    }
+        this(ubyte r) {
+            this(r, r, r, 255);
+        }
 
-    pragma(inline, true) @trusted
-    ubyte[] items() {
-        return (cast(ubyte*) &this)[0 .. length];
-    }
+        @trusted ubyte[] items() => (cast(ubyte*) &this)[0 .. length];
+        bool isZero() => r == 0 && g == 0 && b == 0 && a == 0;
+        bool isOne() =>r == 1 && g == 1 && b == 1 && a == 1;
 
-    pragma(inline, true)
-    bool isZero() {
-        return r == 0 && g == 0 && b == 0 && a == 0;
-    }
-
-    pragma(inline, true)
-    bool isOne() {
-        return r == 1 && g == 1 && b == 1 && a == 1;
-    }
-
-    /// Returns a color with just the alpha modified.
-    Rgba alpha(ubyte value) {
-        return Rgba(r, g, b, value);
+        /// Returns a color with just the alpha modified.
+        Rgba alpha(ubyte value) => Rgba(r, g, b, value);
     }
 }
 
@@ -312,15 +314,6 @@ struct GVec2(T) {
             }
         }
 
-        GVec2!T applyRounding(Rounding type) {
-            final switch (type) {
-                case Rounding.none: return this;
-                case Rounding.floor: return floor();
-                case Rounding.round: return round();
-                case Rounding.ceil: return ceil();
-            }
-        }
-
         GVec2!Float sqrt() {
             static if (is64) {
                 return GVec2!Float(x.sqrt64, y.sqrt64);
@@ -391,6 +384,15 @@ struct GVec2(T) {
 
         Float magnitudeSquared() {
             return x * x + y * y;
+        }
+    }
+
+    GVec2!T applyRounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return this;
+            case Rounding.floor: return floor();
+            case Rounding.round: return round();
+            case Rounding.ceil: return ceil();
         }
     }
 
@@ -507,15 +509,6 @@ struct GVec3(T) {
             }
         }
 
-        GVec3!T applyRounding(Rounding type) {
-            final switch (type) {
-                case Rounding.none: return this;
-                case Rounding.floor: return floor();
-                case Rounding.round: return round();
-                case Rounding.ceil: return ceil();
-            }
-        }
-
         GVec3!Float sqrt() {
             static if (is64) {
                 return GVec3!Float(x.sqrt64, y.sqrt64, z.sqrt64);
@@ -582,6 +575,15 @@ struct GVec3(T) {
 
         Float magnitudeSquared() {
             return x * x + y * y + z * z;
+        }
+    }
+
+    GVec3!T applyRounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return this;
+            case Rounding.floor: return floor();
+            case Rounding.round: return round();
+            case Rounding.ceil: return ceil();
         }
     }
 
@@ -700,15 +702,6 @@ struct GVec4(T) {
             }
         }
 
-        GVec4!T applyRounding(Rounding type) {
-            final switch (type) {
-                case Rounding.none: return this;
-                case Rounding.floor: return floor();
-                case Rounding.round: return round();
-                case Rounding.ceil: return ceil();
-            }
-        }
-
         GVec4!Float sqrt() {
             static if (is64) {
                 return GVec4!Float(x.sqrt64, y.sqrt64, z.sqrt64, w.sqrt64);
@@ -775,6 +768,15 @@ struct GVec4(T) {
 
         Float magnitudeSquared() {
             return x * x + y * y + z * z + w * w;
+        }
+    }
+
+    GVec4!T applyRounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return this;
+            case Rounding.floor: return floor();
+            case Rounding.round: return round();
+            case Rounding.ceil: return ceil();
         }
     }
 
@@ -916,15 +918,6 @@ struct GRect(P, S = P) {
             }
         }
 
-        Self applyRounding(Rounding type) {
-            final switch (type) {
-                case Rounding.none: return this;
-                case Rounding.floor: return floor();
-                case Rounding.round: return round();
-                case Rounding.ceil: return ceil();
-            }
-        }
-
         Self area(Hook hook) {
             return Self(
                 position - origin(hook),
@@ -1042,6 +1035,15 @@ struct GRect(P, S = P) {
                 position.y + size.y >= area.position.y &&
                 position.y <= area.position.y + area.size.y
             );
+        }
+    }
+
+    Self applyRounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return this;
+            case Rounding.floor: return floor();
+            case Rounding.round: return round();
+            case Rounding.ceil: return ceil();
         }
     }
 
@@ -1272,14 +1274,14 @@ struct GCirc(T) {
                 return GCirc!T(position.ceil, radius);
             }
         }
+    }
 
-        GCirc!T applyRounding(Rounding type) {
-            final switch (type) {
-                case Rounding.none: return this;
-                case Rounding.floor: return floor();
-                case Rounding.round: return round();
-                case Rounding.ceil: return ceil();
-            }
+    GCirc!T applyRounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return this;
+            case Rounding.floor: return floor();
+            case Rounding.round: return round();
+            case Rounding.ceil: return ceil();
         }
     }
 }
@@ -1349,14 +1351,14 @@ struct GLine(T) {
                 return GLine!T(a.ceil, b.ceil);
             }
         }
+    }
 
-        GLine!T applyRounding(Rounding type) {
-            final switch (type) {
-                case Rounding.none: return this;
-                case Rounding.floor: return floor();
-                case Rounding.round: return round();
-                case Rounding.ceil: return ceil();
-            }
+    GLine!T applyRounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return this;
+            case Rounding.floor: return floor();
+            case Rounding.round: return round();
+            case Rounding.ceil: return ceil();
         }
     }
 }
@@ -1537,11 +1539,7 @@ pragma(inline, true) @trusted {
     }
 
     T sign(T)(T x) {
-        return x < 0
-            ? -1
-            : x > 0
-            ? 1
-            : 0;
+        return x < 0 ? -1 : x > 0 ? 1 : 0;
     }
 
     T clamp(T)(T x, T a, T b) {
@@ -1738,24 +1736,6 @@ pragma(inline, true) @trusted {
         return stdc.ceil(x);
     }
 
-    RoundingFunc rounding(Rounding type) {
-        final switch (type) {
-            case Rounding.none: return &roundNothing;
-            case Rounding.floor: return &floor;
-            case Rounding.round: return &round;
-            case Rounding.ceil: return &ceil;
-        }
-    }
-
-    Rounding64Func rounding64(Rounding type) {
-        final switch (type) {
-            case Rounding.none: return &roundNothing64;
-            case Rounding.floor: return &floor64;
-            case Rounding.round: return &round64;
-            case Rounding.ceil: return &ceil64;
-        }
-    }
-
     float applyRounding(float x, Rounding type) {
         return rounding(type)(x);
     }
@@ -1826,54 +1806,6 @@ pragma(inline, true) @trusted {
 
     double lerp64(double from, double to, double weight) {
         return from + (to - from) * weight;
-    }
-
-    Vec2 lerp(Vec2 from, Vec2 to, float weight) {
-        return Vec2(
-            lerp(from.x, to.x, weight),
-            lerp(from.y, to.y, weight),
-        );
-    }
-
-    Vec3 lerp(Vec3 from, Vec3 to, float weight) {
-        return Vec3(
-            lerp(from.x, to.x, weight),
-            lerp(from.y, to.y, weight),
-            lerp(from.z, to.z, weight),
-        );
-    }
-
-    Vec4 lerp(Vec4 from, Vec4 to, float weight) {
-        return Vec4(
-            lerp(from.x, to.x, weight),
-            lerp(from.y, to.y, weight),
-            lerp(from.z, to.z, weight),
-            lerp(from.w, to.w, weight),
-        );
-    }
-
-    DVec2 lerp(DVec2 from, DVec2 to, double weight) {
-        return DVec2(
-            lerp64(from.x, to.x, weight),
-            lerp64(from.y, to.y, weight),
-        );
-    }
-
-    DVec3 lerp(DVec3 from, DVec3 to, double weight) {
-        return DVec3(
-            lerp64(from.x, to.x, weight),
-            lerp64(from.y, to.y, weight),
-            lerp64(from.z, to.z, weight),
-        );
-    }
-
-    DVec4 lerp(DVec4 from, DVec4 to, double weight) {
-        return DVec4(
-            lerp64(from.x, to.x, weight),
-            lerp64(from.y, to.y, weight),
-            lerp64(from.z, to.z, weight),
-            lerp64(from.w, to.w, weight),
-        );
     }
 
     float smoothstep(float from, float to, float weight) {
@@ -1952,7 +1884,6 @@ pragma(inline, true) @trusted {
 
     float easeInElastic(float x) {
         enum c4 = (2.0f * pi) / 3.0f;
-
         return x == 0.0f
             ? 0.0f
             : x == 1.0f
@@ -1962,7 +1893,6 @@ pragma(inline, true) @trusted {
 
     float easeOutElastic(float x) {
         enum c4 = (2.0f * pi) / 3.0f;
-
         return x == 0.0f
             ? 0.0f
             : x == 1.0f
@@ -1972,7 +1902,6 @@ pragma(inline, true) @trusted {
 
     float easeInOutElastic(float x) {
         enum c5 = (2.0f * pi) / 4.5f;
-
         return x == 0.0f
             ? 0.0f
             : x == 1.0f
@@ -2026,21 +1955,18 @@ pragma(inline, true) @trusted {
     float easeInBack(float x) {
         enum c1 = 1.70158f;
         enum c3 = c1 + 1.0f;
-
         return c3 * x * x * x - c1 * x * x;
     }
 
     float easeOutBack(float x) {
         enum c1 = 1.70158f;
         enum c3 = c1 + 1.0f;
-
         return 1.0f + c3 * pow(x - 1.0f, 3.0f) + c1 * pow(x - 1.0f, 2.0f);
     }
 
     float easeInOutBack(float x) {
         enum c1 = 1.70158f;
         enum c2 = c1 * 1.525f;
-
         return x < 0.5f
             ? (pow(2.0f * x, 2.0f) * ((c2 + 1.0f) * 2.0f * x - c2)) / 2.0f
             : (pow(2.0f * x - 2.0f, 2.0f) * ((c2 + 1.0f) * (x * 2.0f - 2.0f) + c2) + 2.0f) / 2.0f;
@@ -2053,7 +1979,6 @@ pragma(inline, true) @trusted {
     float easeOutBounce(float x) {
         enum n1 = 7.5625f;
         enum d1 = 2.75f;
-
         return (x < 1.0f / d1)
             ? n1 * x * x
             : (x < 2.0f / d1)
@@ -2067,42 +1992,6 @@ pragma(inline, true) @trusted {
         return x < 0.5f
             ? (1.0f - easeOutBounce(1.0f - 2.0f * x)) / 2.0f
             : (1.0f + easeOutBounce(2.0f * x - 1.0f)) / 2.0f;
-    }
-
-    EasingFunc easing(Easing type) {
-        final switch (type) {
-            case Easing.linear: return &easeLinear;
-            case Easing.inSine: return &easeInSine;
-            case Easing.outSine: return &easeOutSine;
-            case Easing.inOutSine: return &easeInOutSine;
-            case Easing.inCubic: return &easeInCubic;
-            case Easing.outCubic: return &easeOutCubic;
-            case Easing.inOutCubic: return &easeInOutCubic;
-            case Easing.inQuint: return &easeInQuint;
-            case Easing.outQuint: return &easeOutQuint;
-            case Easing.inOutQuint: return &easeInOutQuint;
-            case Easing.inCirc: return &easeInCirc;
-            case Easing.outCirc: return &easeOutCirc;
-            case Easing.inOutCirc: return &easeInOutCirc;
-            case Easing.inElastic: return &easeInElastic;
-            case Easing.outElastic: return &easeOutElastic;
-            case Easing.inOutElastic: return &easeInOutElastic;
-            case Easing.inQuad: return &easeInQuad;
-            case Easing.outQuad: return &easeOutQuad;
-            case Easing.inOutQuad: return &easeInOutQuad;
-            case Easing.inQuart: return &easeInQuart;
-            case Easing.outQuart: return &easeOutQuart;
-            case Easing.inOutQuart: return &easeInOutQuart;
-            case Easing.inExpo: return &easeInExpo;
-            case Easing.outExpo: return &easeOutExpo;
-            case Easing.inOutExpo: return &easeInOutExpo;
-            case Easing.inBack: return &easeInBack;
-            case Easing.outBack: return &easeOutBack;
-            case Easing.inOutBack: return &easeInOutBack;
-            case Easing.inBounce: return &easeInBounce;
-            case Easing.outBounce: return &easeOutBounce;
-            case Easing.inOutBounce: return &easeInOutBounce;
-        }
     }
 
     bool fequals(float a, float b, float localEpsilon = epsilon) {
@@ -2153,6 +2042,50 @@ pragma(inline, true) @trusted {
         return radians * dpi180;
     }
 
+    IVec2 toIVec(Vec2 vec) {
+        return IVec2(cast(int) vec.x, cast(int) vec.y);
+    }
+
+    IVec3 toIVec(Vec3 vec) {
+        return IVec3(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z);
+    }
+
+    IVec4 toIVec(Vec4 vec) {
+        return IVec4(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z, cast(int) vec.w);
+    }
+
+    Vec2 toVec(IVec2 vec) {
+        return Vec2(vec.x, vec.y);
+    }
+
+    Vec2 toVec(GVec2!short vec) {
+        return Vec2(vec.x, vec.y);
+    }
+
+    Vec3 toVec(IVec3 vec) {
+        return Vec3(vec.x, vec.y, vec.z);
+    }
+
+    Vec4 toVec(IVec4 vec) {
+        return Vec4(vec.x, vec.y, vec.z, vec.w);
+    }
+
+    Vec4 toVec(Rgba color) {
+        return Vec4(color.r, color.g, color.b, color.a);
+    }
+
+    IRect toIRect(Rect rect) {
+        return IRect(rect.position.toIVec(), rect.size.toIVec());
+    }
+
+    Rect toRect(IRect rect) {
+        return Rect(rect.position.toVec(), rect.size.toVec());
+    }
+
+    Rect toRect(GRect!(int, short) rect) {
+        return Rect(rect.position.toVec(), rect.size.toVec());
+    }
+
     Rgba toRgb(uint rgb) {
         return Rgba(
             (rgb & 0xFF0000) >> 16,
@@ -2169,7 +2102,9 @@ pragma(inline, true) @trusted {
             (rgba & 0xFF),
         );
     }
+}
 
+@trusted {
     Rgba toRgba(Vec3 vec) {
         return Rgba(
             cast(ubyte) clamp(vec.x, 0.0f, 255.0f),
@@ -2213,48 +2148,106 @@ pragma(inline, true) @trusted {
 
     alias toColor = toRgba;
 
-    IVec2 toIVec(Vec2 vec) {
-        return IVec2(cast(int) vec.x, cast(int) vec.y);
+    Vec2 lerp(Vec2 from, Vec2 to, float weight) {
+        return Vec2(
+            lerp(from.x, to.x, weight),
+            lerp(from.y, to.y, weight),
+        );
     }
 
-    IVec3 toIVec(Vec3 vec) {
-        return IVec3(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z);
+    Vec3 lerp(Vec3 from, Vec3 to, float weight) {
+        return Vec3(
+            lerp(from.x, to.x, weight),
+            lerp(from.y, to.y, weight),
+            lerp(from.z, to.z, weight),
+        );
     }
 
-    IVec4 toIVec(Vec4 vec) {
-        return IVec4(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z, cast(int) vec.w);
+    Vec4 lerp(Vec4 from, Vec4 to, float weight) {
+        return Vec4(
+            lerp(from.x, to.x, weight),
+            lerp(from.y, to.y, weight),
+            lerp(from.z, to.z, weight),
+            lerp(from.w, to.w, weight),
+        );
     }
 
-    Vec2 toVec(IVec2 vec) {
-        return Vec2(vec.x, vec.y);
+    DVec2 lerp(DVec2 from, DVec2 to, double weight) {
+        return DVec2(
+            lerp64(from.x, to.x, weight),
+            lerp64(from.y, to.y, weight),
+        );
     }
 
-    Vec2 toVec(GVec2!short vec) {
-        return Vec2(vec.x, vec.y);
+    DVec3 lerp(DVec3 from, DVec3 to, double weight) {
+        return DVec3(
+            lerp64(from.x, to.x, weight),
+            lerp64(from.y, to.y, weight),
+            lerp64(from.z, to.z, weight),
+        );
     }
 
-    Vec3 toVec(IVec3 vec) {
-        return Vec3(vec.x, vec.y, vec.z);
+    DVec4 lerp(DVec4 from, DVec4 to, double weight) {
+        return DVec4(
+            lerp64(from.x, to.x, weight),
+            lerp64(from.y, to.y, weight),
+            lerp64(from.z, to.z, weight),
+            lerp64(from.w, to.w, weight),
+        );
     }
 
-    Vec4 toVec(IVec4 vec) {
-        return Vec4(vec.x, vec.y, vec.z, vec.w);
+    RoundingFunc rounding(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return &roundNothing;
+            case Rounding.floor: return &floor;
+            case Rounding.round: return &round;
+            case Rounding.ceil: return &ceil;
+        }
     }
 
-    Vec4 toVec(Rgba color) {
-        return Vec4(color.r, color.g, color.b, color.a);
+    Rounding64Func rounding64(Rounding type) {
+        final switch (type) {
+            case Rounding.none: return &roundNothing64;
+            case Rounding.floor: return &floor64;
+            case Rounding.round: return &round64;
+            case Rounding.ceil: return &ceil64;
+        }
     }
 
-    IRect toIRect(Rect rect) {
-        return IRect(rect.position.toIVec(), rect.size.toIVec());
-    }
-
-    Rect toRect(IRect rect) {
-        return Rect(rect.position.toVec(), rect.size.toVec());
-    }
-
-    Rect toRect(GRect!(int, short) rect) {
-        return Rect(rect.position.toVec(), rect.size.toVec());
+    EasingFunc easing(Easing type) {
+        final switch (type) {
+            case Easing.linear: return &easeLinear;
+            case Easing.inSine: return &easeInSine;
+            case Easing.outSine: return &easeOutSine;
+            case Easing.inOutSine: return &easeInOutSine;
+            case Easing.inCubic: return &easeInCubic;
+            case Easing.outCubic: return &easeOutCubic;
+            case Easing.inOutCubic: return &easeInOutCubic;
+            case Easing.inQuint: return &easeInQuint;
+            case Easing.outQuint: return &easeOutQuint;
+            case Easing.inOutQuint: return &easeInOutQuint;
+            case Easing.inCirc: return &easeInCirc;
+            case Easing.outCirc: return &easeOutCirc;
+            case Easing.inOutCirc: return &easeInOutCirc;
+            case Easing.inElastic: return &easeInElastic;
+            case Easing.outElastic: return &easeOutElastic;
+            case Easing.inOutElastic: return &easeInOutElastic;
+            case Easing.inQuad: return &easeInQuad;
+            case Easing.outQuad: return &easeOutQuad;
+            case Easing.inOutQuad: return &easeInOutQuad;
+            case Easing.inQuart: return &easeInQuart;
+            case Easing.outQuart: return &easeOutQuart;
+            case Easing.inOutQuart: return &easeInOutQuart;
+            case Easing.inExpo: return &easeInExpo;
+            case Easing.outExpo: return &easeOutExpo;
+            case Easing.inOutExpo: return &easeInOutExpo;
+            case Easing.inBack: return &easeInBack;
+            case Easing.outBack: return &easeOutBack;
+            case Easing.inOutBack: return &easeInOutBack;
+            case Easing.inBounce: return &easeInBounce;
+            case Easing.outBounce: return &easeOutBounce;
+            case Easing.inOutBounce: return &easeInOutBounce;
+        }
     }
 
     float moveToState(float from, bool to, float delta) {

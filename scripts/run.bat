@@ -6,7 +6,6 @@ set source_path=source
 set exe_path=.\app.exe
 set can_package_include=1
 set parin_package_path=.\parin_package
-set joka_package_path=.\joka_package
 set compiler=dmd
 set version=windows_x86_64
 
@@ -28,7 +27,7 @@ rem Include from packages if needed.
 set "package_include="
 if "%can_package_include%"=="1" (
     if not exist "%source_path%\parin\" (
-        set "package_include=-I=%parin_package_path%\source -I=%joka_package_path%\source"
+        set "package_include=-I=%parin_package_path%\source"
         echo Building with: %package_include%
     )
 )

@@ -8,9 +8,11 @@
 module parin.backend.rl;
 
 import rl = parin.bindings.rl;
-import joka.ascii;
-import joka.containers;
-import joka.memory;
+import parin.joka.ascii;
+import parin.joka.containers;
+import parin.joka.math;
+import parin.joka.memory;
+import parin.joka.types;
 import parin.types;
 
 __gshared BackendState* _backendState;

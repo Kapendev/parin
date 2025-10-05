@@ -7,9 +7,9 @@
 
 module parin.types;
 
-public import joka.math;
-public import joka.types;
-public import joka.containers;
+import parin.joka.math;
+import parin.joka.types;
+import parin.joka.containers;
 
 alias ResourceId = GenIndex;
 

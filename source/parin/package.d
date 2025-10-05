@@ -7,8 +7,8 @@
 
 module parin;
 
-public import joka.ascii;
-public import joka.io;
+public import parin.joka.ascii;
+public import parin.joka.io;
 
 public import parin.engine;
 public import parin.map;

@@ -8,9 +8,9 @@
 /// The `palettes` module offers a collection of predefined colors.
 module parin.palettes;
 
-import joka.ascii;
-import joka.math;
-import joka.types;
+import parin.joka.ascii;
+import parin.joka.math;
+import parin.joka.types;
 
 @safe nothrow @nogc:
 

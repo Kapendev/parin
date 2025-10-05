@@ -16,10 +16,10 @@
 /// The `platformer` module provides a pixel-perfect physics engine.
 module parin.platformer;
 
-import joka.ascii;
-import joka.containers;
-import joka.math;
-import joka.types;
+import parin.joka.ascii;
+import parin.joka.containers;
+import parin.joka.math;
+import parin.joka.types;
 import parin.engine;
 
 @safe nothrow:

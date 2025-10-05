@@ -1,15 +1,15 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
 // ---
 
 /// The `cli` module provides command-line parsing utilities.
-module joka.cli;
+module parin.joka.cli;
 
-import joka.ascii;
-import joka.types;
+import parin.joka.ascii;
+import parin.joka.types;
 
 @safe nothrow @nogc:
 

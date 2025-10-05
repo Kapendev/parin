@@ -5,7 +5,6 @@ source_path=source
 exe_path=./app
 can_package_include=1
 parin_package_path=./parin_package
-joka_package_path=./joka_package
 compiler=dmd
 version=linux_x86_64
 
@@ -27,7 +26,7 @@ fi
 package_include=''
 [ "$can_package_include" = 1 ] \
     && [ ! -d $source_path/parin ] \
-    && package_include="-I=$parin_package_path/source -I=$joka_package_path/source" \
+    && package_include="-I=$parin_package_path/source" \
     && echo "Building with: $package_include"
 
 # Run the thing.

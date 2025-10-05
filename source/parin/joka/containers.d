@@ -1,5 +1,5 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
@@ -8,11 +8,11 @@
 /// The `containers` module provides various general-purpose containers that allocate on the heap by default.
 /// `List`, `BufferList`, and `FixedList` are the basic containers.
 /// Most other containers can accept one of these to adjust their allocation strategy.
-module joka.containers;
+module parin.joka.containers;
 
-import joka.ascii;
-import joka.memory;
-import joka.types;
+import parin.joka.ascii;
+import parin.joka.memory;
+import parin.joka.types;
 
 @safe nothrow:
 

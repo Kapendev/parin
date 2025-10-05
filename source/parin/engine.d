@@ -19,14 +19,14 @@ version (WebAssembly) {
     import em = parin.bindings.em;
 }
 
-import joka.ascii;
-import joka.io;
-import joka.memory;
+import parin.joka.ascii;
+import parin.joka.io;
+import parin.joka.memory;
 
-public import joka.containers;
-public import joka.math;
-public import joka.memory;
-public import joka.types;
+public import parin.joka.containers;
+public import parin.joka.math;
+public import parin.joka.memory;
+public import parin.joka.types;
 public import parin.types;
 
 __gshared EngineState* _engineState;
@@ -2349,7 +2349,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
             bk.backendTextureCount,
-            bk.backendFontCount,
+            bk.backendFontCount - 1,
             _engineState.sounds.length,
             cast(int) a.x,
             cast(int) a.y,
@@ -2363,7 +2363,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
                 fps,
                 bk.backendTextureCount,
-                bk.backendFontCount,
+                bk.backendFontCount - 1,
                 _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
@@ -2372,7 +2372,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
                 fps,
                 bk.backendTextureCount,
-                bk.backendFontCount,
+                bk.backendFontCount - 1,
                 _engineState.sounds.length,
                 cast(int) mouse.x,
                 cast(int) mouse.y,

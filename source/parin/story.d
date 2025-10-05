@@ -11,10 +11,10 @@
 /// The `story` module provides a simple and versatile dialogue system.
 module parin.story;
 
-import joka.ascii;
-import joka.containers;
-import joka.io;
-import joka.types;
+import parin.joka.ascii;
+import parin.joka.containers;
+import parin.joka.io;
+import parin.joka.types;
 
 @safe nothrow:
 

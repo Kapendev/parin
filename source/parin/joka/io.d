@@ -1,18 +1,18 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
 // ---
 
 /// The `io` module provides input and output functions such as file reading.
-module joka.io;
+module parin.joka.io;
 
-import joka.ascii;
-import joka.containers;
-import joka.types;
-import joka.memory;
-import stdc = joka.stdc.stdio;
+import parin.joka.ascii;
+import parin.joka.containers;
+import parin.joka.types;
+import parin.joka.memory;
+import stdc = parin.joka.stdc.stdio;
 
 enum StdStream : ubyte {
     input,

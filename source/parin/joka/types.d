@@ -1,12 +1,12 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
 // ---
 
 /// The `types` module provides basic type definitions and compile-time functions such as type checking.
-module joka.types;
+module parin.joka.types;
 
 @safe nothrow @nogc:
 

@@ -1,16 +1,16 @@
 // ---
-// Copyright 2024 Alexandros F. G. Kapretsos
+// Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
 // ---
 
 /// The `memory` module provides functions for dealing with memory.
-module joka.memory;
+module parin.joka.memory;
 
-import joka.ascii;
-import joka.types;
-import stdc = joka.stdc;
+import parin.joka.ascii;
+import parin.joka.types;
+import stdc = parin.joka.stdc;
 
 @system nothrow:
 

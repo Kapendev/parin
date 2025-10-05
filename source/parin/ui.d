@@ -14,8 +14,8 @@
 module parin.ui;
 
 import rl = parin.bindings.rl;
-import joka.ascii;
-import joka.memory;
+import parin.joka.ascii;
+import parin.joka.memory;
 import parin.engine;
 
 @safe nothrow:
