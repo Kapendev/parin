@@ -209,13 +209,13 @@ struct Sprite {
         }
 
         /// Moves the sprite to follow the target position at the specified speed.
-        void followPosition(Vec2 target, float speed) {
-            position = position.moveTo(target, Vec2(speed));
+        void followPosition(Vec2 target, float delta) {
+            position = position.moveTo(target, Vec2(delta));
         }
 
         /// Moves the sprite to follow the target position with gradual slowdown.
-        void followPositionWithSlowdown(Vec2 target, float slowdown) {
-            position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
+        void followPositionWithSlowdown(Vec2 target, float delta, float slowdown) {
+            position = position.moveToWithSlowdown(target, Vec2(delta), slowdown);
         }
     }
 }
@@ -227,8 +227,8 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
     if (!texture.isValid) {
         if (isEmptyTextureVisible) {
             auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
         }
         return;
     }

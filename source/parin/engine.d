@@ -8,9 +8,7 @@
 // TODO: Viewports and sounds use raylib types instead of the generic ones. Change that.
 // TODO: Replace the `rl.` calls with `.bk` calls.
 // TODO: Fix microui lol.
-// TODO: The smooth follow funcs should follow this style now.
-//   void followScaleWithSlowdown(float target, float delta, float slowdown);
-//   Camera already does this.
+// NOTE: Search for: TODO: STOPPED HERE!!
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -54,25 +52,24 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingLoadOrSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
-enum defaultEngineValidateErrorMessage            = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage                = "ERROR({}:{}): Could not load {} from \"{}\".";
-enum defaultEngineSaveErrorMessage                = "ERROR({}:{}): Could not save {} from \"{}\".";
-enum defaultEngineAssetsPathCapacity              = 8 * kilobyte;
-enum defaultEngineTexturesCapacity                = 128;
-enum defaultEngineSoundsCapacity                  = 128;
-enum defaultEngineFontsCapacity                   = 16;
-enum defaultEngineEnvArgsCapacity                 = 64;
-enum defaultEngineLoadOrSaveTextCapacity          = 14 * kilobyte;
-enum defaultEngineTasksCapacity                   = 255;
-enum defaultEngineArenaCapacity                   = 4 * megabyte;
+enum defaultEngineValidateErrorMessage   = "Resource is invalid or was never assigned.";
+enum defaultEngineLoadErrorMessage       = "ERROR({}:{}): Could not load {} from \"{}\".";
+enum defaultEngineSaveErrorMessage       = "ERROR({}:{}): Could not save {} from \"{}\".";
+enum defaultEngineAssetsPathCapacity     = 8 * kilobyte;
+enum defaultEngineTexturesCapacity       = 128;
+enum defaultEngineSoundsCapacity         = 128;
+enum defaultEngineFontsCapacity          = 16;
+enum defaultEngineEnvArgsCapacity        = 64;
+enum defaultEngineLoadOrSaveTextCapacity = 14 * kilobyte;
+enum defaultEngineTasksCapacity          = 127;
+enum defaultEngineArenaCapacity          = 4 * megabyte;
 
 enum defaultEngineDprintCapacity       = 8 * kilobyte;
 enum defaultEngineDprintPosition       = Vec2(8, 6);
 enum defaultEngineDprintLineCountLimit = 14;
 
-enum defaultEngineEmptyTextureColor = white;
-enum defaultEngineDebugColor1       = black.alpha(140);
-enum defaultEngineDebugColor2       = white.alpha(140);
+enum defaultEngineDebugColor1 = white.alpha(120);
+enum defaultEngineDebugColor2 = black.alpha(180);
 // ----------
 
 /// The default engine font.
@@ -622,6 +619,7 @@ struct EngineState {
     Fault lastLoadOrSaveFault;
     IStr memoryTrackingInfoFilter;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
+    FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
     Tasks tasks;
 
     FStr!defaultEngineDprintCapacity dprintBuffer;
@@ -633,7 +631,6 @@ struct EngineState {
 
     EngineViewport viewport;
     GenList!Sound sounds;
-    FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
     GrowingArena arena;
 }
 
@@ -2013,53 +2010,23 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
 }
 
 /// Draws a rectangle with the specified area and color.
-void drawRect(Rect area, Rgba color = white) {
-    if (isPixelSnapped) {
-        rl.DrawRectanglePro(area.floor().toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
-    } else {
-        rl.DrawRectanglePro(area.toRl(), rl.Vector2(0.0f, 0.0f), 0.0f, color.toRl());
-    }
-}
-
-/// Draws a hollow rectangle with the specified area and color.
-void drawHollowRect(Rect area, float thickness, Rgba color = white) {
-    if (isPixelSnapped) {
-        rl.DrawRectangleLinesEx(area.floor().toRl(), thickness, color.toRl());
-    } else {
-        rl.DrawRectangleLinesEx(area.toRl(), thickness, color.toRl());
-    }
+void drawRect(Rect area, Rgba color = white, float thickness = -1.0f) {
+    bk.drawRect(isPixelSnapped ? area.floor() : area, color, thickness);
 }
 
 /// Draws a point at the specified location with the given size and color.
-void drawVec2(Vec2 point, float size, Rgba color = white) {
-    drawRect(Rect(point, size, size).centerArea, color);
+void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f) {
+    drawRect(Rect(point, thickness, thickness).centerArea, color);
 }
 
 /// Draws a circle with the specified area and color.
-void drawCirc(Circ area, Rgba color = white) {
-    if (isPixelSnapped) {
-        rl.DrawCircleV(area.position.floor().toRl(), area.radius, color.toRl());
-    } else {
-        rl.DrawCircleV(area.position.toRl(), area.radius, color.toRl());
-    }
-}
-
-/// Draws a hollow circle with the specified area and color.
-void drawHollowCirc(Circ area, float thickness, Rgba color = white) {
-    if (isPixelSnapped) {
-        rl.DrawRing(area.position.floor().toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
-    } else {
-        rl.DrawRing(area.position.toRl(), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color.toRl());
-    }
+void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f) {
+    bk.drawCirc(isPixelSnapped ? area.floor() : area, color, thickness);
 }
 
 /// Draws a line with the specified area, thickness, and color.
-void drawLine(Line area, float size, Rgba color = white) {
-    if (isPixelSnapped) {
-        rl.DrawLineEx(area.a.floor().toRl(), area.b.floor().toRl(), size, color.toRl());
-    } else {
-        rl.DrawLineEx(area.a.toRl(), area.b.toRl(), size, color.toRl());
-    }
+void drawLine(Line area, Rgba color = white, float thickness = 9.0f) {
+    bk.drawLine(isPixelSnapped ? area.floor() : area, color, thickness);
 }
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
@@ -2067,8 +2034,8 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
     if (!texture.isValid) {
         if (isEmptyTextureVisible) {
             auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineEmptyTextureColor);
-            drawHollowRect(rect, 1, black);
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
         }
         return;
     }
@@ -2116,11 +2083,10 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    // TODO: Could maybe be made into a function???
     if (!texture.isValid) {
         if (isEmptyTextureVisible) {
-            drawRect(target, defaultEngineEmptyTextureColor);
-            drawHollowRect(target, 1, black);
+            drawRect(target, defaultEngineDebugColor1);
+            drawRect(target, defaultEngineDebugColor2, 1);
         }
         return;
     }
@@ -2193,6 +2159,7 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 
     auto rect = font.glyphInfo(rune).rect.toRect(); // TODO
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
+    //  TODO: STOPPED HERE!! Look at older parin code maybe.
     rl.rlPushMatrix();
     if (isPixelSnapped) {
         rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
@@ -2220,9 +2187,8 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
     auto result = Vec2();
-    auto fontData = font;
     if (!font.isValid) {
-        if (isEmptyFontVisible) fontData = engineFont;
+        if (isEmptyFontVisible) font = engineFont;
         else return Vec2();
     }
 
@@ -2232,7 +2198,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     // Get some info about the text.
     auto textCodepointCount = 0;
     auto textMaxLineWidth = 0;
-    auto textHeight = fontData.size;
+    auto textHeight = font.size;
     {
         auto lineCodepointIndex = 0;
         auto textCodepointIndex = 0;
@@ -2242,9 +2208,9 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
-                linesWidthBuffer.push(cast(ushort) (measureTextSize(fontData, linesBuffer[$ - 1]).x));
+                linesWidthBuffer.push(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
                 if (textMaxLineWidth < linesWidthBuffer[$ - 1]) textMaxLineWidth = linesWidthBuffer[$ - 1];
-                if (codepoint == '\n') textHeight += fontData.lineSpacing;
+                if (codepoint == '\n') textHeight += font.lineSpacing;
                 lineCodepointIndex = cast(ushort) (textCodepointIndex + 1);
             }
             textCodepointIndex += codepointSize;
@@ -2319,7 +2285,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
                 lineCodepointIndex -= codepointSize;
             }
             drawCodepointCounter += 1;
-            textOffsetY += fontData.lineSpacing;
+            textOffsetY += font.lineSpacing;
         } else {
             while (lineCodepointIndex < line.length) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
@@ -2330,15 +2296,15 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
                     bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), 1, options.color);
                 }
                 if (glyphInfo.advanceX) {
-                    textOffsetX += glyphInfo.advanceX + fontData.runeSpacing;
+                    textOffsetX += glyphInfo.advanceX + font.runeSpacing;
                 } else {
-                    textOffsetX += glyphInfo.rect.w + fontData.runeSpacing;
+                    textOffsetX += glyphInfo.rect.w + font.runeSpacing;
                 }
                 drawCodepointCounter += 1;
                 lineCodepointIndex += codepointSize;
             }
             drawCodepointCounter += 1;
-            textOffsetY += fontData.lineSpacing;
+            textOffsetY += font.lineSpacing;
         }
     }
     rl.rlPopMatrix();
@@ -2419,8 +2385,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             );
         }
     }
-    drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor2);
-    drawHollowRect(Rect(a.toScreenPoint(camera), s), 1, defaultEngineDebugColor1);
+    drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor1);
+    drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor2, 1);
     drawText(text, screenPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
         printfln(
@@ -2446,8 +2412,8 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
         cast(int) tile.x,
         cast(int) tile.y,
     );
-    drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor2);
-    drawHollowRect(Rect(tile.position.toScreenPoint(camera), tile.size), 1, defaultEngineDebugColor1);
+    drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor1);
+    drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor2, 1);
     drawText(text, screenPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
         printfln(

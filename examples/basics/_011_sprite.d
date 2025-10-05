@@ -23,7 +23,7 @@ bool update(float dt) {
     if (isWaiting) sprite.play(idleAnimation);
     else sprite.play(walkAnimation);
     // Move the sprite and flip it based on the mouse direction.
-    sprite.followPositionWithSlowdown(mouse, 0.2);
+    sprite.followPositionWithSlowdown(mouse, dt, 0.2);
     if (mouseDirection.x > 0) sprite.flip = Flip.x;
     else if (mouseDirection.x < 0) sprite.flip = Flip.none;
     // Check if 1, 2, or 3 is pressed and change the character.

@@ -65,13 +65,13 @@ struct Tile {
     }
 
     /// Moves the tile to follow the target position at the specified speed.
-    void followPosition(Vec2 target, float speed) {
-        position = position.moveTo(target, Vec2(speed));
+    void followPosition(Vec2 target, float delta) {
+        position = position.moveTo(target, Vec2(delta));
     }
 
     /// Moves the tile to follow the target position with gradual slowdown.
-    void followPositionWithSlowdown(Vec2 target, float slowdown) {
-        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown) {
+        position = position.moveToWithSlowdown(target, Vec2(delta), slowdown);
     }
 }
 
@@ -257,12 +257,12 @@ struct TileMap {
         layers.ignoreLeak();
     }
 
-    void followPosition(Vec2 target, float speed) {
-        position = position.moveTo(target, Vec2(speed));
+    void followPosition(Vec2 target, float delta) {
+        position = position.moveTo(target, Vec2(delta));
     }
 
-    void followPositionWithSlowdown(Vec2 target, float slowdown) {
-        position = position.moveToWithSlowdown(target, Vec2(deltaTime), slowdown);
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown) {
+        position = position.moveToWithSlowdown(target, Vec2(delta), slowdown);
     }
 
     auto gridPoints(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint) {
@@ -386,8 +386,8 @@ struct TileMap {
         if (!texture.isValid) {
             if (isEmptyTextureVisible) {
                 auto rect = Rect(map.position, map.size);
-                drawRect(rect, defaultEngineEmptyTextureColor);
-                drawHollowRect(rect, 1, black);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
             }
             return;
         }

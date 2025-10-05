@@ -10,4 +10,5 @@ module parin.bindings.gf.glfw3;
 
 nothrow @nogc extern(C):
 
+/// Sets the swap interval for the current context.
 void glfwSwapInterval(int interval);

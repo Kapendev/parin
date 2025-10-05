@@ -51,9 +51,10 @@ enum EMSCRIPTEN_EVENT_MOUSEOUT              = 36;
 enum EMSCRIPTEN_EVENT_CANVASRESIZED         = 37;
 enum EMSCRIPTEN_EVENT_POINTERLOCKERROR      = 38;
 
-// This type is used to return the result of most functions in this API.
-// Zero and positive values denote success, while negative values signal failure.
+/// This type is used to return the result of most functions in this API.
+/// Zero and positive values denote success, while negative values signal failure.
 alias EMSCRIPTEN_RESULT = int;
+
 alias em_mouse_callback_func = bool function(int eventType, const(EmscriptenMouseEvent)* mouseEvent, void* userData);
 alias em_touch_callback_func = bool function(int eventType, const(EmscriptenTouchEvent)* touchEvent, void* userData);
 

@@ -327,6 +327,26 @@ bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
 /// Returns true if the specified key was released.
 bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
 
+void drawRect(Rect area, Rgba color, float thickness) {
+    if (thickness < 0) {
+        rl.DrawRectanglePro(toRl(area), rl.Vector2(0.0f, 0.0f), 0.0f, toRl(color));
+    } else {
+        rl.DrawRectangleLinesEx(toRl(area), thickness, toRl(color));
+    }
+}
+
+void drawCirc(Circ area, Rgba color, float thickness) {
+    if (thickness < 0) {
+        rl.DrawCircleV(toRl(area.position), area.radius, toRl(color));
+    } else {
+        rl.DrawRing(toRl(area.position), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, toRl(color));
+    }
+}
+
+void drawLine(Line area, Rgba color, float thickness) {
+    rl.DrawLineEx(toRl(area.a), toRl(area.b), thickness, toRl(color));
+}
+
 void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
     auto resource = &_backendState.textures[id];
     rl.DrawTexturePro(

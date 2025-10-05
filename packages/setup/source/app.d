@@ -71,7 +71,6 @@ enum dubFileContent = `
         "assets"
     ],
     "dependencies": {
-        "joka": "*",
         "parin": "*"
     },
     "configurations": [
@@ -100,7 +99,6 @@ enum dubFileContentForMeTheDev = `
         "assets"
     ],
     "dependencies": {
-        "joka": {"path": "../joka"},
         "parin": {"path": "../parin"}
     },
     "configurations": [

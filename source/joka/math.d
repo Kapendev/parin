@@ -818,7 +818,7 @@ struct GRect(P, S = P) {
     @safe nothrow @nogc:
 
     IStr toStr() {
-        return "{} {}".fmt(position, size);
+        return "P{} S{}".fmt(position, size);
     }
 
     IStr toString() {
@@ -1222,7 +1222,7 @@ struct GCirc(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
-        return "{} ({})".fmt(position, radius);
+        return "P{} R({})".fmt(position, radius);
     }
 
     IStr toString() {
@@ -1240,6 +1240,47 @@ struct GCirc(T) {
         this(T x, T y, T radius) {
             this(GVec2!T(x, y), radius);
         }
+
+        /// The X position of the circle.
+        @trusted ref T x() => position.x;
+        /// The Y position of the circle.
+        @trusted ref T y() => position.y;
+
+        bool hasSize() => radius != 0;
+        GCirc!T abs() => GCirc!T(position.abs, radius.abs);
+
+        GCirc!T floor() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                return GCirc!T(position.floor, radius);
+            }
+        }
+
+        GCirc!T round() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                return GCirc!T(position.round, radius);
+            }
+        }
+
+        GCirc!T ceil() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                return GCirc!T(position.ceil, radius);
+            }
+        }
+
+        GCirc!T applyRounding(Rounding type) {
+            final switch (type) {
+                case Rounding.none: return this;
+                case Rounding.floor: return floor();
+                case Rounding.round: return round();
+                case Rounding.ceil: return ceil();
+            }
+        }
     }
 }
 
@@ -1251,7 +1292,7 @@ struct GLine(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
-        return "{} {}".fmt(a, b);
+        return "A{} B{}".fmt(a, b);
     }
 
     IStr toString() {
@@ -1276,6 +1317,46 @@ struct GLine(T) {
 
         this(T ax, T ay, GVec2!T b) {
             this(GVec2!T(ax, ay), b);
+        }
+
+        @trusted ref T x1() => a.x;
+        @trusted ref T y1() => a.y;
+        @trusted ref T x2() => b.x;
+        @trusted ref T y2() => b.y;
+
+        GLine!T abs() => GLine!T(a.abs, b.abs);
+
+        GLine!T floor() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                return GLine!T(a.floor, b.floor);
+            }
+        }
+
+        GLine!T round() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                return GLine!T(a.round, b.round);
+            }
+        }
+
+        GLine!T ceil() {
+            static if (isIntegerType!T) {
+                return this;
+            } else {
+                return GLine!T(a.ceil, b.ceil);
+            }
+        }
+
+        GLine!T applyRounding(Rounding type) {
+            final switch (type) {
+                case Rounding.none: return this;
+                case Rounding.floor: return floor();
+                case Rounding.round: return round();
+                case Rounding.ceil: return ceil();
+            }
         }
     }
 }
