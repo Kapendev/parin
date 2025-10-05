@@ -16,7 +16,7 @@ Parin is designed to make game development fun — it's easy to set up, hackable
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
 </div>
 
-> [!NOTE]  
+> [!NOTE]
 > 🚧 The `main` branch is currently unstable. Please check out a tagged commit.
 
 ## Major Features
@@ -119,7 +119,6 @@ Create a new folder and run inside the following commands:
 
 ```sh
 git clone --depth 1 https://github.com/Kapendev/parin parin_package
-git clone --depth 1 https://github.com/Kapendev/joka joka_package
 ./parin_package/scripts/prepare
 # Or: .\parin_package\scripts\prepare.bat
 ```
