@@ -53,33 +53,32 @@ struct Sep { IStr value; }
 @trusted
 IStr toStr(T)(T value) {
     static assert(
-        !isArrayType!T,
+        !(is(T : const(A)[N], A, Sz N)), // !isArrayType
         "Static arrays can't be passed to `toStr`. This may also happen indirectly when using printing functions. Convert to a slice first."
     );
 
-    static if (isCharType!T) {
+    static if (is(T == char) || is(T == const(char)) || is(T == immutable(char))) { // isCharType
         return charToStr(value);
-    } else static if (isBoolType!T) {
+    } else static if (is(T == bool) || is(T == const(bool)) || is(T == immutable(bool))) { // isBoolType
         return boolToStr(value);
-    } else static if (isUnsignedType!T) {
+    } else static if (__traits(isUnsigned, T)) { // isUnsignedType
         return unsignedToStr(value);
-    } else static if (isSignedType!T) {
+    } else static if (__traits(isIntegral, T)) { // isSignedType
         return signedToStr(value);
-    } else static if (isFloatingType!T) {
+    } else static if (__traits(isFloating, T)) { // isFloating
         return doubleToStr(value, 2);
-    } else static if (isStrType!T) {
+    } else static if (is(T : IStr)) { // isStrType
         return value;
-    } else static if (isCStrType!T) {
+    } else static if (is(T : ICStr)) { // isCStrType
         return cStrToStr(value);
-    } else static if (is(T == enum)) {
+    } else static if (is(T == enum)) { // isEnumType
         return enumToStr(value);
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {
-        // I'm a nice person.
         return value.toString();
     } else {
-        static assert(0, "Type `" ~ T.stringof ~ "` doesn't implement the `toStr` function.");
+        static assert(0, "Type doesn't implement the `toStr` function.");
     }
 }
 

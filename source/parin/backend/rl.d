@@ -329,6 +329,28 @@ bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
 /// Returns true if the specified key was released.
 bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
 
+// --- Drawing
+
+void pushMatrix() {
+    rl.rlPushMatrix();
+}
+
+void matrixTranslate(float x, float y, float z) {
+    rl.rlTranslatef(x, y, z);
+}
+
+void matrixRotate(float angle, float x, float y, float z) {
+    rl.rlRotatef(angle, x, y, z);
+}
+
+void matrixScale(float x, float y, float z) {
+    rl.rlScalef(x, y, z);
+}
+
+void popMatrix() {
+    rl.rlPopMatrix();
+}
+
 void drawRect(Rect area, Rgba color, float thickness) {
     if (thickness < 0) {
         rl.DrawRectanglePro(toRl(area), rl.Vector2(0.0f, 0.0f), 0.0f, toRl(color));
@@ -361,9 +383,9 @@ void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotat
     );
 }
 
-void drawRune(ResourceId id, int rune, Vec2 position, float scale, Rgba color) {
+void drawRune(ResourceId id, int rune, Vec2 position, Rgba color) {
     auto resource = &_backendState.fonts[id];
-    rl.DrawTextCodepoint(*resource, rune, toRl(position), resource.baseSize * scale, toRl(color));
+    rl.DrawTextCodepoint(*resource, rune, toRl(position), resource.baseSize, toRl(color));
 }
 
 pragma(inline, true) {

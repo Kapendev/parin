@@ -186,10 +186,10 @@ struct List(T) {
 
     @nogc
     IStr toStr() {
-        static if (isCharType!T) {
+        static if (is(T == char)) { // isCharType
             return items;
         } else {
-            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a character type.");
+            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
 }
@@ -303,10 +303,10 @@ struct BufferList(T) {
     void ignoreLeak() {}
 
     IStr toStr() {
-        static if (isCharType!T) {
+        static if (is(T == char)) { // isCharType
             return items;
         } else {
-            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a character type.");
+            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
 }
@@ -421,10 +421,10 @@ struct FixedList(T, Sz N) {
     void ignoreLeak() {}
 
     IStr toStr() {
-        static if (isCharType!T) {
+        static if (is(T == char)) { // isCharType
             return items;
         } else {
-            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a character type.");
+            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
 }

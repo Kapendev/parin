@@ -1073,6 +1073,65 @@ void setAssetsPath(IStr path) {
 
 @trusted nothrow @nogc:
 
+// TODO: Replace that with something in Joka. I was too lazy to write it myself.
+// Get next codepoint in a byte sequence and bytes processed
+// Sorry monky, but it's temp code that I copy-pasted from raylib.
+private int GetCodepointNext_TEMP_REPLACE_ME(const(char)* text, int* codepointSize) {
+    const(char)* ptr = text;
+    int codepoint = 0x3f;       // Codepoint (defaults to '?')
+    *codepointSize = 1;
+
+    // Get current codepoint and bytes processed
+    if (0xf0 == (0xf8 & ptr[0]))
+    {
+        // 4 byte UTF-8 codepoint
+        if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80) || ((ptr[3] & 0xC0) ^ 0x80)) { return codepoint; } // 10xxxxxx checks
+        codepoint = ((0x07 & ptr[0]) << 18) | ((0x3f & ptr[1]) << 12) | ((0x3f & ptr[2]) << 6) | (0x3f & ptr[3]);
+        *codepointSize = 4;
+    }
+    else if (0xe0 == (0xf0 & ptr[0]))
+    {
+        // 3 byte UTF-8 codepoint */
+        if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80)) { return codepoint; } // 10xxxxxx checks
+        codepoint = ((0x0f & ptr[0]) << 12) | ((0x3f & ptr[1]) << 6) | (0x3f & ptr[2]);
+        *codepointSize = 3;
+    }
+    else if (0xc0 == (0xe0 & ptr[0]))
+    {
+        // 2 byte UTF-8 codepoint
+        if ((ptr[1] & 0xC0) ^ 0x80) { return codepoint; } // 10xxxxxx checks
+        codepoint = ((0x1f & ptr[0]) << 6) | (0x3f & ptr[1]);
+        *codepointSize = 2;
+    }
+    else if (0x00 == (0x80 & ptr[0]))
+    {
+        // 1 byte UTF-8 codepoint
+        codepoint = ptr[0];
+        *codepointSize = 1;
+    }
+
+    return codepoint;
+}
+
+// TODO: Replace that with something in Joka. I was too lazy to write it myself.
+// Get previous codepoint in a byte sequence and bytes processed
+private int GetCodepointPrevious_TEMP_REPLACE_ME(const(char)* text, int* codepointSize) {
+    const(char)* ptr = text;
+    int codepoint = 0x3f;       // Codepoint (defaults to '?')
+    int cpSize = 0;
+    *codepointSize = 0;
+
+    // Move to previous codepoint
+    do ptr--;
+    while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80));
+
+    codepoint = GetCodepointNext_TEMP_REPLACE_ME(ptr, &cpSize);
+
+    if (codepoint != 0) *codepointSize = cpSize;
+
+    return codepoint;
+}
+
 bool didLoadOrSaveSucceed(Fault fault, IStr message) {
     if (fault) {
         _engineState.lastLoadOrSaveFault = fault;
@@ -1987,7 +2046,7 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     while (textCodepointIndex < text.length) {
         lineCodepointCount += 1;
         auto codepointByteCount = 0;
-        auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
+        auto codepoint = GetCodepointNext_TEMP_REPLACE_ME(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
         auto glyphInfo = font.glyphInfo(codepoint);
         if (codepoint != '\n') {
             if (glyphInfo.advanceX) {
@@ -2157,20 +2216,19 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
         else return;
     }
 
-    auto rect = font.glyphInfo(rune).rect.toRect(); // TODO
+    auto rect = font.glyphInfo(rune).rect.toRect();
     auto origin = options.origin.isZero ? rect.origin(options.hook) : options.origin;
-    //  TODO: STOPPED HERE!! Look at older parin code maybe.
-    rl.rlPushMatrix();
+    bk.pushMatrix();
     if (isPixelSnapped) {
-        rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
+        bk.matrixTranslate(floor(position.x), floor(position.y), 0.0f);
     } else {
-        rl.rlTranslatef(position.x, position.y, 0.0f);
+        bk.matrixTranslate(position.x, position.y, 0.0f);
     }
-    rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
-    rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
-    bk.drawRune(font.data, rune, Vec2(), 1, options.color);
-    rl.rlPopMatrix();
+    bk.matrixRotate(options.rotation, 0.0f, 0.0f, 1.0f);
+    bk.matrixScale(options.scale.x, options.scale.y, 1.0f);
+    bk.matrixTranslate(floor(-origin.x), floor(-origin.y), 0.0f);
+    bk.drawRune(font.data, rune, Vec2(), options.color);
+    bk.popMatrix();
 }
 
 /// Draws a single character from the default font at the given position with the specified draw options.
@@ -2205,7 +2263,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
         while (textCodepointIndex < text.length) {
             textCodepointCount += 1;
             auto codepointSize = 0;
-            auto codepoint = rl.GetCodepointNext(&text[textCodepointIndex], &codepointSize);
+            auto codepoint = GetCodepointNext_TEMP_REPLACE_ME(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
                 linesWidthBuffer.push(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
@@ -2222,20 +2280,17 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 
     // Prepare the the text for drawing.
     auto origin = Rect(textMaxLineWidth, textHeight).origin(options.hook);
-    rl.rlPushMatrix();
+    bk.pushMatrix();
     if (isPixelSnapped) {
-        rl.rlTranslatef(position.x.floor(), position.y.floor(), 0.0f);
+        bk.matrixTranslate(floor(position.x), floor(position.y), 0.0f);
     } else {
-        rl.rlTranslatef(position.x, position.y, 0.0f);
+        bk.matrixTranslate(position.x, position.y, 0.0f);
     }
-    rl.rlRotatef(options.rotation, 0.0f, 0.0f, 1.0f);
-    rl.rlScalef(options.scale.x, options.scale.y, 1.0f);
-    rl.rlTranslatef(-origin.x.floor(), -origin.y.floor(), 0.0f);
-
+    bk.matrixRotate(options.rotation, 0.0f, 0.0f, 1.0f);
+    bk.matrixScale(options.scale.x, options.scale.y, 1.0f);
+    bk.matrixTranslate(floor(-origin.x), floor(-origin.y), 0.0f);
     // Draw the text.
-    auto drawMaxCodepointCount = extra.visibilityCount
-        ? extra.visibilityCount
-        : textCodepointCount * extra.visibilityRatio;
+    auto drawMaxCodepointCount = extra.visibilityCount ? extra.visibilityCount : textCodepointCount * extra.visibilityRatio;
     auto drawCodepointCounter = 0;
     auto textOffsetY = 0;
     foreach (i, line; linesBuffer) {
@@ -2261,7 +2316,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             while (lineCodepointIndex > 0) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
-                auto codepoint = rl.GetCodepointPrevious(&line.ptr[lineCodepointIndex], &codepointSize);
+                auto codepoint = GetCodepointPrevious_TEMP_REPLACE_ME(&line.ptr[lineCodepointIndex], &codepointSize);
                 auto glyphInfo = font.glyphInfo(codepoint);
                 if (lineCodepointIndex == line.length) {
                     if (glyphInfo.advanceX) {
@@ -2271,7 +2326,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
                     }
                 } else {
                     auto temp = 0;
-                    auto nextRightToLeftGlyphInfo = font.glyphInfo(rl.GetCodepointPrevious(&line[lineCodepointIndex], &temp));
+                    auto nextRightToLeftGlyphInfo = font.glyphInfo(GetCodepointPrevious_TEMP_REPLACE_ME(&line[lineCodepointIndex], &temp));
                     if (nextRightToLeftGlyphInfo.advanceX) {
                         textOffsetX -= nextRightToLeftGlyphInfo.advanceX + font.runeSpacing;
                     } else {
@@ -2279,7 +2334,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
                     }
                 }
                 if (codepoint != ' ' && codepoint != '\t') {
-                    bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), 1, options.color);
+                    bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), options.color);
                 }
                 drawCodepointCounter += 1;
                 lineCodepointIndex -= codepointSize;
@@ -2290,10 +2345,10 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             while (lineCodepointIndex < line.length) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
-                auto codepoint = rl.GetCodepointNext(&line[lineCodepointIndex], &codepointSize);
+                auto codepoint = GetCodepointNext_TEMP_REPLACE_ME(&line[lineCodepointIndex], &codepointSize);
                 auto glyphInfo = font.glyphInfo(codepoint);
                 if (codepoint != ' ' && codepoint != '\t') {
-                    bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), 1, options.color);
+                    bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), options.color);
                 }
                 if (glyphInfo.advanceX) {
                     textOffsetX += glyphInfo.advanceX + font.runeSpacing;
@@ -2307,7 +2362,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             textOffsetY += font.lineSpacing;
         }
     }
-    rl.rlPopMatrix();
+    bk.popMatrix();
     return result;
 }
 

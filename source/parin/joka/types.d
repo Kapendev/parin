@@ -88,7 +88,7 @@ struct Maybe(T) {
     T _data;                   /// The value.
     Fault _fault = Fault.some; /// The error code.
 
-    pragma(inline, true) @safe nothrow @nogc:
+    @safe nothrow @nogc:
 
     this(const(T) value) {
         opAssign(value);
@@ -198,7 +198,7 @@ struct Union(A...) {
         }
     }
 
-    pragma(inline, true) @trusted nothrow @nogc:
+    @trusted nothrow @nogc:
 
     static foreach (i, T; A) {
         this(const(T) value) {
@@ -263,23 +263,11 @@ struct Union(A...) {
     }
 }
 
-/// Converts the value to a fault.
-pragma(inline, true)
-Fault toFault(bool value, Fault other = Fault.some) {
-    return value ? other : Fault.none;
-}
-
-T toUnion(T)(UnionType type) {
-    static assert(isUnionType!T, "Type `" ~ T.stringof  ~ "` is not a variant.");
-
+T toUnion(T)(UnionType type) if (isUnionType!T) {
     T result;
     static foreach (i, Type; T.Types) {
         if (i == type) {
-            static if (isNumberType!Type) {
-                result = cast(Type) 0;
-            } else {
-                result = Type.init;
-            }
+            result = Type.init;
             goto loopExit;
         }
     }
@@ -287,17 +275,11 @@ T toUnion(T)(UnionType type) {
     return result;
 }
 
-T toUnion(T)(IStr typeName) {
-    static assert(isUnionType!T, "Type `" ~ T.stringof  ~ "` is not a variant.");
-
+T toUnion(T)(IStr typeName) if (isUnionType!T) {
     T result;
     static foreach (i, Type; T.Types) {
         if (Type.stringof == typeName) {
-            static if (isNumberType!Type) {
-                result = cast(Type) 0;
-            } else {
-                result = Type.init;
-            }
+            result = Type.init;
             goto loopExit;
         }
     }
@@ -505,8 +487,7 @@ IStr toCleanNumber(alias i)() {
 }
 
 pragma(inline, true) @trusted
-Sz offsetOf(T, IStr member)() {
-    static assert(__traits(hasMember, T, member), "Member doesn't exist.");
+Sz offsetOf(T, IStr member)() if (__traits(hasMember, T, member)) {
     T temp = void;
     return (cast(ubyte*) mixin("&temp.", member)) - (cast(ubyte*) &temp);
 }
@@ -525,9 +506,7 @@ template toStaticArray(alias slice) {
     enum toStaticArray = cast(typeof(slice[0])[slice.length]) slice;
 }
 
-mixin template addSliceOps(T, TT) {
-    static assert(__traits(hasMember, T, "items"), "Slice must implement the `" ~ TT.stringof ~ "[] items()` function or have a member called that.");
-
+mixin template addSliceOps(T, TT) if (__traits(hasMember, T, "items")) {
     pragma(inline, true) @trusted nothrow @nogc {
         TT[] opSlice(Sz dim)(Sz i, Sz j) {
             return items[i .. j];
@@ -559,11 +538,7 @@ mixin template addSliceOps(T, TT) {
     }
 }
 
-mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") {
-    static assert(N >= 2 && N <= 4, "Vector must have a dimension between 2 and 4.");
-    static assert(N == form.length, "Vector must have a dimension that is equal to the given form length.");
-    static assert(__traits(hasMember, T, "items"), "Vector must implement the `TT[] items()` function or have a member called that.");
-
+mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMember, T, "items") && N >= 2 && N <= 4 && N == form.length) {
     pragma(inline, true) @trusted nothrow @nogc {
         T opUnary(IStr op)() {
             static if (N == 2) {
@@ -652,7 +627,9 @@ mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") {
         Sz opDollar(Sz dim)() {
             return N;
         }
+    }
 
+    @trusted nothrow @nogc {
         T _swizzleN(G)(const(G)[] args...) {
             if (args.length != N) assert(0, "Wrong swizzle length.");
             T result = void;
@@ -690,15 +667,10 @@ unittest {
     alias Number = Union!(float, double);
     struct Foo { int x; byte y; byte z; int w; }
 
-    assert(toFault(false) == Fault.none);
-    assert(toFault(true) == Fault.some);
-    assert(toFault(false, Fault.invalid) == Fault.none);
-    assert(toFault(true, Fault.invalid) == Fault.invalid);
-
-    assert(toUnion!Number(Number.typeOf!float).as!float == 0);
-    assert(toUnion!Number(Number.typeOf!double).as!double == 0);
-    assert(toUnion!Number(Number.typeNameOf!float).as!float == 0);
-    assert(toUnion!Number(Number.typeNameOf!double).as!double == 0);
+    assert(toUnion!Number(Number.typeOf!float).as!float.isNan == true);
+    assert(toUnion!Number(Number.typeOf!double).as!double.isNan == true);
+    assert(toUnion!Number(Number.typeNameOf!float).as!float.isNan == true);
+    assert(toUnion!Number(Number.typeNameOf!double).as!double.isNan == true);
 
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
