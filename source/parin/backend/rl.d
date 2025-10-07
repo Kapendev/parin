@@ -8,6 +8,10 @@
 module parin.backend.rl;
 
 import rl = parin.bindings.rl;
+version (WebAssembly) {
+    import em = parin.bindings.em;
+}
+
 import parin.joka.ascii;
 import parin.joka.containers;
 import parin.joka.math;
@@ -21,7 +25,7 @@ __gshared BackendState* _backendState;
 version (WebAssembly) {
     enum defaultBackendResourcesCapacity = 256;
 } else {
-    enum defaultBackendResourcesCapacity = 1536;
+    enum defaultBackendResourcesCapacity = 1024;
 }
 // ----------
 
@@ -47,6 +51,8 @@ struct BackendState {
     GenList!(MusicData.Item.Item, MusicData, GenData) music;
 
     BasicContainer!IStr droppedPaths;
+    Vec2 mouseBuffer;
+    uint elapsedTickCount;
 }
 
 Maybe!ResourceId loadTexture(IStr path) {
@@ -105,6 +111,8 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
 }
 
 void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
+    enum targetHtmlElementId = "canvas";
+
     // Make sure the state is OK first.
     _backendState = jokaMakeBlank!BackendState();
     _backendState.textures.clear();
@@ -126,6 +134,21 @@ void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int
     rl.SetTargetFPS(fpsMax);
     rl.SetWindowMinSize(windowMinWidth, windowMinHeight);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+
+    version (WebAssembly) {
+        extern(C) nothrow @nogc
+        static bool _webMouseCallback(int eventType, const(em.EmscriptenMouseEvent)* mouseEvent, void* userData) {
+            switch (eventType) {
+                case em.EMSCRIPTEN_EVENT_MOUSEMOVE:
+                    _backendState.mouseBuffer = Vec2(mouseEvent.clientX, mouseEvent.clientY);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_webMouseCallback);
+    }
 }
 
 @trusted nothrow @nogc:
@@ -288,12 +311,57 @@ IStr[] droppedPaths() {
 
 // --- Stuff
 
+/// Sets the seed of the random number generator to the given value.
+void setRandomSeed(int value) {
+    rl.SetRandomSeed(value);
+}
+
+/// Randomizes the seed of the random number generator.
+void randomize() {
+    setRandomSeed(randi);
+}
+
+/// Returns a random integer between 0 and int.max (inclusive).
+int randi() {
+    return rl.GetRandomValue(0, int.max);
+}
+
+/// Returns a random floating point number between 0.0 and 1.0 (inclusive).
+float randf() {
+    return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
+}
+
+/// Converts a scene point to a canvas point based on the given camera.
+Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+    auto vec = rl.GetWorldToScreen2D(toRl(point), toRl(camera, canvasSize, Rounding.none));
+    return Vec2(vec.x, vec.y);
+}
+
+/// Converts a canvas point to a scene point based on the given camera.
+Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+    auto vec = rl.GetScreenToWorld2D(toRl(point), toRl(camera, canvasSize, Rounding.none));
+    return Vec2(vec.x, vec.y);
+}
+
+/// Returns the total number of ticks elapsed since the application started.
+uint elapsedTickCount() {
+    return _backendState.elapsedTickCount;
+}
+
 // raylib does not let you do that.
 void setVsync(bool value) {}
 
 // raylib does stuff internally.
 // NOTE: No idea if this is a good name.
-void pumpEvents() {}
+void pumpEvents() {
+    version (WebAssembly) {
+        // Check the `_webMouseCallback` function.
+    } else {
+        auto vec = rl.GetTouchPosition(0);
+        _backendState.mouseBuffer = Vec2(vec.x, vec.y);
+    }
+    _backendState.elapsedTickCount += 1;
+}
 
 // --- Input
 
@@ -329,7 +397,21 @@ bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
 /// Returns true if the specified key was released.
 bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
 
+Vec2 mouse() => _backendState.mouseBuffer;
+
 // --- Drawing
+
+void beginDrawing() {
+    rl.BeginDrawing();
+}
+
+void endDrawing() {
+    rl.EndDrawing();
+}
+
+void clearBackground(Rgba color) {
+    rl.ClearBackground(toRl(color));
+}
 
 void pushMatrix() {
     rl.rlPushMatrix();

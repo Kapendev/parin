@@ -57,7 +57,9 @@ IStr toStr(T)(T value) {
         "Static arrays can't be passed to `toStr`. This may also happen indirectly when using printing functions. Convert to a slice first."
     );
 
-    static if (is(T == char) || is(T == const(char)) || is(T == immutable(char))) { // isCharType
+    static if (is(T == enum)) { // isEnumType
+        return enumToStr(value);
+    } else static if (is(T == char) || is(T == const(char)) || is(T == immutable(char))) { // isCharType
         return charToStr(value);
     } else static if (is(T == bool) || is(T == const(bool)) || is(T == immutable(bool))) { // isBoolType
         return boolToStr(value);
@@ -71,8 +73,6 @@ IStr toStr(T)(T value) {
         return value;
     } else static if (is(T : ICStr)) { // isCStrType
         return cStrToStr(value);
-    } else static if (is(T == enum)) { // isEnumType
-        return enumToStr(value);
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {

@@ -1,8 +1,8 @@
 {
   "version": "0.9.0",
   "pan": {
-    "X": 214.17822,
-    "Y": 41.18817
+    "X": 401.76605,
+    "Y": 164.10458
   },
   "zoom": 1,
   "currentPage": 0,
@@ -13,13 +13,13 @@
     {
       "id": 0,
       "pan": {
-        "X": 214.2018,
-        "Y": 41.173912
+        "X": 401.766,
+        "Y": 164.10461
       },
       "zoom": 1,
       "cards": [
         {
-          "id": 1,
+          "id": 0,
           "rect": {
             "X": 0,
             "Y": -64,
@@ -34,7 +34,7 @@
           }
         },
         {
-          "id": 4,
+          "id": 1,
           "rect": {
             "X": 0,
             "Y": -32,
@@ -49,7 +49,7 @@
           }
         },
         {
-          "id": 5,
+          "id": 2,
           "rect": {
             "X": 64,
             "Y": 64,
@@ -65,7 +65,7 @@
           }
         },
         {
-          "id": 6,
+          "id": 3,
           "rect": {
             "X": 64,
             "Y": 96,
@@ -77,6 +77,37 @@
           "properties": {
             "checked": false,
             "description": "Make big game",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 4,
+          "rect": {
+            "X": 64,
+            "Y": 128,
+            "W": 416,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Go to barber 12:30, 7/10/2025",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 6,
+          "rect": {
+            "X": 512,
+            "Y": 128,
+            "W": 256,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Note",
+          "properties": {
+            "description": "Good looking!",
             "filepath": ""
           }
         }

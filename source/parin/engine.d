@@ -8,7 +8,9 @@
 // TODO: Viewports and sounds use raylib types instead of the generic ones. Change that.
 // TODO: Replace the `rl.` calls with `.bk` calls.
 // TODO: Fix microui lol.
-// NOTE: Search for: TODO: STOPPED HERE!!
+// TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
+// TODO: Now that viewports will become small, maybe add a position to them. Will make things simpler.
+// TODO: Web script needs testing probably.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -469,7 +471,7 @@ struct Viewport {
         _engineState.userViewport = this;
         if (isResolutionLocked) rl.EndTextureMode();
         rl.BeginTextureMode(data);
-        rl.ClearBackground(color.toRl());
+        bk.clearBackground(color);
         bk.beginBlend(blend);
     }
 
@@ -484,7 +486,7 @@ struct Viewport {
         _engineState.userViewport = Viewport();
         bk.endBlend();
         rl.EndTextureMode();
-        if (isResolutionLocked) rl.BeginTextureMode(_engineState.viewport.data.toRl());
+        if (isResolutionLocked) rl.BeginTextureMode(_engineState.viewport.data.data);
     }
 
     /// Sets the filter mode of the viewport.
@@ -608,7 +610,6 @@ struct EngineState {
 
     int fpsMax = defaultEngineFpsMax;
     bool vsync = defaultEngineVsync;
-    Sz tickCount;
     Rgba borderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
@@ -638,7 +639,6 @@ struct EngineState {
 /// You should avoid calling this function manually.
 void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     enum monogramPath = "parin_monogram.png";
-    enum targetHtmlElementId = "canvas";
 
     bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
@@ -652,10 +652,6 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     if (args.length) {
         foreach (arg; args) _engineState.envArgsBuffer.append(arg);
         _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
-    }
-
-    version (WebAssembly) {
-        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_engineMouseCallbackWeb);
     }
 }
 
@@ -672,49 +668,25 @@ void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "P
 /// Use by the `updateWindow` function.
 /// You should avoid calling this function manually.
 bool _updateWindowLoop() {
-    { // Update buffers and resources.
-        auto info = &_engineState.viewportInfoBuffer;
-        if (isResolutionLocked) {
-            info.minSize = resolution;
-            info.maxSize = windowSize;
-            auto ratio = info.maxSize / info.minSize;
-            info.minRatio = min(ratio.x, ratio.y);
-            if (isPixelPerfect) {
-                auto roundMinRatio = info.minRatio.round();
-                auto floorMinRation = info.minRatio.floor();
-                info.minRatio = info.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
-            }
-            auto targetSize = info.minSize * Vec2(info.minRatio);
-            auto targetPosition = info.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-            info.area = Rect(
-                targetPosition.floor(),
-                ratio.x == info.minRatio ? targetSize.x : floor(targetSize.x),
-                ratio.y == info.minRatio ? targetSize.y : floor(targetSize.y),
-            );
-        } else {
-            info.minSize = windowSize;
-            info.maxSize = info.minSize;
-            info.minRatio = 1.0f;
-            info.area = Rect(info.minSize);
-        }
-        _engineMouseCallback();
-        _engineWasdCallback();
-        foreach (ref sound; _engineState.sounds.items) {
-            updateSound(sound);
-        }
+    // Update buffers and resources.
+    bk.pumpEvents();
+    _updateViewportInfoBuffer();
+    _updateEngineMouseBuffer(bk.mouse);
+    _updateEngineWasdBuffer();
+    foreach (ref sound; _engineState.sounds.items) {
+        updateSound(sound);
     }
 
-    // Get some data before doing the game loop.
-    auto loopVsync = vsync;
     // Begin drawing.
+    auto loopVsync = vsync;
     if (isResolutionLocked) {
-        rl.BeginTextureMode(_engineState.viewport.data.toRl());
+        rl.BeginTextureMode(_engineState.viewport.data.data);
     } else {
-        rl.BeginDrawing();
+        bk.beginDrawing();
     }
-    rl.ClearBackground(_engineState.viewport.data.color.toRl());
+    bk.clearBackground(_engineState.viewport.data.color);
 
-    // Update the game.
+    // Update and draw the game.
     bk.beginDroppedPaths();
     _engineState.arena.clear();
     auto dt = deltaTime;
@@ -731,26 +703,25 @@ bool _updateWindowLoop() {
         if (_engineState.debugModeFunc) _engineState.debugModeFunc();
         if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
     }
-    _engineState.tickCount += 1;
     bk.endDroppedPaths();
 
     // End drawing.
     if (isResolutionLocked) {
         auto info = engineViewportInfo;
         rl.EndTextureMode();
-        rl.BeginDrawing();
-        rl.ClearBackground(_engineState.borderColor.toRl());
+        bk.beginDrawing();
+        bk.clearBackground(_engineState.borderColor);
         rl.DrawTexturePro(
-            _engineState.viewport.data.toRl().texture,
+            _engineState.viewport.data.data.texture,
             rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
-            info.area.toRl(),
+            rl.Rectangle(info.area.x, info.area.y, info.area.w, info.area.h),
             rl.Vector2(0.0f, 0.0f),
             0.0f,
             rl.Color(255, 255, 255, 255),
         );
-        rl.EndDrawing();
+        bk.endDrawing();
     } else {
-        rl.EndDrawing();
+        bk.endDrawing();
     }
 
     // NOTE: Could copy this style for viewport and fullscreen. They do have other problems though.
@@ -1141,74 +1112,34 @@ bool didLoadOrSaveSucceed(Fault fault, IStr message) {
     return true;
 }
 
-// NOTE: Internal stuff that you should not really use outside of `engine.d`.
-pragma(inline, true) {
-    Rgba toPr(rl.Color from) {
-        return Rgba(from.r, from.g, from.b, from.a);
-    }
-
-    Vec2 toPr(rl.Vector2 from) {
-        return Vec2(from.x, from.y);
-    }
-
-    Vec3 toPr(rl.Vector3 from) {
-        return Vec3(from.x, from.y, from.z);
-    }
-
-    Vec4 toPr(rl.Vector4 from) {
-        return Vec4(from.x, from.y, from.z, from.w);
-    }
-
-    Rect toPr(rl.Rectangle from) {
-        return Rect(from.x, from.y, from.width, from.height);
-    }
-
-    // --- copy pasted to bk.
-        rl.Color toRl(Rgba from) {
-            return rl.Color(from.r, from.g, from.b, from.a);
+void _updateViewportInfoBuffer() {
+    auto info = &_engineState.viewportInfoBuffer;
+    if (isResolutionLocked) {
+        info.minSize = resolution;
+        info.maxSize = windowSize;
+        auto ratio = info.maxSize / info.minSize;
+        info.minRatio = min(ratio.x, ratio.y);
+        if (isPixelPerfect) {
+            auto roundMinRatio = info.minRatio.round();
+            auto floorMinRation = info.minRatio.floor();
+            info.minRatio = info.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
         }
-
-        rl.Vector2 toRl(Vec2 from) {
-            return rl.Vector2(from.x, from.y);
-        }
-
-        rl.Vector3 toRl(Vec3 from) {
-            return rl.Vector3(from.x, from.y, from.z);
-        }
-
-        rl.Vector4 toRl(Vec4 from) {
-            return rl.Vector4(from.x, from.y, from.z, from.w);
-        }
-
-        rl.Rectangle toRl(Rect from) {
-            return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
-        }
-    // ---
-
-    rl.RenderTexture2D toRl(ref Viewport from) {
-        return from.data;
-    }
-
-    rl.Camera2D toRl(Camera from) {
-        return rl.Camera2D(
-            Rect(resolution).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
-            (from.position + from.offset).toRl(),
-            from.rotation,
-            from.scale,
+        auto targetSize = info.minSize * Vec2(info.minRatio);
+        auto targetPosition = info.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+        info.area = Rect(
+            targetPosition.floor(),
+            ratio.x == info.minRatio ? targetSize.x : floor(targetSize.x),
+            ratio.y == info.minRatio ? targetSize.y : floor(targetSize.y),
         );
-    }
-
-    rl.Camera2D toRl(Camera from, ref Viewport viewport) {
-        return rl.Camera2D(
-            Rect(viewport.isEmpty ? resolution : viewport.size).origin(from.isCentered ? Hook.center : Hook.topLeft).toRl(),
-            (from.position + from.offset).toRl(),
-            from.rotation,
-            from.scale,
-        );
+    } else {
+        info.minSize = windowSize;
+        info.maxSize = info.minSize;
+        info.minRatio = 1.0f;
+        info.area = Rect(info.minSize);
     }
 }
 
-void _setEngineMouseBuffer(Vec2 value) {
+void _updateEngineMouseBuffer(Vec2 value) {
     auto info = &_engineState.viewportInfoBuffer;
     if (isResolutionLocked) {
         _engineState.mouseBuffer = Vec2(
@@ -1220,30 +1151,7 @@ void _setEngineMouseBuffer(Vec2 value) {
     }
 }
 
-void _engineMouseCallback() {
-    version (WebAssembly) {
-        // Emscripten will do it for us. Check the `_engineMouseCallbackWeb` function.
-    } else {
-        _setEngineMouseBuffer(rl.GetTouchPosition(0).toPr());
-    }
-}
-
-version (WebAssembly) {
-    /// Use by Emscripten to update the mouse.
-    /// You should avoid calling this function manually.
-    nothrow @nogc extern(C):
-    bool _engineMouseCallbackWeb(int eventType, const(em.EmscriptenMouseEvent)* mouseEvent, void* userData) {
-        switch (eventType) {
-            case em.EMSCRIPTEN_EVENT_MOUSEMOVE:
-                _setEngineMouseBuffer(Vec2(mouseEvent.clientX, mouseEvent.clientY));
-                return true;
-            default:
-                return false;
-        }
-    }
-}
-
-void _engineWasdCallback() {
+void _updateEngineWasdBuffer() {
     with (Keyboard) {
         _engineState.wasdBuffer = Vec2(
             (d.isDown || right.isDown) - (a.isDown || left.isDown),
@@ -1361,44 +1269,44 @@ IStr[] envArgs() {
     return _engineState.envArgsBuffer.items;
 }
 
-/// Returns a random integer between 0 and int.max (inclusive).
-int randi() {
-    return rl.GetRandomValue(0, int.max);
-}
-
-/// Returns a random floating point number between 0.0 and 1.0 (inclusive).
-float randf() {
-    return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
-}
-
 /// Sets the seed of the random number generator to the given value.
 void setRandomSeed(int value) {
-    rl.SetRandomSeed(value);
+    bk.setRandomSeed(value);
 }
 
 /// Randomizes the seed of the random number generator.
 void randomize() {
-    setRandomSeed(randi);
+    bk.randomize();
 }
 
-/// Converts a world point to a screen point based on the given camera.
-Vec2 toScreenPoint(Vec2 position, Camera camera) {
-    return toPr(rl.GetWorldToScreen2D(position.toRl(), camera.toRl()));
+/// Returns a random integer between 0 and int.max (inclusive).
+int randi() {
+    return bk.randi;
 }
 
-/// Converts a world point to a screen point based on the given camera.
-Vec2 toScreenPoint(Vec2 position, Camera camera, ref Viewport viewport) {
-    return toPr(rl.GetWorldToScreen2D(position.toRl(), camera.toRl(viewport)));
+/// Returns a random floating point number between 0.0 and 1.0 (inclusive).
+float randf() {
+    return bk.randf;
 }
 
-/// Converts a screen point to a world point based on the given camera.
-Vec2 toWorldPoint(Vec2 position, Camera camera) {
-    return toPr(rl.GetScreenToWorld2D(position.toRl(), camera.toRl()));
+/// Converts a scene point to a canvas point based on the given camera.
+Vec2 toCanvasPoint(Vec2 position, Camera camera) {
+    return bk.toCanvasPoint(position, camera, resolution);
 }
 
-/// Converts a screen point to a world point based on the given camera.
-Vec2 toWorldPoint(Vec2 position, Camera camera, ref Viewport viewport) {
-    return toPr(rl.GetScreenToWorld2D(position.toRl(), camera.toRl(viewport)));
+/// Converts a scene point to a canvas point based on the given camera.
+Vec2 toCanvasPoint(Vec2 position, Camera camera, Vec2 canvasSize) {
+    return bk.toCanvasPoint(position, camera, canvasSize);
+}
+
+/// Converts a canvas point to a scene point based on the given camera.
+Vec2 toScenePoint(Vec2 position, Camera camera) {
+    return bk.toScenePoint(position, camera, resolution);
+}
+
+/// Converts a canvas point to a scene point based on the given camera.
+Vec2 toScenePoint(Vec2 position, Camera camera, Vec2 canvasSize) {
+    return bk.toScenePoint(position, camera, canvasSize);
 }
 
 /// Returns the path of the assets folder.
@@ -1805,7 +1713,7 @@ double elapsedTime() {
 
 /// Returns the total number of ticks elapsed since the application started.
 long elapsedTickCount() {
-    return _engineState.tickCount;
+    return bk.elapsedTickCount;
 }
 
 /// Returns the time elapsed since the last frame.
@@ -1821,7 +1729,8 @@ Vec2 mouse() {
 
 /// Returns the change in mouse position since the last frame.
 Vec2 deltaMouse() {
-    return rl.GetMouseDelta().toPr();
+    auto vec = rl.GetMouseDelta();
+    return Vec2(vec.x, vec.y);
 }
 
 /// Returns the change in mouse wheel position since the last frame.
@@ -2384,7 +2293,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     static s = Vec2();
 
     IStr text;
-    auto mouse = mouse.toWorldPoint(camera);
+    auto mouse = mouse.toScenePoint(camera);
     if (Mouse.middle.isPressed) s = Vec2();
     if (Mouse.right.isDown) {
         if (s.isZero) {
@@ -2440,8 +2349,8 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             );
         }
     }
-    drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor1);
-    drawRect(Rect(a.toScreenPoint(camera), s), defaultEngineDebugColor2, 1);
+    drawRect(Rect(a.toCanvasPoint(camera), s), defaultEngineDebugColor1);
+    drawRect(Rect(a.toCanvasPoint(camera), s), defaultEngineDebugColor2, 1);
     drawText(text, screenPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
         printfln(
@@ -2458,7 +2367,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 
 /// Draws debug tile information at the given position with the provided draw options.
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false) {
-    auto mouse = mouse.toWorldPoint(camera);
+    auto mouse = mouse.toScenePoint(camera);
     auto gridPoint = Vec2(mouse.x / tileWidth, mouse.y / tileHeight).floor();
     auto tile = Rect(gridPoint.x * tileWidth, gridPoint.y * tileHeight, tileWidth, tileHeight);
     auto text = "Grid: ({} {})\nWorld: ({} {})".fmt(
@@ -2467,8 +2376,8 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
         cast(int) tile.x,
         cast(int) tile.y,
     );
-    drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor1);
-    drawRect(Rect(tile.position.toScreenPoint(camera), tile.size), defaultEngineDebugColor2, 1);
+    drawRect(Rect(tile.position.toCanvasPoint(camera), tile.size), defaultEngineDebugColor1);
+    drawRect(Rect(tile.position.toCanvasPoint(camera), tile.size), defaultEngineDebugColor2, 1);
     drawText(text, screenPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
         printfln(
