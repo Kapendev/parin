@@ -49,10 +49,20 @@ struct BackendState {
     GenList!(FontsData.Item.Item, FontsData, GenData) fonts;
     GenList!(SoundsData.Item.Item, SoundsData, GenData) sounds;
     GenList!(MusicData.Item.Item, MusicData, GenData) music;
-
     BasicContainer!IStr droppedPaths;
-    Vec2 mouseBuffer;
+
+    bool windowIsChanging;
+    float windowChangeTime;
+    int windowPreviousWindowWidth;
+    int windowPreviousWindowHeight;
+
+    bool vsyncIsChanging;
+    bool vsync;
+
+    bool isCursorVisible;
+    int fpsMax;
     uint elapsedTickCount;
+    Vec2 mouseBuffer;
 }
 
 Maybe!ResourceId loadTexture(IStr path) {
@@ -125,6 +135,9 @@ void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int
     _backendState.fonts.push(rl.Font());
     _backendState.sounds.push(rl.Sound());
     _backendState.music.push(rl.Music());
+    _backendState.vsync = vsync;
+    _backendState.fpsMax = fpsMax;
+    _backendState.isCursorVisible = true;
 
     rl.SetConfigFlags(rl.FLAG_WINDOW_RESIZABLE | (vsync ? rl.FLAG_VSYNC_HINT : 0));
     rl.SetTraceLogLevel(rl.LOG_ERROR);
@@ -311,6 +324,98 @@ IStr[] droppedPaths() {
 
 // --- Stuff
 
+/// Returns the current screen width.
+int screenWidth() {
+    return rl.GetMonitorWidth(rl.GetCurrentMonitor());
+}
+
+/// Returns the current screen height.
+int screenHeight() {
+    return rl.GetMonitorHeight(rl.GetCurrentMonitor());
+}
+
+/// Returns the current window width.
+int windowWidth() {
+    if (isFullscreen) return screenWidth;
+    else return rl.GetScreenWidth();
+}
+
+/// Returns the current window height.
+int windowHeight() {
+    if (isFullscreen) return screenHeight;
+    else return rl.GetScreenHeight();
+}
+
+bool isFullscreen() {
+    return rl.IsWindowFullscreen();
+}
+
+void setIsFullscreen(bool value) {
+    version (WebAssembly) {
+        // NOTE: Add Emscripten code later.
+    } else {
+        if (_backendState.windowIsChanging) return;
+        if (value && !isFullscreen) {
+            _backendState.windowPreviousWindowWidth = rl.GetScreenWidth();
+            _backendState.windowPreviousWindowHeight = rl.GetScreenHeight();
+            rl.SetWindowPosition(0, 0);
+            rl.SetWindowSize(screenWidth, screenHeight);
+        }
+        _backendState.windowChangeTime = 0.0f;
+        _backendState.windowIsChanging = true;
+    }
+}
+
+void updateIsFullscreen() {
+    enum changeDuration = 0.03f;
+
+    if (!_backendState.windowIsChanging) return;
+    _backendState.windowChangeTime += deltaTime;
+    if (_backendState.windowChangeTime >= changeDuration) {
+        if (isFullscreen) {
+            // Size is first because raylib likes that. I will make raylib happy.
+            rl.ToggleFullscreen();
+            rl.SetWindowSize(
+                _backendState.windowPreviousWindowWidth,
+                _backendState.windowPreviousWindowHeight,
+            );
+            rl.SetWindowPosition(
+                cast(int) (screenWidth * 0.5f - _backendState.windowPreviousWindowWidth * 0.5f),
+                cast(int) (screenHeight * 0.5f - _backendState.windowPreviousWindowHeight * 0.5f),
+            );
+        } else {
+            rl.ToggleFullscreen();
+        }
+        _backendState.windowIsChanging = false;
+    }
+}
+
+/// Returns the current frames per second (FPS).
+int fps() {
+    return rl.GetFPS();
+}
+
+/// Returns the maximum frames per second (FPS).
+int fpsMax() {
+    return _backendState.fpsMax;
+}
+
+/// Sets the maximum number of frames that can be rendered every second (FPS).
+void setFpsMax(int value) {
+    _backendState.fpsMax = value > 0 ? value : 0;
+    rl.SetTargetFPS(_backendState.fpsMax);
+}
+
+/// Returns the total elapsed time since the application started.
+double elapsedTime() {
+    return rl.GetTime();
+}
+
+/// Returns the time elapsed since the last frame.
+float deltaTime() {
+    return rl.GetFrameTime();
+}
+
 /// Sets the seed of the random number generator to the given value.
 void setRandomSeed(int value) {
     rl.SetRandomSeed(value);
@@ -348,8 +453,38 @@ uint elapsedTickCount() {
     return _backendState.elapsedTickCount;
 }
 
-// raylib does not let you do that.
-void setVsync(bool value) {}
+/// Returns the vertical synchronization state (VSync).
+bool vsync() {
+    return _backendState.vsync;
+}
+
+/// Sets the vertical synchronization state (VSync).
+void setVsync(bool value) {
+    version (WebAssembly) {
+        // NOTE: Add Emscripten code later.
+    } else {
+        if (value == _backendState.vsync) return;
+        _backendState.vsyncIsChanging = true;
+    }
+}
+
+void updateVsync() {
+    if (!_backendState.vsyncIsChanging) return;
+    // NOTE: Maybe one day we will be able to change vsync, so keep da code.
+    _backendState.vsyncIsChanging = false;
+}
+
+/// Returns true if the cursor is currently visible.
+bool isCursorVisible() {
+    return _backendState.isCursorVisible;
+}
+
+/// Sets whether the cursor should be visible or hidden.
+void setIsCursorVisible(bool value) {
+    if (value) rl.ShowCursor();
+    else rl.HideCursor();
+    _backendState.isCursorVisible = value;
+}
 
 // raylib does stuff internally.
 // NOTE: No idea if this is a good name.
@@ -361,6 +496,8 @@ void pumpEvents() {
         _backendState.mouseBuffer = Vec2(vec.x, vec.y);
     }
     _backendState.elapsedTickCount += 1;
+    updateIsFullscreen();
+    updateVsync();
 }
 
 // --- Input
@@ -397,7 +534,39 @@ bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
 /// Returns true if the specified key was released.
 bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
 
+/// Returns the current position of the mouse on the screen.
 Vec2 mouse() => _backendState.mouseBuffer;
+Vec2 deltaMouse() => Vec2(rl.GetMouseDelta().x, rl.GetMouseDelta().y);
+
+/// Returns the change in mouse wheel position since the last frame.
+// TODO: The value still depends on target. Fix that one day?
+float deltaWheel() {
+    float result = void;
+    version (WebAssembly) {
+        result = rl.GetMouseWheelMove();
+    } else version (OSX) {
+        result = rl.GetMouseWheelMove();
+    } else {
+        result = -rl.GetMouseWheelMove();
+    }
+    return result;
+}
+
+/// Returns the recently pressed keyboard key.
+/// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
+/// A none key is returned when the queue is empty.
+Keyboard dequeuePressedKey() {
+    auto result = cast(Keyboard) rl.GetKeyPressed();
+    if (result.toStr() == "?") return Keyboard.none; // NOTE: Could maybe be better, but who cares.
+    return result;
+}
+
+/// Returns the recently pressed character.
+/// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
+/// A none character is returned when the queue is empty.
+dchar dequeuePressedRune() {
+    return rl.GetCharPressed();
+}
 
 // --- Drawing
 

@@ -5,6 +5,7 @@ void ready() {
 }
 
 bool update(float dt) {
+    if ('q'.isPressed) toggleIsFullscreen();
     drawText("Hello world!\nYep.\nHAHAHAHAHHAHA...", Vec2(8));
     return false;
 }

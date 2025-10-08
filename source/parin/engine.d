@@ -11,6 +11,10 @@
 // TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
 // TODO: Now that viewports will become small, maybe add a position to them. Will make things simpler.
 // TODO: Web script needs testing probably.
+// TODO: Reorder functions to give them a more logical order. Do that after evetything works.
+// TODO: Think about some names again.
+// TODO: Looks at `lockResolution` function again and think if it makes sense.
+// TODO: Good time to think about the fault values now that everything is broken.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -94,13 +98,11 @@ enum EngineFlag : EngineFlags {
     isUsingAssetsPath           = 0x000002,
     isPixelSnapped              = 0x000004,
     isPixelPerfect              = 0x000008,
-    isFullscreen                = 0x000010,
-    isCursorVisible             = 0x000020,
-    isEmptyTextureVisible       = 0x000040,
-    isEmptyFontVisible          = 0x000080,
-    isLoggingLoadOrSaveFaults   = 0x000100,
-    isLoggingMemoryTrackingInfo = 0x000200,
-    isDebugMode                 = 0x000400,
+    isEmptyTextureVisible       = 0x000010,
+    isEmptyFontVisible          = 0x000020,
+    isLoggingLoadOrSaveFaults   = 0x000040,
+    isLoggingMemoryTrackingInfo = 0x000080,
+    isDebugMode                 = 0x000100,
 }
 
 /// A texture identifier.
@@ -582,16 +584,6 @@ struct EngineViewport {
     }
 }
 
-/// The engine fullscreen state.
-struct EngineFullscreenState {
-    int previousWindowWidth;  /// The previous window with before entering fullscreen mode.
-    int previousWindowHeight; /// The previous window height before entering fullscreen mode.
-    float changeTime = 0.0f;  /// The current change time.
-    bool isChanging;          /// The flag that triggers the fullscreen state.
-
-    enum changeDuration = 0.03f;
-}
-
 /// The engine state.
 struct EngineState {
     EngineFlags flags = defaultEngineFlags;
@@ -601,15 +593,12 @@ struct EngineState {
     EngineFunc debugModeEndFunc;
     Keyboard debugModeKey = defaultEngineDebugModeKey;
 
-    EngineFullscreenState fullscreenState;
     EngineViewportInfo viewportInfoBuffer;
     Vec2 mouseBuffer;
     Vec2 wasdBuffer;
     Vec2 wasdPressedBuffer;
     Vec2 wasdReleasedBuffer;
 
-    int fpsMax = defaultEngineFpsMax;
-    bool vsync = defaultEngineVsync;
     Rgba borderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
@@ -642,8 +631,6 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 
     bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
-    _engineState.fullscreenState.previousWindowWidth = width;
-    _engineState.fullscreenState.previousWindowHeight = height;
     _engineState.viewport.data.color = gray;
     _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.arena.ready(defaultEngineArenaCapacity);
@@ -724,9 +711,6 @@ bool _updateWindowLoop() {
         bk.endDrawing();
     }
 
-    // NOTE: Could copy this style for viewport and fullscreen. They do have other problems though.
-    // VSync code.
-    if (_engineState.vsync != loopVsync) bk.setVsync(_engineState.vsync);
     // Viewport code.
     if (_engineState.viewport.isChanging) {
         if (_engineState.viewport.isLocking) {
@@ -737,27 +721,6 @@ bool _updateWindowLoop() {
             _engineState.viewport.data.color = temp;
         }
         _engineState.viewport.isChanging = false;
-    }
-    // Fullscreen code.
-    if (_engineState.fullscreenState.isChanging) {
-        _engineState.fullscreenState.changeTime += dt;
-        if (_engineState.fullscreenState.changeTime >= _engineState.fullscreenState.changeDuration) {
-            if (rl.IsWindowFullscreen()) {
-                rl.ToggleFullscreen();
-                // Size is first because raylib likes that. I will make raylib happy.
-                rl.SetWindowSize(
-                    _engineState.fullscreenState.previousWindowWidth,
-                    _engineState.fullscreenState.previousWindowHeight,
-                );
-                rl.SetWindowPosition(
-                    cast(int) (screenWidth * 0.5f - _engineState.fullscreenState.previousWindowWidth * 0.5f),
-                    cast(int) (screenHeight * 0.5f - _engineState.fullscreenState.previousWindowHeight * 0.5f),
-                );
-            } else {
-                rl.ToggleFullscreen();
-            }
-            _engineState.fullscreenState.isChanging = false;
-        }
     }
     return result;
 }
@@ -1047,7 +1010,7 @@ void setAssetsPath(IStr path) {
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
 // Get next codepoint in a byte sequence and bytes processed
 // Sorry monky, but it's temp code that I copy-pasted from raylib.
-private int GetCodepointNext_TEMP_REPLACE_ME(const(char)* text, int* codepointSize) {
+private int TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
     *codepointSize = 1;
@@ -1086,7 +1049,7 @@ private int GetCodepointNext_TEMP_REPLACE_ME(const(char)* text, int* codepointSi
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
 // Get previous codepoint in a byte sequence and bytes processed
-private int GetCodepointPrevious_TEMP_REPLACE_ME(const(char)* text, int* codepointSize) {
+private int TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
     int cpSize = 0;
@@ -1096,7 +1059,7 @@ private int GetCodepointPrevious_TEMP_REPLACE_ME(const(char)* text, int* codepoi
     do ptr--;
     while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80));
 
-    codepoint = GetCodepointNext_TEMP_REPLACE_ME(ptr, &cpSize);
+    codepoint = TEMP_REPLACE_ME_GetCodepointNext(ptr, &cpSize);
 
     if (codepoint != 0) *codepointSize = cpSize;
 
@@ -1451,27 +1414,13 @@ void setDebugModeKey(Keyboard value) {
 /// Returns true if the application is currently in fullscreen mode.
 // NOTE: There is a conflict between the flag and real-window-state, which could potentially cause issues for some users.
 bool isFullscreen() {
-    return cast(bool) (_engineState.flags & EngineFlag.isFullscreen);
+    return bk.isFullscreen;
 }
 
 /// Sets whether the application should be in fullscreen mode.
 // NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
 void setIsFullscreen(bool value) {
-    version (WebAssembly) {
-    } else {
-        if (value == isFullscreen || _engineState.fullscreenState.isChanging) return;
-        _engineState.flags = value
-            ? _engineState.flags | EngineFlag.isFullscreen
-            : _engineState.flags & ~EngineFlag.isFullscreen;
-        if (value) {
-            _engineState.fullscreenState.previousWindowWidth = rl.GetScreenWidth();
-            _engineState.fullscreenState.previousWindowHeight = rl.GetScreenHeight();
-            rl.SetWindowPosition(0, 0);
-            rl.SetWindowSize(screenWidth, screenHeight);
-        }
-        _engineState.fullscreenState.changeTime = 0.0f;
-        _engineState.fullscreenState.isChanging = true;
-    }
+    bk.setIsFullscreen(value);
 }
 
 /// Toggles the fullscreen mode on or off.
@@ -1481,16 +1430,12 @@ void toggleIsFullscreen() {
 
 /// Returns true if the cursor is currently visible.
 bool isCursorVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isCursorVisible);
+    return bk.isCursorVisible;
 }
 
 /// Sets whether the cursor should be visible or hidden.
 void setIsCursorVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isCursorVisible
-        : _engineState.flags & ~EngineFlag.isCursorVisible;
-    if (value) rl.ShowCursor();
-    else rl.HideCursor();
+    bk.setIsCursorVisible(value);
 }
 
 /// Toggles the visibility of the cursor.
@@ -1625,46 +1570,42 @@ void toggleResolution(int width, int height) {
 
 /// Returns the current screen width.
 int screenWidth() {
-    return rl.GetMonitorWidth(rl.GetCurrentMonitor());
+    return bk.screenWidth;
 }
 
 /// Returns the current screen height.
 int screenHeight() {
-    return rl.GetMonitorHeight(rl.GetCurrentMonitor());
+    return bk.screenHeight;
 }
 
 /// Returns the current screen size.
 Vec2 screenSize() {
-    return Vec2(screenWidth, screenHeight);
+    return Vec2(bk.screenWidth, bk.screenHeight);
 }
 
 /// Returns the current window width.
 int windowWidth() {
-    if (isFullscreen) return screenWidth;
-    else return rl.GetScreenWidth();
+    return bk.windowWidth;
 }
 
 /// Returns the current window height.
 int windowHeight() {
-    if (isFullscreen) return screenHeight;
-    else return rl.GetScreenHeight();
+    return bk.windowHeight;
 }
 
 /// Returns the current window size.
 Vec2 windowSize() {
-    return Vec2(windowWidth, windowHeight);
+    return Vec2(bk.windowWidth, bk.windowHeight);
 }
 
 /// Returns the current resolution width.
 int resolutionWidth() {
-    if (isResolutionLocked) return _engineState.viewport.data.width;
-    else return windowWidth;
+    return isResolutionLocked ? _engineState.viewport.data.width : windowWidth;
 }
 
 /// Returns the current resolution height.
 int resolutionHeight() {
-    if (isResolutionLocked) return _engineState.viewport.data.height;
-    else return windowHeight;
+    return isResolutionLocked ? _engineState.viewport.data.height : windowHeight;
 }
 
 /// Returns the current resolution size.
@@ -1674,41 +1615,32 @@ Vec2 resolution() {
 
 /// Returns the vertical synchronization state (VSync).
 bool vsync() {
-    return _engineState.vsync;
+    return bk.vsync;
 }
 
 /// Sets the vertical synchronization state (VSync).
 void setVsync(bool value) {
-    version (WebAssembly) {
-    } else {
-        _engineState.vsync = value;
-        if (_engineState.flags & EngineFlag.isUpdating) {
-        } else {
-            // TODO: Check the comment in the window loop function.
-            // gf.glfwSwapInterval(value);
-        }
-    }
+    bk.setVsync(value);
 }
 
 /// Returns the current frames per second (FPS).
 int fps() {
-    return rl.GetFPS();
+    return bk.fps;
 }
 
 /// Returns the maximum frames per second (FPS).
 int fpsMax() {
-    return _engineState.fpsMax;
+    return bk.fpsMax;
 }
 
 /// Sets the maximum number of frames that can be rendered every second (FPS).
 void setFpsMax(int value) {
-    _engineState.fpsMax = value > 0 ? value : 0;
-    rl.SetTargetFPS(_engineState.fpsMax);
+    bk.setFpsMax(value);
 }
 
 /// Returns the total elapsed time since the application started.
 double elapsedTime() {
-    return rl.GetTime();
+    return bk.elapsedTime;
 }
 
 /// Returns the total number of ticks elapsed since the application started.
@@ -1718,33 +1650,22 @@ long elapsedTickCount() {
 
 /// Returns the time elapsed since the last frame.
 float deltaTime() {
-    return rl.GetFrameTime();
+    return bk.deltaTime;
 }
 
 /// Returns the current position of the mouse on the screen.
-pragma(inline, true)
 Vec2 mouse() {
     return _engineState.mouseBuffer;
 }
 
 /// Returns the change in mouse position since the last frame.
 Vec2 deltaMouse() {
-    auto vec = rl.GetMouseDelta();
-    return Vec2(vec.x, vec.y);
+    return bk.deltaMouse;
 }
 
 /// Returns the change in mouse wheel position since the last frame.
-// TODO: The value still depends on target. Fix that one day?
 float deltaWheel() {
-    float result = void;
-    version (WebAssembly) {
-        result = rl.GetMouseWheelMove();
-    } else version (OSX) {
-        result = rl.GetMouseWheelMove();
-    } else {
-        result = -rl.GetMouseWheelMove();
-    }
-    return result;
+    return bk.deltaWheel;
 }
 
 /// Returns true if the specified key is currently pressed.
@@ -1778,35 +1699,30 @@ bool isReleased(Gamepad key, int id = 0) => key ? bk.isReleased(key, id) : false
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
 /// A none key is returned when the queue is empty.
 Keyboard dequeuePressedKey() {
-    auto result = cast(Keyboard) rl.GetKeyPressed();
-    if (result.toStr() == "?") return Keyboard.none; // NOTE: Could maybe be better, but who cares.
-    return result;
+    return bk.dequeuePressedKey();
 }
 
 /// Returns the recently pressed character.
 /// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
 /// A none character is returned when the queue is empty.
 dchar dequeuePressedRune() {
-    return rl.GetCharPressed();
+    return bk.dequeuePressedRune();
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are down.
 /// The vector is not normalized.
-pragma(inline, true)
 Vec2 wasd() {
     return _engineState.wasdBuffer;
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are pressed.
 /// The vector is not normalized.
-pragma(inline, true)
 Vec2 wasdPressed() {
     return _engineState.wasdPressedBuffer;
 }
 
 /// Returns the directional input based on the WASD and arrow keys when they are released.
 /// The vector is not normalized.
-pragma(inline, true)
 Vec2 wasdReleased() {
     return _engineState.wasdReleasedBuffer;
 }
@@ -1955,7 +1871,7 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     while (textCodepointIndex < text.length) {
         lineCodepointCount += 1;
         auto codepointByteCount = 0;
-        auto codepoint = GetCodepointNext_TEMP_REPLACE_ME(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
+        auto codepoint = TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
         auto glyphInfo = font.glyphInfo(codepoint);
         if (codepoint != '\n') {
             if (glyphInfo.advanceX) {
@@ -2172,7 +2088,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
         while (textCodepointIndex < text.length) {
             textCodepointCount += 1;
             auto codepointSize = 0;
-            auto codepoint = GetCodepointNext_TEMP_REPLACE_ME(&text[textCodepointIndex], &codepointSize);
+            auto codepoint = TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
                 linesWidthBuffer.push(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
@@ -2225,7 +2141,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             while (lineCodepointIndex > 0) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
-                auto codepoint = GetCodepointPrevious_TEMP_REPLACE_ME(&line.ptr[lineCodepointIndex], &codepointSize);
+                auto codepoint = TEMP_REPLACE_ME_GetCodepointPrevious(&line.ptr[lineCodepointIndex], &codepointSize);
                 auto glyphInfo = font.glyphInfo(codepoint);
                 if (lineCodepointIndex == line.length) {
                     if (glyphInfo.advanceX) {
@@ -2235,7 +2151,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
                     }
                 } else {
                     auto temp = 0;
-                    auto nextRightToLeftGlyphInfo = font.glyphInfo(GetCodepointPrevious_TEMP_REPLACE_ME(&line[lineCodepointIndex], &temp));
+                    auto nextRightToLeftGlyphInfo = font.glyphInfo(TEMP_REPLACE_ME_GetCodepointPrevious(&line[lineCodepointIndex], &temp));
                     if (nextRightToLeftGlyphInfo.advanceX) {
                         textOffsetX -= nextRightToLeftGlyphInfo.advanceX + font.runeSpacing;
                     } else {
@@ -2254,7 +2170,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             while (lineCodepointIndex < line.length) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
-                auto codepoint = GetCodepointNext_TEMP_REPLACE_ME(&line[lineCodepointIndex], &codepointSize);
+                auto codepoint = TEMP_REPLACE_ME_GetCodepointNext(&line[lineCodepointIndex], &codepointSize);
                 auto glyphInfo = font.glyphInfo(codepoint);
                 if (codepoint != ' ' && codepoint != '\t') {
                     bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), options.color);

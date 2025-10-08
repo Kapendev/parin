@@ -24,90 +24,90 @@ enum RL_MAX_MATRIX_STACK_SIZE = 32; /// Maximum size of Matrix stack
 enum RL_MAX_SHADER_LOCATIONS = 32; /// Maximum number of shader locations supported
 
 // Projection matrix culling
-enum RL_CULL_DISTANCE_NEAR = 0.01;  /// Default near cull distance
-enum RL_CULL_DISTANCE_FAR = 1000.0; /// Default far cull distance
+enum RL_CULL_DISTANCE_NEAR = 0.01;   /// Default near cull distance
+enum RL_CULL_DISTANCE_FAR  = 1000.0; /// Default far cull distance
 
 // Texture parameters (equivalent to OpenGL defines)
-enum RL_TEXTURE_WRAP_S = 0x2802;     /// GL_TEXTURE_WRAP_S
-enum RL_TEXTURE_WRAP_T = 0x2803;     /// GL_TEXTURE_WRAP_T
+enum RL_TEXTURE_WRAP_S     = 0x2802; /// GL_TEXTURE_WRAP_S
+enum RL_TEXTURE_WRAP_T     = 0x2803; /// GL_TEXTURE_WRAP_T
 enum RL_TEXTURE_MAG_FILTER = 0x2800; /// GL_TEXTURE_MAG_FILTER
 enum RL_TEXTURE_MIN_FILTER = 0x2801; /// GL_TEXTURE_MIN_FILTER
 
-enum RL_TEXTURE_FILTER_NEAREST = 0x2600;            /// GL_NEAREST
-enum RL_TEXTURE_FILTER_LINEAR = 0x2601;             /// GL_LINEAR
-enum RL_TEXTURE_FILTER_MIP_NEAREST = 0x2700;        /// GL_NEAREST_MIPMAP_NEAREST
+enum RL_TEXTURE_FILTER_NEAREST            = 0x2600; /// GL_NEAREST
+enum RL_TEXTURE_FILTER_LINEAR             = 0x2601; /// GL_LINEAR
+enum RL_TEXTURE_FILTER_MIP_NEAREST        = 0x2700; /// GL_NEAREST_MIPMAP_NEAREST
 enum RL_TEXTURE_FILTER_NEAREST_MIP_LINEAR = 0x2702; /// GL_NEAREST_MIPMAP_LINEAR
 enum RL_TEXTURE_FILTER_LINEAR_MIP_NEAREST = 0x2701; /// GL_LINEAR_MIPMAP_NEAREST
-enum RL_TEXTURE_FILTER_MIP_LINEAR = 0x2703;         /// GL_LINEAR_MIPMAP_LINEAR
-enum RL_TEXTURE_FILTER_ANISOTROPIC = 0x3000;        /// Anisotropic filter (custom identifier)
-enum RL_TEXTURE_MIPMAP_BIAS_RATIO = 0x4000;         /// Texture mipmap bias, percentage ratio (custom identifier)
+enum RL_TEXTURE_FILTER_MIP_LINEAR         = 0x2703; /// GL_LINEAR_MIPMAP_LINEAR
+enum RL_TEXTURE_FILTER_ANISOTROPIC        = 0x3000; /// Anisotropic filter (custom identifier)
+enum RL_TEXTURE_MIPMAP_BIAS_RATIO         = 0x4000; /// Texture mipmap bias, percentage ratio (custom identifier)
 
-enum RL_TEXTURE_WRAP_REPEAT = 0x2901;        /// GL_REPEAT
-enum RL_TEXTURE_WRAP_CLAMP = 0x812F;         /// GL_CLAMP_TO_EDGE
+enum RL_TEXTURE_WRAP_REPEAT        = 0x2901; /// GL_REPEAT
+enum RL_TEXTURE_WRAP_CLAMP         = 0x812F; /// GL_CLAMP_TO_EDGE
 enum RL_TEXTURE_WRAP_MIRROR_REPEAT = 0x8370; /// GL_MIRRORED_REPEAT
-enum RL_TEXTURE_WRAP_MIRROR_CLAMP = 0x8742;  /// GL_MIRROR_CLAMP_EXT
+enum RL_TEXTURE_WRAP_MIRROR_CLAMP  = 0x8742; /// GL_MIRROR_CLAMP_EXT
 
 // Matrix modes (equivalent to OpenGL)
-enum RL_MODELVIEW = 0x1700;  /// GL_MODELVIEW
+enum RL_MODELVIEW  = 0x1700; /// GL_MODELVIEW
 enum RL_PROJECTION = 0x1701; /// GL_PROJECTION
-enum RL_TEXTURE = 0x1702;    /// GL_TEXTURE
+enum RL_TEXTURE    = 0x1702; /// GL_TEXTURE
 
 // Primitive assembly draw modes
-enum RL_LINES = 0x0001;     /// GL_LINES
+enum RL_LINES     = 0x0001; /// GL_LINES
 enum RL_TRIANGLES = 0x0004; /// GL_TRIANGLES
-enum RL_QUADS = 0x0007;     /// GL_QUADS
+enum RL_QUADS     = 0x0007; /// GL_QUADS
 
 // GL equivalent data types
 enum RL_UNSIGNED_BYTE = 0x1401; /// GL_UNSIGNED_BYTE
-enum RL_FLOAT = 0x1406;         /// GL_FLOAT
+enum RL_FLOAT         = 0x1406; /// GL_FLOAT
 
 // GL buffer usage hint
-enum RL_STREAM_DRAW = 0x88E0;  /// GL_STREAM_DRAW
-enum RL_STREAM_READ = 0x88E1;  /// GL_STREAM_READ
-enum RL_STREAM_COPY = 0x88E2;  /// GL_STREAM_COPY
-enum RL_STATIC_DRAW = 0x88E4;  /// GL_STATIC_DRAW
-enum RL_STATIC_READ = 0x88E5;  /// GL_STATIC_READ
-enum RL_STATIC_COPY = 0x88E6;  /// GL_STATIC_COPY
+enum RL_STREAM_DRAW  = 0x88E0; /// GL_STREAM_DRAW
+enum RL_STREAM_READ  = 0x88E1; /// GL_STREAM_READ
+enum RL_STREAM_COPY  = 0x88E2; /// GL_STREAM_COPY
+enum RL_STATIC_DRAW  = 0x88E4; /// GL_STATIC_DRAW
+enum RL_STATIC_READ  = 0x88E5; /// GL_STATIC_READ
+enum RL_STATIC_COPY  = 0x88E6; /// GL_STATIC_COPY
 enum RL_DYNAMIC_DRAW = 0x88E8; /// GL_DYNAMIC_DRAW
 enum RL_DYNAMIC_READ = 0x88E9; /// GL_DYNAMIC_READ
 enum RL_DYNAMIC_COPY = 0x88EA; /// GL_DYNAMIC_COPY
 
 // GL Shader type
 enum RL_FRAGMENT_SHADER = 0x8B30; /// GL_FRAGMENT_SHADER
-enum RL_VERTEX_SHADER = 0x8B31;   /// GL_VERTEX_SHADER
-enum RL_COMPUTE_SHADER = 0x91B9;  /// GL_COMPUTE_SHADER
+enum RL_VERTEX_SHADER   = 0x8B31; /// GL_VERTEX_SHADER
+enum RL_COMPUTE_SHADER  = 0x91B9; /// GL_COMPUTE_SHADER
 
 // GL blending factors
-enum RL_ZERO = 0;                          /// GL_ZERO
-enum RL_ONE = 1;                           /// GL_ONE
-enum RL_SRC_COLOR = 0x0300;                /// GL_SRC_COLOR
-enum RL_ONE_MINUS_SRC_COLOR = 0x0301;      /// GL_ONE_MINUS_SRC_COLOR
-enum RL_SRC_ALPHA = 0x0302;                /// GL_SRC_ALPHA
-enum RL_ONE_MINUS_SRC_ALPHA = 0x0303;      /// GL_ONE_MINUS_SRC_ALPHA
-enum RL_DST_ALPHA = 0x0304;                /// GL_DST_ALPHA
-enum RL_ONE_MINUS_DST_ALPHA = 0x0305;      /// GL_ONE_MINUS_DST_ALPHA
-enum RL_DST_COLOR = 0x0306;                /// GL_DST_COLOR
-enum RL_ONE_MINUS_DST_COLOR = 0x0307;      /// GL_ONE_MINUS_DST_COLOR
-enum RL_SRC_ALPHA_SATURATE = 0x0308;       /// GL_SRC_ALPHA_SATURATE
-enum RL_CONSTANT_COLOR = 0x8001;           /// GL_CONSTANT_COLOR
+enum RL_ZERO                     = 0;      /// GL_ZERO
+enum RL_ONE                      = 1;      /// GL_ONE
+enum RL_SRC_COLOR                = 0x0300; /// GL_SRC_COLOR
+enum RL_ONE_MINUS_SRC_COLOR      = 0x0301; /// GL_ONE_MINUS_SRC_COLOR
+enum RL_SRC_ALPHA                = 0x0302; /// GL_SRC_ALPHA
+enum RL_ONE_MINUS_SRC_ALPHA      = 0x0303; /// GL_ONE_MINUS_SRC_ALPHA
+enum RL_DST_ALPHA                = 0x0304; /// GL_DST_ALPHA
+enum RL_ONE_MINUS_DST_ALPHA      = 0x0305; /// GL_ONE_MINUS_DST_ALPHA
+enum RL_DST_COLOR                = 0x0306; /// GL_DST_COLOR
+enum RL_ONE_MINUS_DST_COLOR      = 0x0307; /// GL_ONE_MINUS_DST_COLOR
+enum RL_SRC_ALPHA_SATURATE       = 0x0308; /// GL_SRC_ALPHA_SATURATE
+enum RL_CONSTANT_COLOR           = 0x8001; /// GL_CONSTANT_COLOR
 enum RL_ONE_MINUS_CONSTANT_COLOR = 0x8002; /// GL_ONE_MINUS_CONSTANT_COLOR
-enum RL_CONSTANT_ALPHA = 0x8003;           /// GL_CONSTANT_ALPHA
+enum RL_CONSTANT_ALPHA           = 0x8003; /// GL_CONSTANT_ALPHA
 enum RL_ONE_MINUS_CONSTANT_ALPHA = 0x8004; /// GL_ONE_MINUS_CONSTANT_ALPHA
 
 // GL blending functions/equations
-enum RL_FUNC_ADD = 0x8006;              /// GL_FUNC_ADD
-enum RL_MIN = 0x8007;                   /// GL_MIN
-enum RL_MAX = 0x8008;                   /// GL_MAX
-enum RL_FUNC_SUBTRACT = 0x800A;         /// GL_FUNC_SUBTRACT
+enum RL_FUNC_ADD              = 0x8006; /// GL_FUNC_ADD
+enum RL_MIN                   = 0x8007; /// GL_MIN
+enum RL_MAX                   = 0x8008; /// GL_MAX
+enum RL_FUNC_SUBTRACT         = 0x800A; /// GL_FUNC_SUBTRACT
 enum RL_FUNC_REVERSE_SUBTRACT = 0x800B; /// GL_FUNC_REVERSE_SUBTRACT
-enum RL_BLEND_EQUATION = 0x8009;        /// GL_BLEND_EQUATION
-enum RL_BLEND_EQUATION_RGB = 0x8009;    /// GL_BLEND_EQUATION_RGB (Same as BLEND_EQUATION)
-enum RL_BLEND_EQUATION_ALPHA = 0x883D;  /// GL_BLEND_EQUATION_ALPHA
-enum RL_BLEND_DST_RGB = 0x80C8;         /// GL_BLEND_DST_RGB
-enum RL_BLEND_SRC_RGB = 0x80C9;         /// GL_BLEND_SRC_RGB
-enum RL_BLEND_DST_ALPHA = 0x80CA;       /// GL_BLEND_DST_ALPHA
-enum RL_BLEND_SRC_ALPHA = 0x80CB;       /// GL_BLEND_SRC_ALPHA
-enum RL_BLEND_COLOR = 0x8005;           /// GL_BLEND_COLOR
+enum RL_BLEND_EQUATION        = 0x8009; /// GL_BLEND_EQUATION
+enum RL_BLEND_EQUATION_RGB    = 0x8009; /// GL_BLEND_EQUATION_RGB (Same as BLEND_EQUATION)
+enum RL_BLEND_EQUATION_ALPHA  = 0x883D; /// GL_BLEND_EQUATION_ALPHA
+enum RL_BLEND_DST_RGB         = 0x80C8; /// GL_BLEND_DST_RGB
+enum RL_BLEND_SRC_RGB         = 0x80C9; /// GL_BLEND_SRC_RGB
+enum RL_BLEND_DST_ALPHA       = 0x80CA; /// GL_BLEND_DST_ALPHA
+enum RL_BLEND_SRC_ALPHA       = 0x80CB; /// GL_BLEND_SRC_ALPHA
+enum RL_BLEND_COLOR           = 0x8005; /// GL_BLEND_COLOR
 
 //----------------------------------------------------------------------------------
 // Types and Structures Definition

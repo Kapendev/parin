@@ -9,7 +9,7 @@ Parin is designed to make game development fun — it's easy to set up, hackable
     <br>A bite-sized escape room game.
 </p>
 <a href="https://kapendev.itch.io/worms-within">
-    <img alt="Game 1" width="460px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
+    <img alt="Game 1" width="520px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
 </a>
 <br>
 <br>
@@ -17,7 +17,7 @@ Parin is designed to make game development fun — it's easy to set up, hackable
 </div>
 
 > [!NOTE]
-> 🚧 The `main` branch is currently unstable. Please check out a tagged commit.
+> The `main` branch is currently unstable. Please check out a tagged commit.
 
 ## Major Features
 
@@ -27,7 +27,7 @@ Parin is designed to make game development fun — it's easy to set up, hackable
 * Atlas-based animation library
 * Efficient tile map structures
 * Intuitive immediate-mode UI
-* Optional garbage collection (compile-time choice)
+* Optional garbage collection
 * Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
 * Modular design — just `import parin.engine`
 * Includes extras like [microui](examples/integrations/microui.d)
