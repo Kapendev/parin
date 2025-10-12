@@ -36,19 +36,35 @@ alias RlWrap   = int;
 alias RlBlend  = int;
 alias RlKey    = int;
 
+struct RlFont {
+    rl.Font data;
+    int runeSpacing; /// The spacing between individual characters.
+    int lineSpacing; /// The spacing between lines of text.
+}
+
+struct RlSound {
+    Union!(rl.Sound, rl.Music) data;
+    float volume = 1.0f;             // 1.0 is max level.
+    float pan = 0.5f;                // 0.5 is center.
+    float pitch = 1.0f;              // 1.0 is base level.
+    float pitchVariance = 1.0f;      // 1.0 is no variation.
+    float pitchVarianceBase = 1.0f;
+    bool canRepeat;
+    bool isActive;
+    bool isPaused;
+}
+
 struct BackendState {
     alias BasicContainer(T)  = FixedList!(T, defaultBackendResourcesCapacity);
     alias SparseContainer(T) = FixedList!(SparseListItem!T, defaultBackendResourcesCapacity);
     alias TexturesData       = SparseList!(rl.Texture, SparseContainer!(rl.Texture2D));
-    alias FontsData          = SparseList!(rl.Font, SparseContainer!(rl.Font));
-    alias SoundsData         = SparseList!(rl.Sound, SparseContainer!(rl.Sound));
-    alias MusicData          = SparseList!(rl.Music, SparseContainer!(rl.Music));
+    alias FontsData          = SparseList!(RlFont, SparseContainer!(RlFont));
+    alias SoundsData         = SparseList!(RlSound, SparseContainer!(RlSound));
     alias GenData            = BasicContainer!(Gen);
 
     GenList!(TexturesData.Item.Item, TexturesData, GenData) textures;
     GenList!(FontsData.Item.Item, FontsData, GenData) fonts;
     GenList!(SoundsData.Item.Item, SoundsData, GenData) sounds;
-    GenList!(MusicData.Item.Item, MusicData, GenData) music;
     BasicContainer!IStr droppedPaths;
 
     bool windowIsChanging;
@@ -80,16 +96,20 @@ Maybe!ResourceId loadTexture(const(ubyte)[] memory, IStr ext = ".png") {
     return Maybe!ResourceId(_backendState.textures.append(resource));
 }
 
-Maybe!ResourceId loadFont(IStr path, int size, IStr32 runes) {
+Maybe!ResourceId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
     auto resource = rl.LoadFontEx(path.toCStr().getOr(), size, runes.length ? cast(int*) runes.ptr : null, cast(int) runes.length);
     if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cantFind);
-    return Maybe!ResourceId(_backendState.fonts.push(resource));
+    return Maybe!ResourceId(_backendState.fonts.push(
+        RlFont(resource, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size),
+    ));
 }
 
-Maybe!ResourceId loadFont(const(ubyte)[] memory, int size, IStr32 runes, IStr ext = ".ttf") {
+Maybe!ResourceId loadFont(const(ubyte)[] memory, int size, int runeSpacing, int lineSpacing, IStr32 runes, IStr ext = ".ttf") {
     auto resource = rl.LoadFontFromMemory(ext.toCStr().getOr(), memory.ptr, cast(int) memory.length, size, runes.length ? cast(int*) runes.ptr : null, cast(int) runes.length);
     if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cantParse);
-    return Maybe!ResourceId(_backendState.fonts.append(resource));
+    return Maybe!ResourceId(_backendState.fonts.append(
+        RlFont(resource, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size),
+    ));
 }
 
 Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
@@ -117,7 +137,36 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
     }
     // We remove the ID, but not the resource. We need the resource.
     _backendState.textures.remove(texture);
-    return Maybe!ResourceId(_backendState.fonts.push(newResource));
+    return Maybe!ResourceId(_backendState.fonts.push(
+        RlFont(newResource, 0, tileHeight),
+    ));
+}
+
+// TODO: WAS DOINFGL OADING LAST TIME
+/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
+/// Supports both forward slashes and backslashes in file paths.
+Maybe!ResourceId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f) {
+    auto resource = RlSound();
+    auto isEmpty = true;
+    if (path.endsWith(".wav")) {
+        auto temp =  rl.LoadSound(path.toCStr().getOr());
+        resource.data = temp;
+        isEmpty = temp.stream.sampleRate == 0;
+    } else {
+        auto temp = rl.LoadMusicStream(path.toCStr().getOr());
+        resource.data = temp;
+        isEmpty = temp.stream.sampleRate == 0;
+    }
+    if (isEmpty) {
+        return Maybe!ResourceId(Fault.invalid);
+    } else {
+        auto id = _backendState.sounds.push(resource);
+        soundSetVolume(id, volume);
+        soundSetPitch(id, pitch, true);
+        soundSetCanRepeat(id, canRepeat);
+        soundSetPitchVariance(id, pitchVariance);
+        return Maybe!ResourceId(id);
+    }
 }
 
 void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
@@ -128,13 +177,11 @@ void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int
     _backendState.textures.clear();
     _backendState.fonts.clear();
     _backendState.sounds.clear();
-    _backendState.music.clear();
     _backendState.droppedPaths.clear();
     // These make the zero value invalid.
     _backendState.textures.push(rl.Texture());
-    _backendState.fonts.push(rl.Font());
-    _backendState.sounds.push(rl.Sound());
-    _backendState.music.push(rl.Music());
+    _backendState.fonts.push(RlFont());
+    _backendState.sounds.push(RlSound());
     _backendState.vsync = vsync;
     _backendState.fpsMax = fpsMax;
     _backendState.isCursorVisible = true;
@@ -174,9 +221,14 @@ void freeAllFonts() {
     foreach (id; _backendState.fonts.ids) fontFree(id);
 }
 
+void freeAllSounds() {
+    foreach (id; _backendState.sounds.ids) soundFree(id);
+}
+
 void freeBackend() {
     freeAllTextures();
     freeAllFonts();
+    freeAllSounds();
     jokaFree(_backendState);
     rl.CloseAudioDevice();
     rl.CloseWindow();
@@ -185,7 +237,6 @@ void freeBackend() {
 Sz backendTextureCount() => _backendState.textures.length - 1;
 Sz backendFontCount()    => _backendState.fonts.length - 1;
 Sz backendSoundCount()   => _backendState.sounds.length - 1;
-Sz backendMusicCount()   => _backendState.music.length - 1;
 
 /// Checks if the texture is null (default value).
 bool resourceIsNull(ResourceId id) {
@@ -250,26 +301,48 @@ bool fontIsValid(ResourceId id) {
 /// Returns the size of the font.
 int fontSize(ResourceId id) {
     auto resource = &_backendState.fonts[id];
-    return resource.baseSize;
+    return resource.data.baseSize;
 }
 
 /// Sets the filter mode of the font.
 void fontSetFilter(ResourceId id, Filter value) {
     auto resource = &_backendState.fonts[id];
-    rl.SetTextureFilter(resource.texture, toRl(value));
+    rl.SetTextureFilter(resource.data.texture, toRl(value));
 }
 
 /// Sets the wrap mode of the font.
 void fontSetWrap(ResourceId id, Wrap value) {
     auto resource = &_backendState.fonts[id];
-    rl.SetTextureWrap(resource.texture, toRl(value));
+    rl.SetTextureWrap(resource.data.texture, toRl(value));
+}
+
+/// Returns the spacing between individual characters.
+int fontRuneSpacing(ResourceId id) {
+    auto resource = &_backendState.fonts[id];
+    return resource.runeSpacing;
+}
+
+void fontSetRuneSpacing(ResourceId id, int value) {
+    auto resource = &_backendState.fonts[id];
+    resource.runeSpacing = value;
+}
+
+ /// Returns the spacing between lines of text.
+int fontLineSpacing(ResourceId id) {
+    auto resource = &_backendState.fonts[id];
+    return resource.lineSpacing;
+}
+
+void fontSetLineSpacing(ResourceId id, int value) {
+    auto resource = &_backendState.fonts[id];
+    resource.lineSpacing = value;
 }
 
 GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
     auto resource = &_backendState.fonts[id];
-    auto glyphIndex = rl.GetGlyphIndex(*resource, rune);
-    auto info = resource.glyphs[glyphIndex];
-    auto rect = resource.recs[glyphIndex];
+    auto glyphIndex = rl.GetGlyphIndex(resource.data, rune);
+    auto info = resource.data.glyphs[glyphIndex];
+    auto rect = resource.data.recs[glyphIndex];
     // "Why are you not using named thingy magingykdopwjopjw!??"
     auto result = GlyphInfo();
     result.value = info.value;
@@ -283,8 +356,243 @@ GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
 void fontFree(ResourceId id) {
     if (!fontIsValid(id)) return;
     auto resource = &_backendState.fonts[id];
-    rl.UnloadFont(*resource);
+    rl.UnloadFont(resource.data);
     _backendState.fonts.remove(id);
+}
+
+// --- Sound
+
+/// Checks if the font is not loaded.
+bool soundIsValid(ResourceId id) {
+    return !resourceIsNull(id) && _backendState.sounds.has(id);
+}
+
+float soundVolume(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.volume;
+}
+
+/// Sets the volume level for the sound associated with the resource identifier. One is the default value.
+void soundSetVolume(ResourceId id, float value) {
+    auto resource = &_backendState.sounds[id];
+    resource.volume = value;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.SetSoundVolume(resource.data.as!(rl.Sound)(), value);
+    } else {
+        rl.SetMusicVolume(resource.data.as!(rl.Music)(), value);
+    }
+}
+
+float soundPan(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.pan;
+}
+
+/// Sets the stereo panning for the sound associated with the resource identifier. One is the default value.
+void soundSetPan(ResourceId id, float value) {
+    auto resource = &_backendState.sounds[id];
+    resource.pan = value;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.SetSoundPan(resource.data.as!(rl.Sound)(), value);
+    } else {
+        rl.SetMusicPan(resource.data.as!(rl.Music)(), value);
+    }
+}
+
+float soundPitch(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.pitch;
+}
+
+/// Sets the pitch for the sound associated with the resource identifier. One is the default value.
+void soundSetPitch(ResourceId id, float value, bool canUpdatePitchVarianceBase) {
+    auto resource = &_backendState.sounds[id];
+    resource.pitch = value;
+    if (canUpdatePitchVarianceBase) resource.pitchVarianceBase = value;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.SetSoundPitch(resource.data.as!(rl.Sound)(), value);
+    } else {
+        rl.SetMusicPitch(resource.data.as!(rl.Music)(), value);
+    }
+}
+
+/// Returns the pitch variance of the sound associated with the resource identifier.
+float soundPitchVariance(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.pitchVariance;
+}
+
+/// Sets the pitch variance for the sound associated with the resource identifier. One is the default value.
+void soundSetPitchVariance(ResourceId id, float value) {
+    auto resource = &_backendState.sounds[id];
+    resource.pitchVariance = value;
+}
+
+/// Returns the pitch variance base of the sound associated with the resource identifier.
+float soundPitchVarianceBase(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.pitchVarianceBase;
+}
+
+/// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
+void soundSetPitchVarianceBase(ResourceId id, float value) {
+    auto resource = &_backendState.sounds[id];
+    resource.pitchVarianceBase = value;
+}
+
+/// Returns true if the sound associated with the resource identifier can repeat.
+bool soundCanRepeat(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.canRepeat;
+}
+
+/// Sets the repeat mode for the sound associated with the resource identifier.
+void soundSetCanRepeat(ResourceId id, bool value) {
+    auto resource = &_backendState.sounds[id];
+    resource.canRepeat = value;
+}
+
+/// Returns true if the sound associated with the resource identifier is playing.
+bool soundIsActive(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.isActive;
+}
+
+/// Returns true if the sound associated with the resource identifier is paused.
+bool soundIsPaused(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    return resource.isPaused;
+}
+
+/// Returns the current playback time of the sound associated with the resource identifier.
+float soundTime(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (resource.data.isType!(rl.Sound)) {
+        return 0.0f;
+    } else {
+        return rl.GetMusicTimePlayed(resource.data.as!(rl.Music)());
+    }
+}
+
+/// Returns the total duration of the sound associated with the resource identifier.
+float soundDuration(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (resource.data.isType!(rl.Sound)) {
+        return 0.0f;
+    } else {
+        return rl.GetMusicTimeLength(resource.data.as!(rl.Music)());
+    }
+}
+
+/// Frees the resource associated with the identifier.
+void soundFree(ResourceId id) {
+    if (!soundIsValid(id)) return;
+    auto resource = &_backendState.sounds[id];
+    if (resource.data.isType!(rl.Sound)) {
+        rl.UnloadSound(resource.data.as!(rl.Sound)());
+    } else {
+        rl.UnloadMusicStream(resource.data.as!(rl.Music)());
+    }
+    _backendState.sounds.remove(id);
+}
+
+// --- Other sound stuff
+
+void updateSoundPitchVariance(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (resource.pitchVariance != 1.0f) {
+        soundSetPitch(
+            id,
+            resource.pitchVarianceBase + (resource.pitchVarianceBase * resource.pitchVariance - resource.pitchVarianceBase) * randf,
+            false,
+        );
+    }
+}
+
+void activateSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    resource.isActive = true;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.PlaySound(resource.data.as!(rl.Sound)());
+    } else {
+        rl.PlayMusicStream(resource.data.as!(rl.Music)());
+    }
+}
+
+void deactivateSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    resource.isActive = false;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.StopSound(resource.data.as!(rl.Sound)());
+    } else {
+        rl.StopMusicStream(resource.data.as!(rl.Music)());
+    }
+}
+
+void playSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (resource.isActive) return;
+    resumeSound(id);
+    updateSoundPitchVariance(id);
+    activateSound(id);
+}
+
+void stopSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (!resource.isActive) return;
+    resumeSound(id);
+    deactivateSound(id);
+}
+
+/// Resets and plays the specified sound.
+void startSound(ResourceId id) {
+    stopSound(id);
+    playSound(id);
+}
+
+void pauseSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (resource.isPaused) return;
+    resource.isPaused = true;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.PauseSound(resource.data.as!(rl.Sound)());
+    } else {
+        rl.PauseMusicStream(resource.data.as!(rl.Music)());
+    }
+}
+
+void resumeSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (!resource.isPaused) return;
+    resource.isPaused = false;
+    if (resource.data.isType!(rl.Sound)) {
+        rl.ResumeSound(resource.data.as!(rl.Sound)());
+    } else {
+        rl.ResumeMusicStream(resource.data.as!(rl.Music)());
+    }
+}
+
+/// Updates the playback state of the specified sound.
+void updateSound(ResourceId id) {
+    auto resource = &_backendState.sounds[id];
+    if (resource.isPaused || !resource.isActive) return;
+    if (resource.data.isType!(rl.Sound)) {
+        if (rl.IsSoundPlaying(resource.data.as!(rl.Sound)())) return;
+        resource.isActive = false;
+        if (resource.canRepeat) playSound(id);
+    } else {
+        auto isPlayingInternally = rl.IsMusicStreamPlaying(resource.data.as!(rl.Music)());
+        auto hasLoopedInternally = soundDuration(id) - soundTime(id) < 0.1f;
+        if (hasLoopedInternally) {
+            if (resource.canRepeat) {
+                updateSoundPitchVariance(id);
+            } else {
+                stopSound(id);
+                isPlayingInternally = false;
+            }
+        }
+        if (isPlayingInternally) rl.UpdateMusicStream(resource.data.as!(rl.Music)());
+    }
 }
 
 // --- Camera
@@ -498,6 +806,7 @@ void pumpEvents() {
     _backendState.elapsedTickCount += 1;
     updateIsFullscreen();
     updateVsync();
+    foreach (id; _backendState.sounds.ids) updateSound(id);
 }
 
 // --- Input
@@ -636,7 +945,7 @@ void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotat
 
 void drawRune(ResourceId id, int rune, Vec2 position, Rgba color) {
     auto resource = &_backendState.fonts[id];
-    rl.DrawTextCodepoint(*resource, rune, toRl(position), resource.baseSize, toRl(color));
+    rl.DrawTextCodepoint(resource.data, rune, toRl(position), resource.data.baseSize, toRl(color));
 }
 
 pragma(inline, true) {

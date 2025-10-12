@@ -245,7 +245,7 @@ Palette!N csvRowToPalette(Sz N)(IStr csv, Sz row = 0, Sz startCol = 0) {
     Palette!N result = void;
 
     auto line = csv.skipLine();
-    if (row > 0) { row -= 1; line = csv.skipLine(); }
+    while (row > 0) { row -= 1; line = csv.skipLine(); }
     auto fields = line.split(',');
     if (startCol >= fields.length) { result[0] = blank; return result; }
     fields = fields[startCol .. $];

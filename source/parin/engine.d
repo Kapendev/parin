@@ -5,7 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Viewports and sounds use raylib types instead of the generic ones. Change that.
+// TODO: Viewports use raylib types instead of the generic ones. Change that.
 // TODO: Replace the `rl.` calls with `.bk` calls.
 // TODO: Fix microui lol.
 // TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
@@ -15,6 +15,7 @@
 // TODO: Think about some names again.
 // TODO: Looks at `lockResolution` function again and think if it makes sense.
 // TODO: Good time to think about the fault values now that everything is broken.
+// TODO: Add the schicorssss thing.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -79,7 +80,7 @@ enum defaultEngineDebugColor2 = black.alpha(180);
 // ----------
 
 /// The default engine font.
-enum engineFont = FontId(GenIndex(1), 0, defaultEngineFontRuneHeight);
+enum engineFont = FontId(GenIndex(1));
 
 alias EngineUpdateFunc = bool function(float dt);
 alias EngineFunc       = void function();
@@ -107,11 +108,9 @@ enum EngineFlag : EngineFlags {
 
 /// A texture identifier.
 struct TextureId {
-    alias Self = TextureId;
-
     ResourceId data;
 
-    pragma(inline, true) @trusted nothrow @nogc:
+    @trusted nothrow @nogc:
 
     /// Checks if the texture is null (default value).
     bool isNull() {
@@ -124,7 +123,7 @@ struct TextureId {
     }
 
     /// Checks if the texture is valid (loaded) and asserts if it is not.
-    Self validate(IStr message = defaultEngineValidateErrorMessage) {
+    TextureId validate(IStr message = defaultEngineValidateErrorMessage) {
         return isValid ? this : assert(0, message);
     }
 
@@ -161,13 +160,9 @@ struct TextureId {
 
 /// A font identifier.
 struct FontId {
-    alias Self = FontId;
-
     ResourceId data;
-    int runeSpacing; /// The spacing between individual characters.
-    int lineSpacing; /// The spacing between lines of text.
 
-    pragma(inline, true) @trusted nothrow @nogc:
+    @trusted nothrow @nogc:
 
     /// Checks if the font is null (default value).
     bool isNull() {
@@ -180,7 +175,7 @@ struct FontId {
     }
 
     /// Checks if the font is valid (loaded) and asserts if it is not.
-    Self validate(IStr message = defaultEngineValidateErrorMessage) {
+    FontId validate(IStr message = defaultEngineValidateErrorMessage) {
         return isValid ? this : assert(0, message);
     }
 
@@ -199,6 +194,24 @@ struct FontId {
         bk.fontSetWrap(data, value);
     }
 
+    /// Returns the spacing between individual characters.
+    int runeSpacing() {
+        return bk.fontRuneSpacing(data);
+    }
+
+    void setRuneSpacing(int value) {
+        return bk.fontSetRuneSpacing(data, value);
+    }
+
+     /// Returns the spacing between lines of text.
+    int lineSpacing() {
+        return bk.fontLineSpacing(data);
+    }
+
+    void setLineSpacing(int value) {
+        return bk.fontSetRuneSpacing(data, value);
+    }
+
     GlyphInfo glyphInfo(int rune) {
         return bk.fontGlyphInfo(data, rune);
     }
@@ -209,207 +222,108 @@ struct FontId {
     }
 }
 
-/// A sound resource.
-struct Sound {
-    Union!(rl.Sound, rl.Music) data;
-    float pitch = 1.0f;
-    float pitchVariance = 1.0f; // A value of 1.0 means no variation.
-    float pitchVarianceBase = 1.0f;
-    bool canRepeat;
-    bool isActive;
-    bool isPaused;
-
-    @trusted nothrow @nogc:
-
-    deprecated("Will be replaced with canRepeat.")
-    alias isLooping = canRepeat;
-    deprecated("Will be replaced with a variable called isActive. Remove `()` when using this name.")
-    bool isPlaying() { return this.isActive; }
-
-    /// Checks if the sound is not loaded.
-    bool isEmpty() {
-        if (data.isType!(rl.Sound)) {
-            return data.as!(rl.Sound)().stream.sampleRate == 0;
-        } else {
-            return data.as!(rl.Music)().stream.sampleRate == 0;
-        }
-    }
-
-    /// Returns the current playback time of the sound.
-    float time() {
-        if (data.isType!(rl.Sound)) {
-            return 0.0f;
-        } else {
-            return rl.GetMusicTimePlayed(data.as!(rl.Music)());
-        }
-    }
-
-    /// Returns the total duration of the sound.
-    float duration() {
-        if (data.isType!(rl.Sound)) {
-            return 0.0f;
-        } else {
-            return rl.GetMusicTimeLength(data.as!(rl.Music)());
-        }
-    }
-
-    /// Returns the progress of the sound.
-    float progress() {
-        if (duration == 0.0f) return 0.0f;
-        return time / duration;
-    }
-
-    /// Sets the volume level for the sound. One is the default value.
-    void setVolume(float value) {
-        if (data.isType!(rl.Sound)) {
-            rl.SetSoundVolume(data.as!(rl.Sound)(), value);
-        } else {
-            rl.SetMusicVolume(data.as!(rl.Music)(), value);
-        }
-    }
-
-    /// Sets the pitch of the sound. One is the default value.
-    void setPitch(float value, bool canUpdatePitchVarianceBase = false) {
-        pitch = value;
-        if (canUpdatePitchVarianceBase) pitchVarianceBase = value;
-        if (data.isType!(rl.Sound)) {
-            rl.SetSoundPitch(data.as!(rl.Sound)(), value);
-        } else {
-            rl.SetMusicPitch(data.as!(rl.Music)(), value);
-        }
-    }
-
-    /// Sets the stereo panning of the sound. One is the default value.
-    void setPan(float value) {
-        if (data.isType!(rl.Sound)) {
-            rl.SetSoundPan(data.as!(rl.Sound)(), value);
-        } else {
-            rl.SetMusicPan(data.as!(rl.Music)(), value);
-        }
-    }
-
-    /// Frees the loaded sound.
-    void free() {
-        if (isEmpty) return;
-        if (data.isType!(rl.Sound)) {
-            rl.UnloadSound(data.as!(rl.Sound)());
-        } else {
-            rl.UnloadMusicStream(data.as!(rl.Music)());
-        }
-        this = Sound();
-    }
-}
-
-/// An identifier for a managed engine resource. Managed resources can be safely shared throughout the code.
-/// To free these resources, use the `freeManagedEngineResources` function or the `free` method on the identifier.
-/// The identifier is automatically invalidated when the resource is freed.
+/// A sound identifier.
 struct SoundId {
     GenIndex data;
 
     @trusted nothrow @nogc:
 
-    deprecated("Will be replaced with canRepeat.")
-    alias isLooping = canRepeat;
-    deprecated("Will be replaced with setCanRepeat.")
-    alias setIsLooping = setCanRepeat;
-    deprecated("Will be replaced with isActive.")
-    bool isPlaying() { return isActive; }
+    /// Checks if the font is null (default value).
+    bool isNull() {
+        return bk.resourceIsNull(data);
+    }
+
+    /// Checks if the font is valid (loaded). Null is invalid.
+    bool isValid() {
+        return bk.soundIsValid(data);
+    }
+
+    /// Checks if the font is valid (loaded) and asserts if it is not.
+    SoundId validate(IStr message = defaultEngineValidateErrorMessage) {
+        return isValid ? this : assert(0, message);
+    }
+
+    float volume() {
+        return bk.soundVolume(data);
+    }
+
+    void setVolume(float value) {
+        bk.soundSetVolume(data, value);
+    }
+
+    float pan() {
+        return bk.soundPan(data);
+    }
+
+    void setPan(float value) {
+        bk.soundSetPan(data, value);
+    }
+
+    float pitch() {
+        return bk.soundPitch(data);
+    }
+
+    void setPitch(float value, bool canUpdatePitchVarianceBase = false) {
+        bk.soundSetPitch(data, value, canUpdatePitchVarianceBase);
+    }
 
     /// Returns the pitch variance of the sound associated with the resource identifier.
     float pitchVariance() {
-        return getOr().pitchVariance;
+        return bk.soundPitchVariance(data);
     }
 
     /// Sets the pitch variance for the sound associated with the resource identifier. One is the default value.
     void setPitchVariance(float value) {
-        getOr().pitchVariance = value;
+        bk.soundSetPitchVariance(data, value);
     }
 
-    /// Returns the pitch variance base of the sound associated with the resource identifier.
-    float pitchVarianceBase() {
-        return getOr().pitchVarianceBase;
+    /// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
+    void pitchVarianceBase() {
+        bk.soundPitchVarianceBase(data);
     }
 
     /// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
     void setPitchVarianceBase(float value) {
-        getOr().pitchVarianceBase = value;
+        bk.soundSetPitchVarianceBase(data, value);
     }
 
     /// Returns true if the sound associated with the resource identifier can repeat.
     bool canRepeat() {
-        return getOr().canRepeat;
+        return bk.soundCanRepeat(data);
+    }
+
+    void setCanRepeat(bool value) {
+        bk.soundSetCanRepeat(data, value);
     }
 
     /// Returns true if the sound associated with the resource identifier is playing.
     bool isActive() {
-        return getOr().isActive;
+        return bk.soundIsActive(data);
     }
 
     /// Returns true if the sound associated with the resource identifier is paused.
     bool isPaused() {
-        return getOr().isPaused;
+        return bk.soundIsPaused(data);
     }
 
     /// Returns the current playback time of the sound associated with the resource identifier.
     float time() {
-        return getOr().time;
+        return bk.soundTime(data);
     }
 
     /// Returns the total duration of the sound associated with the resource identifier.
     float duration() {
-        return getOr().duration;
+        return bk.soundDuration(data);
     }
 
     /// Returns the progress of the sound associated with the resource identifier.
     float progress() {
-        return getOr().progress;
-    }
-
-    /// Sets the volume level for the sound associated with the resource identifier. One is the default value.
-    void setVolume(float value) {
-        getOr().setVolume(value);
-    }
-
-    /// Sets the pitch for the sound associated with the resource identifier. One is the default value.
-    void setPitch(float value, bool canUpdateBuffer = false) {
-        getOr().setPitch(value, canUpdateBuffer);
-    }
-
-    /// Sets the stereo panning for the sound associated with the resource identifier. One is the default value.
-    void setPan(float value) {
-        getOr().setPan(value);
-    }
-
-    /// Sets the repeat mode for the sound associated with the resource identifier.
-    void setCanRepeat(bool value) {
-        if (isValid) get().canRepeat = value;
-    }
-
-    /// Checks if the resource identifier is valid. It becomes automatically invalid when the resource is freed.
-    bool isValid() {
-        return data.value && _engineState.sounds.has(GenIndex(data.value - 1, data.generation));
-    }
-
-    /// Checks if the resource identifier is valid and asserts if it is not.
-    SoundId validate(IStr message = defaultEngineValidateErrorMessage) {
-        if (!isValid) assert(0, message);
-        return this;
-    }
-
-    /// Retrieves the sound associated with the resource identifier.
-    ref Sound get() {
-        if (!isValid) assert(0, defaultEngineValidateErrorMessage);
-        return _engineState.sounds[GenIndex(data.value - 1, data.generation)];
-    }
-
-    /// Retrieves the sound associated with the resource identifier or returns a default value if invalid.
-    Sound getOr() {
-        return isValid ? _engineState.sounds[GenIndex(data.value - 1, data.generation)] : Sound();
+        return time / duration;
     }
 
     /// Frees the resource associated with the identifier.
     void free() {
-        if (isValid) _engineState.sounds.remove(GenIndex(data.value - 1, data.generation));
+        bk.soundFree(data);
     }
 }
 
@@ -620,7 +534,6 @@ struct EngineState {
     bool dprintIsVisible = true;
 
     EngineViewport viewport;
-    GenList!Sound sounds;
     GrowingArena arena;
 }
 
@@ -632,7 +545,6 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
     bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
     _engineState.viewport.data.color = gray;
-    _engineState.sounds.reserve(defaultEngineSoundsCapacity);
     _engineState.arena.ready(defaultEngineArenaCapacity);
     // TODO: will have to remove the id thing and also change the toTexure names to load maybe.
     loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
@@ -660,9 +572,6 @@ bool _updateWindowLoop() {
     _updateViewportInfoBuffer();
     _updateEngineMouseBuffer(bk.mouse);
     _updateEngineWasdBuffer();
-    foreach (ref sound; _engineState.sounds.items) {
-        updateSound(sound);
-    }
 
     // Begin drawing.
     auto loopVsync = vsync;
@@ -760,7 +669,6 @@ void _closeWindow() {
     auto isLogging = isLoggingMemoryTrackingInfo;
 
     _engineState.viewport.free();
-    _engineState.sounds.freeWithItems();
     _engineState.arena.free();
     jokaFree(_engineState);
     _engineState = null;
@@ -858,16 +766,6 @@ T[] frameMakeSlice(T)(Sz length, const(T) value = T.init) {
     return _engineState.arena.makeSlice!T(length, value);
 }
 
-/// Converts a sound into a managed engine resource.
-/// The sound will be freed when the resource is freed.
-// NOTE: We avoid passing sounds by value, but it's fine here because this function will not be called every frame.
-SoundId toSoundId(Sound from) {
-    if (from.isEmpty) return SoundId();
-    auto id = SoundId(_engineState.sounds.push(from));
-    id.data.value += 1;
-    return id;
-}
-
 /// Returns a temporary text container.
 /// The resource remains valid for the duration of the current frame.
 BStr prepareTempText() {
@@ -926,11 +824,11 @@ TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FI
 
 FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
-    auto data = bk.loadFont(toAssetsPath(path), size, runes).get(trap);
+    auto data = bk.loadFont(toAssetsPath(path), size, runeSpacing, lineSpacing, runes).get(trap);
     if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", path.toAssetsPath()))) {
         bk.fontSetFilter(data, _engineState.defaultFilter);
         bk.fontSetWrap(data, _engineState.defaultWrap);
-        return FontId(data, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size);
+        return FontId(data);
     }
     return FontId();
 }
@@ -938,11 +836,11 @@ FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1,
 /// Converts bytes into a font. Returns an empty font on error.
 FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
-    auto data = bk.loadFont(memory, size, runes, ext).get(trap);
+    auto data = bk.loadFont(memory, size, runeSpacing, lineSpacing, runes, ext).get(trap);
     if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", "[MEMORY]"))) {
         bk.fontSetFilter(data, _engineState.defaultFilter);
         bk.fontSetWrap(data, _engineState.defaultWrap);
-        return FontId(data, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size);
+        return FontId(data);
     }
     return FontId();
 }
@@ -953,37 +851,20 @@ FontId loadFont(TextureId texture, int tileWidth, int tileHeight, IStr file = __
     if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", "[TEXTURE]"))) {
         bk.fontSetFilter(data, _engineState.defaultFilter);
         bk.fontSetWrap(data, _engineState.defaultWrap);
-        return FontId(data, 0, tileHeight);
+        return FontId(data);
     }
     return FontId();
 }
 
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
-Maybe!Sound loadRawSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
-    auto value = Sound();
-    if (path.endsWith(".wav")) {
-        value.data = rl.LoadSound(path.toAssetsPath().toCStr().getOr());
-    } else {
-        value.data = rl.LoadMusicStream(path.toAssetsPath().toCStr().getOr());
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadSound(toAssetsPath(path), volume, pitch, canRepeat, pitchVariance).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "sound", path.toAssetsPath()))) {
+        return SoundId(data);
     }
-    if (isLoggingLoadOrSaveFaults && value.isEmpty) printfln!(StdStream.error)(defaultEngineLoadErrorMessage, file, line, "sound", path.toAssetsPath());
-    if (value.isEmpty) {
-        return Maybe!Sound();
-    } else {
-        value.setVolume(volume);
-        value.setPitch(pitch, true);
-        value.canRepeat = canRepeat;
-        value.pitchVariance = pitchVariance;
-        return Maybe!Sound(value);
-    }
-}
-
-/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// The resource can be safely shared throughout the code and is automatically invalidated when the resource is freed.
-/// Supports both forward slashes and backslashes in file paths.
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
-    return loadRawSound(path, volume, pitch, canRepeat, pitchVariance, file, line).get(_engineState.lastLoadOrSaveFault).toSoundId();
+    return SoundId();
 }
 
 /// Saves a text file to the assets folder.
@@ -1288,11 +1169,9 @@ IStr[] droppedPaths() {
     return bk.droppedPaths;
 }
 
-/// Frees all managed engine resources.
+/// Frees all managed engine resources. // TODO no idea what here is oging on
 void freeManagedEngineResources() {
     bk.freeAllTextures();
-    foreach (ref item; _engineState.sounds.items) item.free();
-    _engineState.sounds.clear();
 }
 
 deprecated("Was too generic. Use `freeManagedEngineResources` now.")
@@ -1728,135 +1607,46 @@ Vec2 wasdReleased() {
 }
 
 /// Plays the specified sound.
-void playSound(ref Sound sound) {
-    if (sound.isEmpty || sound.isActive) return;
-    sound.isActive = true;
-    resumeSound(sound);
-    if (sound.pitchVariance != 1.0f) {
-        sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
-    }
-    if (sound.data.isType!(rl.Sound)) {
-        rl.PlaySound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.PlayMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Plays the specified sound.
 void playSound(SoundId sound) {
-    if (sound.isValid) playSound(sound.get());
-}
-
-/// Stops playback of the specified sound.
-void stopSound(ref Sound sound) {
-    if (sound.isEmpty || !sound.isActive) return;
-    sound.isActive = false;
-    resumeSound(sound);
-    if (sound.data.isType!(rl.Sound)) {
-        rl.StopSound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.StopMusicStream(sound.data.as!(rl.Music)());
-    }
+    if (!sound.isValid) return;
+    bk.playSound(sound.data);
 }
 
 /// Stops playback of the specified sound.
 void stopSound(SoundId sound) {
-    if (sound.isValid) stopSound(sound.get());
-}
-
-/// Pauses playback of the specified sound.
-void pauseSound(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused) return;
-    sound.isPaused = true;
-    if (sound.data.isType!(rl.Sound)) {
-        rl.PauseSound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.PauseMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Pauses playback of the specified sound.
-void pauseSound(SoundId sound) {
-    if (sound.isValid) pauseSound(sound.get());
-}
-
-/// Resumes playback of the specified paused sound.
-void resumeSound(ref Sound sound) {
-    if (sound.isEmpty || !sound.isPaused) return;
-    sound.isPaused = false;
-    if (sound.data.isType!(rl.Sound)) {
-        rl.ResumeSound(sound.data.as!(rl.Sound)());
-    } else {
-        rl.ResumeMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// Resumes playback of the specified paused sound.
-void resumeSound(SoundId sound) {
-    if (sound.isValid) resumeSound(sound.get());
-}
-
-/// Resets and plays the specified sound.
-void startSound(ref Sound sound) {
-    stopSound(sound);
-    playSound(sound);
+    if (!sound.isValid) return;
+    bk.stopSound(sound.data);
 }
 
 /// Resets and plays the specified sound.
 void startSound(SoundId sound) {
-    if (sound.isValid) startSound(sound.get());
+    if (!sound.isValid) return;
+    bk.startSound(sound.data);
 }
 
-/// Toggles the active state of the sound.
-void toggleSoundIsActive(ref Sound sound) {
-    if (sound.isActive) stopSound(sound);
-    else playSound(sound);
+/// Pauses playback of the specified sound.
+void pauseSound(SoundId sound) {
+    if (!sound.isValid) return;
+    bk.pauseSound(sound.data);
+}
+
+/// Resumes playback of the specified paused sound.
+void resumeSound(SoundId sound) {
+    if (!sound.isValid) return;
+    bk.resumeSound(sound.data);
 }
 
 /// Toggles the active state of the sound.
 void toggleSoundIsActive(SoundId sound) {
-    if (sound.isValid) toggleSoundIsActive(sound.get());
-}
-
-/// Toggles the paused state of the sound.
-void toggleSoundIsPaused(ref Sound sound) {
-    if (sound.isPaused) resumeSound(sound);
-    else pauseSound(sound);
+    if (sound.isActive) stopSound(sound);
+    else playSound(sound);
 }
 
 /// Toggles the paused state of the sound.
 void toggleSoundIsPaused(SoundId sound) {
-    if (sound.isValid) toggleSoundIsPaused(sound.get());
+    if (sound.isPaused) resumeSound(sound);
+    else pauseSound(sound);
 }
-
-/// Updates the playback state of the specified sound.
-void updateSound(ref Sound sound) {
-    if (sound.isEmpty || sound.isPaused || !sound.isActive) return;
-    if (sound.data.isType!(rl.Sound)) {
-        if (rl.IsSoundPlaying(sound.data.as!(rl.Sound)())) return;
-        sound.isActive = false;
-        if (sound.canRepeat) playSound(sound);
-    } else {
-        auto isPlayingInternally = rl.IsMusicStreamPlaying(sound.data.as!(rl.Music)());
-        auto hasLoopedInternally = sound.duration - sound.time < 0.1f;
-        if (hasLoopedInternally) {
-            if (sound.canRepeat) {
-                // Copy-paste from `playSound`. Maybe make that a function.
-                if (sound.pitchVariance != 1.0f) {
-                    sound.setPitch(sound.pitchVarianceBase + (sound.pitchVarianceBase * sound.pitchVariance - sound.pitchVarianceBase) * randf);
-                }
-            } else {
-                stopSound(sound);
-                isPlayingInternally = false;
-            }
-        }
-        if (isPlayingInternally) rl.UpdateMusicStream(sound.data.as!(rl.Music)());
-    }
-}
-
-/// This function does nothing because managed resources are updated by the engine.
-/// It only exists to make it easier to swap between resource types.
-void updateSound(SoundId sound) {}
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
@@ -2035,10 +1825,10 @@ void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = Dr
 */
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
-void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     if (!font.isValid) {
         if (isEmptyFontVisible) font = engineFont;
-        else return;
+        else return Vec2();
     }
 
     auto rect = font.glyphInfo(rune).rect.toRect();
@@ -2054,12 +1844,13 @@ void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
     bk.matrixTranslate(floor(-origin.x), floor(-origin.y), 0.0f);
     bk.drawRune(font.data, rune, Vec2(), options.color);
     bk.popMatrix();
+    return rect.size;
 }
 
 /// Draws a single character from the default font at the given position with the specified draw options.
 /// Check the `setDefaultFont` function before using this function.
-void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawRune(_engineState.defaultFont, rune, position, options);
+Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
+    return drawRune(_engineState.defaultFont, rune, position, options);
 }
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
@@ -2230,7 +2021,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             fps,
             bk.backendTextureCount,
             bk.backendFontCount - 1,
-            _engineState.sounds.length,
+            bk.backendSoundCount,
             cast(int) a.x,
             cast(int) a.y,
             cast(int) b.x,
@@ -2244,7 +2035,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
                 fps,
                 bk.backendTextureCount,
                 bk.backendFontCount - 1,
-                _engineState.sounds.length,
+                bk.backendSoundCount,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
             );
@@ -2253,7 +2044,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
                 fps,
                 bk.backendTextureCount,
                 bk.backendFontCount - 1,
-                _engineState.sounds.length,
+                bk.backendSoundCount,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
                 cast(int) a.x,
