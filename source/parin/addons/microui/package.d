@@ -5,7 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-module addons.microui;
+module parin.addons.microui;
 
-public import addons.microui.wrapper;
-public import addons.microui.helper;
+public import parin.addons.microui.wrapper;
+public import parin.addons.microui.helper;

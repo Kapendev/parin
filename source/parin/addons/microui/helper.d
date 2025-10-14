@@ -8,7 +8,7 @@
 // TODO: work on attributes maybe.
 
 /// Equivalent to `import wrapper`, with additional helper functions for Parin.
-module addons.microui.helper;
+module parin.addons.microui.helper;
 /* TODO: JUST INGORE UNTIL PARIN WORKS AGAIN
 import parin.engine;
 import addons.microui.core; // TODO: Used because there are some symbols that I haven't removed yet.

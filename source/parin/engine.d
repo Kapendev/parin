@@ -5,10 +5,8 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Viewports use raylib types instead of the generic ones. Change that.
 // TODO: Fix microui lol.
 // TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
-// TODO: Now that viewports will become small, maybe add a position to them. Will make things simpler.
 // TODO: Web script needs testing probably.
 // TODO: Reorder functions to give them a more logical order. Do that after evetything works.
 // TODO: Think about some names again.
@@ -315,7 +313,7 @@ struct SoundId {
 
     /// Returns the progress of the sound associated with the resource identifier.
     float progress() {
-        return time / duration;
+        return bk.soundProgress(data);
     }
 
     /// Frees the resource associated with the identifier.
@@ -329,13 +327,6 @@ struct ViewportId {
     ResourceId data;
 
     @trusted nothrow @nogc:
-
-    /* TODO make load func /// Initializes the viewport with the given size, background color and blend mode.
-    this(Rgba color, Blend blend = Blend.alpha) {
-        this.color = color;
-        this.blend = blend;
-    }
-    */
 
     /// Checks if the font is null (default value).
     bool isNull() {
@@ -440,6 +431,14 @@ void detach(ref Camera camera) {
     if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
     bk.endCamera(camera);
     _engineState.userCamera = Camera();
+}
+
+void beginClip(Rect area) {
+    bk.beginClip(area);
+}
+
+void endClip() {
+    bk.endClip();
 }
 
 /// Represents a scheduled task with interval, repeat count, and callback function.

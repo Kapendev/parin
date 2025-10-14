@@ -10,9 +10,9 @@
 
 /// High-level wrapper around the low-level `core` module.
 /// Provides helper functions that use a global context and follow D naming conventions.
-module addons.microui.wrapper;
+module parin.addons.microui.wrapper;
 
-import addons.microui.core;
+import parin.addons.microui.core;
 
 __gshared UiContext uiContext;
 

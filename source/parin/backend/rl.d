@@ -5,6 +5,10 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: Think about exposing filter and wrap.
+//   It's not really needed and by not having them it's also easier to go over the textures.
+//   So, maybe keep it internal for the viewports. It's the only thing that has that actually lol.
+
 module parin.backend.rl;
 
 import rl = parin.bindings.rl;
@@ -164,7 +168,6 @@ Maybe!ResourceId loadViewport(int width, int height, Rgba color, Blend blend) {
     ));
 }
 
-// TODO: WAS DOINFGL OADING LAST TIME
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Maybe!ResourceId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f) {
@@ -194,18 +197,13 @@ Maybe!ResourceId loadSound(IStr path, float volume, float pitch, bool canRepeat,
 void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
     enum targetHtmlElementId = "canvas";
 
-    // Make sure the state is OK first.
-    _backendState = jokaMakeBlank!BackendState();
-    _backendState.textures.clear();
-    _backendState.fonts.clear();
-    _backendState.sounds.clear();
-    _backendState.viewports.clear();
-    _backendState.droppedPaths.clear();
-    // These make the zero value invalid.
+    // The empty resources make the zero values invalid.
+    _backendState = jokaMake!BackendState();
     _backendState.textures.push(rl.Texture());
     _backendState.fonts.push(RlFont());
     _backendState.sounds.push(RlSound());
     _backendState.viewports.push(RlViewport());
+
     _backendState.vsync = vsync;
     _backendState.fpsMax = fpsMax;
     _backendState.isCursorVisible = true;
@@ -238,29 +236,35 @@ void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int
 @trusted nothrow @nogc:
 
 void freeAllTextures() {
-    foreach (id; _backendState.textures.ids) textureFree(id);
+    foreach (id; _backendState.textures.ids) if (id.value) textureFree(id);
 }
 
 void freeAllFonts() {
-    foreach (id; _backendState.fonts.ids) fontFree(id);
+    foreach (id; _backendState.fonts.ids) if (id.value) fontFree(id);
 }
 
 void freeAllSounds() {
-    foreach (id; _backendState.sounds.ids) soundFree(id);
+    foreach (id; _backendState.sounds.ids) if (id.value) soundFree(id);
+}
+
+void freeAllViewports() {
+    foreach (id; _backendState.viewports.ids) if (id.value) viewportFree(id);
 }
 
 void freeBackend() {
     freeAllTextures();
     freeAllFonts();
     freeAllSounds();
+    freeAllViewports();
     jokaFree(_backendState);
     rl.CloseAudioDevice();
     rl.CloseWindow();
 }
 
 Sz backendTextureCount() => _backendState.textures.length - 1;
-Sz backendFontCount()    => _backendState.fonts.length - 1;
-Sz backendSoundCount()   => _backendState.sounds.length - 1;
+Sz backendFontCount() => _backendState.fonts.length - 1;
+Sz backendSoundCount() => _backendState.sounds.length - 1;
+Sz backendViewportCount() => _backendState.viewports.length - 1;
 
 /// Checks if the texture is null (default value).
 bool resourceIsNull(ResourceId id) {
@@ -277,6 +281,7 @@ bool textureIsValid(ResourceId id) {
 /// Returns the width of the texture.
 /// Will return `0` for null and asserts for other invalid IDs.
 int textureWidth(ResourceId id) {
+    if (!textureIsValid(id)) return 0;
     auto resource = &_backendState.textures[id];
     return resource.width;
 }
@@ -284,6 +289,7 @@ int textureWidth(ResourceId id) {
 /// Returns the height of the texture.
 /// Will return `0` for null and asserts for other invalid IDs.
 int textureHeight(ResourceId id) {
+    if (!textureIsValid(id)) return 0;
     auto resource = &_backendState.textures[id];
     return resource.height;
 }
@@ -291,18 +297,21 @@ int textureHeight(ResourceId id) {
 /// Returns the size of the texture.
 /// Will return `Vec2(0)` for null and asserts for other invalid IDs.
 Vec2 textureSize(ResourceId id) {
+    if (!textureIsValid(id)) return Vec2();
     auto resource = &_backendState.textures[id];
     return Vec2(resource.width, resource.height);
 }
 
 /// Sets the filter mode of the texture.
 void textureSetFilter(ResourceId id, Filter value) {
+    if (!textureIsValid(id)) return;
     auto resource = &_backendState.textures[id];
     rl.SetTextureFilter(*resource, toRl(value));
 }
 
 /// Sets the wrap mode of the texture.
 void textureSetWrap(ResourceId id, Wrap value) {
+    if (!textureIsValid(id)) return;
     auto resource = &_backendState.textures[id];
     rl.SetTextureWrap(*resource, toRl(value));
 }
@@ -324,45 +333,53 @@ bool fontIsValid(ResourceId id) {
 
 /// Returns the size of the font.
 int fontSize(ResourceId id) {
+    if (!fontIsValid(id)) return 0;
     auto resource = &_backendState.fonts[id];
     return resource.data.baseSize;
 }
 
 /// Sets the filter mode of the font.
 void fontSetFilter(ResourceId id, Filter value) {
+    if (!fontIsValid(id)) return;
     auto resource = &_backendState.fonts[id];
     rl.SetTextureFilter(resource.data.texture, toRl(value));
 }
 
 /// Sets the wrap mode of the font.
 void fontSetWrap(ResourceId id, Wrap value) {
+    if (!fontIsValid(id)) return;
     auto resource = &_backendState.fonts[id];
     rl.SetTextureWrap(resource.data.texture, toRl(value));
 }
 
 /// Returns the spacing between individual characters.
 int fontRuneSpacing(ResourceId id) {
+    if (!fontIsValid(id)) return 0;
     auto resource = &_backendState.fonts[id];
     return resource.runeSpacing;
 }
 
 void fontSetRuneSpacing(ResourceId id, int value) {
+    if (!fontIsValid(id)) return;
     auto resource = &_backendState.fonts[id];
     resource.runeSpacing = value;
 }
 
  /// Returns the spacing between lines of text.
 int fontLineSpacing(ResourceId id) {
+    if (!fontIsValid(id)) return 0;
     auto resource = &_backendState.fonts[id];
     return resource.lineSpacing;
 }
 
 void fontSetLineSpacing(ResourceId id, int value) {
+    if (!fontIsValid(id)) return;
     auto resource = &_backendState.fonts[id];
     resource.lineSpacing = value;
 }
 
 GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
+    if (!fontIsValid(id)) return GlyphInfo();
     auto resource = &_backendState.fonts[id];
     auto glyphIndex = rl.GetGlyphIndex(resource.data, rune);
     auto info = resource.data.glyphs[glyphIndex];
@@ -392,12 +409,14 @@ bool soundIsValid(ResourceId id) {
 }
 
 float soundVolume(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.volume;
 }
 
 /// Sets the volume level for the sound associated with the resource identifier. One is the default value.
 void soundSetVolume(ResourceId id, float value) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.volume = value;
     if (resource.data.isType!(rl.Sound)) {
@@ -408,12 +427,14 @@ void soundSetVolume(ResourceId id, float value) {
 }
 
 float soundPan(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pan;
 }
 
 /// Sets the stereo panning for the sound associated with the resource identifier. One is the default value.
 void soundSetPan(ResourceId id, float value) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.pan = value;
     if (resource.data.isType!(rl.Sound)) {
@@ -424,12 +445,14 @@ void soundSetPan(ResourceId id, float value) {
 }
 
 float soundPitch(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pitch;
 }
 
 /// Sets the pitch for the sound associated with the resource identifier. One is the default value.
 void soundSetPitch(ResourceId id, float value, bool canUpdatePitchVarianceBase) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.pitch = value;
     if (canUpdatePitchVarianceBase) resource.pitchVarianceBase = value;
@@ -442,54 +465,63 @@ void soundSetPitch(ResourceId id, float value, bool canUpdatePitchVarianceBase) 
 
 /// Returns the pitch variance of the sound associated with the resource identifier.
 float soundPitchVariance(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pitchVariance;
 }
 
 /// Sets the pitch variance for the sound associated with the resource identifier. One is the default value.
 void soundSetPitchVariance(ResourceId id, float value) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.pitchVariance = value;
 }
 
 /// Returns the pitch variance base of the sound associated with the resource identifier.
 float soundPitchVarianceBase(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pitchVarianceBase;
 }
 
 /// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
 void soundSetPitchVarianceBase(ResourceId id, float value) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.pitchVarianceBase = value;
 }
 
 /// Returns true if the sound associated with the resource identifier can repeat.
 bool soundCanRepeat(ResourceId id) {
+    if (!soundIsValid(id)) return false;
     auto resource = &_backendState.sounds[id];
     return resource.canRepeat;
 }
 
 /// Sets the repeat mode for the sound associated with the resource identifier.
 void soundSetCanRepeat(ResourceId id, bool value) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.canRepeat = value;
 }
 
 /// Returns true if the sound associated with the resource identifier is playing.
 bool soundIsActive(ResourceId id) {
+    if (!soundIsValid(id)) return false;
     auto resource = &_backendState.sounds[id];
     return resource.isActive;
 }
 
 /// Returns true if the sound associated with the resource identifier is paused.
 bool soundIsPaused(ResourceId id) {
+    if (!soundIsValid(id)) return false;
     auto resource = &_backendState.sounds[id];
     return resource.isPaused;
 }
 
 /// Returns the current playback time of the sound associated with the resource identifier.
 float soundTime(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     if (resource.data.isType!(rl.Sound)) {
         return 0.0f;
@@ -500,12 +532,19 @@ float soundTime(ResourceId id) {
 
 /// Returns the total duration of the sound associated with the resource identifier.
 float soundDuration(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
     auto resource = &_backendState.sounds[id];
     if (resource.data.isType!(rl.Sound)) {
         return 0.0f;
     } else {
         return rl.GetMusicTimeLength(resource.data.as!(rl.Music)());
     }
+}
+
+/// Returns the progress of the sound associated with the resource identifier.
+float soundProgress(ResourceId id) {
+    if (!soundIsValid(id)) return 0.0f;
+    return soundTime(id) / soundDuration(id);
 }
 
 /// Frees the resource associated with the identifier.
@@ -523,6 +562,7 @@ void soundFree(ResourceId id) {
 // --- Other sound stuff
 
 void updateSoundPitchVariance(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     if (resource.pitchVariance != 1.0f) {
         soundSetPitch(
@@ -534,6 +574,7 @@ void updateSoundPitchVariance(ResourceId id) {
 }
 
 void activateSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.isActive = true;
     if (resource.data.isType!(rl.Sound)) {
@@ -544,6 +585,7 @@ void activateSound(ResourceId id) {
 }
 
 void deactivateSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     resource.isActive = false;
     if (resource.data.isType!(rl.Sound)) {
@@ -554,6 +596,7 @@ void deactivateSound(ResourceId id) {
 }
 
 void playSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     if (resource.isActive) return;
     resumeSound(id);
@@ -562,6 +605,7 @@ void playSound(ResourceId id) {
 }
 
 void stopSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     if (!resource.isActive) return;
     resumeSound(id);
@@ -570,11 +614,13 @@ void stopSound(ResourceId id) {
 
 /// Resets and plays the specified sound.
 void startSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     stopSound(id);
     playSound(id);
 }
 
 void pauseSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     if (resource.isPaused) return;
     resource.isPaused = true;
@@ -586,6 +632,7 @@ void pauseSound(ResourceId id) {
 }
 
 void resumeSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     if (!resource.isPaused) return;
     resource.isPaused = false;
@@ -598,6 +645,7 @@ void resumeSound(ResourceId id) {
 
 /// Updates the playback state of the specified sound.
 void updateSound(ResourceId id) {
+    if (!soundIsValid(id)) return;
     auto resource = &_backendState.sounds[id];
     if (resource.isPaused || !resource.isActive) return;
     if (resource.data.isType!(rl.Sound)) {
@@ -628,18 +676,21 @@ bool viewportIsValid(ResourceId id) {
 
 /// Returns the width of the viewport.
 int viewportWidth(ResourceId id) {
+    if (!viewportIsValid(id)) return 0;
     auto resource = &_backendState.viewports[id];
     return resource.data.texture.width;
 }
 
 /// Returns the height of the viewport.
 int viewportHeight(ResourceId id) {
+    if (!viewportIsValid(id)) return 0;
     auto resource = &_backendState.viewports[id];
     return resource.data.texture.height;
 }
 
 /// Returns the size of the viewport.
 Vec2 viewportSize(ResourceId id) {
+    if (!viewportIsValid(id)) return Vec2();
     auto resource = &_backendState.viewports[id];
     return Vec2(resource.data.texture.width, resource.data.texture.height);
 }
@@ -647,8 +698,7 @@ Vec2 viewportSize(ResourceId id) {
 /// Resizes the viewport to the given width and height.
 /// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
 void viewportResize(ResourceId id, int newWidth, int newHeight) {
-    // NOTE: Problems with what happens when I put a null resource and stuff maybe? No idea, needs testing.
-    if (!viewportIsValid(id)) return; // TODO: Might think about when to do this check again and why.
+    if (!viewportIsValid(id)) return;
     auto resource = &_backendState.viewports[id];
     auto hasSameSize = resource.data.texture.width == newWidth && resource.data.texture.height == newHeight;
     auto hasData = resource.data.texture.id != 0;
@@ -666,6 +716,7 @@ void viewportResize(ResourceId id, int newWidth, int newHeight) {
 
 /// Sets the filter mode of the viewport.
 void viewportSetFilter(ResourceId id, Filter value) {
+    if (!viewportIsValid(id)) return;
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
@@ -674,6 +725,7 @@ void viewportSetFilter(ResourceId id, Filter value) {
 
 /// Sets the wrap mode of the viewport.
 void viewportSetWrap(ResourceId id, Wrap value) {
+    if (!viewportIsValid(id)) return;
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
@@ -681,21 +733,25 @@ void viewportSetWrap(ResourceId id, Wrap value) {
 }
 
 bool viewportIsAttached(ResourceId id) {
+    if (!viewportIsValid(id)) return false;
     auto resource = &_backendState.viewports[id];
     return resource.isAttached;
 }
 
 Rgba viewportColor(ResourceId id) {
+    if (!viewportIsValid(id)) return Rgba();
     auto resource = &_backendState.viewports[id];
     return resource.color;
 }
 
 void viewportSetColor(ResourceId id, Rgba value) {
+    if (!viewportIsValid(id)) return;
     auto resource = &_backendState.viewports[id];
     resource.color = value;
 }
 
 Blend viewportBlend(ResourceId id) {
+    if (!viewportIsValid(id)) return Blend();
     auto resource = &_backendState.viewports[id];
     return resource.blend;
 }
@@ -949,42 +1005,6 @@ void pumpEvents() {
 
 // --- Input
 
-void beginCamera(ref Camera camera, Vec2 canvasSize, Rounding type) {
-    camera.isAttached = true;
-    rl.BeginMode2D(toRl(camera, canvasSize, type));
-}
-
-void endCamera(ref Camera camera) {
-    camera.isAttached = false;
-    rl.EndMode2D();
-}
-
-void beginViewport(ResourceId id) {
-    auto resource = &_backendState.viewports[id];
-    auto isEmpty = resource.data.texture.id == 0;
-    if (isEmpty) return;
-    resource.isAttached = true;
-    rl.BeginTextureMode(resource.data);
-}
-
-void endViewport(ResourceId id) {
-    auto resource = &_backendState.viewports[id];
-    auto isEmpty = resource.data.texture.id == 0;
-    if (isEmpty) return;
-    resource.isAttached = false;
-    rl.EndTextureMode();
-}
-
-/// Begin blending mode.
-void beginBlend(Blend blend) {
-    rl.BeginBlendMode(toRl(blend));
-}
-
-/// End blending mode.
-void endBlend() {
-    rl.EndBlendMode();
-}
-
 /// Returns true if the specified key is currently pressed.
 bool isDown(char key) => rl.IsKeyDown(toRl(key));
 /// Returns true if the specified key is currently pressed.
@@ -1056,6 +1076,52 @@ void endDrawing() {
     rl.EndDrawing();
 }
 
+void beginCamera(ref Camera camera, Vec2 canvasSize, Rounding type) {
+    camera.isAttached = true;
+    rl.BeginMode2D(toRl(camera, canvasSize, type));
+}
+
+void endCamera(ref Camera camera) {
+    camera.isAttached = false;
+    rl.EndMode2D();
+}
+
+void beginViewport(ResourceId id) {
+    if (!viewportIsValid(id)) return;
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    resource.isAttached = true;
+    rl.BeginTextureMode(resource.data);
+}
+
+void endViewport(ResourceId id) {
+    if (!viewportIsValid(id)) return;
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    resource.isAttached = false;
+    rl.EndTextureMode();
+}
+
+/// Begin blending mode.
+void beginBlend(Blend blend) {
+    rl.BeginBlendMode(toRl(blend));
+}
+
+/// End blending mode.
+void endBlend() {
+    rl.EndBlendMode();
+}
+
+void beginClip(Rect area) {
+    rl.BeginScissorMode(cast(int) area.position.x, cast(int) area.position.y, cast(int) area.size.x, cast(int) area.size.y);
+}
+
+void endClip() {
+    rl.EndScissorMode();
+}
+
 void clearBackground(Rgba color) {
     rl.ClearBackground(toRl(color));
 }
@@ -1100,6 +1166,8 @@ void drawLine(Line area, Rgba color, float thickness) {
     rl.DrawLineEx(toRl(area.a), toRl(area.b), thickness, toRl(color));
 }
 
+// NOTE: Draw functions can maybe crash for invalid stuff? Getters and setters don't right now. Could be an ok thing.
+//   This type of functions is also called more often than let's say... no idae. I need to thinka bout this. look at attach functinos.
 void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
     auto resource = &_backendState.textures[id];
     rl.DrawTexturePro(
