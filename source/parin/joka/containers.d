@@ -69,7 +69,7 @@ struct List(T) {
     void appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
         Sz newLength = length + 1;
         if (newLength > capacity) {
-            capacity = jokaFindListCapacity(newLength);
+            capacity = findListCapacity(newLength);
             auto rawPtr = jokaRealloc(items.ptr, capacity * T.sizeof, file, line);
             if (canIgnoreLeak) rawPtr.ignoreLeak();
             items = (cast(T*) rawPtr)[0 .. newLength];
@@ -133,7 +133,7 @@ struct List(T) {
 
     @trusted
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
-        auto targetCapacity = jokaFindListCapacity(newCapacity);
+        auto targetCapacity = findListCapacity(newCapacity);
         if (targetCapacity > capacity) {
             capacity = targetCapacity;
             auto rawPtr = jokaRealloc(items.ptr, capacity * T.sizeof, file, line);
@@ -459,19 +459,19 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
 
     @trusted @nogc
     ref T opIndex(Sz i) {
-        if (!has(i)) assert(0, "Index `[{}]` does not exist.".fmt(i));
+        if (!has(i)) assert(0, indexErrorMessage(i));
         return data[i].value;
     }
 
     @trusted @nogc
     void opIndexAssign(const(T) rhs, Sz i) {
-        if (!has(i)) assert(0, "Index `[{}]` does not exist.".fmt(i));
+        if (!has(i)) assert(0, indexErrorMessage(i));
         data[i].value = cast(T) rhs;
     }
 
     @trusted @nogc
     void opIndexOpAssign(IStr op)(const(T) rhs, Sz i) {
-        if (!has(i)) assert(0, "Index `[{}]` does not exist.".fmt(i));
+        if (!has(i)) assert(0, indexErrorMessage(i));
         mixin("data[i].value", op, "= cast(T) rhs;");
     }
 
@@ -565,7 +565,7 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
 
     @nogc
     void remove(Sz i) {
-        if (!has(i)) assert(0, "Index `[{}]` does not exist.".fmt(i));
+        if (!has(i)) assert(0, indexErrorMessage(i));
         data[i].flag = false;
         hotIndex = i;
         if (i < openIndex) openIndex = i;
@@ -670,19 +670,19 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
 
     @trusted @nogc
     ref T opIndex(GenIndex i) {
-        if (!has(i)) assert(0, "Index `[{}]` with generation `{}` does not exist.".fmt(i.value, i.generation));
+        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
         return data[i.value];
     }
 
     @trusted @nogc
     void opIndexAssign(const(T) rhs, GenIndex i) {
-        if (!has(i)) assert(0, "Index `[{}]` with generation `{}` does not exist.".fmt(i.value, i.generation));
+        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
         data[i.value] = cast(T) rhs;
     }
 
     @trusted @nogc
     void opIndexOpAssign(IStr op)(const(T) rhs, GenIndex i) {
-        if (!has(i)) assert(0, "Index `[{}]` with generation `{}` does not exist.".fmt(i.value, i.generation));
+        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
         mixin("data[i.value]", op, "= cast(T) rhs;");
     }
 
@@ -723,7 +723,7 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
 
     @nogc
     void remove(GenIndex i) {
-        if (!has(i)) assert(0, "Index `[{}]` with generation `{}` does not exist.".fmt(i.value, i.generation));
+        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
         data.remove(i.value);
         generations[data.hotIndex] += 1;
     }
@@ -828,19 +828,19 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
 
     @trusted @nogc
     ref T opIndex(Sz row, Sz col) {
-        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        return tiles[jokaFindGridIndex(row, col, colCount)];
+        if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+        return tiles[findGridIndex(row, col, colCount)];
     }
 
     @trusted @nogc
     void opIndexAssign(T rhs, Sz row, Sz col) {
-        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-        tiles[jokaFindGridIndex(row, col, colCount)] = rhs;
+        if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+        tiles[findGridIndex(row, col, colCount)] = rhs;
     }
 
     @trusted @nogc
     void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
-        if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+        if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
         mixin("tiles[colCount * row + col]", op, "= rhs;");
     }
 
@@ -1184,26 +1184,41 @@ struct GrowingArena {
     }
 }
 
-pragma(inline, true) extern(C) @nogc
-Sz jokaFindListCapacity(Sz length) {
-    Sz result = defaultListCapacity;
-    while (result < length) result += result;
-    return result;
-}
+@nogc {
+    IStr indexErrorMessage(Sz i) {
+        return "Index `{}` does not exist.".fmt(i);
+    }
 
-pragma(inline, true) extern(C) @nogc
-Sz jokaFindGridIndex(Sz row, Sz col, Sz colCount) {
-    return colCount * row + col;
-}
+    // NOTE: I use `fmt(Sz)` to avoid creating `fmt(Sz, Sz)` or `fmt(int, int)`. Heheheheh.
+    IStr gridIndexErrorMessage(Sz row, Sz col) {
+        auto a = "Index `[{}".fmt(row);
+        auto b = ", {}]` does not exist.".fmt(col);
+        return concat(a, b);
+    }
 
-pragma(inline, true) extern(C) @nogc
-Sz jokaFindGridRow(Sz gridIndex, Sz colCount) {
-    return gridIndex % colCount;
-}
+    IStr genIndexErrorMessage(Sz value, Sz generation) {
+        auto a = "Index `[{}]` ".fmt(value);
+        auto b = "with generation `{}` does not exist.".fmt(generation);
+        return concat(a, b);
+    }
 
-pragma(inline, true) extern(C) @nogc
-Sz jokaFindGridCol(Sz gridIndex, Sz colCount) {
-    return gridIndex / colCount;
+    Sz findListCapacity(Sz length) {
+        Sz result = defaultListCapacity;
+        while (result < length) result += result;
+        return result;
+    }
+
+    Sz findGridIndex(Sz row, Sz col, Sz colCount) {
+        return colCount * row + col;
+    }
+
+    Sz findGridRow(Sz gridIndex, Sz colCount) {
+        return gridIndex % colCount;
+    }
+
+    Sz findGridCol(Sz gridIndex, Sz colCount) {
+        return gridIndex / colCount;
+    }
 }
 
 /// Formats a string using a list and returns the resulting formatted string.
@@ -1211,6 +1226,7 @@ Sz jokaFindGridCol(Sz gridIndex, Sz colCount) {
 /// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
 IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr, A args) {
     if (!canAppend) list.clear();
+    IStr tempSlice;
     auto fmtStrIndex = 0;
     auto argIndex = 0;
     while (fmtStrIndex < fmtStr.length) {
@@ -1220,11 +1236,11 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
             if (argIndex == args.length) assert(0, "A placeholder doesn't have an argument.");
             foreach (i, arg; args) {
                 if (i == argIndex) {
-                    auto temp = arg.toStr();
+                    tempSlice = arg.toStr();
                     static if (S.hasFixedCapacity) {
-                        if (list.capacity < list.length + temp.length) return "";
+                        if (list.capacity < list.length + tempSlice.length) return "";
                     }
-                    list.append(temp);
+                    list.append(tempSlice);
                     fmtStrIndex += 2;
                     argIndex += 1;
                     goto loopExit;
@@ -1321,10 +1337,10 @@ bool isStrContainerType(T)() {
 
 // Function test.
 unittest {
-    assert(jokaFindListCapacity(0) == defaultListCapacity);
-    assert(jokaFindListCapacity(defaultListCapacity) == defaultListCapacity);
-    assert(jokaFindListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
-    assert(jokaFindListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
+    assert(findListCapacity(0) == defaultListCapacity);
+    assert(findListCapacity(defaultListCapacity) == defaultListCapacity);
+    assert(findListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
+    assert(findListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
 }
 
 // TODO: Write better tests.

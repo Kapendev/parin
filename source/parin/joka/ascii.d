@@ -124,11 +124,11 @@ byte                                                        _fmtBufferIndex = 0;
 @trusted
 IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
     static assert(args.length <= defaultAsciiFmtBufferCount, "Too many format arguments.");
+    Str tempSlice;
     foreach (i, arg; args) {
-        auto slice = _fmtIntoBufferDataBuffer[i][];
-        auto temp = arg.toStr();
-        if (slice.copyStr(temp)) return ""; // assert(0, "An argument did not fit in the internal temporary buffer.");
-        _fmtIntoBufferSliceBuffer[i] = slice;
+        tempSlice = _fmtIntoBufferDataBuffer[i][];
+        if (tempSlice.copyStr(arg.toStr())) return ""; // assert(0, "An argument did not fit in the internal temporary buffer.");
+        _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
 }
@@ -143,11 +143,11 @@ IStr fmt(A...)(IStr fmtStr, A args) {
 
     // `fmtIntoBuffer` body copy-pasted here to avoid one template.
     static assert(args.length <= defaultAsciiFmtBufferCount, "Too many format arguments.");
+    Str tempSlice;
     foreach (i, arg; args) {
-        auto slice = _fmtIntoBufferDataBuffer[i][];
-        auto temp = arg.toStr();
-        if (slice.copyStr(temp)) assert(0, "An argument did not fit in the internal temporary buffer.");
-        _fmtIntoBufferSliceBuffer[i] = slice;
+        tempSlice = _fmtIntoBufferDataBuffer[i][];
+        if (tempSlice.copyStr(arg.toStr())) return ""; // assert(0, "An argument did not fit in the internal temporary buffer.");
+        _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
 }
