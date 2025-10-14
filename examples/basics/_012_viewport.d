@@ -2,11 +2,11 @@
 
 import parin;
 
-auto viewport = Viewport(black); // Create a viewport with a black background.
+auto viewport = ViewportId();
 
 void ready() {
-    // Resize the viewport based on the current resolution.
-    viewport.resize(resolutionWidth / 2, resolutionHeight / 2);
+    // Create a viewport with a black background.
+    viewport = loadViewport(resolutionWidth / 2, resolutionHeight / 2, black);
 }
 
 bool update(float dt) {
@@ -16,8 +16,8 @@ bool update(float dt) {
     auto viewportCenter = viewport.size * Vec2(0.5);
     auto viewportMousePosition = mouse - Rect(resolution * Vec2(0.5), viewport.size).centerArea.position;
     viewport.attach();
-    drawVec2(viewportCenter, 20);
-    drawVec2(viewportMousePosition, 20);
+    drawVec2(viewportCenter, white, 20);
+    drawVec2(viewportMousePosition, white, 20);
     viewport.detach();
     // Draw the viewport and other things inside the window.
     drawViewport(viewport, resolution * Vec2(0.5), DrawOptions(Hook.center));

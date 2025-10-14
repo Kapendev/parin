@@ -247,13 +247,13 @@ Palette!N csvRowToPalette(Sz N)(IStr csv, Sz row = 0, Sz startCol = 0) {
     auto line = csv.skipLine();
     while (row > 0) { row -= 1; line = csv.skipLine(); }
     auto fields = line.split(',');
-    if (startCol >= fields.length) { result[0] = blank; return result; }
+    if (startCol >= fields.length) return Palette!N();
     fields = fields[startCol .. $];
-    if (fields.length != N) { result[0] = blank; return result; }
+    if (fields.length != N) return Palette!N();
 
     foreach (i, field; fields) {
         auto value = field.toRgba();
-        if (value == blank) { result[0] = blank; return result; }
+        if (value == blank) return Palette!N();
         result[i] = value;
     }
     return result;

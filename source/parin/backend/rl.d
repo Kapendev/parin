@@ -54,17 +54,28 @@ struct RlSound {
     bool isPaused;
 }
 
+struct RlViewport {
+    rl.RenderTexture2D data;
+    Rgba color;      /// The background color of the viewport.
+    bool isAttached; /// Indicates whether the viewport is currently in use.
+    Filter filter;
+    Wrap wrap;
+    Blend blend;
+}
+
 struct BackendState {
     alias BasicContainer(T)  = FixedList!(T, defaultBackendResourcesCapacity);
     alias SparseContainer(T) = FixedList!(SparseListItem!T, defaultBackendResourcesCapacity);
+    alias GenData            = BasicContainer!(Gen);
     alias TexturesData       = SparseList!(rl.Texture, SparseContainer!(rl.Texture2D));
     alias FontsData          = SparseList!(RlFont, SparseContainer!(RlFont));
     alias SoundsData         = SparseList!(RlSound, SparseContainer!(RlSound));
-    alias GenData            = BasicContainer!(Gen);
+    alias ViewportsData      = SparseList!(RlViewport, SparseContainer!(RlViewport));
 
     GenList!(TexturesData.Item.Item, TexturesData, GenData) textures;
     GenList!(FontsData.Item.Item, FontsData, GenData) fonts;
     GenList!(SoundsData.Item.Item, SoundsData, GenData) sounds;
+    GenList!(ViewportsData.Item.Item, ViewportsData, GenData) viewports;
     BasicContainer!IStr droppedPaths;
 
     bool windowIsChanging;
@@ -142,6 +153,17 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
     ));
 }
 
+Maybe!ResourceId loadViewport(int width, int height, Rgba color, Blend blend) {
+    auto resource = RlViewport();
+    resource.data = rl.LoadRenderTexture(width, height);
+    if (resource.data.id == 0) return Maybe!ResourceId(Fault.cantFind);
+    resource.color = color;
+    resource.blend = blend;
+    return Maybe!ResourceId(_backendState.viewports.push(
+        resource,
+    ));
+}
+
 // TODO: WAS DOINFGL OADING LAST TIME
 /// Loads a sound file (WAV, OGG, MP3) from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
@@ -177,11 +199,13 @@ void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int
     _backendState.textures.clear();
     _backendState.fonts.clear();
     _backendState.sounds.clear();
+    _backendState.viewports.clear();
     _backendState.droppedPaths.clear();
     // These make the zero value invalid.
     _backendState.textures.push(rl.Texture());
     _backendState.fonts.push(RlFont());
     _backendState.sounds.push(RlSound());
+    _backendState.viewports.push(RlViewport());
     _backendState.vsync = vsync;
     _backendState.fpsMax = fpsMax;
     _backendState.isCursorVisible = true;
@@ -595,16 +619,94 @@ void updateSound(ResourceId id) {
     }
 }
 
-// --- Camera
+// --- Viewport
 
-void cameraAttach(ref Camera camera, Vec2 canvasSize, Rounding type) {
-    camera.isAttached = true;
-    rl.BeginMode2D(toRl(camera, canvasSize, type));
+/// Checks if the font is not loaded.
+bool viewportIsValid(ResourceId id) {
+    return !resourceIsNull(id) && _backendState.viewports.has(id);
 }
 
-void cameraDetach(ref Camera camera) {
-    camera.isAttached = false;
-    rl.EndMode2D();
+/// Returns the width of the viewport.
+int viewportWidth(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    return resource.data.texture.width;
+}
+
+/// Returns the height of the viewport.
+int viewportHeight(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    return resource.data.texture.height;
+}
+
+/// Returns the size of the viewport.
+Vec2 viewportSize(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    return Vec2(resource.data.texture.width, resource.data.texture.height);
+}
+
+/// Resizes the viewport to the given width and height.
+/// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
+void viewportResize(ResourceId id, int newWidth, int newHeight) {
+    // NOTE: Problems with what happens when I put a null resource and stuff maybe? No idea, needs testing.
+    if (!viewportIsValid(id)) return; // TODO: Might think about when to do this check again and why.
+    auto resource = &_backendState.viewports[id];
+    auto hasSameSize = resource.data.texture.width == newWidth && resource.data.texture.height == newHeight;
+    auto hasData = resource.data.texture.id != 0;
+    auto hasInvalidNewSize = newWidth < 0 || newHeight < 0;
+    if (hasSameSize) return;
+    if (hasData) rl.UnloadRenderTexture(resource.data);
+    if (hasInvalidNewSize) {
+        resource.data = rl.RenderTexture2D();
+        return;
+    }
+    resource.data = rl.LoadRenderTexture(newWidth, newHeight);
+    rl.SetTextureFilter(resource.data.texture, toRl(resource.filter));
+    rl.SetTextureWrap(resource.data.texture, toRl(resource.wrap));
+}
+
+/// Sets the filter mode of the viewport.
+void viewportSetFilter(ResourceId id, Filter value) {
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    rl.SetTextureFilter(resource.data.texture, toRl(value));
+}
+
+/// Sets the wrap mode of the viewport.
+void viewportSetWrap(ResourceId id, Wrap value) {
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    rl.SetTextureWrap(resource.data.texture, toRl(value));
+}
+
+bool viewportIsAttached(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    return resource.isAttached;
+}
+
+Rgba viewportColor(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    return resource.color;
+}
+
+void viewportSetColor(ResourceId id, Rgba value) {
+    auto resource = &_backendState.viewports[id];
+    resource.color = value;
+}
+
+Blend viewportBlend(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    return resource.blend;
+}
+
+/// Frees the loaded viewport.
+void viewportFree(ResourceId id) {
+    if (!viewportIsValid(id)) return;
+    auto resource = &_backendState.viewports[id];
+    auto hasData = resource.data.texture.id != 0;
+    if (hasData) rl.UnloadRenderTexture(resource.data);
+    _backendState.viewports.remove(id);
 }
 
 // --- Dropped Paths
@@ -696,6 +798,42 @@ void updateIsFullscreen() {
         }
         _backendState.windowIsChanging = false;
     }
+}
+
+bool isWindowCloseButtonPressed() {
+    return rl.WindowShouldClose();
+}
+
+bool isWindowResized() {
+    return rl.IsWindowResized();
+}
+
+void setWindowMinSize(int width, int height) {
+    rl.SetWindowMinSize(width, height);
+}
+
+void setWindowMaxSize(int width, int height) {
+    rl.SetWindowMaxSize(width, height);
+}
+
+Fault setWindowIconFromFiles(IStr path) {
+    auto image = rl.LoadImage(path.toCStr().getOr());
+    if (image.data == null) return Fault.cantFind;
+    rl.SetWindowIcon(image);
+    rl.UnloadImage(image);
+    return Fault.none;
+}
+
+float masterVolume() {
+    return rl.GetMasterVolume();
+}
+
+void setMasterVolume(float value) {
+    rl.SetMasterVolume(value);
+}
+
+void openUrl(IStr url) {
+    rl.OpenURL(url.toCStr().getOr());
 }
 
 /// Returns the current frames per second (FPS).
@@ -811,10 +949,41 @@ void pumpEvents() {
 
 // --- Input
 
+void beginCamera(ref Camera camera, Vec2 canvasSize, Rounding type) {
+    camera.isAttached = true;
+    rl.BeginMode2D(toRl(camera, canvasSize, type));
+}
+
+void endCamera(ref Camera camera) {
+    camera.isAttached = false;
+    rl.EndMode2D();
+}
+
+void beginViewport(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    resource.isAttached = true;
+    rl.BeginTextureMode(resource.data);
+}
+
+void endViewport(ResourceId id) {
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    resource.isAttached = false;
+    rl.EndTextureMode();
+}
+
 /// Begin blending mode.
-void beginBlend(Blend blend) => rl.BeginBlendMode(toRl(blend));
+void beginBlend(Blend blend) {
+    rl.BeginBlendMode(toRl(blend));
+}
+
 /// End blending mode.
-void endBlend() => rl.EndBlendMode();
+void endBlend() {
+    rl.EndBlendMode();
+}
 
 /// Returns true if the specified key is currently pressed.
 bool isDown(char key) => rl.IsKeyDown(toRl(key));
@@ -935,6 +1104,18 @@ void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotat
     auto resource = &_backendState.textures[id];
     rl.DrawTexturePro(
         *resource,
+        toRl(area),
+        toRl(target),
+        toRl(origin),
+        rotation,
+        toRl(color),
+    );
+}
+
+void drawViewport(ResourceId id, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
+    auto resource = &_backendState.viewports[id];
+    rl.DrawTexturePro(
+        resource.data.texture,
         toRl(area),
         toRl(target),
         toRl(origin),

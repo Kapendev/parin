@@ -6,7 +6,6 @@
 // ---
 
 // TODO: Viewports use raylib types instead of the generic ones. Change that.
-// TODO: Replace the `rl.` calls with `.bk` calls.
 // TODO: Fix microui lol.
 // TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
 // TODO: Now that viewports will become small, maybe add a position to them. Will make things simpler.
@@ -15,6 +14,7 @@
 // TODO: Think about some names again.
 // TODO: Looks at `lockResolution` function again and think if it makes sense.
 // TODO: Good time to think about the fault values now that everything is broken.
+// TODO: Maybe add more missing stuff as functions like min window size and other things...
 // TODO: Add the schicorssss thing.
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -63,9 +63,6 @@ enum defaultEngineValidateErrorMessage   = "Resource is invalid or was never ass
 enum defaultEngineLoadErrorMessage       = "ERROR({}:{}): Could not load {} from \"{}\".";
 enum defaultEngineSaveErrorMessage       = "ERROR({}:{}): Could not save {} from \"{}\".";
 enum defaultEngineAssetsPathCapacity     = 8 * kilobyte;
-enum defaultEngineTexturesCapacity       = 128;
-enum defaultEngineSoundsCapacity         = 128;
-enum defaultEngineFontsCapacity          = 16;
 enum defaultEngineEnvArgsCapacity        = 64;
 enum defaultEngineLoadOrSaveTextCapacity = 14 * kilobyte;
 enum defaultEngineTasksCapacity          = 127;
@@ -91,7 +88,7 @@ alias EngineFlags      = uint;
 alias D_ = DrawOptions; /// Shorthand for `DrawOptions`.
 alias T_ = TextOptions; /// Shorthand for `TextOptions`.
 alias C_ = Camera;      /// Shorthand for `Camera`.
-alias V_ = Viewport;    /// Shorthand for `Viewport`.
+alias V_ = ViewportId;  /// Shorthand for `ViewportId`.
 
 enum EngineFlag : EngineFlags {
     none                        = 0x000000,
@@ -328,114 +325,120 @@ struct SoundId {
 }
 
 /// A viewing area for rendering.
-struct Viewport {
-    rl.RenderTexture2D data;
-    Rgba color;      /// The background color of the viewport.
-    Blend blend;     /// A value representing blending modes.
-    bool isAttached; /// Indicates whether the viewport is currently in use.
+struct ViewportId {
+    ResourceId data;
 
     @trusted nothrow @nogc:
 
-    /// Initializes the viewport with the given size, background color and blend mode.
+    /* TODO make load func /// Initializes the viewport with the given size, background color and blend mode.
     this(Rgba color, Blend blend = Blend.alpha) {
         this.color = color;
         this.blend = blend;
     }
+    */
 
-    /// Checks if the viewport is not loaded.
-    bool isEmpty() {
-        return data.texture.id <= 0;
+    /// Checks if the font is null (default value).
+    bool isNull() {
+        return bk.resourceIsNull(data);
+    }
+
+    /// Checks if the font is valid (loaded). Null is invalid.
+    bool isValid() {
+        return bk.viewportIsValid(data);
+    }
+
+    /// Checks if the font is valid (loaded) and asserts if it is not.
+    ViewportId validate(IStr message = defaultEngineValidateErrorMessage) {
+        return isValid ? this : assert(0, message);
     }
 
     /// Returns the width of the viewport.
     int width() {
-        return data.texture.width;
+        return bk.viewportWidth(data);
     }
 
     /// Returns the height of the viewport.
     int height() {
-        return data.texture.height;
+        return bk.viewportHeight(data);
     }
 
     /// Returns the size of the viewport.
     Vec2 size() {
-        return Vec2(width, height);
+        return bk.viewportSize(data);
     }
 
     /// Resizes the viewport to the given width and height.
     /// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
     void resize(int newWidth, int newHeight) {
-        if (width == newWidth && height == newHeight) return;
-        if (!isEmpty) rl.UnloadRenderTexture(data);
-        if (newWidth <= 0 || newHeight <= 0) {
-            data = rl.RenderTexture2D();
-            return;
-        }
-        data = rl.LoadRenderTexture(newWidth, newHeight);
-        setFilter(_engineState.defaultFilter);
-        setWrap(_engineState.defaultWrap);
-    }
-
-    /// Attaches the viewport, making it active.
-    // NOTE: The engine viewport should not use this function.
-    void attach() {
-        if (isEmpty) return;
-        if (_engineState.userViewport.isAttached) {
-            assert(0, "Cannot attach viewport because another viewport is already attached.");
-        }
-        isAttached = true;
-        _engineState.userViewport = this;
-        if (isResolutionLocked) rl.EndTextureMode();
-        rl.BeginTextureMode(data);
-        bk.clearBackground(color);
-        bk.beginBlend(blend);
-    }
-
-    /// Detaches the viewport, making it inactive.
-    // NOTE: The engine viewport should not use this function.
-    void detach() {
-        if (isEmpty) return;
-        if (!isAttached) {
-            assert(0, "Cannot detach viewport because it is not the attached viewport.");
-        }
-        isAttached = false;
-        _engineState.userViewport = Viewport();
-        bk.endBlend();
-        rl.EndTextureMode();
-        if (isResolutionLocked) rl.BeginTextureMode(_engineState.viewport.data.data);
+        bk.viewportResize(data, newWidth, newHeight);
     }
 
     /// Sets the filter mode of the viewport.
     void setFilter(Filter value) {
-        if (isEmpty) return;
-        rl.SetTextureFilter(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
+        bk.viewportSetFilter(data, value);
     }
 
     /// Sets the wrap mode of the viewport.
     void setWrap(Wrap value) {
-        if (isEmpty) return;
-        rl.SetTextureWrap(data.texture, bk.toRl(value)); // TODO: REMOVE THE & BECAUSE VOID& HANDELE
+        bk.viewportSetWrap(data, value);
+    }
+
+    bool isAttached() {
+        return bk.viewportIsAttached(data);
+    }
+
+    Rgba color() {
+        return bk.viewportColor(data);
+    }
+
+    void setColor(Rgba value) {
+        bk.viewportSetColor(data, value);
+    }
+
+    Blend blend() {
+        return bk.viewportBlend(data);
     }
 
     /// Frees the loaded viewport.
     void free() {
-        if (isEmpty) return;
-        rl.UnloadRenderTexture(data);
-        this = Viewport();
+        bk.viewportFree(data);
     }
+}
+
+/// Attaches the viewport, making it active.
+// NOTE: The engine viewport should not use this function.
+void attach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
+    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
+    bk.beginViewport(viewport.data);
+    bk.clearBackground(viewport.color);
+    bk.beginBlend(viewport.blend);
+    _engineState.userViewport = viewport;
+}
+
+/// Detaches the viewport, making it inactive.
+// NOTE: The engine viewport should not use this function.
+void detach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
+    bk.endBlend();
+    bk.endViewport(viewport.data);
+    _engineState.userViewport = ViewportId();
+    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
 }
 
 /// Attaches the camera, making it active.
 void attach(ref Camera camera, Rounding type = Rounding.none) {
     if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
-    bk.cameraAttach(camera, resolution, isPixelSnapped ? Rounding.floor : type);
+    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
     _engineState.userCamera = camera;
 }
 
 /// Detaches the camera, making it inactive.
 void detach(ref Camera camera) {
     if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
-    bk.cameraDetach(camera);
+    bk.endCamera(camera);
     _engineState.userCamera = Camera();
 }
 
@@ -480,7 +483,7 @@ struct EngineViewportInfo {
 
 /// The engine viewport.
 struct EngineViewport {
-    Viewport data;   /// The viewport data.
+    ViewportId data; /// The viewport data.
     int lockWidth;   /// The target lock width.
     int lockHeight;  /// The target lock height.
     bool isChanging; /// The flag that triggers the new lock state.
@@ -519,7 +522,7 @@ struct EngineState {
     FontId defaultFont = engineFont;
     TextureId defaultTexture;
     Camera userCamera;
-    Viewport userViewport;
+    ViewportId userViewport;
     Fault lastLoadOrSaveFault;
     IStr memoryTrackingInfoFilter;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
@@ -544,7 +547,7 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 
     bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
-    _engineState.viewport.data.color = gray;
+    _engineState.viewport.data = loadViewport(0, 0, gray);
     _engineState.arena.ready(defaultEngineArenaCapacity);
     // TODO: will have to remove the id thing and also change the toTexure names to load maybe.
     loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
@@ -576,7 +579,7 @@ bool _updateWindowLoop() {
     // Begin drawing.
     auto loopVsync = vsync;
     if (isResolutionLocked) {
-        rl.BeginTextureMode(_engineState.viewport.data.data);
+        bk.beginViewport(_engineState.viewport.data.data);
     } else {
         bk.beginDrawing();
     }
@@ -604,17 +607,10 @@ bool _updateWindowLoop() {
     // End drawing.
     if (isResolutionLocked) {
         auto info = engineViewportInfo;
-        rl.EndTextureMode();
+        bk.endViewport(_engineState.viewport.data.data);
         bk.beginDrawing();
         bk.clearBackground(_engineState.borderColor);
-        rl.DrawTexturePro(
-            _engineState.viewport.data.data.texture,
-            rl.Rectangle(0.0f, 0.0f, info.minSize.x, -info.minSize.y),
-            rl.Rectangle(info.area.x, info.area.y, info.area.w, info.area.h),
-            rl.Vector2(0.0f, 0.0f),
-            0.0f,
-            rl.Color(255, 255, 255, 255),
-        );
+        bk.drawViewport(_engineState.viewport.data.data, Rect(info.minSize.x, -info.minSize.y), info.area, Vec2(), 0.0f, white);
         bk.endDrawing();
     } else {
         bk.endDrawing();
@@ -625,9 +621,7 @@ bool _updateWindowLoop() {
         if (_engineState.viewport.isLocking) {
             _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
         } else {
-            auto temp = _engineState.viewport.data.color;
-            _engineState.viewport.data.free();
-            _engineState.viewport.data.color = temp;
+            _engineState.viewport.data.resize(0, 0);
         }
         _engineState.viewport.isChanging = false;
     }
@@ -655,7 +649,7 @@ void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null,
     version (WebAssembly) {
         em.emscripten_set_main_loop(&_updateWindowLoopWeb, 0, true);
     } else {
-        while (true) if (rl.WindowShouldClose() || _updateWindowLoop()) break;
+        while (true) if (bk.isWindowCloseButtonPressed || _updateWindowLoop()) break;
     }
     _engineState.flags &= ~EngineFlag.isUpdating;
 }
@@ -663,7 +657,6 @@ void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null,
 /// Closes the window.
 /// You should avoid calling this function manually.
 void _closeWindow() {
-    if (!rl.IsWindowReady()) return;
     // NOTE: I assume `filter` is a static string or managed by the user.
     auto filter = _engineState.memoryTrackingInfoFilter;
     auto isLogging = isLoggingMemoryTrackingInfo;
@@ -865,6 +858,17 @@ SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pi
         return SoundId(data);
     }
     return SoundId();
+}
+
+ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.alpha, IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadViewport(width, height, color, blend).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "viewport", "[MEMORY]"))) {
+        bk.viewportSetFilter(data, _engineState.defaultFilter);
+        bk.viewportSetWrap(data, _engineState.defaultWrap);
+        return ViewportId(data);
+    }
+    return ViewportId();
 }
 
 /// Saves a text file to the assets folder.
@@ -1180,7 +1184,7 @@ alias freeEngineResources = freeManagedEngineResources;
 /// Opens a URL in the default web browser (if available).
 /// Redirect to Parin's GitHub when no URL is provided.
 void openUrl(IStr url = "https://github.com/Kapendev/parin") {
-    rl.OpenURL(url.toCStr().getOr());
+    bk.openUrl(url);
 }
 
 /// Returns true if the assets path is currently in use when loading.
@@ -1324,12 +1328,12 @@ void toggleIsCursorVisible() {
 
 /// Returns true if the windows was resized.
 bool isWindowResized() {
-    return rl.IsWindowResized();
+    return bk.isWindowResized;
 }
 
 /// Sets the background color to the specified value.
 void setBackgroundColor(Rgba value) {
-    _engineState.viewport.data.color = value;
+    _engineState.viewport.data.setColor(value);
 }
 
 /// Sets the border color to the specified value.
@@ -1339,22 +1343,19 @@ void setBorderColor(Rgba value) {
 
 /// Sets the minimum size of the window to the specified value.
 void setWindowMinSize(int width, int height) {
-    rl.SetWindowMinSize(width, height);
+    bk.setWindowMinSize(width, height);
 }
 
 /// Sets the maximum size of the window to the specified value.
+// TODO: DO we care about these values? think about if there shoudl be a way to retrn tgem
 void setWindowMaxSize(int width, int height) {
-    rl.SetWindowMaxSize(width, height);
+    bk.setWindowMaxSize(width, height);
 }
 
 /// Sets the window icon to the specified image that will be loaded from the assets folder.
 /// Supports both forward slashes and backslashes in file paths.
 Fault setWindowIconFromFiles(IStr path) {
-    auto image = rl.LoadImage(path.toAssetsPath().toCStr().getOr());
-    if (image.data == null) return Fault.cantFind;
-    rl.SetWindowIcon(image);
-    rl.UnloadImage(image);
-    return Fault.none;
+    return bk.setWindowIconFromFiles(path.toAssetsPath());
 }
 
 /// Returns information about the engine viewport, including its area.
@@ -1404,17 +1405,17 @@ void setDefaultFont(FontId value) {
 
 /// Returns the current master volume level.
 float masterVolume() {
-    return rl.GetMasterVolume();
+    return bk.masterVolume;
 }
 
 /// Sets the master volume level to the specified value.
 void setMasterVolume(float value) {
-    rl.SetMasterVolume(value);
+    bk.setMasterVolume(value);
 }
 
 /// Returns true if the resolution is locked and cannot be changed.
 bool isResolutionLocked() {
-    return !_engineState.viewport.data.isEmpty;
+    return !_engineState.viewport.data.size.isZero;
 }
 
 /// Locks the resolution to the specified width and height.
@@ -1435,9 +1436,7 @@ void unlockResolution() {
         _engineState.viewport.isChanging = true;
         _engineState.viewport.isLocking = false;
     } else {
-        auto temp = _engineState.viewport.data.color;
-        _engineState.viewport.data.free();
-        _engineState.viewport.data.color = temp;
+        _engineState.viewport.data.resize(0, 0);
     }
 }
 
@@ -1805,9 +1804,18 @@ void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, Dra
     drawTextureSlice(_engineState.defaultTexture, area, target, margin, canRepeat, options);
 }
 
-/* TODO
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
-void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    if (!viewport.isValid) {
+        if (isEmptyTextureVisible) {
+            auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
+        }
+        return;
+    }
+    if (!area.hasSize) return;
+
     // Some basic rules to make viewports noob friendly.
     final switch (options.flip) {
         case Flip.none: options.flip = Flip.y; break;
@@ -1815,14 +1823,40 @@ void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptio
         case Flip.y: options.flip = Flip.none; break;
         case Flip.xy: options.flip = Flip.x; break;
     }
-    drawTextureArea(viewport.data.texture.toPr(), area, position, options);
+    // TODO: JUST COPY PASTERD THE TEXUTYRE TUIBG
+    auto target = Rect(position, area.size * options.scale);
+    auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
+    final switch (options.flip) {
+        case Flip.none: break;
+        case Flip.x: area.size.x *= -1.0f; break;
+        case Flip.y: area.size.y *= -1.0f; break;
+        case Flip.xy: area.size *= Vec2(-1.0f); break;
+    }
+    if (isPixelSnapped) {
+        bk.drawViewport(
+            viewport.data,
+            area.floor(),
+            target.floor(),
+            origin.floor(),
+            options.rotation,
+            options.color,
+        );
+    } else {
+        bk.drawViewport(
+            viewport.data,
+            area,
+            target,
+            origin,
+            options.rotation,
+            options.color,
+        );
+    }
 }
 
 /// Draws the viewport at the given position with the specified draw options.
-void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions()) {
+void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = DrawOptions()) {
     drawViewportArea(viewport, Rect(viewport.size), position, options);
 }
-*/
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
