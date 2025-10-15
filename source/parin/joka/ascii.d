@@ -8,8 +8,8 @@
 /// The `ascii` module provides functions designed to assist with ascii strings.
 module parin.joka.ascii;
 
-import parin.joka.memory;
 import parin.joka.types;
+import stringc = parin.joka.stdc.string;
 
 @safe:
 
@@ -435,7 +435,7 @@ IStr advanceStr(IStr str, Sz amount) {
 @trusted
 Fault copyChars(Str str, IStr source, Sz startIndex = 0) {
     if (str.length < source.length + startIndex) return Fault.overflow;
-    jokaMemcpy(&str[startIndex], source.ptr, source.length);
+    stringc.memcpy(&str[startIndex], source.ptr, source.length);
     return Fault.none;
 }
 
@@ -776,7 +776,7 @@ Maybe!bool toBool(IStr str) {
     } else if (str == "true" || str == "T" || str == "t") {
         return Maybe!bool(true);
     } else {
-        return Maybe!bool(Fault.cantParse);
+        return Maybe!bool(Fault.invalid);
     }
 }
 
@@ -786,7 +786,7 @@ Maybe!ulong toUnsigned(IStr str) {
         return Maybe!ulong(Fault.overflow);
     } else {
         if (str.length == 1 && str[0] == '+') {
-            return Maybe!ulong(Fault.cantParse);
+            return Maybe!ulong(Fault.invalid);
         }
         ulong value = 0;
         ulong level = 1;
@@ -795,7 +795,7 @@ Maybe!ulong toUnsigned(IStr str) {
                 value += (c - '0') * level;
                 level *= 10;
             } else {
-                return Maybe!ulong(Fault.cantParse);
+                return Maybe!ulong(Fault.invalid);
             }
         }
         return Maybe!ulong(value);
@@ -807,7 +807,7 @@ Maybe!ulong toUnsigned(char c) {
     if (isDigit(c)) {
         return Maybe!ulong(c - '0');
     } else {
-        return Maybe!ulong(Fault.cantParse);
+        return Maybe!ulong(Fault.invalid);
     }
 }
 
@@ -826,7 +826,7 @@ Maybe!long toSigned(char c) {
     if (isDigit(c)) {
         return Maybe!long(c - '0');
     } else {
-        return Maybe!long(Fault.cantParse);
+        return Maybe!long(Fault.invalid);
     }
 }
 
@@ -841,9 +841,9 @@ Maybe!double toFloating(IStr str) {
         auto left = toSigned(str[0 .. dotIndex]);
         auto right = toSigned(str[dotIndex + 1 .. $]);
         if (left.isNone || right.isNone) {
-            return Maybe!double(Fault.cantParse);
+            return Maybe!double(Fault.invalid);
         } else if (str[dotIndex + 1] == '-' || str[dotIndex + 1] == '+') {
-            return Maybe!double(Fault.cantParse);
+            return Maybe!double(Fault.invalid);
         } else {
             auto sign = str[0] == '-' ? -1 : 1;
             auto level = 10;
@@ -860,7 +860,7 @@ Maybe!double toFloating(char c) {
     if (isDigit(c)) {
         return Maybe!double(c - '0');
     } else {
-        return Maybe!double(Fault.cantParse);
+        return Maybe!double(Fault.invalid);
     }
 }
 
@@ -870,7 +870,7 @@ Maybe!T toEnum(T)(IStr str) {
         static foreach (m; __traits(allMembers, T)) {
             mixin("case m: return Maybe!T(T.", m, ");");
         }
-        default: return Maybe!T(Fault.cantParse);
+        default: return Maybe!T(Fault.invalid);
     }
 }
 
@@ -880,7 +880,7 @@ Maybe!ICStr toCStr(IStr str) {
     static char[defaultAsciiBufferSize] buffer = void;
 
     if (buffer.length < str.length) {
-        return Maybe!ICStr(Fault.cantParse);
+        return Maybe!ICStr(Fault.invalid);
     } else {
         auto value = buffer[];
         value.copyChars(str);

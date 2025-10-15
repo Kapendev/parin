@@ -38,20 +38,24 @@ enum petabyte = 1024 * terabyte;
 enum exabyte  = 1024 * petabyte;
 
 /// A type representing error values.
-// NOTE: Should cantParse be cannotParse? Who cares? We already write Rgba instead of RGBA for example.
 enum Fault : ubyte {
-    none,      /// Not an error.
-    some,      /// A generic error.
-    bug,       /// An implementation error.
-    invalid,   /// An invalid data error.
-    overflow,  /// An overflow error.
-    assertion, /// An assertion error.
-    cantParse, /// A parse error.
-    cantFind,  /// A wrong path error.
-    cantOpen,  /// An open permissions error.
-    cantClose, /// A close permissions error.
-    cantRead,  /// A read permissions error.
-    cantWrite, /// A write permissions error.
+    none,          /// Not an error.
+    some,          /// A generic error.
+    bug,           /// An implementation error.
+    invalid,       /// An invalid data error.
+    overflow,      /// An overflow error.
+    range,         /// A range violation error.
+    assertion,     /// An assertion error.
+    unconfigured,  /// A missing configuration error.
+    unauthorized,  /// A permission or access rights error.
+    unrecognized,  /// An unknown or unsupported type error.
+    cannotFind,    /// A wrong path error.
+    cannotCreate,  /// A creation permissions error.
+    cannotDestroy, /// A destruction permissions error.
+    cannotOpen,    /// An open permissions error.
+    cannotClose,   /// A close permissions error.
+    cannotRead,    /// A read permissions error.
+    cannotWrite,   /// A write permissions error.
 }
 
 /// A static array.

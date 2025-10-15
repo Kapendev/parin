@@ -693,7 +693,7 @@ struct Story {
                 stack.append(StoryValue(word));
             } else {
                 faultTokenPosition = tokenCount;
-                return Fault.cantParse;
+                return Fault.invalid;
             }
         }
         return Fault.none;
@@ -791,7 +791,7 @@ Maybe!StoryLineKind toStoryLineKind(char from) {
         case '^': return some(menu);
         case '$': return some(expression);
         case '!': return some(procedure);
-        default: return none(Fault.cantParse);
+        default: return none(Fault.invalid);
     }
 }
 

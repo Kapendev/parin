@@ -98,22 +98,22 @@ struct BackendState {
 
 Maybe!ResourceId loadTexture(IStr path) {
     auto resource = rl.LoadTexture(path.toCStr().getOr());
-    if (resource.id == 0) return Maybe!ResourceId(Fault.cantFind);
+    if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
     return Maybe!ResourceId(_backendState.textures.append(resource));
 }
 
 Maybe!ResourceId loadTexture(const(ubyte)[] memory, IStr ext = ".png") {
     auto image = rl.LoadImageFromMemory(ext.toCStr().getOr(), memory.ptr, cast(int) memory.length);
-    if (image.data == null) return Maybe!ResourceId(Fault.cantParse);
+    if (image.data == null) return Maybe!ResourceId(Fault.invalid);
     auto resource = rl.LoadTextureFromImage(image);
     rl.UnloadImage(image);
-    if (resource.id == 0) return Maybe!ResourceId(Fault.cantFind);
+    if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
     return Maybe!ResourceId(_backendState.textures.append(resource));
 }
 
 Maybe!ResourceId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
     auto resource = rl.LoadFontEx(path.toCStr().getOr(), size, runes.length ? cast(int*) runes.ptr : null, cast(int) runes.length);
-    if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cantFind);
+    if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cannotFind);
     return Maybe!ResourceId(_backendState.fonts.push(
         RlFont(resource, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size),
     ));
@@ -121,7 +121,7 @@ Maybe!ResourceId loadFont(IStr path, int size, int runeSpacing, int lineSpacing,
 
 Maybe!ResourceId loadFont(const(ubyte)[] memory, int size, int runeSpacing, int lineSpacing, IStr32 runes, IStr ext = ".ttf") {
     auto resource = rl.LoadFontFromMemory(ext.toCStr().getOr(), memory.ptr, cast(int) memory.length, size, runes.length ? cast(int*) runes.ptr : null, cast(int) runes.length);
-    if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.cantParse);
+    if (resource.texture.id == 0 || resource.texture.id == rl.GetFontDefault().texture.id) return Maybe!ResourceId(Fault.invalid);
     return Maybe!ResourceId(_backendState.fonts.append(
         RlFont(resource, runeSpacing >= 0 ? runeSpacing : 0, lineSpacing >= 0 ? lineSpacing : size),
     ));
@@ -160,7 +160,7 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
 Maybe!ResourceId loadViewport(int width, int height, Rgba color, Blend blend) {
     auto resource = RlViewport();
     resource.data = rl.LoadRenderTexture(width, height);
-    if (resource.data.id == 0) return Maybe!ResourceId(Fault.cantFind);
+    if (resource.data.id == 0) return Maybe!ResourceId(Fault.cannotFind);
     resource.color = color;
     resource.blend = blend;
     return Maybe!ResourceId(_backendState.viewports.push(
@@ -874,7 +874,7 @@ void setWindowMaxSize(int width, int height) {
 
 Fault setWindowIconFromFiles(IStr path) {
     auto image = rl.LoadImage(path.toCStr().getOr());
-    if (image.data == null) return Fault.cantFind;
+    if (image.data == null) return Fault.cannotFind;
     rl.SetWindowIcon(image);
     rl.UnloadImage(image);
     return Fault.none;

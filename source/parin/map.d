@@ -151,7 +151,7 @@ struct TileMap {
     }
 
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
-        if (csv.length == 0) return Fault.cantParse;
+        if (csv.length == 0) return Fault.invalid;
         bool canResizeHard = layerId >= layers.length;
         while (layerId >= layers.length) {
             layers.appendBlank(file, line);
@@ -164,12 +164,12 @@ struct TileMap {
         while (view.length) {
             rowCount += 1;
             colCount = 0;
-            if (rowCount > hardRowCount) return Fault.cantParse;
+            if (rowCount > hardRowCount) return Fault.invalid;
             auto csvLine = view.skipLine();
             while (csvLine.length) {
                 colCount += 1;
                 auto tile = csvLine.skipValue(',').toSigned();
-                if (tile.isNone || colCount > hardColCount) return Fault.cantParse;
+                if (tile.isNone || colCount > hardColCount) return Fault.invalid;
                 layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.xx - isMinZero);
             }
         }
@@ -196,7 +196,7 @@ struct TileMap {
                     auto isHeightWord = word.startsWith("tileheight");
                     if (!isWidthWord && !isHeightWord) continue;
                     auto value = word.split("=")[1][1 .. $ - 1].toSigned(); // NOTE: Removes `"` with `[1 .. $ - 1]`.
-                    if (value.isNone) return Fault.cantParse;
+                    if (value.isNone) return Fault.invalid;
                     if (isWidthWord) tileWidth = cast(short) value.xx;
                     if (isHeightWord) tileHeight = cast(short) value.xx;
                 }
@@ -211,7 +211,7 @@ struct TileMap {
                         break;
                     }
                 }
-                if (parseCsv(tmx[csvStart .. csvEnd], layerId, true, file, line)) return Fault.cantParse;
+                if (parseCsv(tmx[csvStart .. csvEnd], layerId, true, file, line)) return Fault.invalid;
                 layerId += 1;
             }
         }

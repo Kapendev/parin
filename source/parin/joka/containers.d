@@ -195,7 +195,7 @@ struct List(T) {
 }
 
 /// A dynamic array that uses external memory provided at runtime.
-// NOTE: The API is almost 1-1 with `List` to make meta programming easier.
+// The API is almost 1-1 with `List` to make meta programming easier.
 struct BufferList(T) {
     alias Self = BufferList!T;
     alias Item = T;
@@ -312,7 +312,7 @@ struct BufferList(T) {
 }
 
 /// A dynamic array allocated on the stack.
-// NOTE: This is just a copy-paste of `BufferList`, but with a static array.
+// This is just a copy-paste of `BufferList`, but with a static array.
 //   Could make both use one type, but I think it's OK to repeat code here.
 //   Keeps things simple and easy to read.
 struct FixedList(T, Sz N) {

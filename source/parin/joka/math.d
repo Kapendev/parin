@@ -10,7 +10,7 @@ module parin.joka.math;
 
 import parin.joka.ascii;
 import parin.joka.types;
-import stdc = parin.joka.stdc.math;
+import mathc = parin.joka.stdc.math;
 
 // I don't care about `pure`, but I'm a nice person.
 @safe nothrow @nogc pure:
@@ -54,7 +54,7 @@ enum gray    = gray2;               /// Gray gray.
 /// The common color type.
 alias Color = Rgba;
 
-// NOTE: These types are removed for compile time reasons.
+// These types are removed for compile time reasons.
 /*
 alias BVec2 = GVec2!byte;   /// A 2D vector using bytes.
 alias UVec2 = GVec2!uint;   /// A 2D vector using uints.
@@ -1598,99 +1598,99 @@ pragma(inline, true) @trusted {
     }
 
     float fmod(float x, float y) {
-        return stdc.fmodf(x, y);
+        return mathc.fmodf(x, y);
     }
 
     double fmod64(double x, double y) {
-        return stdc.fmod(x, y);
+        return mathc.fmod(x, y);
     }
 
     float remainder(float x, float y) {
-        return stdc.remainderf(x, y);
+        return mathc.remainderf(x, y);
     }
 
     double remainder64(double x, double y) {
-        return stdc.remainder(x, y);
+        return mathc.remainder(x, y);
     }
 
     float exp(float x) {
-        return stdc.expf(x);
+        return mathc.expf(x);
     }
 
     double exp64(double x) {
-        return stdc.exp(x);
+        return mathc.exp(x);
     }
 
     float exp2(float x) {
-        return stdc.exp2f(x);
+        return mathc.exp2f(x);
     }
 
     double exp264(double x) {
-        return stdc.exp2(x);
+        return mathc.exp2(x);
     }
 
     float expm1(float x) {
-        return stdc.expm1f(x);
+        return mathc.expm1f(x);
     }
 
     double expm164(double x) {
-        return stdc.expm1(x);
+        return mathc.expm1(x);
     }
 
     float log(float x) {
-        return stdc.logf(x);
+        return mathc.logf(x);
     }
 
     double log64(double x) {
-        return stdc.log(x);
+        return mathc.log(x);
     }
 
     float log10(float x) {
-        return stdc.log10f(x);
+        return mathc.log10f(x);
     }
 
     double log1064(double x) {
-        return stdc.log10(x);
+        return mathc.log10(x);
     }
 
     float log2(float x) {
-        return stdc.log2f(x);
+        return mathc.log2f(x);
     }
 
     double log264(double x) {
-        return stdc.log2(x);
+        return mathc.log2(x);
     }
 
     float log1p(float x) {
-        return stdc.log1pf(x);
+        return mathc.log1pf(x);
     }
 
     double log1p64(double x) {
-        return stdc.log1p(x);
+        return mathc.log1p(x);
     }
 
     float pow(float base, float exponent) {
-        return stdc.powf(base, exponent);
+        return mathc.powf(base, exponent);
     }
 
     double pow64(double base, double exponent) {
-        return stdc.pow(base, exponent);
+        return mathc.pow(base, exponent);
     }
 
     float atan2(float y, float x) {
-        return stdc.atan2f(y, x);
+        return mathc.atan2f(y, x);
     }
 
     double atan264(double y, double x) {
-        return stdc.atan2(y, x);
+        return mathc.atan2(y, x);
     }
 
     float cbrt(float x) {
-        return stdc.cbrtf(x);
+        return mathc.cbrtf(x);
     }
 
     double cbrt64(double x) {
-        return stdc.cbrt(x);
+        return mathc.cbrt(x);
     }
 
     float roundNothing(float x) {
@@ -1714,11 +1714,11 @@ pragma(inline, true) @trusted {
     }
 
     float floor(float x) {
-        return stdc.floorf(x);
+        return mathc.floorf(x);
     }
 
     double floor64(double  x) {
-        return stdc.floor(x);
+        return mathc.floor(x);
     }
 
     float roundX(float x) {
@@ -1734,11 +1734,11 @@ pragma(inline, true) @trusted {
     }
 
     float round(float x) {
-        return stdc.roundf(x);
+        return mathc.roundf(x);
     }
 
     double round64(double x) {
-        return stdc.round(x);
+        return mathc.round(x);
     }
 
     float ceilX(float x) {
@@ -1754,11 +1754,11 @@ pragma(inline, true) @trusted {
     }
 
     float ceil(float x) {
-        return stdc.ceilf(x);
+        return mathc.ceilf(x);
     }
 
     double ceil64(double x) {
-        return stdc.ceil(x);
+        return mathc.ceil(x);
     }
 
     float applyRounding(float x, Rounding type) {
@@ -1770,59 +1770,59 @@ pragma(inline, true) @trusted {
     }
 
     float sqrt(float x) {
-        return stdc.sqrtf(x);
+        return mathc.sqrtf(x);
     }
 
     double sqrt64(double x) {
-        return stdc.sqrt(x);
+        return mathc.sqrt(x);
     }
 
     float sin(float x) {
-        return stdc.sinf(x);
+        return mathc.sinf(x);
     }
 
     double sin64(double x) {
-        return stdc.sin(x);
+        return mathc.sin(x);
     }
 
     float cos(float x) {
-        return stdc.cosf(x);
+        return mathc.cosf(x);
     }
 
     double cos64(double x) {
-        return stdc.cos(x);
+        return mathc.cos(x);
     }
 
     float tan(float x) {
-        return stdc.tanf(x);
+        return mathc.tanf(x);
     }
 
     double tan64(double x) {
-        return stdc.tan(x);
+        return mathc.tan(x);
     }
 
     float asin(float x) {
-        return stdc.asinf(x);
+        return mathc.asinf(x);
     }
 
     double asin64(double x) {
-        return stdc.asin(x);
+        return mathc.asin(x);
     }
 
     float acos(float x) {
-        return stdc.acosf(x);
+        return mathc.acosf(x);
     }
 
     double acos64(double x) {
-        return stdc.acos(x);
+        return mathc.acos(x);
     }
 
     float atan(float x) {
-        return stdc.atanf(x);
+        return mathc.atanf(x);
     }
 
     double atan64(double x) {
-        return stdc.atan(x);
+        return mathc.atan(x);
     }
 
     float lerp(float from, float to, float weight) {

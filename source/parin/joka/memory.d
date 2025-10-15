@@ -10,7 +10,8 @@ module parin.joka.memory;
 
 import parin.joka.ascii;
 import parin.joka.types;
-import stdc = parin.joka.stdc;
+import stdlibc = parin.joka.stdc.stdlib;
+import stringc = parin.joka.stdc.string;
 
 @system nothrow:
 
@@ -75,7 +76,7 @@ version (JokaCustomMemory) {
 } else {
     extern(C)
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = stdc.malloc(size);
+        auto result = stdlibc.malloc(size);
         static if (isTrackingMemory) {
             if (result) {
                 _memoryTrackingState.table[result] = _MallocInfo(file, line, size);
@@ -91,7 +92,7 @@ version (JokaCustomMemory) {
         if (ptr) {
             static if (isTrackingMemory) {
                 if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                    result = stdc.realloc(ptr, size);
+                    result = stdlibc.realloc(ptr, size);
                     if (result) {
                         _memoryTrackingState.table[result] = _MallocInfo(file, line, size, mallocValue.canIgnore);
                         _memoryTrackingState.totalBytes += size - mallocValue.size;
@@ -105,7 +106,7 @@ version (JokaCustomMemory) {
                     }
                 }
             } else {
-                result = stdc.realloc(ptr, size);
+                result = stdlibc.realloc(ptr, size);
             }
         } else {
             result = jokaMalloc(size, file, line);
@@ -118,7 +119,7 @@ version (JokaCustomMemory) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                stdc.free(ptr);
+                stdlibc.free(ptr);
                 debug {
                     _memoryTrackingState.totalBytes -= mallocValue.size;
                     _memoryTrackingState.table.remove(ptr);
@@ -133,7 +134,7 @@ version (JokaCustomMemory) {
                 }
             }
         } else {
-            stdc.free(ptr);
+            stdlibc.free(ptr);
         }
     }
 }
@@ -161,14 +162,14 @@ auto ignoreLeak(T)(T ptr) {
     }
 }
 
-extern(C) @nogc
+@nogc
 void* jokaMemset(void* ptr, int value, Sz size) {
-    return stdc.memset(ptr, value, size);
+    return stringc.memset(ptr, value, size);
 }
 
-extern(C) @nogc
+@nogc
 void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-    return stdc.memcpy(ptr, source, size);
+    return stringc.memcpy(ptr, source, size);
 }
 
 @trusted

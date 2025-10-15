@@ -10,9 +10,9 @@ module parin.joka.io;
 
 import parin.joka.ascii;
 import parin.joka.containers;
-import parin.joka.types;
 import parin.joka.memory;
-import stdc = parin.joka.stdc.stdio;
+import parin.joka.types;
+import stdioc = parin.joka.stdc.stdio;
 
 enum StdStream : ubyte {
     input,
@@ -28,7 +28,7 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     auto textData = cast(Str) text.ptr[0 .. defaultAsciiBufferSize];
     if (text.length == 0 || text.length == textData.length) return;
     textData[text.length] = '\0';
-    stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
+    stdioc.fputs(textData.ptr, stream == StdStream.output ? stdioc.stdout : stdioc.stderr);
 }
 
 @trusted
@@ -40,7 +40,7 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     if (text.length == 0 || text.length == textData.length || text.length + 1 == textData.length) return;
     textData[text.length] = '\n';
     textData[text.length + 1] = '\0';
-    stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
+    stdioc.fputs(textData.ptr, stream == StdStream.output ? stdioc.stdout : stdioc.stderr);
 }
 
 @safe
@@ -140,32 +140,32 @@ noreturn todo(IStr text = "Not implemented.", IStr file = __FILE__, Sz line = __
 // NOTE: Also maybe think about errno lol.
 @trusted
 Fault readTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
-    auto file = stdc.fopen(toCStr(path).getOr(), "r");
-    if (file == null) return Fault.cantOpen;
+    auto file = stdioc.fopen(toCStr(path).getOr(), "r");
+    if (file == null) return Fault.cannotOpen;
 
-    if (stdc.fseek(file, 0, stdc.SEEK_END) != 0) {
-        stdc.fclose(file);
-        return Fault.cantRead;
+    if (stdioc.fseek(file, 0, stdioc.SEEK_END) != 0) {
+        stdioc.fclose(file);
+        return Fault.cannotRead;
     }
-    auto fileSize = stdc.ftell(file);
+    auto fileSize = stdioc.ftell(file);
     if (fileSize == -1) {
-        stdc.fclose(file);
-        return Fault.cantRead;
+        stdioc.fclose(file);
+        return Fault.cannotRead;
     }
-    if (stdc.fseek(file, 0, stdc.SEEK_SET) != 0) {
-        stdc.fclose(file);
-        return Fault.cantRead;
+    if (stdioc.fseek(file, 0, stdioc.SEEK_SET) != 0) {
+        stdioc.fclose(file);
+        return Fault.cannotRead;
     }
 
     static if (L.hasFixedCapacity) {
         if (listBuffer.capacity < fileSize) {
-            if (stdc.fclose(file) != 0) return Fault.cantClose;
+            if (stdioc.fclose(file) != 0) return Fault.cannotClose;
             return Fault.overflow;
         }
     }
     listBuffer.resizeBlank(fileSize);
-    stdc.fread(listBuffer.items.ptr, fileSize, 1, file);
-    if (stdc.fclose(file) != 0) return Fault.cantClose;
+    stdioc.fread(listBuffer.items.ptr, fileSize, 1, file);
+    if (stdioc.fclose(file) != 0) return Fault.cannotClose;
     return Fault.none;
 }
 
@@ -178,10 +178,10 @@ Maybe!LStr readText(IStr path) {
 // NOTE: Also maybe think about errno lol.
 @trusted @nogc
 Fault writeText(IStr path, IStr text) {
-    auto file = stdc.fopen(toCStr(path).getOr(), "w");
-    if (file == null) return Fault.cantOpen;
-    stdc.fwrite(text.ptr, char.sizeof, text.length, file);
-    if (stdc.fclose(file) != 0) return Fault.cantClose;
+    auto file = stdioc.fopen(toCStr(path).getOr(), "w");
+    if (file == null) return Fault.cannotOpen;
+    stdioc.fwrite(text.ptr, char.sizeof, text.length, file);
+    if (stdioc.fclose(file) != 0) return Fault.cannotClose;
     return Fault.none;
 }
 
