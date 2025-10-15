@@ -68,7 +68,7 @@ IStr toStr(T)(T value) {
     } else static if (__traits(isIntegral, T)) { // isSignedType
         return signedToStr(value);
     } else static if (__traits(isFloating, T)) { // isFloating
-        return doubleToStr(value, 2);
+        return floatingToStr(value, 2);
     } else static if (is(T : IStr)) { // isStrType
         return value;
     } else static if (is(T : ICStr)) { // isCStrType
@@ -153,6 +153,72 @@ IStr fmt(A...)(IStr fmtStr, A args) {
 }
 
 @safe nothrow @nogc:
+
+/// Formats into an internal static ring buffer and returns the slice.
+/// This function can be used for types that create a lot of template bloat.
+/// Example: GVec2, GVec3, GVec4, GRect, ...
+IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) {
+    if (fmtStrs.length != args.length) assert(0, "Argument count and format count should be the same.");
+    switch (fmtStrs.length) {
+        case 1:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+            );
+        case 2:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+                fmtStrs[1].fmt(args[1]),
+            );
+        case 3:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+                fmtStrs[1].fmt(args[1]),
+                fmtStrs[2].fmt(args[2]),
+            );
+        case 4:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+                fmtStrs[1].fmt(args[1]),
+                fmtStrs[2].fmt(args[2]),
+                fmtStrs[3].fmt(args[3]),
+            );
+        default:
+            assert(0, "Argument count should be between 1 and 4.");
+    }
+}
+
+/// Formats into an internal static ring buffer and returns the slice.
+/// This function can be used for types that create a lot of template bloat.
+/// Example: GVec2, GVec3, GVec4, GRect, ...
+IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
+    if (fmtStrs.length != args.length) assert(0, "Argument count and format count should be the same.");
+    switch (fmtStrs.length) {
+        case 1:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+            );
+        case 2:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+                fmtStrs[1].fmt(args[1]),
+            );
+        case 3:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+                fmtStrs[1].fmt(args[1]),
+                fmtStrs[2].fmt(args[2]),
+            );
+        case 4:
+            return concat(
+                fmtStrs[0].fmt(args[0]),
+                fmtStrs[1].fmt(args[1]),
+                fmtStrs[2].fmt(args[2]),
+                fmtStrs[3].fmt(args[3]),
+            );
+        default:
+            assert(0, "Argument count should be between 1 and 4.");
+    }
+}
 
 pragma(inline, true) {
     /// Returns true if the character is a digit (0-9).
@@ -629,7 +695,7 @@ IStr signedToStr(long value) {
 }
 
 /// Converts the double value to its string representation with the specified precision.
-IStr doubleToStr(double value, ulong precision = 2) {
+IStr floatingToStr(double value, ulong precision = 2) {
     static char[64] buffer = void;
 
     if (!(value == value)) return "nan";
@@ -765,7 +831,7 @@ Maybe!long toSigned(char c) {
 }
 
 /// Converts the string to a double.
-Maybe!double toDouble(IStr str) {
+Maybe!double toFloating(IStr str) {
     if (str == "nan") return Maybe!double(double.nan);
     auto dotIndex = findStart(str, '.');
     if (dotIndex == -1) {
@@ -790,7 +856,7 @@ Maybe!double toDouble(IStr str) {
 }
 
 /// Converts the character to a double.
-Maybe!double toDouble(char c) {
+Maybe!double toFloating(char c) {
     if (isDigit(c)) {
         return Maybe!double(c - '0');
     } else {
@@ -940,24 +1006,24 @@ unittest {
     assert(signedToStr(-69) == "-69");
     assert(signedToStr(-69) == "-69");
 
-    assert(doubleToStr(0.00, 0) == "0");
-    assert(doubleToStr(0.00, 1) == "0.0");
-    assert(doubleToStr(0.00, 2) == "0.00");
-    assert(doubleToStr(0.00, 3) == "0.000");
-    assert(doubleToStr(0.60, 1) == "0.6");
-    assert(doubleToStr(0.60, 2) == "0.60");
-    assert(doubleToStr(0.60, 3) == "0.600");
-    assert(doubleToStr(0.09, 1) == "0.0");
-    assert(doubleToStr(0.09, 2) == "0.09");
-    assert(doubleToStr(0.09, 3) == "0.090");
-    assert(doubleToStr(69.0, 1) == "69.0");
-    assert(doubleToStr(69.0, 2) == "69.00");
-    assert(doubleToStr(69.0, 3) == "69.000");
-    assert(doubleToStr(-0.69, 0) == "0");
-    assert(doubleToStr(-0.69, 1) == "-0.6");
-    assert(doubleToStr(-0.69, 2) == "-0.69");
-    assert(doubleToStr(-0.69, 3) == "-0.690");
-    assert(doubleToStr(double.nan) == "nan");
+    assert(floatingToStr(0.00, 0) == "0");
+    assert(floatingToStr(0.00, 1) == "0.0");
+    assert(floatingToStr(0.00, 2) == "0.00");
+    assert(floatingToStr(0.00, 3) == "0.000");
+    assert(floatingToStr(0.60, 1) == "0.6");
+    assert(floatingToStr(0.60, 2) == "0.60");
+    assert(floatingToStr(0.60, 3) == "0.600");
+    assert(floatingToStr(0.09, 1) == "0.0");
+    assert(floatingToStr(0.09, 2) == "0.09");
+    assert(floatingToStr(0.09, 3) == "0.090");
+    assert(floatingToStr(69.0, 1) == "69.0");
+    assert(floatingToStr(69.0, 2) == "69.00");
+    assert(floatingToStr(69.0, 3) == "69.000");
+    assert(floatingToStr(-0.69, 0) == "0");
+    assert(floatingToStr(-0.69, 1) == "-0.6");
+    assert(floatingToStr(-0.69, 2) == "-0.69");
+    assert(floatingToStr(-0.69, 3) == "-0.690");
+    assert(floatingToStr(double.nan) == "nan");
 
     assert(cStrToStr("Hello\0") == "Hello");
 
@@ -999,37 +1065,37 @@ unittest {
     assert(toSigned('9').isSome == true);
     assert(toSigned('9').getOr() == 9);
 
-    assert(toDouble("1_069").isSome == false);
-    assert(toDouble(".1069").isSome == false);
-    assert(toDouble("1069.").isSome == false);
-    assert(toDouble(".").isSome == false);
-    assert(toDouble("-1069.-69").isSome == false);
-    assert(toDouble("-1069.+69").isSome == false);
-    assert(toDouble("-1069").isSome == true);
-    assert(toDouble("-1069").getOr() == -1069);
-    assert(toDouble("+1069").isSome == true);
-    assert(toDouble("+1069").getOr() == 1069);
-    assert(toDouble("1069").isSome == true);
-    assert(toDouble("1069").getOr() == 1069);
-    assert(toDouble("1069.0").isSome == true);
-    assert(toDouble("1069.0").getOr() == 1069);
-    assert(toDouble("-1069.0095").isSome == true);
-    assert(toDouble("-1069.0095").getOr() == -1069.0095);
-    assert(toDouble("+1069.0095").isSome == true);
-    assert(toDouble("+1069.0095").getOr() == 1069.0095);
-    assert(toDouble("1069.0095").isSome == true);
-    assert(toDouble("1069.0095").getOr() == 1069.0095);
-    assert(toDouble("-0.0095").isSome == true);
-    assert(toDouble("-0.0095").getOr() == -0.0095);
-    assert(toDouble("+0.0095").isSome == true);
-    assert(toDouble("+0.0095").getOr() == 0.0095);
-    assert(toDouble("0.0095").isSome == true);
-    assert(toDouble("0.0095").getOr() == 0.0095);
-    assert(toDouble('+').isSome == false);
-    assert(toDouble('0').isSome == true);
-    assert(toDouble('9').isSome == true);
-    assert(toDouble('9').getOr() == 9);
-    assert(!(toDouble("nan").getOr() == double.nan));
+    assert(toFloating("1_069").isSome == false);
+    assert(toFloating(".1069").isSome == false);
+    assert(toFloating("1069.").isSome == false);
+    assert(toFloating(".").isSome == false);
+    assert(toFloating("-1069.-69").isSome == false);
+    assert(toFloating("-1069.+69").isSome == false);
+    assert(toFloating("-1069").isSome == true);
+    assert(toFloating("-1069").getOr() == -1069);
+    assert(toFloating("+1069").isSome == true);
+    assert(toFloating("+1069").getOr() == 1069);
+    assert(toFloating("1069").isSome == true);
+    assert(toFloating("1069").getOr() == 1069);
+    assert(toFloating("1069.0").isSome == true);
+    assert(toFloating("1069.0").getOr() == 1069);
+    assert(toFloating("-1069.0095").isSome == true);
+    assert(toFloating("-1069.0095").getOr() == -1069.0095);
+    assert(toFloating("+1069.0095").isSome == true);
+    assert(toFloating("+1069.0095").getOr() == 1069.0095);
+    assert(toFloating("1069.0095").isSome == true);
+    assert(toFloating("1069.0095").getOr() == 1069.0095);
+    assert(toFloating("-0.0095").isSome == true);
+    assert(toFloating("-0.0095").getOr() == -0.0095);
+    assert(toFloating("+0.0095").isSome == true);
+    assert(toFloating("+0.0095").getOr() == 0.0095);
+    assert(toFloating("0.0095").isSome == true);
+    assert(toFloating("0.0095").getOr() == 0.0095);
+    assert(toFloating('+').isSome == false);
+    assert(toFloating('0').isSome == true);
+    assert(toFloating('9').isSome == true);
+    assert(toFloating('9').getOr() == 9);
+    assert(!(toFloating("nan").getOr() == double.nan));
 
     assert(toEnum!TestEnum("?").isSome == false);
     assert(toEnum!TestEnum("?").getOr() == TestEnum.one);

@@ -1186,20 +1186,26 @@ struct GrowingArena {
 
 @nogc {
     IStr indexErrorMessage(Sz i) {
-        return "Index `{}` does not exist.".fmt(i);
+        IStr[1] fmtStrs = [
+            "Index `{}` does not exist.",
+        ];
+        return fmtSignedGroup(fmtStrs, i);
     }
 
-    // NOTE: I use `fmt(Sz)` to avoid creating `fmt(Sz, Sz)` or `fmt(int, int)`. Heheheheh.
     IStr gridIndexErrorMessage(Sz row, Sz col) {
-        auto a = "Index `[{}".fmt(row);
-        auto b = ", {}]` does not exist.".fmt(col);
-        return concat(a, b);
+        IStr[2] fmtStrs = [
+            "Index `[{}",
+            ", {}]` does not exist.",
+        ];
+        return fmtSignedGroup(fmtStrs, row, col);
     }
 
     IStr genIndexErrorMessage(Sz value, Sz generation) {
-        auto a = "Index `[{}]` ".fmt(value);
-        auto b = "with generation `{}` does not exist.".fmt(generation);
-        return concat(a, b);
+        IStr[2] fmtStrs = [
+            "Index `[{}]` ",
+            "with generation `{}` does not exist.",
+        ];
+        return fmtSignedGroup(fmtStrs, value, generation);
     }
 
     Sz findListCapacity(Sz length) {

@@ -13,13 +13,11 @@
 // TODO: Looks at `lockResolution` function again and think if it makes sense.
 // TODO: Good time to think about the fault values now that everything is broken.
 // TODO: Maybe add more missing stuff as functions like min window size and other things...
-// TODO: Add the schicorssss thing.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
 import bk = parin.backend;
-import rl = parin.bindings.rl;
 version (WebAssembly) {
     import em = parin.bindings.em;
 }

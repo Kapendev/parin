@@ -199,7 +199,8 @@ struct Rgba {
     @safe nothrow @nogc:
 
     IStr toStr() {
-        return "({} {} {} {})".fmt(cast(long) r, cast(long) g, cast(long) b, cast(long) a);
+        IStr[4] fmtStrs = ["({}", " {}", " {}", " {})"];
+        return fmtSignedGroup(fmtStrs, r, g, b, a);
     }
 
     IStr toString() {
@@ -251,10 +252,11 @@ struct GVec2(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
+        IStr[2] fmtStrs = ["({}", " {})"];
         static if (__traits(isFloating, T)) {
-            return "({} {})".fmt(cast(double) x, cast(double) y);
+            return fmtFloatingGroup(fmtStrs, x, y);
         } else {
-            return "({} {})".fmt(cast(long) x, cast(long) y);
+            return fmtSignedGroup(fmtStrs, x, y);
         }
     }
 
@@ -441,10 +443,11 @@ struct GVec3(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
+        IStr[3] fmtStrs = ["({}", " {}", " {})"];
         static if (__traits(isFloating, T)) {
-            return "({} {} {})".fmt(cast(double) x, cast(double) y, cast(double) z);
+            return fmtFloatingGroup(fmtStrs, x, y, z);
         } else {
-            return "({} {} {})".fmt(cast(long) x, cast(long) y, cast(long) z);
+            return fmtSignedGroup(fmtStrs, x, y, z);
         }
     }
 
@@ -633,10 +636,11 @@ struct GVec4(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
+        IStr[4] fmtStrs = ["({}", " {}", " {}", " {})"];
         static if (__traits(isFloating, T)) {
-            return "({} {} {} {})".fmt(cast(double) x, cast(double) y, cast(double) z, cast(double) w);
+            return fmtFloatingGroup(fmtStrs, x, y, z, w);
         } else {
-            return "({} {} {} {})".fmt(cast(long) x, cast(long) y, cast(long) z, cast(long) w);
+            return fmtSignedGroup(fmtStrs, x, y, z, w);
         }
     }
 
@@ -826,10 +830,11 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
     @safe nothrow @nogc:
 
     IStr toStr() {
+        IStr[4] fmtStrs = ["P({}", " {})", " S({}", " {})"];
         static if (__traits(isFloating, P)) {
-            return "P({} {}) S({} {})".fmt(cast(double) position.x, cast(double) position.y, cast(double) size.x, cast(double) size.y);
+            return fmtFloatingGroup(fmtStrs, position.x, position.y, size.x, size.y);
         } else {
-            return "P({} {}) S({} {})".fmt(cast(long) position.x, cast(long) position.y, cast(long) size.x, cast(long) size.y);
+            return fmtSignedGroup(fmtStrs, position.x, position.y, size.x, size.y);
         }
     }
 
@@ -1234,10 +1239,11 @@ struct GCirc(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
+        IStr[3] fmtStrs = ["P({}", " {})", " R({})"];
         static if (__traits(isFloating, T)) {
-            return "P({} {}) R({})".fmt(cast(double) position.x, cast(double) position.y, cast(double) radius);
+            return fmtFloatingGroup(fmtStrs, position.x, position.y, radius);
         } else {
-            return "P({} {}) R({})".fmt(cast(long) position.x, cast(long) position.y, cast(long) radius);
+            return fmtSignedGroup(fmtStrs, position.x, position.y, radius);
         }
     }
 
@@ -1308,10 +1314,11 @@ struct GLine(T) {
     @safe nothrow @nogc:
 
     IStr toStr() {
+        IStr[4] fmtStrs = ["A({}", " {})", " B({}", " {})"];
         static if (__traits(isFloating, T)) {
-            return "A({} {}) B({} {})".fmt(cast(double) a.x, cast(double) a.y, cast(double) b.x, cast(double) b.y);
+            return fmtFloatingGroup(fmtStrs, a.x, a.y, b.x, b.y);
         } else {
-            return "A({} {}) B({} {})".fmt(cast(long) a.x, cast(long) a.y, cast(long) b.x, cast(long) b.y);
+            return fmtSignedGroup(fmtStrs, a.x, a.y, b.x, b.y);
         }
     }
 
