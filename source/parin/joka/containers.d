@@ -318,7 +318,7 @@ struct BufferList(T) {
 struct FixedList(T, Sz N) {
     alias Self = FixedList!(T, N);
     alias Item = T;
-    alias Data = Array!(T, N);
+    alias Data = StaticArray!(T, N);
     enum isBasicContainer = true;
     enum hasFixedCapacity = true;
 

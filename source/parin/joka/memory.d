@@ -141,14 +141,14 @@ version (JokaCustomMemory) {
 
 @trusted @nogc
 auto ignoreLeak(T)(T ptr) {
-    static if (isSliceType!T) {
+    static if (is(T : const(A)[], A)) { // isSliceType
         static if (isTrackingMemory) {
             if (auto mallocValue = ptr.ptr in _memoryTrackingState.table) {
                 mallocValue.canIgnore = true;
             }
         }
         return ptr;
-    } else static if (isPtrType!T) {
+    } else static if (is(T : const(void)*)) { // isPtrType
         static if (isTrackingMemory) {
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
                 mallocValue.canIgnore = true;

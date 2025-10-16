@@ -10,17 +10,14 @@
 // TODO: Web script needs testing probably.
 // TODO: Reorder functions to give them a more logical order. Do that after evetything works.
 // TODO: Think about some names again.
-// TODO: Looks at `lockResolution` function again and think if it makes sense.
 // TODO: Good time to think about the fault values now that everything is broken.
 // TODO: Maybe add more missing stuff as functions like min window size and other things...
+// TODO: Maybe look at the function names in bk and engine again. Was thinking about ready vs _openWindow or updateWindow vs updateMainLoop...
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
 import bk = parin.backend;
-version (WebAssembly) {
-    import em = parin.bindings.em;
-}
 
 import parin.joka.ascii;
 import parin.joka.io;
@@ -61,7 +58,7 @@ enum defaultEngineSaveErrorMessage       = "ERROR({}:{}): Could not save {} from
 enum defaultEngineAssetsPathCapacity     = 8 * kilobyte;
 enum defaultEngineEnvArgsCapacity        = 64;
 enum defaultEngineLoadOrSaveTextCapacity = 14 * kilobyte;
-enum defaultEngineTasksCapacity          = 127;
+enum defaultEngineEngineTasksCapacity    = 112;
 enum defaultEngineArenaCapacity          = 4 * megabyte;
 
 enum defaultEngineDprintCapacity       = 8 * kilobyte;
@@ -72,20 +69,24 @@ enum defaultEngineDebugColor1 = white.alpha(120);
 enum defaultEngineDebugColor2 = black.alpha(180);
 // ----------
 
+@trusted:
+
 /// The default engine font.
 enum engineFont = FontId(GenIndex(1));
 
-alias EngineUpdateFunc = bool function(float dt);
-alias EngineFunc       = void function();
-alias EngineFlags      = uint;
+/// A container holding scheduled tasks.
+alias EngineTasks = GenList!(
+    Task,
+    SparseList!(Task, FixedList!(SparseListItem!Task, defaultEngineEngineTasksCapacity)),
+    FixedList!(Gen, defaultEngineEngineTasksCapacity)
+);
 
-@trusted:
+/// An identifier for a scheduled engine task.
+alias EngineTaskId = GenIndex;
+/// The type of the internal engine flags.
+alias EngineFlags = uint;
 
-alias D_ = DrawOptions; /// Shorthand for `DrawOptions`.
-alias T_ = TextOptions; /// Shorthand for `TextOptions`.
-alias C_ = Camera;      /// Shorthand for `Camera`.
-alias V_ = ViewportId;  /// Shorthand for `ViewportId`.
-
+///  The internal engine flags.
 enum EngineFlag : EngineFlags {
     none                        = 0x000000,
     isUpdating                  = 0x000001,
@@ -97,6 +98,62 @@ enum EngineFlag : EngineFlags {
     isLoggingLoadOrSaveFaults   = 0x000040,
     isLoggingMemoryTrackingInfo = 0x000080,
     isDebugMode                 = 0x000100,
+}
+
+/// Information about the engine viewport, including its area.
+struct EngineViewportInfo {
+    Rect area;      /// The area covered by the viewport.
+    Vec2 minSize;   /// The minimum size that the viewport can be.
+    Vec2 maxSize;   /// The maximum size that the viewport can be.
+    float minRatio; /// The minimum ratio between minSize and maxSize.
+}
+
+/// The engine viewport.
+struct EngineViewport {
+    ViewportId data; /// The viewport data.
+    int lockWidth;   /// The target lock width.
+    int lockHeight;  /// The target lock height.
+    bool isChanging; /// The flag that triggers the new lock state.
+    bool isLocking;  /// The flag that tells what the new lock state is.
+}
+
+/// The engine state.
+struct EngineState {
+    EngineFlags flags = defaultEngineFlags;
+    UpdateFunc updateFunc;
+    CallFunc debugModeFunc;
+    CallFunc debugModeBeginFunc;
+    CallFunc debugModeEndFunc;
+    Keyboard debugModeKey = defaultEngineDebugModeKey;
+
+    EngineViewportInfo viewportInfoBuffer;
+    Vec2 mouseBuffer;
+    Vec2 wasdBuffer;
+    Vec2 wasdPressedBuffer;
+    Vec2 wasdReleasedBuffer;
+
+    Rgba borderColor = black;
+    Filter defaultFilter;
+    Wrap defaultWrap;
+    FontId defaultFont = engineFont;
+    TextureId defaultTexture;
+    Camera userCamera;
+    ViewportId userViewport;
+    Fault lastLoadOrSaveFault;
+    IStr memoryTrackingInfoFilter;
+    FStr!defaultEngineAssetsPathCapacity assetsPath;
+    FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
+    EngineTasks tasks;
+
+    FStr!defaultEngineDprintCapacity dprintBuffer;
+    Vec2 dprintPosition = defaultEngineDprintPosition;
+    DrawOptions dprintOptions;
+    Sz dprintLineCount;
+    Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
+    bool dprintIsVisible = true;
+
+    EngineViewport viewport;
+    GrowingArena arena;
 }
 
 /// A texture identifier.
@@ -439,104 +496,6 @@ void endClip() {
     bk.endClip();
 }
 
-/// Represents a scheduled task with interval, repeat count, and callback function.
-struct Task {
-    float interval = 0.0f;  /// The interval of the task, in seconds.
-    float time = 0.0f;      /// The current time of the task.
-    EngineUpdateFunc func;  /// The callback function of the task.
-    byte count;             /// Number of times the task will run, with -1 indicating it runs forever.
-
-    @trusted:
-
-    /// Updates the task, similar to the main update function.
-    bool update(float dt) {
-        if (count == 0) return true;
-        time += dt;
-        if (time >= interval) {
-            auto status = func(interval);
-            time -= interval;
-            if (count > 0) {
-                count -= 1;
-                if (count == 0) return true;
-            }
-            if (status) return true;
-        }
-        return false;
-    }
-}
-
-/// A container holding scheduled tasks.
-alias Tasks = SparseList!(Task, FixedList!(SparseListItem!Task, defaultEngineTasksCapacity));
-/// An identifier for a scheduled task.
-alias TaskId = uint;
-
-/// Information about the engine viewport, including its area.
-struct EngineViewportInfo {
-    Rect area;             /// The area covered by the viewport.
-    Vec2 minSize;          /// The minimum size that the viewport can be.
-    Vec2 maxSize;          /// The maximum size that the viewport can be.
-    float minRatio = 0.0f; /// The minimum ratio between minSize and maxSize.
-}
-
-/// The engine viewport.
-struct EngineViewport {
-    ViewportId data; /// The viewport data.
-    int lockWidth;   /// The target lock width.
-    int lockHeight;  /// The target lock height.
-    bool isChanging; /// The flag that triggers the new lock state.
-    bool isLocking;  /// The flag that tells what the new lock state is.
-
-    @trusted nothrow @nogc:
-
-    /// Frees the loaded viewport.
-    void free() {
-        lockWidth = 0;
-        lockHeight = 0;
-        isChanging = false;
-        isLocking = false;
-        data.free();
-    }
-}
-
-/// The engine state.
-struct EngineState {
-    EngineFlags flags = defaultEngineFlags;
-    EngineUpdateFunc updateFunc;
-    EngineFunc debugModeFunc;
-    EngineFunc debugModeBeginFunc;
-    EngineFunc debugModeEndFunc;
-    Keyboard debugModeKey = defaultEngineDebugModeKey;
-
-    EngineViewportInfo viewportInfoBuffer;
-    Vec2 mouseBuffer;
-    Vec2 wasdBuffer;
-    Vec2 wasdPressedBuffer;
-    Vec2 wasdReleasedBuffer;
-
-    Rgba borderColor = black;
-    Filter defaultFilter;
-    Wrap defaultWrap;
-    FontId defaultFont = engineFont;
-    TextureId defaultTexture;
-    Camera userCamera;
-    ViewportId userViewport;
-    Fault lastLoadOrSaveFault;
-    IStr memoryTrackingInfoFilter;
-    FStr!defaultEngineAssetsPathCapacity assetsPath;
-    FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
-    Tasks tasks;
-
-    FStr!defaultEngineDprintCapacity dprintBuffer;
-    Vec2 dprintPosition = defaultEngineDprintPosition;
-    DrawOptions dprintOptions;
-    Sz dprintLineCount;
-    Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
-    bool dprintIsVisible = true;
-
-    EngineViewport viewport;
-    GrowingArena arena;
-}
-
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
@@ -544,8 +503,9 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 
     bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
-    _engineState.viewport.data = loadViewport(0, 0, gray);
+    _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
+    _engineState.viewport.data = loadViewport(0, 0, gray);
     // TODO: will have to remove the id thing and also change the toTexure names to load maybe.
     loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
     if (args.length) {
@@ -587,7 +547,7 @@ bool _updateWindowLoop() {
     _engineState.arena.clear();
     auto dt = deltaTime;
     foreach (id; _engineState.tasks.ids) {
-        if (_engineState.tasks[id].update(dt)) _engineState.tasks.remove(id);
+        if (_engineState.tasks[id].update(dt)) cancel(id);
     }
     auto result = _engineState.updateFunc(dt);
     if (_engineState.dprintIsVisible) {
@@ -625,29 +585,17 @@ bool _updateWindowLoop() {
     return result;
 }
 
-version (WebAssembly) {
-    /// Use by the `updateWindow` function.
-    /// You should avoid calling this function manually.
-    void _updateWindowLoopWeb() {
-        if (_updateWindowLoop()) em.emscripten_cancel_main_loop();
-    }
-}
-
 /// Updates the window every frame with the given function.
 /// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
-void _updateWindow(EngineUpdateFunc updateFunc, EngineFunc debugModeFunc = null, EngineFunc debugModeBeginFunc = null, EngineFunc debugModeEndFunc = null) {
+void _updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc debugModeBeginFunc = null, CallFunc debugModeEndFunc = null) {
     _engineState.updateFunc = updateFunc;
     _engineState.debugModeFunc = debugModeFunc;
     _engineState.debugModeBeginFunc = debugModeBeginFunc;
     _engineState.debugModeEndFunc = debugModeEndFunc;
 
     _engineState.flags |= EngineFlag.isUpdating;
-    version (WebAssembly) {
-        em.emscripten_set_main_loop(&_updateWindowLoopWeb, 0, true);
-    } else {
-        while (true) if (bk.isWindowCloseButtonPressed || _updateWindowLoop()) break;
-    }
+    bk.runMainLoop!(_updateWindowLoop);
     _engineState.flags &= ~EngineFlag.isUpdating;
 }
 
@@ -658,7 +606,7 @@ void _closeWindow() {
     auto filter = _engineState.memoryTrackingInfoFilter;
     auto isLogging = isLoggingMemoryTrackingInfo;
 
-    _engineState.viewport.free();
+    _engineState.viewport.data.free();
     _engineState.arena.free();
     jokaFree(_engineState);
     _engineState = null;
@@ -714,13 +662,13 @@ mixin template runGame(
 }
 
 /// Schedule a function (task) to run every interval, optionally limited by count.
-TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false) {
-    _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
-    return cast(TaskId) (_engineState.tasks.length - 1);
+EngineTaskId every(float interval, UpdateFunc func, int count = -1, bool canCallNow = false) {
+    return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
 }
 
-/// Cancel a scheduled task by its ID.
-void cancel(TaskId id) {
+/// Cancel the scheduled task by its ID.
+void cancel(EngineTaskId id) {
+    if (id.value == 0) return;
     _engineState.tasks.remove(id);
 }
 

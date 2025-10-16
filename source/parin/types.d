@@ -11,6 +11,9 @@ import parin.joka.math;
 import parin.joka.types;
 import parin.joka.containers;
 
+alias UpdateFunc = bool function(float dt);
+alias CallFunc   = void function();
+
 alias ResourceId = GenIndex;
 
 /// Flipping orientations.
@@ -213,7 +216,7 @@ struct SlicePart {
 }
 
 /// The parts of a 9-slice.
-alias SliceParts = Array!(SlicePart, 9);
+alias SliceParts = StaticArray!(SlicePart, 9);
 
 // Font glyph info.
 struct GlyphInfo {
@@ -373,5 +376,31 @@ struct Camera {
     /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
     void followScaleWithSlowdown(float target, float delta, float slowdown) {
         scale = scale.moveToWithSlowdown(target, delta, slowdown);
+    }
+}
+
+/// Represents a scheduled task with interval, repeat count, and callback function.
+struct Task {
+    float interval = 0.0f; /// The interval of the task, in seconds.
+    float time = 0.0f;     /// The current time of the task.
+    UpdateFunc func;       /// The callback function of the task.
+    byte count;            /// Number of times the task will run, with -1 indicating it runs forever.
+
+    @trusted:
+
+    /// Updates the task, similar to the main update function.
+    bool update(float dt) {
+        if (count == 0) return true;
+        time += dt;
+        if (time >= interval) {
+            auto status = func(interval);
+            time -= interval;
+            if (count > 0) {
+                count -= 1;
+                if (count == 0) return true;
+            }
+            if (status) return true;
+        }
+        return false;
     }
 }

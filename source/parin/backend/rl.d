@@ -33,8 +33,6 @@ version (WebAssembly) {
 }
 // ----------
 
-@trusted nothrow:
-
 alias RlFilter = int;
 alias RlWrap   = int;
 alias RlBlend  = int;
@@ -95,6 +93,21 @@ struct BackendState {
     uint elapsedTickCount;
     Vec2 mouseBuffer;
 }
+
+@trusted:
+
+void runMainLoop(alias loop)() {
+    version (WebAssembly) {
+        static void loopWeb() {
+            if (loop) em.emscripten_cancel_main_loop();
+        }
+        em.emscripten_set_main_loop(&loopWeb, 0, true);
+    } else {
+        while (true) if (isWindowCloseButtonPressed || loop) break;
+    }
+}
+
+@trusted nothrow:
 
 Maybe!ResourceId loadTexture(IStr path) {
     auto resource = rl.LoadTexture(path.toCStr().getOr());
@@ -857,7 +870,11 @@ void updateIsFullscreen() {
 }
 
 bool isWindowCloseButtonPressed() {
-    return rl.WindowShouldClose();
+    version (WebAssembly) {
+        return false;
+    } else {
+        return rl.WindowShouldClose();
+    }
 }
 
 bool isWindowResized() {

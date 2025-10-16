@@ -104,7 +104,7 @@ struct EmscriptenTouchEvent {
     bool shiftKey;
     bool altKey;
     bool metaKey;
-    Array!(EmscriptenTouchPoint, 32) touches;
+    StaticArray!(EmscriptenTouchPoint, 32) touches;
 }
 
 void emscripten_set_main_loop(void* ptr, int fps, bool loop);
