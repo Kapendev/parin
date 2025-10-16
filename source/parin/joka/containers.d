@@ -1184,7 +1184,7 @@ struct GrowingArena {
     }
 }
 
-@nogc {
+@trusted @nogc {
     IStr indexErrorMessage(Sz i) {
         IStr[1] fmtStrs = [
             "Index `{}` does not exist.",

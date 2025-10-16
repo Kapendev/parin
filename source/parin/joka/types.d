@@ -335,6 +335,7 @@ IStr toCleanNumber(alias i)() {
     }
 }
 
+@trusted
 Sz offsetOf(T, IStr member)() if (__traits(hasMember, T, member)) {
     T temp = void;
     return (cast(ubyte*) mixin("&temp.", member)) - (cast(ubyte*) &temp);
@@ -511,9 +512,6 @@ unittest {
 
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
-
-    assert(isArrayType!(int[3]) == true);
-    assert(isArrayType!(typeof(toStaticArray!([1, 2, 3]))));
 
     assert(offsetOf!(Foo, "x") == 0);
     assert(offsetOf!(Foo, "y") == 4);

@@ -198,6 +198,7 @@ struct Rgba {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[4] fmtStrs = ["({}", " {}", " {}", " {})"];
         return fmtSignedGroup(fmtStrs, r, g, b, a);
@@ -251,6 +252,7 @@ struct GVec2(T) {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[2] fmtStrs = ["({}", " {})"];
         static if (__traits(isFloating, T)) {
@@ -442,6 +444,7 @@ struct GVec3(T) {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[3] fmtStrs = ["({}", " {}", " {})"];
         static if (__traits(isFloating, T)) {
@@ -635,6 +638,7 @@ struct GVec4(T) {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[4] fmtStrs = ["({}", " {}", " {}", " {})"];
         static if (__traits(isFloating, T)) {
@@ -829,6 +833,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[4] fmtStrs = ["P({}", " {})", " S({}", " {})"];
         static if (__traits(isFloating, P)) {
@@ -1238,6 +1243,7 @@ struct GCirc(T) {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[3] fmtStrs = ["P({}", " {})", " R({})"];
         static if (__traits(isFloating, T)) {
@@ -1313,6 +1319,7 @@ struct GLine(T) {
 
     @safe nothrow @nogc:
 
+    @trusted
     IStr toStr() {
         IStr[4] fmtStrs = ["A({}", " {})", " B({}", " {})"];
         static if (__traits(isFloating, T)) {
