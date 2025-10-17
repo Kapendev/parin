@@ -1,29 +1,44 @@
-/// This example shows how to use the viewport structure of Parin.
+/// This example shows how to use Parin with microui.
+/// Parin ships microui under `parin.addons.microui`.
+/// Original repository: https://github.com/Kapendev/microui-d
 
 import parin;
+import parin.addons.microui;
 
-auto viewport = ViewportId();
+Game game;
+
+struct Game {
+    int width = 50;
+    int height = 50;
+
+    @UiMember(0, 255) float color = 0;
+    @UiMember(1)      Vec2  world = Vec2(70, 50);
+    @UiMember("flag") bool  reallyCoolFlag;
+
+    @UiPrivate:
+    bool secret1;
+    bool secret2;
+}
 
 void ready() {
-    // Create a viewport with a black background.
-    viewport = loadViewport(resolutionWidth / 2, resolutionHeight / 2, black);
+    readyUi(2);
+    toggleIsDebugMode();
 }
 
 bool update(float dt) {
-    // Resize the viewport when the window is resized.
-    if (isWindowResized) viewport.resize(resolutionWidth / 2, resolutionHeight / 2);
-    // Draw the mouse position inside the viewport.
-    auto viewportCenter = viewport.size * Vec2(0.5);
-    auto viewportMousePosition = mouse - Rect(resolution * Vec2(0.5), viewport.size).centerArea.position;
-    viewport.attach();
-    drawVec2(viewportCenter, white, 20);
-    drawVec2(viewportMousePosition, white, 20);
-    viewport.detach();
-    // Draw the viewport and other things inside the window.
-    auto o = DrawOptions(Hook.center);
-    o.flip = Flip.xy;
-    drawViewport(viewport, resolution * Vec2(0.5), o);
+    setBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
+    drawRect(
+        Rect(game.world, game.width, game.height),
+        game.reallyCoolFlag ? green : white,
+    );
     return false;
 }
 
-mixin runGame!(ready, update, null);
+void inspect() {
+    if (beginWindow("Window", UiRect(200, 80, 350, 370), UiOptFlag.noClose)) {
+        headerAndMembers(game, 125);
+        endWindow();
+    }
+}
+
+mixin runGame!(ready, update, null, 960, 540, "Parin", inspect, beginUi, endUi);

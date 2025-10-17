@@ -377,7 +377,7 @@ struct TileMap {
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
         version (ParinSkipDrawChecks) {
         } else {
-            if (!texture.isValid) {
+            if (texture.isNull) {
                 if (isEmptyTextureVisible) {
                     auto rect = tile.area;
                     drawRect(rect, defaultEngineDebugColor1);
@@ -398,7 +398,7 @@ struct TileMap {
     void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
         version (ParinSkipDrawChecks) {
         } else {
-            if (!texture.isValid) {
+            if (texture.isNull) {
                 if (isEmptyTextureVisible) {
                     auto rect = Rect(map.position, map.size);
                     drawRect(rect, defaultEngineDebugColor1);

@@ -1,8 +1,3 @@
-// PARIN CHANGES:
-//   Removed `extern(C)` to avoid collisions.
-//   Renamed module names.
-//   Changed one public import to normal import.
-
 // ---
 // Copyright 2025 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT

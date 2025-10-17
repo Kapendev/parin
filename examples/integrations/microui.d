@@ -6,7 +6,6 @@ import parin;
 import parin.addons.microui;
 
 Game game;
-FontId font = engineFont;
 
 struct Game {
     int width = 50;
@@ -22,7 +21,7 @@ struct Game {
 }
 
 void ready() {
-    readyUi(&font, 2);
+    readyUi(2);
     toggleIsDebugMode();
 }
 

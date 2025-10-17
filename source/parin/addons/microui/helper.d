@@ -9,117 +9,43 @@
 
 /// Equivalent to `import wrapper`, with additional helper functions for Parin.
 module parin.addons.microui.helper;
-/* TODO: JUST INGORE UNTIL PARIN WORKS AGAIN
+
 import parin.engine;
-import addons.microui.core; // TODO: Used because there are some symbols that I haven't removed yet.
-import addons.microui.wrapper;
-
-private extern(C) nothrow @nogc {
-    enum MOUSE_BUTTON_LEFT   = 0;
-    enum MOUSE_BUTTON_RIGHT  = 1;
-    enum MOUSE_BUTTON_MIDDLE = 2;
-    enum KEY_ENTER           = 257;
-    enum KEY_TAB             = 258;
-    enum KEY_BACKSPACE       = 259;
-    enum KEY_INSERT          = 260;
-    enum KEY_DELETE          = 261;
-    enum KEY_LEFT_SHIFT      = 340;
-    enum KEY_LEFT_CONTROL    = 341;
-    enum KEY_LEFT_ALT        = 342;
-    enum KEY_LEFT_SUPER      = 343;
-    enum KEY_RIGHT_SHIFT     = 344;
-    enum KEY_RIGHT_CONTROL   = 345;
-    enum KEY_RIGHT_ALT       = 346;
-    enum KEY_KP_ENTER        = 335;
-    enum KEY_RIGHT           = 262;
-    enum KEY_LEFT            = 263;
-    enum KEY_DOWN            = 264;
-    enum KEY_UP              = 265;
-    enum KEY_HOME            = 268;
-    enum KEY_END             = 269;
-    enum KEY_PAGE_UP         = 266;
-    enum KEY_PAGE_DOWN       = 267;
-    enum KEY_F1              = 290;
-    enum KEY_F2              = 291;
-    enum KEY_F3              = 292;
-    enum KEY_F4              = 293;
-
-    struct Color { ubyte r, g, b, a; }
-    struct Vector2 { float x, y; }
-    struct Vector3 { float x, y, z; }
-    struct Vector4 { float x, y, z, w; }
-    struct Rectangle { float x, y, width, height; }
-    struct GlyphInfo {}
-
-    struct Texture {
-        uint id;
-        int width;
-        int height;
-        int mipmaps;
-        int format;
-    }
-
-    struct Font {
-        int baseSize;
-        int glyphCount;
-        int glyphPadding;
-        Texture texture;
-        Rectangle* recs;
-        GlyphInfo* glyphs;
-    }
-
-    void* memcpy(void* dest, const(void)* src, size_t count);
-    Vector2 MeasureTextEx(Font font, const(char)* text, float fontSize, float spacing);
-    Font GetFontDefault();
-    float GetMouseWheelMove();
-    Vector2 GetMouseWheelMoveV();
-    int GetMouseX();
-    int GetMouseY();
-    bool IsMouseButtonPressed(int button);
-    bool IsMouseButtonReleased(int button);
-    bool IsKeyPressed(int button);
-    bool IsKeyReleased(int button);
-    int GetCharPressed();
-    int GetScreenWidth();
-    int GetScreenHeight();
-    void BeginScissorMode(int x, int y, int width, int height);
-    void EndScissorMode();
-    void DrawTextEx(Font font, const(char)* text, Vector2 position, float fontSize, float spacing, Color tint);
-    void DrawRectangleRec(Rectangle rec, Color color);
-}
+import parin.addons.microui.wrapper;
 
 @trusted:
 
 // Temporary text measurement function for prototyping.
-nothrow @nogc
-private int muprTempTextWidthFunc(UiFont font, const(char)[] str) {
-    auto da = cast(PFontId*) font;
-    auto options = DrawOptions();
-    options.scale = Vec2(uiStyle.fontScale, uiStyle.fontScale);
-    return cast(int) prMeasureTextSizeId(*da, str, options, TextOptions()).x;
+private nothrow @nogc
+int tempTextWidthFunc(UiFont font, const(char)[] str) {
+    auto data = cast(FontId*) font;
+    return cast(int) measureTextSize(
+        *data,
+        str,
+        DrawOptions(Vec2(uiStyle.fontScale, uiStyle.fontScale)),
+        TextOptions()
+    ).x;
 }
 // Temporary text measurement function for prototyping.
-nothrow @nogc
-private int muprTempTextHeightFunc(UiFont font) {
-    auto da = cast(PFontId*) font;
-    auto data = cast(Font*) prFontIdGet(da);
-    return data.baseSize * uiStyle.fontScale;
+
+private nothrow @nogc
+int tempTextHeightFunc(UiFont font) {
+    auto data = cast(FontId*) font;
+    return data.size * uiStyle.fontScale;
 }
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
 nothrow @nogc
 void readyUi(UiFont font = null, int fontScale = 1) {
-    readyUiCore(&muprTempTextWidthFunc, &muprTempTextHeightFunc, font, fontScale);
-    auto da = cast(PFontId*) uiStyle.font;
-    if (da) {
-        auto data = cast(Font*) prFontIdGet(da);
-        auto baseSize = data.baseSize * uiStyle.fontScale;
-        uiStyle.size = UiVec(baseSize * 6, baseSize);
-        uiStyle.titleHeight = cast(int) (baseSize * 1.5f);
-
-        // No idea, just looks good sometimes.
-        if (baseSize <= 16) {
-        } else if (baseSize <= 38) {
+    auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
+    readyUiCore(&tempTextWidthFunc, &tempTextHeightFunc, data, fontScale);
+    if (data) {
+        auto size = data.size * uiStyle.fontScale;
+        // No idea, these values just look good sometimes.
+        uiStyle.size = UiVec(size * 6, size);
+        uiStyle.titleHeight = cast(int) (size * 1.5f);
+        if (size <= 16) {
+        } else if (size <= 38) {
             uiStyle.border = 2;
             uiStyle.spacing += 4;
             uiStyle.padding += 4;
@@ -137,6 +63,12 @@ void readyUi(UiFont font = null, int fontScale = 1) {
     }
 }
 
+/// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
+nothrow @nogc
+void readyUi(int fontScale) {
+    readyUi(null, fontScale);
+}
+
 /// Initializes the microui context and sets custom text size functions. Value `font` should be a `FontId*`.
 nothrow @nogc
 void readyUi(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null, int fontScale = 1) {
@@ -149,179 +81,170 @@ void readyUi(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null,
 nothrow @nogc
 void handleUiInput() {
     with (UiMouseFlag) {
-        uiInputScroll(cast(int) prDeltaWheel, cast(int) prDeltaWheel);
-        uiInputMouseDown(cast(int) prMouse.x, cast(int) prMouse.y, prIsPressedMouse(Mouse.left) ? left : none);
-        uiInputMouseUp(cast(int) prMouse.x, cast(int) prMouse.y, prIsReleasedMouse(Mouse.left) ? left : none);
-        uiInputMouseDown(cast(int) prMouse.x, cast(int) prMouse.y, prIsPressedMouse(Mouse.right) ? right : none);
-        uiInputMouseUp(cast(int) prMouse.x, cast(int) prMouse.y, prIsReleasedMouse(Mouse.right) ? right : none);
-        uiInputMouseDown(cast(int) prMouse.x, cast(int) prMouse.y, prIsPressedMouse(Mouse.middle) ? middle : none);
-        uiInputMouseUp(cast(int) prMouse.x, cast(int) prMouse.y, prIsReleasedMouse(Mouse.middle) ? middle : none);
+        uiInputScroll(cast(int) deltaWheel, cast(int) deltaWheel);
+        uiInputMouseDown(cast(int) mouse.x, cast(int) mouse.y, Mouse.left.isPressed ? left : none);
+        uiInputMouseDown(cast(int) mouse.x, cast(int) mouse.y, Mouse.middle.isPressed ? middle : none);
+        uiInputMouseDown(cast(int) mouse.x, cast(int) mouse.y, Mouse.right.isPressed ? right : none);
+        uiInputMouseUp(cast(int) mouse.x, cast(int) mouse.y, Mouse.left.isReleased ? left : none);
+        uiInputMouseUp(cast(int) mouse.x, cast(int) mouse.y, Mouse.middle.isReleased ? middle : none);
+        uiInputMouseUp(cast(int) mouse.x, cast(int) mouse.y, Mouse.right.isReleased ? right : none);
     }
 
     with (UiKeyFlag) {
-        uiInputKeyDown(IsKeyPressed(KEY_LEFT_SHIFT) ? shift : none);
-        uiInputKeyDown(IsKeyPressed(KEY_RIGHT_SHIFT) ? shift : none);
-        uiInputKeyDown(IsKeyPressed(KEY_LEFT_CONTROL) ? ctrl : none);
-        uiInputKeyDown(IsKeyPressed(KEY_RIGHT_CONTROL) ? ctrl : none);
-        uiInputKeyDown(IsKeyPressed(KEY_LEFT_ALT) ? alt : none);
-        uiInputKeyDown(IsKeyPressed(KEY_RIGHT_ALT) ? alt : none);
-        uiInputKeyDown(IsKeyPressed(KEY_BACKSPACE) ? backspace : none);
-        uiInputKeyDown(IsKeyPressed(KEY_ENTER) ? enter : none);
-        uiInputKeyDown(IsKeyPressed(KEY_KP_ENTER) ? enter : none);
-        uiInputKeyDown(IsKeyPressed(KEY_TAB) ? tab : none);
-        uiInputKeyDown(IsKeyPressed(KEY_LEFT) ? left : none);
-        uiInputKeyDown(IsKeyPressed(KEY_RIGHT) ? right : none);
-        uiInputKeyDown(IsKeyPressed(KEY_UP) ? up : none);
-        uiInputKeyDown(IsKeyPressed(KEY_DOWN) ? down : none);
-        uiInputKeyDown(IsKeyPressed(KEY_HOME) ? home : none);
-        uiInputKeyDown(IsKeyPressed(KEY_END) ? end : none);
-        uiInputKeyDown(IsKeyPressed(KEY_PAGE_UP) ? pageUp : none);
-        uiInputKeyDown(IsKeyPressed(KEY_PAGE_DOWN) ? pageDown : none);
-        uiInputKeyDown(IsKeyPressed(KEY_F1) ? f1 : none);
-        uiInputKeyDown(IsKeyPressed(KEY_F2) ? f2 : none);
-        uiInputKeyDown(IsKeyPressed(KEY_F3) ? f3 : none);
-        uiInputKeyDown(IsKeyPressed(KEY_F4) ? f4 : none);
+        uiInputKeyDown(Keyboard.shift.isPressed ? shift : none);
+        uiInputKeyDown(Keyboard.ctrl.isPressed ? ctrl : none);
+        uiInputKeyDown(Keyboard.alt.isPressed ? alt : none);
+        uiInputKeyDown(Keyboard.backspace.isPressed ? backspace : none);
+        uiInputKeyDown(Keyboard.enter.isPressed ? enter : none);
+        uiInputKeyDown(Keyboard.tab.isPressed ? tab : none);
+        uiInputKeyDown(Keyboard.left.isPressed ? left : none);
+        uiInputKeyDown(Keyboard.right.isPressed ? right : none);
+        uiInputKeyDown(Keyboard.up.isPressed ? up : none);
+        uiInputKeyDown(Keyboard.down.isPressed ? down : none);
+        uiInputKeyDown(Keyboard.home.isPressed ? home : none);
+        uiInputKeyDown(Keyboard.end.isPressed ? end : none);
+        uiInputKeyDown(Keyboard.pageUp.isPressed ? pageUp : none);
+        uiInputKeyDown(Keyboard.pageDown.isPressed ? pageDown : none);
+        uiInputKeyDown(Keyboard.f1.isPressed ? f1 : none);
+        uiInputKeyDown(Keyboard.f2.isPressed ? f2 : none);
+        uiInputKeyDown(Keyboard.f3.isPressed ? f3 : none);
+        uiInputKeyDown(Keyboard.f4.isPressed ? f4 : none);
 
-        uiInputKeyUp(IsKeyReleased(KEY_LEFT_SHIFT) ? shift : none);
-        uiInputKeyUp(IsKeyReleased(KEY_RIGHT_SHIFT) ? shift : none);
-        uiInputKeyUp(IsKeyReleased(KEY_LEFT_CONTROL) ? ctrl : none);
-        uiInputKeyUp(IsKeyReleased(KEY_RIGHT_CONTROL) ? ctrl : none);
-        uiInputKeyUp(IsKeyReleased(KEY_LEFT_ALT) ? alt : none);
-        uiInputKeyUp(IsKeyReleased(KEY_RIGHT_ALT) ? alt : none);
-        uiInputKeyUp(IsKeyReleased(KEY_BACKSPACE) ? backspace : none);
-        uiInputKeyUp(IsKeyReleased(KEY_ENTER) ? enter : none);
-        uiInputKeyUp(IsKeyReleased(KEY_KP_ENTER) ? enter : none);
-        uiInputKeyUp(IsKeyReleased(KEY_TAB) ? tab : none);
-        uiInputKeyUp(IsKeyReleased(KEY_LEFT) ? left : none);
-        uiInputKeyUp(IsKeyReleased(KEY_RIGHT) ? right : none);
-        uiInputKeyUp(IsKeyReleased(KEY_UP) ? up : none);
-        uiInputKeyUp(IsKeyReleased(KEY_DOWN) ? down : none);
-        uiInputKeyUp(IsKeyReleased(KEY_HOME) ? home : none);
-        uiInputKeyUp(IsKeyReleased(KEY_END) ? end : none);
-        uiInputKeyUp(IsKeyReleased(KEY_PAGE_UP) ? pageUp : none);
-        uiInputKeyUp(IsKeyReleased(KEY_PAGE_DOWN) ? pageDown : none);
-        uiInputKeyUp(IsKeyReleased(KEY_F1) ? f1 : none);
-        uiInputKeyUp(IsKeyReleased(KEY_F2) ? f2 : none);
-        uiInputKeyUp(IsKeyReleased(KEY_F3) ? f3 : none);
-        uiInputKeyUp(IsKeyReleased(KEY_F4) ? f4 : none);
+        uiInputKeyUp(Keyboard.shift.isReleased ? shift : none);
+        uiInputKeyUp(Keyboard.ctrl.isReleased ? ctrl : none);
+        uiInputKeyUp(Keyboard.alt.isReleased ? alt : none);
+        uiInputKeyUp(Keyboard.backspace.isReleased ? backspace : none);
+        uiInputKeyUp(Keyboard.enter.isReleased ? enter : none);
+        uiInputKeyUp(Keyboard.tab.isReleased ? tab : none);
+        uiInputKeyUp(Keyboard.left.isReleased ? left : none);
+        uiInputKeyUp(Keyboard.right.isReleased ? right : none);
+        uiInputKeyUp(Keyboard.up.isReleased ? up : none);
+        uiInputKeyUp(Keyboard.down.isReleased ? down : none);
+        uiInputKeyUp(Keyboard.home.isReleased ? home : none);
+        uiInputKeyUp(Keyboard.end.isReleased ? end : none);
+        uiInputKeyUp(Keyboard.pageUp.isReleased ? pageUp : none);
+        uiInputKeyUp(Keyboard.pageDown.isReleased ? pageDown : none);
+        uiInputKeyUp(Keyboard.f1.isReleased ? f1 : none);
+        uiInputKeyUp(Keyboard.f2.isReleased ? f2 : none);
+        uiInputKeyUp(Keyboard.f3.isReleased ? f3 : none);
+        uiInputKeyUp(Keyboard.f4.isReleased ? f4 : none);
     }
 
     char[128] charBuffer = void;
     size_t charBufferLength = 0;
-    foreach (i; 0 .. charBuffer.length) {
-        charBuffer[i] = cast(char) GetCharPressed();
-        if (charBuffer[i] == '\0') { charBufferLength = i; break; }
+    foreach (i, ref c; charBuffer) {
+        // TODO: This does only work with ASCII lol. Change that when I add UTF8 stuff to Joka.
+        c = cast(char) dequeuePressedRune();
+        if (c == '\0') { charBufferLength = i; break; }
     }
     if (charBufferLength) uiInputText(charBuffer[0 .. charBufferLength]);
 }
 
 /// Draws the microui context to the screen.
 void drawUi() {
-    auto style_font = cast(PFontId*) uiStyle.font;
-    auto style_texture = cast(PTextureId*) uiStyle.texture;
-    auto parin_options = DrawOptions(); // We just change the color, so it should be fine.
-    BeginScissorMode(0, 0, prWindowWidth, prWindowHeight);
-    UiCommand *cmd;
+    auto styleFont = cast(FontId*) uiStyle.font;
+    auto styleTexture = cast(TextureId*) uiStyle.texture;
+    auto parinOptions = DrawOptions(); // NOTE: Can be weird, but works if you are not a noob.
+    beginClip(Rect(windowSize));
+    UiCommand* cmd;
     while (nextUiCommand(&cmd)) {
         switch (cmd.type) {
-            case MU_COMMAND_TEXT:
-                auto text_font = cast(PFontId*) cmd.text.font;
-                parin_options.color = *(cast(Rgba*) (&cmd.text.color));
-                parin_options.scale = Vec2(uiStyle.fontScale, uiStyle.fontScale);
-                prDrawTextId(
-                    *text_font,
+            case UiCommandEnum.text:
+                auto textFont = cast(FontId*) cmd.text.font;
+                parinOptions.color = *(cast(Rgba*) (&cmd.text.color));
+                parinOptions.scale = Vec2(uiStyle.fontScale);
+                drawText(
+                    *textFont,
                     cmd.text.str.ptr[0 .. cmd.text.len],
                     Vec2(cmd.text.pos.x, cmd.text.pos.y),
-                    parin_options,
-                    TextOptions(),
+                    parinOptions,
                 );
-                parin_options.scale = Vec2(1, 1);
+                parinOptions.scale = Vec2(1);
                 break;
-            case MU_COMMAND_RECT:
-                parin_options.color = *(cast(Rgba*) (&cmd.rect.color));
-                auto atlas_rect = uiStyle.atlasRects[cmd.rect.id];
-                if (style_texture && atlas_rect.hasSize) {
-                    auto slice_margin = uiStyle.sliceMargins[cmd.rect.id];
-                    auto slice_mode = uiStyle.sliceModes[cmd.rect.id];
-                    foreach (i, ref part; computeUiSliceParts(atlas_rect, cmd.rect.rect, slice_margin)) {
-                        if (slice_mode && part.canTile) {
-                            parin_options.scale = Vec2(1, 1);
+            case UiCommandEnum.rect:
+                parinOptions.color = *(cast(Rgba*) (&cmd.rect.color));
+                auto atlasRect = uiStyle.atlasRects[cmd.rect.id];
+                if (styleTexture && atlasRect.hasSize) {
+                    auto sliceMargin = uiStyle.sliceMargins[cmd.rect.id];
+                    auto sliceMode = uiStyle.sliceModes[cmd.rect.id];
+                    foreach (i, ref part; computeUiSliceParts(atlasRect, cmd.rect.rect, sliceMargin)) {
+                        if (sliceMode && part.canTile) {
+                            parinOptions.scale = Vec2(1, 1);
                             foreach (y; 0 .. part.tileCount.y) {
                                 foreach (x; 0 .. part.tileCount.x) {
-                                    auto source_w = (x != part.tileCount.x - 1) ? part.source.w : mu_max(0, part.target.w - x * part.source.w);
-                                    auto source_h = (y != part.tileCount.y - 1) ? part.source.h : mu_max(0, part.target.h - y * part.source.h);
-                                    prDrawTextureAreaId(
-                                        *style_texture,
-                                        Rect(part.source.x, part.source.y, source_w, source_h),
+                                    auto sourceW = (x != part.tileCount.x - 1) ? part.source.w : max(0, part.target.w - x * part.source.w);
+                                    auto sourceH = (y != part.tileCount.y - 1) ? part.source.h : max(0, part.target.h - y * part.source.h);
+                                    drawTextureArea(
+                                        *styleTexture,
+                                        Rect(part.source.x, part.source.y, sourceW, sourceH),
                                         Vec2(part.target.x + x * part.source.w, part.target.y + y * part.source.h),
-                                        parin_options,
+                                        parinOptions,
                                     );
                                 }
                             }
                         } else {
-                            parin_options.scale = Vec2(
+                            parinOptions.scale = Vec2(
                                 part.target.w / cast(float) part.source.w,
                                 part.target.h / cast(float) part.source.h,
                             );
-                            prDrawTextureAreaId(
-                                *style_texture,
+                            drawTextureArea(
+                                *styleTexture,
                                 Rect(part.source.x, part.source.y, part.source.w, part.source.h),
                                 Vec2(part.target.x, part.target.y),
-                                parin_options,
+                                parinOptions,
                             );
                         }
                     }
-                    parin_options.scale = Vec2(1, 1);
+                    parinOptions.scale = Vec2(1, 1);
                 } else {
-                    prDrawRect(
+                    drawRect(
                         Rect(cmd.rect.rect.x, cmd.rect.rect.y, cmd.rect.rect.w, cmd.rect.rect.h),
-                        parin_options.color,
+                        parinOptions.color,
                     );
                 }
                 break;
-            case MU_COMMAND_ICON:
-                parin_options.color = *(cast(Rgba*) (&cmd.icon.color));
-                auto icon_atlas_rect = uiStyle.iconAtlasRects[cmd.icon.id];
-                auto icon_diff = UiVec(cmd.icon.rect.w - icon_atlas_rect.w, cmd.icon.rect.h - icon_atlas_rect.h);
-                if (style_texture && icon_atlas_rect.hasSize) {
-                    prDrawTextureAreaId(
-                        *style_texture,
-                        Rect(icon_atlas_rect.x, icon_atlas_rect.y, icon_atlas_rect.w, icon_atlas_rect.h),
-                        Vec2(cmd.icon.rect.x + icon_diff.x / 2, cmd.icon.rect.y + icon_diff.y / 2),
-                        parin_options,
+            case UiCommandEnum.icon:
+                parinOptions.color = *(cast(Rgba*) (&cmd.icon.color));
+                auto iconAtlasRect = uiStyle.iconAtlasRects[cmd.icon.id];
+                auto iconDiff = UiVec(cmd.icon.rect.w - iconAtlasRect.w, cmd.icon.rect.h - iconAtlasRect.h);
+                if (styleTexture && iconAtlasRect.hasSize) {
+                    drawTextureArea(
+                        *styleTexture,
+                        Rect(iconAtlasRect.x, iconAtlasRect.y, iconAtlasRect.w, iconAtlasRect.h),
+                        Vec2(cmd.icon.rect.x + iconDiff.x / 2, cmd.icon.rect.y + iconDiff.y / 2),
+                        parinOptions,
                     );
                 } else {
-                    parin_options.scale = Vec2(uiStyle.fontScale, uiStyle.fontScale);
+                    parinOptions.scale = Vec2(uiStyle.fontScale, uiStyle.fontScale);
                     const(char)[] icon = "?";
                     switch (cmd.icon.id) {
-                        case MU_ICON_CLOSE: icon = "x"; break;
-                        case MU_ICON_CHECK: icon = "*"; break;
-                        case MU_ICON_COLLAPSED: icon = "+"; break;
-                        case MU_ICON_EXPANDED: icon = "-"; break;
+                        case UiIconEnum.close: icon = "x"; break;
+                        case UiIconEnum.check: icon = "*"; break;
+                        case UiIconEnum.collapsed: icon = "+"; break;
+                        case UiIconEnum.expanded: icon = "-"; break;
                         default: break;
                     }
-                    auto icon_width = uiContext.textWidth(style_font, icon);
-                    auto icon_height = uiContext.textHeight(style_font);
-                    icon_diff = UiVec(cmd.icon.rect.w - icon_width, cmd.icon.rect.h - icon_height);
-                    prDrawTextId(
-                        *style_font,
+                    auto iconWidth = uiContext.textWidth(styleFont, icon);
+                    auto iconHeight = uiContext.textHeight(styleFont);
+                    iconDiff = UiVec(cmd.icon.rect.w - iconWidth, cmd.icon.rect.h - iconHeight);
+                    drawText(
+                        *styleFont,
                         icon,
-                        Vec2(cmd.icon.rect.x + icon_diff.x / 2, cmd.icon.rect.y + icon_diff.y / 2),
-                        parin_options,
-                        TextOptions(),
+                        Vec2(cmd.icon.rect.x + iconDiff.x / 2, cmd.icon.rect.y + iconDiff.y / 2),
+                        parinOptions,
                     );
-                    parin_options.scale = Vec2(1, 1);
+                    parinOptions.scale = Vec2(1);
                 }
                 break;
-            case MU_COMMAND_CLIP:
-                EndScissorMode();
-                BeginScissorMode(cmd.clip.rect.x, cmd.clip.rect.y, cmd.clip.rect.w, cmd.clip.rect.h);
+            case UiCommandEnum.clip:
+                endClip();
+                beginClip(Rect(cmd.clip.rect.x, cmd.clip.rect.y, cmd.clip.rect.w, cmd.clip.rect.h));
                 break;
             default:
                 break;
         }
     }
-    EndScissorMode();
+    endClip();
 }
 
 /// Begins input handling and UI processing.
@@ -335,4 +258,3 @@ void endUi() {
     endUiCore();
     drawUi();
 }
-*/

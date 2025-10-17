@@ -207,6 +207,7 @@ struct TextureId {
     /// Frees the loaded texture.
     void free() {
         bk.textureFree(data);
+        data = ResourceId();
     }
 }
 
@@ -271,6 +272,7 @@ struct FontId {
     /// Frees the loaded font.
     void free() {
         if (this != engineFont) bk.fontFree(data);
+        data = ResourceId();
     }
 }
 
@@ -376,6 +378,7 @@ struct SoundId {
     /// Frees the resource associated with the identifier.
     void free() {
         bk.soundFree(data);
+        data = ResourceId();
     }
 }
 
@@ -450,6 +453,7 @@ struct ViewportId {
     /// Frees the loaded viewport.
     void free() {
         if (this != engineViewport) bk.viewportFree(data);
+        data = ResourceId();
     }
 }
 
@@ -1515,7 +1519,13 @@ void toggleSoundIsPaused(SoundId sound) {
 
 /// Measures the size of the specified text when rendered with the given font and draw options.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    if (!font.isValid || text.length == 0) return Vec2();
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (font.isNull) {
+            if (isEmptyFontVisible) font = engineFont;
+            else return Vec2();
+        }
+    }
 
     auto lineCodepointCount = 0;
     auto lineMaxCodepointCount = 0;
@@ -1572,7 +1582,7 @@ void drawLine(Line area, Rgba color = white, float thickness = 9.0f) {
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
-        if (!texture.isValid) {
+        if (texture.isNull) {
             if (isEmptyTextureVisible) {
                 auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
                 drawRect(rect, defaultEngineDebugColor1);
@@ -1626,7 +1636,7 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
-        if (!texture.isValid) {
+        if (texture.isNull) {
             if (isEmptyTextureVisible) {
                 drawRect(target, defaultEngineDebugColor1);
                 drawRect(target, defaultEngineDebugColor2, 1);
@@ -1724,7 +1734,7 @@ void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = Draw
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
-        if (!font.isValid) {
+        if (font.isNull) {
             if (isEmptyFontVisible) font = engineFont;
             else return Vec2();
         }
@@ -1755,13 +1765,13 @@ Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 /// Draws the specified text with the given font at the given position using the provided draw options.
 // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    enum lineCountOfBuffers = 1024;
+    enum lineCountOfBuffers = 512;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
     version (ParinSkipDrawChecks) {
     } else {
-        if (!font.isValid) {
+        if (font.isNull) {
             if (isEmptyFontVisible) font = engineFont;
             else return Vec2();
         }
