@@ -54,6 +54,7 @@ struct Tile {
         bool isEmpty() => !hasId;
         bool hasId() => id + idOffset >= 0;
         bool hasSize() => width != 0 && height != 0;
+        bool hasIdAndSize() => (id + idOffset >= 0) && (width != 0 && height != 0);
         bool hasIntersection(Rect otherArea) => area.hasIntersection(otherArea);
         bool hasIntersection(Tile otherTile) => hasIntersection(otherTile.area);
         bool hasIntersectionInclusive(Rect otherArea) => area.hasIntersectionInclusive(otherArea);
@@ -374,7 +375,19 @@ struct TileMap {
 
 @nogc {
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
-        if (!tile.hasId || !tile.hasSize) return;
+        version (ParinSkipDrawChecks) {
+        } else {
+            if (!texture.isValid) {
+                if (isEmptyTextureVisible) {
+                    auto rect = tile.area;
+                    drawRect(rect, defaultEngineDebugColor1);
+                    drawRect(rect, defaultEngineDebugColor2, 1);
+                }
+                return;
+            }
+        }
+
+        if (!tile.hasSize) return;
         drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
     }
 
@@ -383,16 +396,19 @@ struct TileMap {
     }
 
     void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-        if (!texture.isValid) {
-            if (isEmptyTextureVisible) {
-                auto rect = Rect(map.position, map.size);
-                drawRect(rect, defaultEngineDebugColor1);
-                drawRect(rect, defaultEngineDebugColor2, 1);
+        version (ParinSkipDrawChecks) {
+        } else {
+            if (!texture.isValid) {
+                if (isEmptyTextureVisible) {
+                    auto rect = Rect(map.position, map.size);
+                    drawRect(rect, defaultEngineDebugColor1);
+                    drawRect(rect, defaultEngineDebugColor2, 1);
+                }
+                return;
             }
-            return;
         }
-        if (!map.hasSize) return;
 
+        if (!map.hasSize) return;
         auto hasAreaSize = viewArea.hasSize;
         auto topLeftPoint = viewArea.topLeftPoint;
         auto bottomRightPoint = viewArea.bottomRightPoint;

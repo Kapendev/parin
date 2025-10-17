@@ -14,8 +14,8 @@ import parin.joka.types;
 
 @safe nothrow @nogc:
 
-alias Palette(Sz N) = Array!(Rgba, N); /// A generic color palette of RGBA colors.
-alias HexPalette(Sz N) = uint[N];      /// A generic color palette of hexadecimal numbers.
+alias Palette(Sz N)    = StaticArray!(Rgba, N); /// A generic color palette of RGBA colors.
+alias HexPalette(Sz N) = uint[N];               /// A generic color palette of hexadecimal numbers.
 
 /// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp

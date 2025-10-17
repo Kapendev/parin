@@ -913,6 +913,25 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         @trusted ref S h() => size.y;
         bool hasSize() => size.x != 0 && size.y != 0;
         Self abs() => Self(position.abs, size.abs);
+
+        GVec2!P origin(Hook hook) {
+            static if (__traits(isFloating, P)) {
+                final switch (hook) {
+                    case Hook.topLeft: return GVec2!P();
+                    case Hook.top: return size * GVec2!P(0.5f, 0.0f);
+                    case Hook.topRight: return size * GVec2!P(1.0f, 0.0f);
+                    case Hook.left: return size * GVec2!P(0.0f, 0.5f);
+                    case Hook.center: return size * GVec2!P(0.5f, 0.5f);
+                    case Hook.right: return size * GVec2!P(1.0f, 0.5f);
+                    case Hook.bottomLeft: return size * GVec2!P(0.0f, 1.0f);
+                    case Hook.bottom: return size * GVec2!P(0.5f, 1.0f);
+                    case Hook.bottomRight: return size;
+                }
+            } else {
+                auto temp = GRect!Float(cast(Float) position.x, cast(Float) position.y, cast(Float) size.x, cast(Float) size.y).origin(hook);
+                return GVec2!P(cast(P) temp.x, cast(P) temp.y);
+            }
+        }
     }
 
     Self floor() {
@@ -1075,25 +1094,6 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         if (size.y < 0) {
             position.y = cast(P) (position.y + size.y);
             size.y = cast(S) (-size.y);
-        }
-    }
-
-    GVec2!P origin(Hook hook) {
-        static if (__traits(isFloating, P)) {
-            final switch (hook) {
-                case Hook.topLeft: return GVec2!P();
-                case Hook.top: return size * GVec2!P(0.5f, 0.0f);
-                case Hook.topRight: return size * GVec2!P(1.0f, 0.0f);
-                case Hook.left: return size * GVec2!P(0.0f, 0.5f);
-                case Hook.center: return size * GVec2!P(0.5f, 0.5f);
-                case Hook.right: return size * GVec2!P(1.0f, 0.5f);
-                case Hook.bottomLeft: return size * GVec2!P(0.0f, 1.0f);
-                case Hook.bottom: return size * GVec2!P(0.5f, 1.0f);
-                case Hook.bottomRight: return size;
-            }
-        } else {
-            auto temp = GRect!Float(cast(Float) position.x, cast(Float) position.y, cast(Float) size.x, cast(Float) size.y).origin(hook);
-            return GVec2!P(cast(P) temp.x, cast(P) temp.y);
         }
     }
 

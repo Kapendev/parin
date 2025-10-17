@@ -221,27 +221,35 @@ struct Sprite {
 }
 
 void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
-    options.hook = sprite.hook; // NOTE: Might be a bad idea in the future.
-    options.flip = sprite.flip; // NOTE: Might be a bad idea in the future.
+    auto tempOptions = options;
+    tempOptions.hook = sprite.hook;
+    tempOptions.flip = sprite.flip;
 
-    if (!texture.isValid) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(sprite.position, sprite.size * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineDebugColor1);
-            drawRect(rect, defaultEngineDebugColor2, 1);
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (!texture.isValid) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
+            }
+            return;
         }
-        return;
     }
-    if (!sprite.hasSize) return;
 
+    if (!sprite.hasSize) return;
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
-    auto gridWidth = max(texture.width - sprite.atlasLeft, 0) / sprite.width; // NOTE: Could be saved maybe.
-    if (gridWidth == 0) return;
+    auto gridWidth = (texture.width - sprite.atlasLeft) / sprite.width;
+
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (gridWidth == 0) return;
+    }
 
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;
     auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
-    drawTextureArea(texture, area, sprite.position, options);
+    drawTextureArea(texture, area, sprite.position, tempOptions);
 }
 
 void drawSprite(Sprite sprite, DrawOptions options = DrawOptions()) {

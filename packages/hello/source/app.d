@@ -1,40 +1,28 @@
-/// This example shows how to use the tile map structures of Parin.
+/// This example shows how to use the viewport structure of Parin.
 
 import parin;
 
-auto atlas = TextureId();
-auto map = TileMap();
-auto camera = Camera(0, 0, true); // Create a centered camera at position (0, 0).
-auto tile = Tile(16, 16, 145);    // Create a 16x16 tile that has the ID 145.
-auto tileOptions = DrawOptions();
+auto viewport = ViewportId();
 
 void ready() {
-    lockResolution(320, 180);
-    atlas = loadTexture("parin_atlas.png");
-    atlas.width;
-    // Parse a CSV, where each tile is 16x16 in size.
-    map.parseCsv("-1,-1,-1\n21,22,23\n37,38,39\n53,54,55\n", 16, 16);
+    // Create a viewport with a black background.
+    viewport = loadViewport(resolutionWidth / 2, resolutionHeight / 2, black);
 }
 
 bool update(float dt) {
-    // Update the tile and camera.
-    tileOptions.flip = wasd.x ? (wasd.x > 0 ? Flip.x : Flip.none) : tileOptions.flip;
-    tile.position += wasd * Vec2(120 * dt);
-    camera.position = tile.position + tile.size * Vec2(0.5);
-    // Check for collisions with the map and resolve them.
-    foreach (t; map.tiles(camera)) {
-        if (t.isEmpty) continue;
-        while (t.hasIntersection(tile)) {
-            tile.position -= wasd * Vec2(dt);
-            camera.position = tile.position + tile.size * Vec2(0.5);
-        }
-    }
-    // Draw the world.
-    camera.attach();
-    drawTileMap(atlas, map, camera);
-    drawTile(atlas, tile, tileOptions);
-    camera.detach();
-    drawText("Move with arrow keys.", Vec2(8));
+    // Resize the viewport when the window is resized.
+    if (isWindowResized) viewport.resize(resolutionWidth / 2, resolutionHeight / 2);
+    // Draw the mouse position inside the viewport.
+    auto viewportCenter = viewport.size * Vec2(0.5);
+    auto viewportMousePosition = mouse - Rect(resolution * Vec2(0.5), viewport.size).centerArea.position;
+    viewport.attach();
+    drawVec2(viewportCenter, white, 20);
+    drawVec2(viewportMousePosition, white, 20);
+    viewport.detach();
+    // Draw the viewport and other things inside the window.
+    auto o = DrawOptions(Hook.center);
+    o.flip = Flip.xy;
+    drawViewport(viewport, resolution * Vec2(0.5), o);
     return false;
 }
 

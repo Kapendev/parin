@@ -10,12 +10,12 @@
 // TODO: Web script needs testing probably.
 // TODO: Reorder functions to give them a more logical order. Do that after evetything works.
 // TODO: Think about some names again.
-// TODO: Good time to think about the fault values now that everything is broken.
-// TODO: Maybe add more missing stuff as functions like min window size and other things...
 // TODO: Maybe look at the function names in bk and engine again. Was thinking about ready vs _openWindow or updateWindow vs updateMainLoop...
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
+
+version (ParinSkipDrawChecks) pragma(msg, "Parin: Skipping draw checks.");
 
 import bk = parin.backend;
 
@@ -961,102 +961,6 @@ void _updateEngineWasdBuffer() {
     }
 }
 
-/// Returns the opposite flip value.
-/// The opposite of every flip value except none is none.
-/// The fallback value is returned if the flip value is none.
-Flip oppositeFlip(Flip flip, Flip fallback) {
-    return flip == fallback ? Flip.none : fallback;
-}
-
-/// Computes the parts of a 9-slice.
-SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
-    SliceParts result;
-    if (!source.hasSize || !target.hasSize) return result;
-    auto canClipW = target.w - source.w < -margin.left - margin.right;
-    auto canClipH = target.h - source.h < -margin.top - margin.bottom;
-
-    // -- 1
-    result[0].source.x  = source.x;                                              result[0].source.y = source.y;
-    result[0].source.w  = margin.left;                                           result[0].source.h = margin.top;
-    result[0].target.x  = target.x;                                              result[0].target.y = target.y;
-    result[0].target.w  = margin.left;                                           result[0].target.h = margin.top;
-    result[0].isCorner = true;
-
-    result[1].source.x  = source.x + result[0].source.w;                         result[1].source.y = result[0].source.y;
-    result[1].source.w  = source.w - margin.left - margin.right;                 result[1].source.h = result[0].source.h;
-    result[1].target.x  = target.x + margin.left;                                result[1].target.y = result[0].target.y;
-    result[1].target.w  = target.w - margin.left - margin.right;                 result[1].target.h = result[0].target.h;
-    result[1].canTile = true;
-
-    result[2].source.x  = source.x + result[0].source.w + result[1].source.w;    result[2].source.y = result[0].source.y;
-    result[2].source.w  = margin.right;                                          result[2].source.h = result[0].source.h;
-    result[2].target.x  = target.x + target.w - margin.right;                    result[2].target.y = result[0].target.y;
-    result[2].target.w  = margin.right;                                          result[2].target.h = result[0].target.h;
-    result[2].isCorner = true;
-
-    // -- 2
-    result[3].source.x  = result[0].source.x;                                    result[3].source.y = source.y + margin.top;
-    result[3].source.w  = result[0].source.w;                                    result[3].source.h = source.h - margin.top - margin.bottom;
-    result[3].target.x  = result[0].target.x;                                    result[3].target.y = target.y + margin.top;
-    result[3].target.w  = result[0].target.w;                                    result[3].target.h = target.h - margin.top - margin.bottom;
-    result[3].canTile = true;
-
-    result[4].source.x  = result[1].source.x;                                    result[4].source.y = result[3].source.y;
-    result[4].source.w  = result[1].source.w;                                    result[4].source.h = result[3].source.h;
-    result[4].target.x  = result[1].target.x;                                    result[4].target.y = result[3].target.y;
-    result[4].target.w  = result[1].target.w;                                    result[4].target.h = result[3].target.h;
-    result[4].canTile = true;
-
-    result[5].source.x  = result[2].source.x;                                    result[5].source.y = result[3].source.y;
-    result[5].source.w  = result[2].source.w;                                    result[5].source.h = result[3].source.h;
-    result[5].target.x  = result[2].target.x;                                    result[5].target.y = result[3].target.y;
-    result[5].target.w  = result[2].target.w;                                    result[5].target.h = result[3].target.h;
-    result[5].canTile = true;
-
-    // -- 3
-    result[6].source.x  = result[0].source.x;                                    result[6].source.y = source.y + margin.top + result[3].source.h;
-    result[6].source.w  = result[0].source.w;                                    result[6].source.h = margin.bottom;
-    result[6].target.x  = result[0].target.x;                                    result[6].target.y = target.y + margin.top + result[3].target.h;
-    result[6].target.w  = result[0].target.w;                                    result[6].target.h = margin.bottom;
-    result[6].isCorner = true;
-
-    result[7].source.x  = result[1].source.x;                                    result[7].source.y = result[6].source.y;
-    result[7].source.w  = result[1].source.w;                                    result[7].source.h = result[6].source.h;
-    result[7].target.x  = result[1].target.x;                                    result[7].target.y = result[6].target.y;
-    result[7].target.w  = result[1].target.w;                                    result[7].target.h = result[6].target.h;
-    result[7].canTile = true;
-
-    result[8].source.x  = result[2].source.x;                                    result[8].source.y = result[6].source.y;
-    result[8].source.w  = result[2].source.w;                                    result[8].source.h = result[6].source.h;
-    result[8].target.x  = result[2].target.x;                                    result[8].target.y = result[6].target.y;
-    result[8].target.w  = result[2].target.w;                                    result[8].target.h = result[6].target.h;
-    result[8].isCorner = true;
-
-    if (canClipW) {
-        foreach (ref item; result) {
-            item.target.x = target.x;
-            item.target.w = target.w;
-        }
-    }
-    if (canClipH) {
-        foreach (ref item; result) {
-            item.target.y = target.y;
-            item.target.h = target.h;
-        }
-    }
-    result[1].tileCount.x = result[1].source.w ? result[1].target.w / result[1].source.w + 1 : 0;
-    result[1].tileCount.y = result[1].source.h ? result[1].target.h / result[1].source.h + 1 : 0;
-    result[3].tileCount.x = result[3].source.w ? result[3].target.w / result[3].source.w + 1 : 0;
-    result[3].tileCount.y = result[3].source.h ? result[3].target.h / result[3].source.h + 1 : 0;
-    result[4].tileCount.x = result[4].source.w ? result[4].target.w / result[4].source.w + 1 : 0;
-    result[4].tileCount.y = result[4].source.h ? result[4].target.h / result[4].source.h + 1 : 0;
-    result[5].tileCount.x = result[5].source.w ? result[5].target.w / result[5].source.w + 1 : 0;
-    result[5].tileCount.y = result[5].source.h ? result[5].target.h / result[5].source.h + 1 : 0;
-    result[7].tileCount.x = result[7].source.w ? result[7].target.w / result[7].source.w + 1 : 0;
-    result[7].tileCount.y = result[7].source.h ? result[7].target.h / result[7].source.h + 1 : 0;
-    return result;
-}
-
 /// Returns the arguments that this application was started with.
 IStr[] envArgs() {
     return _engineState.envArgsBuffer.items;
@@ -1649,15 +1553,17 @@ void drawLine(Line area, Rgba color = white, float thickness = 9.0f) {
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (!texture.isValid) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineDebugColor1);
-            drawRect(rect, defaultEngineDebugColor2, 1);
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (!texture.isValid) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
+            }
+            return;
         }
-        return;
     }
-    if (!area.hasSize) return;
 
     auto target = Rect(position, area.size * options.scale);
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
@@ -1701,23 +1607,22 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    if (!texture.isValid) {
-        if (isEmptyTextureVisible) {
-            drawRect(target, defaultEngineDebugColor1);
-            drawRect(target, defaultEngineDebugColor2, 1);
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (!texture.isValid) {
+            if (isEmptyTextureVisible) {
+                drawRect(target, defaultEngineDebugColor1);
+                drawRect(target, defaultEngineDebugColor2, 1);
+            }
+            return;
         }
-        return;
     }
-    if (!area.hasSize) return;
 
-    // NOTE: New rule for options. Functions are allowed to ignore values. Should they handle bad values? Maybe.
-    // NOTE: If we ever change options to pointers, remember to remove this part.
-    options.hook = Hook.topLeft;
-    options.origin = Vec2(0);
-    options.scale = Vec2(1);
+    // NOTE: New rule for options. Functions are allowed to ignore values. Should they handle bad values? Ehhh.
+    auto tempOptions = options;
     foreach (part; computeSliceParts(area.floor().toIRect(), target.floor().toIRect(), margin)) {
         if (canRepeat && part.canTile) {
-            options.scale = Vec2(1);
+            tempOptions.scale = Vec2(1);
             foreach (y; 0 .. part.tileCount.y) { foreach (x; 0 .. part.tileCount.x) {
                 auto sourceW = (x != part.tileCount.x - 1) ? part.source.w : max(0, part.target.w - x * part.source.w);
                 auto sourceH = (y != part.tileCount.y - 1) ? part.source.h : max(0, part.target.h - y * part.source.h);
@@ -1725,11 +1630,11 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
                     texture,
                     Rect(part.source.x, part.source.y, sourceW, sourceH),
                     Vec2(part.target.x + x * part.source.w, part.target.y + y * part.source.h),
-                    options,
+                    tempOptions,
                 );
             }}
         } else {
-            options.scale = Vec2(
+            tempOptions.scale = Vec2(
                 part.target.w / cast(float) part.source.w,
                 part.target.h / cast(float) part.source.h,
             );
@@ -1737,7 +1642,7 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
                 texture,
                 Rect(part.source.x, part.source.y, part.source.w, part.source.h),
                 Vec2(part.target.x, part.target.y),
-                options,
+                tempOptions,
             );
         }
     }
@@ -1751,31 +1656,26 @@ void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, Dra
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (!viewport.isValid) {
-        if (isEmptyTextureVisible) {
-            auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-            drawRect(rect, defaultEngineDebugColor1);
-            drawRect(rect, defaultEngineDebugColor2, 1);
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (!viewport.isValid) {
+            if (isEmptyTextureVisible) {
+                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
+            }
+            return;
         }
-        return;
     }
-    if (!area.hasSize) return;
 
-    // Some basic rules to make viewports noob friendly.
-    final switch (options.flip) {
-        case Flip.none: options.flip = Flip.y; break;
-        case Flip.x: options.flip = Flip.xy; break;
-        case Flip.y: options.flip = Flip.none; break;
-        case Flip.xy: options.flip = Flip.x; break;
-    }
-    // TODO: JUST COPY PASTERD THE TEXUTYRE TUIBG
+    // NOTE: JUST COPY PASTED THE TEXUTYRE CODE, but changed how the flip works.
     auto target = Rect(position, area.size * options.scale);
     auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
     final switch (options.flip) {
-        case Flip.none: break;
-        case Flip.x: area.size.x *= -1.0f; break;
-        case Flip.y: area.size.y *= -1.0f; break;
-        case Flip.xy: area.size *= Vec2(-1.0f); break;
+        case Flip.none: area.size.y *= -1.0f; break;
+        case Flip.x: area.size *= Vec2(-1.0f); break;
+        case Flip.y: break;
+        case Flip.xy: area.size.x *= -1.0f; break;
     }
     if (isPixelSnapped) {
         bk.drawViewport(
@@ -1805,9 +1705,12 @@ void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = Draw
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (!font.isValid) {
-        if (isEmptyFontVisible) font = engineFont;
-        else return Vec2();
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (!font.isValid) {
+            if (isEmptyFontVisible) font = engineFont;
+            else return Vec2();
+        }
     }
 
     auto rect = font.glyphInfo(rune).rect.toRect();
@@ -1839,13 +1742,15 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
-    auto result = Vec2();
-    if (!font.isValid) {
-        if (isEmptyFontVisible) font = engineFont;
-        else return Vec2();
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (!font.isValid) {
+            if (isEmptyFontVisible) font = engineFont;
+            else return Vec2();
+        }
     }
 
-    if (text.length == 0) return Vec2();
+    auto result = Vec2();
     linesBuffer.clear();
     linesWidthBuffer.clear();
     // Get some info about the text.

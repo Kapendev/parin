@@ -13,8 +13,9 @@ import parin.joka.containers;
 
 alias UpdateFunc = bool function(float dt);
 alias CallFunc   = void function();
-
 alias ResourceId = GenIndex;
+
+@safe nothrow @nogc:
 
 /// Flipping orientations.
 enum Flip : ubyte {
@@ -235,7 +236,7 @@ struct DrawOptions {
     Hook hook      = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
     Flip flip      = Flip.none;    /// A value representing flipping orientations.
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Initializes the options with the given rotation.
     this(float rotation, Hook hook = Hook.topLeft) {
@@ -275,7 +276,7 @@ struct TextOptions {
     Alignment alignment    = Alignment.left; /// A value represeting alignment orientations.
     bool isRightToLeft     = false;          /// Indicates whether the content of the text flows in a right-to-left direction.
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Initializes the options with the given visibility ratio.
     this(float visibilityRatio) {
@@ -298,7 +299,7 @@ struct Camera {
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
     bool isAttached;       /// Indicates whether the camera is currently in use.
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Initializes the camera with the given position and optional centering.
     this(Vec2 position, bool isCentered = false) {
@@ -312,9 +313,9 @@ struct Camera {
     }
 
     /// The X position of the camera.
-    ref float x() => position.x;
+    @trusted ref float x() => position.x;
     /// The Y position of the camera.
-    ref float y() => position.y;
+    @trusted ref float y() => position.y;
     /// The sum of the position and the offset of the camera.
     Vec2 sum() => position + offset;
     /// Returns the current hook associated with the camera.
@@ -403,4 +404,100 @@ struct Task {
         }
         return false;
     }
+}
+
+/// Returns the opposite flip value.
+/// The opposite of every flip value except none is none.
+/// The fallback value is returned if the flip value is none.
+Flip oppositeFlip(Flip flip, Flip fallback) {
+    return flip == fallback ? Flip.none : fallback;
+}
+
+/// Computes the parts of a 9-slice.
+SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
+    SliceParts result;
+    if (!source.hasSize || !target.hasSize) return result;
+    auto canClipW = target.w - source.w < -margin.left - margin.right;
+    auto canClipH = target.h - source.h < -margin.top - margin.bottom;
+
+    // -- 1
+    result[0].source.x  = source.x;                                              result[0].source.y = source.y;
+    result[0].source.w  = margin.left;                                           result[0].source.h = margin.top;
+    result[0].target.x  = target.x;                                              result[0].target.y = target.y;
+    result[0].target.w  = margin.left;                                           result[0].target.h = margin.top;
+    result[0].isCorner = true;
+
+    result[1].source.x  = source.x + result[0].source.w;                         result[1].source.y = result[0].source.y;
+    result[1].source.w  = source.w - margin.left - margin.right;                 result[1].source.h = result[0].source.h;
+    result[1].target.x  = target.x + margin.left;                                result[1].target.y = result[0].target.y;
+    result[1].target.w  = target.w - margin.left - margin.right;                 result[1].target.h = result[0].target.h;
+    result[1].canTile = true;
+
+    result[2].source.x  = source.x + result[0].source.w + result[1].source.w;    result[2].source.y = result[0].source.y;
+    result[2].source.w  = margin.right;                                          result[2].source.h = result[0].source.h;
+    result[2].target.x  = target.x + target.w - margin.right;                    result[2].target.y = result[0].target.y;
+    result[2].target.w  = margin.right;                                          result[2].target.h = result[0].target.h;
+    result[2].isCorner = true;
+
+    // -- 2
+    result[3].source.x  = result[0].source.x;                                    result[3].source.y = source.y + margin.top;
+    result[3].source.w  = result[0].source.w;                                    result[3].source.h = source.h - margin.top - margin.bottom;
+    result[3].target.x  = result[0].target.x;                                    result[3].target.y = target.y + margin.top;
+    result[3].target.w  = result[0].target.w;                                    result[3].target.h = target.h - margin.top - margin.bottom;
+    result[3].canTile = true;
+
+    result[4].source.x  = result[1].source.x;                                    result[4].source.y = result[3].source.y;
+    result[4].source.w  = result[1].source.w;                                    result[4].source.h = result[3].source.h;
+    result[4].target.x  = result[1].target.x;                                    result[4].target.y = result[3].target.y;
+    result[4].target.w  = result[1].target.w;                                    result[4].target.h = result[3].target.h;
+    result[4].canTile = true;
+
+    result[5].source.x  = result[2].source.x;                                    result[5].source.y = result[3].source.y;
+    result[5].source.w  = result[2].source.w;                                    result[5].source.h = result[3].source.h;
+    result[5].target.x  = result[2].target.x;                                    result[5].target.y = result[3].target.y;
+    result[5].target.w  = result[2].target.w;                                    result[5].target.h = result[3].target.h;
+    result[5].canTile = true;
+
+    // -- 3
+    result[6].source.x  = result[0].source.x;                                    result[6].source.y = source.y + margin.top + result[3].source.h;
+    result[6].source.w  = result[0].source.w;                                    result[6].source.h = margin.bottom;
+    result[6].target.x  = result[0].target.x;                                    result[6].target.y = target.y + margin.top + result[3].target.h;
+    result[6].target.w  = result[0].target.w;                                    result[6].target.h = margin.bottom;
+    result[6].isCorner = true;
+
+    result[7].source.x  = result[1].source.x;                                    result[7].source.y = result[6].source.y;
+    result[7].source.w  = result[1].source.w;                                    result[7].source.h = result[6].source.h;
+    result[7].target.x  = result[1].target.x;                                    result[7].target.y = result[6].target.y;
+    result[7].target.w  = result[1].target.w;                                    result[7].target.h = result[6].target.h;
+    result[7].canTile = true;
+
+    result[8].source.x  = result[2].source.x;                                    result[8].source.y = result[6].source.y;
+    result[8].source.w  = result[2].source.w;                                    result[8].source.h = result[6].source.h;
+    result[8].target.x  = result[2].target.x;                                    result[8].target.y = result[6].target.y;
+    result[8].target.w  = result[2].target.w;                                    result[8].target.h = result[6].target.h;
+    result[8].isCorner = true;
+
+    if (canClipW) {
+        foreach (ref item; result) {
+            item.target.x = target.x;
+            item.target.w = target.w;
+        }
+    }
+    if (canClipH) {
+        foreach (ref item; result) {
+            item.target.y = target.y;
+            item.target.h = target.h;
+        }
+    }
+    result[1].tileCount.x = result[1].source.w ? result[1].target.w / result[1].source.w + 1 : 0;
+    result[1].tileCount.y = result[1].source.h ? result[1].target.h / result[1].source.h + 1 : 0;
+    result[3].tileCount.x = result[3].source.w ? result[3].target.w / result[3].source.w + 1 : 0;
+    result[3].tileCount.y = result[3].source.h ? result[3].target.h / result[3].source.h + 1 : 0;
+    result[4].tileCount.x = result[4].source.w ? result[4].target.w / result[4].source.w + 1 : 0;
+    result[4].tileCount.y = result[4].source.h ? result[4].target.h / result[4].source.h + 1 : 0;
+    result[5].tileCount.x = result[5].source.w ? result[5].target.w / result[5].source.w + 1 : 0;
+    result[5].tileCount.y = result[5].source.h ? result[5].target.h / result[5].source.h + 1 : 0;
+    result[7].tileCount.x = result[7].source.w ? result[7].target.w / result[7].source.w + 1 : 0;
+    result[7].tileCount.y = result[7].source.h ? result[7].target.h / result[7].source.h + 1 : 0;
+    return result;
 }
