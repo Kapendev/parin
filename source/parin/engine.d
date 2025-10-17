@@ -37,8 +37,8 @@ enum defaultEngineWidth           = 960;
 enum defaultEngineHeight          = 540;
 enum defaultEngineVsync           = true;
 enum defaultEngineFpsMax          = 60;
-enum defaultEngineWindowMinWidth  = 240;
-enum defaultEngineWindowMinHeight = 135;
+enum defaultEngineWindowMinWidth  = 320;
+enum defaultEngineWindowMinHeight = 180;
 enum defaultEngineWindowMinSize   = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
 enum defaultEngineDebugModeKey    = Keyboard.f3;
 
@@ -66,13 +66,15 @@ enum defaultEngineDprintPosition       = Vec2(8, 6);
 enum defaultEngineDprintLineCountLimit = 14;
 
 enum defaultEngineDebugColor1 = white.alpha(120);
-enum defaultEngineDebugColor2 = black.alpha(180);
+enum defaultEngineDebugColor2 = black.alpha(170);
 // ----------
 
 @trusted:
 
-/// The default engine font.
-enum engineFont = FontId(GenIndex(1));
+/// The engine font.
+enum engineFont = FontId(ResourceId(1));
+/// The engine viewport.
+enum engineViewport = ViewportId(ResourceId(1));
 
 /// A container holding scheduled tasks.
 alias EngineTasks = GenList!(
@@ -160,7 +162,7 @@ struct EngineState {
 struct TextureId {
     ResourceId data;
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Checks if the texture is null (default value).
     bool isNull() {
@@ -212,7 +214,7 @@ struct TextureId {
 struct FontId {
     ResourceId data;
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Checks if the font is null (default value).
     bool isNull() {
@@ -268,15 +270,15 @@ struct FontId {
 
     /// Frees the loaded font.
     void free() {
-        bk.fontFree(data);
+        if (this != engineFont) bk.fontFree(data);
     }
 }
 
 /// A sound identifier.
 struct SoundId {
-    GenIndex data;
+    ResourceId data;
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Checks if the font is null (default value).
     bool isNull() {
@@ -381,7 +383,7 @@ struct SoundId {
 struct ViewportId {
     ResourceId data;
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     /// Checks if the font is null (default value).
     bool isNull() {
@@ -447,7 +449,7 @@ struct ViewportId {
 
     /// Frees the loaded viewport.
     void free() {
-        bk.viewportFree(data);
+        if (this != engineViewport) bk.viewportFree(data);
     }
 }
 
@@ -606,12 +608,11 @@ void _closeWindow() {
     auto filter = _engineState.memoryTrackingInfoFilter;
     auto isLogging = isLoggingMemoryTrackingInfo;
 
-    _engineState.viewport.data.free();
+    bk.freeBackend();
     _engineState.arena.free();
     jokaFree(_engineState);
     _engineState = null;
 
-    bk.freeBackend();
     static if (isTrackingMemory) {
         if (isLogging) printMemoryTrackingInfo(filter);
     }
@@ -1022,13 +1023,29 @@ IStr[] droppedPaths() {
     return bk.droppedPaths;
 }
 
-/// Frees all managed engine resources. // TODO no idea what here is oging on
-void freeManagedEngineResources() {
-    bk.freeAllTextures();
+void freeAllTextureIds() {
+    bk.freeAllTextures(false);
 }
 
-deprecated("Was too generic. Use `freeManagedEngineResources` now.")
-alias freeEngineResources = freeManagedEngineResources;
+void freeAllFontIds() {
+    bk.freeAllFonts(true);
+}
+
+void freeAllSoundIds() {
+    bk.freeAllSounds(false);
+}
+
+void freeAllViewportIds() {
+    bk.freeAllViewports(true);
+}
+
+/// Frees all engine resources.
+void freeAllResourceIds() {
+    freeAllTextureIds();
+    freeAllFontIds();
+    freeAllSoundIds();
+    freeAllViewportIds();
+}
 
 /// Opens a URL in the default web browser (if available).
 /// Redirect to Parin's GitHub when no URL is provided.

@@ -1187,23 +1187,23 @@ struct GrowingArena {
 @trusted @nogc {
     IStr indexErrorMessage(Sz i) {
         IStr[1] fmtStrs = [
-            "Index `{}` does not exist.",
+            "Index {} does not exist.",
         ];
         return fmtSignedGroup(fmtStrs, i);
     }
 
     IStr gridIndexErrorMessage(Sz row, Sz col) {
         IStr[2] fmtStrs = [
-            "Index `[{}",
-            ", {}]` does not exist.",
+            "Index {}",
+            ", {} does not exist.",
         ];
         return fmtSignedGroup(fmtStrs, row, col);
     }
 
     IStr genIndexErrorMessage(Sz value, Sz generation) {
         IStr[2] fmtStrs = [
-            "Index `[{}]` ",
-            "with generation `{}` does not exist.",
+            "Index {} ",
+            "with generation {} does not exist.",
         ];
         return fmtSignedGroup(fmtStrs, value, generation);
     }

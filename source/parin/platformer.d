@@ -753,7 +753,7 @@ struct BoxWorld {
 }
 
 @nogc
-void drawDebugBoxWorld(ref BoxWorld world) {
-    foreach (ref wall; world.walls) drawRect(wall.area.toRect(), brown.alpha(170));
-    foreach (ref actor; world.actors) drawRect(actor.area.toRect(), cyan.alpha(170));
+void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColor = green) {
+    foreach (ref wall; world.walls) drawRect(wall.area.toRect(), wallColor.alpha(defaultEngineDebugColor1.a));
+    foreach (ref actor; world.actors) drawRect(actor.area.toRect(), actorColor.alpha(defaultEngineDebugColor1.a));
 }
