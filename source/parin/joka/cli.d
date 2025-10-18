@@ -85,6 +85,8 @@ auto toArgTokensFromStr(IStr args) {
     return toArgTokens(args.toCliArgs());
 }
 
+// TODO: Got kinda lazy. You could add more helper functions. Maybe do it later.
+
 /// Returns true if the first argument matches the given command.
 bool hasCommand(const(IStr)[] args, IStr command) {
     auto tokens = args.toArgTokens();

@@ -5,9 +5,11 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: Add doc comments to some functions that don't have them. Both here and in backend.
 // TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
-// TODO: Web script needs testing probably.
-// TODO: Reorder functions to give them a more logical order. Do that after evetything works.
+//   OMG it's a lot of work and I hate it...
+// NOTE: Reorder functions to give them a more logical order. Do that after evetything works.
+//   How about I don't do that! Go clean your room. It's going to be more useful than this.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -176,21 +178,6 @@ struct TextureId {
         return isValid ? this : assert(0, message);
     }
 
-    /// Returns the width of the texture.
-    int width() {
-        return bk.textureWidth(data);
-    }
-
-    /// Returns the height of the texture.
-    int height() {
-        return bk.textureHeight(data);
-    }
-
-    /// Returns the size of the texture.
-    Vec2 size() {
-        return bk.textureSize(data);
-    }
-
     Filter filter() {
         return bk.textureFilter(data);
     }
@@ -207,6 +194,21 @@ struct TextureId {
     /// Sets the wrap mode of the texture.
     void setWrap(Wrap value) {
         bk.textureSetWrap(data, value);
+    }
+
+    /// Returns the width of the texture.
+    int width() {
+        return bk.textureWidth(data);
+    }
+
+    /// Returns the height of the texture.
+    int height() {
+        return bk.textureHeight(data);
+    }
+
+    /// Returns the size of the texture.
+    Vec2 size() {
+        return bk.textureSize(data);
     }
 
     /// Frees the loaded texture.
@@ -237,11 +239,6 @@ struct FontId {
         return isValid ? this : assert(0, message);
     }
 
-    /// Returns the size of the font.
-    int size() {
-        return bk.fontSize(data);
-    }
-
     Filter filter() {
         return bk.fontFilter(data);
     }
@@ -258,6 +255,11 @@ struct FontId {
     /// Sets the wrap mode of the font.
     void setWrap(Wrap value) {
         bk.fontSetWrap(data, value);
+    }
+
+    /// Returns the size of the font.
+    int size() {
+        return bk.fontSize(data);
     }
 
     /// Returns the spacing between individual characters.
@@ -416,6 +418,32 @@ struct ViewportId {
         return isValid ? this : assert(0, message);
     }
 
+    Filter filter() {
+        return bk.viewportFilter(data);
+    }
+
+    /// Sets the filter mode of the viewport.
+    void setFilter(Filter value) {
+        bk.viewportSetFilter(data, value);
+    }
+
+    Wrap wrap() {
+        return bk.viewportWrap(data);
+    }
+
+    /// Sets the wrap mode of the viewport.
+    void setWrap(Wrap value) {
+        bk.viewportSetWrap(data, value);
+    }
+
+    Blend blend() {
+        return bk.viewportBlend(data);
+    }
+
+    void setBlend(Blend value) {
+        return bk.viewportSetBlend(data, value);
+    }
+
     /// Returns the width of the viewport.
     int width() {
         return bk.viewportWidth(data);
@@ -449,32 +477,6 @@ struct ViewportId {
         bk.viewportSetColor(data, value);
     }
 
-    Filter filter() {
-        return bk.viewportFilter(data);
-    }
-
-    /// Sets the filter mode of the viewport.
-    void setFilter(Filter value) {
-        bk.viewportSetFilter(data, value);
-    }
-
-    Wrap wrap() {
-        return bk.viewportWrap(data);
-    }
-
-    /// Sets the wrap mode of the viewport.
-    void setWrap(Wrap value) {
-        bk.viewportSetWrap(data, value);
-    }
-
-    Blend blend() {
-        return bk.viewportBlend(data);
-    }
-
-    void setBlend(Blend value) {
-        return bk.viewportSetBlend(data, value);
-    }
-
     /// Frees the loaded viewport.
     void free() {
         if (this != engineViewport) bk.viewportFree(data);
@@ -492,39 +494,6 @@ void attach(ViewportId viewport) {
     bk.clearBackground(viewport.color);
     bk.beginBlend(viewport.blend);
     _engineState.userViewport = viewport;
-}
-
-/// Detaches the viewport, making it inactive.
-// NOTE: The engine viewport should not use this function.
-void detach(ViewportId viewport) {
-    if (viewport.size.isZero) return;
-    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
-    bk.endBlend();
-    bk.endViewport(viewport.data);
-    _engineState.userViewport = ViewportId();
-    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
-}
-
-/// Attaches the camera, making it active.
-void attach(ref Camera camera, Rounding type = Rounding.none) {
-    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
-    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
-    _engineState.userCamera = camera;
-}
-
-/// Detaches the camera, making it inactive.
-void detach(ref Camera camera) {
-    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
-    bk.endCamera(camera);
-    _engineState.userCamera = Camera();
-}
-
-void beginClip(Rect area) {
-    bk.beginClip(area);
-}
-
-void endClip() {
-    bk.endClip();
 }
 
 /// Opens a window with the specified size and title.
@@ -682,6 +651,8 @@ mixin template runGame(
     }
 }
 
+@trusted nothrow:
+
 /// Schedule a function (task) to run every interval, optionally limited by count.
 EngineTaskId every(float interval, UpdateFunc func, int count = -1, bool canCallNow = false) {
     return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
@@ -692,8 +663,6 @@ void cancel(EngineTaskId id) {
     if (id.value == 0) return;
     _engineState.tasks.remove(id);
 }
-
-@trusted nothrow:
 
 /// Allocates raw memory from the frame arena.
 void* frameMalloc(Sz size, Sz alignment) {
@@ -845,11 +814,6 @@ Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     return result;
 }
 
-/// Returns the fault from the last load or save call.
-Fault lastLoadOrSaveFault() {
-    return _engineState.lastLoadOrSaveFault;
-}
-
 /// Sets the path of the assets folder.
 void setAssetsPath(IStr path) {
     _engineState.assetsPath.clear();
@@ -857,6 +821,44 @@ void setAssetsPath(IStr path) {
 }
 
 @trusted nothrow @nogc:
+
+/// Returns the fault from the last load or save call.
+Fault lastLoadOrSaveFault() {
+    return _engineState.lastLoadOrSaveFault;
+}
+
+/// Detaches the viewport, making it inactive.
+// NOTE: The engine viewport should not use this function.
+void detach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
+    bk.endBlend();
+    bk.endViewport(viewport.data);
+    _engineState.userViewport = ViewportId();
+    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
+}
+
+/// Attaches the camera, making it active.
+void attach(ref Camera camera, Rounding type = Rounding.none) {
+    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
+    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
+    _engineState.userCamera = camera;
+}
+
+/// Detaches the camera, making it inactive.
+void detach(ref Camera camera) {
+    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
+    bk.endCamera(camera);
+    _engineState.userCamera = Camera();
+}
+
+void beginClip(Rect area) {
+    bk.beginClip(area);
+}
+
+void endClip() {
+    bk.endClip();
+}
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
 // Get next codepoint in a byte sequence and bytes processed

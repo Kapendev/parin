@@ -272,13 +272,15 @@ pragma(inline, true) {
     }
 
     /// Converts all lowercase letters in the string to uppercase.
-    void toUpper(Str str) {
+    Str toUpper(Str str) {
         foreach (ref c; str) c = toUpper(c);
+        return str;
     }
 
     /// Converts all uppercase letters in the string to lowercase.
-    void toLower(Str str) {
+    Str toLower(Str str) {
         foreach (ref c; str) c = toLower(c);
+        return str;
     }
 
     /// Returns the length of the C string.
@@ -832,7 +834,7 @@ Maybe!long toSigned(char c) {
 
 /// Converts the string to a double.
 Maybe!double toFloating(IStr str) {
-    if (str == "nan") return Maybe!double(double.nan);
+    if (str == "nan" || str == "NaN" || str == "NAN") return Maybe!double(double.nan);
     auto dotIndex = findStart(str, '.');
     if (dotIndex == -1) {
         auto temp = toSigned(str);
@@ -865,12 +867,27 @@ Maybe!double toFloating(char c) {
 }
 
 /// Converts the string to an enum value.
-Maybe!T toEnum(T)(IStr str) {
-    switch (str) {
-        static foreach (m; __traits(allMembers, T)) {
-            mixin("case m: return Maybe!T(T.", m, ");");
+@trusted
+Maybe!T toEnum(T, bool noCase = false)(IStr str) {
+    static if (noCase) {
+        char[128] enumBuffer = void;
+        char[128] strBuffer = void;
+        auto enumSlice = enumBuffer[];
+        auto strSlice = strBuffer[];
+        if (strSlice.copyStr(str)) return Maybe!T(Fault.overflow);
+        strSlice.toUpper();
+        foreach (m; __traits(allMembers, T)) {
+            if (enumSlice.copyStr(m)) return Maybe!T(Fault.overflow);
+            if (enumSlice.toUpper() == strSlice) return Maybe!T(mixin("T.", m));
         }
-        default: return Maybe!T(Fault.invalid);
+        return Maybe!T(Fault.invalid);
+    } else {
+        switch (str) {
+            static foreach (m; __traits(allMembers, T)) {
+                mixin("case m: return Maybe!T(T.", m, ");");
+            }
+            default: return Maybe!T(Fault.invalid);
+        }
     }
 }
 
@@ -880,7 +897,7 @@ Maybe!ICStr toCStr(IStr str) {
     static char[defaultAsciiBufferSize] buffer = void;
 
     if (buffer.length < str.length) {
-        return Maybe!ICStr(Fault.invalid);
+        return Maybe!ICStr(Fault.overflow);
     } else {
         auto value = buffer[];
         value.copyChars(str);
@@ -1103,6 +1120,8 @@ unittest {
     assert(toEnum!TestEnum("one").getOr() == TestEnum.one);
     assert(toEnum!TestEnum("two").isSome == true);
     assert(toEnum!TestEnum("two").getOr() == TestEnum.two);
+    assert(toEnum!TestEnum("TWO").isSome == false);
+    assert(toEnum!(TestEnum, true)("TWO").isSome == true);
 
     assert(toCStr("Hello").getOr().cStrLength == "Hello".length);
     assert(toCStr("Hello").getOr().cStrToStr() == "Hello");
