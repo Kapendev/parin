@@ -5,12 +5,9 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Fix microui lol.
 // TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
 // TODO: Web script needs testing probably.
 // TODO: Reorder functions to give them a more logical order. Do that after evetything works.
-// TODO: Think about some names again.
-// TODO: Maybe look at the function names in bk and engine again. Was thinking about ready vs _openWindow or updateWindow vs updateMainLoop...
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -194,9 +191,17 @@ struct TextureId {
         return bk.textureSize(data);
     }
 
+    Filter filter() {
+        return bk.textureFilter(data);
+    }
+
     /// Sets the filter mode of the texture.
     void setFilter(Filter value) {
         bk.textureSetFilter(data, value);
+    }
+
+    Wrap wrap() {
+        return bk.textureWrap(data);
     }
 
     /// Sets the wrap mode of the texture.
@@ -237,9 +242,17 @@ struct FontId {
         return bk.fontSize(data);
     }
 
+    Filter filter() {
+        return bk.fontFilter(data);
+    }
+
     /// Sets the filter mode of the font.
     void setFilter(Filter value) {
         bk.fontSetFilter(data, value);
+    }
+
+    Wrap wrap() {
+        return bk.fontWrap(data);
     }
 
     /// Sets the wrap mode of the font.
@@ -424,16 +437,6 @@ struct ViewportId {
         bk.viewportResize(data, newWidth, newHeight);
     }
 
-    /// Sets the filter mode of the viewport.
-    void setFilter(Filter value) {
-        bk.viewportSetFilter(data, value);
-    }
-
-    /// Sets the wrap mode of the viewport.
-    void setWrap(Wrap value) {
-        bk.viewportSetWrap(data, value);
-    }
-
     bool isAttached() {
         return bk.viewportIsAttached(data);
     }
@@ -446,8 +449,30 @@ struct ViewportId {
         bk.viewportSetColor(data, value);
     }
 
+    Filter filter() {
+        return bk.viewportFilter(data);
+    }
+
+    /// Sets the filter mode of the viewport.
+    void setFilter(Filter value) {
+        bk.viewportSetFilter(data, value);
+    }
+
+    Wrap wrap() {
+        return bk.viewportWrap(data);
+    }
+
+    /// Sets the wrap mode of the viewport.
+    void setWrap(Wrap value) {
+        bk.viewportSetWrap(data, value);
+    }
+
     Blend blend() {
         return bk.viewportBlend(data);
+    }
+
+    void setBlend(Blend value) {
+        return bk.viewportSetBlend(data, value);
     }
 
     /// Frees the loaded viewport.
@@ -504,10 +529,10 @@ void endClip() {
 
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
-void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
+void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     enum monogramPath = "parin_monogram.png";
 
-    bk.readyBackend(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
+    bk.openWindow(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
@@ -522,101 +547,95 @@ void _openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin"
 
 /// Opens a window with the specified size and title, using C strings.
 /// You should avoid calling this function manually.
-void _openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
-    _openWindow(width, height, null, title.cStrToStr());
+void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
+    openWindow(width, height, null, title.cStrToStr());
     if (argc) {
         foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
         _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
     }
 }
 
-/// Use by the `updateWindow` function.
-/// You should avoid calling this function manually.
-bool _updateWindowLoop() {
-    // Update buffers and resources.
-    bk.pumpEvents();
-    _updateViewportInfoBuffer();
-    _updateEngineMouseBuffer(bk.mouse);
-    _updateEngineWasdBuffer();
-
-    // Begin drawing.
-    auto loopVsync = vsync;
-    if (isResolutionLocked) {
-        bk.beginViewport(_engineState.viewport.data.data);
-    } else {
-        bk.beginDrawing();
-    }
-    bk.clearBackground(_engineState.viewport.data.color);
-
-    // Update and draw the game.
-    bk.beginDroppedPaths();
-    _engineState.arena.clear();
-    auto dt = deltaTime;
-    foreach (id; _engineState.tasks.ids) {
-        if (_engineState.tasks[id].update(dt)) cancel(id);
-    }
-    auto result = _engineState.updateFunc(dt);
-    if (_engineState.dprintIsVisible) {
-        drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
-    }
-    if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
-    if (isDebugMode) {
-        if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
-        if (_engineState.debugModeFunc) _engineState.debugModeFunc();
-        if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
-    }
-    bk.endDroppedPaths();
-
-    // End drawing.
-    if (isResolutionLocked) {
-        auto info = engineViewportInfo;
-        bk.endViewport(_engineState.viewport.data.data);
-        bk.beginDrawing();
-        bk.clearBackground(_engineState.borderColor);
-        bk.drawViewport(_engineState.viewport.data.data, Rect(info.minSize.x, -info.minSize.y), info.area, Vec2(), 0.0f, white);
-        bk.endDrawing();
-    } else {
-        bk.endDrawing();
-    }
-
-    // Viewport code.
-    if (_engineState.viewport.isChanging) {
-        if (_engineState.viewport.isLocking) {
-            _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
-        } else {
-            _engineState.viewport.data.resize(0, 0);
-        }
-        _engineState.viewport.isChanging = false;
-    }
-    return result;
-}
-
 /// Updates the window every frame with the given function.
 /// This function will return when the given function returns true.
 /// You should avoid calling this function manually.
-void _updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc debugModeBeginFunc = null, CallFunc debugModeEndFunc = null) {
+void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc debugModeBeginFunc = null, CallFunc debugModeEndFunc = null) {
+    static bool updateWindowLoop() {
+        // Update buffers and resources.
+        bk.pumpEvents();
+        _updateViewportInfoBuffer();
+        _updateEngineMouseBuffer(bk.mouse);
+        _updateEngineWasdBuffer();
+
+        // Begin drawing.
+        auto loopVsync = vsync;
+        if (isResolutionLocked) {
+            bk.beginViewport(_engineState.viewport.data.data);
+        } else {
+            bk.beginDrawing();
+        }
+        bk.clearBackground(_engineState.viewport.data.color);
+
+        // Update and draw the game.
+        bk.beginDroppedPaths();
+        _engineState.arena.clear();
+        auto dt = deltaTime;
+        foreach (id; _engineState.tasks.ids) {
+            if (_engineState.tasks[id].update(dt)) cancel(id);
+        }
+        auto result = _engineState.updateFunc(dt);
+        if (_engineState.dprintIsVisible) {
+            drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
+        }
+        if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
+        if (isDebugMode) {
+            if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
+            if (_engineState.debugModeFunc) _engineState.debugModeFunc();
+            if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
+        }
+        bk.endDroppedPaths();
+
+        // End drawing.
+        if (isResolutionLocked) {
+            auto info = engineViewportInfo;
+            bk.endViewport(_engineState.viewport.data.data);
+            bk.beginDrawing();
+            bk.clearBackground(_engineState.borderColor);
+            bk.drawViewport(_engineState.viewport.data.data, Rect(info.minSize.x, -info.minSize.y), info.area, Vec2(), 0.0f, white);
+            bk.endDrawing();
+        } else {
+            bk.endDrawing();
+        }
+
+        // Viewport code.
+        if (_engineState.viewport.isChanging) {
+            if (_engineState.viewport.isLocking) {
+                _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
+            } else {
+                _engineState.viewport.data.resize(0, 0);
+            }
+            _engineState.viewport.isChanging = false;
+        }
+        return result;
+    }
+
     _engineState.updateFunc = updateFunc;
     _engineState.debugModeFunc = debugModeFunc;
     _engineState.debugModeBeginFunc = debugModeBeginFunc;
     _engineState.debugModeEndFunc = debugModeEndFunc;
-
     _engineState.flags |= EngineFlag.isUpdating;
-    bk.runMainLoop!(_updateWindowLoop);
+    bk.updateWindow!(updateWindowLoop);
     _engineState.flags &= ~EngineFlag.isUpdating;
 }
 
 /// Closes the window.
 /// You should avoid calling this function manually.
-void _closeWindow() {
-    // NOTE: I assume `filter` is a static string or managed by the user.
-    auto filter = _engineState.memoryTrackingInfoFilter;
+void closeWindow() {
+    auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: I assume `filter` is a static string or managed by the user.
     auto isLogging = isLoggingMemoryTrackingInfo;
-
-    bk.freeBackend();
     _engineState.arena.free();
-    jokaFree(_engineState);
+    _engineState.jokaFree();
     _engineState = null;
-
+    bk.closeWindow();
     static if (isTrackingMemory) {
         if (isLogging) printMemoryTrackingInfo(filter);
     }
@@ -635,32 +654,29 @@ mixin template runGame(
     alias debugModeEndFunc = null
 ) {
     int _runGame() {
-        import _pr = parin.engine;
-        static if (__traits(isStaticFunction, debugModeFunc)) enum debugMode1 = &debugModeFunc;
-        else enum debugMode1 = null;
-        static if (__traits(isStaticFunction, debugModeBeginFunc)) enum debugMode2 = &debugModeBeginFunc;
-        else enum debugMode2 = null;
-        static if (__traits(isStaticFunction, debugModeEndFunc)) enum debugMode3 = &debugModeEndFunc;
-        else enum debugMode3 = null;
+        import mypr = parin.engine;
+        static if (__traits(isStaticFunction, debugModeFunc))      { enum debugMode1 = &debugModeFunc;      } else { enum debugMode1 = null; }
+        static if (__traits(isStaticFunction, debugModeBeginFunc)) { enum debugMode2 = &debugModeBeginFunc; } else { enum debugMode2 = null; }
+        static if (__traits(isStaticFunction, debugModeEndFunc))   { enum debugMode3 = &debugModeEndFunc;   } else { enum debugMode3 = null; }
 
-        static if (__traits(isStaticFunction, readyFunc)) readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) _pr._updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
+        static if (__traits(isStaticFunction, readyFunc))  readyFunc();
+        static if (__traits(isStaticFunction, updateFunc)) mypr.updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
         static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        _pr._closeWindow();
+        mypr.closeWindow();
         return 0;
     }
 
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
-            import _pr = parin.engine;
-            _pr._openWindowC(width, height, argc, argv, title);
+            import mypr = parin.engine;
+            mypr.openWindowC(width, height, argc, argv, title);
             return _runGame();
         }
     } else {
         int main(immutable(char)[][] args) {
-            import _pr = parin.engine;
-            _pr._openWindow(width, height, args, title);
+            import mypr = parin.engine;
+            mypr.openWindow(width, height, args, title);
             return _runGame();
         }
     }
@@ -845,7 +861,7 @@ void setAssetsPath(IStr path) {
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
 // Get next codepoint in a byte sequence and bytes processed
 // Sorry monky, but it's temp code that I copy-pasted from raylib.
-private int TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
+private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
     *codepointSize = 1;
@@ -884,7 +900,7 @@ private int TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSi
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
 // Get previous codepoint in a byte sequence and bytes processed
-private int TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
+private int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
     int cpSize = 0;
@@ -894,7 +910,7 @@ private int TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepoi
     do ptr--;
     while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80));
 
-    codepoint = TEMP_REPLACE_ME_GetCodepointNext(ptr, &cpSize);
+    codepoint = _TEMP_REPLACE_ME_GetCodepointNext(ptr, &cpSize);
 
     if (codepoint != 0) *codepointSize = cpSize;
 
@@ -1536,7 +1552,7 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     while (textCodepointIndex < text.length) {
         lineCodepointCount += 1;
         auto codepointByteCount = 0;
-        auto codepoint = TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
+        auto codepoint = _TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
         auto glyphInfo = font.glyphInfo(codepoint);
         if (codepoint != '\n') {
             if (glyphInfo.advanceX) {
@@ -1790,7 +1806,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
         while (textCodepointIndex < text.length) {
             textCodepointCount += 1;
             auto codepointSize = 0;
-            auto codepoint = TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointSize);
+            auto codepoint = _TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointSize);
             if (codepoint == '\n' || textCodepointIndex == text.length - codepointSize) {
                 linesBuffer.append(text[lineCodepointIndex .. textCodepointIndex + (codepoint != '\n')]);
                 linesWidthBuffer.push(cast(ushort) (measureTextSize(font, linesBuffer[$ - 1]).x));
@@ -1843,7 +1859,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             while (lineCodepointIndex > 0) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
-                auto codepoint = TEMP_REPLACE_ME_GetCodepointPrevious(&line.ptr[lineCodepointIndex], &codepointSize);
+                auto codepoint = _TEMP_REPLACE_ME_GetCodepointPrevious(&line.ptr[lineCodepointIndex], &codepointSize);
                 auto glyphInfo = font.glyphInfo(codepoint);
                 if (lineCodepointIndex == line.length) {
                     if (glyphInfo.advanceX) {
@@ -1853,7 +1869,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
                     }
                 } else {
                     auto temp = 0;
-                    auto nextRightToLeftGlyphInfo = font.glyphInfo(TEMP_REPLACE_ME_GetCodepointPrevious(&line[lineCodepointIndex], &temp));
+                    auto nextRightToLeftGlyphInfo = font.glyphInfo(_TEMP_REPLACE_ME_GetCodepointPrevious(&line[lineCodepointIndex], &temp));
                     if (nextRightToLeftGlyphInfo.advanceX) {
                         textOffsetX -= nextRightToLeftGlyphInfo.advanceX + font.runeSpacing;
                     } else {
@@ -1872,7 +1888,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
             while (lineCodepointIndex < line.length) {
                 if (drawCodepointCounter >= drawMaxCodepointCount) break;
                 auto codepointSize = 0;
-                auto codepoint = TEMP_REPLACE_ME_GetCodepointNext(&line[lineCodepointIndex], &codepointSize);
+                auto codepoint = _TEMP_REPLACE_ME_GetCodepointNext(&line[lineCodepointIndex], &codepointSize);
                 auto glyphInfo = font.glyphInfo(codepoint);
                 if (codepoint != ' ' && codepoint != '\t') {
                     bk.drawRune(font.data, codepoint, Vec2(textOffsetX, textOffsetY), options.color);

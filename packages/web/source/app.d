@@ -74,35 +74,23 @@ int doDefaultProject(IStr sourceDir, bool isSimpProject) {
 
 int doGcProject(IStr sourceDir, bool isSimpProject) {
     // Both DUB and no-DUB projects work the same because I don't care and you should vendor things anyway imo lololol.
-    // The are some hacks here. One of them is that we need to have the package folders of parin and joka.
+    // The are some hacks here. One of them is that we need to have the package folders of parin.
 
     IStr parinPackagePath = "parin_package";
     if (!parinPackagePath.isX) parinPackagePath = join(webDir, "parin_package");
+    if (!parinPackagePath.isX) cmd("git", "clone", "--depth", "1", "https://github.com/Kapendev/parin", parinPackagePath); // Could be removed, but I think most poeple don't care and just want to build something.
     auto parinPackageSourcePath = join(parinPackagePath, "source");
-
-    IStr jokaPackagePath = "joka_package";
-    if (!jokaPackagePath.isX) jokaPackagePath = join(webDir, "joka_package");
-    auto jokaPackageSourcePath = join(jokaPackagePath, "source");
 
     auto webPackagePath = join(parinPackagePath, "packages", "web");
     auto webPackageSourcePath = join(webPackagePath, "source");
-
-    // Could be removed, but I think most poeple don't care and just want to build something.
-    if (!parinPackagePath.isX) cmd("git", "clone", "--depth", "1", "https://github.com/Kapendev/parin", parinPackagePath);
-    if (!jokaPackagePath.isX) cmd("git", "clone", "--depth", "1", "https://github.com/Kapendev/joka", jokaPackagePath);
 
     auto hasParinInSource = false;
     auto hasJokaInSource = false;
     IStr[] files;
     foreach (path; ls(sourceDir, true)) {
-        if (path.findStart("parin_package") != -1 || path.findStart("joka_package") != -1) continue;
+        if (path.findEnd("_package") != -1) continue;
         if (path.findStart("parin") != -1 && path.endsWith(".d")) {
             hasParinInSource = true;
-            files ~= path;
-            continue;
-        }
-        if (path.findStart("joka") != -1 && path.endsWith(".d")) {
-            hasJokaInSource = true;
             files ~= path;
             continue;
         }
@@ -111,9 +99,6 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
     if (!hasParinInSource) {
         foreach (path; ls(parinPackageSourcePath, true)) if (path.endsWith(".d")) files ~= path;
     }
-    if (!hasJokaInSource) {
-        foreach (path; ls(jokaPackageSourcePath, true)) if (path.endsWith(".d")) files ~= path;
-    }
 
     IStr[] args = ["opend", "--target=emscripten", "-of" ~ outputFile];
     // The hack part.
@@ -121,7 +106,6 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
     args ~= "-I=" ~ sourceDir;
     if (!isSimpProject) {
         args ~= "-I=" ~ parinPackageSourcePath;
-        args ~= "-I=" ~ jokaPackageSourcePath;
     }
     // The good part.
     args ~= "-L=" ~ libFile;

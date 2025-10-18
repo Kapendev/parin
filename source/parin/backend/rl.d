@@ -6,6 +6,7 @@
 // ---
 
 // TODO: Think about exposing filter and wrap.
+// TODO WAS DOING THAT LAST TIME!!!!!!  ^^^^
 //   It's not really needed and by not having them it's also easier to go over the textures.
 //   So, maybe keep it internal for the viewports. It's the only thing that has that actually lol.
 
@@ -38,10 +39,18 @@ alias RlWrap   = int;
 alias RlBlend  = int;
 alias RlKey    = int;
 
+struct RlTexture {
+    rl.Texture2D data;
+    Filter filter;
+    Wrap wrap;
+}
+
 struct RlFont {
     rl.Font data;
     int runeSpacing; /// The spacing between individual characters.
     int lineSpacing; /// The spacing between lines of text.
+    Filter filter;
+    Wrap wrap;
 }
 
 struct RlSound {
@@ -69,7 +78,7 @@ struct BackendState {
     alias BasicContainer(T)  = FixedList!(T, defaultBackendResourcesCapacity);
     alias SparseContainer(T) = FixedList!(SparseListItem!T, defaultBackendResourcesCapacity);
     alias GenData            = BasicContainer!(Gen);
-    alias TexturesData       = SparseList!(rl.Texture, SparseContainer!(rl.Texture2D));
+    alias TexturesData       = SparseList!(RlTexture, SparseContainer!(RlTexture));
     alias FontsData          = SparseList!(RlFont, SparseContainer!(RlFont));
     alias SoundsData         = SparseList!(RlSound, SparseContainer!(RlSound));
     alias ViewportsData      = SparseList!(RlViewport, SparseContainer!(RlViewport));
@@ -96,7 +105,7 @@ struct BackendState {
 
 @trusted:
 
-void runMainLoop(alias loop)() {
+void updateWindow(alias loop)() {
     version (WebAssembly) {
         static void loopWeb() {
             if (loop) em.emscripten_cancel_main_loop();
@@ -112,7 +121,7 @@ void runMainLoop(alias loop)() {
 Maybe!ResourceId loadTexture(IStr path) {
     auto resource = rl.LoadTexture(path.toCStr().getOr());
     if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
-    return Maybe!ResourceId(_backendState.textures.append(resource));
+    return Maybe!ResourceId(_backendState.textures.append(RlTexture(resource)));
 }
 
 Maybe!ResourceId loadTexture(const(ubyte)[] memory, IStr ext = ".png") {
@@ -121,7 +130,7 @@ Maybe!ResourceId loadTexture(const(ubyte)[] memory, IStr ext = ".png") {
     auto resource = rl.LoadTextureFromImage(image);
     rl.UnloadImage(image);
     if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
-    return Maybe!ResourceId(_backendState.textures.append(resource));
+    return Maybe!ResourceId(_backendState.textures.append(RlTexture(resource)));
 }
 
 Maybe!ResourceId loadFont(IStr path, int size, int runeSpacing, int lineSpacing, IStr32 runes) {
@@ -150,7 +159,7 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
     newResource.baseSize = tileHeight;
     newResource.glyphCount = maxCount;
     newResource.glyphPadding = 0;
-    newResource.texture = *oldResource;
+    newResource.texture = oldResource.data;
     newResource.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
     foreach (i; 0 .. maxCount) {
         newResource.recs[i].x = (i % colCount) * tileWidth;
@@ -207,12 +216,12 @@ Maybe!ResourceId loadSound(IStr path, float volume, float pitch, bool canRepeat,
     }
 }
 
-void readyBackend(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
+void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
     enum targetHtmlElementId = "canvas";
 
     // The empty resources make the zero values invalid.
     _backendState = jokaMake!BackendState();
-    _backendState.textures.push(rl.Texture());
+    _backendState.textures.push(RlTexture());
     _backendState.fonts.push(RlFont());
     _backendState.sounds.push(RlSound());
     _backendState.viewports.push(RlViewport());
@@ -272,7 +281,7 @@ void freeAllViewports(bool canSkipFirst) {
     }
 }
 
-void freeBackend() {
+void closeWindow() {
     freeAllTextures(false);
     freeAllFonts(false);
     freeAllSounds(false);
@@ -300,7 +309,7 @@ pragma(inline, true) bool textureIsValid(ResourceId id) => !id.resourceIsNull &&
 int textureWidth(ResourceId id) {
     if (id.resourceIsNull) return 0;
     auto resource = &_backendState.textures[id];
-    return resource.width;
+    return resource.data.width;
 }
 
 /// Returns the height of the texture.
@@ -308,7 +317,7 @@ int textureWidth(ResourceId id) {
 int textureHeight(ResourceId id) {
     if (id.resourceIsNull) return 0;
     auto resource = &_backendState.textures[id];
-    return resource.height;
+    return resource.data.height;
 }
 
 /// Returns the size of the texture.
@@ -316,28 +325,42 @@ int textureHeight(ResourceId id) {
 Vec2 textureSize(ResourceId id) {
     if (id.resourceIsNull) return Vec2();
     auto resource = &_backendState.textures[id];
-    return Vec2(resource.width, resource.height);
+    return Vec2(resource.data.width, resource.data.height);
+}
+
+Filter textureFilter(ResourceId id) {
+    if (id.resourceIsNull) return Filter.init;
+    auto resource = &_backendState.textures[id];
+    return resource.filter;
 }
 
 /// Sets the filter mode of the texture.
 void textureSetFilter(ResourceId id, Filter value) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.textures[id];
-    rl.SetTextureFilter(*resource, toRl(value));
+    rl.SetTextureFilter(resource.data, toRl(value));
+    resource.filter = value;
+}
+
+Wrap textureWrap(ResourceId id) {
+    if (id.resourceIsNull) return Wrap.init;
+    auto resource = &_backendState.textures[id];
+    return resource.wrap;
 }
 
 /// Sets the wrap mode of the texture.
 void textureSetWrap(ResourceId id, Wrap value) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.textures[id];
-    rl.SetTextureWrap(*resource, toRl(value));
+    rl.SetTextureWrap(resource.data, toRl(value));
+    resource.wrap = value;
 }
 
 /// Frees the loaded texture.
 void textureFree(ResourceId id) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.textures[id];
-    rl.UnloadTexture(*resource);
+    rl.UnloadTexture(resource.data);
     _backendState.textures.remove(id);
 }
 
@@ -353,11 +376,24 @@ int fontSize(ResourceId id) {
     return resource.data.baseSize;
 }
 
+Filter fontFilter(ResourceId id) {
+    if (id.resourceIsNull) return Filter.init;
+    auto resource = &_backendState.fonts[id];
+    return resource.filter;
+}
+
 /// Sets the filter mode of the font.
 void fontSetFilter(ResourceId id, Filter value) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.fonts[id];
     rl.SetTextureFilter(resource.data.texture, toRl(value));
+    resource.filter = value;
+}
+
+Wrap fontWrap(ResourceId id) {
+    if (id.resourceIsNull) return Wrap.init;
+    auto resource = &_backendState.fonts[id];
+    return resource.wrap;
 }
 
 /// Sets the wrap mode of the font.
@@ -365,6 +401,7 @@ void fontSetWrap(ResourceId id, Wrap value) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.fonts[id];
     rl.SetTextureWrap(resource.data.texture, toRl(value));
+    resource.wrap = value;
 }
 
 /// Returns the spacing between individual characters.
@@ -721,26 +758,10 @@ void viewportResize(ResourceId id, int newWidth, int newHeight) {
         return;
     }
     resource.data = rl.LoadRenderTexture(newWidth, newHeight);
+    // NOTE: The rule is that the engine will set the filter and wrap mode, but viewport resizing is a special case, so we do it here.
+    //   There is also no need to call the member functions here because we just reuse the old values.
     rl.SetTextureFilter(resource.data.texture, toRl(resource.filter));
     rl.SetTextureWrap(resource.data.texture, toRl(resource.wrap));
-}
-
-/// Sets the filter mode of the viewport.
-void viewportSetFilter(ResourceId id, Filter value) {
-    if (id.resourceIsNull) return;
-    auto resource = &_backendState.viewports[id];
-    auto isEmpty = resource.data.texture.id == 0;
-    if (isEmpty) return;
-    rl.SetTextureFilter(resource.data.texture, toRl(value));
-}
-
-/// Sets the wrap mode of the viewport.
-void viewportSetWrap(ResourceId id, Wrap value) {
-    if (id.resourceIsNull) return;
-    auto resource = &_backendState.viewports[id];
-    auto isEmpty = resource.data.texture.id == 0;
-    if (isEmpty) return;
-    rl.SetTextureWrap(resource.data.texture, toRl(value));
 }
 
 bool viewportIsAttached(ResourceId id) {
@@ -761,10 +782,48 @@ void viewportSetColor(ResourceId id, Rgba value) {
     resource.color = value;
 }
 
+Filter viewportFilter(ResourceId id) {
+    if (id.resourceIsNull) return Filter.init;
+    auto resource = &_backendState.viewports[id];
+    return resource.filter;
+}
+
+/// Sets the filter mode of the viewport.
+void viewportSetFilter(ResourceId id, Filter value) {
+    if (id.resourceIsNull) return;
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    rl.SetTextureFilter(resource.data.texture, toRl(value));
+    resource.filter = value;
+}
+
+Wrap viewportWrap(ResourceId id) {
+    if (id.resourceIsNull) return Wrap.init;
+    auto resource = &_backendState.viewports[id];
+    return resource.wrap;
+}
+
+/// Sets the wrap mode of the viewport.
+void viewportSetWrap(ResourceId id, Wrap value) {
+    if (id.resourceIsNull) return;
+    auto resource = &_backendState.viewports[id];
+    auto isEmpty = resource.data.texture.id == 0;
+    if (isEmpty) return;
+    rl.SetTextureWrap(resource.data.texture, toRl(value));
+    resource.wrap = value;
+}
+
 Blend viewportBlend(ResourceId id) {
     if (id.resourceIsNull) return Blend();
     auto resource = &_backendState.viewports[id];
     return resource.blend;
+}
+
+void viewportSetBlend(ResourceId id, Blend value) {
+    if (id.resourceIsNull) return;
+    auto resource = &_backendState.viewports[id];
+    resource.blend = value;
 }
 
 /// Frees the loaded viewport.
@@ -1186,7 +1245,7 @@ void drawLine(Line area, Rgba color, float thickness) {
 void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
     auto resource = &_backendState.textures[id];
     rl.DrawTexturePro(
-        *resource,
+        resource.data,
         toRl(area),
         toRl(target),
         toRl(origin),
