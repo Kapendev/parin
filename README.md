@@ -16,9 +16,6 @@ Parin is designed to make game development fun — it's easy to set up, hackable
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
 </div>
 
-> [!NOTE]
-> The `main` branch is currently unstable. Please check out a tagged commit.
-
 ## Major Features
 
 * Focused 2D engine — not an everything engine

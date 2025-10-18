@@ -484,18 +484,6 @@ struct ViewportId {
     }
 }
 
-/// Attaches the viewport, making it active.
-// NOTE: The engine viewport should not use this function.
-void attach(ViewportId viewport) {
-    if (viewport.size.isZero) return;
-    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
-    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
-    bk.beginViewport(viewport.data);
-    bk.clearBackground(viewport.color);
-    bk.beginBlend(viewport.blend);
-    _engineState.userViewport = viewport;
-}
-
 /// Opens a window with the specified size and title.
 /// You should avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
@@ -825,6 +813,18 @@ void setAssetsPath(IStr path) {
 /// Returns the fault from the last load or save call.
 Fault lastLoadOrSaveFault() {
     return _engineState.lastLoadOrSaveFault;
+}
+
+/// Attaches the viewport, making it active.
+// NOTE: The engine viewport should not use this function.
+void attach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
+    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
+    bk.beginViewport(viewport.data);
+    bk.clearBackground(viewport.color);
+    bk.beginBlend(viewport.blend);
+    _engineState.userViewport = viewport;
 }
 
 /// Detaches the viewport, making it inactive.
