@@ -5,9 +5,8 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Add doc comments to some functions that don't have them. Both here and in backend.
-// TODO: Docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
-//   OMG it's a lot of work and I hate it...
+// TODO: Have to chack doc comments in here. The ID ones should be ok.
+// TODO: .md docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
 // NOTE: Reorder functions to give them a more logical order. Do that after evetything works.
 //   How about I don't do that! Go clean your room. It's going to be more useful than this.
 
@@ -133,7 +132,7 @@ struct EngineState {
     Vec2 wasdPressedBuffer;
     Vec2 wasdReleasedBuffer;
 
-    Rgba borderColor = black;
+    Rgba windowBorderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
     FontId defaultFont = engineFont;
@@ -163,55 +162,57 @@ struct TextureId {
 
     @safe nothrow @nogc:
 
-    /// Checks if the texture is null (default value).
+    /// Checks whether the resource is null (default value).
     bool isNull() {
         return bk.resourceIsNull(data);
     }
 
-    /// Checks if the texture is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid() {
         return bk.textureIsValid(data);
     }
 
-    /// Checks if the texture is valid (loaded) and asserts if it is not.
+    /// Returns this resource if valid, or asserts with the given message if not.
     TextureId validate(IStr message = defaultEngineValidateErrorMessage) {
         return isValid ? this : assert(0, message);
     }
 
+    /// Returns the filter mode.
     Filter filter() {
         return bk.textureFilter(data);
     }
 
-    /// Sets the filter mode of the texture.
+    /// Sets the filter mode.
     void setFilter(Filter value) {
         bk.textureSetFilter(data, value);
     }
 
+    /// Returns the wrap mode.
     Wrap wrap() {
         return bk.textureWrap(data);
     }
 
-    /// Sets the wrap mode of the texture.
+    /// Sets the wrap mode.
     void setWrap(Wrap value) {
         bk.textureSetWrap(data, value);
     }
 
-    /// Returns the width of the texture.
+    /// Returns the width in pixels.
     int width() {
         return bk.textureWidth(data);
     }
 
-    /// Returns the height of the texture.
+    /// Returns the height in pixels.
     int height() {
         return bk.textureHeight(data);
     }
 
-    /// Returns the size of the texture.
+    /// Returns the size in pixels.
     Vec2 size() {
         return bk.textureSize(data);
     }
 
-    /// Frees the loaded texture.
+    /// Frees the resource and resets the identifier to null.
     void free() {
         bk.textureFree(data);
         data = ResourceId();
@@ -224,67 +225,72 @@ struct FontId {
 
     @safe nothrow @nogc:
 
-    /// Checks if the font is null (default value).
+    /// Checks whether the resource is null (default value).
     bool isNull() {
         return bk.resourceIsNull(data);
     }
 
-    /// Checks if the font is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid() {
         return bk.fontIsValid(data);
     }
 
-    /// Checks if the font is valid (loaded) and asserts if it is not.
+    /// Returns this resource if valid, or asserts with the given message if not.
     FontId validate(IStr message = defaultEngineValidateErrorMessage) {
         return isValid ? this : assert(0, message);
     }
 
+    /// Returns the filter mode.
     Filter filter() {
         return bk.fontFilter(data);
     }
 
-    /// Sets the filter mode of the font.
+    /// Sets the filter mode.
     void setFilter(Filter value) {
         bk.fontSetFilter(data, value);
     }
 
+    /// Returns the wrap mode.
     Wrap wrap() {
         return bk.fontWrap(data);
     }
 
-    /// Sets the wrap mode of the font.
+    /// Sets the wrap mode.
     void setWrap(Wrap value) {
         bk.fontSetWrap(data, value);
     }
 
-    /// Returns the size of the font.
+    /// Returns the font size in pixels.
     int size() {
         return bk.fontSize(data);
     }
 
-    /// Returns the spacing between individual characters.
+    /// Returns the spacing between characters in pixels.
     int runeSpacing() {
         return bk.fontRuneSpacing(data);
     }
 
+    /// Sets the spacing between characters in pixels.
     void setRuneSpacing(int value) {
         return bk.fontSetRuneSpacing(data, value);
     }
 
-     /// Returns the spacing between lines of text.
+    /// Returns the spacing between lines in pixels.
     int lineSpacing() {
         return bk.fontLineSpacing(data);
     }
 
+    /// Sets the spacing between lines in pixels.
     void setLineSpacing(int value) {
-        return bk.fontSetRuneSpacing(data, value);
+        bk.fontSetLineSpacing(data, value);
     }
 
+    /// Returns the glyph information for the given rune.
     GlyphInfo glyphInfo(int rune) {
         return bk.fontGlyphInfo(data, rune);
     }
 
-    /// Frees the loaded font.
+    /// Frees the resource and resets the identifier to null.
     void free() {
         if (this != engineFont) bk.fontFree(data);
         data = ResourceId();
@@ -292,199 +298,214 @@ struct FontId {
 }
 
 /// A sound identifier.
+// NOTE: This is a good template for docs. "Returns ...", "Sets ...", "Checks if ..."
 struct SoundId {
     ResourceId data;
 
     @safe nothrow @nogc:
 
-    /// Checks if the font is null (default value).
+    /// Checks whether the resource is null (default value).
     bool isNull() {
         return bk.resourceIsNull(data);
     }
 
-    /// Checks if the font is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid() {
         return bk.soundIsValid(data);
     }
 
-    /// Checks if the font is valid (loaded) and asserts if it is not.
+    /// Returns this resource if valid, or asserts with the given message if not.
     SoundId validate(IStr message = defaultEngineValidateErrorMessage) {
         return isValid ? this : assert(0, message);
     }
 
+    /// Returns the volume. The default value is 1.0 (normal level).
     float volume() {
         return bk.soundVolume(data);
     }
 
+    /// Sets the volume. The default value is 1.0 (normal level).
     void setVolume(float value) {
         bk.soundSetVolume(data, value);
     }
 
+    /// Returns the pan. The default value is 0.5 (center).
     float pan() {
         return bk.soundPan(data);
     }
 
+    /// Sets the pan. The default value is 0.5 (center).
     void setPan(float value) {
         bk.soundSetPan(data, value);
     }
 
+    /// Returns the pitch. The default value is 1.0 (base level).
     float pitch() {
         return bk.soundPitch(data);
     }
 
+    /// Sets the pitch. The default value is 1.0 (base level).
     void setPitch(float value, bool canUpdatePitchVarianceBase = false) {
         bk.soundSetPitch(data, value, canUpdatePitchVarianceBase);
     }
 
-    /// Returns the pitch variance of the sound associated with the resource identifier.
+    /// Returns the pitch variance. The default value is 1.0 (no variation).
     float pitchVariance() {
         return bk.soundPitchVariance(data);
     }
 
-    /// Sets the pitch variance for the sound associated with the resource identifier. One is the default value.
+    /// Sets the pitch variance. The default value is 1.0 (no variation).
     void setPitchVariance(float value) {
         bk.soundSetPitchVariance(data, value);
     }
 
-    /// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
-    void pitchVarianceBase() {
-        bk.soundPitchVarianceBase(data);
+    /// Returns the pitch variance base. The default value is 1.0 (base level).
+    float pitchVarianceBase() {
+        return bk.soundPitchVarianceBase(data);
     }
 
-    /// Sets the pitch variance base for the sound associated with the resource identifier. One is the default value.
+    /// Sets the pitch variance base. The default value is 1.0 (base level).
     void setPitchVarianceBase(float value) {
         bk.soundSetPitchVarianceBase(data, value);
     }
 
-    /// Returns true if the sound associated with the resource identifier can repeat.
+    /// Returns true if the sound is set to repeat.
     bool canRepeat() {
         return bk.soundCanRepeat(data);
     }
 
+    /// Sets whether the sound should repeat.
     void setCanRepeat(bool value) {
         bk.soundSetCanRepeat(data, value);
     }
 
-    /// Returns true if the sound associated with the resource identifier is playing.
+    /// Returns true if the sound is currently active (playing).
     bool isActive() {
         return bk.soundIsActive(data);
     }
 
-    /// Returns true if the sound associated with the resource identifier is paused.
+    /// Returns true if the sound is currently paused.
     bool isPaused() {
         return bk.soundIsPaused(data);
     }
 
-    /// Returns the current playback time of the sound associated with the resource identifier.
+    /// Returns the current playback time in seconds.
     float time() {
         return bk.soundTime(data);
     }
 
-    /// Returns the total duration of the sound associated with the resource identifier.
+    /// Returns the total duration in seconds.
     float duration() {
         return bk.soundDuration(data);
     }
 
-    /// Returns the progress of the sound associated with the resource identifier.
+    /// Returns the progress. The value is between 0.0 (start) and 1.0 (end).
     float progress() {
         return bk.soundProgress(data);
     }
 
-    /// Frees the resource associated with the identifier.
+    /// Frees the resource and resets the identifier to null.
     void free() {
         bk.soundFree(data);
         data = ResourceId();
     }
 }
 
-/// A viewing area for rendering.
+// OLD: A viewing area for rendering.
+/// A viewport identifier.
 struct ViewportId {
     ResourceId data;
 
     @safe nothrow @nogc:
 
-    /// Checks if the font is null (default value).
+    /// Checks whether the resource is null (default value).
     bool isNull() {
         return bk.resourceIsNull(data);
     }
 
-    /// Checks if the font is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid() {
         return bk.viewportIsValid(data);
     }
 
-    /// Checks if the font is valid (loaded) and asserts if it is not.
+    /// Returns this resource if valid, or asserts with the given message if not.
     ViewportId validate(IStr message = defaultEngineValidateErrorMessage) {
         return isValid ? this : assert(0, message);
     }
 
+    /// Returns the filter mode.
     Filter filter() {
         return bk.viewportFilter(data);
     }
 
-    /// Sets the filter mode of the viewport.
+    /// Sets the filter mode.
     void setFilter(Filter value) {
         bk.viewportSetFilter(data, value);
     }
 
+    /// Returns the wrap mode.
     Wrap wrap() {
         return bk.viewportWrap(data);
     }
 
-    /// Sets the wrap mode of the viewport.
+    /// Sets the wrap mode.
     void setWrap(Wrap value) {
         bk.viewportSetWrap(data, value);
     }
 
+    /// Returns the blend mode.
     Blend blend() {
         return bk.viewportBlend(data);
     }
 
+    /// Sets the blend mode.
     void setBlend(Blend value) {
         return bk.viewportSetBlend(data, value);
     }
 
-    /// Returns the width of the viewport.
-    int width() {
-        return bk.viewportWidth(data);
-    }
-
-    /// Returns the height of the viewport.
-    int height() {
-        return bk.viewportHeight(data);
-    }
-
-    /// Returns the size of the viewport.
-    Vec2 size() {
-        return bk.viewportSize(data);
-    }
-
-    /// Resizes the viewport to the given width and height.
-    /// Internally, this allocates a new render texture, so avoid calling it while the viewport is in use.
-    void resize(int newWidth, int newHeight) {
-        bk.viewportResize(data, newWidth, newHeight);
-    }
-
-    bool isAttached() {
-        return bk.viewportIsAttached(data);
-    }
-
+    /// Returns the color in RGBA.
     Rgba color() {
         return bk.viewportColor(data);
     }
 
+    /// Sets the color in RGBA.
     void setColor(Rgba value) {
         bk.viewportSetColor(data, value);
     }
 
-    /// Frees the loaded viewport.
+    /// Returns the width in pixels.
+    int width() {
+        return bk.viewportWidth(data);
+    }
+
+    /// Returns the height in pixels.
+    int height() {
+        return bk.viewportHeight(data);
+    }
+
+    /// Returns the size in pixels.
+    Vec2 size() {
+        return bk.viewportSize(data);
+    }
+
+    /// Returns true if the viewport is attached.
+    bool isAttached() {
+        return bk.viewportIsAttached(data);
+    }
+
+    /// Resizes the viewport. Internally, this creates a new texture, so avoid calling it while the viewport is in use.
+    void resize(int newWidth, int newHeight) {
+        bk.viewportResize(data, newWidth, newHeight);
+    }
+
+    /// Frees the resource and resets the identifier to null.
     void free() {
         if (this != engineViewport) bk.viewportFree(data);
         data = ResourceId();
     }
 }
 
-/// Opens a window with the specified size and title.
+/// Opens the window with the given information.
 /// You should avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     enum monogramPath = "parin_monogram.png";
@@ -494,7 +515,6 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
     _engineState.viewport.data = loadViewport(0, 0, gray);
-    // TODO: will have to remove the id thing and also change the toTexure names to load maybe.
     loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
     if (args.length) {
         foreach (arg; args) _engineState.envArgsBuffer.append(arg);
@@ -504,16 +524,16 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
 
 /// Opens a window with the specified size and title, using C strings.
 /// You should avoid calling this function manually.
-void openWindowC(int width, int height, int argc, ICStr* argv, ICStr title = "Parin") {
-    openWindow(width, height, null, title.cStrToStr());
+void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin") {
+    openWindow(width, height, null, title.strzToStr());
     if (argc) {
-        foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].cStrToStr());
+        foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].strzToStr());
         _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
     }
 }
 
 /// Updates the window every frame with the given function.
-/// This function will return when the given function returns true.
+/// Returns when the given function returns true.
 /// You should avoid calling this function manually.
 void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc debugModeBeginFunc = null, CallFunc debugModeEndFunc = null) {
     static bool updateWindowLoop() {
@@ -556,7 +576,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             auto info = engineViewportInfo;
             bk.endViewport(_engineState.viewport.data.data);
             bk.beginDrawing();
-            bk.clearBackground(_engineState.borderColor);
+            bk.clearBackground(_engineState.windowBorderColor);
             bk.drawViewport(_engineState.viewport.data.data, Rect(info.minSize.x, -info.minSize.y), info.area, Vec2(), 0.0f, white);
             bk.endDrawing();
         } else {
@@ -861,8 +881,7 @@ void endClip() {
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
-// Get next codepoint in a byte sequence and bytes processed
-// Sorry monky, but it's temp code that I copy-pasted from raylib.
+//   Sorry monky, but it's temp code that I copy-pasted from raylib.
 private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
@@ -901,7 +920,7 @@ private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointS
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
-// Get previous codepoint in a byte sequence and bytes processed
+//   Sorry monky, but it's temp code that I copy-pasted from raylib.
 private int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
@@ -1219,14 +1238,22 @@ bool isWindowResized() {
     return bk.isWindowResized;
 }
 
+Rgba windowBackgroundColor() {
+    return _engineState.viewport.data.color;
+}
+
 /// Sets the background color to the specified value.
-void setBackgroundColor(Rgba value) {
+void setWindowBackgroundColor(Rgba value) {
     _engineState.viewport.data.setColor(value);
 }
 
+Rgba windowBorderColor() {
+    return _engineState.windowBorderColor;
+}
+
 /// Sets the border color to the specified value.
-void setBorderColor(Rgba value) {
-    _engineState.borderColor = value;
+void setWindowBorderColor(Rgba value) {
+    _engineState.windowBorderColor = value;
 }
 
 /// Sets the minimum size of the window to the specified value.
@@ -1235,7 +1262,6 @@ void setWindowMinSize(int width, int height) {
 }
 
 /// Sets the maximum size of the window to the specified value.
-// TODO: DO we care about these values? think about if there shoudl be a way to retrn tgem
 void setWindowMaxSize(int width, int height) {
     bk.setWindowMaxSize(width, height);
 }
@@ -1554,7 +1580,7 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     while (textCodepointIndex < text.length) {
         lineCodepointCount += 1;
         auto codepointByteCount = 0;
-        auto codepoint = _TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointByteCount); // TODO: REPLACE WITH JOKA THING
+        auto codepoint = _TEMP_REPLACE_ME_GetCodepointNext(&text[textCodepointIndex], &codepointByteCount);
         auto glyphInfo = font.glyphInfo(codepoint);
         if (codepoint != '\n') {
             if (glyphInfo.advanceX) {
@@ -1948,9 +1974,9 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         s = b - a;
         text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
-            bk.backendTextureCount,
-            bk.backendFontCount - 1,
-            bk.backendSoundCount,
+            bk.textureCount,
+            bk.fontCount - 1,
+            bk.soundCount,
             cast(int) a.x,
             cast(int) a.y,
             cast(int) b.x,
@@ -1962,18 +1988,18 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         if (s.isZero) {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
                 fps,
-                bk.backendTextureCount,
-                bk.backendFontCount - 1,
-                bk.backendSoundCount,
+                bk.textureCount,
+                bk.fontCount - 1,
+                bk.soundCount,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
             );
         } else {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
                 fps,
-                bk.backendTextureCount,
-                bk.backendFontCount - 1,
-                bk.backendSoundCount,
+                bk.textureCount,
+                bk.fontCount - 1,
+                bk.soundCount,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
                 cast(int) a.x,

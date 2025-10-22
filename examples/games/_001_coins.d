@@ -9,7 +9,7 @@ auto coinCount = 8;
 
 void ready() {
     lockResolution(320, 180);
-    setBackgroundColor(Nes8.black);
+    setWindowBackgroundColor(Nes8.black);
     // Place the player at the center of the window.
     player.position = resolution * Vec2(0.5);
     // Create the coins. Every coin will have a random starting position.

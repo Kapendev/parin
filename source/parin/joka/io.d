@@ -140,7 +140,7 @@ noreturn todo(IStr text = "Not implemented.", IStr file = __FILE__, Sz line = __
 // NOTE: Also maybe think about errno lol.
 @trusted
 Fault readTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
-    auto file = stdioc.fopen(toCStr(path).getOr(), "r");
+    auto file = stdioc.fopen(toStrz(path).getOr(), "r");
     if (file == null) return Fault.cannotOpen;
 
     if (stdioc.fseek(file, 0, stdioc.SEEK_END) != 0) {
@@ -178,7 +178,7 @@ Maybe!LStr readText(IStr path) {
 // NOTE: Also maybe think about errno lol.
 @trusted @nogc
 Fault writeText(IStr path, IStr text) {
-    auto file = stdioc.fopen(toCStr(path).getOr(), "w");
+    auto file = stdioc.fopen(toStrz(path).getOr(), "w");
     if (file == null) return Fault.cannotOpen;
     stdioc.fwrite(text.ptr, char.sizeof, text.length, file);
     if (stdioc.fclose(file) != 0) return Fault.cannotClose;

@@ -2,13 +2,13 @@
 
 import parin;
 
-auto viewport = Viewport(black);
+auto viewport = ViewportId();
 auto viewportPosition = Vec2(32);
 auto viewportScale = Vec2(2);
 
 void ready() {
     lockResolution(320, 180);
-    viewport.resize(60, 60);
+    viewport = loadViewport(60, 60, black);
 }
 
 bool update(float dt) {

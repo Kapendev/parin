@@ -15,10 +15,10 @@ auto paddle2 = Rect(2, 30);
 
 void ready() {
     lockResolution(320, 180);
-    setBackgroundColor(Nes8.black);
+    setWindowBackgroundColor(Nes8.black);
     // Place the game objects.
     auto center = resolution * Vec2(0.5);
-    auto offset = Vec2(resolutionWidth * 0.47, 0);
+    auto offset = Vec2(resolutionWidth * 0.4, 0);
     ball.position = center;
     paddle1.position = center - offset;
     paddle2.position = center + offset;

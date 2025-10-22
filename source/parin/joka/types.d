@@ -20,12 +20,12 @@ alias IStr    = const(char)[];  /// A string slice of constant chars.
 alias IStr16  = const(wchar)[]; /// A string slice of constant wchars.
 alias IStr32  = const(dchar)[]; /// A string slice of constant dchars.
 
-alias CStr    = char*;          /// A C string of chars.
-alias CStr16  = wchar*;         /// A C string of wchars.
-alias CStr32  = dchar*;         /// A C string of dchars.
-alias ICStr   = const(char)*;   /// A C string of constant chars.
-alias ICStr16 = const(wchar)*;  /// A C string of constant wchars.
-alias ICStr32 = const(dchar)*;  /// A C string of constant dchars.
+alias Strz    = char*;          /// A C string of chars.
+alias Strz16  = wchar*;         /// A C string of wchars.
+alias Strz32  = dchar*;         /// A C string of dchars.
+alias IStrz   = const(char)*;   /// A C string of constant chars.
+alias IStrz16 = const(wchar)*;  /// A C string of constant wchars.
+alias IStrz32 = const(dchar)*;  /// A C string of constant dchars.
 
 alias UnionType = ubyte;
 alias AliasArgs(A...) = A;
@@ -300,8 +300,8 @@ bool isStrType(T)() {
     return is(T : IStr);
 }
 
-bool isCStrType(T)() {
-    return is(T : ICStr);
+bool isStrzType(T)() {
+    return is(T : IStrz);
 }
 
 int findInAliasArgs(T, A...)() {

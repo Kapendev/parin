@@ -71,8 +71,8 @@ IStr toStr(T)(T value) {
         return floatingToStr(value, 2);
     } else static if (is(T : IStr)) { // isStrType
         return value;
-    } else static if (is(T : ICStr)) { // isCStrType
-        return cStrToStr(value);
+    } else static if (is(T : IStrz)) { // isStrzType
+        return strzToStr(value);
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {
@@ -257,7 +257,7 @@ pragma(inline, true) {
     }
 
     /// Returns true if the string represents a C string.
-    bool isCStr(IStr str) {
+    bool isStrz(IStr str) {
         return str.length != 0 && str[$ - 1] == '\0';
     }
 
@@ -285,7 +285,7 @@ pragma(inline, true) {
 
     /// Returns the length of the C string.
     @trusted
-    Sz cStrLength(ICStr str) {
+    Sz strzLength(IStrz str) {
         Sz result = 0;
         while (str[result]) result += 1;
         return result;
@@ -757,8 +757,8 @@ IStr floatingToStr(double value, ulong precision = 2) {
 
 /// Converts the C string to a string.
 @trusted
-IStr cStrToStr(ICStr value) {
-    return value[0 .. value.cStrLength];
+IStr strzToStr(IStrz value) {
+    return value[0 .. value.strzLength];
 }
 
 /// Converts the enum value to its string representation.
@@ -893,16 +893,16 @@ Maybe!T toEnum(T, bool noCase = false)(IStr str) {
 
 /// Converts the string to a C string.
 @trusted
-Maybe!ICStr toCStr(IStr str) {
+Maybe!IStrz toStrz(IStr str) {
     static char[defaultAsciiBufferSize] buffer = void;
 
     if (buffer.length < str.length) {
-        return Maybe!ICStr(Fault.overflow);
+        return Maybe!IStrz(Fault.overflow);
     } else {
         auto value = buffer[];
         value.copyChars(str);
         value[str.length] = '\0';
-        return Maybe!ICStr(value.ptr);
+        return Maybe!IStrz(value.ptr);
     }
 }
 
@@ -926,8 +926,8 @@ unittest {
     assert(isLower('h') == true);
     assert(isSpace('?') == false);
     assert(isSpace('\r') == true);
-    assert(isCStr("hello") == false);
-    assert(isCStr("hello\0") == true);
+    assert(isStrz("hello") == false);
+    assert(isStrz("hello\0") == true);
 
     str = buffer[];
     str.copyStr("Hello");
@@ -939,8 +939,8 @@ unittest {
 
     str = buffer[];
     str.copyStr("Hello\0");
-    assert(isCStr(str) == true);
-    assert(str.ptr.cStrLength + 1 == str.length);
+    assert(isStrz(str) == true);
+    assert(str.ptr.strzLength + 1 == str.length);
 
     str = buffer[];
     str.copyStr("Hello");
@@ -1042,7 +1042,7 @@ unittest {
     assert(floatingToStr(-0.69, 3) == "-0.690");
     assert(floatingToStr(double.nan) == "nan");
 
-    assert(cStrToStr("Hello\0") == "Hello");
+    assert(strzToStr("Hello\0") == "Hello");
 
     assert(enumToStr(TestEnum.one) == "one");
     assert(enumToStr(TestEnum.two) == "two");
@@ -1123,8 +1123,8 @@ unittest {
     assert(toEnum!TestEnum("TWO").isSome == false);
     assert(toEnum!(TestEnum, true)("TWO").isSome == true);
 
-    assert(toCStr("Hello").getOr().cStrLength == "Hello".length);
-    assert(toCStr("Hello").getOr().cStrToStr() == "Hello");
+    assert(toStrz("Hello").getOr().strzLength == "Hello".length);
+    assert(toStrz("Hello").getOr().strzToStr() == "Hello");
     assert(fmt("Hello {}!", "world") == "Hello world!");
     assert(fmt("({}, {})", -69, -420) == "(-69, -420)");
 }
