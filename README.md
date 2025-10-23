@@ -93,7 +93,8 @@ sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ## Documentation
 
 Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
-For more details, check the [tour page](TOUR.md).
+For more details, see the [tour page](TOUR.md).
+The [`parin.types`](source/parin/types.d) and [`parin.engine`](source/parin/engine.d) modules are easy to read and show what's available.
 
 ## Ideas
 

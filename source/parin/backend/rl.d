@@ -88,7 +88,7 @@ struct BackendState {
     GenList!(ViewportsData.Item.Item, ViewportsData, GenData) viewports;
     BasicContainer!IStr droppedPaths;
 
-    uint elapsedTickCount;
+    uint elapsedTicks;
     int fpsMax;
     Vec2 mouseBuffer;
     bool isCursorVisible;
@@ -824,8 +824,8 @@ Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
     return Vec2(vec.x, vec.y);
 }
 
-uint elapsedTickCount() {
-    return _backendState.elapsedTickCount;
+uint elapsedTicks() {
+    return _backendState.elapsedTicks;
 }
 
 bool vsync() {
@@ -866,7 +866,7 @@ void pumpEvents() {
         auto vec = rl.GetTouchPosition(0);
         _backendState.mouseBuffer = Vec2(vec.x, vec.y);
     }
-    _backendState.elapsedTickCount += 1;
+    _backendState.elapsedTicks += 1;
     updateIsFullscreen();
     updateVsync();
     foreach (id; _backendState.sounds.ids) updateSound(id);

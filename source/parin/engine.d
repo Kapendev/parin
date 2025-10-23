@@ -5,7 +5,6 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Have to chack doc comments in here. The ID ones should be ok.
 // TODO: .md docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -130,6 +129,7 @@ struct EngineState {
     Vec2 wasdPressedBuffer;
     Vec2 wasdReleasedBuffer;
 
+    bool clipIsActive;
     Rgba windowBorderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
@@ -996,14 +996,16 @@ void detach(ref Camera camera) {
 
 /// Begins a clipping region using the given area.
 void beginClip(Rect area) {
-    // TODO: maybe add a check here.
+    if (_engineState.clipIsActive) assert(0, "Cannot begin clip again.");
     bk.beginClip(area);
+    _engineState.clipIsActive = true;
 }
 
 /// Ends the active clipping region.
 void endClip() {
-    // TODO: maybe add a check here.
+    if (!_engineState.clipIsActive) assert(0, "Cannot end clip again.");
     bk.endClip();
+    _engineState.clipIsActive = false;
 }
 
 /// Returns the arguments this application was started with.
@@ -1296,96 +1298,6 @@ Fault setWindowIconFromFiles(IStr path) {
     return bk.setWindowIconFromFiles(path.toAssetsPath());
 }
 
-/// Returns information about the engine viewport, including its size and position.
-EngineViewportInfo engineViewportInfo() {
-    return _engineState.viewportInfoBuffer;
-}
-
-// TODO: I STOPPED HERE LAST TIME WHILE WRITTING SUTFF FOR DOCS STUFF SUTF STUFF
-
-/// Returns the default filter mode.
-Filter defaultFilter() {
-    return _engineState.defaultFilter;
-}
-
-/// Sets the default filter mode to the specified value.
-void setDefaultFilter(Filter value) {
-    _engineState.defaultFilter = value;
-}
-
-/// Returns the default wrap mode.
-Wrap defaultWrap() {
-    return _engineState.defaultWrap;
-}
-
-/// Sets the default wrap mode to the specified value.
-void setDefaultWrap(Wrap value) {
-    _engineState.defaultWrap = value;
-}
-
-/// Returns the default texture.
-TextureId defaultTexture() {
-    return _engineState.defaultTexture;
-}
-
-/// Sets the default texture to the specified value.
-void setDefaultTexture(TextureId value) {
-    _engineState.defaultTexture = value;
-}
-
-/// Returns the default font.
-FontId defaultFont() {
-    return _engineState.defaultFont;
-}
-
-/// Sets the default font to the specified value.
-void setDefaultFont(FontId value) {
-    _engineState.defaultFont = value;
-}
-
-/// Returns the current master volume level.
-float masterVolume() {
-    return bk.masterVolume;
-}
-
-/// Sets the master volume level to the specified value.
-void setMasterVolume(float value) {
-    bk.setMasterVolume(value);
-}
-
-/// Returns true if the resolution is locked and cannot be changed.
-bool isResolutionLocked() {
-    return !_engineState.viewport.data.size.isZero;
-}
-
-/// Locks the resolution to the specified width and height.
-void lockResolution(int width, int height) {
-    _engineState.viewport.lockWidth = width;
-    _engineState.viewport.lockHeight = height;
-    if (_engineState.flags & EngineFlag.isUpdating) {
-        _engineState.viewport.isChanging = true;
-        _engineState.viewport.isLocking = true;
-    } else {
-        _engineState.viewport.data.resize(width, height);
-    }
-}
-
-/// Unlocks the resolution, allowing it to be changed.
-void unlockResolution() {
-    if (_engineState.flags & EngineFlag.isUpdating) {
-        _engineState.viewport.isChanging = true;
-        _engineState.viewport.isLocking = false;
-    } else {
-        _engineState.viewport.data.resize(0, 0);
-    }
-}
-
-/// Toggles between the current resolution and the specified width and height.
-void toggleResolution(int width, int height) {
-    if (isResolutionLocked) unlockResolution();
-    else lockResolution(width, height);
-}
-
 /// Returns the current screen width.
 int screenWidth() {
     return bk.screenWidth;
@@ -1426,19 +1338,48 @@ int resolutionHeight() {
     return isResolutionLocked ? _engineState.viewport.data.height : windowHeight;
 }
 
-/// Returns the current resolution size.
+/// Returns the current resolution.
 Vec2 resolution() {
     return Vec2(resolutionWidth, resolutionHeight);
 }
 
-/// Returns the vertical synchronization state (VSync).
-bool vsync() {
-    return bk.vsync;
+/// Returns true if the resolution is locked.
+bool isResolutionLocked() {
+    return !_engineState.viewport.data.size.isZero;
 }
 
-/// Sets the vertical synchronization state (VSync).
-void setVsync(bool value) {
-    bk.setVsync(value);
+/// Locks the resolution to the given width and height.
+void lockResolution(int width, int height) {
+    // NOTE: Could maybe change for weird values.
+    _engineState.viewport.lockWidth = width;
+    _engineState.viewport.lockHeight = height;
+    if (_engineState.flags & EngineFlag.isUpdating) {
+        _engineState.viewport.isChanging = true;
+        _engineState.viewport.isLocking = true;
+    } else {
+        _engineState.viewport.data.resize(width, height);
+    }
+}
+
+/// Unlocks the resolution.
+void unlockResolution() {
+    if (_engineState.flags & EngineFlag.isUpdating) {
+        _engineState.viewport.isChanging = true;
+        _engineState.viewport.isLocking = false;
+    } else {
+        _engineState.viewport.data.resize(0, 0);
+    }
+}
+
+/// Toggles resolution lock using the specified width and height.
+void toggleResolution(int width, int height) {
+    if (isResolutionLocked) unlockResolution();
+    else lockResolution(width, height);
+}
+
+/// Returns information about the engine viewport, including its size and position.
+EngineViewportInfo engineViewportInfo() {
+    return _engineState.viewportInfoBuffer;
 }
 
 /// Returns the current frames per second (FPS).
@@ -1451,9 +1392,19 @@ int fpsMax() {
     return bk.fpsMax;
 }
 
-/// Sets the maximum number of frames that can be rendered every second (FPS).
+/// Sets the maximum frames per second (FPS).
 void setFpsMax(int value) {
     bk.setFpsMax(value);
+}
+
+/// Returns the vertical synchronization (VSync) state.
+bool vsync() {
+    return bk.vsync;
+}
+
+/// Sets the vertical synchronization (VSync) state.
+void setVsync(bool value) {
+    bk.setVsync(value);
 }
 
 /// Returns the total elapsed time since the application started.
@@ -1461,17 +1412,67 @@ double elapsedTime() {
     return bk.elapsedTime;
 }
 
-/// Returns the total number of ticks elapsed since the application started.
-long elapsedTickCount() {
-    return bk.elapsedTickCount;
+/// Returns the total number of ticks since the application started.
+long elapsedTicks() {
+    return bk.elapsedTicks;
 }
 
-/// Returns the time elapsed since the last frame.
+/// Returns the time elapsed since the last frame (DT).
 float deltaTime() {
     return bk.deltaTime;
 }
 
-/// Returns the current position of the mouse on the screen.
+/// Returns the default filter mode used for textures, fonts and viewports.
+Filter defaultFilter() {
+    return _engineState.defaultFilter;
+}
+
+/// Sets the default filter mode used for textures, fonts and viewports.
+void setDefaultFilter(Filter value) {
+    _engineState.defaultFilter = value;
+}
+
+/// Returns the default wrap mode used for textures, fonts and viewports.
+Wrap defaultWrap() {
+    return _engineState.defaultWrap;
+}
+
+/// Sets the default wrap mode used for textures, fonts and viewports.
+void setDefaultWrap(Wrap value) {
+    _engineState.defaultWrap = value;
+}
+
+/// Returns the default texture used for null textures.
+TextureId defaultTexture() {
+    return _engineState.defaultTexture;
+}
+
+/// Sets the default texture used for null textures.
+void setDefaultTexture(TextureId value) {
+    _engineState.defaultTexture = value;
+}
+
+/// Returns the default font used for null fonts.
+FontId defaultFont() {
+    return _engineState.defaultFont;
+}
+
+/// Sets the default font used for null fonts.
+void setDefaultFont(FontId value) {
+    _engineState.defaultFont = value;
+}
+
+/// Returns the current master volume level.
+float masterVolume() {
+    return bk.masterVolume;
+}
+
+/// Sets the master volume level.
+void setMasterVolume(float value) {
+    bk.setMasterVolume(value);
+}
+
+/// Returns the current mouse position on the window.
 Vec2 mouse() {
     return _engineState.mouseBuffer;
 }
@@ -1486,108 +1487,102 @@ float deltaWheel() {
     return bk.deltaWheel;
 }
 
-/// Returns true if the specified key is currently pressed.
+/// Returns true if the specified character is currently pressed.
 bool isDown(char key) => key ? bk.isDown(key) : false;
-/// Returns true if the specified key is currently pressed.
+/// Returns true if the specified keyboard key is currently pressed.
 bool isDown(Keyboard key) => key ? bk.isDown(key) : false;
-/// Returns true if the specified key is currently pressed.
+/// Returns true if the specified mouse button is currently pressed.
 bool isDown(Mouse key) => key ? bk.isDown(key) : false;
-/// Returns true if the specified key is currently pressed.
+/// Returns true if the specified gamepad button is currently pressed.
 bool isDown(Gamepad key, int id = 0) => key ? bk.isDown(key, id) : false;
 
-/// Returns true if the specified key was pressed.
+/// Returns true if the specified character was pressed this frame.
 bool isPressed(char key) => key ? bk.isPressed(key) : false;
-/// Returns true if the specified key was pressed.
+/// Returns true if the specified keyboard key was pressed this frame.
 bool isPressed(Keyboard key) => key ? bk.isPressed(key) : false;
-/// Returns true if the specified key was pressed.
+/// Returns true if the specified mouse button was pressed this frame.
 bool isPressed(Mouse key) => key ? bk.isPressed(key) : false;
-/// Returns true if the specified key was pressed.
+/// Returns true if the specified gamepad button was pressed this frame.
 bool isPressed(Gamepad key, int id = 0) => key ? bk.isPressed(key, id) : false;
 
-/// Returns true if the specified key was released.
+/// Returns true if the specified character was released this frame.
 bool isReleased(char key) => key ? bk.isReleased(key) : false;
-/// Returns true if the specified key was released.
+/// Returns true if the specified keyboard key was released this frame.
 bool isReleased(Keyboard key) => key ? bk.isReleased(key) : false;
-/// Returns true if the specified key was released.
+/// Returns true if the specified mouse button was released this frame.
 bool isReleased(Mouse key) => key ? bk.isReleased(key) : false;
-/// Returns true if the specified key was released.
+/// Returns true if the specified gamepad button was released this frame.
 bool isReleased(Gamepad key, int id = 0) => key ? bk.isReleased(key, id) : false;
 
-/// Returns the recently pressed keyboard key.
-/// This function acts like a queue, meaning that multiple calls will return other recently pressed keys.
-/// A none key is returned when the queue is empty.
+/// Returns the next recently pressed keyboard key.
+/// This acts like a queue. Returns `Keyboard.none` if the queue is empty.
 Keyboard dequeuePressedKey() {
     return bk.dequeuePressedKey();
 }
 
-/// Returns the recently pressed character.
-/// This function acts like a queue, meaning that multiple calls will return other recently pressed characters.
-/// A none character is returned when the queue is empty.
+/// Returns the next recently pressed character.
+/// This acts like a queue. Returns `\0` if the queue is empty.
 dchar dequeuePressedRune() {
     return bk.dequeuePressedRune();
 }
 
-/// Returns the directional input based on the WASD and arrow keys when they are down.
-/// The vector is not normalized.
+/// Returns the direction from the WASD and arrow keys that are currently down.
+/// The result is not normalized.
 Vec2 wasd() {
     return _engineState.wasdBuffer;
 }
 
-/// Returns the directional input based on the WASD and arrow keys when they are pressed.
-/// The vector is not normalized.
+/// Returns the direction from the WASD and arrow keys that were pressed this frame.
+/// The result is not normalized.
 Vec2 wasdPressed() {
     return _engineState.wasdPressedBuffer;
 }
 
-/// Returns the directional input based on the WASD and arrow keys when they are released.
-/// The vector is not normalized.
+/// Returns the direction from the WASD and arrow keys that were released this frame.
+/// The result is not normalized.
 Vec2 wasdReleased() {
     return _engineState.wasdReleasedBuffer;
 }
 
-/// Plays the specified sound.
+/// Plays the given sound.
+/// If the sound is already playing, this has no effect.
 void playSound(SoundId sound) {
-    if (!sound.isValid) return;
     bk.playSound(sound.data);
 }
 
-/// Stops playback of the specified sound.
+/// Stops playback of the given sound.
 void stopSound(SoundId sound) {
-    if (!sound.isValid) return;
     bk.stopSound(sound.data);
 }
 
-/// Resets and plays the specified sound.
+/// Starts playback of the given sound from the beginning.
 void startSound(SoundId sound) {
-    if (!sound.isValid) return;
     bk.startSound(sound.data);
 }
 
-/// Pauses playback of the specified sound.
+/// Pauses playback of the given sound.
 void pauseSound(SoundId sound) {
-    if (!sound.isValid) return;
     bk.pauseSound(sound.data);
 }
 
-/// Resumes playback of the specified paused sound.
+/// Resumes playback of the given sound if it was paused.
 void resumeSound(SoundId sound) {
-    if (!sound.isValid) return;
     bk.resumeSound(sound.data);
 }
 
-/// Toggles the active state of the sound.
+/// Toggles whether the sound is playing or stopped.
 void toggleSoundIsActive(SoundId sound) {
     if (sound.isActive) stopSound(sound);
     else playSound(sound);
 }
 
-/// Toggles the paused state of the sound.
+/// Toggles whether the sound is paused or resumed.
 void toggleSoundIsPaused(SoundId sound) {
     if (sound.isPaused) resumeSound(sound);
     else pauseSound(sound);
 }
 
-/// Measures the size of the specified text when rendered with the given font and draw options.
+/// Returns the size of the given text when rendered with the specified font and draw options.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
@@ -1692,7 +1687,7 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 }
 
 /// Draws a portion of the default texture at the given position with the specified draw options.
-/// Use the `setDefaultTexture` function before using this function.
+/// Call `setDefaultTexture` before using this function.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(_engineState.defaultTexture, area, position, options);
 }
@@ -1746,7 +1741,7 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
 }
 
 /// Draws a 9-slice from the default texture area at the given target area.
-/// Use the `setDefaultTexture` function before using this function.
+/// Call `setDefaultTexture` before using this function.
 void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
     drawTextureSlice(_engineState.defaultTexture, area, target, margin, canRepeat, options);
 }
@@ -1827,13 +1822,12 @@ Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 }
 
 /// Draws a single character from the default font at the given position with the specified draw options.
-/// Check the `setDefaultFont` function before using this function.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     return drawRune(_engineState.defaultFont, rune, position, options);
 }
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
-// NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 512;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
@@ -1847,6 +1841,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
         }
     }
 
+    // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
     auto result = Vec2();
     linesBuffer.clear();
     linesWidthBuffer.clear();
@@ -1964,7 +1959,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 }
 
 /// Draws text with the default font at the given position with the provided draw options.
-/// Check the `setDefaultFont` function before using this function.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
