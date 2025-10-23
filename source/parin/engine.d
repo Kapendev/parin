@@ -7,8 +7,6 @@
 
 // TODO: Have to chack doc comments in here. The ID ones should be ok.
 // TODO: .md docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
-// NOTE: Reorder functions to give them a more logical order. Do that after evetything works.
-//   How about I don't do that! Go clean your room. It's going to be more useful than this.
 
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
@@ -45,8 +43,8 @@ enum defaultEngineFontRuneHeight = 12;
 
 enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
-    EngineFlag.isEmptyTextureVisible |
-    EngineFlag.isEmptyFontVisible |
+    EngineFlag.isNullTextureVisible |
+    EngineFlag.isNullFontVisible |
     EngineFlag.isLoggingLoadOrSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
@@ -69,12 +67,12 @@ enum defaultEngineDebugColor2 = black.alpha(170);
 
 @trusted:
 
-/// The engine font.
+/// The engine font identifier.
 enum engineFont = FontId(ResourceId(1));
-/// The engine viewport.
+/// The engine viewport identifier.
 enum engineViewport = ViewportId(ResourceId(1));
 
-/// A container holding scheduled tasks.
+/// A container type holding scheduled engine tasks.
 alias EngineTasks = GenList!(
     Task,
     SparseList!(Task, FixedList!(SparseListItem!Task, defaultEngineEngineTasksCapacity)),
@@ -83,7 +81,7 @@ alias EngineTasks = GenList!(
 
 /// An identifier for a scheduled engine task.
 alias EngineTaskId = GenIndex;
-/// The type of the internal engine flags.
+/// Type representing the internal engine flags.
 alias EngineFlags = uint;
 
 ///  The internal engine flags.
@@ -93,14 +91,14 @@ enum EngineFlag : EngineFlags {
     isUsingAssetsPath           = 0x000002,
     isPixelSnapped              = 0x000004,
     isPixelPerfect              = 0x000008,
-    isEmptyTextureVisible       = 0x000010,
-    isEmptyFontVisible          = 0x000020,
+    isNullTextureVisible       = 0x000010,
+    isNullFontVisible          = 0x000020,
     isLoggingLoadOrSaveFaults   = 0x000040,
     isLoggingMemoryTrackingInfo = 0x000080,
     isDebugMode                 = 0x000100,
 }
 
-/// Information about the engine viewport, including its area.
+/// Information about the engine viewport, including its drawing region and size constraints.
 struct EngineViewportInfo {
     Rect area;      /// The area covered by the viewport.
     Vec2 minSize;   /// The minimum size that the viewport can be.
@@ -108,7 +106,7 @@ struct EngineViewportInfo {
     float minRatio; /// The minimum ratio between minSize and maxSize.
 }
 
-/// The engine viewport.
+/// Internal representation of a viewport within the engine.
 struct EngineViewport {
     ViewportId data; /// The viewport data.
     int lockWidth;   /// The target lock width.
@@ -117,7 +115,7 @@ struct EngineViewport {
     bool isLocking;  /// The flag that tells what the new lock state is.
 }
 
-/// The engine state.
+/// Internal state of the engine.
 struct EngineState {
     EngineFlags flags = defaultEngineFlags;
     UpdateFunc updateFunc;
@@ -506,7 +504,7 @@ struct ViewportId {
 }
 
 /// Opens the window with the given information.
-/// You should avoid calling this function manually.
+/// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
     enum monogramPath = "parin_monogram.png";
 
@@ -522,8 +520,8 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
     }
 }
 
-/// Opens a window with the specified size and title, using C strings.
-/// You should avoid calling this function manually.
+/// Opens the window with the given information using C strings.
+/// Avoid calling this function manually.
 void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin") {
     openWindow(width, height, null, title.strzToStr());
     if (argc) {
@@ -532,9 +530,9 @@ void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Pa
     }
 }
 
-/// Updates the window every frame with the given function.
-/// Returns when the given function returns true.
-/// You should avoid calling this function manually.
+/// Starts the main window loop. Accepts an update function and optional debug callbacks.
+/// Returns when the update function returns true.
+/// Avoid calling this function manually.
 void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc debugModeBeginFunc = null, CallFunc debugModeEndFunc = null) {
     static bool updateWindowLoop() {
         // Update buffers and resources.
@@ -605,7 +603,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
 }
 
 /// Closes the window.
-/// You should avoid calling this function manually.
+/// Avoid calling this function manually.
 void closeWindow() {
     auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: I assume `filter` is a static string or managed by the user.
     auto isLogging = isLoggingMemoryTrackingInfo;
@@ -618,7 +616,8 @@ void closeWindow() {
     }
 }
 
-/// Mixes in a game loop template with specified functions for initialization, update, and cleanup, and sets window size and title.
+/// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
+/// Optional callbacks for debug mode can also be provided.
 mixin template runGame(
     alias readyFunc,
     alias updateFunc,
@@ -661,12 +660,14 @@ mixin template runGame(
 
 @trusted nothrow:
 
-/// Schedule a function (task) to run every interval, optionally limited by count.
-EngineTaskId every(float interval, UpdateFunc func, int count = -1, bool canCallNow = false) {
+/// Schedules a task to run every interval.
+/// Set `count` to limit how many times it runs. Use -1 to run indefinitely.
+/// If `canCallNow` is true, the task runs immediately.
+EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false) {
     return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
 }
 
-/// Cancel the scheduled task by its ID.
+/// Cancels a scheduled task by its ID.
 void cancel(EngineTaskId id) {
     if (id.value == 0) return;
     _engineState.tasks.remove(id);
@@ -682,59 +683,68 @@ void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment) {
     return _engineState.arena.realloc(ptr, oldSize, newSize, alignment);
 }
 
-/// Allocates uninitialized memory for a single value of type T from the frame arena.
+/// Allocates uninitialized memory for a single value of type `T`.
 T* frameMakeBlank(T)() {
     return _engineState.arena.makeBlank!T();
 }
 
-/// Allocates and initializes a single value of type T from the frame arena.
-T* frameMake(T)(const(T) value = T.init) {
+/// Allocates and initializes a single value of type `T`.
+T* frameMake(T)() {
+    return _engineState.arena.make!T();
+}
+
+/// Allocates and initializes a single value of type `T`.
+T* frameMake(T)(const(T) value) {
     return _engineState.arena.make!T(value);
 }
 
-/// Allocates uninitialized memory for an array of T with the given length.
+/// Allocates uninitialized memory for an array of type `T` with the given length.
 T[] frameMakeSliceBlank(T)(Sz length) {
     return _engineState.arena.makeSliceBlank!T(length);
 }
 
-/// Allocates and initializes an array of T with the given length.
-T[] frameMakeSlice(T)(Sz length, const(T) value = T.init) {
+/// Allocates and initializes an array of type `T` with the given length.
+T[] frameMakeSlice(T)(Sz length) {
+    return _engineState.arena.makeSlice!T(length);
+}
+
+/// Allocates and initializes an array of type `T` with the given length.
+T[] frameMakeSlice(T)(Sz length, const(T) value) {
     return _engineState.arena.makeSlice!T(length, value);
 }
 
-/// Returns a temporary text container.
-/// The resource remains valid for the duration of the current frame.
+/// Allocates a temporary text buffer for this frame.
+/// Each call returns a new buffer.
 BStr prepareTempText() {
     return BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
 }
 
-/// Loads a text file from the assets folder and saves the content into the given buffer.
-/// Supports both forward slashes and backslashes in file paths.
+/// Loads a text file into the given buffer.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
     didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()));
     return result;
 }
 
-/// Loads a text file from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
+/// Loads a text file and returns the contents as a list.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readText(path.toAssetsPath());
     if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()))) return result.get();
     return LStr();
 }
 
-/// Loads a text file from the assets folder.
-/// The resource remains valid for the duration of the current frame.
-/// Supports both forward slashes and backslashes in file paths.
+/// Loads a text file into a temporary buffer for the current frame.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
     loadTextIntoBuffer(path, tempText, file, line);
     return tempText.items;
 }
 
-/// Loads a texture file (PNG) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
+/// Loads a texture file (PNG) with default filter and wrap modes.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadTexture(toAssetsPath(path)).get(trap);
@@ -746,7 +756,7 @@ TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     return TextureId();
 }
 
-/// Loads a texture file (PNG) from the given bytes.
+/// Loads a texture file (PNG) from memory with default filter and wrap modes.
 TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadTexture(memory, ext).get(trap);
@@ -758,6 +768,8 @@ TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FI
     return TextureId();
 }
 
+/// Loads a font file (TTF) with default filter and wrap modes.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadFont(toAssetsPath(path), size, runeSpacing, lineSpacing, runes).get(trap);
@@ -769,7 +781,7 @@ FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1,
     return FontId();
 }
 
-/// Converts bytes into a font. Returns an empty font on error.
+/// Loads a font file (TTF) from memory with default filter and wrap modes.
 FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadFont(memory, size, runeSpacing, lineSpacing, runes, ext).get(trap);
@@ -781,6 +793,8 @@ FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineS
     return FontId();
 }
 
+/// Loads a font file (TTF) from a texture with default filter and wrap modes.
+/// The input texture will be invalidated after loading.
 FontId loadFont(TextureId texture, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadFont(texture.data, tileWidth, tileHeight).get(trap);
@@ -792,8 +806,8 @@ FontId loadFont(TextureId texture, int tileWidth, int tileHeight, IStr file = __
     return FontId();
 }
 
-/// Loads a sound file (WAV, OGG, MP3) from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
+/// Loads a sound file (WAV, OGG, MP3) with default playback settings.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadSound(toAssetsPath(path), volume, pitch, canRepeat, pitchVariance).get(trap);
@@ -803,6 +817,7 @@ SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pi
     return SoundId();
 }
 
+/// Loads a viewport with default filter and wrap modes.
 ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.alpha, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadViewport(width, height, color, blend).get(trap);
@@ -814,138 +829,21 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
     return ViewportId();
 }
 
-/// Saves a text file to the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
+/// Saves a text file with the given content.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = writeText(path.toAssetsPath(), text);
     if (isLoggingLoadOrSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, file, line, "text", path.toAssetsPath());
     return result;
 }
 
-/// Sets the path of the assets folder.
+/// Sets the path used as the assets folder.
 void setAssetsPath(IStr path) {
     _engineState.assetsPath.clear();
     _engineState.assetsPath.append(path);
 }
 
 @trusted nothrow @nogc:
-
-/// Returns the fault from the last load or save call.
-Fault lastLoadOrSaveFault() {
-    return _engineState.lastLoadOrSaveFault;
-}
-
-/// Attaches the viewport, making it active.
-// NOTE: The engine viewport should not use this function.
-void attach(ViewportId viewport) {
-    if (viewport.size.isZero) return;
-    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
-    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
-    bk.beginViewport(viewport.data);
-    bk.clearBackground(viewport.color);
-    bk.beginBlend(viewport.blend);
-    _engineState.userViewport = viewport;
-}
-
-/// Detaches the viewport, making it inactive.
-// NOTE: The engine viewport should not use this function.
-void detach(ViewportId viewport) {
-    if (viewport.size.isZero) return;
-    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
-    bk.endBlend();
-    bk.endViewport(viewport.data);
-    _engineState.userViewport = ViewportId();
-    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
-}
-
-/// Attaches the camera, making it active.
-void attach(ref Camera camera, Rounding type = Rounding.none) {
-    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
-    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
-    _engineState.userCamera = camera;
-}
-
-/// Detaches the camera, making it inactive.
-void detach(ref Camera camera) {
-    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
-    bk.endCamera(camera);
-    _engineState.userCamera = Camera();
-}
-
-void beginClip(Rect area) {
-    bk.beginClip(area);
-}
-
-void endClip() {
-    bk.endClip();
-}
-
-// TODO: Replace that with something in Joka. I was too lazy to write it myself.
-//   Sorry monky, but it's temp code that I copy-pasted from raylib.
-private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
-    const(char)* ptr = text;
-    int codepoint = 0x3f;       // Codepoint (defaults to '?')
-    *codepointSize = 1;
-
-    // Get current codepoint and bytes processed
-    if (0xf0 == (0xf8 & ptr[0]))
-    {
-        // 4 byte UTF-8 codepoint
-        if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80) || ((ptr[3] & 0xC0) ^ 0x80)) { return codepoint; } // 10xxxxxx checks
-        codepoint = ((0x07 & ptr[0]) << 18) | ((0x3f & ptr[1]) << 12) | ((0x3f & ptr[2]) << 6) | (0x3f & ptr[3]);
-        *codepointSize = 4;
-    }
-    else if (0xe0 == (0xf0 & ptr[0]))
-    {
-        // 3 byte UTF-8 codepoint */
-        if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80)) { return codepoint; } // 10xxxxxx checks
-        codepoint = ((0x0f & ptr[0]) << 12) | ((0x3f & ptr[1]) << 6) | (0x3f & ptr[2]);
-        *codepointSize = 3;
-    }
-    else if (0xc0 == (0xe0 & ptr[0]))
-    {
-        // 2 byte UTF-8 codepoint
-        if ((ptr[1] & 0xC0) ^ 0x80) { return codepoint; } // 10xxxxxx checks
-        codepoint = ((0x1f & ptr[0]) << 6) | (0x3f & ptr[1]);
-        *codepointSize = 2;
-    }
-    else if (0x00 == (0x80 & ptr[0]))
-    {
-        // 1 byte UTF-8 codepoint
-        codepoint = ptr[0];
-        *codepointSize = 1;
-    }
-
-    return codepoint;
-}
-
-// TODO: Replace that with something in Joka. I was too lazy to write it myself.
-//   Sorry monky, but it's temp code that I copy-pasted from raylib.
-private int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
-    const(char)* ptr = text;
-    int codepoint = 0x3f;       // Codepoint (defaults to '?')
-    int cpSize = 0;
-    *codepointSize = 0;
-
-    // Move to previous codepoint
-    do ptr--;
-    while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80));
-
-    codepoint = _TEMP_REPLACE_ME_GetCodepointNext(ptr, &cpSize);
-
-    if (codepoint != 0) *codepointSize = cpSize;
-
-    return codepoint;
-}
-
-bool didLoadOrSaveSucceed(Fault fault, IStr message) {
-    if (fault) {
-        _engineState.lastLoadOrSaveFault = fault;
-        if (isLoggingLoadOrSaveFaults) println!(StdStream.error)(message);
-        return false;
-    }
-    return true;
-}
 
 void _updateViewportInfoBuffer() {
     auto info = &_engineState.viewportInfoBuffer;
@@ -1003,12 +901,117 @@ void _updateEngineWasdBuffer() {
     }
 }
 
-/// Returns the arguments that this application was started with.
+// TODO: Replace that with something in Joka. I was too lazy to write it myself.
+private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
+    const(char)* ptr = text;
+    int codepoint = 0x3f;       // Codepoint (defaults to '?')
+    *codepointSize = 1;
+
+    // Get current codepoint and bytes processed
+    if (0xf0 == (0xf8 & ptr[0]))
+    {
+        // 4 byte UTF-8 codepoint
+        if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80) || ((ptr[3] & 0xC0) ^ 0x80)) { return codepoint; } // 10xxxxxx checks
+        codepoint = ((0x07 & ptr[0]) << 18) | ((0x3f & ptr[1]) << 12) | ((0x3f & ptr[2]) << 6) | (0x3f & ptr[3]);
+        *codepointSize = 4;
+    }
+    else if (0xe0 == (0xf0 & ptr[0]))
+    {
+        // 3 byte UTF-8 codepoint */
+        if (((ptr[1] & 0xC0) ^ 0x80) || ((ptr[2] & 0xC0) ^ 0x80)) { return codepoint; } // 10xxxxxx checks
+        codepoint = ((0x0f & ptr[0]) << 12) | ((0x3f & ptr[1]) << 6) | (0x3f & ptr[2]);
+        *codepointSize = 3;
+    }
+    else if (0xc0 == (0xe0 & ptr[0]))
+    {
+        // 2 byte UTF-8 codepoint
+        if ((ptr[1] & 0xC0) ^ 0x80) { return codepoint; } // 10xxxxxx checks
+        codepoint = ((0x1f & ptr[0]) << 6) | (0x3f & ptr[1]);
+        *codepointSize = 2;
+    }
+    else if (0x00 == (0x80 & ptr[0]))
+    {
+        // 1 byte UTF-8 codepoint
+        codepoint = ptr[0];
+        *codepointSize = 1;
+    }
+
+    return codepoint;
+}
+
+// TODO: Replace that with something in Joka. I was too lazy to write it myself.
+private int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
+    const(char)* ptr = text;
+    int codepoint = 0x3f;       // Codepoint (defaults to '?')
+    int cpSize = 0;
+    *codepointSize = 0;
+
+    // Move to previous codepoint
+    do ptr--;
+    while (((0x80 & ptr[0]) != 0) && ((0xc0 & ptr[0]) ==  0x80));
+
+    codepoint = _TEMP_REPLACE_ME_GetCodepointNext(ptr, &cpSize);
+
+    if (codepoint != 0) *codepointSize = cpSize;
+
+    return codepoint;
+}
+
+/// Attaches the given viewport and makes it active.
+// NOTE: The engine viewport should not use this function.
+void attach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
+    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
+    bk.beginViewport(viewport.data);
+    bk.clearBackground(viewport.color);
+    bk.beginBlend(viewport.blend);
+    _engineState.userViewport = viewport;
+}
+
+/// Detaches the currently active viewport.
+// NOTE: The engine viewport should not use this function.
+void detach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
+    bk.endBlend();
+    bk.endViewport(viewport.data);
+    _engineState.userViewport = ViewportId();
+    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
+}
+
+/// Attaches the given camera and makes it active.
+void attach(ref Camera camera, Rounding type = Rounding.none) {
+    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
+    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
+    _engineState.userCamera = camera;
+}
+
+/// Detaches the currently active camera.
+void detach(ref Camera camera) {
+    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
+    bk.endCamera(camera);
+    _engineState.userCamera = Camera();
+}
+
+/// Begins a clipping region using the given area.
+void beginClip(Rect area) {
+    // TODO: maybe add a check here.
+    bk.beginClip(area);
+}
+
+/// Ends the active clipping region.
+void endClip() {
+    // TODO: maybe add a check here.
+    bk.endClip();
+}
+
+/// Returns the arguments this application was started with.
 IStr[] envArgs() {
     return _engineState.envArgsBuffer.items;
 }
 
-/// Sets the seed of the random number generator to the given value.
+/// Sets the random number generator seed to the given value.
 void setRandomSeed(int value) {
     bk.setRandomSeed(value);
 }
@@ -1023,143 +1026,82 @@ int randi() {
     return bk.randi;
 }
 
-/// Returns a random floating point number between 0.0 and 1.0 (inclusive).
+/// Returns a random float between 0.0 and 1.0 (inclusive).
 float randf() {
     return bk.randf;
 }
 
-/// Converts a scene point to a canvas point based on the given camera.
-Vec2 toCanvasPoint(Vec2 position, Camera camera) {
-    return bk.toCanvasPoint(position, camera, resolution);
+/// Converts a scene point to a canvas point using the given camera and resolution.
+Vec2 toCanvasPoint(Vec2 point, Camera camera) {
+    return bk.toCanvasPoint(point, camera, resolution);
 }
 
-/// Converts a scene point to a canvas point based on the given camera.
-Vec2 toCanvasPoint(Vec2 position, Camera camera, Vec2 canvasSize) {
-    return bk.toCanvasPoint(position, camera, canvasSize);
+/// Converts a scene point to a canvas point using the given camera and canvas size.
+Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+    return bk.toCanvasPoint(point, camera, canvasSize);
 }
 
-/// Converts a canvas point to a scene point based on the given camera.
-Vec2 toScenePoint(Vec2 position, Camera camera) {
-    return bk.toScenePoint(position, camera, resolution);
+/// Converts a canvas point to a scene point using the given camera and resolution.
+Vec2 toScenePoint(Vec2 point, Camera camera) {
+    return bk.toScenePoint(point, camera, resolution);
 }
 
-/// Converts a canvas point to a scene point based on the given camera.
-Vec2 toScenePoint(Vec2 position, Camera camera, Vec2 canvasSize) {
-    return bk.toScenePoint(position, camera, canvasSize);
+/// Converts a canvas point to a scene point using the given camera and canvas size.
+Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+    return bk.toScenePoint(point, camera, canvasSize);
 }
 
-/// Returns the path of the assets folder.
+/// Returns the dropped paths from the current frame.
+IStr[] droppedPaths() {
+    return bk.droppedPaths;
+}
+
+/// Returns the current path used as the assets folder.
 IStr assetsPath() {
     return _engineState.assetsPath.items;
 }
 
-/// Converts a path to a path within the assets folder.
+/// Converts a path to one within the assets folder.
+/// Returns the path unchanged if it is absolute or asset paths are disabled.
 IStr toAssetsPath(IStr path) {
     if (path.startsWith(pathSep) || !isUsingAssetsPath) return path;
     return pathConcat(assetsPath, path).pathFormat();
 }
 
-/// Returns the dropped paths of the current frame.
-IStr[] droppedPaths() {
-    return bk.droppedPaths;
-}
-
-void freeAllTextureIds() {
-    bk.freeAllTextures(false);
-}
-
-void freeAllFontIds() {
-    bk.freeAllFonts(true);
-}
-
-void freeAllSoundIds() {
-    bk.freeAllSounds(false);
-}
-
-void freeAllViewportIds() {
-    bk.freeAllViewports(true);
-}
-
-/// Frees all engine resources.
-void freeAllResourceIds() {
-    freeAllTextureIds();
-    freeAllFontIds();
-    freeAllSoundIds();
-    freeAllViewportIds();
-}
-
-/// Opens a URL in the default web browser (if available).
-/// Redirect to Parin's GitHub when no URL is provided.
-void openUrl(IStr url = "https://github.com/Kapendev/parin") {
-    bk.openUrl(url);
-}
-
-/// Returns true if the assets path is currently in use when loading.
+/// Returns true if the assets path is used when loading.
 bool isUsingAssetsPath() {
     return cast(bool) (_engineState.flags & EngineFlag.isUsingAssetsPath);
 }
 
-/// Sets whether the assets path should be in use when loading.
+/// Sets whether the assets path should be used when loading.
 void setIsUsingAssetsPath(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isUsingAssetsPath
         : _engineState.flags & ~EngineFlag.isUsingAssetsPath;
 }
 
-/// Returns true if the drawing is snapped to pixel coordinates.
-bool isPixelSnapped() {
-    return cast(bool) (_engineState.flags & EngineFlag.isPixelSnapped);
+/// Returns the last fault from a load or save call.
+Fault lastLoadOrSaveFault() {
+    return _engineState.lastLoadOrSaveFault;
 }
 
-/// Sets whether drawing should be snapped to pixel coordinates.
-void setIsPixelSnapped(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isPixelSnapped
-        : _engineState.flags & ~EngineFlag.isPixelSnapped;
+/// Helper for checking the result of a load or save call.
+/// Returns true if the fault is none, false otherwise.
+bool didLoadOrSaveSucceed(Fault fault, IStr message) {
+    if (fault) {
+        _engineState.lastLoadOrSaveFault = fault;
+        if (isLoggingLoadOrSaveFaults) println!(StdStream.error)(message);
+        return false;
+    }
+    return true;
 }
 
-/// Returns true if the drawing is done in a pixel perfect way.
-bool isPixelPerfect() {
-    return cast(bool) (_engineState.flags & EngineFlag.isPixelPerfect);
-}
-
-/// Sets whether drawing should be done in a pixel-perfect way.
-void setIsPixelPerfect(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isPixelPerfect
-        : _engineState.flags & ~EngineFlag.isPixelPerfect;
-}
-
-/// Returns true if drawing is done when an empty texture is used.
-bool isEmptyTextureVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isEmptyTextureVisible);
-}
-
-/// Sets whether drawing should be done when an empty texture is used.
-void setIsEmptyTextureVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isEmptyTextureVisible
-        : _engineState.flags & ~EngineFlag.isEmptyTextureVisible;
-}
-
-/// Returns true if drawing is done when an empty font is used.
-bool isEmptyFontVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isEmptyFontVisible);
-}
-
-/// Sets whether drawing should be done when an empty font is used.
-void setIsEmptyFontVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isEmptyFontVisible
-        : _engineState.flags & ~EngineFlag.isEmptyFontVisible;
-}
-
-/// Returns true if loading or saving should log on fault.
+/// Returns true if load or save faults should be logged.
 bool isLoggingLoadOrSaveFaults() {
     return cast(bool) (_engineState.flags & EngineFlag.isLoggingLoadOrSaveFaults);
 }
 
-/// Sets whether loading or saving should log on fault.
+/// Sets whether load or save faults should be logged.
 void setIsLoggingLoadOrSaveFaults(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isLoggingLoadOrSaveFaults
@@ -1179,6 +1121,88 @@ void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "") {
     _engineState.memoryTrackingInfoFilter = filter;
 }
 
+/// Opens a URL in the default web browser.
+/// Redirects to Parin's GitHub repo if no URL is provided.
+void openUrl(IStr url = "https://github.com/Kapendev/parin") {
+    bk.openUrl(url);
+}
+
+/// Frees all loaded textures.
+void freeAllTextureIds() {
+    bk.freeAllTextures(false);
+}
+
+/// Frees all loaded fonts.
+void freeAllFontIds() {
+    bk.freeAllFonts(true);
+}
+
+/// Frees all loaded sounds.
+void freeAllSoundIds() {
+    bk.freeAllSounds(false);
+}
+
+/// Frees all loaded viewports.
+void freeAllViewportIds() {
+    bk.freeAllViewports(true);
+}
+
+/// Frees all loaded textures, fonts, sounds, and viewports.
+void freeAllResourceIds() {
+    freeAllTextureIds();
+    freeAllFontIds();
+    freeAllSoundIds();
+    freeAllViewportIds();
+}
+
+/// Returns true if drawing is snapped to pixel coordinates.
+bool isPixelSnapped() {
+    return cast(bool) (_engineState.flags & EngineFlag.isPixelSnapped);
+}
+
+/// Sets whether drawing should snap to pixel coordinates.
+void setIsPixelSnapped(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isPixelSnapped
+        : _engineState.flags & ~EngineFlag.isPixelSnapped;
+}
+
+/// Returns true if drawing is pixel-perfect.
+bool isPixelPerfect() {
+    return cast(bool) (_engineState.flags & EngineFlag.isPixelPerfect);
+}
+
+/// Sets whether drawing should be pixel-perfect.
+void setIsPixelPerfect(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isPixelPerfect
+        : _engineState.flags & ~EngineFlag.isPixelPerfect;
+}
+
+/// Returns true if drawing is done when using a null texture.
+bool isNullTextureVisible() {
+    return cast(bool) (_engineState.flags & EngineFlag.isNullTextureVisible);
+}
+
+/// Sets whether drawing should be done when using a null texture.
+void setIsNullTextureVisible(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isNullTextureVisible
+        : _engineState.flags & ~EngineFlag.isNullTextureVisible;
+}
+
+/// Returns true if drawing is done when using a null font.
+bool isNullFontVisible() {
+    return cast(bool) (_engineState.flags & EngineFlag.isNullFontVisible);
+}
+
+/// Sets whether drawing should be done when using a null font.
+void setIsNullFontVisible(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isNullFontVisible
+        : _engineState.flags & ~EngineFlag.isNullFontVisible;
+}
+
 /// Returns true if debug mode is active.
 bool isDebugMode() {
     return cast(bool) (_engineState.flags & EngineFlag.isDebugMode);
@@ -1196,86 +1220,88 @@ void toggleIsDebugMode() {
     setIsDebugMode(!isDebugMode);
 }
 
-/// Sets the key that will toggle the debug mode on or off.
+/// Sets the key that toggles debug mode.
 void setDebugModeKey(Keyboard value) {
     _engineState.debugModeKey = value;
 }
 
-/// Returns true if the application is currently in fullscreen mode.
-// NOTE: There is a conflict between the flag and real-window-state, which could potentially cause issues for some users.
+/// Returns true if the cursor is visible.
+bool isCursorVisible() {
+    return bk.isCursorVisible;
+}
+
+/// Sets whether the cursor should be visible.
+void setIsCursorVisible(bool value) {
+    bk.setIsCursorVisible(value);
+}
+
+/// Toggles cursor visibility.
+void toggleIsCursorVisible() {
+    setIsCursorVisible(!isCursorVisible);
+}
+
+/// Returns true if the application is in fullscreen mode.
 bool isFullscreen() {
     return bk.isFullscreen;
 }
 
 /// Sets whether the application should be in fullscreen mode.
-// NOTE: This function introduces a slight delay to prevent some bugs observed on Linux. See the `updateWindow` function.
 void setIsFullscreen(bool value) {
     bk.setIsFullscreen(value);
 }
 
-/// Toggles the fullscreen mode on or off.
+/// Toggles fullscreen mode.
 void toggleIsFullscreen() {
     setIsFullscreen(!isFullscreen);
 }
 
-/// Returns true if the cursor is currently visible.
-bool isCursorVisible() {
-    return bk.isCursorVisible;
-}
-
-/// Sets whether the cursor should be visible or hidden.
-void setIsCursorVisible(bool value) {
-    bk.setIsCursorVisible(value);
-}
-
-/// Toggles the visibility of the cursor.
-void toggleIsCursorVisible() {
-    setIsCursorVisible(!isCursorVisible);
-}
-
-/// Returns true if the windows was resized.
+/// Returns true if the window was resized.
 bool isWindowResized() {
     return bk.isWindowResized;
 }
 
-Rgba windowBackgroundColor() {
-    return _engineState.viewport.data.color;
-}
-
-/// Sets the background color to the specified value.
-void setWindowBackgroundColor(Rgba value) {
-    _engineState.viewport.data.setColor(value);
-}
-
-Rgba windowBorderColor() {
-    return _engineState.windowBorderColor;
-}
-
-/// Sets the border color to the specified value.
-void setWindowBorderColor(Rgba value) {
-    _engineState.windowBorderColor = value;
-}
-
-/// Sets the minimum size of the window to the specified value.
+/// Sets the minimum size of the window.
 void setWindowMinSize(int width, int height) {
     bk.setWindowMinSize(width, height);
 }
 
-/// Sets the maximum size of the window to the specified value.
+/// Sets the maximum size of the window.
 void setWindowMaxSize(int width, int height) {
     bk.setWindowMaxSize(width, height);
 }
 
-/// Sets the window icon to the specified image that will be loaded from the assets folder.
-/// Supports both forward slashes and backslashes in file paths.
+/// Returns the current background color (fill color) of the window.
+Rgba windowBackgroundColor() {
+    return _engineState.viewport.data.color;
+}
+
+/// Sets the background color (fill color) of the window.
+void setWindowBackgroundColor(Rgba value) {
+    _engineState.viewport.data.setColor(value);
+}
+
+/// Returns the current color of the window borders shown when the aspect ratio is fixed.
+Rgba windowBorderColor() {
+    return _engineState.windowBorderColor;
+}
+
+/// Sets the color of the window borders shown when the aspect ratio is fixed.
+void setWindowBorderColor(Rgba value) {
+    _engineState.windowBorderColor = value;
+}
+
+/// Sets the window icon using an texture file (PNG).
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 Fault setWindowIconFromFiles(IStr path) {
     return bk.setWindowIconFromFiles(path.toAssetsPath());
 }
 
-/// Returns information about the engine viewport, including its area.
+/// Returns information about the engine viewport, including its size and position.
 EngineViewportInfo engineViewportInfo() {
     return _engineState.viewportInfoBuffer;
 }
+
+// TODO: I STOPPED HERE LAST TIME WHILE WRITTING SUTFF FOR DOCS STUFF SUTF STUFF
 
 /// Returns the default filter mode.
 Filter defaultFilter() {
@@ -1566,7 +1592,7 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     version (ParinSkipDrawChecks) {
     } else {
         if (font.isNull) {
-            if (isEmptyFontVisible) font = engineFont;
+            if (isNullFontVisible) font = engineFont;
             else return Vec2();
         }
     }
@@ -1627,7 +1653,7 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
     version (ParinSkipDrawChecks) {
     } else {
         if (texture.isNull) {
-            if (isEmptyTextureVisible) {
+            if (isNullTextureVisible) {
                 auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
                 drawRect(rect, defaultEngineDebugColor1);
                 drawRect(rect, defaultEngineDebugColor2, 1);
@@ -1681,7 +1707,7 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
     version (ParinSkipDrawChecks) {
     } else {
         if (texture.isNull) {
-            if (isEmptyTextureVisible) {
+            if (isNullTextureVisible) {
                 drawRect(target, defaultEngineDebugColor1);
                 drawRect(target, defaultEngineDebugColor2, 1);
             }
@@ -1730,7 +1756,7 @@ void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions
     version (ParinSkipDrawChecks) {
     } else {
         if (!viewport.isValid) {
-            if (isEmptyTextureVisible) {
+            if (isNullTextureVisible) {
                 auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
                 drawRect(rect, defaultEngineDebugColor1);
                 drawRect(rect, defaultEngineDebugColor2, 1);
@@ -1779,7 +1805,7 @@ Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
     version (ParinSkipDrawChecks) {
     } else {
         if (font.isNull) {
-            if (isEmptyFontVisible) font = engineFont;
+            if (isNullFontVisible) font = engineFont;
             else return Vec2();
         }
     }
@@ -1816,7 +1842,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     version (ParinSkipDrawChecks) {
     } else {
         if (font.isNull) {
-            if (isEmptyFontVisible) font = engineFont;
+            if (isNullFontVisible) font = engineFont;
             else return Vec2();
         }
     }

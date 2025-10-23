@@ -228,7 +228,7 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
     version (ParinSkipDrawChecks) {
     } else {
         if (texture.isNull) {
-            if (isEmptyTextureVisible) {
+            if (isNullTextureVisible) {
                 auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
                 drawRect(rect, defaultEngineDebugColor1);
                 drawRect(rect, defaultEngineDebugColor2, 1);

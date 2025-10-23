@@ -378,7 +378,7 @@ struct TileMap {
         version (ParinSkipDrawChecks) {
         } else {
             if (texture.isNull) {
-                if (isEmptyTextureVisible) {
+                if (isNullTextureVisible) {
                     auto rect = tile.area;
                     drawRect(rect, defaultEngineDebugColor1);
                     drawRect(rect, defaultEngineDebugColor2, 1);
@@ -399,7 +399,7 @@ struct TileMap {
         version (ParinSkipDrawChecks) {
         } else {
             if (texture.isNull) {
-                if (isEmptyTextureVisible) {
+                if (isNullTextureVisible) {
                     auto rect = Rect(map.position, map.size);
                     drawRect(rect, defaultEngineDebugColor1);
                     drawRect(rect, defaultEngineDebugColor2, 1);
