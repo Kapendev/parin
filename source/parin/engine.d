@@ -50,7 +50,7 @@ enum defaultEngineLoadErrorMessage       = "ERROR({}:{}): Could not load {} from
 enum defaultEngineSaveErrorMessage       = "ERROR({}:{}): Could not save {} from \"{}\".";
 enum defaultEngineAssetsPathCapacity     = 8 * kilobyte;
 enum defaultEngineEnvArgsCapacity        = 64;
-enum defaultEngineLoadOrSaveTextCapacity = 14 * kilobyte;
+enum defaultEngineLoadOrSaveTextCapacity = 16 * kilobyte;
 enum defaultEngineEngineTasksCapacity    = 112;
 enum defaultEngineArenaCapacity          = 4 * megabyte;
 
@@ -698,8 +698,8 @@ T[] frameMakeSlice(T)(Sz length, const(T) value) {
 
 /// Allocates a temporary text buffer for this frame.
 /// Each call returns a new buffer.
-BStr prepareTempText() {
-    return BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
+BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity) {
+    return BStr(frameMakeSliceBlank!char(capacity));
 }
 
 /// Schedules a task to run every interval.
@@ -811,8 +811,8 @@ LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
 
 /// Loads a text file into a temporary buffer for the current frame.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
-IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
-    auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
+IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+    auto tempText = BStr(frameMakeSliceBlank!char(capacity));
     loadTextIntoBuffer(path, tempText, file, line);
     return tempText.items;
 }

@@ -430,7 +430,7 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
 /// Loads a text file and returns the contents as a list.
 LStr loadText(IStr path);
 /// Loads a text file into a temporary buffer for the current frame.
-IStr loadTempText(IStr path);
+IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 /// Loads a text file into the given buffer.
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 /// Saves a text file with the given content.

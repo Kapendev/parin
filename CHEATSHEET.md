@@ -203,7 +203,7 @@ T[] frameMakeSlice(T)(Sz length);
 /// Allocates and initializes an array of type `T` with the given length.
 T[] frameMakeSlice(T)(Sz length, const(T) value);
 /// Allocates a temporary text buffer for this frame.
-BStr prepareTempText();
+BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 
 /// Schedules a task to run every interval.
 EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
@@ -385,7 +385,7 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
 /// Loads a text file and returns the contents as a list.
 LStr loadText(IStr path);
 /// Loads a text file into a temporary buffer for the current frame.
-IStr loadTempText(IStr path);
+IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 /// Loads a text file into the given buffer.
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 /// Saves a text file with the given content.
