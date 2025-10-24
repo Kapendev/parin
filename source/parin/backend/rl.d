@@ -824,7 +824,7 @@ Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
     return Vec2(vec.x, vec.y);
 }
 
-uint elapsedTicks() {
+ulong elapsedTicks() {
     return _backendState.elapsedTicks;
 }
 

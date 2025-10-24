@@ -115,7 +115,7 @@ Parin consists of the following modules:
 * `parin.timer`: Time utilities
 * `parin.ui`: Immediate mode UI
 
-The `parin.engine` module is the only mandatory module for creating a game.
+The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game.
 All other modules are optional and can be included as needed.
 The `import parin` statement in the example above is a convenience import that includes all modules.
 
@@ -124,30 +124,50 @@ The `import parin` statement in the example above is a convenience import that i
 Parin provides a set of input functions. These include:
 
 ```d
-bool isDown(char key);
-bool isDown(Keyboard key);
-bool isDown(Mouse key);
-bool isDown(Gamepad key, int id = 0);
-
-bool isPressed(char key);
-bool isPressed(Keyboard key);
-bool isPressed(Mouse key);
-bool isPressed(Gamepad key, int id = 0);
-
-bool isReleased(char key);
-bool isReleased(Keyboard key);
-bool isReleased(Mouse key);
-bool isReleased(Gamepad key, int id = 0);
-
-Vec2 wasd();
-Vec2 wasdPressed();
-Vec2 wasdReleased();
-
+/// Returns the current mouse position on the window.
 Vec2 mouse();
+/// Returns the change in mouse position since the last frame.
 Vec2 deltaMouse();
+/// Returns the change in mouse wheel position since the last frame.
 float deltaWheel();
 
+/// Returns true if the specified character is currently pressed.
+bool isDown(char key);
+/// Returns true if the specified keyboard key is currently pressed.
+bool isDown(Keyboard key);
+/// Returns true if the specified mouse button is currently pressed.
+bool isDown(Mouse key);
+/// Returns true if the specified gamepad button is currently pressed.
+bool isDown(Gamepad key, int id = 0);
+
+/// Returns true if the specified character was pressed this frame.
+bool isPressed(char key);
+/// Returns true if the specified keyboard key was pressed this frame.
+bool isPressed(Keyboard key);
+/// Returns true if the specified mouse button was pressed this frame.
+bool isPressed(Mouse key);
+/// Returns true if the specified gamepad button was pressed this frame.
+bool isPressed(Gamepad key, int id = 0);
+
+/// Returns true if the specified character was released this frame.
+bool isReleased(char key);
+/// Returns true if the specified keyboard key was released this frame.
+bool isReleased(Keyboard key);
+/// Returns true if the specified mouse button was released this frame.
+bool isReleased(Mouse key);
+/// Returns true if the specified gamepad button was released this frame.
+bool isReleased(Gamepad key, int id = 0);
+
+/// Returns the direction from the WASD and arrow keys that are currently down.
+Vec2 wasd();
+/// Returns the direction from the WASD and arrow keys that were pressed this frame.
+Vec2 wasdPressed();
+/// Returns the direction from the WASD and arrow keys that were released this frame.
+Vec2 wasdReleased();
+
+/// Returns the next recently pressed keyboard key.
 Keyboard dequeuePressedKey();
+/// Returns the next recently pressed character.
 dchar dequeuePressedRune();
 ```
 
@@ -205,42 +225,79 @@ Below are examples showing how to use these input functions to move text.
 Parin provides a set of drawing functions. These include:
 
 ```d
-void drawRect(Rect area, Rgba color = white);
-void drawHollowRect(Rect area, float thickness, Rgba color = white);
-void drawCirc(Circ area, Rgba color = white);
-void drawHollowCirc(Circ area, float thickness, Rgba color = white);
-void drawVec2(Vec2 point, float size, Rgba color = white);
-void drawLine(Line area, float size, Rgba color = white);
+/// Attaches the given camera and makes it active.
+void attach(ref Camera camera, Rounding type = Rounding.none);
+/// Attaches the given viewport and makes it active.
+void attach(ViewportId viewport);
+/// Detaches the currently active camera.
+void detach(ref Camera camera);
+/// Detaches the currently active viewport.
+void detach(ViewportId viewport);
+/// Begins a clipping region using the given area.
+void beginClip(Rect area);
+/// Ends the active clipping region.
+void endClip();                                               
 
+/// Draws a rectangle with the specified area and color.
+void drawRect(Rect area, Rgba color = white, float thickness = -1.0f);
+/// Draws a point at the specified location with the given size and color.
+void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f);
+/// Draws a circle with the specified area and color.
+void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
+/// Draws a line with the specified area, thickness, and color.
+void drawLine(Line area, Rgba color = white, float thickness = 9.0f);
+
+/// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the default texture at the given position with the specified draw options.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
+/// Draws a 9-slice from the default texture area at the given target area.
 void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 
-void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
-void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the specified viewport at the given position with the specified draw options.
+void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws the viewport at the given position with the specified draw options.
+void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = DrawOptions());
+
+/// Draws a single character from the specified font at the given position with the specified draw options.
+Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a single character from the default font at the given position with the specified draw options.
+Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws the specified text with the given font at the given position using the provided draw options.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+/// Draws text with the default font at the given position with the provided draw options.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
-void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-
-void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
-void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
-
+/// Adds a formatted line to the `dprint*` text.
 void dprintfln(A...)(IStr fmtStr, A args);
+/// Adds a line to the `dprint*` text.
 void dprintln(A...)(A args);
+/// Returns the contents of the `dprint*` buffer as an `IStr`.
 IStr dprintBuffer();
+/// Sets the position of `dprint*` text.
 void setDprintPosition(Vec2 value);
+/// Sets the drawing options for `dprint*` text.
 void setDprintOptions(DrawOptions value);
+/// Sets the maximum number of `dprint*` lines. Older lines are removed once this limit is reached. Use 0 for unlimited.
 void setDprintLineCountLimit(Sz value);
+/// Sets the visibility state of `dprint*` text.
 void setDprintVisibility(bool value);
+/// Toggles the visibility state of `dprint*` text.
 void toggleDprintVisibility();
+/// Clears all `dprint*` text.
 void clearDprintBuffer();
+
+/// Draws debug engine information at the given position with the provided draw options.
+void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+/// Draws debug tile information at the given position with the provided draw options.
+void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 ```
 
-Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions. To change the default filtering mode for new textures, fonts or viewports, call `setDefaultFilter`.
+Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions. To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
 
 ### Draw Options
 
@@ -248,45 +305,38 @@ Draw options are used for configuring drawing parameters.
 
 ```d
 struct DrawOptions {
-    Vec2 origin;
-    Vec2 scale;
-    float rotation;
-    Rgba color;
-    Hook hook;
-    Flip flip;
+    /// The origin point of the drawn object. This value can be used to force a specific origin.
+    Vec2 origin = Vec2(0.0f);
+    /// The scale of the drawn object.
+    Vec2 scale = Vec2(1.0f);
+    /// The rotation of the drawn object, in degrees.
+    float rotation = 0.0f;
+    /// The color of the drawn object, in RGBA.
+    Rgba color = white;
+    /// A value representing the origin point of the drawn object when origin is zero.
+    Hook hook = Hook.topLeft;
+    /// A value representing flipping orientations.
+    Flip flip = Flip.none;
 }
 ```
-
-Here is a breakdown of what every option is:
-
-* `origin`: The origin point of the drawn object. This value can be used to force a specific origin.
-* `scale`: The scale of the drawn object.
-* `rotation`: The rotation of the drawn object, in degrees.
-* `color`: The color of the drawn object, in RGBA.
-* `hook`: A value representing the origin point of the drawn object when origin is zero.
-* `flip`: A value representing flipping orientations.
 
 There is also an additional options type for text drawing.
 
 ```d
+/// Options for configuring extra drawing parameters for text.
 struct TextOptions {
-    float visibilityRatio;
-    int alignmentWidth;
-    ushort visibilityCount;
-    Alignment alignment;
-    bool isRightToLeft;
+    /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
+    float visibilityRatio = 1.0f;
+    /// The width of the aligned text. It is used as a hint and is not enforced.
+    int alignmentWidth = 0;
+    /// Controls the visibility count of the text. This value can be used to force a specific character count.
+    ushort visibilityCount = 0;
+    /// A value represeting alignment orientations.
+    Alignment alignment = Alignment.left;
+    /// Indicates whether the content of the text flows in a right-to-left direction.
+    bool isRightToLeft = false;
 }
 ```
-
-Here is a again a breakdown of what every option is:
-
-* `visibilityRatio`: Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
-* `alignmentWidth`: The width of the aligned text. It is used as a hint and is not enforced.
-* `visibilityCount`: Controls the visibility count of the text. This value can be used to force a specific character count.
-* `alignment`: A value represeting alignment orientations.
-* `isRightToLeft`: Indicates whether the content of the text flows in a right-to-left direction.
-
-Below are examples showing how to use these options to change how text looks.
 
 * Changing the Origin and Scale
 
@@ -321,15 +371,24 @@ Parin provides sprite utilities inside the `parin.sprite` module and map utiliti
 Parin provides a set of sound functions. These include:
 
 ```d
+/// Plays the given sound. If the sound is already playing, this has no effect.
 void playSound(SoundId sound);
+/// Stops playback of the given sound.
 void stopSound(SoundId sound);
-void pauseSound(SoundId sound);
-void resumeSound(SoundId sound);
+/// Starts playback of the given sound from the beginning.
 void startSound(SoundId sound);
+/// Pauses playback of the given sound.
+void pauseSound(SoundId sound);
+/// Resumes playback of the given sound if it was paused.
+void resumeSound(SoundId sound);
+/// Toggles whether the sound is playing or stopped.
 void toggleSoundIsActive(SoundId sound);
+/// Toggles whether the sound is paused or resumed.
 void toggleSoundIsPaused(SoundId sound);
 
+/// Returns the current master volume level.
 float masterVolume();
+/// Sets the master volume level.
 void setMasterVolume(float value);
 ```
 
@@ -351,27 +410,35 @@ Below are examples showing how to use these sound functions.
 Parin provides a set of loading and saving functions. These include:
 
 ```d
+/// Loads a texture file (PNG) with default filter and wrap modes.
 TextureId loadTexture(IStr path);
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null);
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
-Fault lastLoadFault();
+/// Loads a texture file (PNG) from memory with default filter and wrap modes.
+TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png");
 
-Maybe!IStr loadTempText(IStr path);
-Maybe!LStr loadRawText(IStr path);
-Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
+/// Loads a font file (TTF) with default filter and wrap modes.
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "");
+/// Loads a font file (TTF) from memory with default filter and wrap modes.
+FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf");
+/// Loads a font file (TTF) from a texture with default filter and wrap modes.
+FontId loadFont(TextureId texture, int tileWidth, int tileHeight);
+
+/// Loads a sound file (WAV, OGG, MP3) with default playback settings.
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f);
+/// Loads a viewport with default filter and wrap modes.
+ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.alpha);
+
+/// Loads a text file and returns the contents as a list.
+LStr loadText(IStr path);
+/// Loads a text file into a temporary buffer for the current frame.
+IStr loadTempText(IStr path);
+/// Loads a text file into the given buffer.
+Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
+/// Saves a text file with the given content.
 Fault saveText(IStr path, IStr text);
-
-BStr prepareTempText();
 ```
 
-Functions that start with the word load or save will always try to read/write resources from/to the assets folder.
-They handle both forward slashes and backslashes in file paths, ensuring compatibility across operating systems.
-Additionally, resources are separated into three groups. Raw, managed and temporary.
-
-### Raw Resources
-
-Raw resources are managed directly by the user.
+They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+Additionally, resources are separated into two groups. Managed and temporary.
 
 ### Managed Resources
 
@@ -387,11 +454,10 @@ Assets can be embedded into the binary with D's `import` feature.
 DUB projects already pass `-J=assets` to the compiler, so everything in the assets folder is available automatically. For example:
 
 ```d
-auto atlas = Texture();
+auto atlas = TextureId();
 
 void ready() {
-    atlas = toTexture(cast(ubyte[]) import("atlas.png"));
-    // Or add `.toTextureId()` at the end if atlas is a TextureId.
+    atlas = loadTexture(cast(ubyte[]) import("atlas.png"));
 }
 ```
 
@@ -402,12 +468,22 @@ Allocations from it only live for the current frame and are automatically cleare
 This is useful for short-lived data such as strings or small objects that only need to exist for one frame.
 
 ```d
+/// Allocates raw memory from the frame arena.
 void* frameMalloc(Sz size, Sz alignment);
+/// Reallocates memory from the frame arena.
 void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+/// Allocates uninitialized memory for a single value of type `T`.
 T* frameMakeBlank(T)();
-T* frameMake(T)(const(T) value = T.init);
+/// Allocates and initializes a single value of type `T`.
+T* frameMake(T)();
+/// Allocates and initializes a single value of type `T`.
+T* frameMake(T)(const(T) value);
+/// Allocates uninitialized memory for an array of type `T` with the given length.
 T[] frameMakeSliceBlank(T)(Sz length);
-T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
+/// Allocates and initializes an array of type `T` with the given length.
+T[] frameMakeSlice(T)(Sz length);
+/// Allocates and initializes an array of type `T` with the given length.
+T[] frameMakeSlice(T)(Sz length, const(T) value);
 ```
 
 The engine uses this allocator internally for functions like `loadTempText` and `prepareTempText`.
@@ -418,7 +494,9 @@ Parin includes a lightweight memory tracking system that can detect leaks or inv
 By default, leaks will be printed when the game ends only if they are detected.
 
 ```d
+/// Returns true if memory tracking logs are enabled.
 bool isLoggingMemoryTrackingInfo();
+/// Enables or disables memory tracking logs.
 void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
 ```
 
@@ -431,7 +509,7 @@ Memory Leaks: 4 (total 699 bytes, 5 ignored)
   2 leak, 32 bytes, source/app.d:123
 ```
 
-You can filter the leak summary: only leaks with paths containing the filter string are shown.
+The leak summary can be filtered, showing only leaks with paths containing the filter string.
 For example, `setIsLoggingMemoryTrackingInfo(true, "app.d")` shows only leaks with `"app.d"` in the path.
 You can also ignore specific allocations with `ignoreLeak` like this:
 
@@ -452,9 +530,13 @@ You can check whether memory tracking is active with `static if (isTrackingMemor
 Parin has a debug mode that toggles with the **F3** key by default.
 
 ```d
+/// Returns true if debug mode is active.
 bool isDebugMode();
+/// Sets whether debug mode should be active.
 void setIsDebugMode(bool value);
+/// Toggles the debug mode on or off.
 void toggleIsDebugMode();
+/// Sets the key that toggles debug mode.
 void setDebugModeKey(Keyboard value);
 ```
 
@@ -480,8 +562,10 @@ This is useful for timers and background tasks.
 Scheduled functions run before `update`.
 
 ```d
-TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
-void cancel(TaskId id);
+/// Schedules a task to run every interval.
+EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
+/// Cancels a scheduled task by its ID.
+void cancel(EngineTaskId id);
 ```
 
 Example:

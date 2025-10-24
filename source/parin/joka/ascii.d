@@ -13,11 +13,6 @@ import stringc = parin.joka.stdc.string;
 
 @safe:
 
-// TODO: Need to add more `intoBuffer*` functions.
-//   Like the split function is kinda not worth using lol.
-//   Concat too probably.
-//   Having helpers is fine, but yeah.
-
 enum defaultAsciiBufferCount    = 16;   // Generic string count.
 enum defaultAsciiBufferSize     = 1536; // Generic string length.
 enum defaultAsciiFmtBufferCount = 32;   // Arg count.

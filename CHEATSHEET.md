@@ -1,242 +1,572 @@
 # 📋 Parin Cheatsheet (WIP)
 
-This guide highlights the **most commonly used parts** of each module — it's not meant to be full documentation.
+This guide highlights the **most commonly used parts** of the `parin.types` and `parin.engine` modules — it's not meant to be full documentation.
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 
-## 📦 `parin.engine`
-
-### Basic
+## ???
 
 ```d
-// Time-related functions
-bool vsync();
-void setVsync(bool value);
-int fps();
-int fpsMax();
-void setFpsMax(int value);
-float deltaTime();
-double elapsedTime();
-long elapsedTickCount();
-
-// Screen-related functions
-int screenWidth();
-int screenHeight();
-Vec2 screenSize();
-
-// Window-related functions
-int windowWidth();
-int windowHeight();
-Vec2 windowSize();
-bool isWindowResized();
-void setWindowMinSize(int width, int height);
-void setWindowMaxSize(int width, int height);
-Fault setWindowIconFromFiles(IStr path);
-void setBackgroundColor(Rgba value);
-void setBorderColor(Rgba value);
-bool isFullscreen();
-void setIsFullscreen(bool value);
-void toggleIsFullscreen();
-bool isCursorVisible();
-void setIsCursorVisible(bool value);
-void toggleIsCursorVisible();
-
-// Resolution-related functions
-int resolutionWidth();
-int resolutionHeight();
-Vec2 resolution();
-void lockResolution(int width, int height);
-void unlockResolution();
-void toggleResolution(int width, int height);
-
-// Drawing-related functions
-bool isPixelSnapped();
-void setIsPixelSnapped(bool value);
-bool isPixelPerfect();
-void setIsPixelPerfect(bool value);
-bool isEmptyTextureVisible();
-void setIsEmptyTextureVisible(bool value);
-bool isEmptyFontVisible();
-void setIsEmptyFontVisible(bool value);
-Filter defaultFilter();
-void setDefaultFilter(Filter value);
-Wrap defaultWrap();
-void setDefaultWrap(Wrap value);
-TextureId defaultTexture();
-void setDefaultTexture(TextureId value);
-FontId defaultFont();
-void setDefaultFont(FontId value);
-
-// Randomness-related functions
-int randi();
-float randf();
-void randomize();
-void setRandomSeed(int value);
-
-// Frame allocator functions
-void* frameMalloc(Sz size, Sz alignment);
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
-T* frameMakeBlank(T)();
-T* frameMake(T)(const(T) value = T.init);
-T[] frameMakeSliceBlank(T)(Sz length);
-T[] frameMakeSlice(T)(Sz length, const(T) value = T.init);
-
-// Debug-related functions
-bool isLoggingLoadSaveFaults();
-void setIsLoggingLoadSaveFaults(bool value);
-bool isLoggingMemoryTrackingInfo();
-void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
+/// Returns true if debug mode is active.
 bool isDebugMode();
+/// Sets whether debug mode should be active.
 void setIsDebugMode(bool value);
+/// Toggles the debug mode on or off.
 void toggleIsDebugMode();
+/// Sets the key that toggles debug mode.
 void setDebugModeKey(Keyboard value);
-
-// Scheduling-related functions
-TaskId every(float interval, EngineUpdateFunc func, int count = -1, bool canCallNow = false);
-void cancel(TaskId id);
-
-// Path-related functions
-bool isUsingAssetsPath();
-void setIsUsingAssetsPath(bool value);
-IStr assetsPath();
-IStr toAssetsPath(IStr path);
-void setAssetsPath(IStr path);
-
-// Resource-related functions
-Texture toTexture(const(ubyte)[] from, IStr ext = ".png");
-Font toFont(const(ubyte)[] from, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null, IStr ext = ".ttf");
-Font toFontAscii(Texture from, int tileWidth, int tileHeight);
-TextureId toTextureId(Texture from);
-FontId toFontId(Font from);
-SoundId toSoundId(Sound from);
-
-// Other
-Flip oppositeFlip(Flip flip, Flip fallback);
-Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
-IStr[] envArgs();
-IStr[] droppedFilePaths();
-void openUrl(IStr url = "https://github.com/Kapendev/parin");
 ```
 
-### Input
+## ???
 
 ```d
-bool isDown(char key);
-bool isDown(Keyboard key);
-bool isDown(Mouse key);
-bool isDown(Gamepad key, int id = 0);
+/// Returns true if the window was resized.
+bool isWindowResized();
+/// Sets the minimum size of the window.
+void setWindowMinSize(int width, int height);
+/// Sets the maximum size of the window.
+void setWindowMaxSize(int width, int height);
+/// Returns the current background color (fill color) of the window.
+Rgba windowBackgroundColor();
+/// Sets the background color (fill color) of the window.
+void setWindowBackgroundColor(Rgba value);
+/// Returns the current color of the window borders shown when the aspect ratio is fixed.
+Rgba windowBorderColor();
+/// Sets the color of the window borders shown when the aspect ratio is fixed.
+void setWindowBorderColor(Rgba value);
+/// Sets the window icon using an texture file (PNG).
+Fault setWindowIconFromFiles(IStr path);
 
-bool isPressed(char key);
-bool isPressed(Keyboard key);
-bool isPressed(Mouse key);
-bool isPressed(Gamepad key, int id = 0);
+/// Returns the current screen width.
+int screenWidth();
+/// Returns the current screen height.
+int screenHeight();
+/// Returns the current screen size.
+Vec2 screenSize();
+/// Returns the current window width.
+int windowWidth();
+/// Returns the current window height.
+int windowHeight();
+/// Returns the current window size.
+Vec2 windowSize();
+/// Returns the current resolution width.
+int resolutionWidth();
+/// Returns the current resolution height.
+int resolutionHeight();
+/// Returns the current resolution.
+Vec2 resolution();
 
-bool isReleased(char key);
-bool isReleased(Keyboard key);
-bool isReleased(Mouse key);
-bool isReleased(Gamepad key, int id = 0);
+/// Returns true if the resolution is locked.
+bool isResolutionLocked();
+/// Locks the resolution to the given width and height.
+void lockResolution(int width, int height);
+/// Unlocks the resolution.
+void unlockResolution();
+/// Toggles resolution lock using the specified width and height.
+void toggleResolution(int width, int height);
+/// Returns information about the engine viewport, including its size and position.
+EngineViewportInfo engineViewportInfo();
 
-Vec2 wasd();
-Vec2 wasdPressed();
-Vec2 wasdReleased();
+/// Returns true if the application is in fullscreen mode.
+bool isFullscreen();
+/// Sets whether the application should be in fullscreen mode.
+void setIsFullscreen(bool value);
+/// Toggles fullscreen mode.
+void toggleIsFullscreen();
+/// Returns true if the cursor is visible.
+bool isCursorVisible();
+/// Sets whether the cursor should be visible.
+void setIsCursorVisible(bool value);
+/// Toggles cursor visibility.
+void toggleIsCursorVisible();
+```
 
+## ???
+
+```d
+/// Returns the current frames per second (FPS).
+int fps();
+/// Returns the maximum frames per second (FPS).
+int fpsMax();
+/// Sets the maximum frames per second (FPS).
+void setFpsMax(int value);
+/// Returns the vertical synchronization (VSync) state.
+bool vsync();
+/// Sets the vertical synchronization (VSync) state.
+void setVsync(bool value);
+/// Returns the total elapsed time since the application started.
+double elapsedTime();
+/// Returns the total number of ticks since the application started.
+ulong elapsedTicks();
+/// Returns the time elapsed since the last frame.
+float deltaTime();
+```
+
+## ???
+
+```d
+/// Returns a random integer between 0 and int.max (inclusive).
+int randi();
+/// Returns a random float between 0.0 and 1.0 (inclusive).
+float randf();
+/// Randomizes the seed of the random number generator.
+void randomize();
+/// Sets the random number generator seed to the given value.
+void setRandomSeed(int value);
+```
+
+## ???
+
+```d
+/// Returns the default filter mode used for textures, fonts and viewports.
+Filter defaultFilter();
+/// Sets the default filter mode used for textures, fonts and viewports.
+void setDefaultFilter(Filter value);
+/// Returns the default wrap mode used for textures, fonts and viewports.
+Wrap defaultWrap();
+/// Sets the default wrap mode used for textures, fonts and viewports.
+void setDefaultWrap(Wrap value);
+/// Returns the default texture used for null textures.
+TextureId defaultTexture();
+/// Sets the default texture used for null textures.
+void setDefaultTexture(TextureId value);
+/// Returns the default font used for null fonts.
+FontId defaultFont();
+/// Sets the default font used for null fonts.
+void setDefaultFont(FontId value);
+
+/// Returns true if drawing is done when using a null texture.
+bool isNullTextureVisible();
+/// Sets whether drawing should be done when using a null texture.
+void setIsNullTextureVisible(bool value);
+/// Returns true if drawing is done when using a null font.
+bool isNullFontVisible();
+/// Sets whether drawing should be done when using a null font.
+void setIsNullFontVisible(bool value);
+
+/// Returns true if drawing is snapped to pixel coordinates.
+bool isPixelSnapped();
+/// Sets whether drawing should snap to pixel coordinates.
+void setIsPixelSnapped(bool value);
+/// Returns true if drawing is pixel-perfect.
+bool isPixelPerfect();
+/// Sets whether drawing should be pixel-perfect.
+void setIsPixelPerfect(bool value);
+
+/// Returns the size of the text.
+Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+```
+
+## ???
+
+```d
+/// Converts a scene point to a canvas point using the given camera and resolution.
+Vec2 toCanvasPoint(Vec2 point, Camera camera);
+/// Converts a canvas point to a scene point using the given camera and resolution.
+Vec2 toScenePoint(Vec2 point, Camera camera);
+
+/// Returns the arguments this application was started with.
+IStr[] envArgs();
+/// Returns the dropped paths from the current frame.
+IStr[] droppedPaths();
+/// Opens a URL in the default web browser.
+void openUrl(IStr url);
+
+/// Returns the last fault from a load or save call.
+Fault lastLoadOrSaveFault();
+/// Helper for checking the result of a load or save call.
+bool didLoadOrSaveSucceed(Fault fault, IStr message);
+
+/// Frees all loaded textures.
+void freeAllTextureIds();
+/// Frees all loaded fonts.
+void freeAllFontIds();
+/// Frees all loaded sounds.
+void freeAllSoundIds();
+/// Frees all loaded viewports.
+void freeAllViewportIds();
+/// Frees all loaded textures, fonts, sounds, and viewports.
+void freeAllResourceIds();
+
+/// Allocates raw memory from the frame arena.
+void* frameMalloc(Sz size, Sz alignment);
+/// Reallocates memory from the frame arena.
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+/// Allocates uninitialized memory for a single value of type `T`.
+T* frameMakeBlank(T)();
+/// Allocates and initializes a single value of type `T`.
+T* frameMake(T)();
+/// Allocates and initializes a single value of type `T`.
+T* frameMake(T)(const(T) value);
+/// Allocates uninitialized memory for an array of type `T` with the given length.
+T[] frameMakeSliceBlank(T)(Sz length);
+/// Allocates and initializes an array of type `T` with the given length.
+T[] frameMakeSlice(T)(Sz length);
+/// Allocates and initializes an array of type `T` with the given length.
+T[] frameMakeSlice(T)(Sz length, const(T) value);
+/// Allocates a temporary text buffer for this frame.
+BStr prepareTempText();
+
+/// Schedules a task to run every interval.
+EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
+/// Cancels a scheduled task by its ID.
+void cancel(EngineTaskId id);
+```
+
+## Input
+
+```d
+/// Returns the current mouse position on the window.
 Vec2 mouse();
+/// Returns the change in mouse position since the last frame.
 Vec2 deltaMouse();
+/// Returns the change in mouse wheel position since the last frame.
 float deltaWheel();
 
+/// Returns true if the specified character is currently pressed.
+bool isDown(char key);
+/// Returns true if the specified keyboard key is currently pressed.
+bool isDown(Keyboard key);
+/// Returns true if the specified mouse button is currently pressed.
+bool isDown(Mouse key);
+/// Returns true if the specified gamepad button is currently pressed.
+bool isDown(Gamepad key, int id = 0);
+
+/// Returns true if the specified character was pressed this frame.
+bool isPressed(char key);
+/// Returns true if the specified keyboard key was pressed this frame.
+bool isPressed(Keyboard key);
+/// Returns true if the specified mouse button was pressed this frame.
+bool isPressed(Mouse key);
+/// Returns true if the specified gamepad button was pressed this frame.
+bool isPressed(Gamepad key, int id = 0);
+
+/// Returns true if the specified character was released this frame.
+bool isReleased(char key);
+/// Returns true if the specified keyboard key was released this frame.
+bool isReleased(Keyboard key);
+/// Returns true if the specified mouse button was released this frame.
+bool isReleased(Mouse key);
+/// Returns true if the specified gamepad button was released this frame.
+bool isReleased(Gamepad key, int id = 0);
+
+/// Returns the direction from the WASD and arrow keys that are currently down.
+Vec2 wasd();
+/// Returns the direction from the WASD and arrow keys that were pressed this frame.
+Vec2 wasdPressed();
+/// Returns the direction from the WASD and arrow keys that were released this frame.
+Vec2 wasdReleased();
+
+/// Returns the next recently pressed keyboard key.
 Keyboard dequeuePressedKey();
+/// Returns the next recently pressed character.
 dchar dequeuePressedRune();
 ```
 
-### Drawing
+## Drawing
 
 ```d
-void drawRect(Rect area, Rgba color = white);
-void drawHollowRect(Rect area, float thickness, Rgba color = white);
-void drawCirc(Circ area, Rgba color = white);
-void drawHollowCirc(Circ area, float thickness, Rgba color = white);
-void drawVec2(Vec2 point, float size, Rgba color = white);
-void drawLine(Line area, float size, Rgba color = white);
+/// Attaches the given camera and makes it active.
+void attach(ref Camera camera, Rounding type = Rounding.none);
+/// Attaches the given viewport and makes it active.
+void attach(ViewportId viewport);
+/// Detaches the currently active camera.
+void detach(ref Camera camera);
+/// Detaches the currently active viewport.
+void detach(ViewportId viewport);
+/// Begins a clipping region using the given area.
+void beginClip(Rect area);
+/// Ends the active clipping region.
+void endClip();                                               
 
+/// Draws a rectangle with the specified area and color.
+void drawRect(Rect area, Rgba color = white, float thickness = -1.0f);
+/// Draws a point at the specified location with the given size and color.
+void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f);
+/// Draws a circle with the specified area and color.
+void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
+/// Draws a line with the specified area, thickness, and color.
+void drawLine(Line area, Rgba color = white, float thickness = 9.0f);
+
+/// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the default texture at the given position with the specified draw options.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
+/// Draws a 9-slice from the default texture area at the given target area.
 void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 
-void drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
-void drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the specified viewport at the given position with the specified draw options.
+void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws the viewport at the given position with the specified draw options.
+void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = DrawOptions());
+
+/// Draws a single character from the specified font at the given position with the specified draw options.
+Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a single character from the default font at the given position with the specified draw options.
+Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws the specified text with the given font at the given position using the provided draw options.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+/// Draws text with the default font at the given position with the provided draw options.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-void drawViewport(ref Viewport viewport, Vec2 position, DrawOptions options = DrawOptions());
-void drawViewportArea(ref Viewport viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-
-void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
-void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
-
+/// Adds a formatted line to the `dprint*` text.
 void dprintfln(A...)(IStr fmtStr, A args);
+/// Adds a line to the `dprint*` text.
 void dprintln(A...)(A args);
+/// Returns the contents of the `dprint*` buffer as an `IStr`.
 IStr dprintBuffer();
+/// Sets the position of `dprint*` text.
 void setDprintPosition(Vec2 value);
+/// Sets the drawing options for `dprint*` text.
 void setDprintOptions(DrawOptions value);
+/// Sets the maximum number of `dprint*` lines. Older lines are removed once this limit is reached. Use 0 for unlimited.
 void setDprintLineCountLimit(Sz value);
+/// Sets the visibility state of `dprint*` text.
 void setDprintVisibility(bool value);
+/// Toggles the visibility state of `dprint*` text.
 void toggleDprintVisibility();
+/// Clears all `dprint*` text.
 void clearDprintBuffer();
+
+/// Draws debug engine information at the given position with the provided draw options.
+void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+/// Draws debug tile information at the given position with the provided draw options.
+void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 ```
 
-### Sound
+## Sound
 
 ```d
+/// Plays the given sound. If the sound is already playing, this has no effect.
 void playSound(SoundId sound);
+/// Stops playback of the given sound.
 void stopSound(SoundId sound);
-void pauseSound(SoundId sound);
-void resumeSound(SoundId sound);
+/// Starts playback of the given sound from the beginning.
 void startSound(SoundId sound);
+/// Pauses playback of the given sound.
+void pauseSound(SoundId sound);
+/// Resumes playback of the given sound if it was paused.
+void resumeSound(SoundId sound);
+/// Toggles whether the sound is playing or stopped.
 void toggleSoundIsActive(SoundId sound);
+/// Toggles whether the sound is paused or resumed.
 void toggleSoundIsPaused(SoundId sound);
 
+/// Returns the current master volume level.
 float masterVolume();
+/// Sets the master volume level.
 void setMasterVolume(float value);
 ```
 
-### Loading & Saving
+## Loading & Saving
 
 ```d
+// They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+
+/// Loads a texture file (PNG) with default filter and wrap modes.
 TextureId loadTexture(IStr path);
-FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = null);
-FontId loadFontFromTexture(IStr path, int tileWidth, int tileHeight);
-SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat = false, float pitchVariance = 1.0f);
-Fault lastLoadFault();
+/// Loads a texture file (PNG) from memory with default filter and wrap modes.
+TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png");
 
-Maybe!IStr loadTempText(IStr path);
-Maybe!LStr loadRawText(IStr path);
-Fault loadRawTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
+/// Loads a font file (TTF) with default filter and wrap modes.
+FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "");
+/// Loads a font file (TTF) from memory with default filter and wrap modes.
+FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf");
+/// Loads a font file (TTF) from a texture with default filter and wrap modes.
+FontId loadFont(TextureId texture, int tileWidth, int tileHeight);
+
+/// Loads a sound file (WAV, OGG, MP3) with default playback settings.
+SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f);
+/// Loads a viewport with default filter and wrap modes.
+ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.alpha);
+
+/// Loads a text file and returns the contents as a list.
+LStr loadText(IStr path);
+/// Loads a text file into a temporary buffer for the current frame.
+IStr loadTempText(IStr path);
+/// Loads a text file into the given buffer.
+Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
+/// Saves a text file with the given content.
 Fault saveText(IStr path, IStr text);
-
-BStr prepareTempText();
 ```
 
-### Data Structures
+## Data Structures
 
 ```d
+/// A texture identifier.
+struct TextureId {
+    /// Checks whether the resource is null (default value).
+    bool isNull();
+    /// Checks whether the resource is valid (loaded). Null is invalid.
+    bool isValid();
+    /// Returns this resource if valid, or asserts with the given message if not.
+    TextureId validate(IStr message = defaultEngineValidateErrorMessage);
+    /// Returns the filter mode.
+    Filter filter();
+    /// Sets the filter mode.
+    void setFilter(Filter value);
+    /// Returns the wrap mode.
+    Wrap wrap();
+    /// Sets the wrap mode.
+    void setWrap(Wrap value);
+    /// Returns the width in pixels.
+    int width();
+    /// Returns the height in pixels.
+    int height();
+    /// Returns the size in pixels.
+    Vec2 size();
+    /// Frees the resource and resets the identifier to null.
+    void free();
+}
+
+/// A font identifier.
+struct FontId {
+    /// Checks whether the resource is null (default value).
+    bool isNull();
+    /// Checks whether the resource is valid (loaded). Null is invalid.
+    bool isValid();
+    /// Returns this resource if valid, or asserts with the given message if not.
+    FontId validate(IStr message = defaultEngineValidateErrorMessage);
+    /// Returns the filter mode.
+    Filter filter();
+    /// Sets the filter mode.
+    void setFilter(Filter value);
+    /// Returns the wrap mode.
+    Wrap wrap();
+    /// Sets the wrap mode.
+    void setWrap(Wrap value);
+    /// Returns the font size in pixels.
+    int size();
+    /// Returns the spacing between characters in pixels.
+    int runeSpacing();
+    /// Sets the spacing between characters in pixels.
+    void setRuneSpacing(int value);
+    /// Returns the spacing between lines in pixels.
+    int lineSpacing();
+    /// Sets the spacing between lines in pixels.
+    void setLineSpacing(int value);
+    /// Returns the glyph information for the given rune.
+    GlyphInfo glyphInfo(int rune);
+    /// Frees the resource and resets the identifier to null.
+    void free();
+}
+
+/// A sound identifier.
+struct SoundId {
+    /// Checks whether the resource is null (default value).
+    bool isNull();
+    /// Checks whether the resource is valid (loaded). Null is invalid.
+    bool isValid();
+    /// Returns this resource if valid, or asserts with the given message if not.
+    SoundId validate(IStr message = defaultEngineValidateErrorMessage);
+    /// Returns the volume. The default value is 1.0 (normal level).
+    float volume();
+    /// Sets the volume. The default value is 1.0 (normal level).
+    void setVolume(float value);
+    /// Returns the pan. The default value is 0.5 (center).
+    float pan();
+    /// Sets the pan. The default value is 0.5 (center).
+    void setPan(float value);
+    /// Returns the pitch. The default value is 1.0 (base level).
+    float pitch();
+    /// Sets the pitch. The default value is 1.0 (base level).
+    void setPitch(float value, bool canUpdatePitchVarianceBase = false);
+    /// Returns the pitch variance. The default value is 1.0 (no variation).
+    float pitchVariance();
+    /// Sets the pitch variance. The default value is 1.0 (no variation).
+    void setPitchVariance(float value);
+    /// Returns the pitch variance base. The default value is 1.0 (base level).
+    float pitchVarianceBase();
+    /// Sets the pitch variance base. The default value is 1.0 (base level).
+    void setPitchVarianceBase(float value);
+    /// Returns true if the sound is set to repeat.
+    bool canRepeat();
+    /// Sets whether the sound should repeat.
+    void setCanRepeat(bool value);
+    /// Returns true if the sound is currently active (playing).
+    bool isActive();
+    /// Returns true if the sound is currently paused.
+    bool isPaused();
+    /// Returns the current playback time in seconds.
+    float time();
+    /// Returns the total duration in seconds.
+    float duration();
+    /// Returns the progress. The value is between 0.0 (start) and 1.0 (end).
+    float progress();
+    /// Frees the resource and resets the identifier to null.
+    void free();
+}
+
+/// A viewport identifier.
+struct ViewportId {
+    /// Checks whether the resource is null (default value).
+    bool isNull();
+    /// Checks whether the resource is valid (loaded). Null is invalid.
+    bool isValid();
+    /// Returns this resource if valid, or asserts with the given message if not.
+    ViewportId validate(IStr message = defaultEngineValidateErrorMessage);
+    /// Returns the filter mode.
+    Filter filter();
+    /// Sets the filter mode.
+    void setFilter(Filter value);
+    /// Returns the wrap mode.
+    Wrap wrap();
+    /// Sets the wrap mode.
+    void setWrap(Wrap value);
+    /// Returns the blend mode.
+    Blend blend();
+    /// Sets the blend mode.
+    void setBlend(Blend value);
+    /// Returns the color in RGBA.
+    Rgba color();
+    /// Sets the color in RGBA.
+    void setColor(Rgba value);
+    /// Returns the width in pixels.
+    int width();
+    /// Returns the height in pixels.
+    int height();
+    /// Returns the size in pixels.
+    Vec2 size();
+    /// Returns true if the viewport is attached.
+    bool isAttached();
+    /// Resizes the viewport. Internally, this creates a new texture, so avoid calling it while the viewport is in use.
+    void resize(int newWidth, int newHeight);
+    /// Frees the resource and resets the identifier to null.
+    void free();
+}
+
+/// A set of 4 integer margins.
 struct Margin {
+    /// The left side.
     int left;
+    /// The top side.
     int top;
+    /// The right side.
     int right;
+    /// The bottom side.
     int bottom;
 
     this(int left, int top, int right, int bottom);
     this(int left);
 }
 
+/// Options for configuring drawing parameters.
 struct DrawOptions {
-    Vec2 origin;
-    Vec2 scale;
-    float rotation;
-    Rgba color;
-    Hook hook;
-    Flip flip;
+    /// The origin point of the drawn object. This value can be used to force a specific origin.
+    Vec2 origin = Vec2(0.0f);
+    /// The scale of the drawn object.
+    Vec2 scale = Vec2(1.0f);
+    /// The rotation of the drawn object, in degrees.
+    float rotation = 0.0f;
+    /// The color of the drawn object, in RGBA.
+    Rgba color = white;
+    /// A value representing the origin point of the drawn object when origin is zero.
+    Hook hook = Hook.topLeft;
+    /// A value representing flipping orientations.
+    Flip flip = Flip.none;
 
     this(float rotation, Hook hook = Hook.topLeft);
     this(Vec2 scale, Hook hook = Hook.topLeft);
@@ -245,127 +575,44 @@ struct DrawOptions {
     this(Hook hook);
 }
 
+/// Options for configuring extra drawing parameters for text.
 struct TextOptions {
-    float visibilityRatio;
-    int alignmentWidth;
-    ushort visibilityCount;
-    Alignment alignment;
-    bool isRightToLeft;
+    /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
+    float visibilityRatio = 1.0f;
+    /// The width of the aligned text. It is used as a hint and is not enforced.
+    int alignmentWidth = 0;
+    /// Controls the visibility count of the text. This value can be used to force a specific character count.
+    ushort visibilityCount = 0;
+    /// A value represeting alignment orientations.
+    Alignment alignment = Alignment.left;
+    /// Indicates whether the content of the text flows in a right-to-left direction.
+    bool isRightToLeft = false;
 
     this(float visibilityRatio);
     this(Alignment alignment, int alignmentWidth = 0);
 }
 
-struct TextureId {
-    GenIndex data;
-
-    int width();
-    int height();
-    Vec2 size();
-    void setFilter(Filter value);
-    void setWrap(Wrap value);
-    bool isValid();
-    TextureId validate(IStr message = defaultEngineValidateErrorMessage);
-    ref Texture get();
-    Texture getOr();
-    void free();
-}
-
-struct FontId {
-    GenIndex data;
-
-    int runeSpacing();
-    int lineSpacing();
-    int size();
-    void setFilter(Filter value);
-    void setWrap(Wrap value);
-    bool isValid();
-    FontId validate(IStr message = defaultEngineValidateErrorMessage);
-    ref Font get();
-    Font getOr();
-    void free();
-}
-
-struct SoundId {
-    GenIndex data;
-
-    float pitchVariance();
-    void setPitchVariance(float value);
-    float pitchVarianceBase();
-    void setPitchVarianceBase(float value);
-    bool canRepeat();
-    bool isActive();
-    bool isPaused();
-    float time();
-    float duration();
-    float progress();
-    void setVolume(float value);
-    void setPitch(float value);
-    void setPan(float value);
-    void setCanRepeat(bool value);
-    bool isValid();
-    SoundId validate(IStr message = defaultEngineValidateErrorMessage);
-    ref Sound get();
-    Sound getOr();
-    void free();
-}
-
+/// A camera.
 struct Camera {
+    /// The position of the camera.
     Vec2 position;
+    /// The offset of the view area of the camera.
     Vec2 offset;
-    float rotation;
-    float scale;
+    /// The rotation angle of the camera, in degrees.
+    float rotation = 0.0f;
+    /// The zoom level of the camera.
+    float scale = 1.0f;
+    /// Determines if the camera's origin is at the center instead of the top left.
     bool isCentered;
+    /// Indicates whether the camera is currently in use.
     bool isAttached;
 
     this(Vec2 position, bool isCentered = false);
     this(float x, float y, bool isCentered = false);
-    ref float x();
-    ref float y();
-    Vec2 sum();
-    Hook hook();
-    Vec2 origin();
-    Vec2 origin(ref Viewport viewport);
-    Rect area();
-    Rect area(ref Viewport viewport);
-    Vec2 topLeftPoint();
-    Vec2 topPoint();
-    Vec2 topRightPoint();
-    Vec2 leftPoint();
-    Vec2 centerPoint();
-    Vec2 rightPoint();
-    Vec2 bottomLeftPoint();
-    Vec2 bottomPoint();
-    Vec2 bottomRightPoint();
-    void followPosition(Vec2 target, float speed);
-    void followPositionWithSlowdown(Vec2 target, float slowdown);
-    void followScale(float target, float speed);
-    void followScaleWithSlowdown(float target, float slowdown);
-    void attach();
-    void detach();
-}
-
-struct Viewport {
-    rl.RenderTexture2D data;
-    Rgba color;
-    Blend blend;
-    bool isAttached;
-
-    this(Rgba color, Blend blend = Blend.alpha);
-    bool isEmpty();
-    int width();
-    int height();
-    Vec2 size();
-    void resize(int newWidth, int newHeight);
-    void attach();
-    void detach();
-    void setFilter(Filter value);
-    void setWrap(Wrap value);
-    void free();
 }
 ```
 
-### Constants
+## Constants
 
 ```d
 /// Flipping orientations.
@@ -405,7 +652,7 @@ enum Blend : ubyte {
 }
 
 /// A limited set of keyboard keys.
-enum Keyboard : ushort {
+enum Keyboard : ubyte {
     none,         /// Not a key.
     apostrophe,   /// The `'` key.
     comma,        /// The `,` key.
@@ -508,7 +755,7 @@ enum Keyboard : ushort {
 }
 
 /// A limited set of mouse keys.
-enum Mouse : ushort {
+enum Mouse : ubyte {
     none,   /// Not a button.
     left,   /// The left mouse button.
     right,  /// The right mouse button.
@@ -516,7 +763,7 @@ enum Mouse : ushort {
 }
 
 /// A limited set of gamepad buttons.
-enum Gamepad : ushort {
+enum Gamepad : ubyte {
     none,   /// Not a button.
     left,   /// The left button.
     right,  /// The right button.
@@ -535,82 +782,5 @@ enum Gamepad : ushort {
     back,   /// The back button.
     start,  /// The start button.
     middle, /// The middle button.
-}
-```
-
-## 📦 `parin.timer`
-
-### Data Structures
-
-```d
-struct Timer {
-    float duration;
-    float pauseTime;
-    float startTime;
-    float stopTimeElapsedTimeBuffer;
-    bool canRepeat;
-
-    this(float duration, bool canRepeat = false);
-    bool isPaused();
-    bool isActive();
-    bool hasStarted();
-    bool hasStopped();
-    void start(float newDuration = -1.0f);
-    void stop();
-    void toggleIsActive();
-    void pause();
-    void resume();
-    void toggleIsPaused();
-    float time();
-    float timeLeft();
-    void setTime(float newTime);
-}
-```
-
-## 📦 `parin.palettes`
-
-### Constants
-
-```d
-enum Wisp2 : Rgba {
-    black,
-    white,
-}
-
-enum Gb4 : Rgba {
-    black,
-    darkGray,
-    lightGray,
-    white,
-}
-
-enum Nes8 : Rgba {
-    black,
-    brown,
-    purple,
-    red,
-    green,
-    blue,
-    yellow,
-    white,
-}
-
-enum Pico8 : Rgba {
-    black,
-    navy,
-    maroon,
-    darkGreen,
-    brown,
-    darkGray,
-    lightGray,
-    white,
-    red,
-    orange,
-    yellow,
-    lightGreen,
-    blue,
-    purple,
-    pink,
-    peach,
 }
 ```

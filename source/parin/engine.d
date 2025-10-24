@@ -5,8 +5,6 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: .md docs need changes because I also renamed things like: toScreenPoint -> toCanvasPoint
-
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
@@ -90,8 +88,8 @@ enum EngineFlag : EngineFlags {
     isUsingAssetsPath           = 0x000002,
     isPixelSnapped              = 0x000004,
     isPixelPerfect              = 0x000008,
-    isNullTextureVisible       = 0x000010,
-    isNullFontVisible          = 0x000020,
+    isNullTextureVisible        = 0x000010,
+    isNullFontVisible           = 0x000020,
     isLoggingLoadOrSaveFaults   = 0x000040,
     isLoggingMemoryTrackingInfo = 0x000080,
     isDebugMode                 = 0x000100,
@@ -296,7 +294,6 @@ struct FontId {
 }
 
 /// A sound identifier.
-// NOTE: This is a good template for docs. "Returns ...", "Sets ...", "Checks if ..."
 struct SoundId {
     ResourceId data;
 
@@ -409,7 +406,6 @@ struct SoundId {
     }
 }
 
-// OLD: A viewing area for rendering.
 /// A viewport identifier.
 struct ViewportId {
     ResourceId data;
@@ -660,19 +656,6 @@ mixin template runGame(
 
 @trusted nothrow:
 
-/// Schedules a task to run every interval.
-/// Set `count` to limit how many times it runs. Use -1 to run indefinitely.
-/// If `canCallNow` is true, the task runs immediately.
-EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false) {
-    return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
-}
-
-/// Cancels a scheduled task by its ID.
-void cancel(EngineTaskId id) {
-    if (id.value == 0) return;
-    _engineState.tasks.remove(id);
-}
-
 /// Allocates raw memory from the frame arena.
 void* frameMalloc(Sz size, Sz alignment) {
     return _engineState.arena.malloc(size, alignment);
@@ -719,28 +702,17 @@ BStr prepareTempText() {
     return BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
 }
 
-/// Loads a text file into the given buffer.
-/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
-Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
-    didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()));
-    return result;
+/// Schedules a task to run every interval.
+/// Set `count` to limit how many times it runs. Use -1 to run indefinitely.
+/// If `canCallNow` is true, the task runs immediately.
+EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false) {
+    return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
 }
 
-/// Loads a text file and returns the contents as a list.
-/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
-LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = readText(path.toAssetsPath());
-    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()))) return result.get();
-    return LStr();
-}
-
-/// Loads a text file into a temporary buffer for the current frame.
-/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
-IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
-    auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
-    loadTextIntoBuffer(path, tempText, file, line);
-    return tempText.items;
+/// Cancels a scheduled task by its ID.
+void cancel(EngineTaskId id) {
+    if (id.value == 0) return;
+    _engineState.tasks.remove(id);
 }
 
 /// Loads a texture file (PNG) with default filter and wrap modes.
@@ -827,6 +799,30 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
         return ViewportId(data);
     }
     return ViewportId();
+}
+
+/// Loads a text file and returns the contents as a list.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = readText(path.toAssetsPath());
+    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()))) return result.get();
+    return LStr();
+}
+
+/// Loads a text file into a temporary buffer for the current frame.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+IStr loadTempText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto tempText = BStr(frameMakeSliceBlank!char(defaultEngineLoadOrSaveTextCapacity));
+    loadTextIntoBuffer(path, tempText, file, line);
+    return tempText.items;
+}
+
+/// Loads a text file into the given buffer.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
+    didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()));
+    return result;
 }
 
 /// Saves a text file with the given content.
@@ -957,107 +953,6 @@ private int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepo
     return codepoint;
 }
 
-/// Attaches the given viewport and makes it active.
-// NOTE: The engine viewport should not use this function.
-void attach(ViewportId viewport) {
-    if (viewport.size.isZero) return;
-    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
-    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
-    bk.beginViewport(viewport.data);
-    bk.clearBackground(viewport.color);
-    bk.beginBlend(viewport.blend);
-    _engineState.userViewport = viewport;
-}
-
-/// Detaches the currently active viewport.
-// NOTE: The engine viewport should not use this function.
-void detach(ViewportId viewport) {
-    if (viewport.size.isZero) return;
-    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
-    bk.endBlend();
-    bk.endViewport(viewport.data);
-    _engineState.userViewport = ViewportId();
-    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
-}
-
-/// Attaches the given camera and makes it active.
-void attach(ref Camera camera, Rounding type = Rounding.none) {
-    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
-    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
-    _engineState.userCamera = camera;
-}
-
-/// Detaches the currently active camera.
-void detach(ref Camera camera) {
-    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
-    bk.endCamera(camera);
-    _engineState.userCamera = Camera();
-}
-
-/// Begins a clipping region using the given area.
-void beginClip(Rect area) {
-    if (_engineState.clipIsActive) assert(0, "Cannot begin clip again.");
-    bk.beginClip(area);
-    _engineState.clipIsActive = true;
-}
-
-/// Ends the active clipping region.
-void endClip() {
-    if (!_engineState.clipIsActive) assert(0, "Cannot end clip again.");
-    bk.endClip();
-    _engineState.clipIsActive = false;
-}
-
-/// Returns the arguments this application was started with.
-IStr[] envArgs() {
-    return _engineState.envArgsBuffer.items;
-}
-
-/// Sets the random number generator seed to the given value.
-void setRandomSeed(int value) {
-    bk.setRandomSeed(value);
-}
-
-/// Randomizes the seed of the random number generator.
-void randomize() {
-    bk.randomize();
-}
-
-/// Returns a random integer between 0 and int.max (inclusive).
-int randi() {
-    return bk.randi;
-}
-
-/// Returns a random float between 0.0 and 1.0 (inclusive).
-float randf() {
-    return bk.randf;
-}
-
-/// Converts a scene point to a canvas point using the given camera and resolution.
-Vec2 toCanvasPoint(Vec2 point, Camera camera) {
-    return bk.toCanvasPoint(point, camera, resolution);
-}
-
-/// Converts a scene point to a canvas point using the given camera and canvas size.
-Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
-    return bk.toCanvasPoint(point, camera, canvasSize);
-}
-
-/// Converts a canvas point to a scene point using the given camera and resolution.
-Vec2 toScenePoint(Vec2 point, Camera camera) {
-    return bk.toScenePoint(point, camera, resolution);
-}
-
-/// Converts a canvas point to a scene point using the given camera and canvas size.
-Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
-    return bk.toScenePoint(point, camera, canvasSize);
-}
-
-/// Returns the dropped paths from the current frame.
-IStr[] droppedPaths() {
-    return bk.droppedPaths;
-}
-
 /// Returns the current path used as the assets folder.
 IStr assetsPath() {
     return _engineState.assetsPath.items;
@@ -1080,22 +975,6 @@ void setIsUsingAssetsPath(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isUsingAssetsPath
         : _engineState.flags & ~EngineFlag.isUsingAssetsPath;
-}
-
-/// Returns the last fault from a load or save call.
-Fault lastLoadOrSaveFault() {
-    return _engineState.lastLoadOrSaveFault;
-}
-
-/// Helper for checking the result of a load or save call.
-/// Returns true if the fault is none, false otherwise.
-bool didLoadOrSaveSucceed(Fault fault, IStr message) {
-    if (fault) {
-        _engineState.lastLoadOrSaveFault = fault;
-        if (isLoggingLoadOrSaveFaults) println!(StdStream.error)(message);
-        return false;
-    }
-    return true;
 }
 
 /// Returns true if load or save faults should be logged.
@@ -1123,88 +1002,6 @@ void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "") {
     _engineState.memoryTrackingInfoFilter = filter;
 }
 
-/// Opens a URL in the default web browser.
-/// Redirects to Parin's GitHub repo if no URL is provided.
-void openUrl(IStr url = "https://github.com/Kapendev/parin") {
-    bk.openUrl(url);
-}
-
-/// Frees all loaded textures.
-void freeAllTextureIds() {
-    bk.freeAllTextures(false);
-}
-
-/// Frees all loaded fonts.
-void freeAllFontIds() {
-    bk.freeAllFonts(true);
-}
-
-/// Frees all loaded sounds.
-void freeAllSoundIds() {
-    bk.freeAllSounds(false);
-}
-
-/// Frees all loaded viewports.
-void freeAllViewportIds() {
-    bk.freeAllViewports(true);
-}
-
-/// Frees all loaded textures, fonts, sounds, and viewports.
-void freeAllResourceIds() {
-    freeAllTextureIds();
-    freeAllFontIds();
-    freeAllSoundIds();
-    freeAllViewportIds();
-}
-
-/// Returns true if drawing is snapped to pixel coordinates.
-bool isPixelSnapped() {
-    return cast(bool) (_engineState.flags & EngineFlag.isPixelSnapped);
-}
-
-/// Sets whether drawing should snap to pixel coordinates.
-void setIsPixelSnapped(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isPixelSnapped
-        : _engineState.flags & ~EngineFlag.isPixelSnapped;
-}
-
-/// Returns true if drawing is pixel-perfect.
-bool isPixelPerfect() {
-    return cast(bool) (_engineState.flags & EngineFlag.isPixelPerfect);
-}
-
-/// Sets whether drawing should be pixel-perfect.
-void setIsPixelPerfect(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isPixelPerfect
-        : _engineState.flags & ~EngineFlag.isPixelPerfect;
-}
-
-/// Returns true if drawing is done when using a null texture.
-bool isNullTextureVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isNullTextureVisible);
-}
-
-/// Sets whether drawing should be done when using a null texture.
-void setIsNullTextureVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isNullTextureVisible
-        : _engineState.flags & ~EngineFlag.isNullTextureVisible;
-}
-
-/// Returns true if drawing is done when using a null font.
-bool isNullFontVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isNullFontVisible);
-}
-
-/// Sets whether drawing should be done when using a null font.
-void setIsNullFontVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isNullFontVisible
-        : _engineState.flags & ~EngineFlag.isNullFontVisible;
-}
-
 /// Returns true if debug mode is active.
 bool isDebugMode() {
     return cast(bool) (_engineState.flags & EngineFlag.isDebugMode);
@@ -1225,36 +1022,6 @@ void toggleIsDebugMode() {
 /// Sets the key that toggles debug mode.
 void setDebugModeKey(Keyboard value) {
     _engineState.debugModeKey = value;
-}
-
-/// Returns true if the cursor is visible.
-bool isCursorVisible() {
-    return bk.isCursorVisible;
-}
-
-/// Sets whether the cursor should be visible.
-void setIsCursorVisible(bool value) {
-    bk.setIsCursorVisible(value);
-}
-
-/// Toggles cursor visibility.
-void toggleIsCursorVisible() {
-    setIsCursorVisible(!isCursorVisible);
-}
-
-/// Returns true if the application is in fullscreen mode.
-bool isFullscreen() {
-    return bk.isFullscreen;
-}
-
-/// Sets whether the application should be in fullscreen mode.
-void setIsFullscreen(bool value) {
-    bk.setIsFullscreen(value);
-}
-
-/// Toggles fullscreen mode.
-void toggleIsFullscreen() {
-    setIsFullscreen(!isFullscreen);
 }
 
 /// Returns true if the window was resized.
@@ -1382,6 +1149,36 @@ EngineViewportInfo engineViewportInfo() {
     return _engineState.viewportInfoBuffer;
 }
 
+/// Returns true if the application is in fullscreen mode.
+bool isFullscreen() {
+    return bk.isFullscreen;
+}
+
+/// Sets whether the application should be in fullscreen mode.
+void setIsFullscreen(bool value) {
+    bk.setIsFullscreen(value);
+}
+
+/// Toggles fullscreen mode.
+void toggleIsFullscreen() {
+    setIsFullscreen(!isFullscreen);
+}
+
+/// Returns true if the cursor is visible.
+bool isCursorVisible() {
+    return bk.isCursorVisible;
+}
+
+/// Sets whether the cursor should be visible.
+void setIsCursorVisible(bool value) {
+    bk.setIsCursorVisible(value);
+}
+
+/// Toggles cursor visibility.
+void toggleIsCursorVisible() {
+    setIsCursorVisible(!isCursorVisible);
+}
+
 /// Returns the current frames per second (FPS).
 int fps() {
     return bk.fps;
@@ -1413,13 +1210,33 @@ double elapsedTime() {
 }
 
 /// Returns the total number of ticks since the application started.
-long elapsedTicks() {
+ulong elapsedTicks() {
     return bk.elapsedTicks;
 }
 
-/// Returns the time elapsed since the last frame (DT).
+/// Returns the time elapsed since the last frame.
 float deltaTime() {
     return bk.deltaTime;
+}
+
+/// Returns a random integer between 0 and int.max (inclusive).
+int randi() {
+    return bk.randi;
+}
+
+/// Returns a random float between 0.0 and 1.0 (inclusive).
+float randf() {
+    return bk.randf;
+}
+
+/// Randomizes the seed of the random number generator.
+void randomize() {
+    bk.randomize();
+}
+
+/// Sets the random number generator seed to the given value.
+void setRandomSeed(int value) {
+    bk.setRandomSeed(value);
 }
 
 /// Returns the default filter mode used for textures, fonts and viewports.
@@ -1462,127 +1279,55 @@ void setDefaultFont(FontId value) {
     _engineState.defaultFont = value;
 }
 
-/// Returns the current master volume level.
-float masterVolume() {
-    return bk.masterVolume;
+/// Returns true if drawing is done when using a null texture.
+bool isNullTextureVisible() {
+    return cast(bool) (_engineState.flags & EngineFlag.isNullTextureVisible);
 }
 
-/// Sets the master volume level.
-void setMasterVolume(float value) {
-    bk.setMasterVolume(value);
+/// Sets whether drawing should be done when using a null texture.
+void setIsNullTextureVisible(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isNullTextureVisible
+        : _engineState.flags & ~EngineFlag.isNullTextureVisible;
 }
 
-/// Returns the current mouse position on the window.
-Vec2 mouse() {
-    return _engineState.mouseBuffer;
+/// Returns true if drawing is done when using a null font.
+bool isNullFontVisible() {
+    return cast(bool) (_engineState.flags & EngineFlag.isNullFontVisible);
 }
 
-/// Returns the change in mouse position since the last frame.
-Vec2 deltaMouse() {
-    return bk.deltaMouse;
+/// Sets whether drawing should be done when using a null font.
+void setIsNullFontVisible(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isNullFontVisible
+        : _engineState.flags & ~EngineFlag.isNullFontVisible;
 }
 
-/// Returns the change in mouse wheel position since the last frame.
-float deltaWheel() {
-    return bk.deltaWheel;
+/// Returns true if drawing is snapped to pixel coordinates.
+bool isPixelSnapped() {
+    return cast(bool) (_engineState.flags & EngineFlag.isPixelSnapped);
 }
 
-/// Returns true if the specified character is currently pressed.
-bool isDown(char key) => key ? bk.isDown(key) : false;
-/// Returns true if the specified keyboard key is currently pressed.
-bool isDown(Keyboard key) => key ? bk.isDown(key) : false;
-/// Returns true if the specified mouse button is currently pressed.
-bool isDown(Mouse key) => key ? bk.isDown(key) : false;
-/// Returns true if the specified gamepad button is currently pressed.
-bool isDown(Gamepad key, int id = 0) => key ? bk.isDown(key, id) : false;
-
-/// Returns true if the specified character was pressed this frame.
-bool isPressed(char key) => key ? bk.isPressed(key) : false;
-/// Returns true if the specified keyboard key was pressed this frame.
-bool isPressed(Keyboard key) => key ? bk.isPressed(key) : false;
-/// Returns true if the specified mouse button was pressed this frame.
-bool isPressed(Mouse key) => key ? bk.isPressed(key) : false;
-/// Returns true if the specified gamepad button was pressed this frame.
-bool isPressed(Gamepad key, int id = 0) => key ? bk.isPressed(key, id) : false;
-
-/// Returns true if the specified character was released this frame.
-bool isReleased(char key) => key ? bk.isReleased(key) : false;
-/// Returns true if the specified keyboard key was released this frame.
-bool isReleased(Keyboard key) => key ? bk.isReleased(key) : false;
-/// Returns true if the specified mouse button was released this frame.
-bool isReleased(Mouse key) => key ? bk.isReleased(key) : false;
-/// Returns true if the specified gamepad button was released this frame.
-bool isReleased(Gamepad key, int id = 0) => key ? bk.isReleased(key, id) : false;
-
-/// Returns the next recently pressed keyboard key.
-/// This acts like a queue. Returns `Keyboard.none` if the queue is empty.
-Keyboard dequeuePressedKey() {
-    return bk.dequeuePressedKey();
+/// Sets whether drawing should snap to pixel coordinates.
+void setIsPixelSnapped(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isPixelSnapped
+        : _engineState.flags & ~EngineFlag.isPixelSnapped;
 }
 
-/// Returns the next recently pressed character.
-/// This acts like a queue. Returns `\0` if the queue is empty.
-dchar dequeuePressedRune() {
-    return bk.dequeuePressedRune();
+/// Returns true if drawing is pixel-perfect.
+bool isPixelPerfect() {
+    return cast(bool) (_engineState.flags & EngineFlag.isPixelPerfect);
 }
 
-/// Returns the direction from the WASD and arrow keys that are currently down.
-/// The result is not normalized.
-Vec2 wasd() {
-    return _engineState.wasdBuffer;
+/// Sets whether drawing should be pixel-perfect.
+void setIsPixelPerfect(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isPixelPerfect
+        : _engineState.flags & ~EngineFlag.isPixelPerfect;
 }
 
-/// Returns the direction from the WASD and arrow keys that were pressed this frame.
-/// The result is not normalized.
-Vec2 wasdPressed() {
-    return _engineState.wasdPressedBuffer;
-}
-
-/// Returns the direction from the WASD and arrow keys that were released this frame.
-/// The result is not normalized.
-Vec2 wasdReleased() {
-    return _engineState.wasdReleasedBuffer;
-}
-
-/// Plays the given sound.
-/// If the sound is already playing, this has no effect.
-void playSound(SoundId sound) {
-    bk.playSound(sound.data);
-}
-
-/// Stops playback of the given sound.
-void stopSound(SoundId sound) {
-    bk.stopSound(sound.data);
-}
-
-/// Starts playback of the given sound from the beginning.
-void startSound(SoundId sound) {
-    bk.startSound(sound.data);
-}
-
-/// Pauses playback of the given sound.
-void pauseSound(SoundId sound) {
-    bk.pauseSound(sound.data);
-}
-
-/// Resumes playback of the given sound if it was paused.
-void resumeSound(SoundId sound) {
-    bk.resumeSound(sound.data);
-}
-
-/// Toggles whether the sound is playing or stopped.
-void toggleSoundIsActive(SoundId sound) {
-    if (sound.isActive) stopSound(sound);
-    else playSound(sound);
-}
-
-/// Toggles whether the sound is paused or resumed.
-void toggleSoundIsPaused(SoundId sound) {
-    if (sound.isPaused) resumeSound(sound);
-    else pauseSound(sound);
-}
-
-/// Returns the size of the given text when rendered with the specified font and draw options.
+/// Returns the size of the text.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
@@ -1623,6 +1368,185 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
     return Vec2(textMaxWidth * options.scale.x, textHeight * options.scale.y).floor();
 }
 
+/// Converts a scene point to a canvas point using the given camera and resolution.
+Vec2 toCanvasPoint(Vec2 point, Camera camera) {
+    return bk.toCanvasPoint(point, camera, resolution);
+}
+
+/// Converts a scene point to a canvas point using the given camera and canvas size.
+Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+    return bk.toCanvasPoint(point, camera, canvasSize);
+}
+
+/// Converts a canvas point to a scene point using the given camera and resolution.
+Vec2 toScenePoint(Vec2 point, Camera camera) {
+    return bk.toScenePoint(point, camera, resolution);
+}
+
+/// Converts a canvas point to a scene point using the given camera and canvas size.
+Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+    return bk.toScenePoint(point, camera, canvasSize);
+}
+
+/// Returns the arguments this application was started with.
+IStr[] envArgs() {
+    return _engineState.envArgsBuffer.items;
+}
+
+/// Returns the dropped paths from the current frame.
+IStr[] droppedPaths() {
+    return bk.droppedPaths;
+}
+
+/// Opens a URL in the default web browser.
+void openUrl(IStr url) {
+    bk.openUrl(url);
+}
+
+/// Returns the last fault from a load or save call.
+Fault lastLoadOrSaveFault() {
+    return _engineState.lastLoadOrSaveFault;
+}
+
+/// Helper for checking the result of a load or save call.
+/// Returns true if the fault is none, false otherwise.
+bool didLoadOrSaveSucceed(Fault fault, IStr message) {
+    if (fault) {
+        _engineState.lastLoadOrSaveFault = fault;
+        if (isLoggingLoadOrSaveFaults) println!(StdStream.error)(message);
+        return false;
+    }
+    return true;
+}
+
+/// Frees all loaded textures.
+void freeAllTextureIds() {
+    bk.freeAllTextures(false);
+}
+
+/// Frees all loaded fonts.
+void freeAllFontIds() {
+    bk.freeAllFonts(true);
+}
+
+/// Frees all loaded sounds.
+void freeAllSoundIds() {
+    bk.freeAllSounds(false);
+}
+
+/// Frees all loaded viewports.
+void freeAllViewportIds() {
+    bk.freeAllViewports(true);
+}
+
+/// Frees all loaded textures, fonts, sounds, and viewports.
+void freeAllResourceIds() {
+    freeAllTextureIds();
+    freeAllFontIds();
+    freeAllSoundIds();
+    freeAllViewportIds();
+}
+
+/// Returns the current mouse position on the window.
+Vec2 mouse() => _engineState.mouseBuffer;
+/// Returns the change in mouse position since the last frame.
+Vec2 deltaMouse() => bk.deltaMouse;
+/// Returns the change in mouse wheel position since the last frame.
+float deltaWheel() => bk.deltaWheel;
+
+/// Returns true if the specified character is currently pressed.
+bool isDown(char key) => key ? bk.isDown(key) : false;
+/// Returns true if the specified keyboard key is currently pressed.
+bool isDown(Keyboard key) => key ? bk.isDown(key) : false;
+/// Returns true if the specified mouse button is currently pressed.
+bool isDown(Mouse key) => key ? bk.isDown(key) : false;
+/// Returns true if the specified gamepad button is currently pressed.
+bool isDown(Gamepad key, int id = 0) => key ? bk.isDown(key, id) : false;
+
+/// Returns true if the specified character was pressed this frame.
+bool isPressed(char key) => key ? bk.isPressed(key) : false;
+/// Returns true if the specified keyboard key was pressed this frame.
+bool isPressed(Keyboard key) => key ? bk.isPressed(key) : false;
+/// Returns true if the specified mouse button was pressed this frame.
+bool isPressed(Mouse key) => key ? bk.isPressed(key) : false;
+/// Returns true if the specified gamepad button was pressed this frame.
+bool isPressed(Gamepad key, int id = 0) => key ? bk.isPressed(key, id) : false;
+
+/// Returns true if the specified character was released this frame.
+bool isReleased(char key) => key ? bk.isReleased(key) : false;
+/// Returns true if the specified keyboard key was released this frame.
+bool isReleased(Keyboard key) => key ? bk.isReleased(key) : false;
+/// Returns true if the specified mouse button was released this frame.
+bool isReleased(Mouse key) => key ? bk.isReleased(key) : false;
+/// Returns true if the specified gamepad button was released this frame.
+bool isReleased(Gamepad key, int id = 0) => key ? bk.isReleased(key, id) : false;
+
+/// Returns the direction from the WASD and arrow keys that are currently down. The result is not normalized.
+Vec2 wasd() => _engineState.wasdBuffer;
+/// Returns the direction from the WASD and arrow keys that were pressed this frame. The result is not normalized.
+Vec2 wasdPressed() => _engineState.wasdPressedBuffer;
+/// Returns the direction from the WASD and arrow keys that were released this frame. The result is not normalized.
+Vec2 wasdReleased() => _engineState.wasdReleasedBuffer;
+
+/// Returns the next recently pressed keyboard key.
+/// This acts like a queue. Returns `Keyboard.none` if the queue is empty.
+Keyboard dequeuePressedKey() => bk.dequeuePressedKey();
+
+/// Returns the next recently pressed character.
+/// This acts like a queue. Returns `\0` if the queue is empty.
+dchar dequeuePressedRune() => bk.dequeuePressedRune();
+
+/// Attaches the given camera and makes it active.
+void attach(ref Camera camera, Rounding type = Rounding.none) {
+    if (_engineState.userCamera.isAttached) assert(0, "Cannot attach camera because another camera is already attached.");
+    bk.beginCamera(camera, resolution, isPixelSnapped ? Rounding.floor : type);
+    _engineState.userCamera = camera;
+}
+
+// NOTE: The engine viewport should not use this function.
+/// Attaches the given viewport and makes it active.
+void attach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (_engineState.userViewport.isAttached) assert(0, "Cannot attach viewport because another viewport is already attached.");
+    if (isResolutionLocked) bk.endViewport(_engineState.viewport.data.data);
+    bk.beginViewport(viewport.data);
+    bk.clearBackground(viewport.color);
+    bk.beginBlend(viewport.blend);
+    _engineState.userViewport = viewport;
+}
+
+/// Detaches the currently active camera.
+void detach(ref Camera camera) {
+    if (!camera.isAttached) assert(0, "Cannot detach camera because it is not the attached camera.");
+    bk.endCamera(camera);
+    _engineState.userCamera = Camera();
+}
+
+// NOTE: The engine viewport should not use this function.
+/// Detaches the currently active viewport.
+void detach(ViewportId viewport) {
+    if (viewport.size.isZero) return;
+    if (!_engineState.userViewport.isAttached) assert(0, "Cannot detach viewport because it is not the attached viewport.");
+    bk.endBlend();
+    bk.endViewport(viewport.data);
+    _engineState.userViewport = ViewportId();
+    if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
+}
+
+/// Begins a clipping region using the given area.
+void beginClip(Rect area) {
+    if (_engineState.clipIsActive) assert(0, "Cannot begin clip again.");
+    bk.beginClip(area);
+    _engineState.clipIsActive = true;
+}
+
+/// Ends the active clipping region.
+void endClip() {
+    if (!_engineState.clipIsActive) assert(0, "Cannot end clip again.");
+    bk.endClip();
+    _engineState.clipIsActive = false;
+}
+
 /// Draws a rectangle with the specified area and color.
 void drawRect(Rect area, Rgba color = white, float thickness = -1.0f) {
     bk.drawRect(isPixelSnapped ? area.floor() : area, color, thickness);
@@ -1641,6 +1565,11 @@ void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f) {
 /// Draws a line with the specified area, thickness, and color.
 void drawLine(Line area, Rgba color = white, float thickness = 9.0f) {
     bk.drawLine(isPixelSnapped ? area.floor() : area, color, thickness);
+}
+
+/// Draws the texture at the given position with the specified draw options.
+void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawTextureArea(texture, Rect(texture.size), position, options);
 }
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
@@ -1690,11 +1619,6 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 /// Call `setDefaultTexture` before using this function.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(_engineState.defaultTexture, area, position, options);
-}
-
-/// Draws the texture at the given position with the specified draw options.
-void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(texture, Rect(texture.size), position, options);
 }
 
 /// Draws a 9-slice from the specified texture area at the given target area.
@@ -1964,6 +1888,69 @@ Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), Tex
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
 
+/// Adds a formatted line to the `dprint*` text.
+void dprintfln(A...)(IStr fmtStr, A args) {
+    if (_engineState.dprintLineCountLimit != 0) {
+        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
+            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
+            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
+            _engineState.dprintLineCount -= 1;
+        }
+    }
+    sprintfln(_engineState.dprintBuffer, fmtStr, args);
+    _engineState.dprintLineCount += 1;
+}
+
+/// Adds a line to the `dprint*` text.
+void dprintln(A...)(A args) {
+    if (_engineState.dprintLineCountLimit != 0) {
+        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
+            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
+            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
+            _engineState.dprintLineCount -= 1;
+        }
+    }
+    sprintln(_engineState.dprintBuffer, args);
+    _engineState.dprintLineCount += 1;
+}
+
+/// Returns the contents of the `dprint*` buffer as an `IStr`.
+/// The returned string references the internal buffer and may change if more text is printed.
+IStr dprintBuffer() {
+    return _engineState.dprintBuffer.items;
+}
+
+/// Sets the position of `dprint*` text.
+void setDprintPosition(Vec2 value) {
+    _engineState.dprintPosition = value;
+}
+
+/// Sets the drawing options for `dprint*` text.
+void setDprintOptions(DrawOptions value) {
+    _engineState.dprintOptions = value;
+}
+
+/// Sets the maximum number of `dprint*` lines. Older lines are removed once this limit is reached. Use 0 for unlimited.
+void setDprintLineCountLimit(Sz value) {
+    _engineState.dprintLineCountLimit = value;
+}
+
+/// Sets the visibility state of `dprint*` text.
+void setDprintVisibility(bool value) {
+    _engineState.dprintIsVisible = value;
+}
+
+/// Toggles the visibility state of `dprint*` text.
+void toggleDprintVisibility() {
+    setDprintVisibility(!_engineState.dprintIsVisible);
+}
+
+/// Clears all `dprint*` text.
+void clearDprintBuffer() {
+    _engineState.dprintBuffer.clear();
+    _engineState.dprintLineCount = 0;
+}
+
 /// Draws debug engine information at the given position with the provided draw options.
 /// Hold the left mouse button to create and resize a debug area.
 /// Hold the right mouse button to move the debug area.
@@ -2073,66 +2060,49 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
     }
 }
 
-/// Sets the position of `dprint*` text.
-void setDprintPosition(Vec2 value) {
-    _engineState.dprintPosition = value;
+/// Plays the given sound. If the sound is already playing, this has no effect.
+void playSound(SoundId sound) {
+    bk.playSound(sound.data);
 }
 
-/// Sets the drawing options for `dprint*` text.
-void setDprintOptions(DrawOptions value) {
-    _engineState.dprintOptions = value;
+/// Stops playback of the given sound.
+void stopSound(SoundId sound) {
+    bk.stopSound(sound.data);
 }
 
-/// Sets the maximum number of `dprint*` lines.
-/// Older lines are removed once this limit is reached. Use 0 for unlimited.
-void setDprintLineCountLimit(Sz value) {
-    _engineState.dprintLineCountLimit = value;
+/// Starts playback of the given sound from the beginning.
+void startSound(SoundId sound) {
+    bk.startSound(sound.data);
 }
 
-/// Sets the visibility state of `dprint*` text.
-void setDprintVisibility(bool value) {
-    _engineState.dprintIsVisible = value;
+/// Pauses playback of the given sound.
+void pauseSound(SoundId sound) {
+    bk.pauseSound(sound.data);
 }
 
-/// Toggles the visibility state of `dprint*` text.
-void toggleDprintVisibility() {
-    setDprintVisibility(!_engineState.dprintIsVisible);
+/// Resumes playback of the given sound if it was paused.
+void resumeSound(SoundId sound) {
+    bk.resumeSound(sound.data);
 }
 
-/// Clears all `dprint*` text.
-void clearDprintBuffer() {
-    _engineState.dprintBuffer.clear();
-    _engineState.dprintLineCount = 0;
+/// Toggles whether the sound is playing or stopped.
+void toggleSoundIsActive(SoundId sound) {
+    if (sound.isActive) stopSound(sound);
+    else playSound(sound);
 }
 
-/// Returns the contents of the `dprint*` buffer as an `IStr`.
-/// The returned string references the internal buffer and may change if more text is printed.
-IStr dprintBuffer() {
-    return _engineState.dprintBuffer.items;
+/// Toggles whether the sound is paused or resumed.
+void toggleSoundIsPaused(SoundId sound) {
+    if (sound.isPaused) resumeSound(sound);
+    else pauseSound(sound);
 }
 
-/// Adds a formatted line to the `dprint*` text.
-void dprintfln(A...)(IStr fmtStr, A args) {
-    if (_engineState.dprintLineCountLimit != 0) {
-        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
-            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
-            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
-            _engineState.dprintLineCount -= 1;
-        }
-    }
-    sprintfln(_engineState.dprintBuffer, fmtStr, args);
-    _engineState.dprintLineCount += 1;
+/// Returns the current master volume level.
+float masterVolume() {
+    return bk.masterVolume;
 }
 
-/// Adds a line to the `dprint*` text.
-void dprintln(A...)(A args) {
-    if (_engineState.dprintLineCountLimit != 0) {
-        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
-            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
-            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
-            _engineState.dprintLineCount -= 1;
-        }
-    }
-    sprintln(_engineState.dprintBuffer, args);
-    _engineState.dprintLineCount += 1;
+/// Sets the master volume level.
+void setMasterVolume(float value) {
+    bk.setMasterVolume(value);
 }

@@ -54,7 +54,7 @@ enum Blend : ubyte {
 }
 
 /// A limited set of keyboard keys.
-enum Keyboard : ushort {
+enum Keyboard : ubyte {
     none,         /// Not a key.
     apostrophe,   /// The `'` key.
     comma,        /// The `,` key.
@@ -157,7 +157,7 @@ enum Keyboard : ushort {
 }
 
 /// A limited set of mouse keys.
-enum Mouse : ushort {
+enum Mouse : ubyte {
     none,   /// Not a button.
     left,   /// The left mouse button.
     right,  /// The right mouse button.
@@ -165,7 +165,7 @@ enum Mouse : ushort {
 }
 
 /// A limited set of gamepad buttons.
-enum Gamepad : ushort {
+enum Gamepad : ubyte {
     none,   /// Not a button.
     left,   /// The left button.
     right,  /// The right button.
@@ -238,31 +238,26 @@ struct DrawOptions {
 
     @safe nothrow @nogc:
 
-    /// Initializes the options with the given rotation.
     this(float rotation, Hook hook = Hook.topLeft) {
         this.rotation = rotation;
         this.hook = hook;
     }
 
-    /// Initializes the options with the given scale.
     this(Vec2 scale, Hook hook = Hook.topLeft) {
         this.scale = scale;
         this.hook = hook;
     }
 
-    /// Initializes the options with the given color.
     this(Rgba color, Hook hook = Hook.topLeft) {
         this.color = color;
         this.hook = hook;
     }
 
-    /// Initializes the options with the given flip.
     this(Flip flip, Hook hook = Hook.topLeft) {
         this.flip = flip;
         this.hook = hook;
     }
 
-    /// Initializes the options with the given hook.
     this(Hook hook) {
         this.hook = hook;
     }
@@ -278,12 +273,10 @@ struct TextOptions {
 
     @safe nothrow @nogc:
 
-    /// Initializes the options with the given visibility ratio.
     this(float visibilityRatio) {
         this.visibilityRatio = visibilityRatio;
     }
 
-    /// Initializes the options with the given alignment.
     this(Alignment alignment, int alignmentWidth = 0) {
         this.alignment = alignment;
         this.alignmentWidth = alignmentWidth;
@@ -301,13 +294,11 @@ struct Camera {
 
     @safe nothrow @nogc:
 
-    /// Initializes the camera with the given position and optional centering.
     this(Vec2 position, bool isCentered = false) {
         this.position = position;
         this.isCentered = isCentered;
     }
 
-    /// Initializes the camera with the given position and optional centering.
     this(float x, float y, bool isCentered = false) {
         this(Vec2(x, y), isCentered);
     }
