@@ -778,7 +778,8 @@ void openUrl(IStr url) {
 }
 
 void takeScreenshot(IStr path) {
-    rl.TakeScreenshot(path.toStrz().getOr());
+    // NOTE: Provided fileName should not contain paths, saving to working directory. This is how raylib works.
+    rl.TakeScreenshot(path.pathBaseName.toStrz().getOr());
 }
 
 int fps() {
