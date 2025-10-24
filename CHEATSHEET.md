@@ -3,7 +3,7 @@
 This guide highlights the **most commonly used parts** of the `parin.types` and `parin.engine` modules — it's not meant to be full documentation.
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 
-## ???
+## Debug Mode
 
 ```d
 /// Returns true if debug mode is active.
@@ -16,7 +16,7 @@ void toggleIsDebugMode();
 void setDebugModeKey(Keyboard value);
 ```
 
-## ???
+## Window
 
 ```d
 /// Returns true if the window was resized.
@@ -80,7 +80,7 @@ void setIsCursorVisible(bool value);
 void toggleIsCursorVisible();
 ```
 
-## ???
+## Time
 
 ```d
 /// Returns the current frames per second (FPS).
@@ -101,7 +101,7 @@ ulong elapsedTicks();
 float deltaTime();
 ```
 
-## ???
+## Randomness
 
 ```d
 /// Returns a random integer between 0 and int.max (inclusive).
@@ -114,7 +114,7 @@ void randomize();
 void setRandomSeed(int value);
 ```
 
-## ???
+## Settings
 
 ```d
 /// Returns the default filter mode used for textures, fonts and viewports.
@@ -151,14 +151,13 @@ void setIsPixelSnapped(bool value);
 bool isPixelPerfect();
 /// Sets whether drawing should be pixel-perfect.
 void setIsPixelPerfect(bool value);
-
-/// Returns the size of the text.
-Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 ```
 
-## ???
+## Helpers
 
 ```d
+/// Returns the size of the text.
+Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 /// Converts a scene point to a canvas point using the given camera and resolution.
 Vec2 toCanvasPoint(Vec2 point, Camera camera);
 /// Converts a canvas point to a scene point using the given camera and resolution.
