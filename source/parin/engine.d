@@ -45,14 +45,15 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingLoadOrSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
-enum defaultEngineValidateErrorMessage   = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage       = "ERROR({}:{}): Could not load {} from \"{}\".";
-enum defaultEngineSaveErrorMessage       = "ERROR({}:{}): Could not save {} from \"{}\".";
-enum defaultEngineAssetsPathCapacity     = 8 * kilobyte;
-enum defaultEngineEnvArgsCapacity        = 64;
-enum defaultEngineLoadOrSaveTextCapacity = 16 * kilobyte;
-enum defaultEngineEngineTasksCapacity    = 112;
-enum defaultEngineArenaCapacity          = 4 * megabyte;
+enum defaultEngineValidateErrorMessage         = "Resource is invalid or was never assigned.";
+enum defaultEngineLoadErrorMessage             = "ERROR({}:{}): Could not load {} from \"{}\".";
+enum defaultEngineSaveErrorMessage             = "ERROR({}:{}): Could not save {} from \"{}\".";
+enum defaultEngineAssetsPathCapacity           = 8 * kilobyte;
+enum defaultEngineScreenshotTargetPathCapacity = 2 * kilobyte;
+enum defaultEngineEnvArgsCapacity              = 64;
+enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
+enum defaultEngineEngineTasksCapacity          = 112;
+enum defaultEngineArenaCapacity                = 4 * megabyte;
 
 enum defaultEngineDprintCapacity       = 8 * kilobyte;
 enum defaultEngineDprintPosition       = Vec2(8, 6);
@@ -138,6 +139,7 @@ struct EngineState {
     Fault lastLoadOrSaveFault;
     IStr memoryTrackingInfoFilter;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
+    FStr!defaultEngineScreenshotTargetPathCapacity screenshotTargetPath;
     FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
     EngineTasks tasks;
 
@@ -575,6 +577,12 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             bk.endDrawing();
         } else {
             bk.endDrawing();
+        }
+
+        // Screenshot code.
+        if (_engineState.screenshotTargetPath.length) {
+            bk.takeScreenshot(_engineState.screenshotTargetPath.items);
+            _engineState.screenshotTargetPath.clear();
         }
 
         // Viewport code.
@@ -1401,6 +1409,13 @@ IStr[] droppedPaths() {
 /// Opens a URL in the default web browser.
 void openUrl(IStr url) {
     bk.openUrl(url);
+}
+
+/// Saves a screenshot to the given path.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+void takeScreenshot(IStr path) {
+    if (path.length == 0) return;
+    bk.takeScreenshot(path.toAssetsPath());
 }
 
 /// Returns the last fault from a load or save call.

@@ -190,6 +190,7 @@ yay -S emscripten
 
 ### How do I use `Vec2`?
 
+`Vec2` is a type provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
 An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in Joka.
 
 ### How can I load an asset outside of the assets folder?

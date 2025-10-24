@@ -777,6 +777,10 @@ void openUrl(IStr url) {
     rl.OpenURL(url.toStrz().getOr());
 }
 
+void takeScreenshot(IStr path) {
+    rl.TakeScreenshot(path.toStrz().getOr());
+}
+
 int fps() {
     return rl.GetFPS();
 }

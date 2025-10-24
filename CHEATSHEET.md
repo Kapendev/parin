@@ -169,6 +169,8 @@ IStr[] envArgs();
 IStr[] droppedPaths();
 /// Opens a URL in the default web browser.
 void openUrl(IStr url);
+/// Saves a screenshot to the given path.
+void takeScreenshot(IStr path);
 
 /// Returns the last fault from a load or save call.
 Fault lastLoadOrSaveFault();
