@@ -41,8 +41,17 @@ version (Windows) {
 enum sp = Sep(" ");  /// Space separator.
 enum cm = Sep(", "); /// Comma + space separator.
 
+/// Path separator style.
+enum PathSepStyle {
+    native,  /// The platform's default separator.
+    posix,   /// The `/` separator.
+    windows, /// The `\` separator.
+}
+
 /// Separator marker for printing, ...
 struct Sep { IStr value; }
+/// A string pair.
+struct IStrPair { IStr a; IStr b; }
 
 /// Converts the value to its string representation.
 @trusted
@@ -488,9 +497,19 @@ IStr[] split(IStr str, char sep) {
     return split(str, charToStr(sep));
 }
 
+/// Returns the main and alternate separators for the given style.
+IStrPair pathSepStrPair(PathSepStyle style) {
+    with (PathSepStyle) final switch (style) {
+        case native: return IStrPair(pathSepStr, pathSepOtherStr);
+        case posix: return IStrPair("/", "\\");
+        case windows: return IStrPair("\\", "/");
+    }
+}
+
 /// Returns the directory of the path, or "." if there is no directory.
-IStr pathDirName(IStr path) {
-    auto end = findEnd(path, pathSepStr);
+IStr pathDirName(IStr path, PathSepStyle style = PathSepStyle.native) {
+    auto pair = pathSepStrPair(style);
+    auto end = findEnd(path, pair.a);
     if (end == -1) return ".";
     else return path[0 .. end];
 }
@@ -503,8 +522,9 @@ IStr pathExtName(IStr path) {
 }
 
 /// Returns the base name of the path.
-IStr pathBaseName(IStr path) {
-    auto end = findEnd(path, pathSepStr);
+IStr pathBaseName(IStr path, PathSepStyle style = PathSepStyle.native) {
+    auto pair = pathSepStrPair(style);
+    auto end = findEnd(path, pair.a);
     if (end == -1) return path;
     else return path[end + 1 .. $];
 }
@@ -515,10 +535,11 @@ IStr pathBaseNameNoExt(IStr path) {
 }
 
 /// Removes path separators from the beginning of the path.
-IStr pathTrimStart(IStr path) {
-    IStr result = path;
+IStr pathTrimStart(IStr path, PathSepStyle style = PathSepStyle.native) {
+    auto result = path;
+    auto pair = pathSepStrPair(style);
     while (result.length > 0) {
-        if (result[0] == pathSep || result[0] == pathSepOther) result = result[1 .. $];
+        if (result[0] == pair.a[0] || result[0] == pair.b[0]) result = result[1 .. $];
         else break;
     }
     return result;
@@ -526,10 +547,11 @@ IStr pathTrimStart(IStr path) {
 }
 
 /// Removes path separators from the end of the path.
-IStr pathTrimEnd(IStr path) {
-    IStr result = path;
+IStr pathTrimEnd(IStr path, PathSepStyle style = PathSepStyle.native) {
+    auto result = path;
+    auto pair = pathSepStrPair(style);
     while (result.length > 0) {
-        if (result[$ - 1] == pathSep || result[$ - 1] == pathSepOther) result = result[0 .. $ - 1];
+        if (result[$ - 1] == pair.a[0] || result[$ - 1] == pair.b[0]) result = result[0 .. $ - 1];
         else break;
     }
     return result;
@@ -541,68 +563,68 @@ IStr pathTrim(IStr path) {
 }
 
 /// Formats the path to a standard form, normalizing separators.
-IStr pathFormat(IStr path) {
+IStr pathFmt(IStr path, PathSepStyle style = PathSepStyle.native) {
     static char[defaultAsciiBufferSize][defaultAsciiBufferCount] buffers = void;
     static byte bufferIndex = 0;
 
     if (path.length == 0) return ".";
     bufferIndex = (bufferIndex + 1) % buffers.length;
-    auto result = buffers[bufferIndex][];
-    foreach (i, c; path) {
-        if (c == pathSepOther) {
-            result[i] = pathSep;
-        } else {
-            result[i] = c;
-        }
-    }
-    result = result[0 .. path.length];
-    return result;
+    auto bufferSlice = buffers[bufferIndex][];
+    auto pair = pathSepStrPair(style);
+    foreach (i, c; path) bufferSlice[i] = c == pair.b[0] ? pair.a[0] : c;
+    return bufferSlice[0 .. path.length];
 }
 
 /// Concatenates the paths, ensuring proper path separators between them.
 IStr pathConcat(IStr[] args...) {
+    return pathConcat(PathSepStyle.native, args);
+}
+
+/// Concatenates the paths, ensuring proper path separators between them.
+IStr pathConcat(PathSepStyle style, IStr[] args...) {
     static char[defaultAsciiBufferSize][defaultAsciiBufferCount] buffers = void;
     static byte bufferIndex = 0;
 
     if (args.length == 0) return ".";
     bufferIndex = (bufferIndex + 1) % buffers.length;
-    auto result = buffers[bufferIndex][];
+    auto bufferSlice = buffers[bufferIndex][];
+    auto pair = pathSepStrPair(style);
     auto length = 0;
     auto isFirst = true;
     foreach (i, arg; args) {
         if (arg.length == 0) continue;
         auto cleanArg = arg;
-        if (cleanArg[0] == pathSep || cleanArg[0] == pathSepOther) {
+        if (cleanArg[0] == pair.a[0] || cleanArg[0] == pair.b[0]) {
             cleanArg = cleanArg.pathTrimStart();
             if (isFirst) {
-                result[length] = pathSep;
+                bufferSlice[length] = pair.a[0];
                 length += 1;
             }
         }
         cleanArg = cleanArg.pathTrimEnd();
-        result.copyChars(cleanArg, length);
+        bufferSlice.copyChars(cleanArg, length);
         length += cleanArg.length;
         if (i != args.length - 1) {
-            result[length] = pathSep;
+            bufferSlice[length] = pair.a[0];
             length += 1;
         }
         isFirst = false;
     }
     if (length == 0) return ".";
-    result = result[0 .. length];
-    return result;
+    return bufferSlice[0 .. length];
 }
 
 /// Splits the path using a static buffer and returns the result.
 @trusted
-IStr[] pathSplit(IStr str) {
+IStr[] pathSplit(IStr str, PathSepStyle style = PathSepStyle.native) {
     static IStr[defaultAsciiBufferSize][defaultAsciiBufferCount] buffers = void;
     static byte bufferIndex = 0;
 
     bufferIndex = (bufferIndex + 1) % buffers.length;
+    auto pair = pathSepStrPair(style);
     auto length = 0;
     while (str.length != 0) {
-        buffers[bufferIndex][length] = str.skipValue(pathSep);
+        buffers[bufferIndex][length] = str.skipValue(pair.a);
         length += 1;
     }
     return buffers[bufferIndex][0 .. length];
@@ -992,8 +1014,8 @@ unittest {
     assert(pathConcat("one").pathExtName() == "");
     assert(pathConcat("one", "two").pathBaseName() == "two");
     assert(pathConcat("one").pathBaseName() == "one");
-    assert(pathFormat("one/two") == pathConcat("one", "two"));
-    assert(pathFormat("one\\two") == pathConcat("one", "two"));
+    assert(pathFmt("one/two") == pathConcat("one", "two"));
+    assert(pathFmt("one\\two") == pathConcat("one", "two"));
 
     str = buffer[];
     str.copyStr("one, two ,three,");

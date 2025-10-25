@@ -970,7 +970,7 @@ IStr assetsPath() {
 /// Returns the path unchanged if it is absolute or asset paths are disabled.
 IStr toAssetsPath(IStr path) {
     if (path.startsWith(pathSep) || !isUsingAssetsPath) return path;
-    return pathConcat(assetsPath, path).pathFormat();
+    return pathConcat(assetsPath, path).pathFmt();
 }
 
 /// Returns true if the assets path is used when loading.
