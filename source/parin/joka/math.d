@@ -1395,15 +1395,15 @@ struct GLine(T) {
     }
 }
 
-/// A generic tween handles the transition from one value to another based on a duration.
+/// Handles the transition between two values over a specified duration.
 struct GTween(T) {
-    T a;                   /// The first animation value.
-    T b;                   /// The last animation value.
-    float time = 0.0f;     /// The current time, in seconds.
-    float duration = 0.0f; /// The duration, in seconds.
-    TweenMode mode;        /// The mode of the animation.
-    Easing type;           /// The function used to ease from the first to the last value.
-    bool isYoyoing;        /// Controls if the delta given to the update function is reversed.
+    T a;                   /// Start value.
+    T b;                   /// End value.
+    float time = 0.0f;     /// Current time in seconds.
+    float duration = 0.0f; /// Duration of the tween in seconds.
+    TweenMode mode;        /// How the tween behaves when reaching its limits.
+    Easing type;           /// Easing function used for interpolation.
+    bool isYoyoing;        /// True if the tween is currently reversing direction (for yoyo mode).
 
     @safe nothrow @nogc pure:
 
@@ -1416,20 +1416,19 @@ struct GTween(T) {
         this.type = type;
     }
 
-    /// Returns true if the current time is equal to zero.
-    /// This function makes sense when the tween mode is set to bomb.
+    /// Returns true if time is at the start (0.0).
+    /// Useful when using `TweenMode.bomb`.
     bool isAtStart() {
         return time == 0.0f;
     }
 
-    /// Returns true if the current time is equal to the duration.
-    /// This function makes sense when the tween mode is set to bomb.
+    /// Returns true if time is at the end (duration).
+    /// Useful when using `TweenMode.bomb`.
     bool isAtEnd() {
         return time >= duration;
     }
 
-    /// Returns the current value.
-    /// The value is between a and b.
+    /// Returns the current interpolated value between `a` and `b`.
     T now() {
         if (time <= 0.0f) {
             return a;
@@ -1440,32 +1439,29 @@ struct GTween(T) {
         }
     }
 
-    /// Updates the current time by the given delta and returns the current value.
+    /// Advances the tween by the given delta time and returns the current value.
     T update(float delta) {
         setTime(time + (isYoyoing ? -delta : delta));
         return now;
     }
 
-    /// Resets the current time and returns the current value.
+    /// Resets the tween to the start and returns the current value.
     T reset() {
         setTime(0.0f);
         return now;
     }
 
-    /// Returns the current progress.
-    /// The progress is between 0.0 and 1.0.
+    /// Returns the current progress (between 0.0 to 1.0).
     float progress() {
         return duration == 0.0f ? 0.0f : clamp(time / duration, 0.0f, 1.0f);
     }
 
-    /// Sets the current progress to a specific value.
-    /// The progress is between 0.0 and 1.0.
+    /// Sets the tween progress to a specific value (between 0.0 to 1.0).
     void setProgress(float value) {
         time = duration * clamp(value, 0.0f, 1.0f);
     }
 
-    /// Sets the current time to a specific value.
-    /// Takes the tween mode into account.
+    /// Sets the current time and applies the tween mode rules.
     void setTime(float value) {
         final switch (mode) {
             case TweenMode.bomb:
@@ -1486,26 +1482,30 @@ struct GTween(T) {
     }
 }
 
-// TODO: Add docs.
+/// Handles the transition between two boolean states.
 struct SmoothToggle {
-    float progress = 0.0f;
-    bool state;
+    float progress = 0.0f; /// Current progress, between 0.0 and 1.0 (inclusive).
+    bool state;            /// Current target state.
 
     @safe nothrow @nogc pure:
 
+    /// Creates a new toggle.
     this(bool state) {
         this.state = state;
         this.progress = state ? 1.0f : 0.0f;
     }
 
+    /// Returns true if progress is at the start (0.0).
     bool isAtStart() {
         return progress == 0.0f;
     }
 
+    /// Returns true if progress is at the end (1.0).
     bool isAtEnd() {
         return progress == 1.0f;
     }
 
+    /// Returns the current progress (between 0.0 and 1.0).
     float now() {
         if (progress <= 0.0f) {
             return 0.0f;
@@ -1516,24 +1516,33 @@ struct SmoothToggle {
         }
     }
 
+    /// Advances the progress toward the current state.
+    /// Returns the updated progress.
     float update(float delta) {
         return progress.followState(state, delta);
     }
 
+    /// Resets the progress to 0.0.
+    /// Returns the updated progress.
     float reset() {
         setProgress(0.0f);
         return now;
     }
 
+    /// Sets the progress to the given value (clamped).
     void setProgress(float value) {
         progress = clamp(value, 0.0f, 1.0f);
     }
 
+    /// Toggles the target state.
+    /// Returns the new state.
     bool toggle() {
         state = !state;
         return state;
     }
 
+    /// Toggles the state and instantly sets progress to match.
+    /// Returns the new state.
     bool toggleSnap() {
         state = !state;
         progress = state ? 1.0f : 0.0f;

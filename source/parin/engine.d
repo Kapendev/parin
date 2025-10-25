@@ -5,7 +5,6 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// TODO: Add flashing helper thing. Like the one in worms.
 // TODO: Check how mode-7 could be done.
 
 /// The `engine` module functions as a lightweight 2D game engine.
@@ -399,7 +398,7 @@ struct SoundId {
         return bk.soundDuration(data);
     }
 
-    /// Returns the progress. The value is between 0.0 (start) and 1.0 (end).
+    /// Returns the progress. The value is between 0.0 and 1.0 (inclusive).
     float progress() {
         return bk.soundProgress(data);
     }
@@ -1574,6 +1573,11 @@ void drawRect(Rect area, Rgba color = white, float thickness = -1.0f) {
 /// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f) {
     drawRect(Rect(point, thickness, thickness).centerArea, color);
+}
+
+/// Draws a pixel at the specified location with the given color.
+void drawPixel(IVec2 point, Rgba color = white) {
+    drawRect(Rect(point.x, point.y, 1, 1), color);
 }
 
 /// Draws a circle with the specified area and color.

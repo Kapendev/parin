@@ -885,8 +885,8 @@ Maybe!double toFloating(char c) {
 
 /// Converts the string to an enum value.
 @trusted
-Maybe!T toEnum(T, bool noCase = false)(IStr str) {
-    static if (noCase) {
+Maybe!T toEnum(T)(IStr str, bool noCase = false) {
+    if (noCase) {
         char[128] enumBuffer = void;
         char[128] strBuffer = void;
         auto enumSlice = enumBuffer[];
@@ -914,10 +914,9 @@ Maybe!IStrz toStrz(IStr str) {
     static char[defaultAsciiBufferSize] buffer = void;
 
     if (buffer.length < str.length + 1) return Maybe!IStrz(Fault.overflow);
-    auto bufferSlice = buffer[];
-    bufferSlice.copyChars(str);
-    bufferSlice[str.length] = '\0';
-    return Maybe!IStrz(bufferSlice.ptr);
+    buffer.copyChars(str);
+    buffer[str.length] = '\0';
+    return Maybe!IStrz(buffer.ptr);
 }
 
 // Function test.
@@ -1135,7 +1134,7 @@ unittest {
     assert(toEnum!TestEnum("two").isSome == true);
     assert(toEnum!TestEnum("two").getOr() == TestEnum.two);
     assert(toEnum!TestEnum("TWO").isSome == false);
-    assert(toEnum!(TestEnum, true)("TWO").isSome == true);
+    assert(toEnum!TestEnum("TWO", true).isSome == true);
 
     assert(toStrz("Hello").getOr().strzLength == "Hello".length);
     assert(toStrz("Hello").getOr().strzToStr() == "Hello");

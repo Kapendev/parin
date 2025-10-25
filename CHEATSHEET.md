@@ -283,6 +283,8 @@ void endClip();
 void drawRect(Rect area, Rgba color = white, float thickness = -1.0f);
 /// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f);
+/// Draws a pixel at the specified location with the given color.
+void drawPixel(IVec2 point, Rgba color = white);
 /// Draws a circle with the specified area and color.
 void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
 /// Draws a line with the specified area, thickness, and color.
@@ -495,7 +497,7 @@ struct SoundId {
     float time();
     /// Returns the total duration in seconds.
     float duration();
-    /// Returns the progress. The value is between 0.0 (start) and 1.0 (end).
+    /// Returns the progress. The value is between 0.0 and 1.0 (inclusive).
     float progress();
     /// Frees the resource and resets the identifier to null.
     void free();
