@@ -766,20 +766,31 @@ void setWindowMaxSize(int width, int height) {
 }
 
 Fault setWindowIconFromFiles(IStr path) {
-    auto image = rl.LoadImage(path.toStrz().getOr());
-    if (image.data == null) return Fault.cannotFind;
-    rl.SetWindowIcon(image);
-    rl.UnloadImage(image);
-    return Fault.none;
+    version (WebAssembly) {
+        return Fault.none;
+    } else {
+        auto image = rl.LoadImage(path.toStrz().getOr());
+        if (image.data == null) return Fault.cannotFind;
+        rl.SetWindowIcon(image);
+        rl.UnloadImage(image);
+        return Fault.none;
+    }
+}
+
+Fault takeScreenshot(IStr path) {
+    version (WebAssembly) {
+        return Fault.none;
+    } else {
+        auto image = rl.LoadImageFromScreen();
+        if (image.data == null) return Fault.cannotFind;
+        auto result = rl.ExportImage(image, path.toStrz().getOr()) ? Fault.none : Fault.cannotFind;
+        rl.UnloadImage(image);
+        return result;
+    }
 }
 
 void openUrl(IStr url) {
     rl.OpenURL(url.toStrz().getOr());
-}
-
-void takeScreenshot(IStr path) {
-    // NOTE: Provided fileName should not contain paths, saving to working directory. This is how raylib works.
-    rl.TakeScreenshot(path.pathBaseName.toStrz().getOr());
 }
 
 int fps() {

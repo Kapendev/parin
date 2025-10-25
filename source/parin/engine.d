@@ -1406,17 +1406,17 @@ IStr[] droppedPaths() {
     return bk.droppedPaths;
 }
 
-/// Opens a URL in the default web browser.
-void openUrl(IStr url) {
-    bk.openUrl(url);
-}
-
 /// Saves a screenshot to the given path.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 void takeScreenshot(IStr path) {
     if (path.length == 0) return;
     _engineState.screenshotTargetPath.clear();
     _engineState.screenshotTargetPath.append(path.toAssetsPath());
+}
+
+/// Opens a URL in the default web browser.
+void openUrl(IStr url) {
+    bk.openUrl(url);
 }
 
 /// Returns the last fault from a load or save call.
