@@ -1575,11 +1575,6 @@ void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f) {
     drawRect(Rect(point, thickness, thickness).centerArea, color);
 }
 
-/// Draws a pixel at the specified location with the given color.
-void drawPixel(IVec2 point, Rgba color = white) {
-    drawRect(Rect(point.x, point.y, 1, 1), color);
-}
-
 /// Draws a circle with the specified area and color.
 void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f) {
     bk.drawCirc(isPixelSnapped ? area.floor() : area, color, thickness);

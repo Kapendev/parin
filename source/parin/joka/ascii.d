@@ -888,14 +888,10 @@ Maybe!double toFloating(char c) {
 Maybe!T toEnum(T)(IStr str, bool noCase = false) {
     if (noCase) {
         char[128] enumBuffer = void;
-        char[128] strBuffer = void;
-        auto enumSlice = enumBuffer[];
-        auto strSlice = strBuffer[];
-        if (strSlice.copyStr(str)) return Maybe!T(Fault.overflow);
-        strSlice.toUpper();
         foreach (m; __traits(allMembers, T)) {
-            if (enumSlice.copyStr(m)) return Maybe!T(Fault.overflow);
-            if (enumSlice.toUpper() == strSlice) return Maybe!T(mixin("T.", m));
+            auto slice = enumBuffer[];
+            if (slice.copyStr(m)) return Maybe!T(Fault.overflow);
+            if (slice.equalsNoCase(str)) return Maybe!T(mixin("T.", m));
         }
         return Maybe!T(Fault.invalid);
     } else {
