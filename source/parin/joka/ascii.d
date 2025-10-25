@@ -913,14 +913,11 @@ Maybe!T toEnum(T, bool noCase = false)(IStr str) {
 Maybe!IStrz toStrz(IStr str) {
     static char[defaultAsciiBufferSize] buffer = void;
 
-    if (buffer.length < str.length) {
-        return Maybe!IStrz(Fault.overflow);
-    } else {
-        auto value = buffer[];
-        value.copyChars(str);
-        value[str.length] = '\0';
-        return Maybe!IStrz(value.ptr);
-    }
+    if (buffer.length < str.length + 1) return Maybe!IStrz(Fault.overflow);
+    auto bufferSlice = buffer[];
+    bufferSlice.copyChars(str);
+    bufferSlice[str.length] = '\0';
+    return Maybe!IStrz(bufferSlice.ptr);
 }
 
 // Function test.

@@ -5,6 +5,9 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+// TODO: Add flashing helper thing. Like the one in worms.
+// TODO: Check how mode-7 could be done.
+
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
