@@ -491,7 +491,7 @@ mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMembe
         }
 
         T swizzle(G)(const(G)[] args...) {
-            static if (isCharType!G) {
+            static if (is(G == char)) {
                 return _swizzleC(args);
             } else {
                 return _swizzleN(args);
