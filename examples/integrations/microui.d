@@ -26,7 +26,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    setBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
+    setWindowBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
     drawRect(
         Rect(game.world, game.width, game.height),
         game.reallyCoolFlag ? green : white,
