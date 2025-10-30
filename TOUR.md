@@ -360,7 +360,7 @@ struct TextOptions {
     }
     ```
 
-## Sprites & Tile Maps
+### Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
 To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
@@ -448,9 +448,9 @@ Managed resources are managed by the engine, meaning they get updated every fram
 
 Temporary resources are only valid for the duration of the current frame.
 
-## Embedding Assets
+### Embedding Resources
 
-Assets can be embedded into the binary with D's `import` feature.
+Resources can be embedded into the binary with D's `import` feature.
 DUB projects already pass `-J=assets` to the compiler, so everything in the assets folder is available automatically. For example:
 
 ```d

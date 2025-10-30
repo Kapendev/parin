@@ -908,7 +908,7 @@ void _updateEngineWasdBuffer() {
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
-private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
+int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
     *codepointSize = 1;
@@ -946,7 +946,7 @@ private int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointS
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
-private int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
+int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
     int cpSize = 0;

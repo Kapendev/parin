@@ -104,7 +104,7 @@ Most ideas are welcome, except ECS.
 
 ## Devlogs
 
-- Latest: [September 2025](https://dev.to/kapendev/parin-game-engine-devlog-september-2025-517o)
+- Latest: [October 2025](https://dev.to/kapendev/parin-game-engine-devlog-october-2025-5dfi)
 - More: [dev.to/kapendev](https://dev.to/kapendev)
 
 ## Frequently Asked Questions
