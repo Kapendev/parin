@@ -153,6 +153,7 @@ int runDubSetup(string[] args, bool isFirstRun) {
     // Find the main file and replace its content.
     auto appDir = "src";
     if (!appDir.isX) appDir = "source";
+    mkdir(appDir);
     auto appFile = join(appDir, "main.d");
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);

@@ -1,7 +1,7 @@
-# Setup
+# Init Exec
 
-A helper script that automates the project setup.
-It creates files in the current folder and supports both DUB and non-DUB projects.
+A helper script that automates the project setup for DUB project.
+Copy of `setup` package, with small changes.
 
 ## Usage
 
