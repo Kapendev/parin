@@ -16,9 +16,9 @@ dub run parin:setup
 If everything is set up correctly, there should be some new files inside the folder.
 Three of them are particularly important:
 
-* `source`: Contains the source code
-* `assets`: Contains the game assets
-* `web`: Used for exporting to the web
+- `source`: Contains the source code
+- `assets`: Contains the game assets
+- `web`: Used for exporting to the web
 
 Additionally, an app.d file is inside the source folder that looks like this:
 
@@ -87,9 +87,9 @@ Here is a breakdown of how it works:
 
 In essence, a Parin game typically relies on three functions:
 
-* A ready function.
-* An update function.
-* A finish function.
+- A ready function.
+- An update function.
+- A finish function.
 
 To run the game, use the following command:
 
@@ -106,14 +106,14 @@ An example of this can be found in the [examples](examples/basics/_003_dvd.d).
 
 Parin consists of the following modules:
 
-* `parin.engine`: Core engine functionality
-* `parin.map`: Tile map utilities
-* `parin.palettes`: Predefined colors
-* `parin.platformer`: Physics engine
-* `parin.sprite`: Sprite utilities
-* `parin.story`: Dialogue system
-* `parin.timer`: Time utilities
-* `parin.ui`: Immediate mode UI
+- `parin.engine`: Core engine functionality
+- `parin.map`: Tile map utilities
+- `parin.palettes`: Predefined colors
+- `parin.platformer`: Physics engine
+- `parin.sprite`: Sprite utilities
+- `parin.story`: Dialogue system
+- `parin.timer`: Time utilities
+- `parin.ui`: Immediate mode UI
 
 The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game.
 All other modules are optional and can be included as needed.
@@ -173,7 +173,7 @@ dchar dequeuePressedRune();
 
 Below are examples showing how to use these input functions to move text.
 
-* Using the Mouse
+- Using the Mouse
 
     ```d
     bool update(float dt) {
@@ -182,7 +182,7 @@ Below are examples showing how to use these input functions to move text.
     }
     ```
 
-* Using the Arrow Keys
+- Using the Arrow Keys
 
     ```d
     auto position = Vec2(8);
@@ -195,7 +195,7 @@ Below are examples showing how to use these input functions to move text.
     }
     ```
 
-* Using the WASD Keys
+- Using the WASD Keys
 
     ```d
     auto position = Vec2(8);
@@ -208,7 +208,7 @@ Below are examples showing how to use these input functions to move text.
     }
     ```
 
-* Using the WASD or Arrow Keys
+- Using the WASD or Arrow Keys
 
     ```d
     auto position = Vec2(8);
@@ -338,7 +338,7 @@ struct TextOptions {
 }
 ```
 
-* Changing the Origin and Scale
+- Changing the Origin and Scale
 
     ```d
     bool update(float dt) {
@@ -349,7 +349,7 @@ struct TextOptions {
     }
     ```
 
-* Changing the Origin and Visibility Ratio
+- Changing the Origin and Visibility Ratio
 
     ```d
     bool update(float dt) {
@@ -394,7 +394,7 @@ void setMasterVolume(float value);
 
 Below are examples showing how to use these sound functions.
 
-* Playing a Sound
+- Playing a Sound
 
     ```d
     SoundId sound;

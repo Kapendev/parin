@@ -18,17 +18,17 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 
 ## Major Features
 
-* Focused 2D engine — not an everything engine
-* Pixel-perfect physics engine
-* Flexible dialogue system
-* Atlas-based animation library
-* Efficient tile map structures
-* Intuitive immediate-mode UI
-* Mixed memory model — choose manual control, GC, or both
-* Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
-* Modular design — just `import parin.engine`
-* Includes extras like [microui](examples/integrations/microui.d)
-* Cross-platform (Windows, Linux, macOS, Web)
+- Focused 2D engine — not an everything engine
+- Pixel-perfect physics engine
+- Flexible dialogue system
+- Atlas-based animation library
+- Efficient tile map structures
+- Intuitive immediate-mode UI
+- Mixed memory model — choose manual control, GC, or both
+- Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
+- Modular design — just `import parin.engine`
+- Includes extras like [microui](examples/integrations/microui.d)
+- Cross-platform (Windows, Linux, macOS, Web)
 
 ## Hello World Example
 
@@ -206,8 +206,8 @@ The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
 ### Does Parin have other UI libraries?
 
-* [microui-d](examples/integrations/microui.d)
-* [Fluid](examples/integrations/fluid.d)
+- [microui-d](examples/integrations/microui.d)
+- [Fluid](examples/integrations/fluid.d)
 
 ### Are the Parin assets free to use?
 

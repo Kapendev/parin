@@ -224,9 +224,9 @@ struct TileMap {
             layers.appendBlank(file, line);
             layers[$ - 1].clear();
         }
-        rowCount = newHardRowCount;
-        colCount = newHardColCount;
-        foreach (ref layer; layers) layer.resizeBlank(newHardRowCount, newHardColCount, file, line);
+        rowCount = min(maxTileMapLayerRowColCount, newHardRowCount);
+        colCount = min(maxTileMapLayerRowColCount, newHardColCount);
+        foreach (ref layer; layers) layer.resizeBlank(rowCount, colCount, file, line);
     }
 
     @safe nothrow @nogc:

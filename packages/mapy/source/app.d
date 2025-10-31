@@ -52,8 +52,8 @@ struct AppCamera {
     void update(Vec2 moveDelta, float scaleDelta, float dt) {
         targetPosition += moveDelta.normalize() * Vec2(dt * defaultCameraMoveSpeed * (Keyboard.shift.isDown + 1) * (1.0f / min(targetScale, 1.0f)));
         targetScale = max(targetScale + (scaleDelta * dt * defaultCameraZoomSpeed), 0.25f);
-        data.followPositionWithSlowdown(targetPosition, defaultCameraSlowdown);
-        data.followScaleWithSlowdown(targetScale, defaultCameraSlowdown);
+        data.followPositionWithSlowdown(targetPosition, dt, defaultCameraSlowdown);
+        data.followScaleWithSlowdown(targetScale, dt, defaultCameraSlowdown);
     }
 
     void attach() {
@@ -67,7 +67,7 @@ struct AppCamera {
 
 struct AppState {
     TextureId atlas;
-    Viewport atlasViewport;
+    ViewportId atlasViewport;
     AppCamera atlasCamera;
     FontId font;
     TileMap map;
@@ -134,7 +134,7 @@ struct MouseInfo {
     }
 
     void update(Vec2 mouse, AppCamera camera, Sz rowCount, Sz colCount, Vec2 tileSize) {
-        worldPoint = mouse.toWorldPoint(camera.data);
+        worldPoint = mouse.toScenePoint(camera.data); // TODO: Something bad with this. Old code, so no idea. Will probably rewrite parts of it anyway.
         gridPoint = (worldPoint / tileSize).floor().toIVec();
         gridIndex = colCount * gridPoint.y + gridPoint.x;
         worldGridPoint = gridPoint.toVec() * tileSize;
@@ -149,11 +149,11 @@ void drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions()) {
 }
 
 void ready() {
-    setBackgroundColor(canvasColor);
+    setWindowBackgroundColor(canvasColor);
     setIsUsingAssetsPath(false);
     appState.camera.data = Camera(0, 0, true);
-    appState.map = TileMap(256, 256, 0, 0);
-    appState.atlasViewport = Viewport(panelColor1);
+    appState.map = TileMap(128, 128, 0, 0);
+    appState.atlasViewport = loadViewport(0, 0, panelColor1);
     // Parse args.
     foreach (arg; envArgs[1 .. $]) {
         if (0) {
@@ -183,8 +183,8 @@ void ready() {
         appState.map.tileHeight = 16;
     }
     auto value = loadTempText(appState.mapFile);
-    if (value.isSome) {
-        appState.map.parseCsv(value.get());
+    if (value.length) {
+        appState.map.parseCsv(value);
         appState.map.resize(appState.map.hardColCount, appState.map.hardRowCount);
     } else {
         appState.mapFile = "";
@@ -230,14 +230,14 @@ bool update(float dt) {
                         foreach (x; appState.mainPair.a.x .. appState.mainPair.b.x + 1) {
                             auto point = editMouseInfo.gridPoint + IVec2(x - appState.mainPair.a.x, y - appState.mainPair.a.y);
                             if (!appState.map.has(point)) continue;
-                            appState.map[point] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
+                            appState.map[point] = cast(short) findGridIndex(y, x, atlasColCount);
                         }
                     }
                 } else if (appState.editMode == EditMode.random) {
                     if (!editMouseInfo.isInGrid) break;
                     auto x = appState.mainPair.a.x + randi % (appState.mainPair.diff.x + 1);
                     auto y = appState.mainPair.a.y + randi % (appState.mainPair.diff.y + 1);
-                    appState.map[editMouseInfo.gridPoint] = cast(short) jokaFindGridIndex(y, x, atlasColCount);
+                    appState.map[editMouseInfo.gridPoint] = cast(short) findGridIndex(y, x, atlasColCount);
                 } else if (appState.editMode == EditMode.eraser) {
                     assert(0, "NOT DONE!");
                     if (!editMouseInfo.isInGrid) break;
@@ -273,7 +273,7 @@ bool update(float dt) {
 
     appState.camera.attach();
     drawRect(Rect(appState.map.size).addAll(4), mapAreaColor);
-    if (appState.camera.targetScale >= 1.0f) drawHollowRect(Rect(appState.map.size).addAll(4), 1, mapAreaOutlineColor);
+    if (appState.camera.targetScale >= 1.0f) drawRect(Rect(appState.map.size).addAll(4), mapAreaOutlineColor, 1);
     drawTileMap(appState.atlas, appState.map, appState.camera.data);
     if (appState.mode == AppMode.edit) {
         drawTextureArea(
@@ -283,10 +283,10 @@ bool update(float dt) {
         );
         if (appState.editMode == EditMode.brush) {
             drawTextureArea(appState.atlas, Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), editMouseInfo.worldGridPoint);
-            drawHollowRect(Rect(editMouseInfo.worldGridPoint, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
+            drawRect(Rect(editMouseInfo.worldGridPoint, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), mouseAreaColor, 1);
         } else {
             drawTextureArea(appState.atlas, Rect(appState.mainPair.a.toVec() * appState.map.tileSize, appState.map.tileSize), editMouseInfo.worldGridPoint);
-            drawHollowRect(Rect(editMouseInfo.worldGridPoint, appState.map.tileSize), 1, mouseAreaColor);
+            drawRect(Rect(editMouseInfo.worldGridPoint, appState.map.tileSize), mouseAreaColor, 1);
         }
     }
     appState.camera.detach();
@@ -345,8 +345,8 @@ bool update(float dt) {
         appState.atlasViewport.attach();
         appState.atlasCamera.attach();
         drawTexture(appState.atlas, Vec2(0));
-        drawHollowRect(Rect(selectMouseInfo.worldGridPoint, appState.map.tileSize), 1, mouseAreaColor);
-        drawHollowRect(Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), 1, mouseAreaColor);
+        drawRect(Rect(selectMouseInfo.worldGridPoint, appState.map.tileSize), mouseAreaColor, 1);
+        drawRect(Rect(appState.mainPair.a.toVec() * appState.map.tileSize, (appState.mainPair.diff + IVec2(1)).toVec() * appState.map.tileSize), mouseAreaColor, 1);
         appState.atlasCamera.detach();
         appState.atlasViewport.detach();
         drawViewport(appState.atlasViewport, atlasArea.position);
