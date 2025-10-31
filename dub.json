@@ -15,7 +15,7 @@
         "packages/web",
         "packages/mapy",
         "packages/hello",
-        "packages/init-exec"
+		"packages/init-exec"
     ],
     "libs": [
         "raylib"
