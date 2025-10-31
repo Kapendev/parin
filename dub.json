@@ -14,7 +14,15 @@
         "packages/setup",
         "packages/web",
         "packages/mapy",
-        "packages/hello"
+        "packages/hello",
+        {
+            "name": "init-exec",
+            "targetType": "executable",
+            "sourcePaths": [],
+            "sourceFiles": [
+                "packages/setup/source/app.d"
+            ]
+        },
     ],
     "libs": [
         "raylib"
@@ -30,9 +38,9 @@
             "name": "windows-x86_64",
             "platforms": ["windows-x86_64"],
             "targetType": "library",
-			"preBuildCommands": [
-				"cmd.exe /c xcopy \"$PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.*\" \"$ROOT_PACKAGE_DIR\\\" /Y /I"
-		    ]
+            "preBuildCommands": [
+                "cmd.exe /c xcopy \"$PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.*\" \"$ROOT_PACKAGE_DIR\\\" /Y /I"
+            ]
         },
         {
             "name": "osx",
