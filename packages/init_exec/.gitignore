@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/setup
+setup.so
+setup.dylib
+setup.dll
+setup.a
+setup.lib
+setup-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst
+parin*

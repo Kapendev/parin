@@ -15,15 +15,7 @@
         "packages/web",
         "packages/mapy",
         "packages/hello",
-        {
-            "name": "init-exec",
-            "targetType": "executable",
-            "targetPath": "build",
-            "sourcePaths": [],
-            "sourceFiles": [
-                "packages/setup/source/app.d"
-            ]
-        },
+        "packages/init-exec"
     ],
     "libs": [
         "raylib"
