@@ -30,9 +30,9 @@
             "name": "windows-x86_64",
             "platforms": ["windows-x86_64"],
             "targetType": "library",
-			"preBuildCommands": ["cmd.exe /c copy $PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.dll $ROOT_PACKAGE_DIR\\raylib.dll"],
-            "lflags-windows-msvc": ["/LIBPATH:$PACKAGE_DIR\\vendor\\windows_x86_64"],
-            "lflags-windows-ldc": ["-L$PACKAGE_DIR\\vendor\\windows_x86_64"]
+			"preBuildCommands": [
+                "cmd.exe /c xcopy $PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.* $ROOT_PACKAGE_DIR\\ /Y",
+		    ]
         },
         {
             "name": "osx",
