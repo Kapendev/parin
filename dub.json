@@ -18,6 +18,7 @@
         {
             "name": "init-exec",
             "targetType": "executable",
+            "targetPath": "build",
             "sourcePaths": [],
             "sourceFiles": [
                 "packages/setup/source/app.d"
