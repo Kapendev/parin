@@ -41,7 +41,7 @@
             "targetType": "library",
             "lflags": ["-L$PACKAGE_DIR/vendor/macos", "-L."],
             "preBuildCommands": [
-                "/bin/sh -c 'cp $PACKAGE_DIR/vendor/macos/raylib.* \"$ROOT_PACKAGE_DIR\"/'"
+                "cp $PACKAGE_DIR/vendor/macos/raylib.a \"$ROOT_PACKAGE_DIR\"/"
             ]
         }
     ]
