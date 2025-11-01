@@ -8,7 +8,7 @@ auto isViewportEmpty = true;
 
 void ready() {
     lockResolution(320, 180);
-    viewport = loadViewport(128, 128, blank); // Create a viewport with not background.
+    viewport = loadViewport(128, 128, blank); // Create a viewport with no background.
     atlas = loadTexture("parin_atlas.png");
 }
 
