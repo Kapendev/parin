@@ -32,9 +32,9 @@ if "%can_package_include%"=="1" (
     )
 )
 
+rem Old part: -L=/LIBPATH:%parin_package_path%\vendor\%version% ^
 %compiler% ^
     -of=%exe_path% -i ^
-    -L=/LIBPATH:%parin_package_path%\vendor\%version% ^
     -J=%parin_package_path%\source\parin -J=.\assets ^
     -I=%source_path% %package_include% ^
     %extra_flags% -run %app_path%

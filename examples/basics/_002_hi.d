@@ -4,7 +4,7 @@
 import parin;
 
 bool update(float dt) {
-    lockResolution(320, 180);
+    lockResolution(320, 180); // It does nothing if the target resolution is the same as the current one.
     drawText("Hello world!", Vec2(8));
     return false;
 }

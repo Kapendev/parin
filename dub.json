@@ -39,10 +39,7 @@
             "name": "osx",
             "platforms": ["osx"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/vendor/macos", "-L."],
-            "preBuildCommands": [
-                "cp $PACKAGE_DIR/vendor/macos/libraylib.a \"$ROOT_PACKAGE_DIR\"/"
-            ]
+            "lflags": ["-L$PACKAGE_DIR/vendor/macos", "-L."]
         }
     ]
 }

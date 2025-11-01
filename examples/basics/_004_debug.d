@@ -2,9 +2,10 @@
 
 import parin;
 
-auto mode = Mode.printInfo;
-auto hasPressedSpace = false;
+auto mode = Mode.printInfo;   // The current mode of the game.
+auto hasPressedSpace = false; // Used to check if SPACE has been pressed at least one time.
 
+// The update function is split into 3 parts.
 enum Mode {
     printInfo,
     engineInfo,
@@ -16,29 +17,29 @@ void ready() {
 }
 
 bool update(float dt) {
-    with (Keyboard) {
-        // Change debug mode.
-        if (space.isPressed) {
-            mode = cast(Mode) wrap(mode + 1, Mode.min, Mode.max + 1);
-            dprintln("Mode: ", mode);
-            hasPressedSpace = true;
-        }
-        // Print things on the window.
-        if (enter.isPressed) dprintln("ENTER!");
-        if (backspace.isPressed) dprintln("BACKSPACE!");
-        if (shift.isPressed || shiftRight.isPressed) dprintln("SHIFT!");
-        if (ctrl.isPressed || ctrlRight.isPressed) dprintln("CTRL!");
-        // Print the print buffer if needed.
-        if (esc.isPressed && dprintBuffer.length) print("---\n", dprintBuffer);
+    // Change the debug mode.
+    if (Keyboard.space.isPressed) {
+        mode = cast(Mode) wrap(mode + 1, Mode.min, Mode.max + 1);
+        dprintln("Mode: ", mode);
+        hasPressedSpace = true;
     }
-    with (Mode) {
-        // Hide the print output if mode is not `printInfo`.
-        setDprintVisibility(mode == printInfo);
-        final switch (mode) {
-            case printInfo : break;
-            case engineInfo: drawDebugEngineInfo(defaultEngineDprintPosition); break;
-            case tileInfo  : drawDebugTileInfo(16, 16, defaultEngineDprintPosition); break;
-        }
+    // Hide the dprint text if mode is not `printInfo`.
+    setDprintVisibility(mode == Mode.printInfo);
+    // Update based on the current mode.
+    final switch (mode) {
+        case Mode.printInfo:
+            // Print things on the window.
+            if (Keyboard.enter.isPressed) dprintln("ENTER!");
+            if (Keyboard.backspace.isPressed) dprintln("BACKSPACE!");
+            // Print the buffer if needed on the terminal.
+            if (Keyboard.esc.isPressed && dprintBuffer.length) print("---\n", dprintBuffer);
+            break;
+        case Mode.engineInfo:
+            drawDebugEngineInfo(defaultEngineDprintPosition);
+            break;
+        case Mode.tileInfo:
+            drawDebugTileInfo(16, 16, defaultEngineDprintPosition);
+            break;
     }
     if (!hasPressedSpace) drawText("Press SPACE to change mode.", resolution * Vec2(0.5), DrawOptions(Hook.center));
     return false;
