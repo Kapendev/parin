@@ -60,8 +60,7 @@ This guide shows how to install Parin using [DUB](https://dub.pm/).
 Create a new folder and run inside the following commands:
 
 ```sh
-dub init -n
-dub run parin:setup
+dub init -t parin
 dub run
 ```
 

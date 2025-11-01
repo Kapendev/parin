@@ -9,8 +9,7 @@ This section shows how to install Parin using [DUB](https://dub.pm/).
 To begin, make a new folder and run inside the following commands to create a new project:
 
 ```cmd
-dub init -n
-dub run parin:setup
+dub init -t parin
 ```
 
 If everything is set up correctly, there should be some new files inside the folder.
@@ -272,23 +271,23 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 /// Draws text with the default font at the given position with the provided draw options.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-/// Adds a formatted line to the `dprint*` text.
+/// Append a formatted line to the overlay text buffer.
 void dprintfln(A...)(IStr fmtStr, A args);
-/// Adds a line to the `dprint*` text.
+/// Append a line to the overlay text buffer.
 void dprintln(A...)(A args);
-/// Returns the contents of the `dprint*` buffer as an `IStr`.
+/// Returns the contents of the overlay text buffer.
 IStr dprintBuffer();
-/// Sets the position of `dprint*` text.
+/// Sets the position of the overlay text.
 void setDprintPosition(Vec2 value);
-/// Sets the drawing options for `dprint*` text.
+/// Sets the drawing options for the overlay text.
 void setDprintOptions(DrawOptions value);
-/// Sets the maximum number of `dprint*` lines. Older lines are removed once this limit is reached. Use 0 for unlimited.
+/// Sets the maximum number of overlay text lines.
 void setDprintLineCountLimit(Sz value);
-/// Sets the visibility state of `dprint*` text.
+/// Sets the visibility state of the overlay text.
 void setDprintVisibility(bool value);
-/// Toggles the visibility state of `dprint*` text.
+/// Toggles the visibility state of the overlay text.
 void toggleDprintVisibility();
-/// Clears all `dprint*` text.
+/// Clears all overlay text.
 void clearDprintBuffer();
 
 /// Draws debug engine information at the given position with the provided draw options.
@@ -437,12 +436,12 @@ Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 Fault saveText(IStr path, IStr text);
 ```
 
-They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false. Path separators are also normalized to the platform's native format.
 Additionally, resources are separated into two groups. Managed and temporary.
 
 ### Managed Resources
 
-Managed resources are managed by the engine, meaning they get updated every frame when necessary (e.g. sounds) and can be safely shared throughout the code. These resources use something known as [generational indices](https://lucassardois.medium.com/generational-indices-guide-8e3c5f7fd594).
+Managed resources (`TextureId`, `FontId`, `SoundId`, `ViewportId`) are managed by the engine, meaning they get updated every frame when necessary (e.g. sounds) and can be safely shared throughout the code. These resources use something known as [generational indices](https://lucassardois.medium.com/generational-indices-guide-8e3c5f7fd594).
 
 ### Temporary Resources
 

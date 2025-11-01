@@ -725,6 +725,7 @@ void cancel(EngineTaskId id) {
 
 /// Loads a texture file (PNG) with default filter and wrap modes.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadTexture(toAssetsPath(path)).get(trap);
@@ -750,6 +751,7 @@ TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FI
 
 /// Loads a font file (TTF) with default filter and wrap modes.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadFont(toAssetsPath(path), size, runeSpacing, lineSpacing, runes).get(trap);
@@ -788,6 +790,7 @@ FontId loadFont(TextureId texture, int tileWidth, int tileHeight, IStr file = __
 
 /// Loads a sound file (WAV, OGG, MP3) with default playback settings.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadSound(toAssetsPath(path), volume, pitch, canRepeat, pitchVariance).get(trap);
@@ -811,6 +814,7 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
 
 /// Loads a text file and returns the contents as a list.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readText(path.toAssetsPath());
     if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()))) return result.get();
@@ -819,6 +823,7 @@ LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
 
 /// Loads a text file into a temporary buffer for the current frame.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr file = __FILE__, Sz line = __LINE__) {
     auto tempText = BStr(frameMakeSliceBlank!char(capacity));
     loadTextIntoBuffer(path, tempText, file, line);
@@ -827,6 +832,7 @@ IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity, 
 
 /// Loads a text file into the given buffer.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
     didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()));
@@ -835,6 +841,7 @@ Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FI
 
 /// Saves a text file with the given content.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = writeText(path.toAssetsPath(), text);
     if (isLoggingLoadOrSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, file, line, "text", path.toAssetsPath());
@@ -1069,6 +1076,7 @@ void setWindowBorderColor(Rgba value) {
 
 /// Sets the window icon using an texture file (PNG).
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 Fault setWindowIconFromFiles(IStr path) {
     return bk.setWindowIconFromFiles(path.toAssetsPath());
 }
@@ -1408,6 +1416,7 @@ IStr[] droppedPaths() {
 
 /// Saves a screenshot to the given path.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
 void takeScreenshot(IStr path) {
     if (path.length == 0) return;
     _engineState.screenshotTargetPath.clear();
@@ -1904,7 +1913,8 @@ Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), Tex
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
 
-/// Adds a formatted line to the `dprint*` text.
+/// Append a formatted line to the overlay text buffer.
+/// Drawn after everything else using the current default font.
 void dprintfln(A...)(IStr fmtStr, A args) {
     if (_engineState.dprintLineCountLimit != 0) {
         while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
@@ -1917,7 +1927,8 @@ void dprintfln(A...)(IStr fmtStr, A args) {
     _engineState.dprintLineCount += 1;
 }
 
-/// Adds a line to the `dprint*` text.
+/// Append a line to the overlay text buffer.
+/// Drawn after everything else using the current default font.
 void dprintln(A...)(A args) {
     if (_engineState.dprintLineCountLimit != 0) {
         while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
@@ -1930,38 +1941,39 @@ void dprintln(A...)(A args) {
     _engineState.dprintLineCount += 1;
 }
 
-/// Returns the contents of the `dprint*` buffer as an `IStr`.
+/// Returns the contents of the overlay text buffer.
 /// The returned string references the internal buffer and may change if more text is printed.
 IStr dprintBuffer() {
     return _engineState.dprintBuffer.items;
 }
 
-/// Sets the position of `dprint*` text.
+/// Sets the position of the overlay text.
 void setDprintPosition(Vec2 value) {
     _engineState.dprintPosition = value;
 }
 
-/// Sets the drawing options for `dprint*` text.
+/// Sets the drawing options for the overlay text.
 void setDprintOptions(DrawOptions value) {
     _engineState.dprintOptions = value;
 }
 
-/// Sets the maximum number of `dprint*` lines. Older lines are removed once this limit is reached. Use 0 for unlimited.
+/// Sets the maximum number of overlay text lines.
+/// Older lines are removed once this limit is reached. Use 0 for unlimited.
 void setDprintLineCountLimit(Sz value) {
     _engineState.dprintLineCountLimit = value;
 }
 
-/// Sets the visibility state of `dprint*` text.
+/// Sets the visibility state of the overlay text.
 void setDprintVisibility(bool value) {
     _engineState.dprintIsVisible = value;
 }
 
-/// Toggles the visibility state of `dprint*` text.
+/// Toggles the visibility state of the overlay text.
 void toggleDprintVisibility() {
     setDprintVisibility(!_engineState.dprintIsVisible);
 }
 
-/// Clears all `dprint*` text.
+/// Clears all overlay text.
 void clearDprintBuffer() {
     _engineState.dprintBuffer.clear();
     _engineState.dprintLineCount = 0;

@@ -313,23 +313,23 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 /// Draws text with the default font at the given position with the provided draw options.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-/// Adds a formatted line to the `dprint*` text.
+/// Append a formatted line to the overlay text buffer.
 void dprintfln(A...)(IStr fmtStr, A args);
-/// Adds a line to the `dprint*` text.
+/// Append a line to the overlay text buffer.
 void dprintln(A...)(A args);
-/// Returns the contents of the `dprint*` buffer as an `IStr`.
+/// Returns the contents of the overlay text buffer.
 IStr dprintBuffer();
-/// Sets the position of `dprint*` text.
+/// Sets the position of the overlay text.
 void setDprintPosition(Vec2 value);
-/// Sets the drawing options for `dprint*` text.
+/// Sets the drawing options for the overlay text.
 void setDprintOptions(DrawOptions value);
-/// Sets the maximum number of `dprint*` lines. Older lines are removed once this limit is reached. Use 0 for unlimited.
+/// Sets the maximum number of overlay text lines.
 void setDprintLineCountLimit(Sz value);
-/// Sets the visibility state of `dprint*` text.
+/// Sets the visibility state of the overlay text.
 void setDprintVisibility(bool value);
-/// Toggles the visibility state of `dprint*` text.
+/// Toggles the visibility state of the overlay text.
 void toggleDprintVisibility();
-/// Clears all `dprint*` text.
+/// Clears all overlay text.
 void clearDprintBuffer();
 
 /// Draws debug engine information at the given position with the provided draw options.
@@ -366,6 +366,7 @@ void setMasterVolume(float value);
 
 ```d
 // They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+// Path separators are also normalized to the platform's native format.
 
 /// Loads a texture file (PNG) with default filter and wrap modes.
 TextureId loadTexture(IStr path);
