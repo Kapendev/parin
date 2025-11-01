@@ -532,6 +532,8 @@ struct ViewportId {
     int height();
     /// Returns the size in pixels.
     Vec2 size();
+    /// Returns true if the viewport has never been used (attached).
+    bool isFirstUse();
     /// Returns true if the viewport is attached.
     bool isAttached();
     /// Resizes the viewport. Internally, this creates a new texture, so avoid calling it while the viewport is in use.

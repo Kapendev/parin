@@ -484,6 +484,11 @@ struct ViewportId {
         return bk.viewportSize(data);
     }
 
+    /// Returns true if the viewport has never been used (attached).
+    bool isFirstUse() {
+        return bk.viewportIsFirstUse(data);
+    }
+
     /// Returns true if the viewport is attached.
     bool isAttached() {
         return bk.viewportIsAttached(data);

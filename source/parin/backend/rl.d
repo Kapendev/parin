@@ -79,6 +79,7 @@ struct RlViewport {
     Filter filter;           /// Texture filtering mode.
     Wrap wrap;               /// Texture wrapping mode.
     Blend blend;             /// Texture blending mode.
+    bool isFirstUse = true;  /// True if the viewport has never been used (attached).
 }
 
 struct BackendState {
@@ -629,6 +630,12 @@ Vec2 viewportSize(ResourceId id) {
     return Vec2(resource.data.texture.width, resource.data.texture.height);
 }
 
+bool viewportIsFirstUse(ResourceId id) {
+    if (id.resourceIsNull) return false;
+    auto resource = &_backendState.viewports[id];
+    return resource.isFirstUse;
+}
+
 bool viewportIsAttached(ResourceId id) {
     if (id.resourceIsNull) return false;
     auto resource = &_backendState.viewports[id];
@@ -1064,6 +1071,7 @@ void beginViewport(ResourceId id) {
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
+    resource.isFirstUse = false;
     resource.isAttached = true;
     rl.BeginTextureMode(resource.data);
 }
