@@ -25,7 +25,7 @@
             "name": "linux-x86_64",
             "platforms": ["linux-x86_64"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/vendor/linux_x86_64"]
+            "lflags": ["-L$PACKAGE_DIR/vendor/linux_x86_64", "-L."]
         },
         {
             "name": "windows-x86_64",
@@ -39,7 +39,10 @@
             "name": "osx",
             "platforms": ["osx"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/vendor/macos"]
+            "lflags": ["-L$PACKAGE_DIR/vendor/macos", "-L."],
+            "preBuildCommands": [
+                "cp \"$PACKAGE_DIR/vendor/macos/raylib.\"* \"$ROOT_PACKAGE_DIR/\""
+            ]
         }
     ]
 }
