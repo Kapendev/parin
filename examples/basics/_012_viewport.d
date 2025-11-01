@@ -5,8 +5,7 @@ import parin;
 auto viewport = ViewportId();
 
 void ready() {
-    // Create a viewport with a black background.
-    viewport = loadViewport(resolutionWidth / 2, resolutionHeight / 2, black);
+    viewport = loadViewport(resolutionWidth / 2, resolutionHeight / 2, black); // Create a viewport with a black background.
 }
 
 bool update(float dt) {
