@@ -2,7 +2,7 @@
 
 import parin;
 
-auto player = Rect(16, 16);
+auto player = Rect(14, 14);
 auto coins = SparseList!Rect();
 auto coinSize = Vec2(8);
 auto coinCount = 8;
@@ -26,17 +26,22 @@ void ready() {
 }
 
 bool update(float dt) {
+    if (Keyboard.f11.isPressed) toggleIsFullscreen();
     // Move and draw the player.
     player.position += wasd * Vec2(120 * dt);
     drawRect(player, Nes8.blue);
+    drawRect(player, Nes8.white, 1);
     // Collect and draw the coins.
     foreach (id; coins.ids) {
         drawRect(coins[id], Nes8.yellow);
+        drawRect(coins[id], Nes8.white, 1);
         if (coins[id].hasIntersection(player)) coins.remove(id);
     }
     // Draw text about the game.
-    auto text = coins.length == 0 ? "You collected all the coins!" : "Coins: {}/{}\nMove with arrow keys.".fmt(coinCount - coins.length, coinCount);
-    drawText(text, Vec2(8), DrawOptions(Nes8.white));
+    auto text = coins.length == 0
+        ? "You collected all the coins!"
+        : "{}/{}".fmt(coinCount - coins.length, coinCount);
+    drawText(text, Vec2(resolution.x * 0.5, 13), DrawOptions(Nes8.white, Hook.center));
     return false;
 }
 
