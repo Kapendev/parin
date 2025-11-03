@@ -21,7 +21,7 @@ void ready() {
             randf * b.y + a.y,
             coinSize,
         );
-        coins.append(coin);
+        coins.push(coin);
     }
 }
 

@@ -38,16 +38,16 @@ bool update(float dt) {
     foreach (ref pipe; pipes) {
         pipe.x -= 1;
         if (pipe.rightPoint.x < 0) pipe.position = Vec2(resolution.x, randomPipeY);
-        if (pipe.spacePart.hasIntersection(bird)) {
-            if (!spaceTimer.isActive && !hurtTimer.isActive) {
-                gameCounter += 1;
-                spaceTimer.start();
-            }
-        }
         if (pipe.hasIntersection(bird) || pipe.topPart.hasIntersection(bird)) {
             if (!hurtTimer.isActive) {
                 gameCounter -= 1;
                 hurtTimer.start();
+            }
+        }
+        if (pipe.spacePart.hasIntersection(bird)) {
+            if (!spaceTimer.isActive && !hurtTimer.isActive) {
+                gameCounter += 1;
+                spaceTimer.start();
             }
         }
     }
