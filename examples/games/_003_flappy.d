@@ -1,4 +1,4 @@
-/// This example shows how to create a Flappy Bird clone with Parin. (WIP)
+/// This example shows how to create a Flappy Bird clone with Parin.
 
 import parin;
 
@@ -19,22 +19,22 @@ float randomPipeY() => resolution.y * 0.7 + (randi % 2 ? 1 : -1) * (randi % pipe
 void ready() {
     lockResolution(320, 180);
     setWindowBackgroundColor(Nes8.black);
-
+    // Create the pipes and setup the scene.
     foreach (i; 0 .. pipesCount) {
-        pipes.push(Rect(resolution.x + (i + 1) * (resolution.x / pipesCount), randomPipeY, 10, resolution.y));
+        pipes.push(Rect(resolution.x + (i + 1) * (resolution.x / pipesCount), randomPipeY, 12, resolution.y));
     }
     bird.position = Vec2(30, resolution.y * 0.3 - bird.h * 0.5);
 }
 
 bool update(float dt) {
     if (Keyboard.f11.isPressed) toggleIsFullscreen();
-
-    birdVelocity.y = min(birdVelocity.y + 5.5 * dt, 4.5);
-    if (wasdPressed.y < 0) birdVelocity.y = -2.5;
+    // Move the bird.
+    birdVelocity.y = min(birdVelocity.y + 5.5 * dt, 4.3);
+    if (Keyboard.space.isPressed || wasdPressed.y < 0) birdVelocity.y = -2.5;
     bird.position += birdVelocity;
     if (bird.y > resolution.y) bird.y = -bird.h;
     if (bird.bottomPoint.y < 0) bird.y = resolution.y;
-
+    // Move the pipes and check for collisions.
     foreach (ref pipe; pipes) {
         pipe.x -= 1;
         if (pipe.rightPoint.x < 0) pipe.position = Vec2(resolution.x, randomPipeY);
@@ -51,12 +51,15 @@ bool update(float dt) {
             }
         }
     }
-
+    // Draw the game.
     foreach (pipe; pipes) {
-        drawRect(pipe, red);
-        drawRect(pipe.topPart, red);
+        drawRect(pipe, Nes8.green);
+        drawRect(pipe, Nes8.white, 1);
+        drawRect(pipe.topPart, Nes8.green);
+        drawRect(pipe.topPart, Nes8.white, 1);
     }
-    drawRect(bird);
+    drawRect(bird, hurtTimer.isActive ? Nes8.red.alpha(cast(ubyte) ((sin(hurtTimer.time * 15) + 1) * 0.5f * 255)) : Nes8.yellow);
+    drawRect(bird, Nes8.white, 1);
     drawText("[ {} ]".fmt(gameCounter), Vec2(resolution.x * 0.5, 14 + 2 * sin(elapsedTime * 5)), DrawOptions(Nes8.white, Hook.center));
     return false;
 }

@@ -26,7 +26,6 @@ void ready() {
 bool update(float dt) {
     if (Keyboard.f11.isPressed) toggleIsFullscreen();
     auto center = resolution * Vec2(0.5);
-
     // Move the ball.
     ball.position += ballDirection * Vec2(120 * dt);
     // Check if the ball exited the screen.
@@ -37,7 +36,6 @@ bool update(float dt) {
     if (ball.centerArea.topPoint.y < 0 || ball.centerArea.bottomPoint.y > resolution.y) {
         ballDirection.y *= -1;
     }
-
     // Move paddle1.
     paddle1.y = clamp(
         paddle1.y + wasd.y * 120 * dt,
@@ -55,7 +53,6 @@ bool update(float dt) {
         ballDirection.x *= -1;
         gameCounter += 1;
     }
-
     // Draw the game.
     drawRect(ball.centerArea, Nes8.yellow);
     drawRect(paddle1.centerArea, Nes8.blue);
