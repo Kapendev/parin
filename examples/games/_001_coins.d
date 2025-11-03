@@ -41,7 +41,7 @@ bool update(float dt) {
     auto text = coins.length == 0
         ? "You collected all the coins!"
         : "{}/{}".fmt(coinCount - coins.length, coinCount);
-    drawText(text, Vec2(resolution.x * 0.5, 13), DrawOptions(Nes8.white, Hook.center));
+    drawText(text, Vec2(resolution.x * 0.5, 14 + 2 * sin(elapsedTime * 5)), DrawOptions(Nes8.white, Hook.center));
     return false;
 }
 

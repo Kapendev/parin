@@ -32,7 +32,7 @@
             "platforms": ["windows-x86_64"],
             "targetType": "library",
             "preBuildCommands": [
-                "cmd.exe /c xcopy \"$PACKAGE_DIR\\vendor\\windows_x86_64\\raylib.*\" \"$ROOT_PACKAGE_DIR\\\" /Y /I"
+                "cmd.exe /c xcopy \"$PACKAGE_DIR\\vendor\\windows_x86_64\\*\" \"$ROOT_PACKAGE_DIR\\\" /Y /I"
             ]
         },
         {
