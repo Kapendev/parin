@@ -655,8 +655,10 @@ void viewportResize(ResourceId id, int newWidth, int newHeight) {
         return;
     }
     resource.data = rl.LoadRenderTexture(newWidth, newHeight);
-    // NOTE: The rule is that the engine will set the filter and wrap mode, but viewport resizing is a special case, so we do it here.
-    //   There is also no need to call the member functions here because we just reuse the old values.
+    // NOTE: Could feel weird, but I think it makes sense. It's new data that was never used.
+    //   Putting logic stuff in the backend layer might be kinda bad, but ehh. Will think about it later, version 0.2.0 or something.
+    resource.isFirstUse = true;
+    // NOTE: The idea is that the engine will set the filter and wrap mode, but viewport resizing is a special case, so we do it here.
     rl.SetTextureFilter(resource.data.texture, toRl(resource.filter));
     rl.SetTextureWrap(resource.data.texture, toRl(resource.wrap));
 }

@@ -14,6 +14,7 @@ void ready() {
 bool update(float dt) {
     // Generate the viewport texture. Cannot be done in `ready`.
     if (viewport.isFirstUse) {
+        println("Updating viewport.");
         viewport.attach();
         foreach_reverse (i; 0 .. 8) {
             auto options = DrawOptions(white.alpha(cast(ubyte) (255 / (i + 1))), Hook.center);

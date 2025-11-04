@@ -437,7 +437,7 @@ Fault saveText(IStr path, IStr text);
 ```
 
 They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false. Path separators are also normalized to the platform's native format.
-Additionally, resources are separated into two groups. Managed and temporary.
+Additionally, engine resources are separated into two groups. Managed and temporary.
 
 ### Managed Resources
 

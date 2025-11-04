@@ -1,0 +1,5 @@
+#!/bin/env sh
+
+# I am too lazy to remember these commands.
+set -xe
+ls examples/$1/*.d | xargs -I {} closed run {}
