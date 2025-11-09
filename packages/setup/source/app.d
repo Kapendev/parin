@@ -2,12 +2,30 @@
 
 // [Noby Script]
 
+struct VendorData {
+    IStr name;
+    ubyte[] bytes;
+}
+
 enum assetsDir   = "assets";
 enum webDir      = "web";
 enum readmeFile  = "README.md";
 enum gitFile     = ".gitignore";
 enum dubFile     = "dub.json";
 enum dubLockFile = "dub.selections.json";
+
+// Monkeyyy, I know I could do this better, but I don't care and probably you don't care too because this is a DUB thing so yeah.
+// For DUB people: I don't want to learn DUB.
+version (Windows) {
+    VendorData[] vendorData = [
+        { "raylib.dll", cast(ubyte[]) import("vendor/windows_x86_64/raylib.dll") },
+        { "raylib.lib", cast(ubyte[]) import("vendor/windows_x86_64/raylib.lib") },
+    ];
+} else version (OSX) {
+    VendorData[] vendorData = [];
+} else {
+    VendorData[] vendorData = [];
+}
 
 enum readmeFileContent = "
 # Super Cool Title
@@ -141,6 +159,8 @@ int runSimpSetup(string[] args, bool isFirstRun) {
 
 /// The setup code for dub projects.
 int runDubSetup(string[] args, bool isFirstRun) {
+    import std = std.file;
+
     auto isForMeTheDev = args.length > 1 && args[1] == "dev";
     // Create basic stuff and clone the dub files.
     if (isFirstRun) {
@@ -157,6 +177,8 @@ int runDubSetup(string[] args, bool isFirstRun) {
     auto appFile = join(appDir, "main.d");
     if (!appFile.isX) appFile = join(appDir, "app.d");
     paste(appFile, appFileContent, !isFirstRun);
+    // Copy-paste the vendor files in the project folder.
+    foreach (data; vendorData) std.write(data.name, data.bytes);
     // Clean stuff.
     if (isFirstRun) {
         if (isForMeTheDev) paste(dubFile, dubFileContentForMeTheDev);
@@ -172,7 +194,7 @@ int main(string[] args) {
     isCmdOutputHidden = true;
     auto result = 0;
     auto isFirstRun = !assetsDir.isX;
-    auto isSimpProject = !dubFile.isX;
+    auto isSimpProject = false; // It was: `!dubFile.isX;`. Everyone is using this script for DUB anyway.
     if (isSimpProject) {
         result = runSimpSetup(args, isFirstRun);
     } else {

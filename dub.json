@@ -6,40 +6,40 @@
     "description": "A delightfully simple 2D game engine.",
     "license": "MIT",
     "name": "parin",
-    "stringImportPaths": [
-        "source/parin"
-    ],
+    "stringImportPaths": ["source/parin"],
+    "libs": ["raylib"],
     "subPackages" : [
         "packages/rin",
         "packages/setup",
         "packages/web",
         "packages/mapy",
         "packages/hello",
-        "packages/init-exec"
-    ],
-    "libs": [
-        "raylib"
+        {
+            "name": "init-exec",
+            "sourceFiles": ["packages/setup/source/app.d"],
+            "sourcePaths": [],
+            "targetPath": "build",
+            "targetType": "executable",
+            "stringImportPaths": ["packages/setup/source/"]
+        }
     ],
     "configurations": [
         {
             "name": "linux-x86_64",
             "platforms": ["linux-x86_64"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/vendor/linux_x86_64", "-L."]
+            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/linux_x86_64", "-L."]
         },
         {
             "name": "windows-x86_64",
             "platforms": ["windows-x86_64"],
-            "targetType": "library",
-            "preBuildCommands": [
-                "cmd.exe /c xcopy \"$PACKAGE_DIR\\vendor\\windows_x86_64\\*\" \"$ROOT_PACKAGE_DIR\\\" /Y /I"
-            ]
+            "targetType": "library"
         },
         {
             "name": "osx",
             "platforms": ["osx"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/vendor/macos", "-L."]
+            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/macos", "-L."]
         }
     ]
 }

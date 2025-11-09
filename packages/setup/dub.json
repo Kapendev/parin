@@ -5,5 +5,6 @@
 	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
 	"description": "A helper script that automates the project setup.",
 	"license": "MIT",
-	"name": "setup"
+    "name": "setup",
+    "stringImportPaths": ["source"]
 }

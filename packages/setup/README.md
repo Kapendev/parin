@@ -6,4 +6,4 @@ It creates files in the current folder and supports both DUB and non-DUB project
 ## Usage
 
 * With DUB: `dub run parin:setup`
-* Without DUB: `dmd -run source/app.d`
+* Without DUB: `dmd -J=source -run source/app.d`
