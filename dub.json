@@ -18,7 +18,6 @@
             "name": "init-exec",
             "sourceFiles": ["packages/setup/source/app.d"],
             "sourcePaths": [],
-            "targetPath": "build",
             "targetType": "executable",
             "stringImportPaths": ["packages/setup/source/"]
         }

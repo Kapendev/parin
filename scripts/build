@@ -32,7 +32,7 @@ package_include=''
 # Run the thing.
 $compiler \
     -of=$exe_path -i \
-    -L=-L$parin_package_path/vendor/$version \
+    -L=-L$parin_package_path/packages/setup/source/vendor/$version \
     -J=$parin_package_path/source/parin -J=./assets \
     -I=$source_path $package_include \
     $extra_flags $app_path

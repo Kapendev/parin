@@ -9,6 +9,7 @@ parin.dll
 parin.a
 parin.lib
 parin-test-*
+parin_*
 *.exe
 *.pdb
 *.o

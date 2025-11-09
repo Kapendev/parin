@@ -1,5 +1,3 @@
-#!/bin/env -S dmd -run
-
 // [Noby Script]
 
 struct VendorData {
@@ -28,12 +26,13 @@ version (Windows) {
 }
 
 enum readmeFileContent = "
-# Super Cool Title
+# Cool Title
 
 This game was created with [Parin](https://github.com/Kapendev/parin).
-To compile and play, run:
+To play, run:
 
-```cmd
+```sh
+dub run parin:setup
 dub run
 ```
 "[1 .. $];

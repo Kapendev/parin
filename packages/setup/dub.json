@@ -3,7 +3,7 @@
 		"Alexandros F. G. Kapretsos"
 	],
 	"copyright": "Copyright © 2024, Alexandros F. G. Kapretsos",
-	"description": "A helper script that automates the project setup.",
+    "description": "A helper script that automates the project setup for DUB projects.",
 	"license": "MIT",
     "name": "setup",
     "stringImportPaths": ["source"]
