@@ -107,6 +107,12 @@ sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel li
 sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ```
 
+#### Void
+
+```sh
+sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel mesa MesaLib-devel
+```
+
 ## Documentation
 
 Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
