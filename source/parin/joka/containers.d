@@ -86,7 +86,7 @@ struct List(T) {
     }
 
     @trusted
-    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args...) {
+    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         auto oldLength = length;
         resizeBlank(length + args.length, file, line);
         jokaMemcpy(items.ptr + oldLength, args.ptr, args.length * T.sizeof);
@@ -236,7 +236,7 @@ struct BufferList(T) {
     }
 
     @trusted
-    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args...) {
+    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         append(args);
     }
 
@@ -354,7 +354,7 @@ struct FixedList(T, Sz N) {
     }
 
     @trusted
-    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args...) {
+    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         append(args);
     }
 
@@ -530,7 +530,7 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
     }
 
     @trusted
-    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args...) {
+    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         foreach (arg; args) {
             if (openIndex == data.length) {
                 data.appendSource(file, line, Item(cast(T) arg, true));

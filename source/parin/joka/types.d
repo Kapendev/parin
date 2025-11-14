@@ -341,8 +341,7 @@ Sz offsetOf(T, IStr member)() if (__traits(hasMember, T, member)) {
     return (cast(ubyte*) mixin("&temp.", member)) - (cast(ubyte*) &temp);
 }
 
-pure
-bool isNan(double x) => !(x == x);
+pure bool isNan(double x) => !(x == x);
 
 mixin template addSliceOps(T, TT) if (__traits(hasMember, T, "items")) {
     pragma(inline, true) @trusted nothrow @nogc {
