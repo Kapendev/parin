@@ -29,6 +29,12 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 
 </div>
 
+## Why Parin
+
+- Built for making games. Parin is opinionated and its API is designed specifically for game development.
+- Code and data first. Unlike [Godot](https://godotengine.org/) or [Unity](https://unity.com/), there's no scene or resource magic. Everything behaves exactly as the code says.
+- A guided experience. Unlike [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/), the workflow is closer to an [RPGMaker](https://www.rpgmakerweb.com/)-style toolkit, but as a library you stay fully in control of.
+
 ## Major Features
 
 - Focused 2D engine — not an everything engine
@@ -39,7 +45,6 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 - Intuitive immediate-mode UI
 - Mixed memory model — choose manual control, GC, or both
 - Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
-- Modular design — just `import parin.engine`
 - Includes extras like [microui](examples/integrations/microui.d)
 - Cross-platform (Windows, Linux, macOS, Web)
 
