@@ -32,6 +32,9 @@ enum cflags      = [
     "-sUSE_GLFW=3",
     "-sERROR_ON_UNDEFINED_SYMBOLS=0"
 ];
+enum cflagsExtraForRl = [
+    "-sASYNCIFY",
+];
 
 int doDefaultProject(IStr sourceDir, bool isSimpProject) {
     // Compile the game.
@@ -50,6 +53,7 @@ int doDefaultProject(IStr sourceDir, bool isSimpProject) {
     args ~= "--shell-file";
     args ~= shellFile;
     args ~= cflags;
+    if (isRlProject) args ~= cflagsExtraForRl;
     // Check if the assets folder is empty because emcc will cry about it.
     if (assetsDir.isX) {
         foreach (path; ls(assetsDir, true)) {
@@ -116,15 +120,24 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
     args ~= "-L=-sERROR_ON_UNDEFINED_SYMBOLS=0";
     args ~= "-L=--shell-file";
     args ~= "-L=" ~ shellFile;
+    if (isRlProject) {
+        foreach (f; cflagsExtraForRl) args ~= "-L=" ~ f;
+    }
     auto result = cmd(args);
     clear(".", ".o");
     return result;
 }
 
+auto isGcProject = false;
+auto isRlProject = false;
+
 int main(string[] mainArgs) {
     import stdfile = std.file; // Hack import because nob.d is bad and should be rewritten in Rust.
 
-    auto isGcProject = mainArgs.length > 1 && (mainArgs[1] == "gc" || mainArgs[1] == "-gc" || mainArgs[1] == "--gc");
+    foreach (arg; mainArgs) {
+        if (arg== "gc" || arg == "-gc" || arg == "--gc") isGcProject = true;
+        if (arg== "rl" || arg == "-rl" || arg == "--rl") isRlProject = true;
+    }
     auto isSimpProject = !dubFile.isX;
     auto sourceDir = "source";
     if (!sourceDir.isX) sourceDir = "src";
