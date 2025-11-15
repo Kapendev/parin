@@ -1495,6 +1495,35 @@ void DetachAudioStreamProcessor (AudioStream stream, AudioCallback processor); /
 void AttachAudioMixedProcessor (AudioCallback processor); // Attach audio stream processor to the entire audio pipeline, receives the samples as <float>s
 void DetachAudioMixedProcessor (AudioCallback processor); // Detach audio stream processor from the entire audio pipeline
 
+const(char)* TextFormat(const(char)* text, ...); // Text formatting with variables (sprintf() style)
+
+// --- Stupid section for raylib-d stuff.
+
+// Vector with components value 0.0f
+Vector2 Vector2Zero() => Vector2.zero;
+// Vector with components value 1.0f
+Vector2 Vector2One() => Vector2.one;
+// Add two vectors (v1 + v2)
+Vector2 Vector2Add(Vector2 v1, Vector2 v2) => v1 + v2;
+// Add vector and float value
+Vector2 Vector2AddValue(Vector2 v, float add) => v + Vector2(add);
+// Subtract two vectors (v1 - v2)
+Vector2 Vector2Subtract(Vector2 v1, Vector2 v2) => v1 - v2;
+// Subtract vector by float value
+Vector2 Vector2SubtractValue(Vector2 v, float sub) => v - Vector2(sub);
+// Calculate vector length
+float Vector2Length(Vector2 v) => v.magnitude;
+// Calculate vector square length
+float Vector2LengthSqr(Vector2 v) => v.magnitudeSquared;
+// Scale vector (multiply by value)
+Vector2 Vector2Scale(Vector2 v, float scale) => v * Vector2(scale);
+// Multiply vector by vector
+Vector2 Vector2Multiply(Vector2 v1, Vector2 v2) => v1 * v2;
+// Divide vector by vector
+Vector2 Vector2Divide(Vector2 v1, Vector2 v2) => v1 / v2;
+// Normalize provided vector
+Vector2 Vector2Normalize(Vector2 v) => v.normalize();
+
 // --- Copy-paste section for raylib-d stuff.
 
 //----------------------------------------------------------------------------------
