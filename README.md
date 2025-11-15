@@ -4,15 +4,13 @@ A delightfully simple 2D game engine for the [D programming language](https://dl
 Parin is designed to make game development fast and fun — it's easy to set up, hackable, and comes with the essentials built in.
 
 <div align="center">
-
 <p>
     <strong>Worms Within</strong>
     <br>A bite-sized escape room game.
 </p>
 <a href="https://kapendev.itch.io/worms-within">
-    <img alt="Game 1" width="520px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
+    <img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
 </a>
-
 <br>
 <br>
 <p>
@@ -20,20 +18,21 @@ Parin is designed to make game development fast and fun — it's easy to set up,
     <br>A cute visual novel about looking at an egg.
 </p>
 <a href="https://kapendev.itch.io/a-short-metamorphosis">
-    <img alt="Game 1" width="520px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png">
+    <img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png">
 </a>
 
 <br>
 <br>
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
-
 </div>
 
 ## Why Parin
 
-- Built for making games. Parin is opinionated and its API is designed specifically for game development.
-- Code and data first. Unlike [Godot](https://godotengine.org/) or [Unity](https://unity.com/), there's no scene or resource magic. Everything behaves exactly as the code says.
-- A guided experience. Unlike [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/), the workflow is closer to an [RPGMaker](https://www.rpgmakerweb.com/)-style toolkit, but as a library you stay fully in control of.
+- **Focused on games.** It is opinionated in ways that make common game tasks easier than in general-purpose engines.
+- **Code-driven design.** There's no imposed architecture, allowing freedom on how a game is structured.
+- **A guided workflow.** Parin assumes a few common game-development patterns to smooth out the development experience.
+
+Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones.
 
 ## Major Features
 
@@ -43,10 +42,10 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 - Atlas-based animation library
 - Efficient tile map structures
 - Intuitive immediate-mode UI
-- Mixed memory model — choose manual control, GC, or both
+- Mixed memory model: manual control, GC, or both
 - Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
 - Includes extras like [microui](examples/integrations/microui.d)
-- Cross-platform (Windows, Linux, macOS, Web)
+- Cross-platform: Windows, Linux, Web, macOS
 
 ## Hello World Example
 
