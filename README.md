@@ -9,7 +9,7 @@ Parin is designed to make game development fast and fun — it's easy to set up,
     <br>A bite-sized escape room game.
 </p>
 <a href="https://kapendev.itch.io/worms-within">
-    <img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
+    <img alt="Game 1" width="480px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
 </a>
 <br>
 <br>
@@ -18,7 +18,7 @@ Parin is designed to make game development fast and fun — it's easy to set up,
     <br>A cute visual novel about looking at an egg.
 </p>
 <a href="https://kapendev.itch.io/a-short-metamorphosis">
-    <img alt="Game 1" width="420px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png">
+    <img alt="Game 1" width="480px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png">
 </a>
 
 <br>
