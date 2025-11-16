@@ -28,9 +28,9 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 
 ## Why Parin
 
-- **Focused on games.** It is opinionated in ways that make common game tasks easier than in general-purpose engines.
+- **Focused on games.** It is opinionated in ways that make common game-development tasks easier than in general-purpose engines.
 - **Code-driven design.** There's no imposed architecture, allowing freedom on how a game is structured.
-- **A guided workflow.** Parin assumes a few common game-development patterns to smooth out the development experience.
+- **A guided workflow.** Parin assumes a few common patterns to smooth out the development experience.
 
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones.
 
@@ -157,7 +157,7 @@ git clone --depth 1 https://github.com/Kapendev/parin parin_package
 
 Parin includes a build script for the web in the [packages](packages/) folder.
 Building for the web also requires [Emscripten](https://emscripten.org/).
-By default, Parin's web builds use the BetterC flag, meaning only projects compatible with BetterC can be compiled.
+By default, Parin's web builds use the `betterC` flag, meaning only projects compatible with it can be compiled.
 
 #### Running the script with DUB
 
@@ -172,10 +172,10 @@ dub run parin:web
 # Or: .\parin_package\scripts\web.bat
 ```
 
-Projects requiring the full D runtime can be built using the GC flag.
+Projects requiring the full D runtime can be built using the `gc` flag provided by the build script.
 This flag also requires [OpenD](https://opendlang.org/index.html) and the latest version of Emscripten.
 Note that exceptions are not supported and that some DUB related limitations apply like having to include all dependencies inside the source folder.
-Before using the GC flag, make sure `opend install xpack-emscripten` has been run at least once.
+Make sure `opend install xpack-emscripten` has been run at least once before using it.
 
 #### Using the flag with DUB
 
@@ -210,6 +210,42 @@ sudo dnf install emscripten
 yay -S emscripten
 # Or: sudo pacman -S emscripten
 ```
+
+#### Projects Using raylib-d
+
+Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are partially supported through the `rl` flag.
+A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
+This flag can be combined with the `gc` flag if needed.
+Make sure to add something like this in the dub.json file before using it:
+
+```json
+"configurations": [
+    {
+        "name": "default",
+        "targetType": "executable"
+    },
+    {
+        "name": "wasm",
+        "targetType": "library",
+        "targetName": "game_wasm",
+        "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-i", "--release", "-betterC"]
+    }
+]
+```
+
+#### Using the flag with DUB
+
+```sh
+dub run parin:web -- rl
+```
+
+#### Using rl and gc with DUB
+
+```sh
+dub run parin:web -- rl gc
+```
+
+For most projects, using both `rl` and `gc` should provide the best compatibility.
 
 ### How do I use `Vec2`?
 

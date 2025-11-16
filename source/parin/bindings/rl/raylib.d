@@ -15,6 +15,8 @@ pragma(lib, "raylib");
 import joka = parin.joka.math;
 
 // --- Stupid section for raylib-d stuff.
+nothrow @nogc:
+void validateRaylibBinding() {};
 // Vector with components value 0.0f
 Vector2 Vector2Zero() => Vector2.zero;
 // Vector with components value 1.0f
