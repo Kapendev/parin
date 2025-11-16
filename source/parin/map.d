@@ -16,7 +16,7 @@ import parin.engine;
 
 @safe nothrow:
 
-enum maxTileMapLayerRowColCount = 192;
+enum maxTileMapLayerRowColCount = 144;
 enum maxTileMapLayerCapacity = maxTileMapLayerRowColCount * maxTileMapLayerRowColCount;
 
 alias TileMapLayerData = FixedList!(short, maxTileMapLayerCapacity);
@@ -422,7 +422,7 @@ struct TileMap {
             cast(int) clamp((bottomRightPoint.x - map.position.x) / map.tileWidth + map.extraTileCount, 0, map.colCount - 1),
             cast(int) clamp((bottomRightPoint.y - map.position.y) / map.tileHeight + map.extraTileCount, 0, map.rowCount - 1),
         );
-        foreach (layer; map.layers) {
+        foreach (ref layer; map.layers) {
             foreach (row; colRow1.y .. colRow2.y + 1) {
                 foreach (col; colRow1.x .. colRow2.x + 1) {
                     auto id = layer[row, col];
