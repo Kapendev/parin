@@ -47,28 +47,57 @@ Parin sits somewhere between a small engine like raylib or LÖVE and a big engin
 - Includes extras like [microui](examples/integrations/microui.d)
 - Cross-platform: Windows, Linux, Web, macOS
 
-## Hello World Example
+## Examples
+
+### Hello World
 
 ```d
 import parin;
 
-// Called once when the game starts.
 void ready() {
     lockResolution(320, 180);
 }
 
-// Called every frame while the game is running.
-// If true is returned, then the game will stop running.
 bool update(float dt) {
     drawText("Hello world!", Vec2(8));
     return false;
 }
 
-// Called once when the game ends.
 void finish() {}
 
-// Creates a main function that calls the given functions.
 mixin runGame!(ready, update, finish);
+```
+
+### Simple Editor
+
+```d
+import parin;
+import parin.addons.microui;
+
+Game game;
+
+struct Game {
+    int width = 50;
+    int height = 50;
+    IVec2 point = IVec2(70, 50);
+}
+
+void ready() {
+    readyUi(2);
+}
+
+bool update(float dt) {
+    drawRect(Rect(game.point.x, game.point.y, game.width, game.height));
+    beginUi();
+    if (beginWindow("Edit", UiRect(500, 80, 350, 370))) {
+        headerAndMembers(game, 125);
+        endWindow();
+    }
+    endUi();
+    return false;
+}
+
+mixin runGame!(ready, update, null);
 ```
 
 ## Quick Start

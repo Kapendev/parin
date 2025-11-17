@@ -35,7 +35,7 @@ bool update(float dt) {
 }
 
 void inspect() {
-    if (beginWindow("Window", UiRect(200, 80, 350, 370), UiOptFlag.noClose)) {
+    if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
         headerAndMembers(game, 125);
         endWindow();
     }

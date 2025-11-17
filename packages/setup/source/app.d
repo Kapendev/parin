@@ -40,8 +40,11 @@ dub run
 enum gitFileContent = `
 .dub
 game
+favicon.ico
 lib*
 test*
+index.*
+emscripten_shell.html
 *.wasm
 *.so
 *.dylib
