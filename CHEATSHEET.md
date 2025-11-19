@@ -33,6 +33,8 @@ void setWindowBackgroundColor(Rgba value);
 Rgba windowBorderColor();
 /// Sets the color of the window borders shown when the aspect ratio is fixed.
 void setWindowBorderColor(Rgba value);
+/// Sets the title of the window.
+void setWindowTitle(IStr value);
 /// Sets the window icon using an texture file (PNG).
 Fault setWindowIconFromFiles(IStr path);
 

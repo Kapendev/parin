@@ -9,3 +9,4 @@
 module parin.bindings.em;
 
 public import parin.bindings.em.html5;
+public import parin.bindings.em.emscripten;

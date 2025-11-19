@@ -774,6 +774,15 @@ void setWindowMaxSize(int width, int height) {
     rl.SetWindowMaxSize(width, height);
 }
 
+void setWindowTitle(IStr value) {
+    auto temp = value.toStrz().getOr();
+    version (WebAssembly) {
+        em.emscripten_set_window_title(temp);
+    } else {
+        rl.SetWindowTitle(temp);
+    }
+}
+
 Fault setWindowIconFromFiles(IStr path) {
     version (WebAssembly) {
         return Fault.none;
@@ -858,17 +867,20 @@ bool vsync() {
 }
 
 void setVsync(bool value) {
-    version (WebAssembly) {
-        // NOTE: Add Emscripten code later.
-    } else {
-        if (value == _backendState.vsync) return;
-        _backendState.vsyncIsChanging = true;
-    }
+    if (value == _backendState.vsync) return;
+    _backendState.vsync = value;
+    _backendState.vsyncIsChanging = true;
 }
 
 void updateVsync() {
     if (!_backendState.vsyncIsChanging) return;
-    // NOTE: Maybe one day we will be able to change vsync, so keep da code.
+    version (WebAssembly) {
+        // NOTE: Will not really do something, but anyway. We try.
+        if (_backendState.vsync) em.emscripten_set_main_loop_timing(em.EM_TIMING_RAF, 1);
+        else em.emscripten_set_main_loop_timing(em.EM_TIMING_SETTIMEOUT, 0);
+    } else {
+        // TODO: Maybe one day we will be able to change vsync, so keep da code.
+    }
     _backendState.vsyncIsChanging = false;
 }
 
@@ -877,8 +889,13 @@ bool isCursorVisible() {
 }
 
 void setIsCursorVisible(bool value) {
-    if (value) rl.ShowCursor();
-    else rl.HideCursor();
+    version (WebAssembly) {
+        if (value) {}
+        else em.emscripten_hide_mouse();
+    } else {
+        if (value) rl.ShowCursor();
+        else rl.HideCursor();
+    }
     _backendState.isCursorVisible = value;
 }
 

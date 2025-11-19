@@ -107,10 +107,6 @@ struct EmscriptenTouchEvent {
     StaticArray!(EmscriptenTouchPoint, 32) touches;
 }
 
-void emscripten_set_main_loop(void* ptr, int fps, bool loop);
-void emscripten_cancel_main_loop();
-double emscripten_get_device_pixel_ratio();
-
 EMSCRIPTEN_RESULT emscripten_get_canvas_element_size(const(char)* target, int* width, int* height);
 EMSCRIPTEN_RESULT emscripten_get_element_css_size(const(char)* target, double* width, double* height);
 

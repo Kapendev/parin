@@ -34,6 +34,10 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones.
 
+> [!NOTE]
+> Parin is still early in development.
+> If something is missing, it will probably be added when someone (usually the main developer) needs it.
+
 ## Major Features
 
 - Focused 2D engine — not an everything engine

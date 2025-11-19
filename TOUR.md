@@ -114,9 +114,12 @@ Parin consists of the following modules:
 - `parin.timer`: Time utilities
 - `parin.ui`: Immediate mode UI
 
-The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game.
+The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game. They are sometimes referred to as the core modules.
 All other modules are optional and can be included as needed.
 The `import parin` statement in the example above is a convenience import that includes all modules.
+
+> [!NOTE]
+> The core modules are the most stable ones. Other modules may change as the engine grows.
 
 ## Input
 

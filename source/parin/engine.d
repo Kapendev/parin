@@ -1079,6 +1079,11 @@ void setWindowBorderColor(Rgba value) {
     _engineState.windowBorderColor = value;
 }
 
+/// Sets the title of the window.
+void setWindowTitle(IStr value) {
+    bk.setWindowTitle(value);
+}
+
 /// Sets the window icon using an texture file (PNG).
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 /// Path separators are normalized to the platform's native format.
