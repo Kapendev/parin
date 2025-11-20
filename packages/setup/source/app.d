@@ -146,22 +146,15 @@ void makeBasicSetup() {
     paste(gitFile, gitFileContent, true);
 }
 
-/// The setup code for simple projects.
-int runSimpSetup(string[] args, bool isFirstRun) {
-    makeBasicSetup();
-    // Find the main file and replace its content.
-    auto appDir = "src";
-    if (!appDir.isX) appDir = "source";
-    mkdir(appDir);
-    auto appFile = join(appDir, "main.d");
-    if (!appFile.isX) appFile = join(appDir, "app.d");
-    paste(appFile, appFileContent, !isFirstRun);
-    return 0;
-}
-
 /// The setup code for dub projects.
-int runDubSetup(string[] args, bool isFirstRun) {
+int runDubSetup(string[] args, bool isFirstRun, bool isJustUsingVendor = false) {
     import std = std.file;
+
+    // Only copy-paste the vendor files in the project folder. Nice for testing.
+    if (isJustUsingVendor) {
+        foreach (data; vendorData) std.write(data.name, data.bytes);
+        return 0;
+    }
 
     auto isForMeTheDev = args.length > 1 && args[1] == "dev";
     // Create basic stuff and clone the dub files.
@@ -191,17 +184,19 @@ int runDubSetup(string[] args, bool isFirstRun) {
     return 0;
 }
 
+auto isJustCreatingLibs = false;
+
 int main(string[] args) {
     isCmdLineHidden = true;
     isCmdOutputHidden = true;
+
     auto result = 0;
     auto isFirstRun = !assetsDir.isX;
-    auto isSimpProject = false; // It was: `!dubFile.isX;`. Everyone is using this script for DUB anyway.
-    if (isSimpProject) {
-        result = runSimpSetup(args, isFirstRun);
-    } else {
-        result = runDubSetup(args, isFirstRun);
+    auto isJustUsingVendor = false;
+    foreach (arg; args) {
+        if (arg == "vendor" || arg == "-vendor" || arg == "--vendor") isJustUsingVendor = true;
     }
+    result = runDubSetup(args, isFirstRun, isJustUsingVendor);
     if (result == 0) echo("Done!");
     return result;
 }
