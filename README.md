@@ -278,7 +278,9 @@ For most projects, using both `gc` and `rl` should provide the best compatibilit
 ### How do I Upload Web Builds to itch.io?
 
 1. Open the web folder.
+
 2. Select these files and add them to a ZIP file:
+
     ```
     favicon.ico
     index.data
@@ -286,10 +288,15 @@ For most projects, using both `gc` and `rl` should provide the best compatibilit
     index.js
     index.wasm
     ```
+
 3. Go to itch.io and create a new project.
+
 4. Under "Kind of project", choose "HTML".
+
 5. Upload the ZIP file.
+
 6. Enable the option "This file will be played in the browser".
+
 7. Save the changes.
 
 ### How do I use `Vec2`?
