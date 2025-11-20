@@ -39,13 +39,16 @@ enum cflagsExtraForRl = [
 int doDefaultProject(IStr sourceDir, bool isSimpProject) {
     // Compile the game.
     if (isSimpProject) {
-        IStr[] args = ["ldc2", "-i", "-c", "-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC", "--release"];
+        IStr[] args = ["ldc2", "-i", "-c", "-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC"];
+        if (isReleaseBuild) args ~= "--release";
         args ~= "-I=" ~ sourceDir;
         args ~= "-J=" ~ join(sourceDir, "parin");
         foreach (path; ls(sourceDir)) if (path.endsWith(".d")) { args ~= path; }
         if (cmd(args)) return 1;
     } else {
-        if (cmd("dub", "build", "--compiler", "ldc2", "--build", "release", "--config", dubConfig)) return 1;
+        IStr[] args = ["dub", "build", "--compiler", "ldc2", "--config", dubConfig];
+        if (isReleaseBuild) args ~= ["--build", "release"];
+        if (cmd(args)) return 1;
     }
     // Build the web app.
     IStr dubLibFile = "";
@@ -104,7 +107,10 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
         foreach (path; ls(parinPackageSourcePath, true)) if (path.endsWith(".d")) files ~= path;
     }
 
-    IStr[] args = ["opend", "--target=emscripten", "-of" ~ outputFile];
+    IStr[] args = ["opend"];
+    if (isReleaseBuild) args ~= "publish";
+    else args ~= "build";
+    args ~= ["--target=emscripten", "-of" ~ outputFile];
     // The hack part.
     args ~= files;
     args ~= "-I=" ~ sourceDir;
@@ -120,6 +126,16 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
     args ~= "-L=-sERROR_ON_UNDEFINED_SYMBOLS=0";
     args ~= "-L=--shell-file";
     args ~= "-L=" ~ shellFile;
+    // Check if the assets folder is empty because emcc will cry about it.
+    if (assetsDir.isX) {
+        foreach (path; ls(assetsDir, true)) {
+            if (path.isF) {
+                args ~= "-L=--preload-file";
+                args ~= "-L=" ~ assetsDir;
+                break;
+            }
+        }
+    }
     if (isRlProject) {
         foreach (f; cflagsExtraForRl) args ~= "-L=" ~ f;
     }
@@ -130,13 +146,15 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
 
 auto isGcProject = false;
 auto isRlProject = false;
+auto isReleaseBuild = true;
 
 int main(string[] mainArgs) {
     import stdfile = std.file; // Hack import because nob.d is bad and should be rewritten in Rust.
 
     foreach (arg; mainArgs) {
-        if (arg== "gc" || arg == "-gc" || arg == "--gc") isGcProject = true;
-        if (arg== "rl" || arg == "-rl" || arg == "--rl") isRlProject = true;
+        if (arg == "gc" || arg == "-gc" || arg == "--gc") isGcProject = true;
+        if (arg == "rl" || arg == "-rl" || arg == "--rl") isRlProject = true;
+        if (arg == "debug" || arg == "-debug" || arg == "--debug") isReleaseBuild = false;
     }
     auto isSimpProject = !dubFile.isX;
     auto sourceDir = "source";

@@ -10,17 +10,22 @@ module parin.bindings.em.html5;
 
 import parin.joka.types;
 
+private alias pthread_t = uint; // MONKEY I AM SO SORRY...
+
 nothrow @nogc extern(C):
 
-enum EMSCRIPTEN_EVENT_KEYPRESS               = 1;
-enum EMSCRIPTEN_EVENT_KEYDOWN                = 2;
-enum EMSCRIPTEN_EVENT_KEYUP                  = 3;
-enum EMSCRIPTEN_EVENT_CLICK                  = 4;
-enum EMSCRIPTEN_EVENT_MOUSEDOWN              = 5;
-enum EMSCRIPTEN_EVENT_MOUSEUP                = 6;
-enum EMSCRIPTEN_EVENT_DBLCLICK               = 7;
-enum EMSCRIPTEN_EVENT_MOUSEMOVE              = 8;
-enum EMSCRIPTEN_EVENT_WHEEL                  = 9;
+enum EM_CALLBACK_THREAD_CONTEXT_MAIN_RUNTIME_THREAD = cast(pthread_t) 0x1;
+enum EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD      = cast(pthread_t) 0x2;
+
+enum EMSCRIPTEN_EVENT_KEYPRESS              = 1;
+enum EMSCRIPTEN_EVENT_KEYDOWN               = 2;
+enum EMSCRIPTEN_EVENT_KEYUP                 = 3;
+enum EMSCRIPTEN_EVENT_CLICK                 = 4;
+enum EMSCRIPTEN_EVENT_MOUSEDOWN             = 5;
+enum EMSCRIPTEN_EVENT_MOUSEUP               = 6;
+enum EMSCRIPTEN_EVENT_DBLCLICK              = 7;
+enum EMSCRIPTEN_EVENT_MOUSEMOVE             = 8;
+enum EMSCRIPTEN_EVENT_WHEEL                 = 9;
 enum EMSCRIPTEN_EVENT_RESIZE                = 10;
 enum EMSCRIPTEN_EVENT_SCROLL                = 11;
 enum EMSCRIPTEN_EVENT_BLUR                  = 12;
@@ -55,8 +60,8 @@ enum EMSCRIPTEN_EVENT_POINTERLOCKERROR      = 38;
 /// Zero and positive values denote success, while negative values signal failure.
 alias EMSCRIPTEN_RESULT = int;
 
-alias em_mouse_callback_func = bool function(int eventType, const(EmscriptenMouseEvent)* mouseEvent, void* userData);
-alias em_touch_callback_func = bool function(int eventType, const(EmscriptenTouchEvent)* touchEvent, void* userData);
+alias em_mouse_callback_func = bool function(int eventType, EmscriptenMouseEvent* mouseEvent, void* userData);
+alias em_touch_callback_func = bool function(int eventType, EmscriptenTouchEvent* touchEvent, void* userData);
 
 struct EmscriptenMouseEvent {
     double timestamp = 0;
@@ -110,16 +115,16 @@ struct EmscriptenTouchEvent {
 EMSCRIPTEN_RESULT emscripten_get_canvas_element_size(const(char)* target, int* width, int* height);
 EMSCRIPTEN_RESULT emscripten_get_element_css_size(const(char)* target, double* width, double* height);
 
-EMSCRIPTEN_RESULT emscripten_set_click_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_mousedown_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_mouseup_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_dblclick_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_mousemove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_mouseenter_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_mouseleave_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback);
+EMSCRIPTEN_RESULT emscripten_set_click_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mousedown_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mouseup_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_dblclick_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mousemove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mouseenter_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mouseleave_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
 EMSCRIPTEN_RESULT emscripten_get_mouse_status(EmscriptenMouseEvent* mouseState);
 
-EMSCRIPTEN_RESULT emscripten_set_touchstart_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_touchend_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_touchmove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback);
-EMSCRIPTEN_RESULT emscripten_set_touchcancel_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback);
+EMSCRIPTEN_RESULT emscripten_set_touchstart_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchend_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchmove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchcancel_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);

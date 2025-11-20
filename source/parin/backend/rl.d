@@ -144,7 +144,7 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
 
     version (WebAssembly) {
-        static extern(C) nothrow @nogc bool _webMouseCallback(int eventType, const(em.EmscriptenMouseEvent)* mouseEvent, void* userData) {
+        static extern(C) nothrow @nogc bool _webMouseCallback(int eventType, em.EmscriptenMouseEvent* mouseEvent, void* userData) {
             switch (eventType) {
                 case em.EMSCRIPTEN_EVENT_MOUSEMOVE:
                     _backendState.mouseBuffer = Vec2(mouseEvent.clientX, mouseEvent.clientY);
@@ -153,7 +153,21 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
                     return false;
             }
         }
-        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_webMouseCallback);
+        static extern(C) nothrow @nogc bool _webTouchCallback(int eventType, em.EmscriptenTouchEvent* touchEvent, void* userData) {
+            switch (eventType) {
+                case em.EMSCRIPTEN_EVENT_TOUCHMOVE:
+                case em.EMSCRIPTEN_EVENT_TOUCHSTART:
+                case em.EMSCRIPTEN_EVENT_TOUCHEND:
+                    _backendState.mouseBuffer = Vec2(touchEvent.touches[0].clientX, touchEvent.touches[0].clientY);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+        em.emscripten_set_mousemove_callback_on_thread(targetHtmlElementId, null, true, &_webMouseCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
+        em.emscripten_set_touchmove_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
+        em.emscripten_set_touchstart_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
+        em.emscripten_set_touchend_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
     }
 }
 

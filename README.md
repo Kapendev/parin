@@ -223,6 +223,7 @@ dub run parin:web -- gc
 # Or: .\parin_package\scripts\web.bat gc
 ```
 
+To speed up build times, use the `debug` flag.
 Below are installation commands for Emscripten for some Linux distributions.
 
 #### Ubuntu
@@ -269,16 +270,27 @@ Make sure to add something like this in the dub.json file before using it:
 #### Using the flag with DUB
 
 ```sh
-dub run parin:web -- rl
+dub run parin:web -- gc rl
 ```
 
-#### Using rl and gc with DUB
+For most projects, using both `gc` and `rl` should provide the best compatibility.
 
-```sh
-dub run parin:web -- rl gc
-```
+### How do I Upload Web Builds to itch.io?
 
-For most projects, using both `rl` and `gc` should provide the best compatibility.
+1. Open the web folder.
+2. Select these files and add them to a ZIP file:
+    ```
+    favicon.ico
+    index.data
+    index.html
+    index.js
+    index.wasm
+    ```
+3. Go to itch.io and create a new project.
+4. Under "Kind of project", choose "HTML".
+5. Upload the ZIP file.
+6. Enable the option "This file will be played in the browser".
+7. Save the changes.
 
 ### How do I use `Vec2`?
 
