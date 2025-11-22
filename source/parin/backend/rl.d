@@ -294,13 +294,31 @@ void freeAllViewports(bool canSkipFirst) {
     }
 }
 
-Sz textureCount() => _backendState.textures.length - 1;
-Sz fontCount() => _backendState.fonts.length - 1;
-Sz soundCount() => _backendState.sounds.length - 1;
-Sz viewportCount() => _backendState.viewports.length - 1;
+Sz textureCount() {
+    return _backendState.textures.length - 1;
+}
 
-pragma(inline, true) bool resourceIsNull(ResourceId id) => id.value == 0;
-pragma(inline, true) bool textureIsValid(ResourceId id) => !id.resourceIsNull && _backendState.textures.has(id);
+Sz fontCount() {
+    return _backendState.fonts.length - 1;
+}
+
+Sz soundCount() {
+    return _backendState.sounds.length - 1;
+}
+
+Sz viewportCount() {
+    return _backendState.viewports.length - 1;
+}
+
+pragma(inline, true)
+bool resourceIsNull(ResourceId id) {
+    return id.value == 0;
+}
+
+pragma(inline, true)
+bool textureIsValid(ResourceId id) {
+    return !id.resourceIsNull && _backendState.textures.has(id);
+}
 
 Filter textureFilter(ResourceId id) {
     if (id.resourceIsNull) return Filter.init;
@@ -353,7 +371,10 @@ void textureFree(ResourceId id) {
     _backendState.textures.remove(id);
 }
 
-pragma(inline, true) bool fontIsValid(ResourceId id) => !id.resourceIsNull && _backendState.fonts.has(id);
+pragma(inline, true)
+bool fontIsValid(ResourceId id) {
+    return !id.resourceIsNull && _backendState.fonts.has(id);
+}
 
 Filter fontFilter(ResourceId id) {
     if (id.resourceIsNull) return Filter.init;
@@ -432,7 +453,10 @@ void fontFree(ResourceId id) {
     _backendState.fonts.remove(id);
 }
 
-pragma(inline, true) bool soundIsValid(ResourceId id) => !id.resourceIsNull && _backendState.sounds.has(id);
+pragma(inline, true)
+bool soundIsValid(ResourceId id) {
+    return !id.resourceIsNull && _backendState.sounds.has(id);
+}
 
 float soundVolume(ResourceId id) {
     if (id.resourceIsNull) return 0.0f;
@@ -570,7 +594,10 @@ void soundFree(ResourceId id) {
     _backendState.sounds.remove(id);
 }
 
-pragma(inline, true) bool viewportIsValid(ResourceId id) => !id.resourceIsNull && _backendState.viewports.has(id);
+pragma(inline, true)
+bool viewportIsValid(ResourceId id) {
+    return !id.resourceIsNull && _backendState.viewports.has(id);
+}
 
 Filter viewportFilter(ResourceId id) {
     if (id.resourceIsNull) return Filter.init;
@@ -928,23 +955,61 @@ void pumpEvents() {
     foreach (id; _backendState.sounds.ids) updateSound(id);
 }
 
-bool isDown(char key) => rl.IsKeyDown(toRl(key));
-bool isDown(Keyboard key) => rl.IsKeyDown(toRl(key));
-bool isDown(Mouse key) => rl.IsMouseButtonDown(toRl(key));
-bool isDown(Gamepad key, int id = 0) => rl.IsGamepadButtonDown(id, toRl(key));
+bool isDown(char key) {
+    return rl.IsKeyDown(toRl(key));
+}
 
-bool isPressed(char key) => rl.IsKeyPressed(toRl(key));
-bool isPressed(Keyboard key) => rl.IsKeyPressed(toRl(key));
-bool isPressed(Mouse key) => rl.IsMouseButtonPressed(toRl(key));
-bool isPressed(Gamepad key, int id = 0) => rl.IsGamepadButtonPressed(id, toRl(key));
+bool isDown(Keyboard key) {
+    return rl.IsKeyDown(toRl(key));
+}
 
-bool isReleased(char key) => rl.IsKeyReleased(toRl(key));
-bool isReleased(Keyboard key) => rl.IsKeyReleased(toRl(key));
-bool isReleased(Mouse key) => rl.IsMouseButtonReleased(toRl(key));
-bool isReleased(Gamepad key, int id = 0) => rl.IsGamepadButtonReleased(id, toRl(key));
+bool isDown(Mouse key) {
+    return rl.IsMouseButtonDown(toRl(key));
+}
 
-Vec2 mouse() => _backendState.mouseBuffer;
-Vec2 deltaMouse() => Vec2(rl.GetMouseDelta().x, rl.GetMouseDelta().y);
+bool isDown(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonDown(id, toRl(key));
+}
+
+bool isPressed(char key) {
+    return rl.IsKeyPressed(toRl(key));
+}
+
+bool isPressed(Keyboard key) {
+    return rl.IsKeyPressed(toRl(key));
+}
+
+bool isPressed(Mouse key) {
+    return rl.IsMouseButtonPressed(toRl(key));
+}
+
+bool isPressed(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonPressed(id, toRl(key));
+}
+
+bool isReleased(char key) {
+    return rl.IsKeyReleased(toRl(key));
+}
+
+bool isReleased(Keyboard key) {
+    return rl.IsKeyReleased(toRl(key));
+}
+
+bool isReleased(Mouse key) {
+    return rl.IsMouseButtonReleased(toRl(key));
+}
+
+bool isReleased(Gamepad key, int id = 0) {
+    return rl.IsGamepadButtonReleased(id, toRl(key));
+}
+
+Vec2 mouse() {
+    return _backendState.mouseBuffer;
+}
+
+Vec2 deltaMouse() {
+    return Vec2(rl.GetMouseDelta().x, rl.GetMouseDelta().y);
+}
 
 // TODO: The value still depends on target. Fix that one day?
 float deltaWheel() {

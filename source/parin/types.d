@@ -304,36 +304,79 @@ struct Camera {
     }
 
     /// The X position of the camera.
-    @trusted ref float x() => position.x;
+    @trusted ref float x() {
+        return position.x;
+    }
+
     /// The Y position of the camera.
-    @trusted ref float y() => position.y;
+    @trusted ref float y() {
+        return position.y;
+    }
+
     /// The sum of the position and the offset of the camera.
-    Vec2 sum() => position + offset;
+    Vec2 sum() {
+        return position + offset;
+    }
+
     /// Returns the current hook associated with the camera.
-    Hook hook() => isCentered ? Hook.center : Hook.topLeft;
+    Hook hook() {
+        return isCentered ? Hook.center : Hook.topLeft;
+    }
+
     /// Returns the origin of the camera.
-    Vec2 origin(Vec2 canvasSize) => Rect(canvasSize / Vec2(scale)).origin(hook);
+    Vec2 origin(Vec2 canvasSize) {
+        return Rect(canvasSize / Vec2(scale)).origin(hook);
+    }
+
     /// Returns the area covered by the camera.
-    Rect area(Vec2 canvasSize) => Rect(sum, canvasSize / Vec2(scale)).area(hook);
+    Rect area(Vec2 canvasSize) {
+        return Rect(sum, canvasSize / Vec2(scale)).area(hook);
+    }
 
     /// Returns the top left point of the camera.
-    Vec2 topLeftPoint(Vec2 canvasSize) => area(canvasSize).topLeftPoint;
+    Vec2 topLeftPoint(Vec2 canvasSize) {
+        return area(canvasSize).topLeftPoint;
+    }
+
     /// Returns the top point of the camera.
-    Vec2 topPoint(Vec2 canvasSize) => area(canvasSize).topPoint;
+    Vec2 topPoint(Vec2 canvasSize) {
+        return area(canvasSize).topPoint;
+    }
+
     /// Returns the top right point of the camera.
-    Vec2 topRightPoint(Vec2 canvasSize) => area(canvasSize).topRightPoint;
+    Vec2 topRightPoint(Vec2 canvasSize) {
+        return area(canvasSize).topRightPoint;
+    }
+
     /// Returns the left point of the camera.
-    Vec2 leftPoint(Vec2 canvasSize) => area(canvasSize).leftPoint;
+    Vec2 leftPoint(Vec2 canvasSize) {
+        return area(canvasSize).leftPoint;
+    }
+
     /// Returns the center point of the camera.
-    Vec2 centerPoint(Vec2 canvasSize) => area(canvasSize).centerPoint;
+    Vec2 centerPoint(Vec2 canvasSize) {
+        return area(canvasSize).centerPoint;
+    }
+
     /// Returns the right point of the camera.
-    Vec2 rightPoint(Vec2 canvasSize) => area(canvasSize).rightPoint;
+    Vec2 rightPoint(Vec2 canvasSize) {
+        return area(canvasSize).rightPoint;
+    }
+
     /// Returns the bottom left point of the camera.
-    Vec2 bottomLeftPoint(Vec2 canvasSize) => area(canvasSize).bottomLeftPoint;
+    Vec2 bottomLeftPoint(Vec2 canvasSize) {
+        return area(canvasSize).bottomLeftPoint;
+    }
+
     /// Returns the bottom point of the camera.
-    Vec2 bottomPoint(Vec2 canvasSize) => area(canvasSize).bottomPoint;
+    Vec2 bottomPoint(Vec2 canvasSize) {
+        return area(canvasSize).bottomPoint;
+    }
+
     /// Returns the bottom right point of the camera.
-    Vec2 bottomRightPoint(Vec2 canvasSize) => area(canvasSize).bottomRightPoint;
+    Vec2 bottomRightPoint(Vec2 canvasSize) {
+        return area(canvasSize).bottomRightPoint;
+    }
 
     void floor() {
         position = position.floor();

@@ -15,32 +15,72 @@ pragma(lib, "raylib");
 import joka = parin.joka.math;
 
 // --- Stupid section for raylib-d stuff.
+
 nothrow @nogc:
+
 void validateRaylibBinding() {};
+
 // Vector with components value 0.0f
-Vector2 Vector2Zero() => Vector2.zero;
+Vector2 Vector2Zero() {
+    return Vector2.zero;
+}
+
 // Vector with components value 1.0f
-Vector2 Vector2One() => Vector2.one;
+Vector2 Vector2One() {
+    return Vector2.one;
+}
+
 // Add two vectors (v1 + v2)
-Vector2 Vector2Add(Vector2 v1, Vector2 v2) => v1 + v2;
+Vector2 Vector2Add(Vector2 v1, Vector2 v2) {
+    return v1 + v2;
+}
+
 // Add vector and float value
-Vector2 Vector2AddValue(Vector2 v, float add) => v + Vector2(add);
+Vector2 Vector2AddValue(Vector2 v, float add) {
+    return v + Vector2(add);
+}
+
 // Subtract two vectors (v1 - v2)
-Vector2 Vector2Subtract(Vector2 v1, Vector2 v2) => v1 - v2;
+Vector2 Vector2Subtract(Vector2 v1, Vector2 v2) {
+    return v1 - v2;
+}
+
 // Subtract vector by float value
-Vector2 Vector2SubtractValue(Vector2 v, float sub) => v - Vector2(sub);
+Vector2 Vector2SubtractValue(Vector2 v, float sub) {
+    return v - Vector2(sub);
+}
+
 // Calculate vector length
-float Vector2Length(Vector2 v) => v.magnitude;
+float Vector2Length(Vector2 v) {
+    return v.magnitude;
+}
+
 // Calculate vector square length
-float Vector2LengthSqr(Vector2 v) => v.magnitudeSquared;
+float Vector2LengthSqr(Vector2 v) {
+    return v.magnitudeSquared;
+}
+
 // Scale vector (multiply by value)
-Vector2 Vector2Scale(Vector2 v, float scale) => v * Vector2(scale);
+Vector2 Vector2Scale(Vector2 v, float scale) {
+    return v * Vector2(scale);
+}
+
 // Multiply vector by vector
-Vector2 Vector2Multiply(Vector2 v1, Vector2 v2) => v1 * v2;
+Vector2 Vector2Multiply(Vector2 v1, Vector2 v2) {
+    return v1 * v2;
+}
+
 // Divide vector by vector
-Vector2 Vector2Divide(Vector2 v1, Vector2 v2) => v1 / v2;
+Vector2 Vector2Divide(Vector2 v1, Vector2 v2) {
+    return v1 / v2;
+}
+
 // Normalize provided vector
-Vector2 Vector2Normalize(Vector2 v) => v.normalize();
+Vector2 Vector2Normalize(Vector2 v) {
+    return v.normalize();
+}
+
+// --- Normal section for raylib stuff.
 
 nothrow @nogc extern(C):
 

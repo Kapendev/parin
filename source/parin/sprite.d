@@ -103,9 +103,6 @@ struct Sprite {
 
     @safe nothrow @nogc:
 
-    deprecated("Will be replaced with isActive.")
-    alias isRunning = isActive;
-
     /// Initializes the sprite with the specified size, atlas position, and optional world position.
     this(short width, short height, ushort atlasLeft, ushort atlasTop, Vec2 position = Vec2(), Hook hook = Hook.topLeft) {
         this.width = width;
@@ -126,11 +123,27 @@ struct Sprite {
     }
 
     pragma(inline, true) {
-        @trusted ref float x() => position.x;
-        @trusted ref float y() => position.y;
-        Vec2 size() => Vec2(width, height);
-        Rect area() => Rect(position, width, height).area(hook); // NOTE: Can be bad if someone sets a custom origin in the options.
-        bool hasSize() => width != 0 && height != 0;
+        @trusted
+        ref float x() {
+            return position.x;
+        }
+
+        @trusted
+        ref float y() {
+            return position.y;
+        }
+
+        Vec2 size() {
+            return Vec2(width, height);
+        }
+
+        Rect area() {
+            return Rect(position, width, height).area(hook); // NOTE: Can be bad if someone sets a custom origin in the options.
+        }
+
+        bool hasSize() {
+            return width != 0 && height != 0;
+        }
 
         /// Returns true if the sprite is currently active (running).
         bool isActive() {

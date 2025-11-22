@@ -16,7 +16,7 @@ import parin.joka.types;
 
 @safe nothrow:
 
-enum defaultListCapacity = 16; /// The default list capacity. It is also the smallest list capacity.
+enum defaultListCapacity = 32; /// The default list capacity. It is also the smallest list capacity.
 
 alias LStr         = List!char;            /// A dynamic string of chars.
 alias LStr16       = List!wchar;           /// A dynamic string of wchars.
@@ -85,6 +85,7 @@ struct List(T) {
         jokaMemcpy(items.ptr + oldLength, args.ptr, args.length * T.sizeof);
     }
 
+    // NOTE: There is no good reason here for args having a default value, but I keep it for reference.
     @trusted
     void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         auto oldLength = length;
@@ -216,10 +217,21 @@ struct BufferList(T) {
             append(args);
         }
 
-        T[] items() => data[0 .. length];
-        T* ptr() => data.ptr;
-        bool isEmpty() => length == 0;
-        Sz capacity() => data.length;
+        T[] items() {
+            return data[0 .. length];
+        }
+
+        T* ptr() {
+            return data.ptr;
+        }
+
+        bool isEmpty() {
+            return length == 0;
+        }
+
+        Sz capacity() {
+            return data.length;
+        }
     }
 
     @trusted
@@ -334,9 +346,18 @@ struct FixedList(T, Sz N) {
             append(args);
         }
 
-        T[] items() => data.items[0 .. length];
-        T* ptr() => data.ptr;
-        bool isEmpty() => length == 0;
+        T[] items() {
+            return data.items[0 .. length];
+        }
+
+        T* ptr() {
+            return data.ptr;
+        }
+
+        bool isEmpty() {
+            return length == 0;
+        }
+
         enum capacity = N;
     }
 

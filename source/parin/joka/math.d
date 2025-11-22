@@ -224,11 +224,22 @@ struct Rgba {
             this(r, r, r, 255);
         }
 
-        @trusted ubyte[] items() => (cast(ubyte*) &this)[0 .. length];
-        bool isZero() => r == 0 && g == 0 && b == 0 && a == 0;
-        bool isOne() =>r == 1 && g == 1 && b == 1 && a == 1;
+        @trusted ubyte[] items() {
+            return (cast(ubyte*) &this)[0 .. length];
+        }
+
+        bool isZero() {
+            return r == 0 && g == 0 && b == 0 && a == 0;
+        }
+
+        bool isOne() {
+            return r == 1 && g == 1 && b == 1 && a == 1;
+        }
+
         /// Returns a color with just the alpha modified.
-        Rgba alpha(ubyte value) => Rgba(r, g, b, value);
+        Rgba alpha(ubyte value) {
+            return Rgba(r, g, b, value);
+        }
     }
 }
 
@@ -280,11 +291,25 @@ struct GVec2(T) {
             this(x, x);
         }
 
-        @trusted T[] items() => (cast(T*) &this)[0 .. length];
-        bool isZero() => x == 0 && y == 0;
-        bool isOne() => x == 1 && y == 1;
-        T chop() => x;
-        GVec2!T abs() => GVec2!T(x.abs, y.abs);
+        @trusted T[] items() {
+            return (cast(T*) &this)[0 .. length];
+        }
+
+        bool isZero() {
+            return x == 0 && y == 0;
+        }
+
+        bool isOne() {
+            return x == 1 && y == 1;
+        }
+
+        T chop() {
+            return x;
+        }
+
+        GVec2!T abs() {
+            return GVec2!T(x.abs, y.abs);
+        }
     }
 
     GVec2!T floor() {
@@ -477,11 +502,25 @@ struct GVec3(T) {
             this(xy.x, xy.y, z);
         }
 
-        @trusted T[] items() => (cast(T*) &this)[0 .. length];
-        bool isZero() => x == 0 && y == 0 && z == 0;
-        bool isOne() => x == 1 && y == 1 && z == 1;
-        GVec2!T chop() => GVec2!T(x, y);
-        GVec3!T abs() => GVec3!T(x.abs, y.abs, z.abs);
+        @trusted T[] items() {
+            return (cast(T*) &this)[0 .. length];
+        }
+
+        bool isZero() {
+            return x == 0 && y == 0 && z == 0;
+        }
+
+        bool isOne() {
+            return x == 1 && y == 1 && z == 1;
+        }
+
+        GVec2!T chop() {
+            return GVec2!T(x, y);
+        }
+
+        GVec3!T abs() {
+            return GVec3!T(x.abs, y.abs, z.abs);
+        }
     }
 
     GVec3!T floor() {
@@ -676,11 +715,25 @@ struct GVec4(T) {
             this(xyz.x, xyz.y, xyz.z, w);
         }
 
-        @trusted T[] items() => (cast(T*) &this)[0 .. length];
-        bool isZero() => x == 0 && y == 0 && z == 0 && w == 0;
-        bool isOne() => x == 1 && y == 1 && z == 1 && w == 1;
-        GVec3!T chop() => GVec3!T(x, y, z);
-        GVec4!T abs() => GVec4!T(x.abs, y.abs, z.abs, w.abs);
+        @trusted T[] items() {
+            return (cast(T*) &this)[0 .. length];
+        }
+
+        bool isZero() {
+            return x == 0 && y == 0 && z == 0 && w == 0;
+        }
+
+        bool isOne() {
+            return x == 1 && y == 1 && z == 1 && w == 1;
+        }
+
+        GVec3!T chop() {
+            return GVec3!T(x, y, z);
+        }
+
+        GVec4!T abs() {
+            return GVec4!T(x.abs, y.abs, z.abs, w.abs);
+        }
     }
 
     GVec4!T floor() {
@@ -904,15 +957,36 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         }
 
         /// The X position of the rectangle.
-        @trusted ref P x() => position.x;
+        @trusted
+        ref P x() {
+            return position.x;
+        }
+
         /// The Y position of the rectangle.
-        @trusted ref P y() => position.y;
+        @trusted
+        ref P y() {
+            return position.y;
+        }
+
         /// The width of the rectangle.
-        @trusted ref S w() => size.x;
+        @trusted
+        ref S w() {
+            return size.x;
+        }
+
         /// The height of the rectangle.
-        @trusted ref S h() => size.y;
-        bool hasSize() => size.x != 0 && size.y != 0;
-        Self abs() => Self(position.abs, size.abs);
+        @trusted
+        ref S h() {
+            return size.y;
+        }
+
+        bool hasSize() {
+            return size.x != 0 && size.y != 0;
+        }
+
+        Self abs() {
+            return Self(position.abs, size.abs);
+        }
 
         GVec2!P origin(Hook hook) {
             static if (__traits(isFloating, P)) {
@@ -1270,12 +1344,24 @@ struct GCirc(T) {
         }
 
         /// The X position of the circle.
-        @trusted ref T x() => position.x;
-        /// The Y position of the circle.
-        @trusted ref T y() => position.y;
+        @trusted
+        ref T x() {
+            return position.x;
+        }
 
-        bool hasSize() => radius != 0;
-        GCirc!T abs() => GCirc!T(position.abs, radius.abs);
+        /// The Y position of the circle.
+        @trusted
+        ref T y() {
+            return position.y;
+        }
+
+        bool hasSize() {
+            return radius != 0;
+        }
+
+        GCirc!T abs() {
+            return GCirc!T(position.abs, radius.abs);
+        }
     }
 
     GCirc!T floor() {
@@ -1353,12 +1439,29 @@ struct GLine(T) {
             this(GVec2!T(ax, ay), b);
         }
 
-        @trusted ref T x1() => a.x;
-        @trusted ref T y1() => a.y;
-        @trusted ref T x2() => b.x;
-        @trusted ref T y2() => b.y;
+        @trusted
+        ref T x1() {
+            return a.x;
+        }
 
-        GLine!T abs() => GLine!T(a.abs, b.abs);
+        @trusted
+        ref T y1() {
+            return a.y;
+        }
+
+        @trusted
+        ref T x2() {
+            return b.x;
+        }
+
+        @trusted
+        ref T y2() {
+            return b.y;
+        }
+
+        GLine!T abs() {
+            return GLine!T(a.abs, b.abs);
+        }
     }
 
     GLine!T floor() {

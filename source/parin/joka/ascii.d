@@ -497,6 +497,29 @@ IStr[] split(IStr str, char sep) {
     return split(str, charToStr(sep));
 }
 
+/// Returns true if the given path is absolute.
+bool isAbsolutePath(IStr path, PathSepStyle style = PathSepStyle.native) {
+    if (path.length == 0) return false;
+    auto isPosix = style == PathSepStyle.posix;
+    if (style == PathSepStyle.native) {
+        version (Windows) isPosix = false;
+        else isPosix = true;
+    }
+    if (isPosix) {
+        return path.startsWith("/");
+    } else {
+        if (path.startsWith("\\\\")) {
+            return true; // UNC.
+        } else if (path[0].isAlpha) {
+            return path[1 .. $].startsWith(":\\") || path[1 .. $].startsWith(":/"); // Drive.
+        } else if (path.startsWith("/") || path.startsWith("\\")) {
+            return true; // Rooted.
+        } else {
+            return false;
+        }
+    }
+}
+
 /// Returns the main and alternate separators for the given style.
 IStrPair pathSepStrPair(PathSepStyle style) {
     with (PathSepStyle) final switch (style) {
@@ -1000,6 +1023,13 @@ unittest {
         assert(pathConcat("", "two/") == "two");
         assert(pathConcat("", "/two/") == "/two");
     }
+    assert(isAbsolutePath("\\\\dw", PathSepStyle.windows) == true);
+    assert(isAbsolutePath("C:/dw", PathSepStyle.windows) == true);
+    assert(isAbsolutePath("c:/dw", PathSepStyle.windows) == true);
+    assert(isAbsolutePath("C:dw", PathSepStyle.windows) == false);
+    assert(isAbsolutePath("c:dw", PathSepStyle.windows) == false);
+    assert(isAbsolutePath("C:", PathSepStyle.windows) == false);
+    assert(isAbsolutePath("c:", PathSepStyle.windows) == false);
     assert(pathConcat("one", "two").pathDirName() == "one");
     assert(pathConcat("one").pathDirName() == ".");
     assert(pathConcat("one.csv").pathExtName() == ".csv");

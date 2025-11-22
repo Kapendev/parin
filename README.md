@@ -20,7 +20,6 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 <a href="https://kapendev.itch.io/a-short-metamorphosis">
     <img alt="Game 1" width="480px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png">
 </a>
-
 <br>
 <br>
 <p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
@@ -115,7 +114,7 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
-For instructions on building without DUB, check the "[How can I build without DUB?](#how-can-i-build-without-dub)" section.
+For instructions on building without DUB, check the ["How can I build without DUB?"](#how-can-i-build-without-dub) section.
 
 ### Required Libraries on Linux
 
@@ -291,11 +290,11 @@ For most projects, using both `gc` and `rl` should provide the best compatibilit
 
 3. Go to itch.io and create a new project.
 
-4. Under "Kind of project", choose "HTML".
+4. Under "Kind of project", choose "HTML."
 
 5. Upload the ZIP file.
 
-6. Enable the option "This file will be played in the browser".
+6. Enable the option "This file will be played in the browser."
 
 7. Save the changes.
 

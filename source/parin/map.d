@@ -44,25 +44,83 @@ struct Tile {
     }
 
     pragma(inline, true) {
-        @trusted ref float x() => position.x;
-        @trusted ref float y() => position.y;
-        Sz row(Sz colCount) => (id + idOffset) / colCount;
-        Sz col(Sz colCount) => (id + idOffset) % colCount;
-        Vec2 size() => Vec2(width, height);
-        Rect area() => Rect(position, width, height);
-        Rect textureArea(Sz colCount) => Rect(col(colCount) * width, row(colCount) * height, width, height);
-        bool isEmpty() => !hasId;
-        bool hasId() => id + idOffset >= 0;
-        bool hasSize() => width != 0 && height != 0;
-        bool hasIdAndSize() => (id + idOffset >= 0) && (width != 0 && height != 0);
-        bool hasIntersection(Rect otherArea) => area.hasIntersection(otherArea);
-        bool hasIntersection(Tile otherTile) => hasIntersection(otherTile.area);
-        bool hasIntersectionInclusive(Rect otherArea) => area.hasIntersectionInclusive(otherArea);
-        bool hasIntersectionInclusive(Tile otherTile) => hasIntersectionInclusive(otherTile.area);
-        Rect intersection(Rect otherArea) => area.intersection(otherArea);
-        Rect intersection(Tile otherTile) => intersection(otherTile.area);
-        Rect merger(Rect otherArea) => area.merger(otherArea);
-        Rect merger(Tile otherTile) => merger(otherTile.area);
+        @trusted
+        ref float x() {
+            return position.x;
+        }
+
+        @trusted
+        ref float y() {
+            return position.y;
+        }
+
+        Sz row(Sz colCount) {
+            return (id + idOffset) / colCount;
+        }
+
+        Sz col(Sz colCount) {
+            return (id + idOffset) % colCount;
+        }
+
+        Vec2 size() {
+            return Vec2(width, height);
+        }
+
+        Rect area() {
+            return Rect(position, width, height);
+        }
+
+        Rect textureArea(Sz colCount) {
+            return Rect(col(colCount) * width, row(colCount) * height, width, height);
+        }
+
+        bool isEmpty() {
+            return !hasId;
+        }
+
+        bool hasId() {
+            return id + idOffset >= 0;
+        }
+
+        bool hasSize() {
+            return width != 0 && height != 0;
+        }
+
+        bool hasIdAndSize() {
+            return (id + idOffset >= 0) && (width != 0 && height != 0);
+        }
+
+        bool hasIntersection(Rect otherArea) {
+            return area.hasIntersection(otherArea);
+        }
+
+        bool hasIntersection(Tile otherTile) {
+            return hasIntersection(otherTile.area);
+        }
+
+        bool hasIntersectionInclusive(Rect otherArea) {
+            return area.hasIntersectionInclusive(otherArea);
+        }
+
+        bool hasIntersectionInclusive(Tile otherTile) {
+            return hasIntersectionInclusive(otherTile.area);
+        }
+
+        Rect intersection(Rect otherArea) {
+            return area.intersection(otherArea);
+        }
+
+        Rect intersection(Tile otherTile) {
+            return intersection(otherTile.area);
+        }
+
+        Rect merger(Rect otherArea) {
+            return area.merger(otherArea);
+        }
+
+        Rect merger(Tile otherTile) {
+            return merger(otherTile.area);
+        }
     }
 
     /// Moves the tile to follow the target position at the specified speed.
@@ -131,24 +189,76 @@ struct TileMap {
             return opIndexOpAssign!(op)(rhs, position.y, position.x, layerId);
         }
 
-        @trusted ref float x() => position.x;
-        @trusted ref float y() => position.y;
-        int width() => cast(int) (colCount * tileWidth);
-        int height() => cast(int) (rowCount * tileHeight);
-        Vec2 size() => Vec2(width, height);
-        Vec2 tileSize() => Vec2(tileWidth, tileHeight);
-        Sz hardRowCount() => layers[0].rowCount;
-        Sz hardColCount() => layers[0].colCount;
+        @trusted
+        ref float x() {
+            return position.x;
+        }
 
-        bool isEmpty() => layers.isEmpty;
-        bool has(Sz row, Sz col) => row < rowCount && col < colCount;
-        bool has(IVec2 position) => has(position.y, position.x);
-        bool hasTileSize() => tileWidth != 0 && tileHeight != 0;
-        bool hasSize() => hasTileSize && rowCount != 0 && colCount != 0;
-        Vec2 worldPointAt(int gridX, int gridY) => Vec2(position.x + gridX * tileWidth, position.y + gridY * tileHeight);
-        Vec2 worldPointAt(IVec2 gridPoint) => worldPointAt(gridPoint.x, gridPoint.y);
-        IVec2 gridPointAt(float worldX, float worldY) => IVec2(cast(int) floor((worldX - position.x) / tileWidth), cast(int) floor((worldY - position.y) / tileHeight));
-        IVec2 gridPointAt(Vec2 worldPoint) => gridPointAt(worldPoint.x, worldPoint.y);
+        @trusted
+        ref float y() {
+            return position.y;
+        }
+
+        int width() {
+            return cast(int) (colCount * tileWidth);
+        }
+
+        int height() {
+            return cast(int) (rowCount * tileHeight);
+        }
+
+        Vec2 size() {
+            return Vec2(width, height);
+        }
+
+        Vec2 tileSize() {
+            return Vec2(tileWidth, tileHeight);
+        }
+
+        Sz hardRowCount() {
+            return layers[0].rowCount;
+        }
+
+        Sz hardColCount() {
+            return layers[0].colCount;
+        }
+
+
+        bool isEmpty() {
+            return layers.isEmpty;
+        }
+
+        bool has(Sz row, Sz col) {
+            return row < rowCount && col < colCount;
+        }
+
+        bool has(IVec2 position) {
+            return has(position.y, position.x);
+        }
+
+        bool hasTileSize() {
+            return tileWidth != 0 && tileHeight != 0;
+        }
+
+        bool hasSize() {
+            return hasTileSize && rowCount != 0 && colCount != 0;
+        }
+
+        Vec2 worldPointAt(int gridX, int gridY) {
+            return Vec2(position.x + gridX * tileWidth, position.y + gridY * tileHeight);
+        }
+
+        Vec2 worldPointAt(IVec2 gridPoint) {
+            return worldPointAt(gridPoint.x, gridPoint.y);
+        }
+
+        IVec2 gridPointAt(float worldX, float worldY) {
+            return IVec2(cast(int) floor((worldX - position.x) / tileWidth), cast(int) floor((worldY - position.y) / tileHeight));
+        }
+
+        IVec2 gridPointAt(Vec2 worldPoint) {
+            return gridPointAt(worldPoint.x, worldPoint.y);
+        }
     }
 
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {

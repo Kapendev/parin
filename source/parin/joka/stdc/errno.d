@@ -35,7 +35,7 @@ version (CRuntime_Microsoft) {
     alias errno = __error;
 } else version (DragonFlyBSD) {
     pragma(mangle, "errno") int __errno;
-    ref int __error() => __errno;
+    ref int __error() { return __errno; }
     alias errno = __error;
 } else version (CRuntime_Bionic) {
     ref int __errno();

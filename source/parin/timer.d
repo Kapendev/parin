@@ -22,9 +22,6 @@ struct Timer {
 
     @safe nothrow @nogc:
 
-    deprecated("Will be replaced with pauseTime.")
-    alias pausedTime = pauseTime;
-
     /// Initializes the timer with the specified duration and repeat behavior.
     this(float duration, bool canRepeat = false) {
         this.duration = duration;
@@ -120,11 +117,4 @@ struct Timer {
             pauseTime = time;
         }
     }
-
-    deprecated("Will be replaced with isActive.")
-    alias isRunning = isActive;
-    deprecated("Will be removed because it does nothing now.")
-    void update(float dt) {};
-    deprecated("Will be replaced with setTime.")
-    void time(float newTime) => setTime(newTime);
 }

@@ -211,7 +211,7 @@ struct mu_Array(T, size_t N) {
 
     enum length = N;
 
-    @trusted nothrow @nogc:
+    pragma(inline, true) @trusted nothrow @nogc:
 
     this(const(T)[] items...) {
         if (items.length > N) assert(0, "Too many items.");
@@ -219,49 +219,40 @@ struct mu_Array(T, size_t N) {
         foreach (i; 0 .. N) datadata[i] = cast(T) items[i];
     }
 
-    pragma(inline, true)
     T[] opSlice(size_t dim)(size_t i, size_t j) {
         return items[i .. j];
     }
 
-    pragma(inline, true)
     T[] opIndex() {
         return items[];
     }
 
-    pragma(inline, true)
     T[] opIndex(T[] slice) {
         return slice;
     }
 
-    pragma(inline, true)
     ref T opIndex(size_t i) {
         return items[i];
     }
 
-    pragma(inline, true)
     void opIndexAssign(const(T) rhs, size_t i) {
         items[i] = cast(T) rhs;
     }
 
-    pragma(inline, true)
     void opIndexOpAssign(const(char)[] op)(const(T) rhs, size_t i) {
         mixin("items[i]", op, "= cast(T) rhs;");
     }
 
-    pragma(inline, true)
     size_t opDollar(size_t dim)() {
         return N;
     }
 
     /// Returns the items of the array.
-    pragma(inline, true)
     T[] items() {
         return (cast(T*) data.ptr)[0 .. N];
     }
 
     /// Returns the pointer of the array.
-    pragma(inline, true)
     T* ptr() {
         return cast(T*) data.ptr;
     }
@@ -271,20 +262,17 @@ struct mu_Array(T, size_t N) {
 struct mu_Stack(T, size_t N) {
     int idx;
     mu_Array!(T, N) data = void;
-
     alias data this;
 
-    @safe nothrow @nogc:
+    pragma(inline, true) @safe nothrow @nogc:
 
     /// Pushes a value onto the stack.
-    pragma(inline, true)
     void push(T val) {
         items[idx] = val;
         idx += 1; /* incremented after incase `val` uses this value */
     }
 
     /// Pops a value off the stack.
-    pragma(inline, true)
     void pop() {
         mu_expect(idx > 0);
         idx -= 1;
@@ -294,24 +282,29 @@ struct mu_Stack(T, size_t N) {
 /// A RGBA color using ubytes.
 struct mu_Color {
     ubyte r, g, b, a;
-
-    @safe nothrow @nogc pure:
-
-    pragma(inline, true)
-    mu_Color shift(int value) => mu_shift_color(this, value);
 }
 
 /// A 2D rectangle using ints.
 struct mu_Rect {
     int x, y, w, h;
 
-    @safe nothrow @nogc pure:
+    pragma(inline, true) @safe nothrow @nogc pure:
 
-    pragma(inline, true):
-    mu_Rect expand(int n) => mu_expand_rect(this, n);
-    mu_Rect intersect(mu_Rect r2) => mu_intersect_rects(this, r2);
-    bool overlaps(mu_Vec2 p) => mu_rect_overlaps_vec2(this, p);
-    bool hasSize() => mu_rect_has_size(this);
+    mu_Rect expand(int n) {
+        return mu_expand_rect(this, n);
+    }
+
+    mu_Rect intersect(mu_Rect r2) {
+        return mu_intersect_rects(this, r2);
+    }
+
+    bool overlaps(mu_Vec2 p) {
+        return mu_rect_overlaps_vec2(this, p);
+    }
+
+    bool hasSize() {
+        return mu_rect_has_size(this);
+    }
 }
 
 /// A 2D vector using ints.
@@ -649,19 +642,35 @@ private @trusted {
 
     // The microui assert function.
     nothrow @nogc pure
-    void mu_expect(bool x, const(char)[] message = "Fatal microui error.") => assert(x, message);
+    void mu_expect(bool x, const(char)[] message = "Fatal microui error.") {
+        assert(x, message);
+    }
+
     // Temporary text measurement function for prototyping.
     nothrow @nogc pure
-    int mu_temp_text_width_func(mu_Font font, const(char)[] str) => 200;
+    int mu_temp_text_width_func(mu_Font font, const(char)[] str) {
+        return 200;
+    }
+
     // Temporary text measurement function for prototyping.
     nothrow @nogc pure
-    int mu_temp_text_height_func(mu_Font font) => 20;
+    int mu_temp_text_height_func(mu_Font font) {
+        return 20;
+    }
 }
 
 pragma(inline, true) @safe nothrow @nogc pure {
-    T mu_min(T)(T a, T b)        => ((a) < (b) ? (a) : (b));
-    T mu_max(T)(T a, T b)        => ((a) > (b) ? (a) : (b));
-    T mu_clamp(T)(T x, T a, T b) => mu_min(b, mu_max(a, x));
+    T mu_min(T)(T a, T b) {
+        return ((a) < (b) ? (a) : (b));
+    }
+
+    T mu_max(T)(T a, T b) {
+        return ((a) > (b) ? (a) : (b));
+    }
+
+    T mu_clamp(T)(T x, T a, T b) {
+        return mu_min(b, mu_max(a, x));
+    }
 
     /// Returns true if the character is a symbol (!, ", ...).
     bool mu_is_symbol_char(char c) {
@@ -692,10 +701,6 @@ pragma(inline, true) @safe nothrow @nogc pure {
 
     mu_Color mu_color(ubyte r, ubyte g, ubyte b, ubyte a) {
         return mu_Color(r, g, b, a);
-    }
-
-    mu_Color mu_shift_color(mu_Color c, int value) {
-        return mu_color(cast(ubyte) (c.r + value), cast(ubyte) (c.g + value), cast(ubyte) (c.b + value), c.a);
     }
 
     mu_Rect mu_expand_rect(mu_Rect rect, int n) {

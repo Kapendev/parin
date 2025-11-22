@@ -5,6 +5,8 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
+// TODO: Got kinda lazy. You could add more helper functions. Maybe do it later. Maybe a Go-like thing would be nice.
+
 /// The `cli` module provides command-line parsing utilities.
 module parin.joka.cli;
 
@@ -84,8 +86,6 @@ ArgTokenRange toArgTokens(const(IStr)[] args...) {
 auto toArgTokensFromStr(IStr args) {
     return toArgTokens(args.toCliArgs());
 }
-
-// TODO: Got kinda lazy. You could add more helper functions. Maybe do it later.
 
 /// Returns true if the first argument matches the given command.
 bool hasCommand(const(IStr)[] args, IStr command) {

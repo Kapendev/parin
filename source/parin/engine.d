@@ -849,7 +849,7 @@ Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FI
 /// Path separators are normalized to the platform's native format.
 Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = writeText(path.toAssetsPath(), text);
-    if (isLoggingLoadOrSaveFaults && result) printfln!(StdStream.error)(defaultEngineSaveErrorMessage, file, line, "text", path.toAssetsPath());
+    if (isLoggingLoadOrSaveFaults && result) eprintfln(defaultEngineSaveErrorMessage, file, line, "text", path.toAssetsPath());
     return result;
 }
 
@@ -981,7 +981,7 @@ IStr assetsPath() {
 /// Converts a path to one within the assets folder.
 /// Returns the path unchanged if it is absolute or asset paths are disabled.
 IStr toAssetsPath(IStr path) {
-    if (path.startsWith(pathSep) || !isUsingAssetsPath) return path;
+    if (!isUsingAssetsPath || path.isAbsolutePath) return path;
     return pathConcat(assetsPath, path).pathFmt();
 }
 
@@ -1448,7 +1448,7 @@ Fault lastLoadOrSaveFault() {
 bool didLoadOrSaveSucceed(Fault fault, IStr message) {
     if (fault) {
         _engineState.lastLoadOrSaveFault = fault;
-        if (isLoggingLoadOrSaveFaults) println!(StdStream.error)(message);
+        if (isLoggingLoadOrSaveFaults) eprintln(message);
         return false;
     }
     return true;
@@ -1483,53 +1483,106 @@ void freeAllResourceIds() {
 }
 
 /// Returns the current mouse position on the window.
-Vec2 mouse() => _engineState.mouseBuffer;
+Vec2 mouse() {
+    return _engineState.mouseBuffer;
+}
+
 /// Returns the change in mouse position since the last frame.
-Vec2 deltaMouse() => bk.deltaMouse;
+Vec2 deltaMouse() {
+    return bk.deltaMouse;
+}
+
 /// Returns the change in mouse wheel position since the last frame.
-float deltaWheel() => bk.deltaWheel;
+float deltaWheel() {
+    return bk.deltaWheel;
+}
 
 /// Returns true if the specified character is currently pressed.
-bool isDown(char key) => key ? bk.isDown(key) : false;
+bool isDown(char key) {
+    return key ? bk.isDown(key) : false;
+}
+
 /// Returns true if the specified keyboard key is currently pressed.
-bool isDown(Keyboard key) => key ? bk.isDown(key) : false;
+bool isDown(Keyboard key) {
+    return key ? bk.isDown(key) : false;
+}
+
 /// Returns true if the specified mouse button is currently pressed.
-bool isDown(Mouse key) => key ? bk.isDown(key) : false;
+bool isDown(Mouse key) {
+    return key ? bk.isDown(key) : false;
+}
+
 /// Returns true if the specified gamepad button is currently pressed.
-bool isDown(Gamepad key, int id = 0) => key ? bk.isDown(key, id) : false;
+bool isDown(Gamepad key, int id = 0) {
+    return key ? bk.isDown(key, id) : false;
+}
 
 /// Returns true if the specified character was pressed this frame.
-bool isPressed(char key) => key ? bk.isPressed(key) : false;
+bool isPressed(char key) {
+    return key ? bk.isPressed(key) : false;
+}
+
 /// Returns true if the specified keyboard key was pressed this frame.
-bool isPressed(Keyboard key) => key ? bk.isPressed(key) : false;
+bool isPressed(Keyboard key) {
+    return key ? bk.isPressed(key) : false;
+}
+
 /// Returns true if the specified mouse button was pressed this frame.
-bool isPressed(Mouse key) => key ? bk.isPressed(key) : false;
+bool isPressed(Mouse key) {
+    return key ? bk.isPressed(key) : false;
+}
+
 /// Returns true if the specified gamepad button was pressed this frame.
-bool isPressed(Gamepad key, int id = 0) => key ? bk.isPressed(key, id) : false;
+bool isPressed(Gamepad key, int id = 0) {
+    return key ? bk.isPressed(key, id) : false;
+}
 
 /// Returns true if the specified character was released this frame.
-bool isReleased(char key) => key ? bk.isReleased(key) : false;
+bool isReleased(char key) {
+    return key ? bk.isReleased(key) : false;
+}
+
 /// Returns true if the specified keyboard key was released this frame.
-bool isReleased(Keyboard key) => key ? bk.isReleased(key) : false;
+bool isReleased(Keyboard key) {
+    return key ? bk.isReleased(key) : false;
+}
+
 /// Returns true if the specified mouse button was released this frame.
-bool isReleased(Mouse key) => key ? bk.isReleased(key) : false;
+bool isReleased(Mouse key) {
+    return key ? bk.isReleased(key) : false;
+}
+
 /// Returns true if the specified gamepad button was released this frame.
-bool isReleased(Gamepad key, int id = 0) => key ? bk.isReleased(key, id) : false;
+bool isReleased(Gamepad key, int id = 0) {
+    return key ? bk.isReleased(key, id) : false;
+}
 
 /// Returns the direction from the WASD and arrow keys that are currently down. The result is not normalized.
-Vec2 wasd() => _engineState.wasdBuffer;
+Vec2 wasd() {
+    return _engineState.wasdBuffer;
+}
+
 /// Returns the direction from the WASD and arrow keys that were pressed this frame. The result is not normalized.
-Vec2 wasdPressed() => _engineState.wasdPressedBuffer;
+Vec2 wasdPressed() {
+    return _engineState.wasdPressedBuffer;
+}
+
 /// Returns the direction from the WASD and arrow keys that were released this frame. The result is not normalized.
-Vec2 wasdReleased() => _engineState.wasdReleasedBuffer;
+Vec2 wasdReleased() {
+    return _engineState.wasdReleasedBuffer;
+}
 
 /// Returns the next recently pressed keyboard key.
 /// This acts like a queue. Returns `Keyboard.none` if the queue is empty.
-Keyboard dequeuePressedKey() => bk.dequeuePressedKey();
+Keyboard dequeuePressedKey() {
+    return bk.dequeuePressedKey();
+}
 
 /// Returns the next recently pressed character.
 /// This acts like a queue. Returns `\0` if the queue is empty.
-dchar dequeuePressedRune() => bk.dequeuePressedRune();
+dchar dequeuePressedRune() {
+    return bk.dequeuePressedRune();
+}
 
 /// Attaches the given camera and makes it active.
 void attach(ref Camera camera, Rounding type = Rounding.none) {
