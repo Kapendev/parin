@@ -1,0 +1,11 @@
+#!/bin/env sh
+
+## For testing if examples compile.
+
+set -xe
+
+ls examples/basics/*.d | xargs -I xx dmd -i -of=.temp -I=source -J=source/parin -L=-Lpackages/setup/source/vendor/linux_x86_64 xx
+ls examples/games/*.d | xargs -I xx dmd -i -of=.temp -I=source -J=source/parin -L=-Lpackages/setup/source/vendor/linux_x86_64 xx
+ls examples/ui/*.d | xargs -I xx dmd -i -of=.temp -I=source -J=source/parin -L=-Lpackages/setup/source/vendor/linux_x86_64 xx
+
+dmd -i -of=.temp -I=source -J=source/parin -L=-Lpackages/setup/source/vendor/linux_x86_64 examples/integrations/microui.d

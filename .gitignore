@@ -2,7 +2,6 @@
 docs.json
 __dummy.html
 docs/
-/parin
 parin.so
 parin.dylib
 parin.dll
@@ -17,3 +16,6 @@ parin_*
 *.lst
 lib*
 dub.selections.json
+.temp
+!scripts/parin_helpers/*
+!scripts/parin_helpers
