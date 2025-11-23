@@ -469,7 +469,7 @@ mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMembe
         }
     }
 
-    @trusted nothrow @nogc {
+    @trusted nothrow @nogc pure {
         T _swizzleN(G)(const(G)[] args...) {
             if (args.length != N) assert(0, "Wrong swizzle length.");
             T result = void;
@@ -498,6 +498,18 @@ mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMembe
             } else {
                 return _swizzleN(args);
             }
+        }
+
+        TT min() {
+            auto result = mixin(form[0]);
+            foreach (item; items[1 .. $]) if (item < result) result = item;
+            return result;
+        }
+
+        TT max() {
+            auto result = mixin(form[0]);
+            foreach (item; items[1 .. $]) if (item > result) result = item;
+            return result;
         }
     }
 }

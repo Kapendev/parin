@@ -121,6 +121,9 @@ struct EngineState {
     CallFunc debugModeBeginFunc;
     CallFunc debugModeEndFunc;
     Keyboard debugModeKey = defaultEngineDebugModeKey;
+    bool debugModePreviousState;
+    bool debugModeEnteringFrameState;
+    bool debugModeExitingFrameState;
 
     EngineViewportInfo viewportInfoBuffer;
     Vec2 mouseBuffer;
@@ -554,22 +557,25 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
         bk.clearBackground(_engineState.viewport.data.color);
 
         // Update and draw the game.
+        auto dt = deltaTime;
         bk.beginDroppedPaths();
         _engineState.arena.clear();
-        auto dt = deltaTime;
-        foreach (id; _engineState.tasks.ids) {
-            if (_engineState.tasks[id].update(dt)) cancel(id);
-        }
+        _engineState.debugModePreviousState = isDebugMode;
+
+        foreach (id; _engineState.tasks.ids) if (_engineState.tasks[id].update(dt)) cancel(id);
         auto result = _engineState.updateFunc(dt);
-        if (_engineState.dprintIsVisible) {
-            drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
-        }
         if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
-        if (isDebugMode) {
+        if (isDebugMode || isExitingDebugMode) {
             if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
             if (_engineState.debugModeFunc) _engineState.debugModeFunc();
             if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
         }
+        if (_engineState.dprintIsVisible) {
+            drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
+        }
+
+        _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
+        _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
         bk.endDroppedPaths();
 
         // End drawing.
@@ -1027,11 +1033,27 @@ bool isDebugMode() {
     return cast(bool) (_engineState.flags & EngineFlag.isDebugMode);
 }
 
+/// Returns true when entering debug mode this frame.
+bool isEnteringDebugMode() {
+    return _engineState.debugModeEnteringFrameState;
+}
+
+/// Returns true when exiting debug mode this frame.
+bool isExitingDebugMode() {
+    return _engineState.debugModeExitingFrameState;
+}
+
 /// Sets whether debug mode should be active.
 void setIsDebugMode(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isDebugMode
         : _engineState.flags & ~EngineFlag.isDebugMode;
+    if (_engineState.flags & EngineFlag.isUpdating) {
+    } else {
+        // NOTE: Copy-paste from update window function.
+        _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
+        _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
+    }
 }
 
 /// Toggles the debug mode on or off.

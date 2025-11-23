@@ -8,7 +8,11 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 ```d
 /// Returns true if debug mode is active.
 bool isDebugMode();
-/// Sets whether debug mode should be active.
+/// Returns true when entering debug mode this frame.
+bool isEnteringDebugMode();
+/// Returns true when exiting debug mode this frame.
+bool isExitingDebugMode();
+/// Sets whether debug mode should be active
 void setIsDebugMode(bool value);
 /// Toggles the debug mode on or off.
 void toggleIsDebugMode();
