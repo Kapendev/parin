@@ -147,6 +147,8 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
 auto isGcProject = false;
 auto isRlProject = false;
 auto isReleaseBuild = true;
+auto isBuildOnly = false;
+auto isTargetItch = false;
 
 int main(string[] mainArgs) {
     import stdfile = std.file; // Hack import because nob.d is bad and should be rewritten in Rust.
@@ -155,6 +157,8 @@ int main(string[] mainArgs) {
         if (arg == "gc" || arg == "-gc" || arg == "--gc") isGcProject = true;
         if (arg == "rl" || arg == "-rl" || arg == "--rl") isRlProject = true;
         if (arg == "debug" || arg == "-debug" || arg == "--debug") isReleaseBuild = false;
+        if (arg == "build" || arg == "-build" || arg == "--build") isBuildOnly = true;
+        if (arg == "itch" || arg == "-itch" || arg == "--itch") isTargetItch = true;
     }
     auto isSimpProject = !dubFile.isX;
     auto sourceDir = "source";
@@ -171,8 +175,32 @@ int main(string[] mainArgs) {
         if (doDefaultProject(sourceDir, isSimpProject)) return 1;
     }
     clear(".", ".o");
+    // For making the ZIP file that itch.io needs.
+    if (isTargetItch) {
+        auto target = join(webDir, "game_web.zip");
+        if (target.isX) rm(target);
+        version (Windows) {
+            echo("Was too lazy to think how to zip on Windows. Open an issue on GitHub.");
+        } else {
+            if (cmd("zip", "--version")) {
+                echo("Can't create archive without `zip` installed.");
+            } else {
+                IStr[] args = [
+                    "zip",
+                    "-j",
+                    target,
+                    join(webDir, "favicon.ico"),
+                    join(webDir, "index.html"),
+                    join(webDir, "index.js"),
+                    join(webDir, "index.wasm"),
+                ];
+                if (join(webDir, "index.data").isX) args ~= join(webDir, "index.data");
+                if (cmd(args)) return 1;
+            }
+        }
+    }
     // Run the web app.
-    return cmd(emrunName, outputFile);
+    return isBuildOnly ? 0 : cmd(emrunName, outputFile);
 }
 
 // [Noby Library]

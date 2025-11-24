@@ -188,7 +188,7 @@ git clone --depth 1 https://github.com/Kapendev/parin parin_package
 ### How do I make a web build?
 
 Parin includes a build script for the web in the [packages](packages/) folder.
-Building for the web also requires [Emscripten](https://emscripten.org/).
+Building for the web requires [Emscripten](https://emscripten.org/) (the latest version is recommended).
 By default, Parin's web builds use the `betterC` flag, meaning only projects compatible with it can be compiled.
 
 #### Running the script with DUB
@@ -224,6 +224,7 @@ dub run parin:web -- gc
 
 To speed up build times, use the `debug` flag.
 Below are installation commands for Emscripten for some Linux distributions.
+Note that some of these may not install the latest version.
 
 #### Ubuntu
 
@@ -297,6 +298,10 @@ For most projects, using both `gc` and `rl` should provide the best compatibilit
 6. Enable the option "This file will be played in the browser."
 
 7. Save the changes.
+
+The web build script provides the `itch` flag to automate the first two steps.
+It currently only works on Linux and macOS.
+Contributions to add Windows support are welcome.
 
 ### How do I use `Vec2`?
 

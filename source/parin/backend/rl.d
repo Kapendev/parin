@@ -158,7 +158,9 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
                 case em.EMSCRIPTEN_EVENT_TOUCHMOVE:
                 case em.EMSCRIPTEN_EVENT_TOUCHSTART:
                 case em.EMSCRIPTEN_EVENT_TOUCHEND:
-                    _backendState.mouseBuffer = Vec2(touchEvent.touches[0].clientX, touchEvent.touches[0].clientY);
+                    if (touchEvent.numTouches) {
+                        _backendState.mouseBuffer = Vec2(touchEvent.touches[0].clientX, touchEvent.touches[0].clientY);
+                    }
                     return true;
                 default:
                     return false;

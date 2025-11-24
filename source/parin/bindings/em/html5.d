@@ -10,9 +10,9 @@ module parin.bindings.em.html5;
 
 import parin.joka.types;
 
-private alias pthread_t = uint; // MONKEY I AM SO SORRY...
-
 nothrow @nogc extern(C):
+
+alias pthread_t = uint;
 
 enum EM_CALLBACK_THREAD_CONTEXT_MAIN_RUNTIME_THREAD = cast(pthread_t) 0x1;
 enum EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD      = cast(pthread_t) 0x2;

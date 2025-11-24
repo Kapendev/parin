@@ -687,8 +687,8 @@ IStr skipLine(ref inout(char)[] str) {
 }
 
 /// Converts the boolean value to its string representation.
-IStr boolToStr(bool value, bool shortMode = false) {
-    return value ? (shortMode ? "T" : "true") : (shortMode ? "F" : "false");
+IStr boolToStr(bool value, bool isShortName = false, bool isLower = false) {
+    return value ? (isShortName ? (isLower ? "t" : "T") : "true") : (isShortName ? (isLower ? "f" : "F") : "false");
 }
 
 /// Converts the character to its string representation.
@@ -812,10 +812,10 @@ IStr enumToStr(T)(T value) {
 }
 
 /// Converts the string to a bool.
-Maybe!bool toBool(IStr str) {
-    if (str == "false" || str == "F" || str == "f") {
+Maybe!bool toBool(IStr str, bool isFullNameOnly = false, bool isUpperOnly = false) {
+    if (str == "false" || (isFullNameOnly ? false : (isUpperOnly ? str == "F" : str == "F" || str == "f"))) {
         return Maybe!bool(false);
-    } else if (str == "true" || str == "T" || str == "t") {
+    } else if (str == "true" || (isFullNameOnly ? false : (isUpperOnly ? str == "T" : str == "T" || str == "t"))) {
         return Maybe!bool(true);
     } else {
         return Maybe!bool(Fault.invalid);
@@ -1050,9 +1050,11 @@ unittest {
     assert(skipLine(str) == "");
 
     assert(boolToStr(false) == "false");
-    assert(boolToStr(true) == "true");
     assert(boolToStr(false, true) == "F");
+    assert(boolToStr(false, true, true) == "f");
+    assert(boolToStr(true) == "true");
     assert(boolToStr(true, true) == "T");
+    assert(boolToStr(true, true, true) == "t");
     assert(charToStr('L') == "L");
 
     assert(unsignedToStr(0) == "0");
@@ -1087,11 +1089,29 @@ unittest {
     assert(enumToStr(TestEnum.two) == "two");
 
     assert(toBool("false").isSome == true);
+    assert(toBool("true").isSome == true);
     assert(toBool("F").isSome == true);
     assert(toBool("f").isSome == true);
-    assert(toBool("true").isSome == true);
     assert(toBool("T").isSome == true);
     assert(toBool("t").isSome == true);
+    assert(toBool("false", true).isSome == true);
+    assert(toBool("true", true).isSome == true);
+    assert(toBool("F", true).isSome == false);
+    assert(toBool("f", true).isSome == false);
+    assert(toBool("T", true).isSome == false);
+    assert(toBool("t", true).isSome == false);
+    assert(toBool("false", true, true).isSome == true);
+    assert(toBool("true", true, true).isSome == true);
+    assert(toBool("F", true, true).isSome == false);
+    assert(toBool("f", true, true).isSome == false);
+    assert(toBool("T", true, true).isSome == false);
+    assert(toBool("t", true, true).isSome == false);
+    assert(toBool("false", false, true).isSome == true);
+    assert(toBool("true", false, true).isSome == true);
+    assert(toBool("F", false, true).isSome == true);
+    assert(toBool("f", false, true).isSome == false);
+    assert(toBool("T", false, true).isSome == true);
+    assert(toBool("t", false, true).isSome == false);
 
     assert(toUnsigned("1_069").isSome == false);
     assert(toUnsigned("1_069").getOr() == 0);
