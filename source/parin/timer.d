@@ -108,6 +108,11 @@ struct Timer {
         return duration - time;
     }
 
+    /// Returns the remaining time, or zero if inactive.
+    float timeLeftOrZero() {
+        return isActive ? timeLeft : 0.0f;
+    }
+
     /// Sets the current time of the timer.
     /// If the given value is non-zero, the timer becomes active.
     void setTime(float newTime) {

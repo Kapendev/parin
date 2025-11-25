@@ -265,7 +265,7 @@ Make sure to add something like this in the dub.json file before using it:
 
 Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
 
-### How do I Upload Web Builds to itch.io?
+### How do I upload web builds to itch.io?
 
 1. Open the web folder.
 

@@ -428,6 +428,50 @@ mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMembe
             }
         }
 
+        T opBinary(IStr op)(TT rhs) {
+            static if (N == 2) {
+                return T(
+                    cast(TT) mixin(form[0], op, "rhs"),
+                    cast(TT) mixin(form[1], op, "rhs"),
+                );
+            } else static if (N == 3) {
+                return T(
+                    cast(TT) mixin(form[0], op, "rhs"),
+                    cast(TT) mixin(form[1], op, "rhs"),
+                    cast(TT) mixin(form[2], op, "rhs"),
+                );
+            } else static if (N == 4) {
+                return T(
+                    cast(TT) mixin(form[0], op, "rhs"),
+                    cast(TT) mixin(form[1], op, "rhs"),
+                    cast(TT) mixin(form[2], op, "rhs"),
+                    cast(TT) mixin(form[3], op, "rhs"),
+                );
+            }
+        }
+
+        T opBinaryRight(IStr op)(TT lhs) {
+            static if (N == 2) {
+                return T(
+                    cast(TT) mixin("lhs", op, form[0]),
+                    cast(TT) mixin("lhs", op, form[1]),
+                );
+            } else static if (N == 3) {
+                return T(
+                    cast(TT) mixin("lhs", op, form[0]),
+                    cast(TT) mixin("lhs", op, form[1]),
+                    cast(TT) mixin("lhs", op, form[2]),
+                );
+            } else static if (N == 4) {
+                return T(
+                    cast(TT) mixin("lhs", op, form[0]),
+                    cast(TT) mixin("lhs", op, form[1]),
+                    cast(TT) mixin("lhs", op, form[2]),
+                    cast(TT) mixin("lhs", op, form[3]),
+                );
+            }
+        }
+
         void opOpAssign(IStr op)(T rhs) {
             static if (N == 2) {
                 mixin(form[0], op, "=rhs.", form[0], ";");
@@ -441,6 +485,22 @@ mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMembe
                 mixin(form[1], op, "=rhs.", form[1], ";");
                 mixin(form[2], op, "=rhs.", form[2], ";");
                 mixin(form[3], op, "=rhs.", form[3], ";");
+            }
+        }
+
+        void opOpAssign(IStr op)(TT rhs) {
+            static if (N == 2) {
+                mixin(form[0], op, "=rhs;");
+                mixin(form[1], op, "=rhs;");
+            } else static if (N == 3) {
+                mixin(form[0], op, "=rhs;");
+                mixin(form[1], op, "=rhs;");
+                mixin(form[2], op, "=rhs;");
+            } else static if (N == 4) {
+                mixin(form[0], op, "=rhs;");
+                mixin(form[1], op, "=rhs;");
+                mixin(form[2], op, "=rhs;");
+                mixin(form[3], op, "=rhs;");
             }
         }
 
