@@ -34,7 +34,7 @@ Parin is designed to make game development fast and fun — it's easy to set up,
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones.
 
 > [!NOTE]
-> Parin is still early in development.
+> The project is still early in development.
 > If something is missing, it will probably be added when someone (usually the main developer) needs it.
 
 ## Major Features
@@ -205,8 +205,7 @@ dub run parin:web
 ```
 
 Projects requiring the full D runtime can be built using the `gc` flag provided by the build script.
-This flag also requires [OpenD](https://opendlang.org/index.html) and the latest version of Emscripten.
-Note that exceptions are not supported and that some DUB related limitations apply like having to include all dependencies inside the source folder.
+Note that exceptions are not supported and that currently some DUB related limitations apply like having to include all dependencies inside the source folder.
 Make sure `opend install xpack-emscripten` has been run at least once before using it.
 
 #### Using the flag with DUB
@@ -245,11 +244,8 @@ yay -S emscripten
 # Or: sudo pacman -S emscripten
 ```
 
-#### Projects Using raylib-d
-
 Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are partially supported through the `rl` flag.
 A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
-This flag can be combined with the `gc` flag if needed.
 Make sure to add something like this in the dub.json file before using it:
 
 ```json
@@ -267,13 +263,7 @@ Make sure to add something like this in the dub.json file before using it:
 ]
 ```
 
-#### Using the flag with DUB
-
-```sh
-dub run parin:web -- gc rl
-```
-
-For most projects, using both `gc` and `rl` should provide the best compatibility.
+Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
 
 ### How do I Upload Web Builds to itch.io?
 

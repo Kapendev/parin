@@ -12,14 +12,12 @@ module parin.joka.types;
 
 alias Sz      = size_t;         /// The result of sizeof.
 alias Pd      = ptrdiff_t;      /// The result of pointer math.
-
 alias Str     = char[];         /// A string slice of chars.
 alias Str16   = wchar[];        /// A string slice of wchars.
 alias Str32   = dchar[];        /// A string slice of dchars.
 alias IStr    = const(char)[];  /// A string slice of constant chars.
 alias IStr16  = const(wchar)[]; /// A string slice of constant wchars.
 alias IStr32  = const(dchar)[]; /// A string slice of constant dchars.
-
 alias Strz    = char*;          /// A C string of chars.
 alias Strz16  = wchar*;         /// A C string of wchars.
 alias Strz32  = dchar*;         /// A C string of dchars.
@@ -27,15 +25,15 @@ alias IStrz   = const(char)*;   /// A C string of constant chars.
 alias IStrz16 = const(wchar)*;  /// A C string of constant wchars.
 alias IStrz32 = const(dchar)*;  /// A C string of constant dchars.
 
-alias UnionType = ubyte;
-alias AliasArgs(A...) = A;
+alias UnionType       = ubyte; /// The type of a tagged union.
+alias AliasArgs(A...) = A;     /// The type of compile time alias arguments.
 
-enum kilobyte = 1024;
-enum megabyte = 1024 * kilobyte;
-enum gigabyte = 1024 * megabyte;
-enum terabyte = 1024 * gigabyte;
-enum petabyte = 1024 * terabyte;
-enum exabyte  = 1024 * petabyte;
+enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
+enum megabyte = 1024 * kilobyte; /// The size of one megabyte in bytes.
+enum gigabyte = 1024 * megabyte; /// The size of one gigabyte in bytes.
+enum terabyte = 1024 * gigabyte; /// The size of one terabyte in bytes.
+enum petabyte = 1024 * terabyte; /// The size of one petabyte in bytes.
+enum exabyte  = 1024 * petabyte; /// The size of one exabyte in bytes.
 
 /// A type representing error values.
 enum Fault : ubyte {
@@ -62,8 +60,8 @@ enum Fault : ubyte {
 /// It exists mainly because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
     alias Self = StaticArray!(T, N);
-    enum length = N;
-    enum capacity = N;
+    enum length = N;   /// The length of the array.
+    enum capacity = N; /// The capacity of the array. This member exists to make metaprogramming easier.
 
     align(T.alignof) ubyte[T.sizeof * N] _data;
 
@@ -89,9 +87,10 @@ struct StaticArray(T, Sz N) {
 }
 
 /// Represents an optional value.
+/// It can also hold an error code when a value is missing, and errors are referred to as faults in Joka.
 struct Maybe(T) {
-    T _data;                   /// The value.
-    Fault _fault = Fault.some; /// The error code.
+    T _data;
+    Fault _fault = Fault.some;
 
     @safe nothrow @nogc:
 
@@ -141,29 +140,29 @@ struct Maybe(T) {
         return _fault;
     }
 
-    /// Returns the value and traps the error if it exists.
+    /// Returns the value and traps the fault if it exists.
     ref T get(ref Fault trap) {
         trap = _fault;
         return _data;
     }
 
-    /// Returns the value, or asserts if an error exists.
+    /// Returns the value, or asserts if a fault exists.
     ref T get() {
         if (_fault) assert(0, "Fault was detected.");
         return _data;
     }
 
-    /// Returns the value. Returns a default value when there is an error.
+    /// Returns the value. Returns a default value when there is a fault.
     T getOr(T other) {
         return _fault ? other : _data;
     }
 
-    /// Returns the value. Returns a default value when there is an error.
+    /// Returns the value. Returns a default value when there is a fault.
     T getOr() {
         return _data;
     }
 
-    /// Returns true when there is an error.
+    /// Returns true when there is a fault.
     bool isNone() {
         return _fault != 0;
     }
@@ -171,6 +170,11 @@ struct Maybe(T) {
     /// Returns true when there is a value.
     bool isSome() {
         return _fault == 0;
+    }
+
+    /// Clears the value, making it none.
+    void clear() {
+        _fault = Fault.some;
     }
 }
 
