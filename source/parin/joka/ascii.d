@@ -9,10 +9,12 @@
 module parin.joka.ascii;
 
 import parin.joka.types;
+import parin.joka.interpolation;
 import stringc = parin.joka.stdc.string;
 
 @safe:
 
+enum defaultAsciiFmtArgStr      = "{}";
 enum defaultAsciiBufferCount    = 16;   // Generic string count.
 enum defaultAsciiBufferSize     = 1536; // Generic string length.
 enum defaultAsciiFmtBufferCount = 32;   // Arg count.
@@ -50,6 +52,7 @@ enum PathSepStyle {
 
 /// Separator marker for printing, ...
 struct Sep { IStr value; }
+
 /// A string pair.
 struct IStrPair { IStr a; IStr b; }
 
@@ -99,7 +102,7 @@ IStr fmtIntoBufferWithStrs(Str buffer, IStr fmtStr, IStr[] args...) {
     while (fmtStrIndex < fmtStr.length) {
         auto c1 = fmtStr[fmtStrIndex];
         auto c2 = fmtStrIndex + 1 >= fmtStr.length ? '+' : fmtStr[fmtStrIndex + 1];
-        if (c1 == '{' && c2 == '}') {
+        if (c1 == defaultAsciiFmtArgStr[0] && c2 == defaultAsciiFmtArgStr[1]) {
             if (argIndex == args.length) assert(0, "A placeholder doesn't have an argument.");
             if (copyChars(result, args[argIndex], resultLength)) return "";
             resultLength += args[argIndex].length;
@@ -125,6 +128,7 @@ byte                                                        _fmtBufferIndex = 0;
 /// Options within placeholders are not supported.
 /// For custom formatting use a wrapper type with a `toStr` method.
 /// Writes into the buffer and returns the formatted string.
+// TODO: Does this not need an IES version??
 @trusted
 IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
     static assert(args.length <= defaultAsciiFmtBufferCount, "Too many format arguments.");
@@ -154,6 +158,28 @@ IStr fmt(A...)(IStr fmtStr, A args) {
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
+}
+
+/// Formats into an internal static ring buffer and returns the slice.
+/// The slice is temporary and may be overwritten by later calls to `fmt`.
+/// For details on formatting, see the `fmtIntoBuffer` function.
+IStr fmt(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    template lcheck(TT) { enum lcheck = is(TT == InterpolatedLiteral!_, alias _); }
+    template echeck(TT) { enum echeck = is(TT == InterpolatedExpression!_, alias _); }
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (lcheck!T) { result ~= args[i].toString(); }
+            else static if (echeck!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (lcheck!T || echeck!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    return mixin("fmt(fmtStr,", fmtArgs, ")");
 }
 
 @safe nothrow @nogc:

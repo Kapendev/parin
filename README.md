@@ -205,6 +205,7 @@ dub run parin:web
 ```
 
 Projects requiring the full D runtime can be built using the `gc` flag provided by the build script.
+This flag also requires [OpenD](https://opendlang.org/index.html).
 Note that exceptions are not supported and that currently some DUB related limitations apply like having to include all dependencies inside the source folder.
 Make sure `opend install xpack-emscripten` has been run at least once before using it.
 
@@ -222,6 +223,7 @@ dub run parin:web -- gc
 ```
 
 To speed up build times, use the `debug` flag.
+The `build` flag can be used to build the project without running the game.
 Below are installation commands for Emscripten for some Linux distributions.
 Note that some of these may not install the latest version.
 

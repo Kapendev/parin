@@ -12,6 +12,7 @@ import parin.joka.ascii;
 import parin.joka.containers;
 import parin.joka.memory;
 import parin.joka.types;
+import parin.joka.interpolation;
 import stdioc = parin.joka.stdc.stdio;
 
 @trusted:
@@ -34,6 +35,25 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     stdioc.fputs(textData.ptr, stream == StdStream.output ? stdioc.stdout : stdioc.stderr);
 }
 
+void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    template lcheck(TT) { enum lcheck = is(TT == InterpolatedLiteral!_, alias _); }
+    template echeck(TT) { enum echeck = is(TT == InterpolatedExpression!_, alias _); }
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (lcheck!T) { result ~= args[i].toString(); }
+            else static if (echeck!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (lcheck!T || echeck!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    mixin("printf(fmtStr,", fmtArgs, ");");
+}
+
 void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
@@ -43,6 +63,25 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     textData[text.length] = '\n';
     textData[text.length + 1] = '\0';
     stdioc.fputs(textData.ptr, stream == StdStream.output ? stdioc.stdout : stdioc.stderr);
+}
+
+void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    template lcheck(TT) { enum lcheck = is(TT == InterpolatedLiteral!_, alias _); }
+    template echeck(TT) { enum echeck = is(TT == InterpolatedExpression!_, alias _); }
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (lcheck!T) { result ~= args[i].toString(); }
+            else static if (echeck!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (lcheck!T || echeck!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    mixin("printfln(fmtStr,", fmtArgs, ");");
 }
 
 void print(StdStream stream = StdStream.output, A...)(A args) {
@@ -77,6 +116,7 @@ void eprintln(StdStream stream = StdStream.output, A...)(A args) {
     println!(StdStream.error)(args);
 }
 
+// TODO: Does this not need an IES version??
 IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     static if (isStrContainerType!S) {
         return fmtIntoList!true(buffer, fmtStr, args);

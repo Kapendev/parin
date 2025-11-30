@@ -75,11 +75,13 @@ struct Timer {
 
     /// Pauses the time.
     void pause() {
+        if (!isActive) return;
         pauseTime = time;
     }
 
     /// Resumes the timer from the paused state.
     void resume() {
+        if (!isActive || pauseTime == 0.0f) return;
         startTime = elapsedTime - pauseTime;
         pauseTime = 0.0f;
     }
@@ -121,5 +123,30 @@ struct Timer {
             pauseTime = 0.0f;
             pauseTime = time;
         }
+    }
+
+    /// Returns the current progress (between 0.0 to 1.0).
+    float progress() {
+        return duration  == 0.0f ? 0.0f : time / duration;
+    }
+
+    /// Returns the remaining progress (between 0.0 to 1.0).
+    float progressLeft() {
+        return 1.0f - progress;
+    }
+
+    /// Returns the remaining progress (between 0.0 to 1.0), or zero if inactive.
+    float progressLeftOrZero() {
+        return isActive ? progressLeft : 0.0f;
+    }
+
+    /// Sets the progress to a specific value (between 0.0 to 1.0).
+    void setProgress(float value) {
+        setTime(duration * clamp(value, 0.0f, 1.0f));
+    }
+
+    /// Sets the remaining progress to a specific value (between 0.0 to 1.0).
+    void setProgressLeft(float value) {
+        setProgress(1.0f - value);
     }
 }

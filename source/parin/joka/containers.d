@@ -236,8 +236,8 @@ struct BufferList(T) {
 
     @trusted
     void appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
+        if (length >= capacity) return;
         length += 1;
-        if (length > capacity) assert(0, "List is full.");
     }
 
     @trusted
@@ -363,8 +363,8 @@ struct FixedList(T, Sz N) {
 
     @trusted
     void appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
+        if (length >= capacity) return;
         length += 1;
-        if (length > capacity) assert(0, "List is full.");
     }
 
     @trusted
@@ -1251,6 +1251,7 @@ struct GrowingArena {
 /// Formats a string using a list and returns the resulting formatted string.
 /// The list is cleared before writing.
 /// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
+// TODO: Does this not need an IES version??
 IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr, A args) {
     if (!canAppend) list.clear();
     IStr tempSlice;
@@ -1259,7 +1260,7 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
     while (fmtStrIndex < fmtStr.length) {
         auto c1 = fmtStr[fmtStrIndex];
         auto c2 = fmtStrIndex + 1 >= fmtStr.length ? '+' : fmtStr[fmtStrIndex + 1];
-        if (c1 == '{' && c2 == '}') {
+        if (c1 == defaultAsciiFmtArgStr[0] && c2 == defaultAsciiFmtArgStr[1]) {
             if (argIndex == args.length) assert(0, "A placeholder doesn't have an argument.");
             foreach (i, arg; args) {
                 if (i == argIndex) {

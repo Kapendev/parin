@@ -1556,10 +1556,10 @@ struct GTween(T) {
 
     /// Returns the current progress (between 0.0 to 1.0).
     float progress() {
-        return duration == 0.0f ? 0.0f : clamp(time / duration, 0.0f, 1.0f);
+        return duration == 0.0f ? 0.0f : time / duration;
     }
 
-    /// Sets the tween progress to a specific value (between 0.0 to 1.0).
+    /// Sets the progress to a specific value (between 0.0 to 1.0).
     void setProgress(float value) {
         time = duration * clamp(value, 0.0f, 1.0f);
     }
