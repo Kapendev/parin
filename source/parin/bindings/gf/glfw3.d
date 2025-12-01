@@ -12,3 +12,7 @@ nothrow @nogc extern(C):
 
 /// Sets the swap interval for the current context.
 void glfwSwapInterval(int interval);
+/// Makes the OpenGL or OpenGL ES context of the specified window current on the calling thread.
+void glfwMakeContextCurrent(GLFWwindow* window);
+
+struct GLFWwindow;

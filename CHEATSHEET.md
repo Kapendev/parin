@@ -193,6 +193,8 @@ void freeAllSoundIds();
 void freeAllViewportIds();
 /// Frees all loaded textures, fonts, sounds, and viewports.
 void freeAllResourceIds();
+/// Clears all engine tasks.
+void clearAllEngineTasks();
 
 /// Allocates raw memory from the frame arena.
 void* frameMalloc(Sz size, Sz alignment);

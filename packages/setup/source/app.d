@@ -13,7 +13,6 @@ enum dubFile     = "dub.json";
 enum dubLockFile = "dub.selections.json";
 
 // Monkeyyy, I know I could do this better, but I don't care and probably you don't care too because this is a DUB thing so yeah.
-// For DUB people: I don't want to learn DUB.
 version (Windows) {
     VendorData[] vendorData = [
         { "raylib.dll", cast(ubyte[]) import("vendor/windows_x86_64/raylib.dll") },

@@ -511,14 +511,15 @@ struct ViewportId {
 
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
-void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin") {
+void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
     enum monogramPath = "parin_monogram.png";
 
-    bk.openWindow(width, height, title, defaultEngineVsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
+    bk.openWindow(width, height, title, vsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
     _engineState.viewport.data = loadViewport(0, 0, gray);
+    if (!vsync) setFpsMax(0);
     loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
     if (args.length) {
         foreach (arg; args) _engineState.envArgsBuffer.append(arg);
@@ -528,8 +529,8 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin")
 
 /// Opens the window with the given information using C strings.
 /// Avoid calling this function manually.
-void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin") {
-    openWindow(width, height, null, title.strzToStr());
+void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin", bool vsync = defaultEngineVsync) {
+    openWindow(width, height, null, title.strzToStr(), vsync);
     if (argc) {
         foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].strzToStr());
         _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
@@ -548,7 +549,6 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
         _updateEngineWasdBuffer();
 
         // Begin drawing.
-        auto loopVsync = vsync;
         if (isResolutionLocked) {
             bk.beginViewport(_engineState.viewport.data.data);
         } else {
@@ -642,7 +642,8 @@ mixin template runGame(
     IStr title = defaultEngineTitle,
     alias debugModeFunc = null,
     alias debugModeBeginFunc = null,
-    alias debugModeEndFunc = null
+    alias debugModeEndFunc = null,
+    bool vsyncOffHack = false,
 ) {
     int _runGame() {
         import mypr = parin.engine;
@@ -661,13 +662,13 @@ mixin template runGame(
         extern(C)
         int main(int argc, const(char)** argv) {
             import mypr = parin.engine;
-            mypr.openWindowC(width, height, argc, argv, title);
+            mypr.openWindowC(width, height, argc, argv, title, vsyncOffHack ? false : defaultEngineVsync);
             return _runGame();
         }
     } else {
         int main(immutable(char)[][] args) {
             import mypr = parin.engine;
-            mypr.openWindow(width, height, args, title);
+            mypr.openWindow(width, height, args, title, vsyncOffHack ? false : defaultEngineVsync);
             return _runGame();
         }
     }
@@ -1502,6 +1503,11 @@ void freeAllResourceIds() {
     freeAllFontIds();
     freeAllSoundIds();
     freeAllViewportIds();
+}
+
+/// Clears all engine tasks.
+void clearAllEngineTasks() {
+    _engineState.tasks.clear();
 }
 
 /// Returns the current mouse position on the window.

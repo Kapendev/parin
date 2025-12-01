@@ -170,6 +170,7 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
         em.emscripten_set_touchmove_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
         em.emscripten_set_touchstart_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
         em.emscripten_set_touchend_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
+    } else {
     }
 }
 
@@ -270,6 +271,10 @@ void closeWindow() {
     jokaFree(_backendState);
     rl.CloseAudioDevice();
     rl.CloseWindow();
+}
+
+bool isBackendNull() {
+    return _backendState != null;
 }
 
 void freeAllTextures(bool canSkipFirst) {
@@ -922,7 +927,8 @@ void updateVsync() {
         if (_backendState.vsync) em.emscripten_set_main_loop_timing(em.EM_TIMING_RAF, 1);
         else em.emscripten_set_main_loop_timing(em.EM_TIMING_SETTIMEOUT, 0);
     } else {
-        // TODO: Maybe one day we will be able to change vsync, so keep da code.
+        // TODO: I tried, but nothing I can do.
+        /* gf.glfwSwapInterval(_backendState.vsync); */
     }
     _backendState.vsyncIsChanging = false;
 }
