@@ -676,37 +676,11 @@ mixin template runGame(
 }
 
 Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLit!T) { result ~= args[i].toString(); }
-            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
-    }();
-    enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLit!T || isInterExp!T) {}
-            else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
-    }();
-    return mixin("drawText(font, fmt(fmtStr,", fmtArgs, "), position, options, extra)");
+    return drawText(font, fmt(header, args, footer), position, options, extra);
 }
 
 Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLit!T) { result ~= args[i].toString(); }
-            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
-    }();
-    enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLit!T || isInterExp!T) {}
-            else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
-    }();
-    return mixin("drawText(fmt(fmtStr,", fmtArgs, "), position, options, extra)");
+    return drawText(fmt(header, args, footer), position, options, extra);
 }
 
 void dprintfln(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
