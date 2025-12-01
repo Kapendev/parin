@@ -39,12 +39,12 @@ bool update(float dt) {
     i = 5;
     drawText(i"Time $(i): $(elapsedTime)", resolution * 0.5);
     drawText(engineFont, i"Time $(i): $(elapsedTime)", resolution * 0.5 + Vec2(0, 32));
-    return false;
 
     i = 6;
     fmt(i"Time $(i): $(elapsedTime)");
     fmtIntoBuffer(buffer[], i"Time $(i): $(elapsedTime)");
     fmtIntoList(buffer, i"Time $(i): $(elapsedTime)");
+    return false;
 }
 
 mixin runGame!(ready, update, null);

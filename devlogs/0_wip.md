@@ -6,4 +6,5 @@
 
 * Added devlogs in repo.
 * Made it easier to use Parin as "raylib-d with web support".
-* Faster web builds, fixes and touch support working again.
+* Faster web builds, fixes and touch support.
+* IES support.
