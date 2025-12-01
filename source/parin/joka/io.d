@@ -37,17 +37,15 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
 
 void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    template lcheck(TT) { enum lcheck = is(TT == InterpolatedLiteral!_, alias _); }
-    template echeck(TT) { enum echeck = is(TT == InterpolatedExpression!_, alias _); }
     enum fmtStr = () {
         Str result; static foreach (i, T; A) {
-            static if (lcheck!T) { result ~= args[i].toString(); }
-            else static if (echeck!T) { result ~= defaultAsciiFmtArgStr; }
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
         } return result;
     }();
     enum fmtArgs = () {
         Str result; static foreach (i, T; A) {
-            static if (lcheck!T || echeck!T) {}
+            static if (isInterLit!T || isInterExp!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
         } return result;
     }();
@@ -67,17 +65,15 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
 
 void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    template lcheck(TT) { enum lcheck = is(TT == InterpolatedLiteral!_, alias _); }
-    template echeck(TT) { enum echeck = is(TT == InterpolatedExpression!_, alias _); }
     enum fmtStr = () {
         Str result; static foreach (i, T; A) {
-            static if (lcheck!T) { result ~= args[i].toString(); }
-            else static if (echeck!T) { result ~= defaultAsciiFmtArgStr; }
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
         } return result;
     }();
     enum fmtArgs = () {
         Str result; static foreach (i, T; A) {
-            static if (lcheck!T || echeck!T) {}
+            static if (isInterLit!T || isInterExp!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
         } return result;
     }();
@@ -104,8 +100,16 @@ void eprintf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     printf!(StdStream.error)(fmtStr, args);
 }
 
+void eprintf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+    printf!(StdStream.error)(header, args, footer);
+}
+
 void eprintfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     printfln!(StdStream.error)(fmtStr, args);
+}
+
+void eprintfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+    printfln!(StdStream.error)(header, args, footer);
 }
 
 void eprint(StdStream stream = StdStream.output, A...)(A args) {
@@ -116,13 +120,29 @@ void eprintln(StdStream stream = StdStream.output, A...)(A args) {
     println!(StdStream.error)(args);
 }
 
-// TODO: Does this not need an IES version??
 IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     static if (isStrContainerType!S) {
         return fmtIntoList!true(buffer, fmtStr, args);
     } else {
         return fmtIntoBuffer(buffer, fmtStr, args);
     }
+}
+
+void sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T || isInterExp!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    mixin("sprintf(buffer, fmtStr,", fmtArgs, ");");
 }
 
 IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
@@ -142,6 +162,23 @@ IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
         buffer[text.length] = '\n';
         return buffer[0 .. text.length + 1];
     }
+}
+
+void sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T || isInterExp!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    mixin("sprintfln(buffer, fmtStr,", fmtArgs, ");");
 }
 
 void sprint(S = LStr, A...)(ref S buffer, A args) {

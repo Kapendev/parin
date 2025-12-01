@@ -128,7 +128,6 @@ byte                                                        _fmtBufferIndex = 0;
 /// Options within placeholders are not supported.
 /// For custom formatting use a wrapper type with a `toStr` method.
 /// Writes into the buffer and returns the formatted string.
-// TODO: Does this not need an IES version??
 @trusted
 IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
     static assert(args.length <= defaultAsciiFmtBufferCount, "Too many format arguments.");
@@ -139,6 +138,23 @@ IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
+}
+
+IStr fmtIntoBuffer(A...)(Str buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T || isInterExp!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    return mixin("fmtIntoBuffer(buffer, fmtStr,", fmtArgs, ")");
 }
 
 /// Formats into an internal static ring buffer and returns the slice.
@@ -160,22 +176,17 @@ IStr fmt(A...)(IStr fmtStr, A args) {
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
 }
 
-/// Formats into an internal static ring buffer and returns the slice.
-/// The slice is temporary and may be overwritten by later calls to `fmt`.
-/// For details on formatting, see the `fmtIntoBuffer` function.
 IStr fmt(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    template lcheck(TT) { enum lcheck = is(TT == InterpolatedLiteral!_, alias _); }
-    template echeck(TT) { enum echeck = is(TT == InterpolatedExpression!_, alias _); }
     enum fmtStr = () {
         Str result; static foreach (i, T; A) {
-            static if (lcheck!T) { result ~= args[i].toString(); }
-            else static if (echeck!T) { result ~= defaultAsciiFmtArgStr; }
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
         } return result;
     }();
     enum fmtArgs = () {
         Str result; static foreach (i, T; A) {
-            static if (lcheck!T || echeck!T) {}
+            static if (isInterLit!T || isInterExp!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
         } return result;
     }();

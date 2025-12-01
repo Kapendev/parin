@@ -12,6 +12,7 @@ module parin.joka.containers;
 
 import parin.joka.ascii;
 import parin.joka.memory;
+import parin.joka.interpolation;
 import parin.joka.types;
 
 @safe nothrow:
@@ -1251,7 +1252,6 @@ struct GrowingArena {
 /// Formats a string using a list and returns the resulting formatted string.
 /// The list is cleared before writing.
 /// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
-// TODO: Does this not need an IES version??
 IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr, A args) {
     if (!canAppend) list.clear();
     IStr tempSlice;
@@ -1282,6 +1282,23 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
     }
     if (argIndex != args.length) assert(0, "An argument doesn't have a placeholder.");
     return list[];
+}
+
+IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T) { result ~= args[i].toString(); }
+            else static if (isInterExp!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLit!T || isInterExp!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    return mixin("fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ")");
 }
 
 void freeOnlyItems(T)(ref T container, IStr file = __FILE__, Sz line = __LINE__) {
