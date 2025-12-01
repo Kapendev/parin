@@ -50,11 +50,27 @@ enum PathSepStyle {
     windows, /// The `\` separator.
 }
 
-/// Separator marker for printing, ...
-struct Sep { IStr value; }
-
 /// A string pair.
 struct IStrPair { IStr a; IStr b; }
+
+/// Separator marker for printing.
+struct Sep { IStr value; }
+
+/// A wrapper type for priting floats and doubles.
+struct Floating {
+    double value = 0.0; /// The value.
+    uint precision = 2; /// The number of digits after the dot.
+
+    @safe nothrow @nogc:
+
+    IStr toStr() {
+        return floatingToStr(value, precision);
+    }
+
+    IStr toString() {
+        return toStr();
+    }
+}
 
 /// Converts the value to its string representation.
 @trusted
@@ -262,6 +278,11 @@ IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
 }
 
 pragma(inline, true) {
+    /// Wraps a floating value with formatting options.
+    Floating flo(double value, uint precision) {
+        return Floating(value, precision);
+    }
+
     /// Returns true if the character is a digit (0-9).
     bool isDigit(char c) {
         return c >= '0' && c <= '9';
@@ -774,10 +795,10 @@ IStr signedToStr(long value) {
 }
 
 /// Converts the double value to its string representation with the specified precision.
-IStr floatingToStr(double value, ulong precision = 2) {
+IStr floatingToStr(double value, uint precision = 2) {
     static char[64] buffer = void;
 
-    if (!(value == value)) return "nan";
+    if (value.isNan) return "nan";
     if (precision == 0) return signedToStr(cast(long) value);
 
     auto result = buffer[];
@@ -1223,4 +1244,8 @@ unittest {
     assert(toStrz("Hello").getOr().strzToStr() == "Hello");
     assert(fmt("Hello {}!", "world") == "Hello world!");
     assert(fmt("({}, {})", -69, -420) == "(-69, -420)");
+
+    assert(fmt("Number: {}", 1.54321.flo(0)) == "Number: 1");
+    assert(fmt("Number: {}", 1.54321.flo(1)) == "Number: 1.5");
+    assert(fmt("Number: {}", 1.54321.flo(2)) == "Number: 1.54");
 }
