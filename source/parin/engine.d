@@ -566,7 +566,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
         foreach (id; _engineState.tasks.ids) if (_engineState.tasks[id].update(dt)) cancel(id);
         auto result = _engineState.updateFunc(dt);
         if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
-        if (isDebugMode || isExitingDebugMode) {
+        if (isDebugMode || isExitingDebugMode || _engineState.debugModePreviousState) {
             if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
             if (_engineState.debugModeFunc) _engineState.debugModeFunc();
             if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
@@ -2081,19 +2081,27 @@ void setDprintLineCountLimit(Sz value) {
 }
 
 /// Sets the visibility state of the overlay text.
+/// Does not affect manual drawing via `drawDprintBuffer`.
 void setDprintVisibility(bool value) {
     _engineState.dprintIsVisible = value;
 }
 
 /// Toggles the visibility state of the overlay text.
+/// Does not affect manual drawing via `drawDprintBuffer`.
 void toggleDprintVisibility() {
     setDprintVisibility(!_engineState.dprintIsVisible);
 }
 
-/// Clears all overlay text.
+/// Clears the overlay text.
 void clearDprintBuffer() {
     _engineState.dprintBuffer.clear();
     _engineState.dprintLineCount = 0;
+}
+
+/// Draws the overlay text now instead of at the end of the frame.
+/// The text will still be drawn automatically later unless the buffer is cleared with `clearDprintBuffer`, or visibility is disabled with `setDprintVisibility`.
+void drawDprintBuffer() {
+    drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
 }
 
 /// Draws debug engine information at the given position with the provided draw options.

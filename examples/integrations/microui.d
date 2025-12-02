@@ -35,10 +35,12 @@ bool update(float dt) {
 }
 
 void inspect() {
+    beginUi();
     if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
         headerAndMembers(game, 125);
         endWindow();
     }
+    endUi();
 }
 
-mixin runGame!(ready, update, null, 960, 540, "Parin", inspect, beginUi, endUi);
+mixin runGame!(ready, update, null, 960, 540, "Title", inspect);

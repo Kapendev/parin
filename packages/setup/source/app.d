@@ -79,6 +79,20 @@ void finish() {}
 mixin runGame!(ready, update, finish);
 `[1 .. $];
 
+enum appFileContentBasic = `
+import parin;
+
+void ready() {
+    lockResolution(320, 180);
+}
+
+bool update(float dt) {
+    return false;
+}
+
+mixin runGame!(ready, update, null);
+`[1 .. $];
+
 enum dubFileContent = `
 {
     "authors" : ["Name"],
@@ -146,7 +160,7 @@ void makeBasicSetup() {
 }
 
 /// The setup code for dub projects.
-int runDubSetup(string[] args, bool isFirstRun, bool isJustUsingVendor = false) {
+int runDubSetup(string[] args, bool isFirstRun) {
     import std = std.file;
 
     // Only copy-paste the vendor files in the project folder. Nice for testing.
@@ -170,7 +184,7 @@ int runDubSetup(string[] args, bool isFirstRun, bool isJustUsingVendor = false) 
     mkdir(appDir);
     auto appFile = join(appDir, "main.d");
     if (!appFile.isX) appFile = join(appDir, "app.d");
-    paste(appFile, appFileContent, !isFirstRun);
+    paste(appFile, isAppFileBasic ? appFileContentBasic : appFileContent, !isFirstRun);
     // Copy-paste the vendor files in the project folder.
     foreach (data; vendorData) std.write(data.name, data.bytes);
     // Clean stuff.
@@ -183,7 +197,8 @@ int runDubSetup(string[] args, bool isFirstRun, bool isJustUsingVendor = false) 
     return 0;
 }
 
-auto isJustCreatingLibs = false;
+auto isJustUsingVendor = false;
+auto isAppFileBasic = false;
 
 int main(string[] args) {
     isCmdLineHidden = true;
@@ -191,11 +206,11 @@ int main(string[] args) {
 
     auto result = 0;
     auto isFirstRun = !assetsDir.isX;
-    auto isJustUsingVendor = false;
     foreach (arg; args) {
         if (arg == "vendor" || arg == "-vendor" || arg == "--vendor") isJustUsingVendor = true;
+        if (arg == "basic" || arg == "-basic" || arg == "--basic") isAppFileBasic = true;
     }
-    result = runDubSetup(args, isFirstRun, isJustUsingVendor);
+    result = runDubSetup(args, isFirstRun);
     if (result == 0) echo("Done!");
     return result;
 }

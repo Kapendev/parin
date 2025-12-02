@@ -337,8 +337,10 @@ void setDprintLineCountLimit(Sz value);
 void setDprintVisibility(bool value);
 /// Toggles the visibility state of the overlay text.
 void toggleDprintVisibility();
-/// Clears all overlay text.
+/// Clears the overlay text.
 void clearDprintBuffer();
+/// Draws the overlay text now instead of at the end of the frame.
+void drawDprintBuffer();
 
 /// Draws debug engine information at the given position with the provided draw options.
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
