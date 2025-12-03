@@ -83,7 +83,7 @@ struct List(T) {
     void append(const(T)[] args...) {
         auto oldLength = length;
         resizeBlank(length + args.length);
-        jokaMemcpy(items.ptr + oldLength, args.ptr, args.length * T.sizeof);
+        if (length != oldLength) jokaMemcpy(items.ptr + oldLength, args.ptr, args.length * T.sizeof);
     }
 
     // NOTE: There is no good reason here for args having a default value, but I keep it for reference.
@@ -91,7 +91,7 @@ struct List(T) {
     void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         auto oldLength = length;
         resizeBlank(length + args.length, file, line);
-        jokaMemcpy(items.ptr + oldLength, args.ptr, args.length * T.sizeof);
+        if (length != oldLength) jokaMemcpy(items.ptr + oldLength, args.ptr, args.length * T.sizeof);
     }
 
     @trusted
@@ -157,8 +157,8 @@ struct List(T) {
     void resize(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
         auto oldLength = length;
         resizeBlank(newLength, file, line);
-        if (newLength > oldLength) {
-            foreach (i; 0 .. newLength - oldLength) items[$ - i - 1] = T.init;
+        if (length > oldLength) {
+            foreach (i; 0 .. length - oldLength) items[$ - i - 1] = T.init;
         }
     }
 
@@ -245,7 +245,7 @@ struct BufferList(T) {
     void append(const(T)[] args...) {
         auto oldLength = length;
         resizeBlank(length + args.length);
-        jokaMemcpy(ptr + oldLength, args.ptr, args.length * T.sizeof);
+        if (length != oldLength) jokaMemcpy(ptr + oldLength, args.ptr, args.length * T.sizeof);
     }
 
     @trusted
@@ -255,7 +255,7 @@ struct BufferList(T) {
 
     @trusted
     void push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        append(arg);
+        appendSource(file, line, arg);
     }
 
     void remove(Sz i) {
@@ -291,15 +291,15 @@ struct BufferList(T) {
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {}
 
     void resizeBlank(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
-        if (newLength > capacity) assert(0, "List is full.");
-        length = newLength;
+        if (newLength > capacity) length = capacity;
+        else length = newLength;
     }
 
     void resize(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
         auto oldLength = length;
         resizeBlank(newLength);
-        if (newLength > oldLength) {
-            foreach (i; 0 .. newLength - oldLength) items[$ - i - 1] = T.init;
+        if (length > oldLength) {
+            foreach (i; 0 .. length - oldLength) items[$ - i - 1] = T.init;
         }
     }
 
@@ -372,7 +372,7 @@ struct FixedList(T, Sz N) {
     void append(const(T)[] args...) {
         auto oldLength = length;
         resizeBlank(length + args.length);
-        jokaMemcpy(ptr + oldLength, args.ptr, args.length * T.sizeof);
+        if (length != oldLength) jokaMemcpy(ptr + oldLength, args.ptr, args.length * T.sizeof);
     }
 
     @trusted
@@ -382,7 +382,7 @@ struct FixedList(T, Sz N) {
 
     @trusted
     void push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        append(arg);
+        appendSource(file, line, arg);
     }
 
     void remove(Sz i) {
@@ -418,15 +418,15 @@ struct FixedList(T, Sz N) {
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {}
 
     void resizeBlank(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
-        if (newLength > capacity) assert(0, "List is full.");
-        length = newLength;
+        if (newLength > capacity) length = capacity;
+        else length = newLength;
     }
 
     void resize(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
         auto oldLength = length;
         resizeBlank(newLength);
-        if (newLength > oldLength) {
-            foreach (i; 0 .. newLength - oldLength) items[$ - i - 1] = T.init;
+        if (length > oldLength) {
+            foreach (i; 0 .. length - oldLength) items[$ - i - 1] = T.init;
         }
     }
 
@@ -1485,6 +1485,15 @@ unittest {
     assert(text[0] == char.init);
     assert(text.length == 1);
     text.clear();
+
+    auto text2 = FStr!4();
+    text2.push('a');
+    text2.push('b');
+    text2.push('c');
+    text2.push('d');
+    assert(text2[] == "abcd");
+    text2.append("AAA");
+    assert(text2[] == "abcd");
 }
 
 // TODO: Write better tests.
@@ -1528,6 +1537,15 @@ unittest {
     assert(text[0] == char.init);
     assert(text.length == 1);
     text.clear();
+
+    auto text2 = BStr(buffer[0 .. 4]);
+    text2.push('a');
+    text2.push('b');
+    text2.push('c');
+    text2.push('d');
+    assert(text2[] == "abcd");
+    text2.append("AAA");
+    assert(text2[] == "abcd");
 }
 
 // SparseList test.
