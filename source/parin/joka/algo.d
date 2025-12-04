@@ -5,9 +5,14 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
+// NOTE: Maybe look at this: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
+//   Something about map, filter, ..
+//   This module exists just for fun. That's also why it's not imported by default.
+
 /// The `algo` module includes functions that work with ranges.
 module parin.joka.algo;
 
+import parin.joka.ascii;
 import parin.joka.types;
 
 @safe nothrow @nogc:
@@ -15,6 +20,16 @@ import parin.joka.types;
 struct ValueIndex(V, I) {
     V value;
     I index;
+
+    @safe nothrow @nogc:
+
+    IStr toStr() {
+        return "{}".fmt(value);
+    }
+
+    IStr toString() {
+        return toStr();
+    }
 }
 
 auto toRange(T)(const(T)[] slice) {
@@ -33,6 +48,22 @@ auto toRange(T)(const(T)[] slice) {
         void popFront() {
             index += 1;
         }
+
+        T back() {
+            return slice[$ - index - 1];
+        }
+
+        void popBack() {
+            index += 1;
+        }
+
+        Sz length() {
+            return slice.length;
+        }
+
+        T opIndex(Sz i) {
+            return slice[i];
+        }
     }
 
     return Range(slice);
@@ -40,9 +71,10 @@ auto toRange(T)(const(T)[] slice) {
 
 auto range(I)(I start, I stop, I step = 1) {
     static struct Range {
-        I index;
+        I start;
         I stop;
         I step;
+        I index;
 
         bool empty() {
             return step > 0 ? index >= stop : index <= stop;
@@ -55,9 +87,17 @@ auto range(I)(I start, I stop, I step = 1) {
         void popFront() {
             index += step;
         }
+
+        I back() {
+            return stop - (index - start) - 1;
+        }
+
+        void popBack() {
+            index += step;
+        }
     }
 
-    return Range(start, stop, step);
+    return Range(start, stop, step, start);
 }
 
 auto range(I)(I stop) {
@@ -70,7 +110,7 @@ auto enumerate(R, I)(R range, I start = 0) {
     static if (is(R : const(T)[], T)) {
         return enumerate(range.toRange());
     } else {
-        alias Front = ValueIndex!(typeof(R.front()), I);
+        alias FrontBack = ValueIndex!(typeof(R.front()), I);
 
         static struct Range {
             R range;
@@ -80,12 +120,21 @@ auto enumerate(R, I)(R range, I start = 0) {
                 return range.empty;
             }
 
-            Front front() {
-                return Front(range.front, index);
+            FrontBack front() {
+                return FrontBack(range.front, index);
             }
 
             void popFront() {
                 range.popFront();
+                index += 1;
+            }
+
+            FrontBack back() {
+                return FrontBack(range.back, index);
+            }
+
+            void popBack() {
+                range.popBack();
                 index += 1;
             }
         }
