@@ -58,13 +58,13 @@ version (JokaCustomMemory) {
     pragma(msg, "Joka: Using GC allocator.");
 
     extern(C)
-    void* jokaMalloc(Sz size) {
+    void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = cast(void*) new ubyte[](size).ptr;
         return result;
     }
 
     extern(C)
-    void* jokaRealloc(void* ptr, Sz size) {
+    void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMalloc(size);
         if (ptr == null || result == null) return result;
         jokaMemcpy(result, ptr, size);
@@ -72,7 +72,7 @@ version (JokaCustomMemory) {
     }
 
     extern(C) @nogc
-    void jokaFree(void* ptr) {}
+    void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
     extern(C)
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {

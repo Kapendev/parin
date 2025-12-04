@@ -1498,6 +1498,7 @@ unittest {
 
 // TODO: Write better tests.
 // BufferList test.
+@trusted
 unittest {
     BStr text;
     char[64] buffer;
