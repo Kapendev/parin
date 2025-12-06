@@ -42,13 +42,11 @@ static if (__traits(compiles, { import core.interpolation; })) {
 }
 
 // NOTE: Helper functions.
-template isInterLit(TT) { enum isInterLit = is(TT == InterpolatedLiteral!_, alias _); }
-template isInterExp(TT) { enum isInterExp = is(TT == InterpolatedExpression!_, alias _); }
+template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral!_, alias _); }
+template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
 
 // NOTE: A BetterC fix. It's only needed when using IES.
 version (D_BetterC) {
     extern(C) @nogc pure nothrow @safe
-    IStr _D4core13interpolation16__getEmptyStringFNaNbNiNfZAya() {
-        return "";
-    }
+    IStr _D4core13interpolation16__getEmptyStringFNaNbNiNfZAya() { return ""; }
 }
