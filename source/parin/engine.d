@@ -510,6 +510,46 @@ struct ViewportId {
     }
 }
 
+/// A clipping region. Designed to be used with the `with` keyword.
+struct Clip {
+    Rect _area;
+
+    @safe nothrow @nogc:
+
+    this(Rect area) {
+        this._area = area;
+        beginClip(area);
+    }
+
+    this(Vec2 position, Vec2 size) {
+        this(Rect(position, size));
+    }
+
+    this(Vec2 size) {
+        this(Vec2(), size);
+    }
+
+    this(float x, float y, float w, float h) {
+        this(Vec2(x, y), Vec2(w, h));
+    }
+
+    this(float w, float h) {
+        this(Vec2(), Vec2(w, h));
+    }
+
+    this(Vec2 position, float w, float h) {
+        this(position, Vec2(w, h));
+    }
+
+    this(float x, float y, Vec2 size) {
+        this(Vec2(x, y), size);
+    }
+
+    ~this() {
+        endClip();
+    }
+}
+
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
@@ -1680,6 +1720,11 @@ void beginClip(Rect area) {
     if (_engineState.clipIsActive) assert(0, "Cannot begin clip again.");
     bk.beginClip(area);
     _engineState.clipIsActive = true;
+}
+
+/// Begins a clipping region using the given area.
+void beginClip(float x, float y, float w, float h) {
+    beginClip(Rect(x, y, w, h));
 }
 
 /// Ends the active clipping region.
