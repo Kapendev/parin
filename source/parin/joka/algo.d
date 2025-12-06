@@ -6,7 +6,6 @@
 // ---
 
 // NOTE: Maybe look at this: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
-//   Something about map, filter, ..
 //   This module exists just for fun. That's also why it's not imported by default.
 
 /// The `algo` module includes functions that work with ranges.
@@ -14,8 +13,6 @@ module parin.joka.algo;
 
 import parin.joka.ascii;
 import parin.joka.types;
-
-@safe nothrow @nogc:
 
 struct ValueIndex(V, I) {
     V value;
@@ -30,6 +27,41 @@ struct ValueIndex(V, I) {
     IStr toString() {
         return toStr();
     }
+}
+
+auto range(I)(I start, I stop, I step = 1) {
+    static struct Range {
+        I start;
+        I stop;
+        I step;
+        I index;
+
+        bool empty() {
+            return step > 0 ? index >= stop : index <= stop;
+        }
+
+        I front() {
+            return index;
+        }
+
+        void popFront() {
+            index += step;
+        }
+
+        I back() {
+            return stop - (index - start) - 1;
+        }
+
+        void popBack() {
+            index += step;
+        }
+    }
+
+    return Range(start, stop, step, start);
+}
+
+auto range(I)(I stop) {
+    return range(0, stop);
 }
 
 auto toRange(T)(const(T)[] slice) {
@@ -69,43 +101,8 @@ auto toRange(T)(const(T)[] slice) {
     return Range(slice);
 }
 
-auto range(I)(I start, I stop, I step = 1) {
-    static struct Range {
-        I start;
-        I stop;
-        I step;
-        I index;
-
-        bool empty() {
-            return step > 0 ? index >= stop : index <= stop;
-        }
-
-        I front() {
-            return index;
-        }
-
-        void popFront() {
-            index += step;
-        }
-
-        I back() {
-            return stop - (index - start) - 1;
-        }
-
-        void popBack() {
-            index += step;
-        }
-    }
-
-    return Range(start, stop, step, start);
-}
-
-auto range(I)(I stop) {
-    return range(0, stop);
-}
-
 auto enumerate(R, I)(R range, I start = 0) {
-    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays can't be passed.");
+    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays are not supported.");
 
     static if (is(R : const(T)[], T)) {
         return enumerate(range.toRange());
@@ -129,13 +126,15 @@ auto enumerate(R, I)(R range, I start = 0) {
                 index += 1;
             }
 
-            FrontBack back() {
-                return FrontBack(range.back, index);
-            }
+            static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
+                FrontBack back() {
+                    return FrontBack(range.back, index);
+                }
 
-            void popBack() {
-                range.popBack();
-                index += 1;
+                void popBack() {
+                    range.popBack();
+                    index += 1;
+                }
             }
         }
 
@@ -143,30 +142,225 @@ auto enumerate(R, I)(R range, I start = 0) {
     }
 }
 
-auto sum(R)(R range) {
-    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays can't be passed.");
+auto map(R, F)(R range, F func) {
+    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays are not supported.");
 
     static if (is(R : const(T)[], T)) {
-        return sum(range.toRange());
+        return map(range.toRange(), func);
     } else {
-        enum isValueIndexType = is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I);
+        static struct Range {
+            R range;
+            F func;
 
-        static if (isValueIndexType) {
-            auto result = typeof(R.front().value).init;
-        } else {
-            auto result = typeof(R.front()).init;
-        }
-        foreach (item; range) {
-            static if (isValueIndexType) {
-                result += item.value;
-            } else {
-                result += item;
+            bool empty() {
+                return range.empty;
+            }
+
+            auto front() {
+                return func(range.front);
+            }
+
+            void popFront() {
+                range.popFront();
+            }
+
+            static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
+                auto back() {
+                    return func(range.back);
+                }
+
+                void popBack() {
+                    range.popBack();
+                }
             }
         }
+
+        return Range(range, func);
+    }
+}
+
+auto filter(R, F)(R range, F func) {
+    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays are not supported.");
+
+    static if (is(R : const(T)[], T)) {
+        return filter(range.toRange(), func);
+    } else {
+        static struct Range {
+            R range;
+            F func;
+
+            void skipToNext(bool canIncludeSelf) {
+                if (!canIncludeSelf) range.popFront();
+                while (!range.empty && !func(range.front)) range.popFront();
+            }
+
+            bool empty() {
+                skipToNext(true);
+                return range.empty;
+            }
+
+            auto front() {
+                return range.front;
+            }
+
+            void popFront() {
+                skipToNext(false);
+            }
+
+            auto back() {
+                assert(0, "Reverse iteration is not supported. Use `filterBack` instead.");
+            }
+
+            void popBack() {
+                assert(0, "Reverse iteration is not supported. Use `filterBack` instead.");
+            }
+        }
+
+        return Range(range, func);
+    }
+}
+
+auto filterBack(R, F)(R range, F func) {
+    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays are not supported.");
+
+    static if (is(R : const(T)[], T)) {
+        return filterBack(range.toRange(), func);
+    } else {
+        static struct Range {
+            R range;
+            F func;
+
+            void skipToNext(bool canIncludeSelf) {
+                if (!canIncludeSelf) range.popBack();
+                while (!range.empty && !func(range.back)) range.popBack();
+            }
+
+            bool empty() {
+                skipToNext(true);
+                return range.empty;
+            }
+
+            auto back() {
+                return range.back;
+            }
+
+            void popBack() {
+                skipToNext(false);
+            }
+
+            auto front() {
+                assert(0, "Forward iteration is not supported. Use `filter` instead.");
+            }
+
+            void popFront() {
+                assert(0, "Forward iteration is not supported. Use `filter` instead.");
+            }
+        }
+
+        return Range(range, func);
+    }
+}
+
+auto reduce(R, F, T)(R range, F func, T initial) {
+    static assert(!(is(R : const(A)[N], A, Sz N)), "Static arrays are not supported.");
+
+    static if (is(R : const(T)[], T)) {
+        return reduce(range.toRange(), func, initial);
+    } else {
+        auto result = initial;
+        foreach (item; range) result = func(result, item);
         return result;
     }
 }
 
+auto reduce(R, F)(R range, F func) {
+    static if (is(R : const(T)[], T)) {
+        return reduce(range.toRange(), func);
+    } else {
+        if (range.empty) assert(0, "Cannot reduce an empty range without an initial value.");
+        auto initial = range.front;
+        range.popFront();
+        return reduce(range, func, initial);
+    }
+}
+
+auto min(R)(R range) {
+    enum isValueIndexType = is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I);
+
+    static if (is(R : const(S)[], S)) {
+        alias T = typeof(range[0]);
+    } else static if (isValueIndexType) {
+        alias VI = typeof(R.front());
+        alias T = typeof(R.front().value);
+    } else {
+        alias T = typeof(R.front());
+    }
+
+    static if (isValueIndexType) {
+        return range.map((VI x) => x.value).reduce((T x, T y) => x < y ? x : y);
+    } else {
+        return range.reduce((T x, T y) => x < y ? x : y);
+    }
+}
+
+auto max(R)(R range) {
+    enum isValueIndexType = is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I);
+
+    static if (is(R : const(S)[], S)) {
+        alias T = typeof(range[0]);
+    } else static if (isValueIndexType) {
+        alias VI = typeof(R.front());
+        alias T = typeof(R.front().value);
+    } else {
+        alias T = typeof(R.front());
+    }
+
+    static if (isValueIndexType) {
+        return range.map((VI x) => x.value).reduce((T x, T y) => x > y ? x : y);
+    } else {
+        return range.reduce((T x, T y) => x > y ? x : y);
+    }
+}
+
+auto sum(R)(R range) {
+    enum isValueIndexType = is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I);
+
+    static if (is(R : const(S)[], S)) {
+        alias T = typeof(range[0]);
+    } else static if (isValueIndexType) {
+        alias VI = typeof(R.front());
+        alias T = typeof(R.front().value);
+    } else {
+        alias T = typeof(R.front());
+    }
+
+    static if (isValueIndexType) {
+        return range.map((VI x) => x.value).reduce((T x, T y) => x + y);
+    } else {
+        return range.reduce((T x, T y) => x + y);
+    }
+}
+
+auto product(R)(R range) {
+    enum isValueIndexType = is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I);
+
+    static if (is(R : const(S)[], S)) {
+        alias T = typeof(range[0]);
+    } else static if (isValueIndexType) {
+        alias VI = typeof(R.front());
+        alias T = typeof(R.front().value);
+    } else {
+        alias T = typeof(R.front());
+    }
+
+    static if (isValueIndexType) {
+        return range.map((VI x) => x.value).reduce((T x, T y) => x * y);
+    } else {
+        return range.reduce((T x, T y) => x * y);
+    }
+}
+
+@safe nothrow @nogc
 unittest {
     auto temp = 0;
     auto start = 0;
@@ -198,4 +392,22 @@ unittest {
     int[3] array = [2, 2, 2];
     int[] slice = array[];
     assert(slice.sum == 6);
+
+    assert(range(3).map((int x) => x * 2).sum == 6);
+    assert(range(9).filter((int x) => x == 2 || x == 4).sum == 6);
+    assert(range(0, 4).reduce((int x, int y) => x + y) == 6);
+    assert(range(0, 4).reduce((int x, int y) => x * y) == 0);
+    assert(range(1, 4).reduce((int x, int y) => x * y) == 6);
+    assert(slice.reduce((int x, int y) => x + y) == 6);
+    assert(range(2, 6).min == 2);
+    assert(range(2, 6).max == 5);
+    assert(slice.min == 2);
+    assert(slice.max == 2);
+
+    auto numbers = range(1, 5);
+    auto numbersResult = numbers
+        .map((int x) => x * 2)
+        .filter((int x) => x > 4)
+        .reduce((int a, int b) => a + b);
+    assert(numbersResult == 14);
 }

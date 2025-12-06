@@ -201,10 +201,6 @@ void printMemoryTrackingInfo(IStr filter = "", bool canShowEmpty = false) {
     print(memoryTrackingInfo(filter, canShowEmpty));
 }
 
-void tracef(IStr file = __FILE__, Sz line = __LINE__, A...)(IStr fmtStr, A args) {
-    printf("TRACE({}:{}): {}\n", file, line, fmtStr.fmt(args));
-}
-
 void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
     printf("TRACE({}:{}):", file, line);
     foreach (arg; args) printf(" {}", arg);

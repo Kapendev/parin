@@ -27,6 +27,16 @@ struct ArgToken {
     ArgType type; /// The type of the argument.
     IStr name;    /// The name of the argument. Always present.
     IStr value;   /// The value of the argument. May be empty.
+
+    @safe nothrow @nogc:
+
+    IStr toStr() {
+        return "{}".fmt(name);
+    }
+
+    IStr toString() {
+        return toStr();
+    }
 }
 
 /// A range of parsed tokens from the command-line arguments.
