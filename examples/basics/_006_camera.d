@@ -13,11 +13,12 @@ bool update(float dt) {
     // Move the camera.
     cameraTarget += wasd * Vec2(120 * dt);
     camera.followPositionWithSlowdown(cameraTarget, dt, 0.15);
-    // Draw the world.
-    camera.attach();
-    drawText("Move with arrow keys.", Vec2(8));
-    drawRect(camera.area(resolution).subAll(3), Color(50, 50, 40, 130));
-    camera.detach();
+    // Draw the objects inside the camera.
+    // This can also be done with the `attach` and `detach` functions.
+    with (Attached(camera)) {
+        drawText("Move with arrow keys.", Vec2(8));
+        drawRect(camera.area(resolution).subAll(3), Color(50, 50, 40, 130));
+    }
     // Draw the UI.
     drawText("I am UI!", Vec2(8));
     drawText("+", resolution * Vec2(0.5));

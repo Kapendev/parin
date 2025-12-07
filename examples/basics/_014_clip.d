@@ -9,11 +9,8 @@ bool update(float dt) {
         drawVec2(mouse + 16, black, 90);
         drawVec2(mouse, white, 90);
     }
-    drawText(
-        "Move the mouse across the screen.",
-        Vec2(min(mouse.x, resolution.x * 0.5), 12),
-        DrawOptions(Vec2(2)),
-    );
+    drawVec2(mouse, red, 45);
+    drawText("Move the mouse across the screen.", Vec2(12), DrawOptions(Vec2(2)));
     return false;
 }
 

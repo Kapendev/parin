@@ -550,6 +550,28 @@ struct Clip {
     }
 }
 
+// NOTE: Was thinking that `Attached!Camera(camera)` would look bad, so I used a function.
+struct _Attached(T) {
+    T* _object;
+
+    @trusted nothrow @nogc:
+
+    this(ref T object) {
+        this._object = &object;
+        attach(*this._object);
+    }
+
+    ~this() {
+        detach(*this._object);
+    }
+}
+
+// NOTE: Can keep it here because of inferred attributes.
+/// Attaches the camera for the scope and detaches automatically.
+_Attached!T Attached(T)(ref T data) {
+    return _Attached!T(data);
+}
+
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {

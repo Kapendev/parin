@@ -969,10 +969,12 @@ struct Arena {
         ready(capacity, file, line);
     }
 
+    @nogc
     this(ubyte* data, Sz capacity) {
         ready(data, capacity);
     }
 
+    @nogc
     this(ubyte[] data) {
         ready(data);
     }
@@ -986,6 +988,8 @@ struct Arena {
         isOwning = true;
     }
 
+    @trusted nothrow @nogc:
+
     void ready(ubyte* newData, Sz newCapacity) {
         free();
         data = newData;
@@ -995,8 +999,6 @@ struct Arena {
     void ready(ubyte[] newData) {
         ready(newData.ptr, newData.length);
     }
-
-    @trusted nothrow @nogc:
 
     void* malloc(Sz size, Sz alignment) {
         Sz alignedOffset = void;
@@ -1082,6 +1084,56 @@ struct Arena {
         canIgnoreLeak = true;
         data.ignoreLeak();
         return this;
+    }
+}
+
+struct ScopedArena {
+    Arena _arena;
+
+    @trusted nothrow @nogc:
+
+    this(ubyte* data, Sz capacity) {
+        this._arena.ready(data, capacity);
+    }
+
+    this(ubyte[] data) {
+        this._arena.ready(data);
+    }
+
+    ~this() {
+        this._arena.free();
+    }
+
+    void* malloc(Sz size, Sz alignment) {
+        return _arena.malloc(size, alignment);
+    }
+
+    void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment) {
+        return _arena.realloc(ptr, oldSize, newSize, alignment);
+    }
+
+    T* makeBlank(T)() {
+        return _arena.makeBlank!T();
+    }
+
+    T* make(T)() {
+        return _arena.make!T();
+    }
+
+    T* make(T)(const(T) value) {
+        return _arena.make!T(value);
+    }
+
+    T[] makeSliceBlank(T)(Sz length) {
+        return _arena.makeSliceBlank!T(length);
+    }
+
+    T[] makeSlice(T)(Sz length) {
+        return _arena.makeSlice!T(length);
+    }
+
+    T[] makeSlice(T)(Sz length, const(T) value) {
+        return _arena.makeSlice!T(length, value);
     }
 }
 
@@ -1784,4 +1836,11 @@ unittest {
     assert(arena.offset == 0);
     assert(arena.data == null);
     assert(arena.isOwning == false);
+
+    with (ScopedArena(buffer)) {
+        assert(*make!char('C') == 'C');
+        assert(*make!short(69) == 69);
+        assert(*make!char('D') == 'D');
+        assert(_arena.offset == 5);
+    }
 }
