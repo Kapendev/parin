@@ -150,7 +150,7 @@ IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];
-        if (tempSlice.copyStr(arg.toStr())) return ""; // assert(0, "An argument did not fit in the internal temporary buffer.");
+        if (tempSlice.copyStr(arg.toStr())) return ""; // "An argument did not fit in the internal temporary buffer."
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
@@ -186,7 +186,7 @@ IStr fmt(A...)(IStr fmtStr, A args) {
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];
-        if (tempSlice.copyStr(arg.toStr())) return ""; // assert(0, "An argument did not fit in the internal temporary buffer.");
+        if (tempSlice.copyStr(arg.toStr())) return ""; // "An argument did not fit in the internal temporary buffer."
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);

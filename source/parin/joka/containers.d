@@ -882,7 +882,7 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         } else static if (dim == 1) {
             return colCount;
         } else {
-            assert(0, "WTF!");
+            static assert(0, "WTF!");
         }
     }
 

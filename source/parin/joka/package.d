@@ -7,6 +7,7 @@
 
 module parin.joka;
 
+public import parin.joka.algo;
 public import parin.joka.ascii;
 public import parin.joka.cli;
 public import parin.joka.containers;

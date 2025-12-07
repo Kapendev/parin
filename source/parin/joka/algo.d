@@ -6,7 +6,6 @@
 // ---
 
 // NOTE: Maybe look at this: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
-//   This module exists just for fun. That's also why it's not imported by default.
 
 /// The `algo` module includes functions that work with ranges.
 module parin.joka.algo;
@@ -276,7 +275,7 @@ auto reduce(R, F)(R range, F func) {
     static if (is(R : const(T)[], T)) {
         return reduce(range.toRange(), func);
     } else {
-        if (range.empty) assert(0, "Cannot reduce an empty range without an initial value.");
+        if (range.empty) return range.front.init;
         auto initial = range.front;
         range.popFront();
         return reduce(range, func, initial);
