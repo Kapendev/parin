@@ -15,8 +15,8 @@ bool update(float dt) {
     auto viewportCenter = viewport.size * Vec2(0.5);
     auto viewportMousePosition = mouse - Rect(resolution * Vec2(0.5), viewport.size).centerArea.position;
     viewport.attach();
-    drawVec2(viewportCenter, white, 20);
-    drawVec2(viewportMousePosition, white, 20);
+    drawVec2(viewportCenter, white, 70);
+    drawVec2(viewportMousePosition, white, 70);
     viewport.detach();
     // Draw the viewport and other things inside the window.
     drawViewport(viewport, resolution * Vec2(0.5), DrawOptions(Hook.center));
