@@ -51,9 +51,9 @@ debug {
 version (JokaCustomMemory) {
     pragma(msg, "Joka: Using custom allocator.");
 
-    extern(C) void* jokaMalloc(Sz size);
-    extern(C) void* jokaRealloc(void* ptr, Sz size);
-    extern(C) @nogc void jokaFree(void* ptr);
+    extern(C) void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) @nogc void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__);
 } else version (JokaGcMemory) {
     pragma(msg, "Joka: Using GC allocator.");
 

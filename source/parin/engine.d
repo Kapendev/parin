@@ -620,26 +620,27 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
         bk.clearBackground(_engineState.viewport.data.color);
 
         // Update and draw the game.
-        auto dt = deltaTime;
-        bk.beginDroppedPaths();
-        _engineState.arena.clear();
-        _engineState.debugModePreviousState = isDebugMode;
-
-        foreach (id; _engineState.tasks.ids) if (_engineState.tasks[id].update(dt)) cancel(id);
-        auto result = _engineState.updateFunc(dt);
-        if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
-        if (isDebugMode || isExitingDebugMode || _engineState.debugModePreviousState) {
-            if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
-            if (_engineState.debugModeFunc) _engineState.debugModeFunc();
-            if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
+        auto result = false;
+        with (ScopedArena(_engineState.arena)) {
+            bk.beginDroppedPaths();
+            _engineState.debugModePreviousState = isDebugMode;
+            foreach (id; _engineState.tasks.ids) {
+                if (_engineState.tasks[id].update(deltaTime)) cancel(id);
+            }
+            result = _engineState.updateFunc(deltaTime);
+            if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
+            if (isDebugMode || isExitingDebugMode || _engineState.debugModePreviousState) {
+                if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
+                if (_engineState.debugModeFunc) _engineState.debugModeFunc();
+                if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
+            }
+            if (_engineState.dprintIsVisible) {
+                drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
+            }
+            _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
+            _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
+            bk.endDroppedPaths();
         }
-        if (_engineState.dprintIsVisible) {
-            drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
-        }
-
-        _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
-        _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
-        bk.endDroppedPaths();
 
         // End drawing.
         if (isResolutionLocked) {

@@ -327,3 +327,7 @@ A custom backend may be added in the future, but it's not a priority.
 ### What are Parin's priorities?
 
 The goal is a smooth experience, similar to Godot or Unity.
+
+### The end?
+
+[Yes.](https://youtu.be/jqKCwHHZH98?si=tWS3I68b8CaDzy-V)
