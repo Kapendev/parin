@@ -1089,50 +1089,83 @@ struct Arena {
 
 struct ScopedArena {
     Arena _arena;
+    Arena* _otherArenaPtr;
+    GrowingArena* _otherGrowingArenaPtr;
 
-    @trusted nothrow @nogc:
+    @trusted nothrow:
 
+    @nogc
     this(ubyte* data, Sz capacity) {
         this._arena.ready(data, capacity);
     }
 
+    @nogc
     this(ubyte[] data) {
         this._arena.ready(data);
     }
 
+    @nogc
+    this(ref Arena data) {
+        this._otherArenaPtr = &data;
+    }
+
+    @nogc
+    this(ref GrowingArena data) {
+        this._otherGrowingArenaPtr = &data;
+    }
+
+    @nogc
     ~this() {
-        this._arena.free();
+        if (_otherArenaPtr) this._otherArenaPtr.clear();
+        if (_otherGrowingArenaPtr) this._otherGrowingArenaPtr.clear();
+        this._arena.clear();
     }
 
     void* malloc(Sz size, Sz alignment) {
+        if (_otherArenaPtr) return _otherArenaPtr.malloc(size, alignment);
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.malloc(size, alignment);
         return _arena.malloc(size, alignment);
     }
 
     void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment) {
+        if (_otherArenaPtr) return _otherArenaPtr.realloc(ptr, oldSize, newSize, alignment);
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.realloc(ptr, oldSize, newSize, alignment);
         return _arena.realloc(ptr, oldSize, newSize, alignment);
     }
 
     T* makeBlank(T)() {
+        if (_otherArenaPtr) return _otherArenaPtr.makeBlank!T();
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeBlank!T();
         return _arena.makeBlank!T();
     }
 
     T* make(T)() {
+        if (_otherArenaPtr) return _otherArenaPtr.make!T();
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.make!T();
         return _arena.make!T();
     }
 
     T* make(T)(const(T) value) {
+        if (_otherArenaPtr) return _otherArenaPtr.make!T(value);
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.make!T(value);
         return _arena.make!T(value);
     }
 
     T[] makeSliceBlank(T)(Sz length) {
+        if (_otherArenaPtr) return _otherArenaPtr.makeSliceBlank!T(length);
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeSliceBlank!T(length);
         return _arena.makeSliceBlank!T(length);
     }
 
     T[] makeSlice(T)(Sz length) {
+        if (_otherArenaPtr) return _otherArenaPtr.makeSlice!T(length);
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeSlice!T(length);
         return _arena.makeSlice!T(length);
     }
 
     T[] makeSlice(T)(Sz length, const(T) value) {
+        if (_otherArenaPtr) return _otherArenaPtr.makeSlice!T(length, value);
+        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeSlice!T(length, value);
         return _arena.makeSlice!T(length, value);
     }
 }
@@ -1843,4 +1876,17 @@ unittest {
         assert(*make!char('D') == 'D');
         assert(_arena.offset == 5);
     }
+
+    arena = Arena(512);
+    with (ScopedArena(arena)) {
+        assert(*make!char('C') == 'C');
+        assert(*make!short(69) == 69);
+        assert(*make!char('D') == 'D');
+        assert(_otherArenaPtr.offset == 5);
+        assert(arena.offset == 5);
+    }
+    assert(arena.isOwning == true);
+    assert(arena.data != null);
+    assert(arena.offset == 0);
+    arena.free();
 }
