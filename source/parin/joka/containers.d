@@ -1221,90 +1221,64 @@ struct GrowingArena {
     }
 }
 
-struct ScopedArena {
-    void* _otherArenaVoidPtr;
-    Sz _otherArenaCheckpointOffset;
-    bool _otherArenaIsGrowing;
+struct _ScopedArena(T) {
+    T* _currentArena;
+    Sz _currentArenaCheckpointOffset;
 
     @trusted nothrow:
 
     @nogc
-    this(ref Arena data) {
-        this._otherArenaVoidPtr = &data;
-        this._otherArenaCheckpointOffset = _otherArenaPtr.offset;
-    }
-
-    @nogc
-    this(ref GrowingArena data) {
-        this._otherArenaVoidPtr = &data;
-        this._otherArenaIsGrowing = true;
+    this(ref T data) {
+        this._currentArena = &data;
+        static if (is(T == Arena)) {
+            this._currentArenaCheckpointOffset = data.offset;
+        }
     }
 
     @nogc
     ~this() {
-        if (_otherArenaPtr) _otherArenaPtr.rollback(_otherArenaCheckpointOffset);
-        if (_otherGrowingArenaPtr) _otherGrowingArenaPtr.clear();
-    }
-
-    @nogc
-    Arena* _otherArenaPtr() {
-        if (_otherArenaVoidPtr && !_otherArenaIsGrowing) return cast(Arena*) _otherArenaVoidPtr;
-        return null;
-    }
-
-    @nogc
-    GrowingArena* _otherGrowingArenaPtr() {
-        if (_otherArenaVoidPtr && _otherArenaIsGrowing) return cast(GrowingArena*) _otherArenaVoidPtr;
-        return null;
+        static if (is(T == Arena)) {
+            _currentArena.rollback(_currentArenaCheckpointOffset);
+        } else {
+            _currentArena.clear();
+        }
     }
 
     void* malloc(Sz size, Sz alignment) {
-        if (_otherArenaPtr) return _otherArenaPtr.malloc(size, alignment);
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.malloc(size, alignment);
-        return null;
+        return _currentArena.malloc(size, alignment);
     }
 
     void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment) {
-        if (_otherArenaPtr) return _otherArenaPtr.realloc(ptr, oldSize, newSize, alignment);
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.realloc(ptr, oldSize, newSize, alignment);
-        return null;
+        return _currentArena.realloc(ptr, oldSize, newSize, alignment);
     }
 
     T* makeBlank(T)() {
-        if (_otherArenaPtr) return _otherArenaPtr.makeBlank!T();
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeBlank!T();
-        return null;
+        return _currentArena.makeBlank!T();
     }
 
     T* make(T)() {
-        if (_otherArenaPtr) return _otherArenaPtr.make!T();
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.make!T();
-        return null;
+        return _currentArena.make!T();
     }
 
     T* make(T)(const(T) value) {
-        if (_otherArenaPtr) return _otherArenaPtr.make!T(value);
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.make!T(value);
-        return null;
+        return _currentArena.make!T(value);
     }
 
     T[] makeSliceBlank(T)(Sz length) {
-        if (_otherArenaPtr) return _otherArenaPtr.makeSliceBlank!T(length);
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeSliceBlank!T(length);
-        return null;
+        return _currentArena.makeSliceBlank!T(length);
     }
 
     T[] makeSlice(T)(Sz length) {
-        if (_otherArenaPtr) return _otherArenaPtr.makeSlice!T(length);
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeSlice!T(length);
-        return null;
+        return _currentArena.makeSlice!T(length);
     }
 
     T[] makeSlice(T)(Sz length, const(T) value) {
-        if (_otherArenaPtr) return _otherArenaPtr.makeSlice!T(length, value);
-        if (_otherGrowingArenaPtr) return _otherGrowingArenaPtr.makeSlice!T(length, value);
-        return null;
+        return _currentArena.makeSlice!T(length, value);
     }
+}
+
+_ScopedArena!T ScopedArena(T)(ref T arena) {
+    return _ScopedArena!T(arena);
 }
 
 @trusted @nogc {

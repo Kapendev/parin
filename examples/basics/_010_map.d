@@ -28,11 +28,10 @@ bool update(float dt) {
             camera.position = tile.position + tile.size * Vec2(0.5);
         }
     }
-    // Draw the world.
-    camera.attach();
-    drawTileMap(atlas, map, camera);
-    drawTile(atlas, tile, tileOptions);
-    camera.detach();
+    with (Attached(camera)) {
+        drawTileMap(atlas, map, camera);
+        drawTile(atlas, tile, tileOptions);
+    }
     drawText("Move with arrow keys.", Vec2(8));
     return false;
 }

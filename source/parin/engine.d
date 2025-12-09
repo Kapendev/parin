@@ -512,12 +512,12 @@ struct ViewportId {
 
 /// A clipping region. Designed to be used with the `with` keyword.
 struct Clip {
-    Rect _area;
+    Rect _clipArea;
 
     @safe nothrow @nogc:
 
     this(Rect area) {
-        this._area = area;
+        this._clipArea = area;
         beginClip(area);
     }
 
@@ -552,24 +552,24 @@ struct Clip {
 
 // NOTE: Was thinking that `Attached!Camera(camera)` would look bad, so I used a function.
 struct _Attached(T) {
-    T* _object;
+    T* _attachedObject;
 
     @trusted nothrow @nogc:
 
     this(ref T object) {
-        this._object = &object;
-        attach(*this._object);
+        this._attachedObject = &object;
+        attach(*this._attachedObject);
     }
 
     ~this() {
-        detach(*this._object);
+        detach(*this._attachedObject);
     }
 }
 
 // NOTE: Can keep it here because of inferred attributes.
 /// Attaches the camera for the scope and detaches automatically.
-_Attached!T Attached(T)(ref T data) {
-    return _Attached!T(data);
+_Attached!T Attached(T)(ref T object) {
+    return _Attached!T(object);
 }
 
 /// Opens the window with the given information.

@@ -34,7 +34,6 @@ bool update(float dt) {
             walkAnimation.frameRow = row;
         }
     }
-    // Draw the sprite.
     drawSprite(atlas, sprite, DrawOptions(Vec2(2)));
     drawText("Move the mouse.\nPress 1, 2 or 3 to change the character.", Vec2(8));
     return false;

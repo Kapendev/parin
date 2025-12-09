@@ -28,7 +28,6 @@ bool update(float dt) {
     if (world.moveActorY(playerBoxId, playerMover.velocity.y)) {
         playerMover.velocity.y = 0;
     }
-    // Draw the world.
     drawDebugBoxWorld(world);
     drawText("Move with arrow keys.", Vec2(8));
     return false;

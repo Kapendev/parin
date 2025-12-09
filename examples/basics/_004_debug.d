@@ -5,7 +5,7 @@ import parin;
 // The current mode of the game.
 auto mode = Mode.engineInfo;
 
-// The update function is split into 3 parts.
+// The update function is split into 2 parts.
 enum Mode {
     engineInfo,
     printInfo,

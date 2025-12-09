@@ -1,7 +1,7 @@
 # 🦆 Parin
 
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
-Parin is designed to make game development fast and fun — it's easy to set up, hackable, and comes with the essentials built in.
+Parin is designed to make game development fast and fun. It's easy to set up, hackable, and comes with the essentials built in.
 
 <div align="center">
 <p>
@@ -39,7 +39,7 @@ Parin sits somewhere between a small engine like raylib or LÖVE and a big engin
 
 ## Major Features
 
-- Focused 2D engine — not an everything engine
+- Not an everything engine
 - Pixel-perfect physics engine
 - Flexible dialogue system
 - Atlas-based animation library
@@ -248,24 +248,11 @@ yay -S emscripten
 
 Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are partially supported through the `rl` flag.
 A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
-Make sure to add something like this in the dub.json file before using it:
-
-```json
-"configurations": [
-    {
-        "name": "default",
-        "targetType": "executable"
-    },
-    {
-        "name": "wasm",
-        "targetType": "library",
-        "targetName": "game_wasm",
-        "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-i", "--release", "-betterC"]
-    }
-]
-```
-
 Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
+
+```sh
+dub run parin:web -- gc rl
+```
 
 ### How do I upload web builds to itch.io?
 
