@@ -515,12 +515,23 @@ Memory Leaks: 4 (total 699 bytes, 5 ignored)
 
 The leak summary can be filtered, showing only leaks with paths containing the filter string.
 For example, `setIsLoggingMemoryTrackingInfo(true, "app.d")` shows only leaks with `"app.d"` in the path.
-You can also ignore specific allocations with `ignoreLeak` like this:
+Specific allocations can be ignored with `ignoreLeak` like this:
 
 ```d
 // struct Game { int hp; int mp; }
 // Game* game;
 game = jokaMake!Game().ignoreLeak();
+```
+
+Allocations can also be grouped to make it easier to understand what each allocation is used for like this:
+
+```d
+// This can also be done with the `beginAllocationGroup` and `endAllocationGroup` functions.
+with (AllocationGroup("World")) {
+    allocateMonsters();
+    allocateActors();
+}
+allocateText();
 ```
 
 This isn't strictly a Parin feature.

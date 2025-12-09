@@ -1277,6 +1277,7 @@ struct _ScopedArena(T) {
     }
 }
 
+@trusted
 _ScopedArena!T ScopedArena(T)(ref T arena) {
     return _ScopedArena!T(arena);
 }
