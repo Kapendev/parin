@@ -766,49 +766,54 @@ void dprintfln(A...)(InterpolationHeader header, A args, InterpolationFooter foo
 @trusted nothrow:
 
 /// Allocates raw memory from the frame arena.
-void* frameMalloc(Sz size, Sz alignment) {
-    return _engineState.arena.malloc(size, alignment);
+void* frameMalloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.malloc(size, alignment, file, line);
 }
 
 /// Reallocates memory from the frame arena.
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment) {
-    return _engineState.arena.realloc(ptr, oldSize, newSize, alignment);
+void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.realloc(ptr, oldSize, newSize, alignment, file, line);
 }
 
 /// Allocates uninitialized memory for a single value of type `T`.
-T* frameMakeBlank(T)() {
-    return _engineState.arena.makeBlank!T();
+T* frameMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.makeBlank!T(file, line);
 }
 
 /// Allocates and initializes a single value of type `T`.
-T* frameMake(T)() {
-    return _engineState.arena.make!T();
+T* frameMake(T)(IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.make!T(file, line);
 }
 
 /// Allocates and initializes a single value of type `T`.
-T* frameMake(T)(const(T) value) {
-    return _engineState.arena.make!T(value);
+T* frameMake(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.make!T(value, file, line);
 }
 
 /// Allocates uninitialized memory for an array of type `T` with the given length.
-T[] frameMakeSliceBlank(T)(Sz length) {
-    return _engineState.arena.makeSliceBlank!T(length);
+T[] frameMakeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.makeSliceBlank!T(length, file, line);
 }
 
 /// Allocates and initializes an array of type `T` with the given length.
-T[] frameMakeSlice(T)(Sz length) {
-    return _engineState.arena.makeSlice!T(length);
+T[] frameMakeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.makeSlice!T(length, file, line);
 }
 
 /// Allocates and initializes an array of type `T` with the given length.
-T[] frameMakeSlice(T)(Sz length, const(T) value) {
-    return _engineState.arena.makeSlice!T(length, value);
+T[] frameMakeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.makeSlice!T(length, value, file, line);
+}
+
+/// Allocates and initializes an array of type `T` with the given slice.
+T[] frameMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.makeSlice!T(values, file, line);
 }
 
 /// Allocates a temporary text buffer for this frame.
 /// Each call returns a new buffer.
-BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity) {
-    return BStr(frameMakeSliceBlank!char(capacity));
+BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+    return BStr(frameMakeSliceBlank!char(capacity, file, line));
 }
 
 /// Schedules a task to run every interval.
@@ -926,7 +931,7 @@ LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 /// Path separators are normalized to the platform's native format.
 IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr file = __FILE__, Sz line = __LINE__) {
-    auto tempText = BStr(frameMakeSliceBlank!char(capacity));
+    auto tempText = BStr(frameMakeSliceBlank!char(capacity, file, line));
     loadTextIntoBuffer(path, tempText, file, line);
     return tempText.items;
 }
@@ -1111,11 +1116,11 @@ bool isLoggingMemoryTrackingInfo() {
 }
 
 /// Enables or disables memory tracking logs.
-void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "") {
+void setIsLoggingMemoryTrackingInfo(bool value, IStr pathFilter = "") {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isLoggingMemoryTrackingInfo
         : _engineState.flags & ~EngineFlag.isLoggingMemoryTrackingInfo;
-    _engineState.memoryTrackingInfoFilter = filter;
+    _engineState.memoryTrackingInfoFilter = pathFilter;
 }
 
 /// Returns true if debug mode is active.

@@ -501,7 +501,7 @@ By default, leaks will be printed when the game ends only if they are detected.
 /// Returns true if memory tracking logs are enabled.
 bool isLoggingMemoryTrackingInfo();
 /// Enables or disables memory tracking logs.
-void setIsLoggingMemoryTrackingInfo(bool value, IStr filter = "");
+void setIsLoggingMemoryTrackingInfo(bool value, IStr pathFilter = "");
 ```
 
 Example output:
@@ -523,15 +523,19 @@ Specific allocations can be ignored with `ignoreLeak` like this:
 game = jokaMake!Game().ignoreLeak();
 ```
 
-Allocations can also be grouped to make it easier to understand what each allocation is used for like this:
+Allocations can also be grouped to make it easier to understand what each allocation is used for with `AllocationGroup` like this:
 
 ```d
 // This can also be done with the `beginAllocationGroup` and `endAllocationGroup` functions.
-with (AllocationGroup("World")) {
+with (AllocationGroup("world")) {
     allocateMonsters();
     allocateActors();
+    with (AllocationGroup("contents")) {
+        allocateItems();
+        allocateEvents();
+    }
 }
-allocateText();
+allocateText(); // Not part of any group.
 ```
 
 This isn't strictly a Parin feature.
