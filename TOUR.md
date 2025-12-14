@@ -488,6 +488,8 @@ T[] frameMakeSliceBlank(T)(Sz length);
 T[] frameMakeSlice(T)(Sz length);
 /// Allocates and initializes an array of type `T` with the given length.
 T[] frameMakeSlice(T)(Sz length, const(T) value);
+/// Allocates and initializes an array of type `T` with the given slice.
+T[] frameMakeSlice(T)(const(T)[] values);
 ```
 
 The engine uses this allocator internally for functions like `loadTempText` and `prepareTempText`.
@@ -552,7 +554,11 @@ Parin has a debug mode that toggles with the **F3** key by default.
 ```d
 /// Returns true if debug mode is active.
 bool isDebugMode();
-/// Sets whether debug mode should be active.
+/// Returns true when entering debug mode this frame.
+bool isEnteringDebugMode();
+/// Returns true when exiting debug mode this frame.
+bool isExitingDebugMode();
+/// Sets whether debug mode should be active
 void setIsDebugMode(bool value);
 /// Toggles the debug mode on or off.
 void toggleIsDebugMode();

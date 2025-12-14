@@ -212,10 +212,10 @@ T[] frameMakeSliceBlank(T)(Sz length);
 T[] frameMakeSlice(T)(Sz length);
 /// Allocates and initializes an array of type `T` with the given length.
 T[] frameMakeSlice(T)(Sz length, const(T) value);
-/// Allocates a temporary text buffer for this frame.
-BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 /// Allocates and initializes an array of type `T` with the given slice.
 T[] frameMakeSlice(T)(const(T)[] values);
+/// Allocates a temporary text buffer for this frame.
+BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 
 /// Schedules a task to run every interval.
 EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
