@@ -980,6 +980,30 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
             return size.y;
         }
 
+        /// The X position of the rectangle for read-only data.
+        @trusted
+        P xx() const {
+            return position.x;
+        }
+
+        /// The Y position of the rectangle for read-only data.
+        @trusted
+        P yy() const {
+            return position.y;
+        }
+
+        /// The width of the rectangle for read-only data.
+        @trusted
+        S ww() const {
+            return size.x;
+        }
+
+        /// The height of the rectangle for read-only data.
+        @trusted
+        S hh() const {
+            return size.y;
+        }
+
         bool hasSize() {
             return size.x != 0 && size.y != 0;
         }
@@ -1355,6 +1379,18 @@ struct GCirc(T) {
             return position.y;
         }
 
+        /// The X position of the circle for read-only data.
+        @trusted
+        T xx() const {
+            return position.x;
+        }
+
+        /// The Y position of the circle for read-only data.
+        @trusted
+        T yy() const {
+            return position.y;
+        }
+
         bool hasSize() {
             return radius != 0;
         }
@@ -1456,6 +1492,26 @@ struct GLine(T) {
 
         @trusted
         ref T y2() {
+            return b.y;
+        }
+
+        @trusted
+        T xx1() const {
+            return a.x;
+        }
+
+        @trusted
+        T yy1() const {
+            return a.y;
+        }
+
+        @trusted
+        T xx2() const {
+            return b.x;
+        }
+
+        @trusted
+        T yy2() const {
             return b.y;
         }
 

@@ -46,17 +46,28 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingLoadOrSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
-enum defaultEngineValidateErrorMessage         = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage             = "ERROR({}:{}): Could not load {} from \"{}\".";
-enum defaultEngineSaveErrorMessage             = "ERROR({}:{}): Could not save {} from \"{}\".";
-enum defaultEngineAssetsPathCapacity           = 8 * kilobyte;
-enum defaultEngineScreenshotTargetPathCapacity = 2 * kilobyte;
-enum defaultEngineEnvArgsCapacity              = 64;
-enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-enum defaultEngineEngineTasksCapacity          = 112;
-enum defaultEngineArenaCapacity                = 4 * megabyte;
+enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
+enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Could not load {} from \"{}\".";
+enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Could not save {} from \"{}\".";
 
-enum defaultEngineDprintCapacity       = 8 * kilobyte;
+version (WebAssembly) {
+    enum defaultEngineAssetsPathCapacity           = 4 * kilobyte;
+    enum defaultEngineScreenshotTargetPathCapacity = 1 * kilobyte;
+    enum defaultEngineEnvArgsCapacity              = 16;
+    enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
+    enum defaultEngineEngineTasksCapacity          = 56;
+    enum defaultEngineArenaCapacity                = 1 * megabyte;
+    enum defaultEngineDprintCapacity               = 2 * kilobyte;
+} else {
+    enum defaultEngineAssetsPathCapacity           = 8 * kilobyte;
+    enum defaultEngineScreenshotTargetPathCapacity = 2 * kilobyte;
+    enum defaultEngineEnvArgsCapacity              = 64;
+    enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
+    enum defaultEngineEngineTasksCapacity          = 112;
+    enum defaultEngineArenaCapacity                = 4 * megabyte;
+    enum defaultEngineDprintCapacity               = 8 * kilobyte;
+}
+
 enum defaultEngineDprintPosition       = Vec2(8, 6);
 enum defaultEngineDprintLineCountLimit = 14;
 

@@ -513,7 +513,7 @@ Memory Leaks: 4 (total 699 bytes, 5 ignored)
   2 leak, 32 bytes, source/app.d:123
 ```
 
-The leak summary can be filtered, showing only leaks with paths containing the filter string.
+The leak summary above can be filtered, showing only leaks with paths containing the filter string.
 For example, `setIsLoggingMemoryTrackingInfo(true, "app.d")` shows only leaks with `"app.d"` in the path.
 Specific allocations can be ignored with `ignoreLeak` like this:
 
@@ -527,10 +527,10 @@ Allocations can also be grouped to make it easier to understand what each alloca
 
 ```d
 // This can also be done with the `beginAllocationGroup` and `endAllocationGroup` functions.
-with (AllocationGroup("world")) {
+with (AllocationGroup("World")) {
     allocateMonsters();
     allocateActors();
-    with (AllocationGroup("contents")) {
+    with (AllocationGroup("Contents")) {
         allocateItems();
         allocateEvents();
     }
@@ -538,11 +538,12 @@ with (AllocationGroup("world")) {
 allocateText(); // Not part of any group.
 ```
 
+You can check whether memory tracking is active with `static if (isTrackingMemory)`, and if it is, you can inspect the current tracking state via `_memoryTrackingState`.
+`_memoryTrackingState` is thread-local, so each thread has its own separate tracking state.
+
 This isn't strictly a Parin feature.
 It comes from [Joka](https://github.com/Kapendev/joka), the library Parin uses for memory allocations.
 Anything allocated through Joka is automatically tracked.
-You can check whether memory tracking is active with `static if (isTrackingMemory)`, and if it is, you can inspect the current tracking state via `_memoryTrackingState`.
-`_memoryTrackingState` is thread-local, so each thread has its own separate tracking state.
 
 ## Debug Mode
 

@@ -44,6 +44,7 @@ lib*
 test*
 index.*
 emscripten_shell.html
+game_web.zip
 *.wasm
 *.so
 *.dylib

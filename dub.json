@@ -6,6 +6,7 @@
     "description": "A delightfully simple 2D game engine.",
     "license": "MIT",
     "name": "parin",
+    "libs": ["raylib"],
     "stringImportPaths": ["source/parin"],
     "subPackages" : [
         "packages/rin",
@@ -26,21 +27,18 @@
             "name": "linux-x86_64",
             "platforms": ["linux-x86_64"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/linux_x86_64", "-L."],
-            "libs": ["raylib"]
+            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/linux_x86_64", "-L."]
         },
         {
             "name": "windows-x86_64",
             "platforms": ["windows-x86_64"],
-            "targetType": "library",
-            "libs": ["raylib"]
+            "targetType": "library"
         },
         {
             "name": "osx",
             "platforms": ["osx"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/macos", "-L."],
-            "libs": ["raylib"]
+            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/macos", "-L."]
         }
     ]
 }
