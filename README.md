@@ -22,7 +22,7 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
 </a>
 <br>
 <br>
-<p>A list of projects made with Parin is available in the <a href="https://kapendev.github.io/parin-website/pages/projects.html">projects page</a>.</p>
+<p>A list of projects made with Parin is available in the <a href="PROJECTS.md">projects page</a>.</p>
 </div>
 
 ## Why Parin
