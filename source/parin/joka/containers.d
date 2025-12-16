@@ -17,7 +17,7 @@ import parin.joka.types;
 
 @safe nothrow:
 
-enum defaultListCapacity = 32; /// The default list capacity. It is also the smallest list capacity.
+enum defaultListCapacity = 16; /// The default list capacity. It is also the smallest list capacity.
 
 alias LStr         = List!char;            /// A dynamic string of chars.
 alias LStr16       = List!wchar;           /// A dynamic string of wchars.

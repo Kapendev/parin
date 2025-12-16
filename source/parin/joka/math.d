@@ -8,9 +8,9 @@
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
+import mathc = parin.joka.stdc.math;
 import parin.joka.ascii;
 import parin.joka.types;
-import mathc = parin.joka.stdc.math;
 
 // I don't care about `pure`, but I'm a nice person.
 @safe nothrow @nogc pure:

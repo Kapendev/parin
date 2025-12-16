@@ -8,12 +8,12 @@
 /// The `io` module provides input and output functions such as file reading.
 module parin.joka.io;
 
+import stdioc = parin.joka.stdc.stdio;
 import parin.joka.ascii;
 import parin.joka.containers;
 import parin.joka.memory;
 import parin.joka.types;
 import parin.joka.interpolation;
-import stdioc = parin.joka.stdc.stdio;
 
 @trusted:
 
