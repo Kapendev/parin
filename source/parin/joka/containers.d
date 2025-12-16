@@ -99,7 +99,7 @@ struct List(T) {
         return false;
     }
 
-    @trusted
+    pragma(inline, true) @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         appendBlank(file, line);
         items.ptr[items.length - 1] = cast(T) arg;
@@ -118,9 +118,9 @@ struct List(T) {
         items = items[0 .. $ - 1];
     }
 
-    @nogc
+    pragma(inline, true) @trusted @nogc
     void drop() {
-        if (length) items = items[0 .. $ - 1];
+        if (length) items = items.ptr[0 .. items.length - 1];
     }
 
     @nogc
@@ -275,7 +275,7 @@ struct BufferList(T) {
         return append(args);
     }
 
-    @trusted
+    pragma(inline, true) @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         return appendSource(file, line, arg);
     }
@@ -290,6 +290,7 @@ struct BufferList(T) {
         length -= 1;
     }
 
+    pragma(inline, true)
     void drop() {
         if (length) length -= 1;
     }
@@ -413,7 +414,7 @@ struct FixedList(T, Sz N) {
         return append(args);
     }
 
-    @trusted
+    pragma(inline, true) @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         return appendSource(file, line, arg);
     }
@@ -428,6 +429,7 @@ struct FixedList(T, Sz N) {
         length -= 1;
     }
 
+    pragma(inline, true)
     void drop() {
         if (length) length -= 1;
     }
