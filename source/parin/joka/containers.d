@@ -70,9 +70,11 @@ struct List(T) {
     bool appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
         Sz newLength = length + 1;
         if (newLength > capacity) {
-            capacity = findListCapacity(newLength, capacity);
+            capacity = findListCapacityFastAndAssumeOneAddedItem(newLength, capacity);
             auto rawPtr = jokaRealloc(items.ptr, capacity * T.sizeof, file, line);
-            if (canIgnoreLeak) rawPtr.ignoreLeak();
+            static if (isTrackingMemory) {
+                if (canIgnoreLeak) rawPtr.ignoreLeak();
+            }
             items = (cast(T*) rawPtr)[0 .. newLength];
         } else {
             items = items.ptr[0 .. newLength];
@@ -99,7 +101,9 @@ struct List(T) {
 
     @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        return appendSource(file, line, arg);
+        appendBlank(file, line);
+        items.ptr[items.length - 1] = cast(T) arg;
+        return false;
     }
 
     @nogc
@@ -152,7 +156,9 @@ struct List(T) {
         if (targetCapacity > capacity) {
             capacity = targetCapacity;
             auto rawPtr = jokaRealloc(items.ptr, capacity * T.sizeof, file, line);
-            if (canIgnoreLeak) rawPtr.ignoreLeak();
+            static if (isTrackingMemory) {
+                if (canIgnoreLeak) rawPtr.ignoreLeak();
+            }
             items = (cast(T*) rawPtr)[0 .. length];
         }
     }
@@ -1347,9 +1353,15 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
     pragma(inline, true)
     Sz findListCapacity(Sz length, Sz currentCapacity = 0) {
         Sz result = currentCapacity ? currentCapacity : defaultListCapacity;
-        if (result + 1 == length) return result * 2;
+        if (result + 1 == length) return result + result;
         while (result < length) result += result;
         return result;
+    }
+
+    pragma(inline, true)
+    Sz findListCapacityFastAndAssumeOneAddedItem(Sz length, Sz currentCapacity = 0) {
+        Sz result = currentCapacity ? currentCapacity : defaultListCapacity;
+        return (result + 1 == length) ? result + result : result;
     }
 
     pragma(inline, true)
