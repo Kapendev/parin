@@ -112,7 +112,7 @@ Parin consists of the following modules:
 - `parin.sprite`: Sprite utilities
 - `parin.story`: Dialogue system
 - `parin.timer`: Time utilities
-- `parin.ui`: Immediate mode UI
+- `parin.ui`: Immediate mode UI (WIP)
 
 The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game. They are sometimes referred to as the core modules.
 All other modules are optional and can be included as needed.

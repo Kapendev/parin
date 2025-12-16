@@ -115,6 +115,16 @@ struct List(T) {
     }
 
     @nogc
+    void drop() {
+        if (length) remove(length - 1);
+    }
+
+    @nogc
+    void dropFront() {
+        if (length) removeShift(0);
+    }
+
+    @nogc
     T pop() {
         if (length > 0) {
             T temp = items[$ - 1];
@@ -274,6 +284,14 @@ struct BufferList(T) {
         length -= 1;
     }
 
+    void drop() {
+        if (length) remove(length - 1);
+    }
+
+    void dropFront() {
+        if (length) removeShift(0);
+    }
+
     T pop() {
         if (length > 0) {
             T temp = items[$ - 1];
@@ -402,6 +420,14 @@ struct FixedList(T, Sz N) {
     void removeShift(Sz i) {
         foreach (j; i .. items.length - 1) items[j] = items[j + 1];
         length -= 1;
+    }
+
+    void drop() {
+        if (length) remove(length - 1);
+    }
+
+    void dropFront() {
+        if (length) removeShift(0);
     }
 
     T pop() {

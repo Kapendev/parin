@@ -44,7 +44,7 @@ Parin sits somewhere between a small engine like raylib or LÖVE and a big engin
 - Flexible dialogue system
 - Atlas-based animation library
 - Efficient tile map structures
-- Intuitive immediate-mode UI
+- Intuitive immediate-mode UI (WIP)
 - Mixed memory model: manual control, GC, or both
 - Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
 - Includes extras like [microui](examples/integrations/microui.d)
