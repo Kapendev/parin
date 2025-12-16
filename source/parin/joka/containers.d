@@ -106,10 +106,10 @@ struct List(T) {
         return false;
     }
 
-    @nogc
+    pragma(inline, true) @trusted @nogc
     void remove(Sz i) {
-        items[i] = items[$ - 1];
-        items = items[0 .. $ - 1];
+        items[i] = items.ptr[items.length - 1];
+        items = items.ptr[0 .. items.length - 1];
     }
 
     @nogc
@@ -238,7 +238,7 @@ struct BufferList(T) {
         }
 
         T[] items() {
-            return data[0 .. length];
+            return data.ptr[0 .. length];
         }
 
         T* ptr() {
@@ -277,11 +277,14 @@ struct BufferList(T) {
 
     pragma(inline, true) @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        return appendSource(file, line, arg);
+        auto result = appendBlank(file, line);
+        if (!result) data.ptr[length - 1] = cast(T) arg;
+        return result;
     }
 
+    pragma(inline, true) @trusted
     void remove(Sz i) {
-        items[i] = items[$ - 1];
+        items[i] = items.ptr[items.length - 1];
         length -= 1;
     }
 
@@ -322,8 +325,7 @@ struct BufferList(T) {
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {}
 
     void resizeBlank(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
-        if (newLength > capacity) length = capacity;
-        else length = newLength;
+        length = newLength > capacity ? capacity : newLength;
     }
 
     void resize(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
@@ -379,7 +381,7 @@ struct FixedList(T, Sz N) {
         }
 
         T[] items() {
-            return data.items[0 .. length];
+            return data.ptr[0 .. length];
         }
 
         T* ptr() {
@@ -416,11 +418,14 @@ struct FixedList(T, Sz N) {
 
     pragma(inline, true) @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        return appendSource(file, line, arg);
+        auto result = appendBlank(file, line);
+        if (!result) data.ptr[length - 1] = cast(T) arg;
+        return result;
     }
 
+    pragma(inline, true) @trusted
     void remove(Sz i) {
-        items[i] = items[$ - 1];
+        items[i] = items.ptr[items.length - 1];
         length -= 1;
     }
 
@@ -461,8 +466,7 @@ struct FixedList(T, Sz N) {
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {}
 
     void resizeBlank(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
-        if (newLength > capacity) length = capacity;
-        else length = newLength;
+        length = newLength > capacity ? capacity : newLength;
     }
 
     void resize(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
@@ -1016,7 +1020,9 @@ struct Arena {
     void ready(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
         free();
         auto rawPtr = jokaMalloc(newCapacity, file, line);
-        if (canIgnoreLeak) rawPtr.ignoreLeak();
+        static if (isTrackingMemory) {
+            if (canIgnoreLeak) rawPtr.ignoreLeak();
+        }
         data = cast(ubyte*) rawPtr;
         capacity = newCapacity;
         isOwning = true;
@@ -1146,19 +1152,23 @@ struct GrowingArena {
     void ready(Sz newChunkCapacity, Sz newChunkCount = 1, IStr file = __FILE__, Sz line = __LINE__) {
         free();
         head = jokaMake(Arena(newChunkCapacity, file, line), file, line);
-        // To be, or not to be, that is the question.
-        if (canIgnoreLeak) {
-            .ignoreLeak(head);
-            head.ignoreLeak();
+        static if (isTrackingMemory) {
+            // To be, or not to be, that is the question.
+            if (canIgnoreLeak) {
+                .ignoreLeak(head);
+                head.ignoreLeak();
+            }
         }
         current = head;
         chunkCapacity = newChunkCapacity;
         auto chunk = head;
         foreach (i; 1 .. newChunkCount) {
             chunk.next = jokaMake(Arena(newChunkCapacity, file, line), file, line);
-            if (canIgnoreLeak) {
-                .ignoreLeak(chunk.next);
-                chunk.next.ignoreLeak();
+            static if (isTrackingMemory) {
+                if (canIgnoreLeak) {
+                    .ignoreLeak(chunk.next);
+                    chunk.next.ignoreLeak();
+                }
             }
             chunk = chunk.next;
         }
@@ -1168,9 +1178,11 @@ struct GrowingArena {
         void* p = current.malloc(size, alignment);
         if (p == null) {
             auto chunk = current.next ? current.next : jokaMake(Arena(size > chunkCapacity ? size : chunkCapacity, file, line), file, line);
-            if (current.next == null && canIgnoreLeak) {
-                .ignoreLeak(chunk);
-                chunk.ignoreLeak();
+            static if (isTrackingMemory) {
+                if (current.next == null && canIgnoreLeak) {
+                    .ignoreLeak(chunk);
+                    chunk.ignoreLeak();
+                }
             }
             p = chunk.malloc(size, alignment);
             current.next = chunk;
@@ -1183,9 +1195,11 @@ struct GrowingArena {
         void* p = current.realloc(ptr, oldSize, newSize, alignment);
         if (p == null) {
             auto chunk = current.next ? current.next : jokaMake(Arena(newSize > chunkCapacity ? newSize : chunkCapacity, file, line), file, line);
-            if (current.next == null && canIgnoreLeak) {
-                .ignoreLeak(chunk);
-                chunk.ignoreLeak();
+            static if (isTrackingMemory) {
+                if (current.next == null && canIgnoreLeak) {
+                    .ignoreLeak(chunk);
+                    chunk.ignoreLeak();
+                }
             }
             p = chunk.realloc(ptr, oldSize, newSize, alignment);
             current.next = chunk;

@@ -39,7 +39,12 @@ debug {
             _MallocGroupInfo[_MallocInfo] groupBuffer;
         }
 
-        _MemoryTrackingState _memoryTrackingState;
+        version (JokaGlobalTracking) {
+            pragma(msg, "Joka: Using global (non-TLS) tracking.");
+            __gshared _MemoryTrackingState _memoryTrackingState;
+        } else {
+            _MemoryTrackingState _memoryTrackingState;
+        }
     }
 } else {
     enum isTrackingMemory = false;
