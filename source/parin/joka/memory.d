@@ -94,16 +94,12 @@ version (JokaCustomMemory) {
 
     extern(C)
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = memoryd.GC.malloc(size);
-        return result;
+        return memoryd.GC.malloc(size);
     }
 
     extern(C)
     void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = jokaMalloc(size);
-        if (ptr == null || result == null) return result;
-        jokaMemcpy(result, ptr, size);
-        return result;
+        return memoryd.GC.realloc(ptr, size);
     }
 
     extern(C) @nogc
