@@ -135,6 +135,10 @@ void setDefaultWrap(Wrap value);
 TextureId defaultTexture();
 /// Sets the default texture used for null textures.
 void setDefaultTexture(TextureId value);
+/// Returns the default texture area size used for the ID version of `drawTextureArea`.
+Vec2 defaultTextureAreaSize();
+/// Sets the default texture area size used for the ID version of `drawTextureArea`.
+void setDefaultTextureAreaSize(Vec2 size);
 /// Returns the default font used for null fonts.
 FontId defaultFont();
 /// Sets the default font used for null fonts.
@@ -304,6 +308,8 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a portion of the default texture at the given position with the specified draw options.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the default texture by ID at the given position with the specified draw options.
+void drawTextureArea(int id, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 /// Draws a 9-slice from the default texture area at the given target area.

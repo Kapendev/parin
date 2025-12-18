@@ -149,6 +149,8 @@ struct EngineState {
     Wrap defaultWrap;
     FontId defaultFont = engineFont;
     TextureId defaultTexture;
+    Vec2 defaultTextureAreaSize;
+    int defaultTextureAreaColCount;
     Camera userCamera;
     ViewportId userViewport;
     Fault lastLoadOrSaveFault;
@@ -1423,6 +1425,21 @@ void setDefaultTexture(TextureId value) {
     _engineState.defaultTexture = value;
 }
 
+/// Returns the default texture area size used for the ID version of `drawTextureArea`.
+Vec2 defaultTextureAreaSize() {
+    return _engineState.defaultTextureAreaSize;
+}
+
+/// Sets the default texture area size used for the ID version of `drawTextureArea`.
+void setDefaultTextureAreaSize(Vec2 size) {
+    _engineState.defaultTextureAreaSize = size;
+    if (_engineState.defaultTexture.isValid) {
+        _engineState.defaultTextureAreaColCount = _engineState.defaultTexture.width / cast(int) size.x;
+    } else {
+        assert(0, "Cannot set default texture area size because the default texture is invalid or not assigned.");
+    }
+}
+
 /// Returns the default font used for null fonts.
 FontId defaultFont() {
     return _engineState.defaultFont;
@@ -1845,6 +1862,15 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 /// Call `setDefaultTexture` before using this function.
 void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(_engineState.defaultTexture, area, position, options);
+}
+
+/// Draws a portion of the default texture by ID at the given position with the specified draw options.
+/// Call `setDefaultTexture` and `setDefaultTextureAreaSize` before using this function.
+void drawTextureArea(int id, Vec2 position, DrawOptions options = DrawOptions()) {
+    if (_engineState.defaultTextureAreaColCount == 0) assert(0, "Cannot draw texture area by ID because `setDefaultTextureAreaSize` was not called.");
+    auto col = id % _engineState.defaultTextureAreaColCount;
+    auto row = id / _engineState.defaultTextureAreaColCount;
+    drawTextureArea(_engineState.defaultTexture, Rect(col * _engineState.defaultTextureAreaSize.x, row * _engineState.defaultTextureAreaSize.y, _engineState.defaultTextureAreaSize), position, options);
 }
 
 /// Draws a 9-slice from the specified texture area at the given target area.
