@@ -2,7 +2,6 @@
 
 import parin;
 
-auto atlas = TextureId();
 auto position = Vec2(320 / 2 - 16, 180 / 2 - 16);
 
 void ready() {
