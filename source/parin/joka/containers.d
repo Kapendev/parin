@@ -70,7 +70,7 @@ struct List(T) {
     bool appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
         Sz newLength = length + 1;
         if (newLength > capacity) {
-            capacity = findListCapacityFastAndAssumeOneAddedItem(newLength, capacity);
+            capacity = findListCapacityFastAndAssumeOneAddedItemInLength(newLength, capacity);
             auto rawPtr = jokaRealloc(items.ptr, capacity * T.sizeof, file, line);
             static if (isTrackingMemory) {
                 if (canIgnoreLeak) rawPtr.ignoreLeak();
@@ -226,6 +226,32 @@ struct BufferList(T) {
 
     Data data;
     Sz length;
+
+    @trusted
+    bool resizeCapacity(C)(ref C arena, Sz newCapacity) {
+        auto newData = arena.resizeSlice(data.ptr, data.length, newCapacity);
+        if (newData.ptr) {
+            data = newData;
+            if (length > newData.length) length = newData.length;
+            return false;
+        }
+        return true;
+    }
+
+    @trusted nothrow @nogc
+    bool resizeCapacity(T[] newRawPureData) {
+        if (newRawPureData.ptr) {
+            if (data.length <= newRawPureData.length) {
+                jokaMemcpy(newRawPureData.ptr, data.ptr, T.sizeof * data.length);
+            } else {
+                jokaMemcpy(newRawPureData.ptr, data.ptr, T.sizeof * newRawPureData.length);
+            }
+            data = newRawPureData;
+            if (length > newRawPureData.length) length = newRawPureData.length;
+            return false;
+        }
+        return true;
+    }
 
     @safe nothrow @nogc:
 
@@ -1057,8 +1083,11 @@ struct Arena {
         if (ptr == null) return malloc(newSize, alignment);
         auto newPtr = malloc(newSize, alignment);
         if (newPtr == null) return null;
-        if (oldSize <= newSize) jokaMemcpy(newPtr, ptr, oldSize);
-        else jokaMemcpy(newPtr, ptr, newSize);
+        if (oldSize <= newSize) {
+            jokaMemcpy(newPtr, ptr, oldSize);
+        } else {
+            jokaMemcpy(newPtr, ptr, newSize);
+        }
         return newPtr;
     }
 
@@ -1068,18 +1097,20 @@ struct Arena {
 
     T* make(T)(IStr file = __FILE__, Sz line = __LINE__) {
         auto result = makeBlank!T();
-        *result = T.init;
+        if (result) *result = T.init;
         return result;
     }
 
     T* make(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = makeBlank!T();
-        *result = cast(T) value;
+        if (result) *result = cast(T) value;
         return result;
     }
 
     T[] makeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-        return (cast(T*) malloc(T.sizeof * length, T.alignof))[0 .. length];
+        auto result = (cast(T*) malloc(T.sizeof * length, T.alignof))[0 .. length];
+        if (result.ptr) return result;
+        return [];
     }
 
     T[] makeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
@@ -1094,10 +1125,16 @@ struct Arena {
         return result;
     }
 
-    T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
+    T[] makeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = makeSliceBlank!T(values.length);
-        result.ptr.jokaMemcpy(values.ptr, T.sizeof * values.length);
+        if (result.ptr) result.ptr.jokaMemcpy(values.ptr, T.sizeof * values.length);
         return result;
+    }
+
+    T[] resizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = (cast(T*) realloc(values, T.sizeof * oldLength, T.sizeof * newLength, T.alignof))[0 .. newLength];
+        if (result.ptr) return result;
+        return [];
     }
 
     void checkpoint() {
@@ -1214,18 +1251,20 @@ struct GrowingArena {
 
     T* make(T)(IStr file = __FILE__, Sz line = __LINE__) {
         auto result = makeBlank!T(file, line);
-        *result = T.init;
+        if (result) *result = T.init;
         return result;
     }
 
     T* make(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = makeBlank!T(file, line);
-        *result = cast(T) value;
+        if (result) *result = cast(T) value;
         return result;
     }
 
     T[] makeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-        return (cast(T*) malloc(T.sizeof * length, T.alignof, file, line))[0 .. length];
+        auto result = (cast(T*) malloc(T.sizeof * length, T.alignof, file, line))[0 .. length];
+        if (result.ptr) return result;
+        return [];
     }
 
     T[] makeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
@@ -1240,10 +1279,16 @@ struct GrowingArena {
         return result;
     }
 
-    T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
+    T[] makeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = makeSliceBlank!T(values.length, file, line);
-        result.ptr.jokaMemcpy(values.ptr, T.sizeof * values.length);
+        if (result.ptr) result.ptr.jokaMemcpy(values.ptr, T.sizeof * values.length);
         return result;
+    }
+
+    T[] resizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = (cast(T*) realloc(values, T.sizeof * oldLength, T.sizeof * newLength, T.alignof))[0 .. newLength];
+        if (result.ptr) return result;
+        return [];
     }
 
     @trusted nothrow @nogc:
@@ -1335,6 +1380,10 @@ struct _ScopedArena(T) {
     T[] makeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         return _currentArena.makeSlice!T(length, value, file, line);
     }
+
+    T[] resizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
+        return _currentArena.resizeSlice!T(values, oldLength, newLength, file, line);
+    }
 }
 
 @trusted
@@ -1375,7 +1424,7 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
     }
 
     pragma(inline, true)
-    Sz findListCapacityFastAndAssumeOneAddedItem(Sz length, Sz currentCapacity = 0) {
+    Sz findListCapacityFastAndAssumeOneAddedItemInLength(Sz length, Sz currentCapacity = 0) {
         Sz result = currentCapacity ? currentCapacity : defaultListCapacity;
         return (result + 1 == length) ? result + result : result;
     }
@@ -1533,6 +1582,18 @@ unittest {
     assert(findListCapacity(defaultListCapacity) == defaultListCapacity);
     assert(findListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
     assert(findListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
+
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(0, 0) == 16);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(16, 0) == 16);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(17, 0) == 32);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(18, 0) == 16);
+
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(0, 32) == 32);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(16, 32) == 32);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(17, 32) == 32);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(18, 32) == 32);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(32, 32) == 32);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(33, 32) == 64);
 }
 
 // TODO: Write better tests.
@@ -1935,4 +1996,16 @@ unittest {
     }
     assert(arena.offset == 0);
     arena.free();
+
+    arena = Arena(buffer);
+    auto dynamicArray = BStr(arena.makeSlice!char(2));
+    assert(dynamicArray.push('D') == false);
+    assert(dynamicArray.push('D') == false);
+    assert(dynamicArray.push('D') == true);
+    if (dynamicArray.push('D')) {
+        dynamicArray.resizeCapacity(arena, 4);
+    }
+    assert(dynamicArray.push('D') == false);
+    assert(dynamicArray.length == 3);
+    foreach (item; dynamicArray) assert(item == 'D');
 }

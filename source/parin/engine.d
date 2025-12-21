@@ -823,6 +823,11 @@ T[] frameMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE_
     return _engineState.arena.makeSlice!T(values, file, line);
 }
 
+/// Resizes an array of type `T` with the given slice pointer and length.
+T[] frameResizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.resizeSlice!T(values, oldLength, newLength, file, line);
+}
+
 /// Allocates a temporary text buffer for this frame.
 /// Each call returns a new buffer.
 BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr file = __FILE__, Sz line = __LINE__) {

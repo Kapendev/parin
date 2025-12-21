@@ -13,7 +13,7 @@ import parin.joka.types;
 static if (__traits(compiles, { import core.interpolation; })) {
     public import core.interpolation;
 } else {
-    pragma(msg, "Joka: Using custom interpolation functions.");
+    // pragma(msg, "Joka: Using custom interpolation functions.");
 
     // Functions below are copy-pasted from core.interpolation.
 

@@ -218,6 +218,8 @@ T[] frameMakeSlice(T)(Sz length);
 T[] frameMakeSlice(T)(Sz length, const(T) value);
 /// Allocates and initializes an array of type `T` with the given slice.
 T[] frameMakeSlice(T)(const(T)[] values);
+/// Resizes an array of type `T` with the given slice pointer and length.
+T[] frameResizeSlice(T)(T* values, Sz oldLength, Sz newLength);
 /// Allocates a temporary text buffer for this frame.
 BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 

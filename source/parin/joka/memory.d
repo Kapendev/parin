@@ -132,6 +132,11 @@ version (JokaCustomMemory) {
 
     extern(C)
     void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+        if (size == 0) {
+            jokaFree(ptr);
+            return null;
+        }
+
         void* result;
         if (ptr) {
             static if (isTrackingMemory) {
@@ -229,20 +234,22 @@ T* jokaMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
 @trusted
 T* jokaMake(T)(IStr file = __FILE__, Sz line = __LINE__) {
     auto result = jokaMakeBlank!T(file, line);
-    *result = T.init;
+    if (result) *result = T.init;
     return result;
 }
 
 @trusted
 T* jokaMake(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = jokaMakeBlank!T(file, line);
-    *result = cast(T) value;
+    if (result) *result = cast(T) value;
     return result;
 }
 
 @trusted
 T[] jokaMakeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-    return (cast(T*) jokaMalloc(T.sizeof * length, file, line))[0 .. length];
+    auto result = (cast(T*) jokaMalloc(T.sizeof * length, file, line))[0 .. length];
+    if (result.ptr) return result;
+    return [];
 }
 
 @trusted
@@ -262,6 +269,13 @@ T[] jokaMakeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = 
 @trusted
 T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = jokaMakeSliceBlank!T(values.length, file, line);
-    jokaMemcpy(result.ptr, values.ptr, T.sizeof * values.length);
+    if (result.ptr) jokaMemcpy(result.ptr, values.ptr, T.sizeof * values.length);
     return result;
+}
+
+@trusted
+T[] jokaResizeSlice(T)(T* values, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = (cast(T*) jokaRealloc(values, T.sizeof * length, file, line))[0 .. length];
+    if (result.ptr) return result;
+    return [];
 }
