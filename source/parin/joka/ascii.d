@@ -1023,13 +1023,24 @@ Maybe!double toFloating(char c) {
 
 /// Converts the string to an enum value.
 @trusted
-Maybe!T toEnum(T)(IStr str, bool noCase = false) {
-    if (noCase) {
-        char[128] enumBuffer = void;
+Maybe!T toEnum(T)(IStr str, bool noCase = false, bool canIgnoreSpaceAndSymbol = false) {
+    if (noCase || canIgnoreSpaceAndSymbol) {
+        char[256] enumBuffer = void;
         foreach (m; __traits(allMembers, T)) {
-            auto slice = enumBuffer[];
-            if (slice.copyStr(m)) return Maybe!T(Fault.overflow);
-            if (slice.equalsNoCase(str)) return Maybe!T(mixin("T.", m));
+            if (canIgnoreSpaceAndSymbol) {
+                auto slice = enumBuffer[];
+                auto sliceLength = 0;
+                foreach (i, c; str) {
+                    if (c.isSpace || c.isSymbol) continue;
+                    if (sliceLength >= enumBuffer.length) return Maybe!T(Fault.overflow);
+                    slice[sliceLength] = c;
+                    sliceLength += 1;
+                }
+                slice = slice[0 .. sliceLength];
+                if (noCase ? m.equalsNoCase(slice) : m == slice) return Maybe!T(mixin("T.", m));
+            } else {
+                if (noCase ? m.equalsNoCase(str) : m == str) return Maybe!T(mixin("T.", m));
+            }
         }
         return Maybe!T(Fault.invalid);
     } else {
@@ -1059,6 +1070,7 @@ unittest {
     enum TestEnum {
         one,
         two,
+        oneAndTwo,
     }
 
     char[128] buffer = void;
@@ -1296,6 +1308,11 @@ unittest {
     assert(toEnum!TestEnum("two").getOr() == TestEnum.two);
     assert(toEnum!TestEnum("TWO").isSome == false);
     assert(toEnum!TestEnum("TWO", true).isSome == true);
+    assert(toEnum!TestEnum("  TWO  ", true, false).isSome == false);
+    assert(toEnum!TestEnum("  TWO  ", true, true).isSome == true);
+    assert(toEnum!TestEnum(" -TWO- ", true, true).isSome == true);
+    assert(toEnum!TestEnum("One and Two", true, true).isSome == true);
+    assert(toEnum!TestEnum("one-and-two", true, true).isSome == true);
 
     assert(toStrz("Hello").getOr().strzLength == "Hello".length);
     assert(toStrz("Hello").getOr().strzToStr() == "Hello");

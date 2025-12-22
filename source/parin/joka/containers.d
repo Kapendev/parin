@@ -1391,7 +1391,7 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
     return _ScopedArena!T(arena);
 }
 
-@trusted @nogc {
+pragma(inline, true) @trusted @nogc {
     IStr indexErrorMessage(Sz i) {
         IStr[1] fmtStrs = [
             "Index {} does not exist.",
@@ -1415,7 +1415,6 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
         return fmtSignedGroup(fmtStrs, value, generation);
     }
 
-    pragma(inline, true)
     Sz findListCapacity(Sz length, Sz currentCapacity = 0) {
         Sz result = currentCapacity ? currentCapacity : defaultListCapacity;
         if (result + 1 == length) return result + result;
@@ -1423,23 +1422,19 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
         return result;
     }
 
-    pragma(inline, true)
     Sz findListCapacityFastAndAssumeOneAddedItemInLength(Sz length, Sz currentCapacity = 0) {
         Sz result = currentCapacity ? currentCapacity : defaultListCapacity;
         return (result + 1 == length) ? result + result : result;
     }
 
-    pragma(inline, true)
     Sz findGridIndex(Sz row, Sz col, Sz colCount) {
         return colCount * row + col;
     }
 
-    pragma(inline, true)
     Sz findGridRow(Sz gridIndex, Sz colCount) {
         return gridIndex % colCount;
     }
 
-    pragma(inline, true)
     Sz findGridCol(Sz gridIndex, Sz colCount) {
         return gridIndex / colCount;
     }
