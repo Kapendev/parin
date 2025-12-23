@@ -29,7 +29,7 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
     auto text = fmt(fmtStr, args);
-    auto textData = cast(Str) text.ptr[0 .. defaultAsciiBufferSize];
+    auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
     if (text.length == 0 || text.length == textData.length) return;
     textData[text.length] = '\0';
     stdioc.fputs(textData.ptr, stream == StdStream.output ? stdioc.stdout : stdioc.stderr);
@@ -56,7 +56,7 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
     auto text = fmt(fmtStr, args);
-    auto textData = cast(Str) text.ptr[0 .. defaultAsciiBufferSize];
+    auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
     if (text.length == 0 || text.length == textData.length || text.length + 1 == textData.length) return;
     textData[text.length] = '\n';
     textData[text.length + 1] = '\0';

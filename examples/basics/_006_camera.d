@@ -11,7 +11,7 @@ void ready() {
 
 bool update(float dt) {
     // Move the camera.
-    cameraTarget += wasd * Vec2(120 * dt);
+    cameraTarget += wasd * 120 * dt;
     camera.followPositionWithSlowdown(cameraTarget, dt, 0.15);
     // Draw the objects inside the camera.
     // This can also be done with the `attach` and `detach` functions.
@@ -21,8 +21,8 @@ bool update(float dt) {
     }
     // Draw the UI.
     drawText("I am UI!", Vec2(8));
-    drawText("+", resolution * Vec2(0.5));
-    drawText("+", resolution * Vec2(0.5) + (cameraTarget - camera.position));
+    drawText("+", resolution * 0.5);
+    drawText("+", resolution * 0.5 + (cameraTarget - camera.position));
     return false;
 }
 

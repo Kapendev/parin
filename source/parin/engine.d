@@ -64,7 +64,7 @@ version (WebAssembly) {
     enum defaultEngineEnvArgsCapacity              = 64;
     enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
     enum defaultEngineEngineTasksCapacity          = 112;
-    enum defaultEngineArenaCapacity                = 4 * megabyte;
+    enum defaultEngineArenaCapacity                = 2 * megabyte;
     enum defaultEngineDprintCapacity               = 8 * kilobyte;
 }
 

@@ -12,7 +12,7 @@ void ready() {
 
 bool update(float dt) {
     // Draw a 9-patch with a size based on the mouse position.
-    drawTextureSlice(atlas, patch, Rect(Vec2(8), mouse - Vec2(8)), Margin(16), true);
+    drawTextureSlice(atlas, patch, Rect(8, 8, mouse - 8), Margin(16), true);
     return false;
 }
 

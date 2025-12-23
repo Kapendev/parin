@@ -6,7 +6,6 @@ auto atlas = TextureId();
 auto map = TileMap();
 auto camera = Camera(0, 0, true); // Create a centered camera at position (0, 0).
 auto tile = Tile(16, 16, 145);    // Create a 16x16 tile that has the ID 145.
-auto tileOptions = DrawOptions();
 
 void ready() {
     lockResolution(320, 180);
@@ -17,20 +16,20 @@ void ready() {
 
 bool update(float dt) {
     // Update the tile and camera.
-    tileOptions.flip = wasd.x ? (wasd.x > 0 ? Flip.x : Flip.none) : tileOptions.flip;
-    tile.position += wasd * Vec2(120 * dt);
-    camera.position = tile.position + tile.size * Vec2(0.5);
+    tile.flip = wasd.x ? (wasd.x > 0 ? Flip.x : Flip.none) : tile.flip;
+    tile.position += wasd * 120 * dt;
+    camera.position = tile.position + tile.size * 0.5;
     // Check for collisions with the map and resolve them.
     foreach (t; map.tiles(camera)) {
         if (t.isEmpty) continue;
         while (t.hasIntersection(tile)) {
-            tile.position -= wasd * Vec2(dt);
-            camera.position = tile.position + tile.size * Vec2(0.5);
+            tile.position -= wasd * dt;
+            camera.position = tile.position + tile.size * 0.5;
         }
     }
     with (Attached(camera)) {
         drawTileMap(atlas, map, camera);
-        drawTile(atlas, tile, tileOptions);
+        drawTile(atlas, tile);
     }
     drawText("Move with arrow keys.", Vec2(8));
     return false;

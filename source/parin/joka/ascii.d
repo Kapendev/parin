@@ -14,11 +14,14 @@ import parin.joka.types;
 
 @safe:
 
-enum defaultAsciiFmtArgStr      = "{}";
-enum defaultAsciiBufferCount    = 16;   // Generic string count.
-enum defaultAsciiBufferSize     = 1536; // Generic string length.
-enum defaultAsciiFmtBufferCount = 32;   // Arg count.
-enum defaultAsciiFmtBufferSize  = 512;  // Arg length.
+enum defaultAsciiBufferCount = 16;   /// Generic string count.
+enum defaultAsciiBufferSize  = 2048; /// Generic string length.
+
+enum defaultAsciiFmtArgStr         = "{}"; /// The format argument symbol.
+enum defaultAsciiFmtArgBufferCount = 32;   /// Format argument count.
+enum defaultAsciiFmtArgBufferSize  = 1024; /// Format argument length.
+enum defaultAsciiFmtBufferCount    = 32;   /// Format string count.
+enum defaultAsciiFmtBufferSize     = 2048; /// Format string length.
 
 enum digitChars    = "0123456789";                         /// The set of decimal numeric characters.
 enum upperChars    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";         /// The set of uppercase letters.
@@ -192,10 +195,10 @@ IStr fmtIntoBufferWithStrs(Str buffer, IStr fmtStr, IStr[] args...) {
     return result;
 }
 
-char[defaultAsciiFmtBufferSize][defaultAsciiFmtBufferCount] _fmtIntoBufferDataBuffer = void;
-IStr[defaultAsciiFmtBufferCount]                            _fmtIntoBufferSliceBuffer = void;
-char[defaultAsciiBufferSize][defaultAsciiBufferCount]       _fmtBuffer = void;
-byte                                                        _fmtBufferIndex = 0;
+char[defaultAsciiFmtArgBufferSize][defaultAsciiFmtArgBufferCount] _fmtIntoBufferDataBuffer = void;
+IStr[defaultAsciiFmtArgBufferCount]                               _fmtIntoBufferSliceBuffer = void;
+char[defaultAsciiFmtBufferSize][defaultAsciiFmtBufferCount]       _fmtBuffer = void;
+byte                                                              _fmtBufferIndex = 0;
 
 /// Formats the given string by replacing `{}` placeholders with argument values in order.
 /// Options within placeholders are not supported.
@@ -203,7 +206,7 @@ byte                                                        _fmtBufferIndex = 0;
 /// Writes into the buffer and returns the formatted string.
 @trusted
 IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
-    static assert(args.length <= defaultAsciiFmtBufferCount, "Too many format arguments.");
+    static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];
@@ -239,7 +242,7 @@ IStr fmt(A...)(IStr fmtStr, A args) {
     auto buffer = _fmtBuffer[_fmtBufferIndex][];
 
     // `fmtIntoBuffer` body copy-pasted here to avoid one template.
-    static assert(args.length <= defaultAsciiFmtBufferCount, "Too many format arguments.");
+    static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];

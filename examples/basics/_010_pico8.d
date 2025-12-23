@@ -12,7 +12,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    position += wasd * Vec2(120 * dt);
+    position += wasd * 120 * dt;
     // Draw a texture area using a Pico-8–style ID.
     drawTextureArea(58 + cast(int) fmod(elapsedTime * 2, 4), position, DrawOptions(Vec2(2)));
     drawText("Move with arrow keys.", Vec2(8));

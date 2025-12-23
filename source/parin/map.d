@@ -27,6 +27,7 @@ struct Tile {
     short width;
     short height;
     short id;
+    Flip flip;
     byte idOffset;
     Vec2 position;
 
@@ -485,6 +486,9 @@ struct TileMap {
 
 @nogc {
     void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
+        auto tempOptions = options;
+        tempOptions.flip = tile.flip;
+
         version (ParinSkipDrawChecks) {
         } else {
             if (texture.isNull) {
@@ -498,7 +502,7 @@ struct TileMap {
         }
 
         if (!tile.hasSize) return;
-        drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, options);
+        drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, tempOptions);
     }
 
     void drawTile(Tile tile, DrawOptions options = DrawOptions()) {

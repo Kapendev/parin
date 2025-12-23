@@ -18,13 +18,13 @@ bool update(float dt) {
         viewport.attach();
         foreach_reverse (i; 0 .. 8) {
             auto options = DrawOptions(white.alpha(cast(ubyte) (255 / (i + 1))), Hook.center);
-            drawTextureArea(atlas, Rect(16, 128, 16, 16), viewport.size / Vec2(2) + Vec2(i * 8, -i * 2), options);
+            drawTextureArea(atlas, Rect(16, 128, 16, 16), viewport.size * 0.5 + Vec2(i * 8, -i * 2), options);
         }
         viewport.detach();
     }
     // Draw the generated viewport texture.
     auto options = DrawOptions(Vec2(2), Hook.center);
-    drawViewport(viewport, resolution / Vec2(2) + Vec2(0, 6 * sin(elapsedTime * 4)), options);
+    drawViewport(viewport, resolution * 0.5 + Vec2(0, 6 * sin(elapsedTime * 4)), options);
     return false;
 }
 
