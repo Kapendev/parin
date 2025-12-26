@@ -1,8 +1,8 @@
 {
   "version": "0.9.0",
   "pan": {
-    "X": 401.76605,
-    "Y": 164.10458
+    "X": 590.59753,
+    "Y": 193.25323
   },
   "zoom": 1,
   "currentPage": 0,
@@ -13,8 +13,8 @@
     {
       "id": 0,
       "pan": {
-        "X": 401.766,
-        "Y": 164.10461
+        "X": 590.59766,
+        "Y": 193.25327
       },
       "zoom": 1,
       "cards": [
@@ -49,26 +49,10 @@
           }
         },
         {
-          "id": 2,
-          "rect": {
-            "X": 64,
-            "Y": 64,
-            "W": 224,
-            "H": 32
-          },
-          "collapsed": "CollapsedNone",
-          "contents": "Checkbox",
-          "properties": {
-            "checked": false,
-            "description": "Backend API",
-            "filepath": ""
-          }
-        },
-        {
           "id": 3,
           "rect": {
-            "X": 64,
-            "Y": 96,
+            "X": 576,
+            "Y": 32,
             "W": 256,
             "H": 32
           },
@@ -81,10 +65,26 @@
           }
         },
         {
-          "id": 4,
+          "id": 2,
           "rect": {
             "X": 64,
-            "Y": 128,
+            "Y": 64,
+            "W": 224,
+            "H": 32
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Checkbox",
+          "properties": {
+            "checked": true,
+            "description": "Backend API",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 4,
+          "rect": {
+            "X": 576,
+            "Y": 64,
             "W": 416,
             "H": 32
           },
@@ -99,8 +99,24 @@
         {
           "id": 6,
           "rect": {
-            "X": 512,
-            "Y": 128,
+            "X": 64,
+            "Y": 96,
+            "W": 416,
+            "H": 64
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Add Y-sorting with begin and end functions.",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 5,
+          "rect": {
+            "X": 608,
+            "Y": 96,
             "W": 256,
             "H": 32
           },
@@ -108,6 +124,37 @@
           "contents": "Note",
           "properties": {
             "description": "Good looking!",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 7,
+          "rect": {
+            "X": 64,
+            "Y": 160,
+            "W": 416,
+            "H": 64
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Checkbox",
+          "properties": {
+            "checked": false,
+            "description": "Start work on a game based on Will of The Hair Wisp.",
+            "filepath": ""
+          }
+        },
+        {
+          "id": 8,
+          "rect": {
+            "X": 96,
+            "Y": 224,
+            "W": 384,
+            "H": 96
+          },
+          "collapsed": "CollapsedNone",
+          "contents": "Note",
+          "properties": {
+            "description": "There is already a good idea there that I can extend and make better.",
             "filepath": ""
           }
         }

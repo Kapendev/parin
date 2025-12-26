@@ -227,6 +227,10 @@ struct BufferList(T) {
     Data data;
     Sz length;
 
+    bool growCapacity(C)(ref C arena) {
+        return resizeCapacity(arena, findListCapacityFastAndAssumeOneAddedItemInLength(data.length + 1, data.length));
+    }
+
     @trusted
     bool resizeCapacity(C)(ref C arena, Sz newCapacity) {
         auto newData = arena.resizeSlice(data.ptr, data.length, newCapacity);
@@ -596,10 +600,11 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
     }
 
     @trusted
-    void append(const(T)[] args...) {
+    bool append(const(T)[] args...) {
         foreach (arg; args) {
             if (openIndex == data.length) {
-                data.append(Item(cast(T) arg, true));
+                auto result = data.push(Item(cast(T) arg, true));
+                if (result) return true;
                 hotIndex = openIndex;
                 openIndex = data.length;
                 length += 1;
@@ -615,20 +620,23 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
                     }
                 }
                 if (isFull) {
-                    data.append(Item(cast(T) arg, true));
+                    auto result = data.push(Item(cast(T) arg, true));
+                    if (result) return true;
                     hotIndex = data.length - 1;
                     openIndex = data.length;
                 }
                 length += 1;
             }
         }
+        return false;
     }
 
     @trusted
-    void appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
+    bool appendSource(IStr file = __FILE__, Sz line = __LINE__, const(T)[] args = []...) {
         foreach (arg; args) {
             if (openIndex == data.length) {
-                data.appendSource(file, line, Item(cast(T) arg, true));
+                auto result = data.push(Item(cast(T) arg, true), file, line);
+                if (result) return true;
                 hotIndex = openIndex;
                 openIndex = data.length;
                 length += 1;
@@ -644,18 +652,20 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
                     }
                 }
                 if (isFull) {
-                    data.appendSource(file, line, Item(cast(T) arg, true));
+                    auto result = data.push(Item(cast(T) arg, true), file, line);
+                    if (result) return true;
                     hotIndex = data.length - 1;
                     openIndex = data.length;
                 }
                 length += 1;
             }
         }
+        return false;
     }
 
     @trusted
-    void push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        appendSource(file, line, arg);
+    bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
+        return appendSource(file, line, arg);
     }
 
     @nogc
@@ -743,11 +753,21 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
     }
 }
 
-alias Gen = uint;
+alias Gen = int;
 
 struct GenIndex {
     Gen value;
     Gen generation;
+
+    pragma(inline, true) @safe nothrow @nogc pure:
+
+    bool isNone() {
+        return value < 0;
+    }
+
+    bool isSome() {
+        return value >= 0;
+    }
 }
 
 struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboValid!(T, D) && isBasicContainerType!G) {
@@ -807,7 +827,8 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
     }
 
     GenIndex append(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        data.appendSource(file, line, arg);
+        auto result = data.push(arg, file, line);
+        if (result) return GenIndex(-1, -1);
         generations.resize(data.data.length, file, line);
         return GenIndex(cast(Gen) data.hotIndex, generations[data.hotIndex]);
     }
@@ -1998,9 +2019,10 @@ unittest {
     assert(dynamicArray.push('D') == false);
     assert(dynamicArray.push('D') == true);
     if (dynamicArray.push('D')) {
-        dynamicArray.resizeCapacity(arena, 4);
+        dynamicArray.growCapacity(arena);
     }
     assert(dynamicArray.push('D') == false);
     assert(dynamicArray.length == 3);
+    assert(dynamicArray.capacity == 4);
     foreach (item; dynamicArray) assert(item == 'D');
 }
