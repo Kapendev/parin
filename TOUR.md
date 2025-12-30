@@ -282,6 +282,8 @@ void dprintfln(A...)(IStr fmtStr, A args);
 void dprintln(A...)(A args);
 /// Returns the contents of the overlay text buffer.
 IStr dprintBuffer();
+/// Sets the font of the overlay text.
+void setDprintFont(FontId value);
 /// Sets the position of the overlay text.
 void setDprintPosition(Vec2 value);
 /// Sets the drawing options for the overlay text.

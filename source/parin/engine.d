@@ -36,9 +36,6 @@ enum defaultEngineWindowMinHeight = 180;
 enum defaultEngineWindowMinSize   = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
 enum defaultEngineDebugModeKey    = Keyboard.f3;
 
-enum defaultEngineFontRuneWidth  = 6;
-enum defaultEngineFontRuneHeight = 12;
-
 enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
     EngineFlag.isNullTextureVisible |
@@ -47,8 +44,8 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingMemoryTrackingInfo;
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Could not load {} from \"{}\".";
-enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Could not save {} from \"{}\".";
+enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Can't load {} from \"{}\".";
+enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Can't save {} from \"{}\".";
 
 version (WebAssembly) {
     enum defaultEngineAssetsPathCapacity           = 4 * kilobyte;
@@ -68,7 +65,7 @@ version (WebAssembly) {
     enum defaultEngineDprintCapacity               = 8 * kilobyte;
 }
 
-enum defaultEngineDprintPosition       = Vec2(8, 6);
+enum defaultEngineDprintPosition       = Vec2(3, 3);
 enum defaultEngineDprintLineCountLimit = 14;
 
 enum defaultEngineDebugColor1 = white.alpha(120);
@@ -79,6 +76,8 @@ enum defaultEngineDebugColor2 = black.alpha(170);
 
 /// The engine font identifier.
 enum engineFont = FontId(ResourceId(1));
+/// The second engine font identifier.
+enum engineFontSmall = FontId(ResourceId(2));
 /// The engine viewport identifier.
 enum engineViewport = ViewportId(ResourceId(1));
 
@@ -105,7 +104,8 @@ enum EngineFlag : EngineFlags {
     isNullFontVisible           = 0x000020,
     isLoggingLoadOrSaveFaults   = 0x000040,
     isLoggingMemoryTrackingInfo = 0x000080,
-    isDebugMode                 = 0x000100,
+    isLoggingWithDprint         = 0x000100,
+    isDebugMode                 = 0x000200,
 }
 
 /// Information about the engine viewport, including its drawing region and size constraints.
@@ -161,6 +161,7 @@ struct EngineState {
     EngineTasks tasks;
 
     FStr!defaultEngineDprintCapacity dprintBuffer;
+    FontId dprintFont = engineFont;
     Vec2 dprintPosition = defaultEngineDprintPosition;
     DrawOptions dprintOptions;
     Sz dprintLineCount;
@@ -307,7 +308,8 @@ struct FontId {
 
     /// Frees the resource and resets the identifier to null.
     void free() {
-        if (this != engineFont) bk.fontFree(data);
+        if (this == engineFont || this == engineFontSmall) return;
+        bk.fontFree(data);
         data = ResourceId();
     }
 }
@@ -588,15 +590,18 @@ _Attached!T Attached(T)(ref T object) {
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
-    enum monogramPath = "parin_monogram.png";
-
     bk.openWindow(width, height, title, vsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
     _engineState.viewport.data = loadViewport(0, 0, gray);
     if (!vsync) setFpsMax(0);
-    loadTexture(cast(const(ubyte)[]) import(monogramPath)).loadFont(defaultEngineFontRuneWidth, defaultEngineFontRuneHeight);
+
+    loadTexture(cast(const(ubyte)[]) import("parin_monogram.png")).loadFont(6, 12);
+    loadTexture(cast(const(ubyte)[]) import("parin_minigram.png")).loadFont(3, 6);
+    engineFontSmall.setRuneSpacing(1); // NOTE: Could maybe be part of `loadFont`.
+    engineFontSmall.setLineSpacing(9); // NOTE: Could maybe be part of `loadFont`.
+
     if (args.length) {
         foreach (arg; args) _engineState.envArgsBuffer.append(arg);
         _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
@@ -648,7 +653,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
                 if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
             }
             if (_engineState.dprintIsVisible) {
-                drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
+                drawText(_engineState.dprintFont, _engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
             }
             _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
             _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
@@ -853,7 +858,7 @@ void cancel(EngineTaskId id) {
 TextureId loadTexture(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadTexture(toAssetsPath(path)).get(trap);
-    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "texture", path.toAssetsPath()))) {
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "texture", path))) {
         bk.textureSetFilter(data, _engineState.defaultFilter);
         bk.textureSetWrap(data, _engineState.defaultWrap);
         return TextureId(data);
@@ -879,7 +884,7 @@ TextureId loadTexture(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FI
 FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadFont(toAssetsPath(path), size, runeSpacing, lineSpacing, runes).get(trap);
-    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", path.toAssetsPath()))) {
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "font", path))) {
         bk.fontSetFilter(data, _engineState.defaultFilter);
         bk.fontSetWrap(data, _engineState.defaultWrap);
         return FontId(data);
@@ -918,7 +923,7 @@ FontId loadFont(TextureId texture, int tileWidth, int tileHeight, IStr file = __
 SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pitchVariance = 1.0f, IStr file = __FILE__, Sz line = __LINE__) {
     auto trap = Fault.none;
     auto data = bk.loadSound(toAssetsPath(path), volume, pitch, canRepeat, pitchVariance).get(trap);
-    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "sound", path.toAssetsPath()))) {
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "sound", path))) {
         return SoundId(data);
     }
     return SoundId();
@@ -941,7 +946,7 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
 /// Path separators are normalized to the platform's native format.
 LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readText(path.toAssetsPath());
-    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()))) return result.get();
+    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path))) return result.get();
     return LStr();
 }
 
@@ -959,7 +964,7 @@ IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity, 
 /// Path separators are normalized to the platform's native format.
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readTextIntoBuffer(path.toAssetsPath(), listBuffer);
-    didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path.toAssetsPath()));
+    didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "text", path));
     return result;
 }
 
@@ -1139,6 +1144,18 @@ void setIsLoggingMemoryTrackingInfo(bool value, IStr pathFilter = "") {
         ? _engineState.flags | EngineFlag.isLoggingMemoryTrackingInfo
         : _engineState.flags & ~EngineFlag.isLoggingMemoryTrackingInfo;
     _engineState.memoryTrackingInfoFilter = pathFilter;
+}
+
+/// Returns true if load or save faults should be logged with the `dprint` functions.
+bool isLoggingWithDprint() {
+    return cast(bool) (_engineState.flags & EngineFlag.isLoggingWithDprint);
+}
+
+/// Sets whether load or save faults should be logged with the `dprint` functions.
+void setIsLoggingWithDprint(bool value) {
+    _engineState.flags = value
+        ? _engineState.flags | EngineFlag.isLoggingWithDprint
+        : _engineState.flags & ~EngineFlag.isLoggingWithDprint;
 }
 
 /// Returns true if debug mode is active.
@@ -1598,7 +1615,19 @@ Fault lastLoadOrSaveFault() {
 bool didLoadOrSaveSucceed(Fault fault, IStr message) {
     if (fault) {
         _engineState.lastLoadOrSaveFault = fault;
-        if (isLoggingLoadOrSaveFaults) eprintln(message);
+        if (isLoggingLoadOrSaveFaults) {
+            if (isLoggingWithDprint) {
+                auto start = message.findStart(": ");
+                if (start != -1) {
+                    dprintln(message[0 .. start]);
+                    dprintln("  ", message[start + 2 .. $]);
+                } else {
+                    dprintln(message);
+                }
+            } else {
+                eprintln(message);
+            }
+        }
         return false;
     }
     return true;
@@ -1611,7 +1640,7 @@ void freeAllTextureIds() {
 
 /// Frees all loaded fonts.
 void freeAllFontIds() {
-    bk.freeAllFonts(true);
+    bk.freeAllFonts(true, true);
 }
 
 /// Frees all loaded sounds.
@@ -2177,6 +2206,11 @@ void dprintln(A...)(A args) {
 /// The returned string references the internal buffer and may change if more text is printed.
 IStr dprintBuffer() {
     return _engineState.dprintBuffer.items;
+}
+
+/// Sets the font of the overlay text.
+void setDprintFont(FontId value) {
+    _engineState.dprintFont = value;
 }
 
 /// Sets the position of the overlay text.

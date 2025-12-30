@@ -235,31 +235,37 @@ struct DrawOptions {
     Rgba color     = white;        /// The color of the drawn object, in RGBA.
     Hook hook      = Hook.topLeft; /// A value representing the origin point of the drawn object when origin is zero.
     Flip flip      = Flip.none;    /// A value representing flipping orientations.
+    ubyte layer    = 0;            /// A value that can be used by depth sorting functions.
 
     @safe nothrow @nogc:
 
-    this(float rotation, Hook hook = Hook.topLeft) {
+    this(float rotation, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.rotation = rotation;
         this.hook = hook;
+        this.layer = layer;
     }
 
-    this(Vec2 scale, Hook hook = Hook.topLeft) {
+    this(Vec2 scale, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.scale = scale;
         this.hook = hook;
+        this.layer = layer;
     }
 
-    this(Rgba color, Hook hook = Hook.topLeft) {
+    this(Rgba color, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.color = color;
         this.hook = hook;
+        this.layer = layer;
     }
 
-    this(Flip flip, Hook hook = Hook.topLeft) {
+    this(Flip flip, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.flip = flip;
         this.hook = hook;
+        this.layer = layer;
     }
 
-    this(Hook hook) {
+    this(Hook hook, ubyte layer = 0) {
         this.hook = hook;
+        this.layer = layer;
     }
 }
 

@@ -220,6 +220,8 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
         newResource.recs[i].height = tileHeight;
     }
     newResource.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
+    // NOTE: From SP to how many thing can fit in the texture and `SP + maxCount` is the last character.
+    //   Values outside of ASCII can be used to add funny symbols.
     foreach (i; 0 .. maxCount) {
         newResource.glyphs[i] = rl.GlyphInfo();
         newResource.glyphs[i].value = i + 32;
@@ -265,7 +267,7 @@ Maybe!ResourceId loadSound(IStr path, float volume, float pitch, bool canRepeat,
 
 void closeWindow() {
     freeAllTextures(false);
-    freeAllFonts(false);
+    freeAllFonts(false, false);
     freeAllSounds(false);
     freeAllViewports(false);
     jokaFree(_backendState);
@@ -283,9 +285,9 @@ void freeAllTextures(bool canSkipFirst) {
     }
 }
 
-void freeAllFonts(bool canSkipFirst) {
+void freeAllFonts(bool canSkipFirst, bool canSkipSecond /* LOL */) {
     foreach (id; _backendState.fonts.ids) if (id.value) {
-        if (canSkipFirst && id.value == 1) {} else fontFree(id);
+        if ((canSkipFirst && id.value == 1) || (canSkipSecond && id.value == 2)) {} else fontFree(id);
     }
 }
 
