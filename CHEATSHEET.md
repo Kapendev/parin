@@ -177,8 +177,12 @@ Vec2 toScenePoint(Vec2 point, Camera camera);
 IStr[] envArgs();
 /// Returns the dropped paths from the current frame.
 IStr[] droppedPaths();
-/// Saves a screenshot to the given path.
-void takeScreenshot(IStr path);
+/// Takes a screenshot and saves it to the given path.
+void takeScreenshot(IStr path, bool isUsingLockedResolution = false, bool hasAlpha = false);
+/// Takes a screenshot and creates a texture from it that can be used with the `getRequestedScreenshot` function.
+void requestScreenshot(bool isUsingLockedResolution = false, bool hasAlpha = false);
+/// Returns the texture created by the last screenshot request, if available (true).
+bool getRequestedScreenshot(ref TextureId result, bool canFreeGivenTexture);
 /// Opens a URL in the default web browser.
 void openUrl(IStr url);
 

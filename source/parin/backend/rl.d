@@ -25,7 +25,7 @@ __gshared BackendState* _backendState;
 version (WebAssembly) {
     enum defaultBackendResourcesCapacity = 256;
 } else {
-    enum defaultBackendResourcesCapacity = 1024;
+    enum defaultBackendResourcesCapacity = 2048;
 }
 // ----------
 
@@ -845,15 +845,88 @@ Fault setWindowIconFromFiles(IStr path) {
     }
 }
 
-Fault takeScreenshot(IStr path) {
+Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
     version (WebAssembly) {
         return Fault.none;
     } else {
-        auto image = rl.LoadImageFromScreen();
-        if (image.data == null) return Fault.cannotFind;
+        auto image = rl.Image();
+        if (canvasViewportId.resourceIsNull) {
+            image = rl.LoadImageFromScreen();
+            if (image.data == null) return Fault.invalid;
+        } else {
+            auto resource = &_backendState.viewports[canvasViewportId];
+            image = rl.LoadImageFromTexture(resource.data.texture);
+            if (image.data == null) return Fault.invalid;
+            rl.ImageFlipVertical(&image);
+        }
+
+        if (!hasAlpha) {
+            // NOTE: Set every pixel's alpha to 255 because somertimes raylib will return some transparent pixels.
+            //   We don't care about it for the texture version of this function.
+            int imageFormat = image.format;
+            int imageWidth = image.width;
+            int imageHeight = image.height;
+            Color[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
+            Color[] imageData = (cast(Color*) rl.MemAlloc(cast(int) (imagePixels.length * Color.sizeof)))[0 .. imagePixels.length];
+            foreach (i, pixel; imagePixels) {
+                imageData[i] = pixel;
+                imageData[i].a = 255;
+            }
+            rl.MemFree(image.data);
+            image.data = imageData.ptr;
+            image.width = imageWidth;
+            image.height = imageHeight;
+            image.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+            rl.ImageFormat(&image, imageFormat); // NOTE: Reformat to orignal format.
+            rl.UnloadImageColors(imagePixels.ptr);
+        }
+
         auto result = rl.ExportImage(image, path.toStrz().getOr()) ? Fault.none : Fault.cannotFind;
         rl.UnloadImage(image);
         return result;
+    }
+}
+
+Maybe!ResourceId takeScreenshotAndUseAsTexture(ResourceId canvasViewportId, bool hasAlpha) {
+    version (WebAssembly) {
+        return Maybe!ResourceId(Fault.none);
+    } else {
+        auto image = rl.Image();
+        if (canvasViewportId.resourceIsNull) {
+            image = rl.LoadImageFromScreen();
+            if (image.data == null) return Maybe!ResourceId(Fault.invalid);
+        } else {
+            auto resource = &_backendState.viewports[canvasViewportId];
+            image = rl.LoadImageFromTexture(resource.data.texture);
+            if (image.data == null) return Maybe!ResourceId(Fault.invalid);
+            rl.ImageFlipVertical(&image);
+        }
+
+        if (!hasAlpha) {
+            // NOTE: Set every pixel's alpha to 255 because somertimes raylib will return some transparent pixels.
+            //   We don't care about it for the texture version of this function.
+            int imageFormat = image.format;
+            int imageWidth = image.width;
+            int imageHeight = image.height;
+            Color[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
+            Color[] imageData = (cast(Color*) rl.MemAlloc(cast(int) (imagePixels.length * Color.sizeof)))[0 .. imagePixels.length];
+            foreach (i, pixel; imagePixels) {
+                imageData[i] = pixel;
+                imageData[i].a = 255;
+            }
+            rl.MemFree(image.data);
+            image.data = imageData.ptr;
+            image.width = imageWidth;
+            image.height = imageHeight;
+            image.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+            rl.ImageFormat(&image, imageFormat); // NOTE: Reformat to orignal format.
+            rl.UnloadImageColors(imagePixels.ptr);
+        }
+
+        auto resource = rl.LoadTextureFromImage(image);
+        rl.UnloadImage(image);
+        if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
+        return Maybe!ResourceId(_backendState.textures.append(RlTexture(resource)));
     }
 }
 

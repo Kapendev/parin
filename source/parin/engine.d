@@ -151,6 +151,7 @@ struct EngineState {
     TextureId defaultTexture;
     Vec2 defaultTextureAreaSize;
     int defaultTextureAreaColCount;
+    TextureId currentScreenshotTexture;
     Camera userCamera;
     ViewportId userViewport;
     Fault lastLoadOrSaveFault;
@@ -674,7 +675,27 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
 
         // Screenshot code.
         if (_engineState.screenshotTargetPath.length) {
-            bk.takeScreenshot(_engineState.screenshotTargetPath.items);
+            // NOTE: The string `screenshotTargetPath` has extra metadata at the start.
+            auto localIsUsingLockedResolution = _engineState.screenshotTargetPath[0] == 1 && isResolutionLocked;
+            auto localHasAlpha = _engineState.screenshotTargetPath[1] == 1;
+            auto localScreenshotTargetPath = _engineState.screenshotTargetPath[2 .. $];
+            // NOTE: The string `_screenshotRequestPath` is created by the `requestScreenshot` function.
+            //   It Indicates that we don't want to save the screenshot on disk.
+            if (localScreenshotTargetPath == _screenshotRequestPath) {
+                if (!_engineState.currentScreenshotTexture.isValid) {
+                    auto trap = Fault.none;
+                    auto data = bk.takeScreenshotAndUseAsTexture(localIsUsingLockedResolution ? _engineState.viewport.data.data : ResourceId(), localHasAlpha).get(trap);
+                    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, 0, 0, "texture", "[MEMORY]"))) {
+                        bk.textureSetFilter(data, _engineState.defaultFilter);
+                        bk.textureSetWrap(data, _engineState.defaultWrap);
+                        _engineState.currentScreenshotTexture = TextureId(data);
+                    } else {
+                        _engineState.currentScreenshotTexture = TextureId();
+                    }
+                }
+            } else {
+                bk.takeScreenshot(localScreenshotTargetPath, localIsUsingLockedResolution ? _engineState.viewport.data.data : ResourceId(), localHasAlpha);
+            }
             _engineState.screenshotTargetPath.clear();
         }
 
@@ -1591,13 +1612,40 @@ IStr[] droppedPaths() {
     return bk.droppedPaths;
 }
 
-/// Saves a screenshot to the given path.
+/// Takes a screenshot and saves it to the given path.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 /// Path separators are normalized to the platform's native format.
-void takeScreenshot(IStr path) {
+void takeScreenshot(IStr path, bool isUsingLockedResolution = false, bool hasAlpha = false) {
     if (path.length == 0) return;
     _engineState.screenshotTargetPath.clear();
+    _engineState.screenshotTargetPath.append(isUsingLockedResolution ? 1 : 0);
+    _engineState.screenshotTargetPath.append(hasAlpha ? 1 : 0);
     _engineState.screenshotTargetPath.append(path.toAssetsPath());
+    if (!_engineState.screenshotTargetPath[].endsWith(".png")) {
+        _engineState.screenshotTargetPath.append(".png");
+    }
+}
+
+enum _screenshotRequestPath = "[SCREENSHOT]";
+
+/// Takes a screenshot and creates a texture from it that can be used with the `getRequestedScreenshot` function.
+void requestScreenshot(bool isUsingLockedResolution = false, bool hasAlpha = false) {
+    _engineState.screenshotTargetPath.clear();
+    _engineState.screenshotTargetPath.append(isUsingLockedResolution ? 1 : 0);
+    _engineState.screenshotTargetPath.append(hasAlpha ? 1 : 0);
+    _engineState.screenshotTargetPath.append(_screenshotRequestPath);
+}
+
+/// Returns the texture created by the last screenshot request, if available (true).
+/// When `canFreeGivenTexture` is true, the existing texture in `result` is freed.
+bool getRequestedScreenshot(ref TextureId result, bool canFreeGivenTexture) {
+    if (_engineState.currentScreenshotTexture.isValid) {
+        if (canFreeGivenTexture) result.free();
+        result = _engineState.currentScreenshotTexture;
+        _engineState.currentScreenshotTexture = TextureId();
+        return true;
+    }
+    return false;
 }
 
 /// Opens a URL in the default web browser.
@@ -1631,6 +1679,26 @@ bool didLoadOrSaveSucceed(Fault fault, IStr message) {
         return false;
     }
     return true;
+}
+
+/// Returns the number of loaded textures.
+Sz textureIdCount() {
+    return bk.textureCount;
+}
+
+/// Returns the number of loaded fonts.
+Sz fontIdCount() {
+    return bk.fontCount;
+}
+
+/// Returns the number of loaded sounds.
+Sz soundIdCount() {
+    return bk.soundCount;
+}
+
+/// Returns the number of loaded viewports.
+Sz viewportIdCount() {
+    return bk.viewportCount;
 }
 
 /// Frees all loaded textures.

@@ -4,34 +4,34 @@ A delightfully simple 2D game engine for the [D programming language](https://dl
 Parin is designed to make game development fast and fun. It's easy to set up, hackable, and comes with the essentials built in.
 
 <div align="center">
-<p>
-    <strong>Worms Within</strong>
-    <br>A bite-sized escape room game.
-</p>
-<a href="https://kapendev.itch.io/worms-within">
-    <img alt="Game 1" width="480px" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png">
-</a>
-<br>
-<br>
-<p>
-    <strong>A Short Metamorphosis</strong>
-    <br>A cute visual novel about looking at an egg.
-</p>
-<a href="https://kapendev.itch.io/a-short-metamorphosis">
-    <img alt="Game 1" width="480px" src="https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png">
-</a>
-<br>
-<br>
+<table>
+    <tr>
+        <th><div align="center">Twenty Seconds, Twenty Steps</div></th>
+        <th><div align="center">Worms Within</div></th>
+    </tr>
+    <tr>
+        <td align="center">
+            <a href="https://kapendev.itch.io/twenty-seconds-twenty-steps">
+                <img alt="A Short Metamorphosis" src="https://img.itch.zone/aW1hZ2UvNDExODcyMy8yNDU0NDYzMy5wbmc=/original/G9%2B%2BMo.png" width="480">
+            </a>
+        </td>
+        <td align="center">
+            <a href="https://kapendev.itch.io/worms-within">
+                <img alt="Worms Within" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png" width="480">
+            </a>
+        </td>
+    </tr>
+</table>
 <p>A list of projects made with Parin is available in the <a href="PROJECTS.md">projects page</a>.</p>
 </div>
 
 ## Why Parin
 
-- **Focused on games.** It is opinionated in ways that make common game-development tasks easier than in general-purpose engines.
-- **Code-driven design.** There's no imposed architecture, allowing freedom on how a game is structured.
+- **Focused on games.** It is opinionated in ways that make game-development tasks easier than in general-purpose engines.
+- **Code-driven design.** There's no imposed game architecture, allowing freedom on how a game is structured.
 - **A guided workflow.** Parin assumes a few common patterns to smooth out the development experience.
 
-Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones.
+Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones. It's especially nice for retro-style games, with helper functions and two pixel fonts included.
 
 > [!NOTE]
 > The project is still early in development.
