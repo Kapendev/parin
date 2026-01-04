@@ -44,8 +44,8 @@ enum defaultEngineFlags =
     EngineFlag.isLoggingMemoryTrackingInfo;
 
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Can't load {} from \"{}\".";
-enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Can't save {} from \"{}\".";
+enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Can't load {} from \"{}\"";
+enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Can't save {} to \"{}\"";
 
 version (WebAssembly) {
     enum defaultEngineAssetsPathCapacity           = 4 * kilobyte;
@@ -66,7 +66,8 @@ version (WebAssembly) {
 }
 
 enum defaultEngineDprintPosition       = Vec2(3, 3);
-enum defaultEngineDprintLineCountLimit = 14;
+enum defaultEngineDprintLineCountLimit = 13;
+enum defaultEngineDprintFont           = engineFont;
 
 enum defaultEngineDebugColor1 = white.alpha(120);
 enum defaultEngineDebugColor2 = black.alpha(170);
@@ -158,11 +159,14 @@ struct EngineState {
     IStr memoryTrackingInfoFilter;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
     FStr!defaultEngineScreenshotTargetPathCapacity screenshotTargetPath;
+    FStr!defaultEngineScreenshotTargetPathCapacity screenshotLastFaultPath;
+    IStr screenshotLastFaultFile;
+    Sz screenshotLastFaultLine;
     FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
     EngineTasks tasks;
 
     FStr!defaultEngineDprintCapacity dprintBuffer;
-    FontId dprintFont = engineFont;
+    FontId dprintFont = defaultEngineDprintFont;
     Vec2 dprintPosition = defaultEngineDprintPosition;
     DrawOptions dprintOptions;
     Sz dprintLineCount;
@@ -631,13 +635,12 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
         _updateEngineWasdBuffer();
 
         // Begin drawing.
+        bk.beginDrawing();
+        bk.clearBackground(_engineState.viewport.data.color);
         if (isResolutionLocked) {
             bk.beginViewport(_engineState.viewport.data.data);
-        } else {
-            bk.beginDrawing();
+            bk.clearBackground(_engineState.viewport.data.color);
         }
-        bk.clearBackground(_engineState.viewport.data.color);
-
         // Update and draw the game.
         auto result = false;
         with (ScopedArena(_engineState.arena)) {
@@ -660,7 +663,6 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
             bk.endDroppedPaths();
         }
-
         // End drawing.
         if (isResolutionLocked) {
             auto info = engineViewportInfo;
@@ -668,10 +670,8 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             bk.beginDrawing();
             bk.clearBackground(_engineState.windowBorderColor);
             bk.drawViewport(_engineState.viewport.data.data, Rect(info.minSize.x, -info.minSize.y), info.area, Vec2(), 0.0f, white);
-            bk.endDrawing();
-        } else {
-            bk.endDrawing();
         }
+        bk.endDrawing();
 
         // Screenshot code.
         if (_engineState.screenshotTargetPath.length) {
@@ -685,7 +685,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
                 if (!_engineState.currentScreenshotTexture.isValid) {
                     auto trap = Fault.none;
                     auto data = bk.takeScreenshotAndUseAsTexture(localIsUsingLockedResolution ? _engineState.viewport.data.data : ResourceId(), localHasAlpha).get(trap);
-                    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, 0, 0, "texture", "[MEMORY]"))) {
+                    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, _engineState.screenshotLastFaultFile, _engineState.screenshotLastFaultLine, "screenshot", "[MEMORY]"))) {
                         bk.textureSetFilter(data, _engineState.defaultFilter);
                         bk.textureSetWrap(data, _engineState.defaultWrap);
                         _engineState.currentScreenshotTexture = TextureId(data);
@@ -694,7 +694,9 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
                     }
                 }
             } else {
-                bk.takeScreenshot(localScreenshotTargetPath, localIsUsingLockedResolution ? _engineState.viewport.data.data : ResourceId(), localHasAlpha);
+                // TODO: I should maybe find a better way to do error messages.
+                auto trap = bk.takeScreenshot(localScreenshotTargetPath, localIsUsingLockedResolution ? _engineState.viewport.data.data : ResourceId(), localHasAlpha);
+                didLoadOrSaveSucceed(trap, fmt(defaultEngineSaveErrorMessage, _engineState.screenshotLastFaultFile, _engineState.screenshotLastFaultLine, "screenshot", _engineState.screenshotLastFaultPath[]));
             }
             _engineState.screenshotTargetPath.clear();
         }
@@ -994,7 +996,16 @@ Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FI
 /// Path separators are normalized to the platform's native format.
 Fault saveText(IStr path, IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = writeText(path.toAssetsPath(), text);
-    if (isLoggingLoadOrSaveFaults && result) eprintfln(defaultEngineSaveErrorMessage, file, line, "text", path.toAssetsPath());
+    didLoadOrSaveSucceed(result, fmt(defaultEngineSaveErrorMessage, file, line, "text", path));
+    return result;
+}
+
+/// Saves an image taken from the given viewport.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
+Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = bk.takeScreenshot(path.toAssetsPath(), viewport.data, hasAlpha);
+    didLoadOrSaveSucceed(result, fmt(defaultEngineSaveErrorMessage, file, line, "viewport", path));
     return result;
 }
 
@@ -1615,7 +1626,7 @@ IStr[] droppedPaths() {
 /// Takes a screenshot and saves it to the given path.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 /// Path separators are normalized to the platform's native format.
-void takeScreenshot(IStr path, bool isUsingLockedResolution = false, bool hasAlpha = false) {
+void takeScreenshot(IStr path, bool isUsingLockedResolution = false, bool hasAlpha = false, IStr file = __FILE__, Sz line = __LINE__) {
     if (path.length == 0) return;
     _engineState.screenshotTargetPath.clear();
     _engineState.screenshotTargetPath.append(isUsingLockedResolution ? 1 : 0);
@@ -1624,16 +1635,26 @@ void takeScreenshot(IStr path, bool isUsingLockedResolution = false, bool hasAlp
     if (!_engineState.screenshotTargetPath[].endsWith(".png")) {
         _engineState.screenshotTargetPath.append(".png");
     }
+    _engineState.screenshotLastFaultFile = file;
+    _engineState.screenshotLastFaultLine = line;
+    _engineState.screenshotLastFaultPath.clear();
+    _engineState.screenshotLastFaultPath.append(path);
+    if (!_engineState.screenshotLastFaultPath[].endsWith(".png")) {
+        _engineState.screenshotLastFaultPath.append(".png");
+    }
 }
 
 enum _screenshotRequestPath = "[SCREENSHOT]";
 
 /// Takes a screenshot and creates a texture from it that can be used with the `getRequestedScreenshot` function.
-void requestScreenshot(bool isUsingLockedResolution = false, bool hasAlpha = false) {
+void requestScreenshot(bool isUsingLockedResolution = false, bool hasAlpha = false, IStr file = __FILE__, Sz line = __LINE__) {
     _engineState.screenshotTargetPath.clear();
     _engineState.screenshotTargetPath.append(isUsingLockedResolution ? 1 : 0);
     _engineState.screenshotTargetPath.append(hasAlpha ? 1 : 0);
     _engineState.screenshotTargetPath.append(_screenshotRequestPath);
+    _engineState.screenshotLastFaultFile = file;
+    _engineState.screenshotLastFaultLine = line;
+    _engineState.screenshotLastFaultPath.clear();
 }
 
 /// Returns the texture created by the last screenshot request, if available (true).
@@ -1661,24 +1682,44 @@ Fault lastLoadOrSaveFault() {
 /// Helper for checking the result of a load or save call.
 /// Returns true if the fault is none, false otherwise.
 bool didLoadOrSaveSucceed(Fault fault, IStr message) {
-    if (fault) {
-        _engineState.lastLoadOrSaveFault = fault;
-        if (isLoggingLoadOrSaveFaults) {
-            if (isLoggingWithDprint) {
-                auto start = message.findStart(": ");
-                if (start != -1) {
-                    dprintln(message[0 .. start]);
-                    dprintln("  ", message[start + 2 .. $]);
+    if (fault == Fault.none) return true;
+
+    _engineState.lastLoadOrSaveFault = fault;
+    if (isLoggingLoadOrSaveFaults) {
+        if (isLoggingWithDprint) {
+            enum space = " ";
+            enum splitter = ": ";
+            auto tempIndex = message.findStart(splitter);
+            if (tempIndex != -1) {
+                auto start = message[0 .. tempIndex];
+                if (start.startsWith("ERROR(source/")) {
+                    dprintln("ERROR(", start["ERROR(source/".length .. $]);
+                } else if (start.startsWith("ERROR(src/")) {
+                    dprintln("ERROR(", start["ERROR(src/".length .. $]);
                 } else {
-                    dprintln(message);
+                    dprintln(start);
+                }
+
+                auto content = message[tempIndex + splitter.length .. $];
+                if (content.findEnd("from ") != -1) {
+                    tempIndex = content.findEnd("from ");
+                    dprintln(space, content[0 .. tempIndex]);
+                    dprintln(space, content[tempIndex .. $]);
+                } else if (content.findEnd("to ") != -1) {
+                    tempIndex = content.findEnd("to ");
+                    dprintln(space, content[0 .. tempIndex]);
+                    dprintln(space, content[tempIndex .. $]);
+                } else {
+                    dprintln(space, content);
                 }
             } else {
-                eprintln(message);
+                dprintln(message);
             }
+        } else {
+            eprintln(message);
         }
-        return false;
     }
-    return true;
+    return false;
 }
 
 /// Returns the number of loaded textures.

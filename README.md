@@ -27,11 +27,11 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
 
 ## Why Parin
 
-- **Focused on games.** It is opinionated in ways that make game-development tasks easier than in general-purpose engines.
+- **Focused on games.** It's opinionated in ways that make game-development tasks (rendering, input) easier than in general-purpose engines.
 - **Code-driven design.** There's no imposed game architecture, allowing freedom on how a game is structured.
-- **A guided workflow.** Parin assumes a few common patterns to smooth out the development experience.
+- **A guided workflow.** It assumes a few common patterns like a fixed aspect ratio, an assets folder, and debug UI to smooth out the development experience.
 
-Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones. It's especially nice for retro-style games, with helper functions and two pixel fonts included.
+Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity. It offers more direction than small ones, but far less overhead and "magic" than big ones. It's especially well-suited for retro games, with helper functions and two pixel fonts included.
 
 > [!NOTE]
 > The project is still early in development.
@@ -39,7 +39,6 @@ Parin sits somewhere between a small engine like raylib or LÖVE and a big engin
 
 ## Major Features
 
-- Not an everything engine
 - Pixel-perfect physics engine
 - Flexible dialogue system
 - Atlas-based animation library
@@ -74,8 +73,7 @@ mixin runGame!(ready, update, finish);
 ### Simple Editor
 
 ```d
-import parin;
-import parin.addons.microui;
+import parin, parin.addons.microui;
 
 Game game;
 
@@ -86,7 +84,7 @@ struct Game {
 }
 
 void ready() {
-    readyUi(2);
+    readyUi(engineFont, 2);
 }
 
 bool update(float dt) {

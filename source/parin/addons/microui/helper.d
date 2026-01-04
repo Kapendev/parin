@@ -42,9 +42,14 @@ void readyUi(UiFont font = null, int fontScale = 1) {
     if (data) {
         auto size = data.size * uiStyle.fontScale;
         // No idea, these values just look good sometimes.
+        // TODO: Should find a better way to do that haha.
         uiStyle.size = UiVec(size * 6, size);
         uiStyle.titleHeight = cast(int) (size * 1.5f);
-        if (size <= 16) {
+        if (size <= 8) {
+            uiStyle.size = UiVec(size * 6, size - 4);
+            uiStyle.titleHeight = cast(int) (size * 2.0f);
+        } else if (size <= 16) {
+            // Nothing LOLOLOLO.
         } else if (size <= 38) {
             uiStyle.border = 2;
             uiStyle.spacing += 4;
@@ -63,10 +68,18 @@ void readyUi(UiFont font = null, int fontScale = 1) {
     }
 }
 
-/// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
+/// Initializes the microui context and sets temporary text size functions.
 nothrow @nogc
 void readyUi(int fontScale) {
     readyUi(null, fontScale);
+}
+
+/// Initializes the microui context and sets temporary text size functions.
+nothrow @nogc
+void readyUi(FontId font, int fontScale = 1) {
+    static readyUiFont = FontId();
+    readyUiFont = font;
+    readyUi(&readyUiFont, fontScale);
 }
 
 /// Initializes the microui context and sets custom text size functions. Value `font` should be a `FontId*`.

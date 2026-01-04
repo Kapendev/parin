@@ -21,7 +21,7 @@ struct Game {
 }
 
 void ready() {
-    readyUi(2);
+    readyUi(engineFont, 2);
     toggleIsDebugMode();
 }
 

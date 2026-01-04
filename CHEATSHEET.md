@@ -419,6 +419,8 @@ IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 /// Saves a text file with the given content.
 Fault saveText(IStr path, IStr text);
+/// Saves an image taken from the given viewport.
+Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha);
 ```
 
 ## Data Structures

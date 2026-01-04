@@ -846,6 +846,8 @@ Fault setWindowIconFromFiles(IStr path) {
 }
 
 Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
+    if (!path.endsWith(".png")) return Fault.invalid;
+
     version (WebAssembly) {
         return Fault.none;
     } else {
@@ -888,46 +890,42 @@ Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
 }
 
 Maybe!ResourceId takeScreenshotAndUseAsTexture(ResourceId canvasViewportId, bool hasAlpha) {
-    version (WebAssembly) {
-        return Maybe!ResourceId(Fault.none);
+    auto image = rl.Image();
+    if (canvasViewportId.resourceIsNull) {
+        image = rl.LoadImageFromScreen();
+        if (image.data == null) return Maybe!ResourceId(Fault.invalid);
     } else {
-        auto image = rl.Image();
-        if (canvasViewportId.resourceIsNull) {
-            image = rl.LoadImageFromScreen();
-            if (image.data == null) return Maybe!ResourceId(Fault.invalid);
-        } else {
-            auto resource = &_backendState.viewports[canvasViewportId];
-            image = rl.LoadImageFromTexture(resource.data.texture);
-            if (image.data == null) return Maybe!ResourceId(Fault.invalid);
-            rl.ImageFlipVertical(&image);
-        }
-
-        if (!hasAlpha) {
-            // NOTE: Set every pixel's alpha to 255 because somertimes raylib will return some transparent pixels.
-            //   We don't care about it for the texture version of this function.
-            int imageFormat = image.format;
-            int imageWidth = image.width;
-            int imageHeight = image.height;
-            Color[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
-            Color[] imageData = (cast(Color*) rl.MemAlloc(cast(int) (imagePixels.length * Color.sizeof)))[0 .. imagePixels.length];
-            foreach (i, pixel; imagePixels) {
-                imageData[i] = pixel;
-                imageData[i].a = 255;
-            }
-            rl.MemFree(image.data);
-            image.data = imageData.ptr;
-            image.width = imageWidth;
-            image.height = imageHeight;
-            image.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
-            rl.ImageFormat(&image, imageFormat); // NOTE: Reformat to orignal format.
-            rl.UnloadImageColors(imagePixels.ptr);
-        }
-
-        auto resource = rl.LoadTextureFromImage(image);
-        rl.UnloadImage(image);
-        if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
-        return Maybe!ResourceId(_backendState.textures.append(RlTexture(resource)));
+        auto resource = &_backendState.viewports[canvasViewportId];
+        image = rl.LoadImageFromTexture(resource.data.texture);
+        if (image.data == null) return Maybe!ResourceId(Fault.invalid);
+        rl.ImageFlipVertical(&image);
     }
+
+    if (!hasAlpha) {
+        // NOTE: Set every pixel's alpha to 255 because somertimes raylib will return some transparent pixels.
+        //   We don't care about it for the texture version of this function.
+        int imageFormat = image.format;
+        int imageWidth = image.width;
+        int imageHeight = image.height;
+        Color[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
+        Color[] imageData = (cast(Color*) rl.MemAlloc(cast(int) (imagePixels.length * Color.sizeof)))[0 .. imagePixels.length];
+        foreach (i, pixel; imagePixels) {
+            imageData[i] = pixel;
+            imageData[i].a = 255;
+        }
+        rl.MemFree(image.data);
+        image.data = imageData.ptr;
+        image.width = imageWidth;
+        image.height = imageHeight;
+        image.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+        rl.ImageFormat(&image, imageFormat); // NOTE: Reformat to orignal format.
+        rl.UnloadImageColors(imagePixels.ptr);
+    }
+
+    auto resource = rl.LoadTextureFromImage(image);
+    rl.UnloadImage(image);
+    if (resource.id == 0) return Maybe!ResourceId(Fault.cannotFind);
+    return Maybe!ResourceId(_backendState.textures.append(RlTexture(resource)));
 }
 
 void openUrl(IStr url) {

@@ -305,7 +305,9 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 ```
 
-Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing. To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions. To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
+Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing.
+To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions.
+To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
 
 ### Draw Options
 
@@ -325,6 +327,8 @@ struct DrawOptions {
     Hook hook = Hook.topLeft;
     /// A value representing flipping orientations.
     Flip flip = Flip.none;
+    /// A value that can be used by depth sorting functions.
+    ubyte layer = 0;
 }
 ```
 
@@ -443,6 +447,8 @@ IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 /// Saves a text file with the given content.
 Fault saveText(IStr path, IStr text);
+/// Saves an image taken from the given viewport.
+Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha);
 ```
 
 They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false. Path separators are also normalized to the platform's native format.
