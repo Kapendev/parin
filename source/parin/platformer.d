@@ -61,7 +61,7 @@ enum BoxSide : ubyte {
     bottom,
 }
 
-alias Box = GRect!(int, short);
+alias Box = SRect;
 
 struct BoxProperties {
     Vec2 remainder;
