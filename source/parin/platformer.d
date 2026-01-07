@@ -17,9 +17,6 @@
 module parin.platformer;
 
 import parin.joka.ascii;
-import parin.joka.containers;
-import parin.joka.math;
-import parin.joka.types;
 import parin.engine;
 
 @safe nothrow:

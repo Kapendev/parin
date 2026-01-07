@@ -12,7 +12,7 @@
 module parin.story;
 
 import parin.joka.ascii;
-import parin.joka.containers;
+import parin.joka.memory;
 import parin.joka.io;
 import parin.joka.types;
 

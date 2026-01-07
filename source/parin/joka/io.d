@@ -10,7 +10,6 @@ module parin.joka.io;
 
 import stdc = parin.joka.stdc;
 import parin.joka.ascii;
-import parin.joka.containers;
 import parin.joka.memory;
 import parin.joka.types;
 

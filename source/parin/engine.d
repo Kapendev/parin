@@ -14,9 +14,7 @@ import bk = parin.backend;
 
 import parin.joka.ascii;
 import parin.joka.io;
-import parin.joka.memory;
 
-public import parin.joka.containers;
 public import parin.joka.math;
 public import parin.joka.memory;
 public import parin.joka.types;

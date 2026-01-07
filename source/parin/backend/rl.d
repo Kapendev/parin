@@ -13,7 +13,6 @@ version (WebAssembly) {
 }
 
 import parin.joka.ascii;
-import parin.joka.containers;
 import parin.joka.math;
 import parin.joka.memory;
 import parin.joka.types;

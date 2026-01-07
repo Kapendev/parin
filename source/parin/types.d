@@ -9,7 +9,7 @@ module parin.types;
 
 import parin.joka.math;
 import parin.joka.types;
-import parin.joka.containers;
+import parin.joka.memory;
 
 alias UpdateFunc = bool function(float dt);
 alias CallFunc   = void function();
