@@ -7,11 +7,10 @@
 
 module parin.joka;
 
-public import parin.joka.algo;
 public import parin.joka.ascii;
-public import parin.joka.cli;
 public import parin.joka.containers;
 public import parin.joka.io;
 public import parin.joka.math;
 public import parin.joka.memory;
+public import parin.joka.ranges;
 public import parin.joka.types;

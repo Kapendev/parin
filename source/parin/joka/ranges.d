@@ -8,9 +8,8 @@
 // NOTE: Maybe look at this: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
 
 /// The `algo` module includes functions that work with ranges.
-module parin.joka.algo;
+module parin.joka.ranges;
 
-import parin.joka.ascii;
 import parin.joka.types;
 
 @safe nothrow @nogc:

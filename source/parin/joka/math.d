@@ -8,7 +8,7 @@
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
-import mathc = parin.joka.stdc.math;
+import stdc = parin.joka.stdc;
 import parin.joka.ascii;
 import parin.joka.types;
 
@@ -1606,91 +1606,91 @@ pragma(inline, true) @trusted {
     }
 
     float fmod(float x, float y) {
-        return mathc.fmodf(x, y);
+        return stdc.fmodf(x, y);
     }
 
     double fmod64(double x, double y) {
-        return mathc.fmod(x, y);
+        return stdc.fmod(x, y);
     }
 
     float remainder(float x, float y) {
-        return mathc.remainderf(x, y);
+        return stdc.remainderf(x, y);
     }
 
     double remainder64(double x, double y) {
-        return mathc.remainder(x, y);
+        return stdc.remainder(x, y);
     }
 
     float exp(float x) {
-        return mathc.expf(x);
+        return stdc.expf(x);
     }
 
     double exp64(double x) {
-        return mathc.exp(x);
+        return stdc.exp(x);
     }
 
     float exp2(float x) {
-        return mathc.exp2f(x);
+        return stdc.exp2f(x);
     }
 
     double exp264(double x) {
-        return mathc.exp2(x);
+        return stdc.exp2(x);
     }
 
     float expm1(float x) {
-        return mathc.expm1f(x);
+        return stdc.expm1f(x);
     }
 
     double expm164(double x) {
-        return mathc.expm1(x);
+        return stdc.expm1(x);
     }
 
     float log(float x) {
-        return mathc.logf(x);
+        return stdc.logf(x);
     }
 
     double log64(double x) {
-        return mathc.log(x);
+        return stdc.log(x);
     }
 
     float log10(float x) {
-        return mathc.log10f(x);
+        return stdc.log10f(x);
     }
 
     double log1064(double x) {
-        return mathc.log10(x);
+        return stdc.log10(x);
     }
 
     float log2(float x) {
-        return mathc.log2f(x);
+        return stdc.log2f(x);
     }
 
     double log264(double x) {
-        return mathc.log2(x);
+        return stdc.log2(x);
     }
 
     float log1p(float x) {
-        return mathc.log1pf(x);
+        return stdc.log1pf(x);
     }
 
     double log1p64(double x) {
-        return mathc.log1p(x);
+        return stdc.log1p(x);
     }
 
     float pow(float base, float exponent) {
-        return mathc.powf(base, exponent);
+        return stdc.powf(base, exponent);
     }
 
     double pow64(double base, double exponent) {
-        return mathc.pow(base, exponent);
+        return stdc.pow(base, exponent);
     }
 
     float atan2(float y, float x) {
-        return mathc.atan2f(y, x);
+        return stdc.atan2f(y, x);
     }
 
     double atan264(double y, double x) {
-        return mathc.atan2(y, x);
+        return stdc.atan2(y, x);
     }
 
     auto _atan2(T)(T y, T x) {
@@ -1702,11 +1702,11 @@ pragma(inline, true) @trusted {
     }
 
     float cbrt(float x) {
-        return mathc.cbrtf(x);
+        return stdc.cbrtf(x);
     }
 
     double cbrt64(double x) {
-        return mathc.cbrt(x);
+        return stdc.cbrt(x);
     }
 
     float roundNothing(float x) {
@@ -1730,11 +1730,11 @@ pragma(inline, true) @trusted {
     }
 
     float floor(float x) {
-        return mathc.floorf(x);
+        return stdc.floorf(x);
     }
 
     double floor64(double  x) {
-        return mathc.floor(x);
+        return stdc.floor(x);
     }
 
     T _floor(T)(T x) {
@@ -1760,11 +1760,11 @@ pragma(inline, true) @trusted {
     }
 
     float round(float x) {
-        return mathc.roundf(x);
+        return stdc.roundf(x);
     }
 
     double round64(double x) {
-        return mathc.round(x);
+        return stdc.round(x);
     }
 
     T _round(T)(T x) {
@@ -1790,11 +1790,11 @@ pragma(inline, true) @trusted {
     }
 
     float ceil(float x) {
-        return mathc.ceilf(x);
+        return stdc.ceilf(x);
     }
 
     double ceil64(double x) {
-        return mathc.ceil(x);
+        return stdc.ceil(x);
     }
 
     T _ceil(T)(T x) {
@@ -1816,11 +1816,11 @@ pragma(inline, true) @trusted {
     }
 
     float sqrt(float x) {
-        return mathc.sqrtf(x);
+        return stdc.sqrtf(x);
     }
 
     double sqrt64(double x) {
-        return mathc.sqrt(x);
+        return stdc.sqrt(x);
     }
 
     auto _sqrt(T)(T x) {
@@ -1832,11 +1832,11 @@ pragma(inline, true) @trusted {
     }
 
     float sin(float x) {
-        return mathc.sinf(x);
+        return stdc.sinf(x);
     }
 
     double sin64(double x) {
-        return mathc.sin(x);
+        return stdc.sin(x);
     }
 
     auto _sin(T)(T x) {
@@ -1848,11 +1848,11 @@ pragma(inline, true) @trusted {
     }
 
     float cos(float x) {
-        return mathc.cosf(x);
+        return stdc.cosf(x);
     }
 
     double cos64(double x) {
-        return mathc.cos(x);
+        return stdc.cos(x);
     }
 
     auto _cos(T)(T x) {
@@ -1864,11 +1864,11 @@ pragma(inline, true) @trusted {
     }
 
     float tan(float x) {
-        return mathc.tanf(x);
+        return stdc.tanf(x);
     }
 
     double tan64(double x) {
-        return mathc.tan(x);
+        return stdc.tan(x);
     }
 
     auto _tan(T)(T x) {
@@ -1880,11 +1880,11 @@ pragma(inline, true) @trusted {
     }
 
     float asin(float x) {
-        return mathc.asinf(x);
+        return stdc.asinf(x);
     }
 
     double asin64(double x) {
-        return mathc.asin(x);
+        return stdc.asin(x);
     }
 
     auto _asin(T)(T x) {
@@ -1896,11 +1896,11 @@ pragma(inline, true) @trusted {
     }
 
     float acos(float x) {
-        return mathc.acosf(x);
+        return stdc.acosf(x);
     }
 
     double acos64(double x) {
-        return mathc.acos(x);
+        return stdc.acos(x);
     }
 
     auto _acos(T)(T x) {
@@ -1912,11 +1912,11 @@ pragma(inline, true) @trusted {
     }
 
     float atan(float x) {
-        return mathc.atanf(x);
+        return stdc.atanf(x);
     }
 
     double atan64(double x) {
-        return mathc.atan(x);
+        return stdc.atan(x);
     }
 
     auto _atan(T)(T x) {

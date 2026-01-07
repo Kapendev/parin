@@ -12,7 +12,6 @@ module parin.joka.containers;
 
 import parin.joka.ascii;
 import parin.joka.memory;
-import parin.joka.interpolation;
 import parin.joka.types;
 
 @safe nothrow:

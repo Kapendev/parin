@@ -8,8 +8,6 @@
 /// The `ascii` module provides functions designed to assist with ascii strings.
 module parin.joka.ascii;
 
-import parin.joka.interpolation;
-import parin.joka.memory;
 import parin.joka.types;
 
 @safe:
@@ -75,62 +73,48 @@ struct Floating {
     }
 }
 
-@trusted nothrow
-IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
-    static if (isTrackingMemory) {
-        // TODO: This needs to be simpler because it was so hard to remember how it works.
-        static void _updateGroupBuffer(T)(ref T table) {
-            _memoryTrackingState.groupBuffer.clear();
-            foreach (key, value; table) {
-                if (value.canIgnore) continue;
-                auto groupKey = _MallocInfo(value.file, value.line, 0, false, value.group);
-                if (auto groupValue = groupKey in _memoryTrackingState.groupBuffer) {
-                    groupValue.size += value.size;
-                    groupValue.count += 1;
-                } else {
-                    _memoryTrackingState.groupBuffer[groupKey] = _MallocGroupInfo(value.size, 1);
-                }
-            }
-        }
+// ---------- IES Support
+static if (__traits(compiles, { import core.interpolation; })) {
+    public import core.interpolation;
+} else {
+    // pragma(msg, "Joka: Using custom interpolation functions.");
 
-        try {
-            _memoryTrackingState.infoBuffer.length = 0;
-            auto finalLength = _memoryTrackingState.table.length;
-            foreach (key, value; _memoryTrackingState.table) if (value.canIgnore) finalLength -= 1;
-            auto ignoreCount = _memoryTrackingState.table.length - finalLength;
-            auto ignoreText = ignoreCount ? ", {} ignored".fmt(ignoreCount) : "";
-            auto filterText = pathFilter.length ? fmt("Filter: \"{}\"\n", pathFilter) : "";
+    // Functions below are copy-pasted from core.interpolation.
 
-            if (canShowEmpty ? true : finalLength != 0) {
-                _memoryTrackingState.infoBuffer ~= fmt("Memory Leaks: {} (total {} bytes{})\n{}", finalLength, _memoryTrackingState.totalBytes, ignoreText, filterText);
-            }
-            _updateGroupBuffer(_memoryTrackingState.table);
-            foreach (key, value; _memoryTrackingState.groupBuffer) {
-                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
-                _memoryTrackingState.infoBuffer ~= fmt("  {} leak, {} bytes, {}:{}{}\n", value.count, value.size, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
-            }
-            if (canShowEmpty ? true : _memoryTrackingState.invalidFreeTable.length != 0) {
-                _memoryTrackingState.infoBuffer ~= fmt("Invalid Frees: {}\n{}", _memoryTrackingState.invalidFreeTable.length, filterText);
-            }
-            _updateGroupBuffer(_memoryTrackingState.invalidFreeTable);
-            foreach (key, value; _memoryTrackingState.groupBuffer) {
-                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
-                _memoryTrackingState.infoBuffer ~= fmt("  {} free, {}:{}{}\n", value.count, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
-            }
-        } catch (Exception e) {
-            return "No memory tracking data available.\n";
-        }
-        return _memoryTrackingState.infoBuffer;
-    } else {
-        debug {
-            version (D_BetterC) {
-                return "No memory tracking data available in BetterC builds.\n";
-            }
-        } else {
-            return "No memory tracking data available in release builds.\n";
+    public IStr __getEmptyString() @nogc pure nothrow @safe {
+        return "";
+    }
+
+    struct InterpolationHeader {
+        alias toString = __getEmptyString;
+    }
+
+    struct InterpolationFooter {
+        alias toString = __getEmptyString;
+    }
+
+    struct InterpolatedLiteral(IStr text) {
+        static IStr toString() @nogc pure nothrow @safe {
+            return text;
         }
     }
+
+    struct InterpolatedExpression(IStr text) {
+        enum expression = text;
+        alias toString = __getEmptyString;
+    }
 }
+
+// NOTE: A BetterC fix. It's only needed when using IES.
+version (D_BetterC) {
+    extern(C) @nogc pure nothrow @safe
+    IStr _D4core13interpolation16__getEmptyStringFNaNbNiNfZAya() { return ""; }
+}
+
+// NOTE: Helper functions.
+template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral!_, alias _); }
+template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
+// ----------
 
 /// Converts the value to its string representation.
 @trusted
@@ -559,7 +543,7 @@ IStr advanceStr(IStr str, Sz amount) {
 @trusted
 Fault copyChars(Str str, IStr source, Sz startIndex = 0) {
     if (str.length < source.length + startIndex) return Fault.overflow;
-    jokaMemcpy(&str[startIndex], source.ptr, source.length);
+    str[startIndex .. startIndex + source.length] = source[];
     return Fault.none;
 }
 

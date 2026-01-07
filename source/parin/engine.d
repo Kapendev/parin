@@ -15,7 +15,6 @@ import bk = parin.backend;
 import parin.joka.ascii;
 import parin.joka.io;
 import parin.joka.memory;
-import parin.joka.interpolation;
 
 public import parin.joka.containers;
 public import parin.joka.math;
@@ -732,7 +731,7 @@ void closeWindow() {
     _engineState = null;
     bk.closeWindow();
     static if (isTrackingMemory) {
-        if (isLogging) printMemoryTrackingInfo(filter);
+        if (isLogging) print(memoryTrackingInfo(filter));
     }
 }
 

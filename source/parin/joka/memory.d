@@ -80,16 +80,16 @@ version (JokaCustomMemory) {
     pragma(msg, "Joka: Using GC memory.");
 
     import memoryd = core.memory;
-    import stringc = parin.joka.stdc.string;
+    import stdc = parin.joka.stdc;
 
     extern(C) @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
-        return stringc.memset(ptr, value, size);
+        return stdc.memset(ptr, value, size);
     }
 
     extern(C) @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stringc.memcpy(ptr, source, size);
+        return stdc.memcpy(ptr, source, size);
     }
 
     extern(C)
@@ -105,22 +105,21 @@ version (JokaCustomMemory) {
     extern(C) @nogc
     void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
-    import stdlibc = parin.joka.stdc.stdlib;
-    import stringc = parin.joka.stdc.string;
+    import stdc = parin.joka.stdc;
 
     extern(C) @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
-        return stringc.memset(ptr, value, size);
+        return stdc.memset(ptr, value, size);
     }
 
     extern(C) @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stringc.memcpy(ptr, source, size);
+        return stdc.memcpy(ptr, source, size);
     }
 
     extern(C)
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = stdlibc.malloc(size);
+        auto result = stdc.malloc(size);
         static if (isTrackingMemory) {
             if (result) {
                 _memoryTrackingState.table[result] = _MallocInfo(file, line, size, false, _memoryTrackingState.currentGroupStack.length ? _memoryTrackingState.currentGroupStack[$ - 1] : "");
@@ -141,7 +140,7 @@ version (JokaCustomMemory) {
         if (ptr) {
             static if (isTrackingMemory) {
                 if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                    result = stdlibc.realloc(ptr, size);
+                    result = stdc.realloc(ptr, size);
                     if (result) {
                         _memoryTrackingState.table[result] = _MallocInfo(file, line, size, mallocValue.canIgnore, _memoryTrackingState.currentGroupStack.length ? _memoryTrackingState.currentGroupStack[$ - 1] : "");
                         _memoryTrackingState.totalBytes += size;
@@ -156,7 +155,7 @@ version (JokaCustomMemory) {
                     }
                 }
             } else {
-                result = stdlibc.realloc(ptr, size);
+                result = stdc.realloc(ptr, size);
             }
         } else {
             result = jokaMalloc(size, file, line);
@@ -169,7 +168,7 @@ version (JokaCustomMemory) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                stdlibc.free(ptr);
+                stdc.free(ptr);
                 debug {
                     _memoryTrackingState.totalBytes -= mallocValue.size;
                     _memoryTrackingState.table.remove(ptr);
@@ -184,7 +183,7 @@ version (JokaCustomMemory) {
                 }
             }
         } else {
-            stdlibc.free(ptr);
+            stdc.free(ptr);
         }
     }
 }
