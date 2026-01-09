@@ -12,7 +12,6 @@ version (WebAssembly) {
     import em = parin.bindings.em;
 }
 
-import parin.joka.ascii;
 import parin.joka.math;
 import parin.joka.memory;
 import parin.joka.types;

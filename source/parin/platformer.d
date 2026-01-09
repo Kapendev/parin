@@ -16,7 +16,6 @@
 /// The `platformer` module provides a pixel-perfect physics engine.
 module parin.platformer;
 
-import parin.joka.ascii;
 import parin.engine;
 
 @safe nothrow:

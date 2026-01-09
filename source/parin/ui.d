@@ -14,7 +14,6 @@
 module parin.ui;
 
 import rl = parin.bindings.rl;
-import parin.joka.ascii;
 import parin.joka.memory;
 import parin.engine;
 

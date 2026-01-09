@@ -12,7 +12,6 @@ version (ParinSkipDrawChecks) pragma(msg, "Parin: Skipping draw checks.");
 
 import bk = parin.backend;
 
-import parin.joka.ascii;
 import parin.joka.io;
 
 public import parin.joka.math;

@@ -9,7 +9,6 @@
 module parin.joka.math;
 
 import stdc = parin.joka.stdc;
-import parin.joka.ascii;
 import parin.joka.types;
 
 // I don't care about `pure`, but I'm a nice person.

@@ -11,7 +11,6 @@
 
 module parin.joka.memory;
 
-import parin.joka.ascii;
 import parin.joka.types;
 
 // --- Core
@@ -86,16 +85,16 @@ version (JokaCustomMemory) {
     pragma(msg, "Joka: Using GC memory.");
 
     import memoryd = core.memory;
-    import stdc = parin.joka.stdc;
+    import stringc = core.stdc.string;
 
     extern(C) @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
-        return stdc.memset(ptr, value, size);
+        return stringc.memset(ptr, value, size);
     }
 
     extern(C) @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stdc.memcpy(ptr, source, size);
+        return stringc.memcpy(ptr, source, size);
     }
 
     extern(C)
@@ -111,21 +110,28 @@ version (JokaCustomMemory) {
     extern(C) @nogc
     void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
-    import stdc = parin.joka.stdc;
+    version(JokaPhobosStdc) {
+        pragma(msg, "Joka: Using Phobos `stdc` modules.");
+        import stringc = core.stdc.string;
+        import stdlibc = core.stdc.stdlib;
+    } else {
+        import stringc = parin.joka.stdc;
+        import stdlibc = parin.joka.stdc;
+    }
 
     extern(C) @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
-        return stdc.memset(ptr, value, size);
+        return stringc.memset(ptr, value, size);
     }
 
     extern(C) @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stdc.memcpy(ptr, source, size);
+        return stringc.memcpy(ptr, source, size);
     }
 
     extern(C)
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = stdc.malloc(size);
+        auto result = stdlibc.malloc(size);
         static if (isTrackingMemory) {
             if (result) {
                 _memoryTrackingState.table[result] = _MallocInfo(file, line, size, false, _memoryTrackingState.currentGroupStack.length ? _memoryTrackingState.currentGroupStack[$ - 1] : "");
@@ -146,7 +152,7 @@ version (JokaCustomMemory) {
         if (ptr) {
             static if (isTrackingMemory) {
                 if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                    result = stdc.realloc(ptr, size);
+                    result = stdlibc.realloc(ptr, size);
                     if (result) {
                         _memoryTrackingState.table[result] = _MallocInfo(file, line, size, mallocValue.canIgnore, _memoryTrackingState.currentGroupStack.length ? _memoryTrackingState.currentGroupStack[$ - 1] : "");
                         _memoryTrackingState.totalBytes += size;
@@ -161,7 +167,7 @@ version (JokaCustomMemory) {
                     }
                 }
             } else {
-                result = stdc.realloc(ptr, size);
+                result = stdlibc.realloc(ptr, size);
             }
         } else {
             result = jokaMalloc(size, file, line);
@@ -174,7 +180,7 @@ version (JokaCustomMemory) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                stdc.free(ptr);
+                stdlibc.free(ptr);
                 debug {
                     _memoryTrackingState.totalBytes -= mallocValue.size;
                     _memoryTrackingState.table.remove(ptr);
@@ -189,7 +195,7 @@ version (JokaCustomMemory) {
                 }
             }
         } else {
-            stdc.free(ptr);
+            stdlibc.free(ptr);
         }
     }
 }

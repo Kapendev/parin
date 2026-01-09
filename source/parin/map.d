@@ -11,7 +11,6 @@
 /// The `map` module provides a simple and fast tile map.
 module parin.map;
 
-import parin.joka.ascii;
 import parin.engine;
 
 @safe nothrow:

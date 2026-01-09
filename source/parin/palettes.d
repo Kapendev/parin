@@ -8,7 +8,6 @@
 /// The `palettes` module offers a collection of predefined colors.
 module parin.palettes;
 
-import parin.joka.ascii;
 import parin.joka.math;
 import parin.joka.types;
 
