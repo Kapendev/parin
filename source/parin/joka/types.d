@@ -8,8 +8,6 @@
 /// The `types` module provides basic type definitions, compile-time functions and ASCII string helpers.
 module parin.joka.types;
 
-@safe nothrow @nogc:
-
 alias Sz      = size_t;         /// The result of sizeof.
 alias Pd      = ptrdiff_t;      /// The result of pointer math.
 alias Str     = char[];         /// A string slice of chars.
@@ -345,7 +343,7 @@ Sz offsetOf(T, IStr member)() if (__traits(hasMember, T, member)) {
     return (cast(ubyte*) mixin("&temp.", member)) - (cast(ubyte*) &temp);
 }
 
-pure
+@safe nothrow @nogc pure
 bool isNan(double x) {
     return !(x == x);
 }
