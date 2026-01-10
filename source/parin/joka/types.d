@@ -241,6 +241,7 @@ struct Union(A...) {
     }
 
     ref Base base() {
+        debug assert(isBaseAliasingSafe, "Not all union members start with base type `" ~ Base.stringof ~ "`.");
         return _data._m0;
     }
 
@@ -259,6 +260,23 @@ struct Union(A...) {
             }
             assert(0, "WTF!");
         }
+    }
+
+    static bool isBaseAliasingSafe() {
+        foreach (T; A[1 .. $]) {
+            if (is(T == struct)) {
+                if (is(typeof(T.tupleof[0]) == struct)) {
+                    if (!is(typeof(T.tupleof[0].tupleof[0]) == Base)) {
+                        return false;
+                    }
+                } else if (!is(typeof(T.tupleof[0]) == Base)) {
+                    return false;
+                }
+            } else {
+                if (!is(T == Base)) return false;
+            }
+        }
+        return true;
     }
 
     template typeOf(T) {
@@ -351,6 +369,8 @@ bool isNan(double x) {
 }
 
 mixin template distinct(T) {
+    alias Base = T;
+
     T _data;
     alias _data this;
 
@@ -636,7 +656,7 @@ unittest {
     assert(Maybe!int(69, Fault.some).getOr() == 0);
 }
 
-// Variant test.
+// Union test.
 unittest {
     alias Number = Union!(float, double);
 
@@ -668,6 +688,15 @@ unittest {
     auto numberPtr = &number.as!float();
     *numberPtr *= 10;
     assert(number.as!float == 690);
+
+    assert(Number.isBaseAliasingSafe == false);
+    struct Foo1 { float a; }
+    struct Foo2 { alias x = int; float b; }
+    struct Foo3 { Foo1 c; }
+    assert(Union!(float, Foo1).isBaseAliasingSafe == true);
+    assert(Union!(float, Foo2).isBaseAliasingSafe == true);
+    assert(Union!(float, Foo3).isBaseAliasingSafe == true);
+    assert(Union!(float, Foo1, Foo2, Foo3).isBaseAliasingSafe == true);
 }
 
 // Distinct test.
