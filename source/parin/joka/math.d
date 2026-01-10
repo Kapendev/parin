@@ -210,7 +210,7 @@ struct Rgba {
 
     @safe nothrow @nogc pure:
 
-    mixin addXyzwOps!(Rgba, ubyte, length, form);
+    mixin xyzwOps!(Rgba, ubyte, length, form);
 
     pragma(inline, true) {
         this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
@@ -279,7 +279,7 @@ struct GVec2(T) {
 
     @safe nothrow @nogc pure:
 
-    mixin addXyzwOps!(GVec2!T, T, length, form);
+    mixin xyzwOps!(GVec2!T, T, length, form);
 
     pragma(inline, true) {
         this(T x, T y) {
@@ -429,7 +429,7 @@ struct GVec3(T) {
 
     @safe nothrow @nogc pure:
 
-    mixin addXyzwOps!(GVec3!T, T, length, form);
+    mixin xyzwOps!(GVec3!T, T, length, form);
 
     pragma(inline, true) {
         this(T x, T y, T z) {
@@ -581,7 +581,7 @@ struct GVec4(T) {
 
     @safe nothrow @nogc pure:
 
-    mixin addXyzwOps!(GVec4!T, T, length, form);
+    mixin xyzwOps!(GVec4!T, T, length, form);
 
     pragma(inline, true) {
         this(T x, T y, T z, T w) {

@@ -65,7 +65,7 @@ struct StaticArray(T, Sz N) {
 
     pragma(inline, true) @trusted nothrow @nogc:
 
-    mixin addSliceOps!(Self, T);
+    mixin sliceOps!(Self, T);
 
     this(const(T)[] items...) {
         if (items.length > N) assert(0, "Too many items.");
@@ -87,6 +87,8 @@ struct StaticArray(T, Sz N) {
 /// Represents an optional value.
 /// It can also hold an error code when a value is missing, and errors are referred to as faults in Joka.
 struct Maybe(T) {
+    alias Base = T;
+
     T _data;
     Fault _fault = Fault.some;
 
@@ -348,7 +350,25 @@ bool isNan(double x) {
     return !(x == x);
 }
 
-mixin template addSliceOps(T, TT) if (__traits(hasMember, T, "items")) {
+mixin template distinct(T) {
+    T _data;
+    alias _data this;
+
+    @safe nothrow @nogc {
+        this(T value) {
+            this._data = value;
+        }
+
+        this(typeof(this) value) {
+            this._data = value._data;
+        }
+    }
+}
+
+deprecated("Use `sliceOps` instead.")
+alias addSliceOps = sliceOps;
+
+mixin template sliceOps(T, TT) if (__traits(hasMember, T, "items")) {
     pragma(inline, true) @trusted nothrow @nogc {
         TT[] opSlice(Sz dim)(Sz i, Sz j) {
             return items[i .. j];
@@ -380,7 +400,10 @@ mixin template addSliceOps(T, TT) if (__traits(hasMember, T, "items")) {
     }
 }
 
-mixin template addXyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMember, T, "items") && N >= 2 && N <= 4 && N == form.length) {
+deprecated("Use `xyzwOps` instead.")
+alias addXyzwOps = xyzwOps;
+
+mixin template xyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMember, T, "items") && N >= 2 && N <= 4 && N == form.length) {
     pragma(inline, true) @trusted nothrow @nogc {
         T opUnary(IStr op)() {
             static if (N == 2) {
@@ -645,6 +668,23 @@ unittest {
     auto numberPtr = &number.as!float();
     *numberPtr *= 10;
     assert(number.as!float == 690);
+}
+
+// Distinct test.
+unittest {
+    struct Foo { mixin distinct!int; }
+
+    assert(is(Foo == int) == false);
+    assert(is(Foo : int) == true);
+    assert(is(int : Foo) == false);
+
+    auto a = Foo(0);
+    a = 1;
+    a += 2;
+    assert(a == 3);
+
+    auto b = a;
+    assert(b == a);
 }
 
 // --- ASCII

@@ -321,7 +321,7 @@ struct List(T) {
 
     @safe nothrow:
 
-    mixin addSliceOps!(Self, Item);
+    mixin sliceOps!(Self, Item);
 
     pragma(inline, true) @trusted {
         this(const(T)[] args...) {
@@ -537,7 +537,7 @@ struct BufferList(T) {
 
     @safe nothrow @nogc:
 
-    mixin addSliceOps!(Self, Item);
+    mixin sliceOps!(Self, Item);
 
     pragma(inline, true) @trusted {
         this(T[] data, const(T)[] args...) {
@@ -681,7 +681,7 @@ struct FixedList(T, Sz N) {
 
     @safe nothrow @nogc:
 
-    mixin addSliceOps!(Self, Item);
+    mixin sliceOps!(Self, Item);
 
     pragma(inline, true) @trusted {
         this(const(T)[] args...) {
