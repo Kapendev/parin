@@ -263,20 +263,19 @@ struct Union(A...) {
     }
 
     static bool isBaseAliasingSafe() {
+        bool result = true;
         foreach (T; A[1 .. $]) {
-            if (is(T == struct)) {
-                if (is(typeof(T.tupleof[0]) == struct)) {
-                    if (!is(typeof(T.tupleof[0].tupleof[0]) == Base)) {
-                        return false;
-                    }
-                } else if (!is(typeof(T.tupleof[0]) == Base)) {
-                    return false;
+            static if (is(T == struct)) {
+                static if (is(typeof(T.tupleof[0]) == struct)) {
+                    if (!is(typeof(T.tupleof[0]) == Base) && !is(typeof(T.tupleof[0].tupleof[0]) == Base)) result = false;
+                } else {
+                    if (!is(typeof(T.tupleof[0]) == Base)) result = false;
                 }
             } else {
-                if (!is(T == Base)) return false;
+                if (!is(T == Base)) result = false;
             }
         }
-        return true;
+        return result;
     }
 
     template typeOf(T) {

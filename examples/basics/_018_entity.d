@@ -20,7 +20,7 @@ struct EntityBase {
 }
 
 // An `Actor` is one type of entity. It does nothing special.
-// It uses 'alias base this' to inherit the fields and methods of `EntityBase`.
+// It uses `alias base this` to inherit the fields and methods of `EntityBase`.
 struct Actor {
     EntityBase base;
     alias base this;
@@ -72,6 +72,10 @@ void ready() {
     entities.push(Actor(40, 60).xx);
     entities.push(Actor(80, 120).xx);
     entities.push(Player(320 / 2, 180 / 2 - 16).xx);
+
+    // Access the base shared by all types in the union.
+    // This allows bulk modification of shared data, like position, without checking the specific type.
+    foreach (ref e; entities.items) e.base.body.x += 35;
 }
 
 bool update(float dt) {
