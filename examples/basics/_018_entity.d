@@ -11,6 +11,10 @@ Entities entities;
 alias Entity = Union!(EntityBase, Actor, Player);
 alias Entities = GenList!Entity;
 
+// Ensure at compile time that all types in the union start with `EntityBase`.
+// This guarantees that accessing 'e.base' is always safe, regardless of the active type.
+static assert(Entity.isBaseAliasingSafe, "All types must have `EntityBase` as their first field.");
+
 // The base structure for all entities, containing shared data.
 struct EntityBase {
     Rect body = Rect(24, 32);

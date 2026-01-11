@@ -283,10 +283,21 @@ The web build script provides the `itch` flag to automate the first two steps.
 It currently only works on Linux and macOS.
 Contributions to add Windows support are welcome.
 
+### Does Parin have an entity system?
+
+No. However, there is a small example of how to build one using the `Union` type in the [examples folder](examples/basics/_018_entity.d).
+
+### Does Parin have other UI libraries?
+
+The following libraries are compatible with Parin:
+
+- [microui-d](examples/integrations/microui.d)
+- [Fluid](examples/integrations/fluid.d)
+
 ### How do I use `Vec2`?
 
-`Vec2` is a type provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
-An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in Joka.
+The `Vec2` type is provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
+An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in the Joka repository.
 
 ### How can I load an asset outside of the assets folder?
 
@@ -297,11 +308,6 @@ Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
 
 Asset hot reloading is not supported out of the box.
 The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
-
-### Does Parin have other UI libraries?
-
-- [microui-d](examples/integrations/microui.d)
-- [Fluid](examples/integrations/fluid.d)
 
 ### Are the Parin assets free to use?
 
