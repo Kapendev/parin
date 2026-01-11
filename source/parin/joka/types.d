@@ -241,7 +241,6 @@ struct Union(A...) {
     }
 
     ref Base base() {
-        debug assert(isBaseAliasingSafe, "Not all union members start with base type `" ~ Base.stringof ~ "`.");
         return _data._m0;
     }
 
@@ -262,7 +261,7 @@ struct Union(A...) {
         }
     }
 
-    static bool isBaseAliasingSafe() {
+    static bool _isBaseAliasingSafe() {
         bool result = true;
         foreach (T; A[1 .. $]) {
             static if (is(T == struct)) {
@@ -277,6 +276,9 @@ struct Union(A...) {
         }
         return result;
     }
+
+    // NOTE: Did not know how to make it one thing, so it's two things. Monkeyy I don't careee, OK?
+    enum isBaseAliasingSafe = _isBaseAliasingSafe();
 
     template typeOf(T) {
         static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
