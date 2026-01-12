@@ -297,7 +297,11 @@ void detach(ViewportId viewport);
 /// Begins a clipping region using the given area.
 void beginClip(Rect area);
 /// Ends the active clipping region.
-void endClip();                                               
+void endClip();
+/// Begins a depth sort. Works only with textures.
+void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown);
+/// Ends a depth sort. Works only with textures.
+void endDepthSort();
 
 /// Draws a rectangle with the specified area and color.
 void drawRect(Rect area, Rgba color = white, float thickness = -1.0f);
@@ -814,5 +818,13 @@ enum Gamepad : ubyte {
     back,   /// The back button.
     start,  /// The start button.
     middle, /// The middle button.
+}
+
+/// Depth sorting modes.
+enum DepthSortMode : ubyte {
+    topDown,        /// Sorts with: Layer + Y + Call Order
+    topDownFast,    /// Sorts with: Layer + Y
+    topDownFastest, /// Sorts with: Y
+    layered,        /// Sorts with: Layer + Call Order
 }
 ```

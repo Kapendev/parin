@@ -467,7 +467,8 @@ private @trusted {
         }
     }
 
-    int compare_zindex(const(void)* a, const(void)* b) {
+    extern(C) nothrow @nogc
+    int mu_compare_zindex(const(void)* a, const(void)* b) {
         return (*cast(mu_Container**) b).zIndex - (*cast(mu_Container**) a).zIndex;
     }
 
@@ -909,7 +910,7 @@ void mu_end(mu_Context *ctx) {
 
     /* sort root containers by z index */
     int n = ctx.rootList.idx;
-    qsort(ctx.rootList.items.ptr, n, (mu_Container*).sizeof, cast(STDLIB_QSORT_FUNC) &compare_zindex);
+    qsort(ctx.rootList.items.ptr, n, (mu_Container*).sizeof, &mu_compare_zindex);
 
     /* set root container jump commands */
     foreach (i; 0 .. n) {

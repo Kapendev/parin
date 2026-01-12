@@ -11,6 +11,7 @@ module parin.engine;
 version (ParinSkipDrawChecks) pragma(msg, "Parin: Skipping draw checks.");
 
 import bk = parin.backend;
+import stdc = parin.joka.stdc;
 
 import parin.joka.io;
 
@@ -168,6 +169,11 @@ struct EngineState {
     Sz dprintLineCount;
     Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
     bool dprintIsVisible = true;
+
+    FixedList!(DepthSortCommand, 32768) depthSortCommandBuffer;
+    FixedList!(DepthSortPair, 32768) depthSortPairBuffer;
+    DepthSortMode depthSortMode;
+    bool depthSortActive;
 
     EngineViewport viewport;
     GrowingArena arena;
@@ -526,7 +532,8 @@ struct ViewportId {
     }
 }
 
-/// A clipping region. Designed to be used with the `with` keyword.
+/// A clipping region.
+/// Designed to be used with the `with` keyword.
 struct Clip {
     Rect _clipArea;
 
@@ -582,10 +589,89 @@ struct _Attached(T) {
     }
 }
 
-// NOTE: Can keep it here because of inferred attributes.
 /// Attaches the camera for the scope and detaches automatically.
+/// Designed to be used with the `with` keyword.
+@trusted nothrow @nogc
 _Attached!T Attached(T)(ref T object) {
     return _Attached!T(object);
+}
+
+/// Depth sorting modes.
+enum DepthSortMode : ubyte {
+    topDown,        /// Sorts with: Layer + Y + Call Order
+    topDownFast,    /// Sorts with: Layer + Y
+    topDownFastest, /// Sorts with: Y
+    layered,        /// Sorts with: Layer + Call Order
+}
+
+struct DepthSortCommand {
+    TextureId texture;
+    Rect area;
+    Vec2 position;
+    DrawOptions options;
+}
+
+struct DepthSortPair {
+    float y;
+    ushort i;
+    ubyte layer;
+}
+
+struct _DepthSort {
+    DepthSortMode _depthSortMode;
+
+    @safe nothrow @nogc:
+
+    this(DepthSortMode mode) {
+        this._depthSortMode = mode;
+        beginDepthSort(mode);
+    }
+
+    ~this() {
+        endDepthSort();
+    }
+}
+
+/// A depth sort. Works only with textures.
+/// Designed to be used with the `with` keyword.
+@safe nothrow @nogc
+_DepthSort DepthSort(DepthSortMode mode = DepthSortMode.topDown) {
+    return _DepthSort(mode);
+}
+
+extern(C) @trusted nothrow @nogc {
+    int _parinSortTopDown(const(void)* a, const(void)* b) {
+        auto pair1 = cast(DepthSortPair*) a;
+        auto pair2 = cast(DepthSortPair*) b;
+        return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && (pair1.y < pair2.y || (pair1.y == pair2.y && pair1.i < pair2.i))) )
+            ? -1
+            : 1;
+    }
+
+
+    int _parinSortTopDownFast(const(void)* a, const(void)* b) {
+        auto pair1 = cast(DepthSortPair*) a;
+        auto pair2 = cast(DepthSortPair*) b;
+        return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.y < pair2.y) )
+            ? -1
+            : 1;
+    }
+
+    int _parinSortTopDownFastest(const(void)* a, const(void)* b) {
+        auto pair1 = cast(DepthSortPair*) a;
+        auto pair2 = cast(DepthSortPair*) b;
+        return ( pair1.y < pair2.y )
+            ? -1
+            : 1;
+    }
+
+    int _parinSortLayered(const(void)* a, const(void)* b) {
+        auto pair1 = cast(DepthSortPair*) a;
+        auto pair2 = cast(DepthSortPair*) b;
+        return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.i < pair2.i) )
+            ? -1
+            : 1;
+    }
 }
 
 /// Opens the window with the given information.
@@ -1929,6 +2015,45 @@ void endClip() {
     _engineState.clipIsActive = false;
 }
 
+/// Begins a depth sort. Works only with textures.
+void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown) {
+    if (_engineState.depthSortActive == true) assert(0, "Call `endDepthSort` after `beginDepthSort`.");
+    _engineState.depthSortCommandBuffer.clear();
+    _engineState.depthSortPairBuffer.clear();
+    _engineState.depthSortMode = mode;
+    _engineState.depthSortActive = true;
+}
+
+/// Ends a depth sort. Works only with textures.
+void endDepthSort() {
+    if (_engineState.depthSortActive == false) assert(0, "Call `beginDepthSort` before `endDepthSort`.");
+    _engineState.depthSortActive = false;
+    if (_engineState.depthSortPairBuffer.length == 0) return;
+    with (DepthSortMode) final switch (_engineState.depthSortMode) {
+        case topDown:
+            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDown);
+            break;
+        case topDownFast:
+            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDownFast);
+            break;
+        case topDownFastest:
+            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDownFastest);
+            break;
+        case layered:
+            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortLayered);
+            break;
+    }
+    foreach (ref temp; _engineState.depthSortPairBuffer) {
+        auto data = &_engineState.depthSortCommandBuffer.ptr[temp.i];
+        drawTextureArea(
+            data.texture,
+            data.area,
+            data.position,
+            data.options,
+        );
+    }
+}
+
 /// Draws a rectangle with the specified area and color.
 void drawRect(Rect area, Rgba color = white, float thickness = -1.0f) {
     bk.drawRect(isPixelSnapped ? area.floor() : area, color, thickness);
@@ -1956,44 +2081,53 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (texture.isNull) {
-            if (isNullTextureVisible) {
-                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-                drawRect(rect, defaultEngineDebugColor1);
-                drawRect(rect, defaultEngineDebugColor2, 1);
-            }
-            return;
+    if (_engineState.depthSortActive) {
+        if (_engineState.depthSortCommandBuffer.push(DepthSortCommand(texture, area, position, options))) {
+            endDepthSort();
+            beginDepthSort(_engineState.depthSortMode);
+            _engineState.depthSortCommandBuffer.push(DepthSortCommand(texture, area, position, options));
         }
-    }
-
-    auto target = Rect(position, area.size * options.scale);
-    auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
-    final switch (options.flip) {
-        case Flip.none: break;
-        case Flip.x: area.size.x *= -1.0f; break;
-        case Flip.y: area.size.y *= -1.0f; break;
-        case Flip.xy: area.size *= Vec2(-1.0f); break;
-    }
-    if (isPixelSnapped) {
-        bk.drawTexture(
-            texture.data,
-            area.floor(),
-            target.floor(),
-            origin.floor(),
-            options.rotation,
-            options.color,
-        );
+        _engineState.depthSortPairBuffer.push(DepthSortPair(position.y, cast(ushort) (_engineState.depthSortCommandBuffer.length - 1), options.layer));
     } else {
-        bk.drawTexture(
-            texture.data,
-            area,
-            target,
-            origin,
-            options.rotation,
-            options.color,
-        );
+        version (ParinSkipDrawChecks) {
+        } else {
+            if (texture.isNull) {
+                if (isNullTextureVisible) {
+                    auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+                    drawRect(rect, defaultEngineDebugColor1);
+                    drawRect(rect, defaultEngineDebugColor2, 1);
+                }
+                return;
+            }
+        }
+
+        auto target = Rect(position, area.size * options.scale);
+        auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
+        final switch (options.flip) {
+            case Flip.none: break;
+            case Flip.x: area.size.x *= -1.0f; break;
+            case Flip.y: area.size.y *= -1.0f; break;
+            case Flip.xy: area.size *= Vec2(-1.0f); break;
+        }
+        if (isPixelSnapped) {
+            bk.drawTexture(
+                texture.data,
+                area.floor(),
+                target.floor(),
+                origin.floor(),
+                options.rotation,
+                options.color,
+            );
+        } else {
+            bk.drawTexture(
+                texture.data,
+                area,
+                target,
+                origin,
+                options.rotation,
+                options.color,
+            );
+        }
     }
 }
 

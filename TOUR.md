@@ -239,6 +239,10 @@ void detach(ViewportId viewport);
 void beginClip(Rect area);
 /// Ends the active clipping region.
 void endClip();                                               
+/// Begins a depth sort. Works only with textures.
+void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown);
+/// Ends a depth sort. Works only with textures.
+void endDepthSort();
 
 /// Draws a rectangle with the specified area and color.
 void drawRect(Rect area, Rgba color = white, float thickness = -1.0f);
