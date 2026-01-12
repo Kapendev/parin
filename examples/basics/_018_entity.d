@@ -3,23 +3,22 @@
 
 import parin;
 
-// A generational list to store and manage the entities.
 Entities entities;
 
 // The `Union` type allows a single variable to hold one of several different types.
-// This allows us to store different structs in the same list.
 alias Entity = Union!(EntityBase, Actor, Player);
+// A generational list to store and manage the entities.
 alias Entities = GenList!Entity;
 
-// Ensure at compile time that all types in the union start with `EntityBase`.
-// This guarantees that accessing 'e.base' is always safe, regardless of the active type.
-static assert(Entity.isBaseAliasingSafe, "All types must have `EntityBase` as their first field.");
+// Ensure at compile time that all types in the union have `EntityBase` as their first field.
+// This guarantees that using `.base` is always safe, regardless of the active type.
+static assert(Entity.isBaseAliasingSafe);
 
 // The base structure for all entities, containing shared data.
 struct EntityBase {
     Rect body = Rect(24, 32);
 
-    void update() {}
+    void update(float dt) {}
     void draw() {}
 }
 
@@ -51,7 +50,7 @@ struct Player {
     }
 
     // Custom update logic for `Player` to handle movement.
-    void update() {
+    void update(float dt) {
         isRunning = Keyboard.shift.isDown;
         body.position += wasd * (isRunning ? 2 : 1);
     }
@@ -72,7 +71,6 @@ void ready() {
     lockResolution(320, 180);
 
     // Instantiate entities and add them to the list.
-    // The `.xx` helper wraps the specific struct into the union type.
     entities.push(Actor(40, 60).xx);
     entities.push(Actor(80, 120).xx);
     entities.push(Player(320 / 2, 180 / 2 - 16).xx);
@@ -83,11 +81,10 @@ void ready() {
 }
 
 bool update(float dt) {
-    // e.call!"methodName"() is a union feature.
-    // It automatically calls the correct method for the underlying type.
+    // e.call!"methodName"() calls the correct method for the underlying type.
 
     // Update all entities in the list.
-    foreach (ref e; entities.items) e.call!"update"();
+    foreach (ref e; entities.items) e.call!"update"(dt);
     // Draw all entities in the list.
     foreach (ref e; entities.items) e.call!"draw"();
 

@@ -27,10 +27,10 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
 
 ## Why Parin
 
-- **Focused on games.** It's opinionated in ways that make game development tasks (rendering, input) easier than in general-purpose engines.
-- **Code-driven design.** There's no imposed game architecture, allowing freedom on how a game is structured.
+- **Focused on games.** It's opinionated in ways that make game development tasks (rendering, input) easier out of the box than in general-purpose engines.
+- **Code-driven design.** There's no imposed architecture, allowing freedom on how a game is structured.
 - **A guided workflow.** It assumes a few common patterns like a fixed aspect ratio and debug UI to smooth out the development experience.
-- **Your level of control.** Use the high-level GC of D for convenience, or drop down to low-level manual memory management when every frame counts.
+- **Flexible abstraction.** Leverage the GC of D for convenience, or drop down to manual memory management when needed.
 
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity.
 It offers more direction than small ones, but far less overhead and "magic" than big ones.
@@ -48,7 +48,7 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Efficient tile map structures
 - Intuitive immediate-mode UI (WIP)
 - Mixed memory model: manual control, GC, or both
-- Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L20)
+- Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25)
 - Includes extras like [microui](examples/integrations/microui.d)
 - Cross-platform: Windows, Linux, Web, macOS
 
@@ -165,26 +165,32 @@ Most ideas are welcome, except ECS.
 
 ## Frequently Asked Questions
 
-### How can I build without DUB?
+### Does Parin have an entity system?
 
-Create a new folder and run inside the following commands:
+No. However, there is an [example](examples/basics/_018_entity.d) of how to build one using the `Union` type in the examples folder.
 
-#### Prepare folder
+### Does Parin have a UI library?
 
-```sh
-git clone --depth 1 https://github.com/Kapendev/parin parin_package
-./parin_package/scripts/prepare
-# Or: .\parin_package\scripts\prepare.bat
-```
+The following libraries are compatible with Parin:
 
-#### Compile & run
+- [Parin UI](examples/ui)
+- [microui-d](examples/integrations/microui.d)
+- [Fluid](examples/integrations/fluid.d)
 
-```sh
-./parin_package/scripts/run
-# Or: .\parin_package\scripts\run.bat
-# Or: ./parin_package/scripts/run ldc2 macos
-# Or: ./parin_package/scripts/run opend
-```
+### How do I use `Vec2`?
+
+The `Vec2` type is provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
+An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in the Joka repository.
+
+### How can I load an asset outside of the assets folder?
+
+Call `setIsUsingAssetsPath(false)` to disable the default behavior.
+Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
+
+### How can I hot reload assets?
+
+Asset hot reloading is not supported out of the box.
+The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
 ### How do I make a web build?
 
@@ -251,10 +257,6 @@ Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are par
 A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
 Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
 
-```sh
-dub run parin:web -- gc rl
-```
-
 ### How do I upload web builds to itch.io?
 
 1. Open the web folder.
@@ -283,31 +285,26 @@ The web build script provides the `itch` flag to automate the first two steps.
 It currently only works on Linux and macOS.
 Contributions to add Windows support are welcome.
 
-### Does Parin have an entity system?
+### How can I build without DUB?
 
-No. However, there is a small example of how to build one using the `Union` type in the [examples folder](examples/basics/_018_entity.d).
+Create a new folder and run inside the following commands:
 
-### Does Parin have other UI libraries?
+#### Prepare folder
 
-The following libraries are compatible with Parin:
+```sh
+git clone --depth 1 https://github.com/Kapendev/parin parin_package
+./parin_package/scripts/prepare
+# Or: .\parin_package\scripts\prepare.bat
+```
 
-- [microui-d](examples/integrations/microui.d)
-- [Fluid](examples/integrations/fluid.d)
+#### Compile & run
 
-### How do I use `Vec2`?
-
-The `Vec2` type is provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
-An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in the Joka repository.
-
-### How can I load an asset outside of the assets folder?
-
-Call `setIsUsingAssetsPath(false)` to disable the default behavior.
-Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
-
-### How can I hot reload assets?
-
-Asset hot reloading is not supported out of the box.
-The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
+```sh
+./parin_package/scripts/run
+# Or: .\parin_package\scripts\run.bat
+# Or: ./parin_package/scripts/run ldc2 macos
+# Or: ./parin_package/scripts/run opend
+```
 
 ### Are the Parin assets free to use?
 

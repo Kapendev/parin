@@ -41,9 +41,7 @@ struct ArgToken {
         return "{}".fmt(name);
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 }
 
 /// A range of parsed tokens from the command-line arguments.

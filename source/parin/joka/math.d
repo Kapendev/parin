@@ -204,9 +204,7 @@ struct Rgba {
         return fmtSignedGroup(fmtStrs, r, g, b, a);
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 
@@ -273,9 +271,7 @@ struct GVec2(T) {
         }
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 
@@ -423,9 +419,7 @@ struct GVec3(T) {
         }
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 
@@ -575,9 +569,7 @@ struct GVec4(T) {
         }
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 
@@ -728,9 +720,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         }
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 
@@ -1183,9 +1173,7 @@ struct GCirc(T) {
         }
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 
@@ -1283,9 +1271,7 @@ struct GLine(T) {
         }
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 
     @safe nothrow @nogc pure:
 

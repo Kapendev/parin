@@ -8,6 +8,8 @@
 /// The `types` module provides basic type definitions, compile-time functions and ASCII string helpers.
 module parin.joka.types;
 
+// --- Core
+
 alias Sz      = size_t;         /// The result of sizeof.
 alias Pd      = ptrdiff_t;      /// The result of pointer math.
 alias Str     = char[];         /// A string slice of chars.
@@ -178,23 +180,18 @@ struct Maybe(T) {
     }
 }
 
-union UnionData(A...) {
-    static assert(A.length != 0, "Arguments must contain at least one element.");
+struct Union(A...) if (A.length != 0) {
+    alias Types = A;
+    alias Base = A[0];
 
-    static foreach (i, T; A) {
-        mixin("T _m", toCleanNumber!i, ";");
+    union UnionData {
+        static foreach (i, T; A) {
+            mixin("T _m", toCleanNumber!i, ";");
+        }
     }
 
-    alias Types = A;
-    alias Base = A[0];
-}
-
-struct Union(A...) {
-    UnionData!A _data;
+    UnionData _data;
     UnionType _type;
-
-    alias Types = A;
-    alias Base = A[0];
 
     @trusted
     auto call(IStr func, AA...)(AA args) {
@@ -215,7 +212,7 @@ struct Union(A...) {
         }
 
         void opAssign(const(T) rhs) {
-            auto temp = UnionData!A();
+            auto temp = UnionData();
             *(cast(T*) &temp) = cast(T) rhs;
             _data = temp;
             _type = i;
@@ -721,13 +718,18 @@ unittest {
 
 @safe:
 
-enum defaultAsciiBufferCount = 16;   /// Generic string count.
-enum defaultAsciiBufferSize  = 2048; /// Generic string length.
+version (JokaSmallFootprint) {
+    enum defaultAsciiBufferCount = 4;
+    enum defaultAsciiBufferSize  = 1024;
+} else {
+    enum defaultAsciiBufferCount = 8;    /// Generic string count.
+    enum defaultAsciiBufferSize  = 2048; /// Generic string length.
+}
 
 enum defaultAsciiFmtArgStr         = "{}"; /// The format argument symbol.
-enum defaultAsciiFmtArgBufferCount = 32;   /// Format argument count.
+enum defaultAsciiFmtArgBufferCount = 16;   /// Format argument count.
 enum defaultAsciiFmtArgBufferSize  = 1024; /// Format argument length.
-enum defaultAsciiFmtBufferCount    = 32;   /// Format string count.
+enum defaultAsciiFmtBufferCount    = 16;   /// Format string count.
 enum defaultAsciiFmtBufferSize     = 2048; /// Format string length.
 
 enum digitChars    = "0123456789";                         /// The set of decimal numeric characters.
@@ -777,12 +779,11 @@ struct Floating {
         return floatingToStr(value, precision);
     }
 
-    IStr toString() {
-        return toStr();
-    }
+    alias toString = toStr;
 }
 
-// ---------- IES Support
+// --- IES Support
+// ===
 static if (__traits(compiles, { import core.interpolation; })) {
     public import core.interpolation;
 } else {
@@ -823,7 +824,7 @@ version (D_BetterC) {
 // NOTE: Helper functions.
 template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral!_, alias _); }
 template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
-// ----------
+// ===
 
 /// Converts the value to its string representation.
 @trusted
