@@ -238,7 +238,7 @@ void detach(ViewportId viewport);
 /// Begins a clipping region using the given area.
 void beginClip(Rect area);
 /// Ends the active clipping region.
-void endClip();                                               
+void endClip();
 /// Begins a depth sort. Works only with textures.
 void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown);
 /// Ends a depth sort. Works only with textures.
