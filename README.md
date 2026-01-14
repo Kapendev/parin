@@ -165,9 +165,12 @@ Most ideas are welcome, except ECS.
 
 ## Frequently Asked Questions
 
-### Does Parin have an entity system?
+### Does Parin have a scene or entity system?
 
-No. However, there is an [example](examples/basics/_018_entity.d) of how to build one using the `Union` type in the examples folder.
+No. However, there are examples of how to build them using the `Union` type in the examples folder:
+
+- [Entity system](examples/basics/_018_entity.d)
+- [State (Scene) system](examples/basics/_019_state.d)
 
 ### Does Parin have a UI library?
 

@@ -624,7 +624,7 @@ bool updateText(float dt) {
 
 void ready() {
     lockResolution(320, 180);
-    every(1, &updateText);
+    every(&updateText, 0.5);
 }
 
 bool update(float dt) {
