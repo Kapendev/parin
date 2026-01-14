@@ -171,6 +171,7 @@ No. However, there are examples of how to build them using the `Union` type in t
 
 - [Entity system](examples/basics/_018_entity.d)
 - [State (Scene) system](examples/basics/_019_state.d)
+- [Project template](examples/basics/_020_entity_state_template.d)
 
 ### Does Parin have a UI library?
 
