@@ -219,6 +219,15 @@ struct SlicePart {
 /// The parts of a 9-slice.
 alias SliceParts = StaticArray!(SlicePart, 9);
 
+/// Pixel data.
+struct Surface {
+    Rgba[] pixels;
+    int width;
+    int height;
+    int pitch;
+    alias pixels this;
+}
+
 // Font glyph info.
 struct GlyphInfo {
     int value;    // Character value.

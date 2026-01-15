@@ -57,26 +57,26 @@ alias Color = Rgba;
 /*
 alias BVec2 = GVec2!byte;   /// A 2D vector using bytes.
 alias UVec2 = GVec2!uint;   /// A 2D vector using uints.
+alias DVec2 = GVec2!double; /// A 2D vector using doubles.
 */
 alias IVec2 = GVec2!int;    /// A 2D vector using ints.
 alias Vec2  = GVec2!float;  /// A 2D vector using floats.
-alias DVec2 = GVec2!double; /// A 2D vector using doubles.
 
 /*
 alias BVec3 = GVec3!byte;   /// A 3D vector using bytes.
 alias UVec3 = GVec3!uint;   /// A 3D vector using uints.
+alias DVec3 = GVec3!double; /// A 3D vector using doubles.
 */
 alias IVec3 = GVec3!int;    /// A 3D vector using ints.
 alias Vec3  = GVec3!float;  /// A 3D vector using floats.
-alias DVec3 = GVec3!double; /// A 3D vector using doubles.
 
 /*
 alias BVec4 = GVec4!byte;   /// A 4D vector using bytes.
 alias UVec4 = GVec4!uint;   /// A 4D vector using uints.
+alias DVec4 = GVec4!double; /// A 4D vector using doubles.
 */
 alias IVec4 = GVec4!int;    /// A 4D vector using ints.
 alias Vec4  = GVec4!float;  /// A 4D vector using floats.
-alias DVec4 = GVec4!double; /// A 4D vector using doubles.
 
 /*
 alias BRect = GRect!byte;         /// A 2D rectangle using bytes.
@@ -318,6 +318,18 @@ struct GVec2(T) {
         GVec2!T ceil() {
             return GVec2!T(x._ceil, y._ceil);
         }
+
+        GVec2!T yx() {
+            return GVec2!T(y, x);
+        }
+
+        GVec2!T xx() {
+            return GVec2!T(x, x);
+        }
+
+        GVec2!T yy() {
+            return GVec2!T(y, y);
+        }
     }
 
     GVec2!Float sqrt() {
@@ -481,6 +493,50 @@ struct GVec3(T) {
         GVec3!T ceil() {
             return GVec3!T(x._ceil, y._ceil, z._ceil);
         }
+
+        GVec2!T yx() {
+            return GVec2!T(y, x);
+        }
+
+        GVec2!T xx() {
+            return GVec2!T(x, x);
+        }
+
+        GVec2!T yy() {
+            return GVec2!T(y, y);
+        }
+
+        GVec2!T xy() {
+            return GVec2!T(x, y);
+        }
+
+        GVec2!T xz() {
+            return GVec2!T(x, z);
+        }
+
+        GVec2!T yz() {
+            return GVec2!T(y, z);
+        }
+
+        GVec3!T xzy() {
+            return GVec3!T(x, z, y);
+        }
+
+        GVec3!T zyx() {
+            return GVec3!T(z, y, x);
+        }
+
+        GVec3!T xxx() {
+            return GVec3!T(x, x, x);
+        }
+
+        GVec3!T yyy() {
+            return GVec3!T(y, y, y);
+        }
+
+        GVec3!T zzz() {
+            return GVec3!T(z, z, z);
+        }
     }
 
     GVec3!Float sqrt() {
@@ -635,6 +691,62 @@ struct GVec4(T) {
 
         GVec4!T ceil() {
             return GVec4!T(x._ceil, y._ceil, z._ceil, w._ceil);
+        }
+
+        GVec2!T yx() {
+            return GVec2!T(y, x);
+        }
+
+        GVec2!T xx() {
+            return GVec2!T(x, x);
+        }
+
+        GVec2!T yy() {
+            return GVec2!T(y, y);
+        }
+
+        GVec2!T xy() {
+            return GVec2!T(x, y);
+        }
+
+        GVec2!T xz() {
+            return GVec2!T(x, z);
+        }
+
+        GVec2!T yz() {
+            return GVec2!T(y, z);
+        }
+
+        GVec3!T xzy() {
+            return GVec3!T(x, z, y);
+        }
+
+        GVec3!T zyx() {
+            return GVec3!T(z, y, x);
+        }
+
+        GVec3!T xxx() {
+            return GVec3!T(x, x, x);
+        }
+
+        GVec3!T yyy() {
+            return GVec3!T(y, y, y);
+        }
+
+        GVec3!T zzz() {
+            return GVec3!T(z, z, z);
+        }
+
+        GVec4!T wxyz() {
+            return GVec4!T(w, x, y, z);
+        }
+
+        GVec4!T xywz() {
+            return GVec4!T(x, y, w, z);
+        }
+
+        GVec4!T wwww() {
+            return GVec4!T(w, w, w, w);
         }
     }
 
@@ -2152,18 +2264,6 @@ pragma(inline, true) @trusted {
         return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon) && fequals(a.z, b.z, localEpsilon) && fequals(a.w, b.w, localEpsilon);
     }
 
-    bool fequals(DVec2 a, DVec2 b, double localEpsilon = epsilon) {
-        return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon);
-    }
-
-    bool fequals(DVec3 a, DVec3 b, double localEpsilon = epsilon) {
-        return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon) && fequals(a.z, b.z, localEpsilon);
-    }
-
-    bool fequals(DVec4 a, DVec4 b, double localEpsilon = epsilon) {
-        return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon) && fequals(a.z, b.z, localEpsilon) && fequals(a.w, b.w, localEpsilon);
-    }
-
     float toRadians(float degrees) {
         return degrees * pi180;
     }
@@ -2310,30 +2410,6 @@ pragma(inline, true) @trusted {
         );
     }
 
-    DVec2 lerp(DVec2 from, DVec2 to, double weight) {
-        return DVec2(
-            lerp64(from.x, to.x, weight),
-            lerp64(from.y, to.y, weight),
-        );
-    }
-
-    DVec3 lerp(DVec3 from, DVec3 to, double weight) {
-        return DVec3(
-            lerp64(from.x, to.x, weight),
-            lerp64(from.y, to.y, weight),
-            lerp64(from.z, to.z, weight),
-        );
-    }
-
-    DVec4 lerp(DVec4 from, DVec4 to, double weight) {
-        return DVec4(
-            lerp64(from.x, to.x, weight),
-            lerp64(from.y, to.y, weight),
-            lerp64(from.z, to.z, weight),
-            lerp64(from.w, to.w, weight),
-        );
-    }
-
     RoundingFunc rounding(Rounding type) {
         final switch (type) {
             case Rounding.none: return &roundNothing;
@@ -2454,42 +2530,6 @@ pragma(inline, true) @trusted {
         return result;
     }
 
-    DVec2 moveTo(DVec2 from, DVec2 to, DVec2 delta) {
-        DVec2 result = void;
-        auto offset = from.directionTo(to) * delta;
-        if (abs(to.x - from.x) > abs(offset.x)) result.x = from.x + offset.x;
-        else result.x = to.x;
-        if (abs(to.y - from.y) > abs(offset.y)) result.y = from.y + offset.y;
-        else result.y = to.y;
-        return result;
-    }
-
-    DVec3 moveTo(DVec3 from, DVec3 to, DVec3 delta) {
-        DVec3 result = void;
-        auto offset = from.directionTo(to) * delta;
-        if (abs(to.x - from.x) > abs(offset.x)) result.x = from.x + offset.x;
-        else result.x = to.x;
-        if (abs(to.y - from.y) > abs(offset.y)) result.y = from.y + offset.y;
-        else result.y = to.y;
-        if (abs(to.z - from.z) > abs(offset.z)) result.z = from.z + offset.z;
-        else result.z = to.z;
-        return result;
-    }
-
-    DVec4 moveTo(DVec4 from, DVec4 to, DVec4 delta) {
-        DVec4 result = void;
-        auto offset = from.directionTo(to) * delta;
-        if (abs(to.x - from.x) > abs(offset.x)) result.x = from.x + offset.x;
-        else result.x = to.x;
-        if (abs(to.y - from.y) > abs(offset.y)) result.y = from.y + offset.y;
-        else result.y = to.y;
-        if (abs(to.z - from.z) > abs(offset.z)) result.z = from.z + offset.z;
-        else result.z = to.z;
-        if (abs(to.w - from.w) > abs(offset.w)) result.w = from.w + offset.w;
-        else result.w = to.w;
-        return result;
-    }
-
     float moveToWithSlowdown(float from, float to, float delta, float slowdown) {
         if (from.fequals(to)) return to;
         auto target = ((from * (slowdown - 1.0f)) + to) / slowdown;
@@ -2523,30 +2563,6 @@ pragma(inline, true) @trusted {
             moveToWithSlowdown(from.y, to.y, delta.y, slowdown),
             moveToWithSlowdown(from.z, to.z, delta.z, slowdown),
             moveToWithSlowdown(from.w, to.w, delta.w, slowdown),
-        );
-    }
-
-    DVec2 moveToWithSlowdown(DVec2 from, DVec2 to, DVec2 delta, double slowdown) {
-        return DVec2(
-            moveToWithSlowdown64(from.x, to.x, delta.x, slowdown),
-            moveToWithSlowdown64(from.y, to.y, delta.y, slowdown),
-        );
-    }
-
-    DVec3 moveToWithSlowdown(DVec3 from, DVec3 to, DVec3 delta, double slowdown) {
-        return DVec3(
-            moveToWithSlowdown64(from.x, to.x, delta.x, slowdown),
-            moveToWithSlowdown64(from.y, to.y, delta.y, slowdown),
-            moveToWithSlowdown64(from.z, to.z, delta.z, slowdown),
-        );
-    }
-
-    DVec4 moveToWithSlowdown(DVec4 from, DVec4 to, DVec4 delta, double slowdown) {
-        return DVec4(
-            moveToWithSlowdown64(from.x, to.x, delta.x, slowdown),
-            moveToWithSlowdown64(from.y, to.y, delta.y, slowdown),
-            moveToWithSlowdown64(from.z, to.z, delta.z, slowdown),
-            moveToWithSlowdown64(from.w, to.w, delta.w, slowdown),
         );
     }
 }
@@ -2628,20 +2644,33 @@ unittest {
 
 // Vec test.
 unittest {
-    assert(IVec2(6) + IVec2(4) == IVec2(10));
-    assert(IVec3(6) + IVec3(4) == IVec3(10));
-    assert(IVec4(6) + IVec4(4) == IVec4(10));
+    alias V2 = IVec2;
+    auto v2 = V2(0, 1);
+    v2 = -(-v2);
+    v2 += V2(1);   v2 += 1;
+    v2 = v2 + V2(1);
+    v2 = v2 + 1;
+    v2 = 1 + v2;
+    v2 += V2(1);   v2 += 1;
+    assert(v2 == V2(7, 8) && !v2.isZero);
 
-    auto temp2 = IVec2(6);
-    auto temp3 = IVec2(6);
-    auto temp4 = IVec2(6);
-    temp2 += IVec2(4);
-    temp3 += IVec2(4);
-    temp4 += IVec2(4);
-    assert(temp2 == IVec2(10));
-    assert(temp3 == IVec2(10));
-    assert(temp4 == IVec2(10));
-    assert(!temp2.isZero);
-    assert(!temp3.isZero);
-    assert(!temp4.isZero);
+    alias V3 = IVec3;
+    auto v3 = V3(0, 1, 2);
+    v3 = -(-v3);
+    v3 += V3(1);   v3 += 1;
+    v3 = v3 + V3(1);
+    v3 = v3 + 1;
+    v3 = 1 + v3;
+    v3 += V3(1);   v3 += 1;
+    assert(v3 == V3(7, 8, 9) && !v3.isZero);
+
+    alias V4 = IVec4;
+    auto v4 = V4(0, 1, 2, 3);
+    v4 = -(-v4);
+    v4 += V4(1);   v4 += 1;
+    v4 = v4 + V4(1);
+    v4 = v4 + 1;
+    v4 = 1 + v4;
+    v4 += V4(1);   v4 += 1;
+    assert(v4 == V4(7, 8, 9, 10) && !v4.isZero);
 }
