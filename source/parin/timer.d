@@ -52,12 +52,18 @@ struct Timer {
         return stopTimeElapsedTimeBuffer.fequals(elapsedTime);
     }
 
-    /// Starts the timer with an optional new duration.
-    void start(float newDuration = -1.0f) {
+    /// Starts the timer with new duration and repeat behavior.
+    void start(float newDuration, bool newCanRepeat) {
         if (newDuration >= 0.0f) duration = newDuration;
         startTime = elapsedTime;
         stopTimeElapsedTimeBuffer = 0.0f;
         pauseTime = 0.0f;
+        canRepeat = newCanRepeat;
+    }
+
+    /// Starts the timer with an optional new duration.
+    void start(float newDuration = -1.0f) {
+        start(newDuration, canRepeat);
     }
 
     /// Stops the timer and records the time at which it stopped.

@@ -369,6 +369,16 @@ struct GVec2(T) {
         }
     }
 
+    GVec2!Float rotate(Float radians) {
+        static if (__traits(isFloating, T)) {
+            auto vsin = _sin(radians);
+            auto vcos = _cos(radians);
+            return GVec2!Float(x * vcos - y * vsin, x * vsin + y * vcos);
+        } else {
+            return GVec2!Float(cast(Float) x, cast(Float) y).rotate(radians);
+        }
+    }
+
     GVec2!Float normalize() {
         static if (__traits(isFloating, T)) {
             auto m = magnitude;
@@ -1187,6 +1197,10 @@ struct GCirc(T) {
             this(GVec2!T(x, y), radius);
         }
 
+        this(T radius) {
+            this(GVec2!T(), radius);
+        }
+
         /// The X position of the circle.
         @trusted
         ref T x() {
@@ -1199,6 +1213,12 @@ struct GCirc(T) {
             return position.y;
         }
 
+        /// The radius of the circle.
+        @trusted
+        ref T r() {
+            return radius;
+        }
+
         /// The X position of the circle for read-only data.
         @trusted
         T xx() const {
@@ -1209,6 +1229,12 @@ struct GCirc(T) {
         @trusted
         T yy() const {
             return position.y;
+        }
+
+        /// The radius of the circle for read-only data.
+        @trusted
+        T rr() const {
+            return radius;
         }
 
         bool hasSize() {

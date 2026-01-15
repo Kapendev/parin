@@ -3,8 +3,6 @@
 
 import parin;
 
-// --- Core
-
 StateManager manager;
 
 void ready() {
@@ -25,10 +23,8 @@ mixin runGame!(ready, update, finish, 960, 540, "Game Title");
 // --- Entities
 
 alias Entity = Union!(
-    EntityBase
+    EntityBase,
 );
-
-alias Entities = GenList!Entity;
 
 struct EntityBase {
     Rect body;
@@ -36,6 +32,8 @@ struct EntityBase {
     void update(float dt) {}
     void draw() {}
 }
+
+alias Entities = GenList!Entity;
 
 static foreach (T; Entity.Types) {
     Entity xx(T value) => Entity(value);
@@ -48,8 +46,33 @@ static assert(Entity.isBaseAliasingSafe);
 alias State = Union!(
     StateBase,
     TitleState,
-    PlayState
+    PlayState,
 );
+
+struct StateBase {
+    void ready() {}
+    bool update(float dt) { return false; }
+    void finish() {}
+}
+
+struct TitleState {
+    mixin distinct!StateBase;
+
+    bool update(float dt) {
+        drawText("~ Game Title ~", resolution * 0.5, DrawOptions(Hook.center));
+        return false;
+    }
+}
+
+struct PlayState {
+    mixin distinct!StateBase;
+
+    bool update(float dt) {
+        foreach (ref e; manager.entities.items) e.call!"update"(dt);
+        foreach (ref e; manager.entities.items) e.call!"draw"();
+        return false;
+    }
+}
 
 struct StateManager {
     alias Base = State.Base;
@@ -87,31 +110,6 @@ struct StateManager {
         } else {
             _next = S();
         }
-    }
-}
-
-struct StateBase {
-    void ready() {}
-    bool update(float dt) { return false; }
-    void finish() {}
-}
-
-struct TitleState {
-    mixin distinct!StateBase;
-
-    bool update(float dt) {
-        drawText("~ Game Title ~", resolution * 0.5, DrawOptions(Hook.center));
-        return false;
-    }
-}
-
-struct PlayState {
-    mixin distinct!StateBase;
-
-    bool update(float dt) {
-        foreach (ref e; manager.entities.items) e.call!"update"(dt);
-        foreach (ref e; manager.entities.items) e.call!"draw"();
-        return false;
     }
 }
 
