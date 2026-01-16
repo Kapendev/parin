@@ -1,6 +1,3 @@
-/// This example is a template that can be used as a starting point for a project.
-/// It includes the entity and state systems from `_018_entity.d` and `_019_state.d`.
-
 import parin;
 
 StateManager manager;

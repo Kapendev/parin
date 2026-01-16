@@ -52,28 +52,7 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Includes extras like [microui](examples/integrations/microui.d)
 - Cross-platform: Windows, Linux, Web, macOS
 
-## Examples
-
-### Hello World
-
-```d
-import parin;
-
-void ready() {
-    lockResolution(320, 180);
-}
-
-bool update(float dt) {
-    drawText("Hello world!", Vec2(8));
-    return false;
-}
-
-void finish() {}
-
-mixin runGame!(ready, update, finish);
-```
-
-### Simple Editor
+## Simple Editor Example
 
 ```d
 import parin, parin.addons.microui;
@@ -115,6 +94,10 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
+By default, this creates a project with the basic template.
+The command `dub init -t parin -- entity` provides a template with an entity and state system.
+It's best to check the [examples](examples/) before using this one.
+
 For instructions on building without DUB, check the ["How can I build without DUB?"](#how-can-i-build-without-dub) section.
 
 ### Required Libraries on Linux

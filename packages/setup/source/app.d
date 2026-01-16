@@ -1,16 +1,16 @@
 // [Noby Script]
 
-struct VendorData {
-    IStr name;
-    ubyte[] bytes;
-}
-
 enum assetsDir   = "assets";
 enum webDir      = "web";
 enum readmeFile  = "README.md";
 enum gitFile     = ".gitignore";
 enum dubFile     = "dub.json";
 enum dubLockFile = "dub.selections.json";
+
+struct VendorData {
+    IStr name;
+    ubyte[] bytes;
+}
 
 // Monkeyyy, I know I could do this better, but I don't care and probably you don't care too because this is a DUB thing so yeah.
 version (Windows) {
@@ -23,6 +23,16 @@ version (Windows) {
 } else {
     VendorData[] vendorData = [];
 }
+
+enum AppFileType {
+    basic,
+    entity,
+}
+
+immutable appFileTypeContent = [
+    AppFileType.basic: import("template_basic.d"),
+    AppFileType.entity: import("template_entity.d"),
+];
 
 enum readmeFileContent = "
 # Cool Title
@@ -58,42 +68,6 @@ game_web.zip
 *.lst
 `[1 .. $];
 
-enum appFileContent = `
-import parin;
-
-// Called once when the game starts.
-void ready() {
-    lockResolution(320, 180);
-}
-
-// Called every frame while the game is running.
-// If true is returned, then the game will stop running.
-bool update(float dt) {
-    drawText("Hello world!", Vec2(8));
-    return false;
-}
-
-// Called once when the game ends.
-void finish() {}
-
-// Creates a main function that calls the given functions.
-mixin runGame!(ready, update, finish);
-`[1 .. $];
-
-enum appFileContentBasic = `
-import parin;
-
-void ready() {
-    lockResolution(320, 180);
-}
-
-bool update(float dt) {
-    return false;
-}
-
-mixin runGame!(ready, update, null);
-`[1 .. $];
-
 enum dubFileContent = `
 {
     "authors" : ["Name"],
@@ -122,43 +96,8 @@ enum dubFileContent = `
 }
 `[1 .. $];
 
-enum dubFileContentForMeTheDev = `
-{
-    "authors" : ["Name"],
-    "copyright" : "Copyright © 2025, Name",
-    "description" : "A game made with Parin.",
-    "license" : "proprietary",
-    "name" : "game",
-    "stringImportPaths": [
-        "assets"
-    ],
-    "dependencies": {
-        "parin": {"path": "../parin"}
-    },
-    "configurations": [
-        {
-            "name": "default",
-            "targetType": "executable"
-        },
-        {
-            "name": "wasm",
-            "targetType": "library",
-            "targetName": "game_wasm",
-            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-i", "--release", "-betterC"]
-        }
-    ]
-}
-`[1 .. $];
-
-/// Creates the basic project setup of a parin project inside the current folder.
-void makeBasicSetup() {
-    mkdir(assetsDir);
-    mkdir(webDir);
-    paste(join(assetsDir, ".gitkeep"), "");
-    paste(join(webDir, ".gitkeep"), "");
-    paste(readmeFile, readmeFileContent, true);
-    paste(gitFile, gitFileContent, true);
-}
+auto isJustUsingVendor = false;
+auto appFileType = AppFileType.basic;
 
 /// The setup code for dub projects.
 int runDubSetup(string[] args, bool isFirstRun) {
@@ -170,7 +109,6 @@ int runDubSetup(string[] args, bool isFirstRun) {
         return 0;
     }
 
-    auto isForMeTheDev = args.length > 1 && args[1] == "dev";
     // Create basic stuff and clone the dub files.
     if (isFirstRun) {
         rm(gitFile);
@@ -178,28 +116,32 @@ int runDubSetup(string[] args, bool isFirstRun) {
         clone(dubFile);
         clone(dubLockFile);
     }
-    makeBasicSetup();
+
+    /// Creates the basic project setup of a parin project inside the current folder.
+    mkdir(assetsDir);
+    mkdir(webDir);
+    paste(join(assetsDir, ".gitkeep"), "");
+    paste(join(webDir, ".gitkeep"), "");
+    paste(readmeFile, readmeFileContent, true);
+    paste(gitFile, gitFileContent, true);
+
     // Find the main file and replace its content.
     auto appDir = "src";
     if (!appDir.isX) appDir = "source";
     mkdir(appDir);
     auto appFile = join(appDir, "main.d");
     if (!appFile.isX) appFile = join(appDir, "app.d");
-    paste(appFile, isAppFileBasic ? appFileContentBasic : appFileContent, !isFirstRun);
+    paste(appFile, appFileTypeContent[appFileType], !isFirstRun);
     // Copy-paste the vendor files in the project folder.
     foreach (data; vendorData) std.write(data.name, data.bytes);
     // Clean stuff.
     if (isFirstRun) {
-        if (isForMeTheDev) paste(dubFile, dubFileContentForMeTheDev);
-        else paste(dubFile, dubFileContent);
+        paste(dubFile, dubFileContent);
     }
     restore(dubFile);
     restore(dubLockFile);
     return 0;
 }
-
-auto isJustUsingVendor = false;
-auto isAppFileBasic = false;
 
 int main(string[] args) {
     isCmdLineHidden = true;
@@ -207,9 +149,10 @@ int main(string[] args) {
 
     auto result = 0;
     auto isFirstRun = !assetsDir.isX;
-    foreach (arg; args) {
-        if (arg == "vendor" || arg == "-vendor" || arg == "--vendor") isJustUsingVendor = true;
-        if (arg == "basic" || arg == "-basic" || arg == "--basic") isAppFileBasic = true;
+    with (AppFileType) foreach (arg; args) {
+        if (arg == "vendor") isJustUsingVendor = true;
+        if (arg == "basic") appFileType = basic;
+        if (arg == "entity") appFileType = entity;
     }
     result = runDubSetup(args, isFirstRun);
     if (result == 0) echo("Done!");

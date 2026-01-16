@@ -12,4 +12,6 @@
 * New small font.
 * Depth sorting.
 * RAII tricks.
-* ...
+* Surface.
+* Templates.
+* Better swizzle stuff.
