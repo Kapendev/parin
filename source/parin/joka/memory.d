@@ -1215,63 +1215,55 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         fill(value);
     }
 
-    @trusted @nogc
-    T[] opIndex() {
-        return tiles[0 .. length];
-    }
-
-    @trusted @nogc
-    ref T opIndex(Sz row, Sz col) {
-        if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
-        return tiles[findGridIndex(row, col, colCount)];
-    }
-
-    @trusted @nogc
-    void opIndexAssign(T rhs, Sz row, Sz col) {
-        if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
-        tiles[findGridIndex(row, col, colCount)] = rhs;
-    }
-
-    @trusted @nogc
-    void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
-        if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
-        mixin("tiles[colCount * row + col]", op, "= rhs;");
-    }
-
-    @nogc
-    Sz opDollar(Sz dim)() {
-        static if (dim == 0) {
-            return rowCount;
-        } else static if (dim == 1) {
-            return colCount;
-        } else {
-            static assert(0, "WTF!");
+    pragma(inline, true) @trusted nothrow @nogc {
+        T[] opIndex() {
+            return tiles[0 .. length];
         }
-    }
 
-    @nogc
-    Sz length() {
-        return tiles.length;
-    }
+        ref T opIndex(Sz row, Sz col) {
+            if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+            return tiles[findGridIndex(row, col, colCount)];
+        }
 
-    @trusted @nogc
-    T* ptr() {
-        return tiles.ptr;
-    }
+        void opIndexAssign(T rhs, Sz row, Sz col) {
+            if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+            tiles[findGridIndex(row, col, colCount)] = rhs;
+        }
 
-    @nogc
-    Sz capacity() {
-        return tiles.capacity;
-    }
+        void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
+            if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+            mixin("tiles[findGridIndex(row, col, colCount)]", op, "= rhs;");
+        }
 
-    @nogc
-    bool isEmpty() {
-        return tiles.isEmpty;
-    }
+        Sz opDollar(Sz dim)() {
+            static if (dim == 0) {
+                return rowCount;
+            } else static if (dim == 1) {
+                return colCount;
+            } else {
+                static assert(0, "WTF!");
+            }
+        }
 
-    @nogc
-    bool has(Sz row, Sz col) {
-        return row < rowCount && col < colCount;
+        Sz length() {
+            return tiles.length;
+        }
+
+        T* ptr() {
+            return tiles.ptr;
+        }
+
+        Sz capacity() {
+            return tiles.capacity;
+        }
+
+        bool has(Sz row, Sz col) {
+            return row < rowCount && col < colCount;
+        }
+
+        bool isEmpty() {
+            return tiles.isEmpty;
+        }
     }
 
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
@@ -1343,7 +1335,7 @@ struct Arena {
     }
 
     void ready(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
-        free();
+        free(file, line);
         auto rawPtr = jokaMalloc(newCapacity, file, line);
         static if (isTrackingMemory) {
             if (canIgnoreLeak) rawPtr.ignoreLeak();
@@ -1355,8 +1347,8 @@ struct Arena {
 
     @trusted nothrow @nogc:
 
-    void ready(ubyte* newData, Sz newCapacity) {
-        free();
+    void ready(ubyte* newData, Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+        free(file, line);
         data = newData;
         capacity = newCapacity;
     }

@@ -26,20 +26,14 @@ alias Entity = Union!(
     EntityBase,
 );
 
+alias Entities = GenList!Entity;
+
 struct EntityBase {
     Rect body;
 
     void update(float dt) {}
     void draw() {}
 }
-
-alias Entities = GenList!Entity;
-
-static foreach (T; Entity.Types) {
-    Entity xx(T value) => Entity(value);
-}
-
-static assert(Entity.isBaseAliasingSafe);
 
 // --- States
 
@@ -112,6 +106,14 @@ struct StateManager {
         }
     }
 }
+
+// --- Helpers
+
+static foreach (T; Entity.Types) {
+    Entity xx(T value) => Entity(value);
+}
+
+static assert(Entity.isBaseAliasingSafe);
 
 static foreach (T; State.Types) {
     State xx(T value) => State(value);

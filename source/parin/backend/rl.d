@@ -25,6 +25,9 @@ version (WebAssembly) {
 } else {
     enum defaultBackendResourcesCapacity = 2048;
 }
+
+enum defaultBackendMaxSurfaceCount = 4;
+enum defaultBackendMaxSurfaceSide = 512;
 // ----------
 
 alias BasicContainer(T)  = FixedList!(T, defaultBackendResourcesCapacity);
@@ -87,6 +90,11 @@ struct BackendState {
     GenList!(ViewportsData.Item.Item, ViewportsData, GenData) viewports;
     BasicContainer!IStr droppedPaths;
 
+    RlTexture[defaultBackendMaxSurfaceCount] surfaceTextureBuffers;
+    IVec2 surfaceCursor;
+    int surfaceRowHeight;
+    int surfaceCurrentSlot;
+
     uint elapsedTicks;
     int fpsMax;
     Vec2 mouseBuffer;
@@ -140,6 +148,22 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
     rl.SetTargetFPS(fpsMax);
     rl.SetWindowMinSize(windowMinWidth, windowMinHeight);
     rl.rlSetBlendFactorsSeparate(0x0302, 0x0303, 1, 0x0303, 0x8006, 0x8006);
+
+    // Create the buffer texture for surfaces.
+    {
+        auto image = rl.Image();
+        image.data = jokaMalloc(Rgba.sizeof * defaultBackendMaxSurfaceSide * defaultBackendMaxSurfaceSide);
+        image.width = defaultBackendMaxSurfaceSide;
+        image.height = defaultBackendMaxSurfaceSide;
+        image.mipmaps = 1;
+        image.format = rl.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8;
+        foreach (ref buffer; _backendState.surfaceTextureBuffers) {
+            buffer.data = rl.LoadTextureFromImage(image);
+            rl.SetTextureFilter(buffer.data, toRl(Filter.init));
+            rl.SetTextureWrap(buffer.data, toRl(Wrap.init));
+        }
+        jokaFree(image.data);
+    }
 
     version (WebAssembly) {
         static extern(C) nothrow @nogc bool _webMouseCallback(int eventType, em.EmscriptenMouseEvent* mouseEvent, void* userData) {
@@ -268,7 +292,13 @@ void closeWindow() {
     freeAllFonts(false, false);
     freeAllSounds(false);
     freeAllViewports(false);
+
+    foreach (ref buffer; _backendState.surfaceTextureBuffers) {
+        rl.UnloadTexture(buffer.data);
+    }
     jokaFree(_backendState);
+    _backendState = null;
+
     rl.CloseAudioDevice();
     rl.CloseWindow();
 }
@@ -1032,6 +1062,7 @@ void pumpEvents() {
     updateIsFullscreen();
     updateVsync();
     foreach (id; _backendState.sounds.ids) updateSound(id);
+    _backendState.surfaceCurrentSlot = 0;
 }
 
 bool isDown(char key) {
@@ -1304,22 +1335,82 @@ void popMatrix() {
 
 void drawRect(Rect area, Rgba color, float thickness) {
     if (thickness < 0) {
-        rl.DrawRectanglePro(toRl(area), rl.Vector2(0.0f, 0.0f), 0.0f, toRl(color));
+        rl.DrawRectanglePro(toRl(area), rl.Vector2(0.0f, 0.0f), 0.0f, color);
     } else {
-        rl.DrawRectangleLinesEx(toRl(area), thickness, toRl(color));
+        rl.DrawRectangleLinesEx(toRl(area), thickness, color);
     }
 }
 
 void drawCirc(Circ area, Rgba color, float thickness) {
     if (thickness < 0) {
-        rl.DrawCircleV(toRl(area.position), area.radius, toRl(color));
+        rl.DrawCircleV(area.position, area.radius, color);
     } else {
-        rl.DrawRing(toRl(area.position), area.radius - thickness, area.radius, 0.0f, 360.0f, 30, toRl(color));
+        rl.DrawRing(area.position, area.radius - thickness, area.radius, 0.0f, 360.0f, 30, color);
     }
 }
 
 void drawLine(Line area, Rgba color, float thickness) {
     rl.DrawLineEx(toRl(area.a), toRl(area.b), thickness, toRl(color));
+}
+
+void drawSurface(ref Surface surface, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
+    // FROM RAYLIB:
+    //   Update GPU texture rectangle with new data
+    //   NOTE 1: pixels data must match texture.format
+    //   NOTE 2: pixels data must contain as many pixels as rec contains
+    //   NOTE 3: rec must fit completely within texture's width and height
+
+    // Fit it in a 512x512 space. Scale it down or clip it if not.
+    int w = min(surface.width, defaultBackendMaxSurfaceSide);
+    int h = min(surface.height, defaultBackendMaxSurfaceSide);
+    // Wrap to next row.
+    if (_backendState.surfaceCursor.x + w > 512) {
+        _backendState.surfaceCursor.x = 0;
+        _backendState.surfaceCursor.y += _backendState.surfaceRowHeight;
+        _backendState.surfaceRowHeight = 0;
+    }
+    // Move to next texture slot if current one is full.
+    if (_backendState.surfaceCursor.y + h > 512) {
+        _backendState.surfaceCursor.x = 0;
+        _backendState.surfaceCursor.y = 0;
+        _backendState.surfaceRowHeight = 0;
+        _backendState.surfaceCurrentSlot = (_backendState.surfaceCurrentSlot + 1) % defaultBackendMaxSurfaceCount;
+        // If we looped through all textures, DRAWWWW!
+        if (_backendState.surfaceCurrentSlot == 0) {
+            rl.rlDrawRenderBatchActive();
+        }
+    }
+
+    // Update the filter and wrap if needed.
+    auto surfaceTextureBuffer = &_backendState.surfaceTextureBuffers[_backendState.surfaceCurrentSlot];
+    if (surfaceTextureBuffer.filter != surface.filter) {
+        rl.SetTextureFilter(surfaceTextureBuffer.data, toRl(surface.filter));
+        surfaceTextureBuffer.filter = surface.filter;
+    }
+    if (surfaceTextureBuffer.wrap != surface.wrap) {
+        rl.SetTextureWrap(surfaceTextureBuffer.data, toRl(surface.wrap));
+        surfaceTextureBuffer.wrap = surface.wrap;
+    }
+
+    // Draw.
+    rl.UpdateTextureRec(surfaceTextureBuffer.data, rl.Rectangle(_backendState.surfaceCursor.x, _backendState.surfaceCursor.y, w, h), surface.pixels.ptr);
+    Rect sourceArea = area;
+    sourceArea.x += _backendState.surfaceCursor.x;
+    sourceArea.y += _backendState.surfaceCursor.y;
+    rl.DrawTexturePro(
+        surfaceTextureBuffer.data,
+        toRl(sourceArea),
+        toRl(target),
+        origin,
+        rotation,
+        color,
+    );
+
+    // Update the cursor.
+    _backendState.surfaceCursor.x += w + 1;
+    if (h > _backendState.surfaceRowHeight) {
+        _backendState.surfaceRowHeight = h + 1;
+    }
 }
 
 void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
@@ -1328,9 +1419,9 @@ void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotat
         resource.data,
         toRl(area),
         toRl(target),
-        toRl(origin),
+        origin,
         rotation,
-        toRl(color),
+        color,
     );
 }
 
@@ -1340,9 +1431,9 @@ void drawViewport(ResourceId id, Rect area, Rect target, Vec2 origin, float rota
         resource.data.texture,
         toRl(area),
         toRl(target),
-        toRl(origin),
+        origin,
         rotation,
-        toRl(color),
+        color,
     );
 }
 

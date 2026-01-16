@@ -386,14 +386,14 @@ mixin template distinct(T) {
 deprecated("Use `sliceOps` instead.")
 alias addSliceOps = sliceOps;
 
-mixin template sliceOps(T, TT) if (__traits(hasMember, T, "items")) {
+mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, "items")) {
     pragma(inline, true) @trusted nothrow @nogc {
         TT[] opSlice(Sz dim)(Sz i, Sz j) {
-            return items[i .. j];
+            return mixin(itemsMemberName, "[i .. j]");
         }
 
         TT[] opIndex() {
-            return items[];
+            return mixin(itemsMemberName, "[]");
         }
 
         TT[] opIndex(TT[] slice) {
@@ -401,19 +401,19 @@ mixin template sliceOps(T, TT) if (__traits(hasMember, T, "items")) {
         }
 
         ref TT opIndex(Sz i) {
-            return items[i];
+            return mixin(itemsMemberName, "[i]");
         }
 
         void opIndexAssign(const(TT) rhs, Sz i) {
-            items[i] = cast(TT) rhs;
+            mixin(itemsMemberName, "[i] = cast(TT) rhs;");
         }
 
         void opIndexOpAssign(const(char)[] op)(const(TT) rhs, Sz i) {
-            mixin("items[i]", op, "= cast(TT) rhs;");
+            mixin(itemsMemberName, "[i]", op, "= cast(TT) rhs;");
         }
 
         Sz opDollar(Sz dim)() {
-            return items.length;
+            return mixin(itemsMemberName, ".length");
         }
     }
 }

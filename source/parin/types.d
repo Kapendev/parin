@@ -219,13 +219,43 @@ struct SlicePart {
 /// The parts of a 9-slice.
 alias SliceParts = StaticArray!(SlicePart, 9);
 
-/// Pixel data.
+/// A pixel buffer.
 struct Surface {
-    Rgba[] pixels;
-    int width;
-    int height;
-    int pitch;
+    alias Pixel = Rgba;
+
+    Pixel[] pixels; /// Raw pixel array.
+    int width;      /// Width of the surface in pixels.
+    int height;     /// Height of the surface in pixels.
+    Filter filter;  /// The texture filter mode used when this surface is uploaded to the GPU.
+    Wrap wrap;      /// The texture wrap mode used when this surface is uploaded to the GPU.
+
     alias pixels this;
+
+    @safe nothrow @nogc:
+
+    /// Creates a new surface with the specified pixels, width, and height.
+    this(Pixel[] pixels, int width, int height) {
+        this.pixels = pixels;
+        this.width = width;
+        this.height = height;
+    }
+
+    pragma(inline, true) {
+        /// Returns the size of the surface as a vector.
+        Vec2 size() {
+            return Vec2(width, height);
+        }
+
+        /// Returns the number of bytes per row of pixels.
+        int pitch() {
+            return cast(int) (width * Pixel.sizeof);
+        }
+    }
+
+    /// Fills the entire surface with a single color.
+    void fill(Rgba color) {
+        foreach (ref pixel; pixels) pixel = color;
+    }
 }
 
 // Font glyph info.

@@ -2074,6 +2074,44 @@ void drawLine(Line area, Rgba color = white, float thickness = 9.0f) {
     bk.drawLine(isPixelSnapped ? area.floor() : area, color, thickness);
 }
 
+/// Draws the surface at the given position with the specified draw options.
+/// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.
+void drawSurface(ref Surface surface, Vec2 position, DrawOptions options = DrawOptions()) {
+    drawSurfaceArea(surface, Rect(surface.size), position, options);
+}
+
+/// Draws a portion of the specified surface at the given position with the specified draw options.
+/// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.
+void drawSurfaceArea(ref Surface surface, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
+    auto target = Rect(position, area.size * options.scale);
+    auto origin = options.origin.isZero ? target.origin(options.hook) : options.origin;
+    final switch (options.flip) {
+        case Flip.none: break;
+        case Flip.x: area.size.x *= -1.0f; break;
+        case Flip.y: area.size.y *= -1.0f; break;
+        case Flip.xy: area.size *= Vec2(-1.0f); break;
+    }
+    if (isPixelSnapped) {
+        bk.drawSurface(
+            surface,
+            area.floor(),
+            target.floor(),
+            origin.floor(),
+            options.rotation,
+            options.color,
+        );
+    } else {
+        bk.drawSurface(
+            surface,
+            area,
+            target,
+            origin,
+            options.rotation,
+            options.color,
+        );
+    }
+}
+
 /// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions()) {
     drawTextureArea(texture, Rect(texture.size), position, options);

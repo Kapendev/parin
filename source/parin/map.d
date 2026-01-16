@@ -182,7 +182,7 @@ struct TileMap {
         @trusted
         void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col, Sz layerId = 0) {
             if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-            mixin("layers[layerId][colCount * row + col]", op, "= rhs;");
+            mixin("layers[layerId][findGridIndex(row, col, colCount)]", op, "= rhs;");
         }
 
         void opIndexOpAssign(IStr op)(T rhs, IVec2 position, Sz layerId = 0) {

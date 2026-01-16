@@ -253,6 +253,11 @@ void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
 /// Draws a line with the specified area, thickness, and color.
 void drawLine(Line area, Rgba color = white, float thickness = 9.0f);
 
+/// Draws the surface at the given position with the specified draw options.
+void drawSurface(ref Surface surface, Vec2 position, DrawOptions options = DrawOptions());
+/// Draws a portion of the specified surface at the given position with the specified draw options.
+void drawSurfaceArea(ref Surface surface, Rect area, Vec2 position, DrawOptions options = DrawOptions());
+
 /// Draws the texture at the given position with the specified draw options.
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a portion of the specified texture at the given position with the specified draw options.

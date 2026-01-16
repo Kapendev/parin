@@ -234,6 +234,22 @@ struct Rgba {
             return r == 1 && g == 1 && b == 1 && a == 1;
         }
 
+        Rgba rrrr() {
+            return Rgba(r, r, r, r);
+        }
+
+        Rgba gggg() {
+            return Rgba(g, g, g, g);
+        }
+
+        Rgba bbbb() {
+            return Rgba(b, b, b, b);
+        }
+
+        Rgba aaaa() {
+            return Rgba(a, a, a, a);
+        }
+
         /// Returns a color with just the alpha modified.
         Rgba alpha(ubyte value) {
             return Rgba(r, g, b, value);
@@ -737,12 +753,28 @@ struct GVec4(T) {
             return GVec3!T(z, z, z);
         }
 
+        GVec3!T xyz() {
+            return GVec3!T(x, y, z);
+        }
+
         GVec4!T wxyz() {
             return GVec4!T(w, x, y, z);
         }
 
         GVec4!T xywz() {
             return GVec4!T(x, y, w, z);
+        }
+
+        GVec4!T xxxx() {
+            return GVec4!T(x, x, x, x);
+        }
+
+        GVec4!T yyyy() {
+            return GVec4!T(y, y, y, y);
+        }
+
+        GVec4!T zzzz() {
+            return GVec4!T(z, z, z, z);
         }
 
         GVec4!T wwww() {
