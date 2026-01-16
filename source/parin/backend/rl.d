@@ -27,7 +27,7 @@ version (WebAssembly) {
 }
 
 enum defaultBackendMaxSurfaceCount = 4;
-enum defaultBackendMaxSurfaceSide = 512;
+enum defaultBackendMaxSurfaceSide = 1024;
 // ----------
 
 alias BasicContainer(T)  = FixedList!(T, defaultBackendResourcesCapacity);
@@ -194,6 +194,26 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
         em.emscripten_set_touchend_callback_on_thread(targetHtmlElementId, null, true, &_webTouchCallback, em.EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD);
     } else {
     }
+}
+
+Maybe!Surface loadSurface(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto image = rl.LoadImage(path.toStrz().getOr());
+    if (image.data == null) return Maybe!Surface(Fault.cannotFind);
+
+    auto result = Surface(image.width, image.height, file, line);
+    jokaMemcpy(result.pixels.ptr, image.data, Rgba.sizeof * image.width * image.height);
+    rl.UnloadImage(image);
+    return Maybe!Surface(result);
+}
+
+Maybe!Surface loadSurface(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FILE__, Sz line = __LINE__) {
+    auto image = rl.LoadImageFromMemory(ext.toStrz().getOr(), memory.ptr, cast(int) memory.length);
+    if (image.data == null) return Maybe!Surface(Fault.cannotFind);
+
+    auto result = Surface(image.width, image.height, file, line);
+    jokaMemcpy(result.pixels.ptr, image.data, Rgba.sizeof * image.width * image.height);
+    rl.UnloadImage(image);
+    return Maybe!Surface(result);
 }
 
 Maybe!ResourceId loadTexture(IStr path) {
@@ -1062,6 +1082,9 @@ void pumpEvents() {
     updateIsFullscreen();
     updateVsync();
     foreach (id; _backendState.sounds.ids) updateSound(id);
+    _backendState.surfaceCursor.x = 0;
+    _backendState.surfaceCursor.y = 0;
+    _backendState.surfaceRowHeight = 0;
     _backendState.surfaceCurrentSlot = 0;
 }
 
@@ -1360,17 +1383,17 @@ void drawSurface(ref Surface surface, Rect area, Rect target, Vec2 origin, float
     //   NOTE 2: pixels data must contain as many pixels as rec contains
     //   NOTE 3: rec must fit completely within texture's width and height
 
-    // Fit it in a 512x512 space. Scale it down or clip it if not.
+    // Fit it in a SxS space. Scale it down or clip it if not.
     int w = min(surface.width, defaultBackendMaxSurfaceSide);
     int h = min(surface.height, defaultBackendMaxSurfaceSide);
     // Wrap to next row.
-    if (_backendState.surfaceCursor.x + w > 512) {
+    if (_backendState.surfaceCursor.x + w > defaultBackendMaxSurfaceSide) {
         _backendState.surfaceCursor.x = 0;
         _backendState.surfaceCursor.y += _backendState.surfaceRowHeight;
         _backendState.surfaceRowHeight = 0;
     }
     // Move to next texture slot if current one is full.
-    if (_backendState.surfaceCursor.y + h > 512) {
+    if (_backendState.surfaceCursor.y + h > defaultBackendMaxSurfaceSide) {
         _backendState.surfaceCursor.x = 0;
         _backendState.surfaceCursor.y = 0;
         _backendState.surfaceRowHeight = 0;

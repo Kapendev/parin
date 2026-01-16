@@ -957,6 +957,32 @@ void cancel(EngineTaskId id) {
     _engineState.tasks.remove(id);
 }
 
+/// Loads a surface file (PNG) with default filter and wrap modes.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
+Surface loadSurface(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadSurface(toAssetsPath(path), file, line).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "surface", path))) {
+        data.filter = _engineState.defaultFilter;
+        data.wrap = _engineState.defaultWrap;
+        return data;
+    }
+    return Surface();
+}
+
+/// Loads a surface file (PNG) from memory with default filter and wrap modes.
+Surface loadSurface(const(ubyte)[] memory, IStr ext = ".png", IStr file = __FILE__, Sz line = __LINE__) {
+    auto trap = Fault.none;
+    auto data = bk.loadSurface(memory, ext, file, line).get(trap);
+    if (didLoadOrSaveSucceed(trap, fmt(defaultEngineLoadErrorMessage, file, line, "surface", "[MEMORY]"))) {
+        data.filter = _engineState.defaultFilter;
+        data.wrap = _engineState.defaultWrap;
+        return data;
+    }
+    return Surface();
+}
+
 /// Loads a texture file (PNG) with default filter and wrap modes.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 /// Path separators are normalized to the platform's native format.
@@ -1811,7 +1837,7 @@ Sz textureIdCount() {
 
 /// Returns the number of loaded fonts.
 Sz fontIdCount() {
-    return bk.fontCount;
+    return bk.fontCount - 2;
 }
 
 /// Returns the number of loaded sounds.
@@ -1821,7 +1847,7 @@ Sz soundIdCount() {
 
 /// Returns the number of loaded viewports.
 Sz viewportIdCount() {
-    return bk.viewportCount;
+    return bk.viewportCount - 1;
 }
 
 /// Frees all loaded textures.
@@ -2561,9 +2587,9 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         s = b - a;
         text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: A({} {}) B({} {}) S({} {})".fmt(
             fps,
-            bk.textureCount,
-            bk.fontCount - 1,
-            bk.soundCount,
+            textureIdCount,
+            fontIdCount,
+            soundIdCount,
             cast(int) a.x,
             cast(int) a.y,
             cast(int) b.x,
@@ -2575,18 +2601,18 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
         if (s.isZero) {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})".fmt(
                 fps,
-                bk.textureCount,
-                bk.fontCount - 1,
-                bk.soundCount,
+                textureIdCount,
+                fontIdCount,
+                soundIdCount,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
             );
         } else {
             text = "FPS: {}\nAssets: (T{} F{} S{})\nMouse: ({} {})\nArea: A({} {}) B({} {}) S({} {})".fmt(
                 fps,
-                bk.textureCount,
-                bk.fontCount - 1,
-                bk.soundCount,
+                textureIdCount,
+                fontIdCount,
+                soundIdCount,
                 cast(int) mouse.x,
                 cast(int) mouse.y,
                 cast(int) a.x,

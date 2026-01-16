@@ -403,6 +403,11 @@ void setMasterVolume(float value);
 // They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 // Path separators are also normalized to the platform's native format.
 
+/// Loads a surface file (PNG) with default filter and wrap modes.
+Surface loadSurface(IStr path);
+/// Loads a surface file (PNG) from memory with default filter and wrap modes.
+Surface loadSurface(const(ubyte)[] memory, IStr ext = ".png");
+
 /// Loads a texture file (PNG) with default filter and wrap modes.
 TextureId loadTexture(IStr path);
 /// Loads a texture file (PNG) from memory with default filter and wrap modes.

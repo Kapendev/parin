@@ -431,6 +431,11 @@ Below are examples showing how to use these sound functions.
 Parin provides a set of loading and saving functions. These include:
 
 ```d
+/// Loads a surface file (PNG) with default filter and wrap modes.
+Surface loadSurface(IStr path);
+/// Loads a surface file (PNG) from memory with default filter and wrap modes.
+Surface loadSurface(const(ubyte)[] memory, IStr ext = ".png");
+
 /// Loads a texture file (PNG) with default filter and wrap modes.
 TextureId loadTexture(IStr path);
 /// Loads a texture file (PNG) from memory with default filter and wrap modes.

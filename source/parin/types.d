@@ -221,20 +221,26 @@ alias SliceParts = StaticArray!(SlicePart, 9);
 
 /// A pixel buffer.
 struct Surface {
-    alias Pixel = Rgba;
-
-    Pixel[] pixels; /// Raw pixel array.
-    int width;      /// Width of the surface in pixels.
-    int height;     /// Height of the surface in pixels.
-    Filter filter;  /// The texture filter mode used when this surface is uploaded to the GPU.
-    Wrap wrap;      /// The texture wrap mode used when this surface is uploaded to the GPU.
+    Rgba[] pixels; /// Pixel array.
+    int width;     /// Width of the surface in pixels.
+    int height;    /// Height of the surface in pixels.
+    Filter filter; /// The texture filter mode used when this surface is uploaded to the GPU.
+    Wrap wrap;     /// The texture wrap mode used when this surface is uploaded to the GPU.
+    bool isOwning; /// A value indicating if the pixels must be freed with the `free` function.
 
     alias pixels this;
+
+    /// Creates a new surface with the specified width, and height.
+    @safe nothrow
+    this(int width, int height, IStr file = __FILE__, Sz line = __LINE__) {
+        this.isOwning = true;
+        this(jokaMakeSlice!Rgba(width * height, file, line), width, height);
+    }
 
     @safe nothrow @nogc:
 
     /// Creates a new surface with the specified pixels, width, and height.
-    this(Pixel[] pixels, int width, int height) {
+    this(Rgba[] pixels, int width, int height) {
         this.pixels = pixels;
         this.width = width;
         this.height = height;
@@ -248,13 +254,20 @@ struct Surface {
 
         /// Returns the number of bytes per row of pixels.
         int pitch() {
-            return cast(int) (width * Pixel.sizeof);
+            return cast(int) (width * Rgba.sizeof);
         }
     }
 
     /// Fills the entire surface with a single color.
     void fill(Rgba color) {
         foreach (ref pixel; pixels) pixel = color;
+    }
+
+    /// Frees the memory if it is owning it and resets the state.
+    @trusted
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        if (isOwning) jokaFree(pixels.ptr);
+        this = Surface();
     }
 }
 
