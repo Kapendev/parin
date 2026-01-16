@@ -30,8 +30,8 @@ enum AppFileType {
 }
 
 immutable appFileTypeContent = [
-    AppFileType.basic: import("template_basic.d"),
-    AppFileType.entity: import("template_entity.d"),
+    AppFileType.basic: import("template_basic"),
+    AppFileType.entity: import("template_entity"),
 ];
 
 enum readmeFileContent = "
