@@ -1,4 +1,4 @@
-# 📋 Parin Cheatsheet (WIP)
+# Parin Cheatsheet (WIP)
 
 This guide highlights the **most commonly used parts** of the `parin.types` and `parin.engine` modules — it's not meant to be full documentation.
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!

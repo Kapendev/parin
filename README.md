@@ -1,4 +1,4 @@
-# 🦆 Parin
+# Parin
 
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
 Parin is designed to make game development fast and fun. It's easy to set up, hackable, and comes with the essentials built in.
@@ -29,7 +29,7 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
 
 - **Focused on games.** It's opinionated in ways that make game development tasks (rendering, input) easier out of the box than in general-purpose engines.
 - **Code-driven design.** There's no imposed architecture, allowing freedom on how a game is structured.
-- **A guided workflow.** It assumes a few common patterns like a fixed aspect ratio and debug UI to smooth out the development experience.
+- **A guided workflow.** It assumes a few common patterns like a fixed aspect ratio, debug UI and a frame allocator to smooth out the development experience.
 - **Flexible abstraction.** Leverage the GC of D for convenience, or drop down to manual memory management when needed.
 
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity.
@@ -145,6 +145,16 @@ Most ideas are welcome, except ECS.
 - Latest: [October 2025](https://dev.to/kapendev/parin-game-engine-devlog-october-2025-5dfi)
 - More: [dev.to/kapendev](https://dev.to/kapendev)
 - Archive: [parin/devlogs](devlogs/)
+
+## Recommended Tools
+
+While it is possible use any tool with Parin, these open-source ones are simple to use and work well with it:
+
+- Editor: [Pulsar](https://pulsar-edit.dev/) or [Lite XL](https://lite-xl.com/)
+- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama)
+- Levels: [Tiled](https://www.mapeditor.org/)
+- Sounds: [Bfxr](https://www.bfxr.net/) or [Jfxr](https://jfxr.frozenfractal.com/)
+- Music: [MilkyTracker](https://milkytracker.org/)
 
 ## Frequently Asked Questions
 

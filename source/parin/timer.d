@@ -5,7 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `timer` module provides a simple timer.
+/// The `timer` module provides timer utilities.
 module parin.timer;
 
 import parin.engine;
@@ -156,3 +156,11 @@ struct Timer {
         setProgress(1.0f - value);
     }
 }
+
+// TODO: Random idea I have about making it easier to do the typing and menu stuff.
+// struct InputRepeater {
+//     Timer timer;
+//     float delay;
+//     Keyboard key;
+//     Gamepad button;
+// }
