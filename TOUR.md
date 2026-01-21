@@ -1,4 +1,4 @@
-# 🦉 Parin Tour (WIP)
+# Parin Tour (WIP)
 
 This guide will go over **some of the features** of the engine and provide examples of how to use them.
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
@@ -8,7 +8,7 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 This section shows how to install Parin using [DUB](https://dub.pm/).
 To begin, make a new folder and run inside the following commands to create a new project:
 
-```cmd
+```sh
 dub init -t parin
 ```
 
@@ -92,7 +92,7 @@ In essence, a Parin game typically relies on three functions:
 
 To run the game, use the following command:
 
-```cmd
+```sh
 dub run
 ```
 

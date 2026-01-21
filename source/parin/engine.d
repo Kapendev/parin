@@ -8,13 +8,10 @@
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
-version (ParinSkipDrawChecks) pragma(msg, "Parin: Skipping draw checks.");
-
 import bk = parin.backend;
 import stdc = parin.joka.stdc;
 
 import parin.joka.io;
-
 public import parin.joka.math;
 public import parin.joka.memory;
 public import parin.joka.types;
@@ -24,8 +21,8 @@ __gshared EngineState* _engineState;
 
 // ---------- Config
 enum defaultEngineTitle           = "Parin";
-enum defaultEngineWidth           = 960;
-enum defaultEngineHeight          = 540;
+enum defaultEngineWidth           = 1280;
+enum defaultEngineHeight          = 720;
 enum defaultEngineVsync           = true;
 enum defaultEngineFpsMax          = 60;
 enum defaultEngineWindowMinWidth  = 320;
@@ -49,7 +46,7 @@ version (WebAssembly) {
     enum defaultEngineScreenshotTargetPathCapacity = 1 * kilobyte;
     enum defaultEngineEnvArgsCapacity              = 16;
     enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-    enum defaultEngineEngineTasksCapacity          = 56;
+    enum defaultEngineEngineTasksCapacity          = 64;
     enum defaultEngineArenaCapacity                = 1 * megabyte;
     enum defaultEngineDprintCapacity               = 2 * kilobyte;
 } else {
@@ -57,9 +54,9 @@ version (WebAssembly) {
     enum defaultEngineScreenshotTargetPathCapacity = 2 * kilobyte;
     enum defaultEngineEnvArgsCapacity              = 64;
     enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-    enum defaultEngineEngineTasksCapacity          = 112;
+    enum defaultEngineEngineTasksCapacity          = 128;
     enum defaultEngineArenaCapacity                = 2 * megabyte;
-    enum defaultEngineDprintCapacity               = 8 * kilobyte;
+    enum defaultEngineDprintCapacity               = 4 * kilobyte;
 }
 
 enum defaultEngineDprintPosition       = Vec2(3, 3);
@@ -859,6 +856,27 @@ mixin template runGame(
             return _runGame();
         }
     }
+}
+
+mixin template runGameMinimal(
+    alias readyFunc,
+    alias updateFunc,
+    alias finishFunc,
+    IStr title = defaultEngineTitle,
+    bool vsyncOffHack = false,
+) {
+    mixin runGame!(
+        readyFunc,
+        updateFunc,
+        finishFunc,
+        defaultEngineWidth,
+        defaultEngineHeight,
+        title,
+        null,
+        null,
+        null,
+        vsyncOffHack
+    );
 }
 
 Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
@@ -2154,6 +2172,7 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
         _engineState.depthSortPairBuffer.push(DepthSortPair(position.y, cast(ushort) (_engineState.depthSortCommandBuffer.length - 1), options.layer));
     } else {
         version (ParinSkipDrawChecks) {
+            pragma(msg, "Parin: Skipping draw checks.");
         } else {
             if (texture.isNull) {
                 if (isNullTextureVisible) {

@@ -12,12 +12,12 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
     <tr>
         <td align="center">
             <a href="https://kapendev.itch.io/twenty-seconds-twenty-steps">
-                <img alt="A Short Metamorphosis" src="https://img.itch.zone/aW1hZ2UvNDExODcyMy8yNDU0NDYzMy5wbmc=/original/G9%2B%2BMo.png" width="480">
+            <img alt="A Short Metamorphosis" src="https://img.itch.zone/aW1hZ2UvNDExODcyMy8yNDU0NDYzMy5wbmc=/original/G9%2B%2BMo.png" width="480">
             </a>
         </td>
         <td align="center">
             <a href="https://kapendev.itch.io/worms-within">
-                <img alt="Worms Within" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png" width="480">
+            <img alt="Worms Within" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png" width="480">
             </a>
         </td>
     </tr>
@@ -47,9 +47,9 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Atlas-based animation library
 - Efficient tile map structures
 - Intuitive immediate-mode UI (WIP)
+- Includes extras like [microui](examples/integrations/microui.d) and memory allocators ([tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25))
 - Mixed memory model: manual control, GC, or both
-- Built-in memory allocators: [tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), and [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25)
-- Includes extras like [microui](examples/integrations/microui.d)
+- No external dependencies
 - Cross-platform: Windows, Linux, Web, macOS
 
 ## Simple Editor Example
@@ -151,7 +151,7 @@ Most ideas are welcome, except ECS.
 While it is possible use any tool with Parin, these open-source ones are simple to use and work well with it:
 
 - Editor: [Pulsar](https://pulsar-edit.dev/) or [Lite XL](https://lite-xl.com/)
-- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama)
+- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama) or [GIMP](https://www.gimp.org/)
 - Levels: [Tiled](https://www.mapeditor.org/)
 - Sounds: [Bfxr](https://www.bfxr.net/) or [Jfxr](https://jfxr.frozenfractal.com/)
 - Music: [MilkyTracker](https://milkytracker.org/)
