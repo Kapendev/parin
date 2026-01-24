@@ -1254,7 +1254,10 @@ IStr advanceStr(IStr str, Sz amount) {
 @trusted
 Fault copyChars(Str str, IStr source, Sz startIndex = 0) {
     if (str.length < source.length + startIndex) return Fault.overflow;
-    str[startIndex .. startIndex + source.length] = source[];
+
+    auto min = startIndex;
+    auto max = startIndex + source.length;
+    foreach (i; min .. max) str[i] = source[i - min];
     return Fault.none;
 }
 
@@ -1721,32 +1724,47 @@ Maybe!double toFloating(char c) {
 
 /// Converts the string to an enum value.
 @trusted
-Maybe!T toEnum(T)(IStr str, bool noCase = false, bool canIgnoreSpaceAndSymbol = false) {
-    if (noCase || canIgnoreSpaceAndSymbol) {
+Maybe!T toEnum(T, bool noCase = false, bool canIgnoreSpaceAndSymbol = false)(IStr str) if (is(T == enum)) {
+    auto result = Maybe!T();
+    static if (noCase || canIgnoreSpaceAndSymbol) {
         char[256] enumBuffer = void;
-        foreach (m; __traits(allMembers, T)) {
-            if (canIgnoreSpaceAndSymbol) {
-                auto slice = enumBuffer[];
-                auto sliceLength = 0;
+        auto slice = enumBuffer[];
+        auto sliceLength = 0;
+        static foreach (m; __traits(allMembers, T)) {
+            static if (canIgnoreSpaceAndSymbol) {
+                slice = enumBuffer[];
+                sliceLength = 0;
                 foreach (i, c; str) {
                     if (c.isSpace || c.isSymbol) continue;
-                    if (sliceLength >= enumBuffer.length) return Maybe!T(Fault.overflow);
+                    if (sliceLength >= enumBuffer.length) {
+                        result = Fault.overflow;
+                        return result;
+                    }
                     slice[sliceLength] = c;
                     sliceLength += 1;
                 }
                 slice = slice[0 .. sliceLength];
-                if (noCase ? m.equalsNoCase(slice) : m == slice) return Maybe!T(mixin("T.", m));
+                if (noCase ? m.equalsNoCase(slice) : m == slice) {
+                    result = mixin("T.", m);
+                    return result;
+                }
             } else {
-                if (noCase ? m.equalsNoCase(str) : m == str) return Maybe!T(mixin("T.", m));
+                if (noCase ? m.equalsNoCase(str) : m == str) {
+                    result = mixin("T.", m);
+                    return result;
+                }
             }
         }
-        return Maybe!T(Fault.invalid);
+        result = Fault.invalid;
+        return result;
     } else {
         switch (str) {
             static foreach (m; __traits(allMembers, T)) {
                 mixin("case m: return Maybe!T(T.", m, ");");
             }
-            default: return Maybe!T(Fault.invalid);
+            default:
+                result = Fault.invalid;
+                return result;
         }
     }
 }
@@ -2005,12 +2023,12 @@ unittest {
     assert(toEnum!TestEnum("two").isSome == true);
     assert(toEnum!TestEnum("two").getOr() == TestEnum.two);
     assert(toEnum!TestEnum("TWO").isSome == false);
-    assert(toEnum!TestEnum("TWO", true).isSome == true);
-    assert(toEnum!TestEnum("  TWO  ", true, false).isSome == false);
-    assert(toEnum!TestEnum("  TWO  ", true, true).isSome == true);
-    assert(toEnum!TestEnum(" -TWO- ", true, true).isSome == true);
-    assert(toEnum!TestEnum("One and Two", true, true).isSome == true);
-    assert(toEnum!TestEnum("one-and-two", true, true).isSome == true);
+    assert(toEnum!(TestEnum, true)("TWO").isSome == true);
+    assert(toEnum!(TestEnum, true, false)("  TWO  ").isSome == false);
+    assert(toEnum!(TestEnum, true, true)("  TWO  ").isSome == true);
+    assert(toEnum!(TestEnum, true, true)(" -TWO- ").isSome == true);
+    assert(toEnum!(TestEnum, true, true)("One and Two").isSome == true);
+    assert(toEnum!(TestEnum, true, true)("one-and-two").isSome == true);
 
     assert(toStrz("Hello").getOr().strzLength == "Hello".length);
     assert(toStrz("Hello").getOr().strzToStr() == "Hello");

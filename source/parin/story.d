@@ -314,9 +314,11 @@ struct Story {
         return prepare();
     }
 
+    // TODO: Needs a refaktor. I added some functions inside it for now to avoid the `__chkstk` error.
     @trusted
     Fault execute(IStr expression, IStr file = __FILE__, Sz line = __LINE__) {
         static FixedList!(StoryValue, defaultStoryFixedListCapacity) stack;
+        alias Stack = FixedList!(StoryValue, defaultStoryFixedListCapacity);
 
         stack.clear();
         auto ifCounter = 0;
@@ -350,33 +352,47 @@ struct Story {
                     case LESS:
                     case GREATER:
                     case EQUAL:
-                        if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        if (!da.isType!StoryNumber || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryNumber;
-                        auto b = db.as!StoryNumber;
-                        auto c = StoryNumber.init;
-                        switch (op) {
-                            case ADD: c = a + b; break;
-                            case SUB: c = a - b; break;
-                            case MUL: c = a * b; break;
-                            case DIV: c = (b != 0) ? (a / b) : 0; break;
-                            case MOD: c = (b != 0) ? (a % b) : 0; break;
-                            case AND: c = a && b; break;
-                            case OR: c = a || b; break;
-                            case LESS: c = a < b; break;
-                            case GREATER: c = a > b; break;
-                            case EQUAL: c = a == b; break;
-                            default: assert(0, "WTF!");
+                        static Fault doEQUAL(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryNumber || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryNumber;
+                                auto b = db.as!StoryNumber;
+                                auto c = StoryNumber.init;
+                                switch (op) {
+                                    case ADD: c = a + b; break;
+                                    case SUB: c = a - b; break;
+                                    case MUL: c = a * b; break;
+                                    case DIV: c = (b != 0) ? (a / b) : 0; break;
+                                    case MOD: c = (b != 0) ? (a % b) : 0; break;
+                                    case AND: c = a && b; break;
+                                    case OR: c = a || b; break;
+                                    case LESS: c = a < b; break;
+                                    case GREATER: c = a > b; break;
+                                    case EQUAL: c = a == b; break;
+                                    default: assert(0, "WTF!");
+                                }
+                                stack.append(StoryValue(c));
+                                return Fault.none;
+                            }
                         }
-                        stack.append(StoryValue(c));
+                        auto fault = doEQUAL(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case NOT:
-                        if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
-                        if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        stack.append(StoryValue(!da.as!StoryNumber));
+                        static Fault doNOT(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 1) return throwOpFault(op, tokenCount);
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                stack.append(StoryValue(!da.as!StoryNumber));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doNOT(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case POP:
                         stack.pop();
@@ -386,8 +402,8 @@ struct Story {
                         break;
                     case SWAP:
                         if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
+                        auto db = stack[$ - 1]; stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         stack.append(db);
                         stack.append(da);
                         break;
@@ -401,19 +417,26 @@ struct Story {
                         stack.append(stack[$ - 2]);
                         break;
                     case RANGE:
-                        if (stack.length < 3) return throwOpFault(op, tokenCount);
-                        auto dc = stack.pop();
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        if (!da.isType!StoryNumber || !db.isType!StoryNumber || !dc.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryNumber();
-                        auto b = db.as!StoryNumber();
-                        auto c = dc.as!StoryNumber();
-                        stack.append(StoryValue(a >= b && a <= c));
+                        static Fault doRANGE(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 3) return throwOpFault(op, tokenCount);
+                                auto dc = stack[$ - 1]; stack.pop();
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryNumber || !db.isType!StoryNumber || !dc.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryNumber();
+                                auto b = db.as!StoryNumber();
+                                auto c = dc.as!StoryNumber();
+                                stack.append(StoryValue(a >= b && a <= c));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doRANGE(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case IF:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
                         if (!da.as!StoryNumber) ifCounter += 1;
                         break;
@@ -423,35 +446,49 @@ struct Story {
                     case THEN:
                         break;
                     case CAT:
-                        if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        StoryWord word;
-                        auto data = concat(da.toStr(), db.toStr());
-                        auto tempWordRef = word[];
-                        if (auto fault = tempWordRef.copyChars(data)) {
-                            faultTokenPosition = tokenCount;
-                            return fault;
+                        static Fault doCAT(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                StoryWord word;
+                                auto data = concat(da.toStr(), db.toStr());
+                                auto tempWordRef = word[];
+                                if (auto fault = tempWordRef.copyChars(data)) {
+                                    faultTokenPosition = tokenCount;
+                                    return fault;
+                                }
+                                stack.append(StoryValue(word));
+                                return Fault.none;
+                            }
                         }
-                        stack.append(StoryValue(word));
+                        auto fault = doCAT(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case SAME:
-                        if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        auto a = da.as!StoryWord;
-                        auto b = db.as!StoryWord;
-                        stack.append(StoryValue(a == b));
+                        static Fault doSAME(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                auto a = da.as!StoryWord;
+                                auto b = db.as!StoryWord;
+                                stack.append(StoryValue(a == b));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doSAME(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case WORD:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         stack.append(StoryValue(da.isType!StoryWord));
                         break;
                     case NUMBER:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         stack.append(StoryValue(da.isType!StoryNumber));
                         break;
                     case LINE:
@@ -465,7 +502,7 @@ struct Story {
                         break;
                     case ASSERT:
                         if (stack.length) {
-                            auto da = stack.pop();
+                            auto da = stack[$ - 1]; stack.pop();
                             if (da.isType!StoryWord || (da.isType!StoryNumber && !da.as!StoryNumber())) return Fault.assertion;
                         } else {
                             return Fault.assertion;
@@ -477,7 +514,10 @@ struct Story {
                     case ECHON:
                         auto space = "\n";
                         if (op == ECHON) space = " ";
-                        if (stack.length) print(stack.pop(), space);
+                        if (stack.length) {
+                            print(stack[$ - 1], space);
+                            stack.pop();
+                        }
                         else print(space);
                         break;
                     case LEAK:
@@ -509,14 +549,14 @@ struct Story {
                         break;
                     case HERE:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
                         auto a = da.as!StoryWord();
                         stack.append(StoryValue(findVariable(a) != -1));
                         break;
                     case GET:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
                         auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
@@ -527,49 +567,70 @@ struct Story {
                         }
                         break;
                     case GETN:
-                        if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        if (!da.isType!StoryWord || !db.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryWord();
-                        auto b = db.as!StoryWord();
-                        auto aIndex = findVariable(a);
-                        auto bIndex = findVariable(b);
-                        if (aIndex != -1 && bIndex != -1) {
-                            stack.append(variables[aIndex].value);
-                            stack.append(variables[bIndex].value);
-                        } else {
-                            return throwOpFault(op, tokenCount);
+                        static Fault doGETN(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord || !db.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto b = db.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                auto bIndex = findVariable(b);
+                                if (aIndex != -1 && bIndex != -1) {
+                                    stack.append(variables[aIndex].value);
+                                    stack.append(variables[bIndex].value);
+                                } else {
+                                    return throwOpFault(op, tokenCount);
+                                }
+                                return Fault.none;
+                            }
                         }
+                        auto fault = doGETN(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case SET:
-                        if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryWord();
-                        auto aIndex = findVariable(a);
-                        if (aIndex != -1) {
-                            variables[aIndex].value = db;
-                        } else {
-                            variables.push(StoryVariable(a, db));
+                        static Fault doSET(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    variables[aIndex].value = db;
+                                } else {
+                                    variables.push(StoryVariable(a, db));
+                                }
+                                return Fault.none;
+                            }
                         }
+                        auto fault = doSET(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case INIT:
-                        if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
-                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryWord();
-                        auto aIndex = findVariable(a);
-                        if (aIndex != -1) {
-                            variables[aIndex].value = StoryValue(0);
-                        } else {
-                            variables.push(StoryVariable(a, StoryValue(0)));
+                        static Fault doINIT(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 1) return throwOpFault(op, tokenCount);
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    variables[aIndex].value = StoryValue(0);
+                                } else {
+                                    variables.push(StoryVariable(a, StoryValue(0)));
+                                }
+                                return Fault.none;
+                            }
                         }
+                        auto fault = doINIT(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case DROP:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
                         auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
@@ -582,45 +643,59 @@ struct Story {
                         break;
                     case INC:
                     case DEC:
-                        if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
-                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryWord();
-                        auto aIndex = findVariable(a);
-                        if (aIndex != -1) {
-                            if (variables[aIndex].value.isType!StoryNumber) {
-                                variables[aIndex].value.as!StoryNumber() += (op == INC ? 1 : -1);
-                                stack.append(variables[aIndex].value);
-                            } else {
-                                return throwOpFault(op, tokenCount);
+                        static Fault doDEC(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 1) return throwOpFault(op, tokenCount);
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    if (variables[aIndex].value.isType!StoryNumber) {
+                                        variables[aIndex].value.as!StoryNumber() += (op == INC ? 1 : -1);
+                                        stack.append(variables[aIndex].value);
+                                    } else {
+                                        return throwOpFault(op, tokenCount);
+                                    }
+                                } else {
+                                    return throwOpFault(op, tokenCount);
+                                }
+                                return Fault.none;
                             }
-                        } else {
-                            return throwOpFault(op, tokenCount);
                         }
+                        auto fault = doDEC(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case INCN:
                     case DECN:
-                        if (stack.length < 2) return throwOpFault(op, tokenCount);
-                        auto db = stack.pop();
-                        auto da = stack.pop();
-                        if (!da.isType!StoryWord || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
-                        auto a = da.as!StoryWord();
-                        auto b = db.as!StoryNumber();
-                        auto aIndex = findVariable(a);
-                        if (aIndex != -1) {
-                            if (variables[aIndex].value.isType!StoryNumber) {
-                                variables[aIndex].value.as!StoryNumber() += b * (op == INCN ? 1 : -1);
-                                stack.append(variables[aIndex].value);
-                            } else {
-                                return throwOpFault(op, tokenCount);
+                        static Fault doDECN(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto b = db.as!StoryNumber();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    if (variables[aIndex].value.isType!StoryNumber) {
+                                        variables[aIndex].value.as!StoryNumber() += b * (op == INCN ? 1 : -1);
+                                        stack.append(variables[aIndex].value);
+                                    } else {
+                                        return throwOpFault(op, tokenCount);
+                                    }
+                                } else {
+                                    return throwOpFault(op, tokenCount);
+                                }
+                                return Fault.none;
                             }
-                        } else {
-                            return throwOpFault(op, tokenCount);
                         }
+                        auto fault = doDECN(stack, op, tokenCount, this);
+                        if (fault) return fault;
                         break;
                     case TOG:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
                         auto a = da.as!StoryWord();
                         auto aIndex = findVariable(a);
@@ -649,7 +724,7 @@ struct Story {
                         break;
                     case SKIP:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
                         auto a = da.as!StoryNumber();
                         if (a == 0) break;
@@ -663,7 +738,7 @@ struct Story {
                         break;
                     case JUMP:
                         if (stack.length < 1) return throwOpFault(op, tokenCount);
-                        auto da = stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
                         if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
                         auto a = da.as!StoryWord();
                         auto aIndex = findLabel(a);

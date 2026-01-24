@@ -396,37 +396,16 @@ struct List(T) {
         items = items[0 .. $ - 1];
     }
 
-    pragma(inline, true) @trusted @nogc
-    void drop() {
+    @trusted @nogc
+    void pop() {
         if (length) items = items.ptr[0 .. items.length - 1];
     }
 
     @nogc
-    void dropFront() {
+    void popFront() {
         if (length) removeShift(0);
     }
 
-    @nogc
-    T pop() {
-        if (length > 0) {
-            T temp = items[$ - 1];
-            items = items[0 .. $ - 1];
-            return temp;
-        } else {
-            return T.init;
-        }
-    }
-
-    @nogc
-    T popFront() {
-        if (length > 0) {
-            T temp = items[0];
-            removeShift(0);
-            return temp;
-        } else {
-            return T.init;
-        }
-    }
 
     @trusted
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
@@ -601,33 +580,12 @@ struct BufferList(T) {
         length -= 1;
     }
 
-    pragma(inline, true)
-    void drop() {
+    void pop() {
         if (length) length -= 1;
     }
 
-    void dropFront() {
+    void popFront() {
         if (length) removeShift(0);
-    }
-
-    T pop() {
-        if (length > 0) {
-            T temp = items[$ - 1];
-            length -= 1;
-            return temp;
-        } else {
-            return T.init;
-        }
-    }
-
-    T popFront() {
-        if (length > 0) {
-            T temp = items[0];
-            removeShift(0);
-            return temp;
-        } else {
-            return T.init;
-        }
     }
 
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {}
@@ -742,33 +700,12 @@ struct FixedList(T, Sz N) {
         length -= 1;
     }
 
-    pragma(inline, true)
-    void drop() {
+    void pop() {
         if (length) length -= 1;
     }
 
-    void dropFront() {
+    void popFront() {
         if (length) removeShift(0);
-    }
-
-    T pop() {
-        if (length > 0) {
-            T temp = items[$ - 1];
-            length -= 1;
-            return temp;
-        } else {
-            return T.init;
-        }
-    }
-
-    T popFront() {
-        if (length > 0) {
-            T temp = items[0];
-            removeShift(0);
-            return temp;
-        } else {
-            return T.init;
-        }
     }
 
     void reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {}
@@ -1915,14 +1852,10 @@ unittest {
     assert(text[0] == 'h');
     text.append("!!");
     assert(text[] == "hello world!!!");
-    assert(text.pop() == '!');
-    assert(text.pop() == '!');
-    assert(text[] == "hello world!");
     text.resize(0);
     assert(text[] == "");
     assert(text.length == 0);
     assert(text.capacity == defaultListCapacity);
-    assert(text.pop() == char.init);
     text.resize(1);
     assert(text[0] == char.init);
     assert(text.length == 1);
@@ -1968,13 +1901,9 @@ unittest {
     assert(text[0] == 'h');
     text.append("!!");
     assert(text[] == "hello world!!!");
-    assert(text.pop() == '!');
-    assert(text.pop() == '!');
-    assert(text[] == "hello world!");
     text.resize(0);
     assert(text[] == "");
     assert(text.length == 0);
-    assert(text.pop() == char.init);
     text.resize(1);
     assert(text[0] == char.init);
     assert(text.length == 1);
@@ -2021,13 +1950,9 @@ unittest {
     assert(text[0] == 'h');
     text.append("!!");
     assert(text[] == "hello world!!!");
-    assert(text.pop() == '!');
-    assert(text.pop() == '!');
-    assert(text[] == "hello world!");
     text.resize(0);
     assert(text[] == "");
     assert(text.length == 0);
-    assert(text.pop() == char.init);
     text.resize(1);
     assert(text[0] == char.init);
     assert(text.length == 1);
