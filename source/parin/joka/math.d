@@ -8,7 +8,11 @@
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
-import stdc = parin.joka.stdc;
+version(JokaPhobosStdc) {
+    import stdc = core.stdc.math;
+} else {
+    import stdc = parin.joka.stdc;
+}
 import parin.joka.types;
 
 // I don't care about `pure`, but I'm a nice person.
@@ -542,6 +546,10 @@ struct GVec3(T) {
             return GVec3!T(z, y, x);
         }
 
+        GVec3!T zxy() {
+            return GVec3!T(z, x, y);
+        }
+
         GVec3!T xxx() {
             return GVec3!T(x, x, x);
         }
@@ -739,6 +747,10 @@ struct GVec4(T) {
 
         GVec3!T zyx() {
             return GVec3!T(z, y, x);
+        }
+
+        GVec3!T zxy() {
+            return GVec3!T(z, x, y);
         }
 
         GVec3!T xxx() {
@@ -1740,7 +1752,7 @@ pragma(inline, true) @trusted {
         static if (__traits(isUnsigned, T)) {
             result = cast(T) wrap!long(x, a, b);
         } else static if (__traits(isFloating, T)) {
-            result = fmod(x - a, range);
+            result = _fmod(x - a, range);
             if (result < 0) result += range;
             result += a;
         } else {
@@ -1761,91 +1773,233 @@ pragma(inline, true) @trusted {
     }
 
     float fmod(float x, float y) {
-        return stdc.fmodf(x, y);
+        version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x, float y) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.fmodf;
+            return pureFunction(x, y);
+        } else {
+            return stdc.fmodf(x, y);
+        }
     }
 
     double fmod64(double x, double y) {
-        return stdc.fmod(x, y);
+        version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x, double y) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.fmod;
+            return pureFunction(x, y);
+        } else {
+            return stdc.fmod(x, y);
+        }
+    }
+
+    T _fmod(T)(T x, T y) {
+        static if (__traits(isIntegral, T)) {
+            static assert(0, "This function only supports floats and doubles.");
+        } else static if (is(T == float) || is(T == const(float))) {
+            return fmod(x, y);
+        } else {
+            return fmod64(x, y);
+        }
     }
 
     float remainder(float x, float y) {
-        return stdc.remainderf(x, y);
+        version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x, float y) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.remainderf;
+            return pureFunction(x, y);
+        } else {
+            return stdc.remainderf(x, y);
+        }
     }
 
     double remainder64(double x, double y) {
-        return stdc.remainder(x, y);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x, double y) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.remainder;
+            return pureFunction(x, y);
+        } else {
+            return stdc.remainder(x, y);
+        }
     }
 
     float exp(float x) {
-        return stdc.expf(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.expf;
+            return pureFunction(x);
+        } else {
+            return stdc.expf(x);
+        }
     }
 
     double exp64(double x) {
-        return stdc.exp(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.exp;
+            return pureFunction(x);
+        } else {
+            return stdc.exp(x);
+        }
     }
 
     float exp2(float x) {
-        return stdc.exp2f(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.exp2f;
+            return pureFunction(x);
+        } else {
+            return stdc.exp2f(x);
+        }
     }
 
     double exp264(double x) {
-        return stdc.exp2(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.exp2;
+            return pureFunction(x);
+        } else {
+            return stdc.exp2(x);
+        }
     }
 
     float expm1(float x) {
-        return stdc.expm1f(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.expm1f;
+            return pureFunction(x);
+        } else {
+            return stdc.expm1f(x);
+        }
     }
 
     double expm164(double x) {
-        return stdc.expm1(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.expm1;
+            return pureFunction(x);
+        } else {
+            return stdc.expm1(x);
+        }
     }
 
     float log(float x) {
-        return stdc.logf(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.logf;
+            return pureFunction(x);
+        } else {
+            return stdc.logf(x);
+        }
     }
 
     double log64(double x) {
-        return stdc.log(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log;
+            return pureFunction(x);
+        } else {
+            return stdc.log(x);
+        }
     }
 
     float log10(float x) {
-        return stdc.log10f(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log10f;
+            return pureFunction(x);
+        } else {
+            return stdc.log10f(x);
+        }
     }
 
     double log1064(double x) {
-        return stdc.log10(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log10;
+            return pureFunction(x);
+        } else {
+            return stdc.log10(x);
+        }
     }
 
     float log2(float x) {
-        return stdc.log2f(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log2f;
+            return pureFunction(x);
+        } else {
+            return stdc.log2f(x);
+        }
     }
 
     double log264(double x) {
-        return stdc.log2(x);
+      version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log2;
+            return pureFunction(x);
+        } else {
+            return stdc.log2(x);
+        }
     }
 
     float log1p(float x) {
-        return stdc.log1pf(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log1pf;
+            return pureFunction(x);
+        } else {
+            return stdc.log1pf(x);
+        }
     }
 
     double log1p64(double x) {
-        return stdc.log1p(x);
+      version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.log1p;
+            return pureFunction(x);
+        } else {
+            return stdc.log1p(x);
+        }
     }
 
     float pow(float base, float exponent) {
-        return stdc.powf(base, exponent);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float base, float exponent) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.powf;
+            return pureFunction(base, exponent);
+        } else {
+            return stdc.powf(base, exponent);
+        }
     }
 
     double pow64(double base, double exponent) {
-        return stdc.pow(base, exponent);
+      version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double base, double exponent) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.pow;
+            return pureFunction(base, exponent);
+        } else {
+            return stdc.pow(base, exponent);
+        }
     }
 
     float atan2(float y, float x) {
-        return stdc.atan2f(y, x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float y, float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.atan2f;
+            return pureFunction(y, x);
+        } else {
+            return stdc.atan2f(y, x);
+        }
     }
 
     double atan264(double y, double x) {
-        return stdc.atan2(y, x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double y, double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.atan2;
+            return pureFunction(y, x);
+        } else {
+            return stdc.atan2(y, x);
+        }
     }
 
     auto _atan2(T)(T y, T x) {
@@ -1971,11 +2125,23 @@ pragma(inline, true) @trusted {
     }
 
     float sqrt(float x) {
-        return stdc.sqrtf(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.sqrtf;
+            return pureFunction(x);
+        } else {
+            return stdc.sqrtf(x);
+        }
     }
 
     double sqrt64(double x) {
-        return stdc.sqrt(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.sqrt;
+            return pureFunction(x);
+        } else {
+            return stdc.sqrt(x);
+        }
     }
 
     auto _sqrt(T)(T x) {
@@ -2035,11 +2201,23 @@ pragma(inline, true) @trusted {
     }
 
     float asin(float x) {
-        return stdc.asinf(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.asinf;
+            return pureFunction(x);
+        } else {
+            return stdc.asinf(x);
+        }
     }
 
     double asin64(double x) {
-        return stdc.asin(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.asin;
+            return pureFunction(x);
+        } else {
+            return stdc.asin(x);
+        }
     }
 
     auto _asin(T)(T x) {
@@ -2051,11 +2229,23 @@ pragma(inline, true) @trusted {
     }
 
     float acos(float x) {
-        return stdc.acosf(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.acosf;
+            return pureFunction(x);
+        } else {
+            return stdc.acosf(x);
+        }
     }
 
     double acos64(double x) {
-        return stdc.acos(x);
+       version (JokaPhobosStdc) {
+            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
+            auto pureFunction = cast(Pure) &stdc.acos;
+            return pureFunction(x);
+        } else {
+            return stdc.acos(x);
+        }
     }
 
     auto _acos(T)(T x) {
