@@ -367,8 +367,6 @@ bool isNan(double x) {
 }
 
 mixin template distinct(T) {
-    alias Base = T;
-
     T _data;
     alias _data this;
 
@@ -714,10 +712,53 @@ unittest {
     assert(b == a);
 }
 
+// NOTE: Some `JokaCustomMemory` functions are defined also in `memory.d`.
+version (JokaCustomMemory) {
+    pragma(msg, "Joka: Using custom memory.");
+
+    extern(C) nothrow @nogc pure void* jokaMemset(void* ptr, int value, Sz size);
+    extern(C) nothrow @nogc pure void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+} else version (JokaGcMemory) {
+    pragma(msg, "Joka: Using GC memory.");
+    import stringc = core.stdc.string;
+
+    extern(C) nothrow @nogc pure
+    void* jokaMemset(void* ptr, int value, Sz size) {
+        return stringc.memset(ptr, value, size);
+    }
+
+    extern(C) nothrow @nogc pure
+    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+        return stringc.memcpy(ptr, source, size);
+    }
+} else {
+    version(JokaPhobosStdc) {
+        pragma(msg, "Joka: Using Phobos `stdc` modules.");
+        import stringc = core.stdc.string;
+    } else {
+        import stringc = parin.joka.stdc;
+    }
+
+    extern(C) nothrow @nogc pure
+    void* jokaMemset(void* ptr, int value, Sz size) {
+        return stringc.memset(ptr, value, size);
+    }
+
+    extern(C) nothrow @nogc pure
+    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+        return stringc.memcpy(ptr, source, size);
+    }
+}
+
 version (JokaRuntimeSymbols) {
     pragma(msg, "Joka: Defining missing runtime symbols.");
     extern(C) @trusted nothrow @nogc pure {
         void __chkstk() {}
+
+        void _d_array_slice_copy(void* dst, Sz dstlen, void* src, Sz srclen, Sz elemsz) {
+            if (dstlen != srclen) assert(0, "Lengths don't match for slice copy.");
+            jokaMemcpy(dst, src, dstlen * elemsz);
+        }
     }
 }
 
@@ -1261,10 +1302,7 @@ IStr advanceStr(IStr str, Sz amount) {
 @trusted
 Fault copyChars(Str str, IStr source, Sz startIndex = 0) {
     if (str.length < source.length + startIndex) return Fault.overflow;
-
-    auto min = startIndex;
-    auto max = startIndex + source.length;
-    foreach (i; min .. max) str[i] = source[i - min];
+    jokaMemcpy(str.ptr + startIndex, source.ptr, source.length);
     return Fault.none;
 }
 

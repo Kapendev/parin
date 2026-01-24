@@ -291,7 +291,7 @@ double strtod(const(char)* str, char** str_end);
 
 // --- string.h
 
-int memcmp(const(void)* lhs, const(void)* rhs, size_t count);
-void* memset(void* dest, int ch, size_t count);
-void* memcpy(void* dest, const(void)* src, size_t count);
-size_t strlen(const(char)* str);
+pure int memcmp(const(void)* lhs, const(void)* rhs, size_t count);
+pure void* memset(void* dest, int ch, size_t count);
+pure void* memcpy(void* dest, const(void)* src, size_t count);
+pure size_t strlen(const(char)* str);

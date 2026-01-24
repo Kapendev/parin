@@ -73,63 +73,34 @@ struct AllocationGroup {
 
 @system nothrow:
 
+// NOTE: Some `JokaCustomMemory` functions are defined also in `types.d`.
 version (JokaCustomMemory) {
-    pragma(msg, "Joka: Using custom memory.");
-
-    extern(C) @nogc void* jokaMemset(void* ptr, int value, Sz size);
-    extern(C) @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
-    extern(C)       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C)       void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) @nogc void  jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow @nogc void  jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__);
 } else version (JokaGcMemory) {
-    pragma(msg, "Joka: Using GC memory.");
-
     import memoryd = core.memory;
-    import stringc = core.stdc.string;
 
-    extern(C) @nogc
-    void* jokaMemset(void* ptr, int value, Sz size) {
-        return stringc.memset(ptr, value, size);
-    }
-
-    extern(C) @nogc
-    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stringc.memcpy(ptr, source, size);
-    }
-
-    extern(C)
+    extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         return memoryd.GC.malloc(size);
     }
 
-    extern(C)
+    extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         return memoryd.GC.realloc(ptr, size);
     }
 
-    extern(C) @nogc
+    extern(C) nothrow @nogc
     void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
     version(JokaPhobosStdc) {
-        pragma(msg, "Joka: Using Phobos `stdc` modules.");
-        import stringc = core.stdc.string;
         import stdlibc = core.stdc.stdlib;
     } else {
-        import stringc = parin.joka.stdc;
         import stdlibc = parin.joka.stdc;
     }
 
-    extern(C) @nogc
-    void* jokaMemset(void* ptr, int value, Sz size) {
-        return stringc.memset(ptr, value, size);
-    }
-
-    extern(C) @nogc
-    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stringc.memcpy(ptr, source, size);
-    }
-
-    extern(C)
+    extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = stdlibc.malloc(size);
         static if (isTrackingMemory) {
@@ -141,7 +112,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    extern(C)
+    extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) {
             jokaFree(ptr);
@@ -175,7 +146,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    extern(C) @nogc
+    extern(C) nothrow @nogc
     void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
