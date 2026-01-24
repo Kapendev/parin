@@ -714,6 +714,13 @@ unittest {
     assert(b == a);
 }
 
+version (JokaRuntimeSymbols) {
+    pragma(msg, "Joka: Defining missing runtime symbols.");
+    extern(C) @trusted nothrow @nogc pure {
+        void __chkstk() {}
+    }
+}
+
 // --- ASCII
 
 @safe:
@@ -1760,7 +1767,7 @@ Maybe!T toEnum(T, bool noCase = false, bool canIgnoreSpaceAndSymbol = false)(ISt
     } else {
         switch (str) {
             static foreach (m; __traits(allMembers, T)) {
-                mixin("case m: return Maybe!T(T.", m, ");");
+                mixin("case m: { result = T.", m, "; return result; }");
             }
             default:
                 result = Fault.invalid;
