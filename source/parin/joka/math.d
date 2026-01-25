@@ -8,12 +8,21 @@
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
-version(JokaPhobosStdc) {
+version (JokaPhobosStdc) {
     import stdc = core.stdc.math;
 } else {
     import stdc = parin.joka.stdc;
 }
-import parin.joka.types;
+
+version (JokaNoTypes) {
+    pragma(msg, "Joka: Defining missing `types.d` symbols.");
+    alias Sz = size_t;
+    alias IStr = const(char)[];
+    @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
+    @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
+} else {
+    import parin.joka.types;
+}
 
 // I don't care about `pure`, but I'm a nice person.
 @safe nothrow @nogc pure:
@@ -186,6 +195,205 @@ enum Hook : ubyte {
     bottomLeft,  /// The bottom left point.
     bottom,      /// The bottom point.
     bottomRight, /// The bottom right point.
+}
+
+deprecated("Use `xyzwOps` instead.")
+alias addXyzwOps = xyzwOps;
+
+mixin template xyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMember, T, "items") && N >= 2 && N <= 4 && N == form.length) {
+    pragma(inline, true) @trusted nothrow @nogc {
+        T opUnary(IStr op)() {
+            static if (N == 2) {
+                return mixin("T(", op, form[0], ",", op, form[1], ")");
+            } else static if (N == 3) {
+                return mixin("T(", op, form[0], ",", op, form[1], ",", op, form[2], ")");
+            } else static if (N == 4) {
+                return mixin("T(", op, form[0], ",", op, form[1], ",", op, form[2], ",", op, form[3], ")");
+            }
+        }
+
+        T opBinary(IStr op)(T rhs) {
+            static if (N == 2) {
+                return mixin("T(",
+                    "cast(TT)(", form[0], op, "rhs.", form[0], "),",
+                    "cast(TT)(", form[1], op, "rhs.", form[1], "))"
+                );
+            } else static if (N == 3) {
+                return mixin("T(",
+                    "cast(TT)(", form[0], op, "rhs.", form[0], "),",
+                    "cast(TT)(", form[1], op, "rhs.", form[1], "),",
+                    "cast(TT)(", form[2], op, "rhs.", form[2], "))"
+                );
+            } else static if (N == 4) {
+                return mixin("T(",
+                    "cast(TT)(", form[0], op, "rhs.", form[0], "),",
+                    "cast(TT)(", form[1], op, "rhs.", form[1], "),",
+                    "cast(TT)(", form[2], op, "rhs.", form[2], "),",
+                    "cast(TT)(", form[3], op, "rhs.", form[3], "))"
+                );
+            }
+        }
+
+        T opBinary(IStr op)(TT rhs) {
+            static if (N == 2) {
+                return mixin("T(",
+                    "cast(TT)(", form[0], op, "rhs),",
+                    "cast(TT)(", form[1], op, "rhs))"
+                );
+            } else static if (N == 3) {
+                return mixin("T(",
+                    "cast(TT)(", form[0], op, "rhs),",
+                    "cast(TT)(", form[1], op, "rhs),",
+                    "cast(TT)(", form[2], op, "rhs))"
+                );
+            } else static if (N == 4) {
+                return mixin("T(",
+                    "cast(TT)(", form[0], op, "rhs),",
+                    "cast(TT)(", form[1], op, "rhs),",
+                    "cast(TT)(", form[2], op, "rhs),",
+                    "cast(TT)(", form[3], op, "rhs))"
+                );
+            }
+        }
+
+        T opBinaryRight(IStr op)(TT lhs) {
+            static if (N == 2) {
+                return mixin("T(",
+                    "cast(TT)(lhs", op, form[0], "),",
+                    "cast(TT)(lhs", op, form[1], "))"
+                );
+            } else static if (N == 3) {
+                return mixin("T(",
+                    "cast(TT)(lhs", op, form[0], "),",
+                    "cast(TT)(lhs", op, form[1], "),",
+                    "cast(TT)(lhs", op, form[2], "))"
+                );
+            } else static if (N == 4) {
+                return mixin("T(",
+                    "cast(TT)(lhs", op, form[0], "),",
+                    "cast(TT)(lhs", op, form[1], "),",
+                    "cast(TT)(lhs", op, form[2], "),",
+                    "cast(TT)(lhs", op, form[3], "))"
+                );
+            }
+        }
+
+        void opOpAssign(IStr op)(T rhs) {
+            static if (N == 2) {
+                mixin(
+                    form[0], op, "=rhs.", form[0], ";",
+                    form[1], op, "=rhs.", form[1], ";"
+                );
+            } else static if (N == 3) {
+                mixin(
+                    form[0], op, "=rhs.", form[0], ";",
+                    form[1], op, "=rhs.", form[1], ";",
+                    form[2], op, "=rhs.", form[2], ";"
+                );
+            } else static if (N == 4) {
+                mixin(
+                    form[0], op, "=rhs.", form[0], ";",
+                    form[1], op, "=rhs.", form[1], ";",
+                    form[2], op, "=rhs.", form[2], ";",
+                    form[3], op, "=rhs.", form[3], ";"
+                );
+            }
+        }
+
+        void opOpAssign(IStr op)(TT rhs) {
+            static if (N == 2) {
+                mixin(
+                    form[0], op, "=rhs;",
+                    form[1], op, "=rhs;"
+                );
+            } else static if (N == 3) {
+                mixin(
+                    form[0], op, "=rhs;",
+                    form[1], op, "=rhs;",
+                    form[2], op, "=rhs;"
+                );
+            } else static if (N == 4) {
+                mixin(
+                    form[0], op, "=rhs;",
+                    form[1], op, "=rhs;",
+                    form[2], op, "=rhs;",
+                    form[3], op, "=rhs;"
+                );
+            }
+        }
+
+        TT[] opSlice(Sz dim)(Sz i, Sz j) {
+            return items[i .. j];
+        }
+
+        TT[] opIndex() {
+            return items;
+        }
+
+        TT[] opIndex(TT[] slice) {
+            return slice;
+        }
+
+        ref TT opIndex(Sz i) {
+            return items[i];
+        }
+
+        void opIndexAssign(const(TT) rhs, Sz i) {
+            items[i] = cast(TT) rhs;
+        }
+
+        void opIndexOpAssign(IStr op)(const(TT) rhs, Sz i) {
+            mixin("items[i]", op, "= cast(TT) rhs;");
+        }
+
+        Sz opDollar(Sz dim)() {
+            return N;
+        }
+    }
+
+    @trusted nothrow @nogc pure {
+        T _swizzleN(G)(const(G)[] args...) {
+            if (args.length != N) assert(0, "Wrong swizzle length.");
+            T result = void;
+            foreach (i, arg; args) result.items.ptr[i] = items[arg];
+            return result;
+        }
+
+        T _swizzleC(IStr args...) {
+            if (args.length != N) assert(0, "Wrong swizzle length.");
+            T result = void;
+            foreach (i, arg; args) {
+                auto hasBadArg = true;
+                foreach (j, c; form) if (c == arg) {
+                    result.items.ptr[i] = items.ptr[j];
+                    hasBadArg = false;
+                    break;
+                }
+                if (hasBadArg) assert(0, "Invalid swizzle component.");
+            }
+            return result;
+        }
+
+        T swizzle(G)(const(G)[] args...) {
+            static if (is(G == char)) {
+                return _swizzleC(args);
+            } else {
+                return _swizzleN(args);
+            }
+        }
+
+        TT min() {
+            auto result = mixin(form[0]);
+            foreach (item; items.ptr[1 .. N]) if (item < result) result = item;
+            return result;
+        }
+
+        TT max() {
+            auto result = mixin(form[0]);
+            foreach (item; items.ptr[1 .. N]) if (item > result) result = item;
+            return result;
+        }
+    }
 }
 
 /// A RGBA color using ubytes.
