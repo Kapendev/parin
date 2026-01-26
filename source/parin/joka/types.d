@@ -186,7 +186,7 @@ struct Union(A...) if (A.length != 0) {
 
     union UnionData {
         static foreach (i, T; A) {
-            mixin("T _m", toCleanNumber!i, ";");
+            mixin("T _m", typeOf!T, ";");
         }
     }
 
@@ -195,10 +195,11 @@ struct Union(A...) if (A.length != 0) {
 
     @trusted
     auto call(IStr func, AA...)(AA args) {
+        // NOTE: Copy-pasted the `funcImplementationErrorMessage` function here to avoid one template.
         switch (_type) {
-            static foreach (i, T; A) {
-                static assert(__traits(hasMember, T, func), funcImplementationErrorMessage!(T, func));
-                mixin("case ", i, ": return _data._m", toCleanNumber!i, ".", func, "(args);");
+            static foreach (T; A) {
+                static assert(__traits(hasMember, T, func), "Type `" ~ T.stringof ~ "` doesn't implement the `" ~ func ~ "` function.");
+                mixin("case ", typeOf!T, ": return _data._m", typeOf!T, ".", func, "(args);");
             }
             default: assert(0, "WTF!");
         }
@@ -206,16 +207,14 @@ struct Union(A...) if (A.length != 0) {
 
     @trusted nothrow @nogc:
 
-    static foreach (i, T; A) {
+    static foreach (T; A) {
         this(const(T) value) {
             opAssign(value);
         }
 
         void opAssign(const(T) rhs) {
-            auto temp = UnionData();
-            *(cast(T*) &temp) = cast(T) rhs;
-            _data = temp;
-            _type = i;
+            *(cast(T*) &_data) = cast(T) rhs;
+            _type = cast(UnionType) typeOf!T;
         }
     }
 
@@ -225,16 +224,15 @@ struct Union(A...) if (A.length != 0) {
 
     IStr typeName() {
         switch (_type) {
-            static foreach (i, T; A) {
-                mixin("case ", i, ": return T.stringof;");
+            static foreach (T; A) {
+                mixin("case ", typeOf!T, ": return T.stringof;");
             }
             default: assert(0, "WTF!");
         }
     }
 
     bool isType(T)() {
-        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
-        return _type == findInAliasArgs!(T, A);
+        return _type == typeOf!T;
     }
 
     ref Base base() {
@@ -242,15 +240,15 @@ struct Union(A...) if (A.length != 0) {
     }
 
     ref T as(T)() {
-        mixin("return _data._m", findInAliasArgs!(T, A), ";");
+        mixin("return _data._m", typeOf!T, ";");
     }
 
     ref T to(T)() {
         if (isType!T) {
             return as!T;
         } else {
-            static foreach (i, TT; A) {
-                if (i == _type) {
+            static foreach (TT; A) {
+                if (typeOf!TT == _type) {
                     assert(0, "Value is `" ~ A[i].stringof ~ "` and not `" ~ T.stringof ~ "`.");
                 }
             }

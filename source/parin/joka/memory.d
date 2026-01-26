@@ -262,6 +262,67 @@ T[] jokaResizeSlice(T)(T* values, Sz length, IStr file = __FILE__, Sz line = __L
     return [];
 }
 
+T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
+    enum commonAlignment = typeof(T.tupleof[0][0]).alignof;
+
+    if (lengths.length != T.tupleof.length) assert(0, "Lengths count doesn't match member count.");
+    auto result = T();
+
+    auto totalBytes = cast(Sz) 0;
+    static foreach (i, member; T.tupleof) {
+        static assert(
+            is(typeof(member) : const(M)[], M),
+            "Member `" ~ member.stringof ~ "` must be a slice.",
+        );
+        totalBytes = (totalBytes + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
+        totalBytes += typeof(member[0]).sizeof * lengths[i];
+    }
+
+    auto memory = cast(ubyte*) jokaMalloc(totalBytes);
+    if (memory == null) return result;
+    jokaMemset(memory, 0, totalBytes);
+
+    auto offset = cast(Sz) 0;
+    static foreach (i, member; T.tupleof) {
+        offset = (offset + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
+        mixin("result.", member.stringof, "= (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]];");
+        offset += typeof(member[0]).sizeof * lengths[i];
+    }
+    return result;
+}
+
+unittest {
+    static struct Vector2 { float x, y; }
+    static struct Vector3 { float x, y, z; }
+    static struct Mesh {
+        char[] name;
+        Vector3[] positions;
+        int[] indices;
+        Vector2[] uvs;
+
+        nothrow
+        void* ptr() {
+            return this.tupleof[0].ptr;
+        }
+
+        nothrow
+        void free() {
+            jokaFree(ptr);
+            this = Mesh();
+        }
+    }
+
+    auto mesh = jokaMakeJoint!Mesh(64, 24, 36, 24);
+    assert(mesh.name.length == 64);
+    assert(mesh.positions.length == 24);
+    assert(mesh.indices.length == 36);
+    assert(mesh.uvs.length == 24);
+
+    assert(mesh.name[0] == '\0');
+    assert(mesh.indices[0] == 0);
+    mesh.free();
+}
+
 // --- Containers
 
 @safe nothrow:
@@ -1411,37 +1472,45 @@ struct GrowingArena {
     }
 
     void* malloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
-        void* p = current.malloc(size, alignment);
-        if (p == null) {
-            auto chunk = current.next ? current.next : jokaMake(Arena(size > chunkCapacity ? size : chunkCapacity, file, line), file, line);
+        auto pp = current.malloc(size, alignment);
+        if (pp == null) {
+            // NOTE: Active next pointer + T being bigger than the memory of the next pointer will return a null.
+            //   Should probably be fine for most cases. I will keep it like that for now.
+            auto chunk = current.next
+                ? current.next
+                : jokaMake(Arena(size > chunkCapacity ? size : chunkCapacity, file, line), file, line);
             static if (isTrackingMemory) {
                 if (current.next == null && canIgnoreLeak) {
                     .ignoreLeak(chunk);
                     chunk.ignoreLeak();
                 }
             }
-            p = chunk.malloc(size, alignment);
+            pp = chunk.malloc(size, alignment);
             current.next = chunk;
             current = chunk;
         }
-        return p;
+        return pp;
     }
 
     void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
-        void* p = current.realloc(ptr, oldSize, newSize, alignment);
-        if (p == null) {
-            auto chunk = current.next ? current.next : jokaMake(Arena(newSize > chunkCapacity ? newSize : chunkCapacity, file, line), file, line);
+        auto pp = current.realloc(ptr, oldSize, newSize, alignment);
+        if (pp == null) {
+            // NOTE: Active next pointer + T being bigger than the memory of the next pointer will return a null.
+            //   Should probably be fine for most cases. I will keep it like that for now.
+            auto chunk = current.next
+                ? current.next
+                : jokaMake(Arena(newSize > chunkCapacity ? newSize : chunkCapacity, file, line), file, line);
             static if (isTrackingMemory) {
                 if (current.next == null && canIgnoreLeak) {
                     .ignoreLeak(chunk);
                     chunk.ignoreLeak();
                 }
             }
-            p = chunk.realloc(ptr, oldSize, newSize, alignment);
+            pp = chunk.realloc(ptr, oldSize, newSize, alignment);
             current.next = chunk;
             current = chunk;
         }
-        return p;
+        return pp;
     }
 
     T* makeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {

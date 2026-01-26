@@ -114,7 +114,8 @@ Parin consists of the following modules:
 - `parin.timer`: Time utilities
 - `parin.ui`: Immediate mode UI (WIP)
 
-The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game. They are sometimes referred to as the core modules.
+The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game.
+They are sometimes referred to as the core modules.
 All other modules are optional and can be included as needed.
 The `import parin` statement in the example above is a convenience import that includes all modules.
 
@@ -465,12 +466,14 @@ Fault saveText(IStr path, IStr text);
 Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha);
 ```
 
-They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false. Path separators are also normalized to the platform's native format.
+They use the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+Path separators are also normalized to the platform's native format.
 Additionally, engine resources are separated into two groups. Managed and temporary.
 
 ### Managed Resources
 
-Managed resources (`TextureId`, `FontId`, `SoundId`, `ViewportId`) are managed by the engine, meaning they get updated every frame when necessary (e.g. sounds) and can be safely shared throughout the code. These resources use something known as [generational indices](https://lucassardois.medium.com/generational-indices-guide-8e3c5f7fd594).
+Managed resources (`TextureId`, `FontId`, `SoundId`, `ViewportId`) are managed by the engine, meaning they get updated every frame when necessary (e.g. sounds) and can be safely shared throughout the code.
+These resources use something known as [generational indices](https://lucassardois.medium.com/generational-indices-guide-8e3c5f7fd594).
 
 ### Temporary Resources
 
