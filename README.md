@@ -168,11 +168,27 @@ No. However, there are examples of how to build them using the `Union` type in t
 
 ### Does Parin have a UI library?
 
-The following libraries are compatible with Parin:
+Yes. However, it's WIP and will change in the future.
+Check the [examples](examples/ui) folder for more information about how the current version works.
 
-- [Parin UI](examples/ui)
-- [microui-d](examples/integrations/microui.d)
-- [Fluid](examples/integrations/fluid.d)
+The following libraries are also compatible with Parin:
+
+- [microui-d](examples/integrations/microui.d): A tiny immediate-mode UI library.
+- [Fluid](examples/integrations/fluid.d): A declarative cross-platform user interface library.
+
+### Does Parin have a scripting language?
+
+No. The following projects might be useful:
+
+- [wren-port](https://github.com/AuburnSounds/wren-port): A port of the Wren programming language to D.
+- [arsd.script](https://arsd-official.dpldocs.info/arsd.script.html): The language is based on a hybrid of D and Javascript.
+
+### Any other helpful libraries that I can use?
+
+- [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
+- [newsdlang](https://codeberg.org/ZILtoid1991/newsdlang): SDLang/XDL reader and writer.
+- [Inochi2D](https://github.com/Inochi2D/inochi2d): A library for realtime 2D puppet animation.
+- [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
 
 ### How do I use `Vec2`?
 
