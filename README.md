@@ -50,7 +50,7 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Includes extras like [microui](examples/integrations/microui.d) and memory allocators ([tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25))
 - Mixed memory model: manual control, GC, or both
 - No external dependencies
-- Cross-platform: Windows, Linux, Web, macOS
+- Cross-platform: Windows, Linux, Web, macOS (needs testing)
 
 ## Simple Editor Example
 
@@ -279,7 +279,7 @@ Using both `gc` and `rl` should provide the best compatibility for most raylib-d
 7. Save the changes.
 
 The web build script provides the `itch` flag to automate the first two steps.
-It currently only works on Linux and macOS.
+It currently only works on Linux and maybe macOS.
 Contributions to add Windows support are welcome.
 
 ### How can I build without DUB?

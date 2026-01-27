@@ -4,14 +4,14 @@
 
 ## YAP STUFF
 
-* Added devlogs in repo.
 * Made it easier to use Parin as "raylib-d with web support".
 * Faster web builds, fixes and touch support.
 * IES support.
-* Logging in window.
+* Logging inside window.
 * New small font.
 * Depth sorting.
-* RAII tricks.
-* Surface.
-* Templates.
+* RAII tricks with attaching and clip areas.
+* Surface type.
+* Project templates.
 * Better swizzle stuff.
+* Joint allocations.

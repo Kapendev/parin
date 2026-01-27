@@ -271,8 +271,8 @@ T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
     auto totalBytes = cast(Sz) 0;
     static foreach (i, member; T.tupleof) {
         static assert(
-            is(typeof(member) : const(M)[], M),
-            "Member `" ~ member.stringof ~ "` must be a slice.",
+            is(typeof(member) : const(M)[], M) || isBufferContainerType!(typeof(member)),
+            "Member `" ~ member.stringof ~ "` must be a slice or a buffer list.",
         );
         totalBytes = (totalBytes + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
         totalBytes += typeof(member[0]).sizeof * lengths[i];
@@ -285,13 +285,19 @@ T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
     auto offset = cast(Sz) 0;
     static foreach (i, member; T.tupleof) {
         offset = (offset + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
-        mixin("result.", member.stringof, "= (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]];");
+        static if (isBufferContainerType!(typeof(member))) {
+            mixin("result.", member.stringof, "= BufferList!(member.Item)(  (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]]  );");
+        } else {
+            mixin("result.", member.stringof, "= (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]];");
+        }
         offset += typeof(member[0]).sizeof * lengths[i];
     }
     return result;
 }
 
+/// Joint allocation test.
 unittest {
+    // First Jai example.
     static struct Vector2 { float x, y; }
     static struct Vector3 { float x, y, z; }
     static struct Mesh {
@@ -300,12 +306,12 @@ unittest {
         int[] indices;
         Vector2[] uvs;
 
-        nothrow
+        nothrow:
+
         void* ptr() {
             return this.tupleof[0].ptr;
         }
 
-        nothrow
         void free() {
             jokaFree(ptr);
             this = Mesh();
@@ -313,6 +319,7 @@ unittest {
     }
 
     auto mesh = jokaMakeJoint!Mesh(64, 24, 36, 24);
+
     assert(mesh.name.length == 64);
     assert(mesh.positions.length == 24);
     assert(mesh.indices.length == 36);
@@ -321,6 +328,48 @@ unittest {
     assert(mesh.name[0] == '\0');
     assert(mesh.indices[0] == 0);
     mesh.free();
+
+    // Second Jai example.
+    static struct PartyMemberInfo {
+        BStr className;
+        BStr characterName;
+
+        nothrow:
+
+        void* ptr() {
+            return this.tupleof[0].ptr;
+        }
+
+        void free() {
+            jokaFree(ptr);
+            this = PartyMemberInfo();
+        }
+    }
+    static struct PartyMember {
+        PartyMemberInfo info;
+        int healthMax = 100;
+        int currentLevel = 1;
+
+        nothrow:
+
+        void free() {
+            info.free();
+            this = PartyMember();
+        }
+    }
+
+    auto partyMember = PartyMember(jokaMakeJoint!PartyMemberInfo(32, 64));
+
+    assert(partyMember.info.characterName.length == 0);
+    assert(partyMember.info.characterName.capacity == 64);
+    assert(partyMember.info.characterName.append("Harold") == false);
+    assert(partyMember.info.characterName[] == "Harold");
+
+    assert(partyMember.info.className.length == 0);
+    assert(partyMember.info.className.capacity == 32);
+    assert(partyMember.info.className.append("Hero") == false);
+    assert(partyMember.info.className[] == "Hero");
+    partyMember.free();
 }
 
 // --- Containers
@@ -344,7 +393,9 @@ struct List(T) {
     alias Self = List!T;
     alias Item = T;
     alias Data = T[];
+
     enum isBasicContainer = true;
+    enum isBufferContainer = false;
     enum hasFixedCapacity = false;
 
     Data items;
@@ -510,7 +561,9 @@ struct BufferList(T) {
     alias Self = BufferList!T;
     alias Item = T;
     alias Data = T[];
+
     enum isBasicContainer = true;
+    enum isBufferContainer = true;
     enum hasFixedCapacity = true;
 
     Data data;
@@ -663,7 +716,9 @@ struct FixedList(T, Sz N) {
     alias Self = FixedList!(T, N);
     alias Item = T;
     alias Data = StaticArray!(T, N);
+
     enum isBasicContainer = true;
+    enum isBufferContainer = false;
     enum hasFixedCapacity = true;
 
     Data data = void;
@@ -788,9 +843,11 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
     alias Self = SparseList!(T, D);
     alias Item = D.Item;
     alias Data = D;
+
     enum isBasicContainer = false;
-    enum isSparseContainer = true;
+    enum isBufferContainer = false;
     enum hasFixedCapacity = D.hasFixedCapacity;
+    enum isSparseContainer = true;
 
     Data data;
     Sz hotIndex;
@@ -1022,7 +1079,9 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
     alias Item = D.Item;
     alias Data = D;
     alias DataGen = G;
+
     enum isBasicContainer = false;
+    enum isBufferContainer = false;
     enum hasFixedCapacity = D.hasFixedCapacity && G.hasFixedCapacity;
 
     Data data;
@@ -1170,7 +1229,9 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     alias Self = Grid!(T, D);
     alias Item = D.Item;
     alias Data = D;
+
     enum isBasicContainer = false;
+    enum isBufferContainer = false;
     enum hasFixedCapacity = D.hasFixedCapacity;
 
     Data tiles;
@@ -1787,9 +1848,17 @@ bool isBasicContainerType(T)() {
     }
 }
 
+bool isBufferContainerType(T)() {
+    static if (__traits(hasMember, T, "isBufferContainer")) {
+        return T.isBufferContainer;
+    } else {
+        return false;
+    }
+}
+
 bool isSparseContainerType(T)() {
-    static if (__traits(hasMember, T, "isBasicContainer")) {
-        return !T.isBasicContainer && __traits(hasMember, T, "isSparseContainer");
+    static if (__traits(hasMember, T, "isSparseContainer")) {
+        return T.isSparseContainer;
     } else {
         return false;
     }
