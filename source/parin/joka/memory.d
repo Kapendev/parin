@@ -11,7 +11,90 @@
 
 module parin.joka.memory;
 
-import parin.joka.types;
+version (JokaNoTypes) {
+    pragma(msg, "Joka: Defining missing `types.d` symbols for `memory.d`.");
+
+    private alias Sz = size_t;
+    private alias IStr = const(char)[];
+    private alias Str = char[];
+
+    private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
+    private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
+
+    private struct StaticArray(T, Sz N) {
+        alias Self = StaticArray!(T, N);
+        enum length = N;
+        enum capacity = N;
+
+        align(T.alignof) ubyte[T.sizeof * N] _data;
+
+        pragma(inline, true) @trusted nothrow @nogc:
+
+        mixin sliceOps!(Self, T);
+
+        this(const(T)[] items...) {
+            if (items.length > N) assert(0, "Too many items.");
+            auto me = this.items;
+            foreach (i; 0 .. N) me[i] = cast(T) items[i];
+        }
+
+        T[] items() {
+            return (cast(T*) _data.ptr)[0 .. N];
+        }
+
+        T* ptr() {
+            return cast(T*) _data.ptr;
+        }
+    }
+
+    private mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, "items")) {
+        pragma(inline, true) @trusted nothrow @nogc {
+            TT[] opSlice(Sz dim)(Sz i, Sz j) {
+                return mixin(itemsMemberName, "[i .. j]");
+            }
+
+            TT[] opIndex() {
+                return mixin(itemsMemberName, "[]");
+            }
+
+            TT[] opIndex(TT[] slice) {
+                return slice;
+            }
+
+            ref TT opIndex(Sz i) {
+                return mixin(itemsMemberName, "[i]");
+            }
+
+            void opIndexAssign(const(TT) rhs, Sz i) {
+                mixin(itemsMemberName, "[i] = cast(TT) rhs;");
+            }
+
+            void opIndexOpAssign(const(char)[] op)(const(TT) rhs, Sz i) {
+                mixin(itemsMemberName, "[i]", op, "= cast(TT) rhs;");
+            }
+
+            Sz opDollar(Sz dim)() {
+                return mixin(itemsMemberName, ".length");
+            }
+        }
+    }
+
+    private IStr __getEmptyString() @nogc pure nothrow @safe {
+        return "";
+    }
+    private struct InterpolationHeader {
+        alias toString = __getEmptyString;
+    }
+    private struct InterpolationFooter {
+        alias toString = __getEmptyString;
+    }
+
+    private @safe nothrow @nogc IStr toStr(IStr value) { return value; }
+    private @safe nothrow @nogc IStr toStr(long value) { return ""; }
+    private enum defaultAsciiFmtArgStr = "{}";
+} else {
+    import parin.joka.types;
+}
 
 // --- Core
 
@@ -78,6 +161,11 @@ version (JokaCustomMemory) {
     extern(C) nothrow       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow @nogc void  jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__);
+
+    version (JokaNoTypes) {
+        private extern(C) nothrow @nogc pure void* jokaMemset(void* ptr, int value, Sz size);
+        private extern(C) nothrow @nogc pure void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    }
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
 
@@ -93,11 +181,25 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
+
+    version (JokaNoTypes) {
+        import stringc = core.stdc.string;
+        extern(C) nothrow @nogc pure
+        void* jokaMemset(void* ptr, int value, Sz size) {
+            return stringc.memset(ptr, value, size);
+        }
+        extern(C) nothrow @nogc pure
+        void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+            return stringc.memcpy(ptr, source, size);
+        }
+    }
 } else {
     version(JokaPhobosStdc) {
         import stdlibc = core.stdc.stdlib;
+        import stringc = core.stdc.string; // NOTE: Used for `JokaNoTypes`.
     } else {
         import stdlibc = parin.joka.stdc;
+        import stringc = parin.joka.stdc; // NOTE: Used for `JokaNoTypes`.
     }
 
     extern(C) nothrow
@@ -167,6 +269,17 @@ version (JokaCustomMemory) {
             }
         } else {
             stdlibc.free(ptr);
+        }
+    }
+
+    version (JokaNoTypes) {
+        extern(C) nothrow @nogc pure
+        void* jokaMemset(void* ptr, int value, Sz size) {
+            return stringc.memset(ptr, value, size);
+        }
+        extern(C) nothrow @nogc pure
+        void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+            return stringc.memcpy(ptr, source, size);
         }
     }
 }
@@ -1976,8 +2089,14 @@ unittest {
     text.reserve(defaultListCapacity + 1);
     assert(text.length == 0);
     assert(text.capacity == defaultListCapacity * 2);
-    assert(text.fmtIntoList("Hello {}!", "world") == "Hello world!");
-    assert(text.fmtIntoList("({}, {})", -69, -420) == "(-69, -420)");
+
+    version (JokaNoTypes) {
+        // NOTE: YOU SHOULD NOT USE `fmtIntoList` WITH THIS VERSION!!!
+    } else {
+        assert(text.fmtIntoList("Hello {}!", "world") == "Hello world!");
+        assert(text.fmtIntoList("({}, {})", -69, -420) == "(-69, -420)");
+    }
+
     text.free();
 }
 

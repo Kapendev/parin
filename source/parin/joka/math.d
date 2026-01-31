@@ -15,11 +15,14 @@ version (JokaPhobosStdc) {
 }
 
 version (JokaNoTypes) {
-    pragma(msg, "Joka: Defining missing `types.d` symbols.");
-    alias Sz = size_t;
-    alias IStr = const(char)[];
-    @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
-    @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
+    pragma(msg, "Joka: Defining missing `types.d` symbols for `math.d`.");
+
+    private alias Sz = size_t;
+    private alias IStr = const(char)[];
+    private alias Str = char[];
+
+    private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
+    private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
 } else {
     import parin.joka.types;
 }
