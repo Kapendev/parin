@@ -5,17 +5,22 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
-// NOTE: Maybe look at this: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
+// NOTE: Maybe look at this for more ideas: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
+//   I'm fine with not including any allocation, sorting or mutation functions.
+//   Ideas from Monkyyy:
+//     most important: map filter reduce acc last count backwards chunks cycle chain stride
+//     important but hard: sort(nlogn) radixsort transposed takemap cache splitter joiner (grouped with splitter, not hard)
+//     old notes: find balencedpern swapkeyvalue half1 half2 enumerate repeat
+//     trivail: any all issorted max min sum product stripleft stripright padleft padright takeexact center drop take
 
-/// The `algo` module includes functions that work with ranges.
+/// The `ranges` module includes functions that work with ranges.
 module parin.joka.ranges;
 
 import parin.joka.types;
 
-@safe nothrow @nogc:
-
 alias NumericRangeValue = int;
 alias Nrv = NumericRangeValue;
+
 static assert(Nrv.min < 0, "Type `NumericRangeValue` should be a signed type.");
 
 struct ValueIndex(V, I) {
@@ -31,7 +36,7 @@ struct NumericRange {
     Nrv step;
     Nrv index;
 
-    pragma(inline, true) @safe nothrow @nogc:
+    pragma(inline, true) @safe nothrow @nogc pure:
 
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
@@ -60,7 +65,7 @@ struct SliceRange(T) {
     Nrv sliceLength;
     Nrv index;
 
-    pragma(inline, true) @trusted nothrow @nogc:
+    pragma(inline, true) @trusted nothrow @nogc pure:
 
     bool empty() {
         return index >= sliceLength;
@@ -91,158 +96,129 @@ struct SliceRange(T) {
     }
 }
 
-NumericRange range(Nrv start, Nrv stop, Nrv step = 1) {
-    return NumericRange(start, stop, step, start);
-}
+struct EnumeratedRange(R) {
+    alias FrontBack = ValueIndex!(typeof(R.front()), Nrv);
 
-NumericRange range(Nrv stop) {
-    return range(0, stop);
-}
+    R range;
+    Nrv index;
 
-@trusted
-SliceRange!T range(T)(const(T)[] slice) {
-    return SliceRange!T(slice.ptr, cast(Nrv) slice.length);
-}
+    pragma(inline, true) @safe nothrow @nogc pure:
 
-alias toRange = range;
+    bool empty() {
+        return range.empty;
+    }
 
-auto enumerate(R)(R range, Nrv start = 0) if (rangeIsNotStaticArrayType!R) {
-    static if (is(R : const(T)[], T)) {
-        return enumerate(range.toRange());
-    } else {
-        alias FrontBack = ValueIndex!(typeof(R.front()), Nrv);
+    FrontBack front() {
+        return FrontBack(range.front, index);
+    }
 
-        static struct Range {
-            R range;
-            Nrv index;
+    void popFront() {
+        range.popFront();
+        index += 1;
+    }
 
-            bool empty() {
-                return range.empty;
-            }
-
-            FrontBack front() {
-                return FrontBack(range.front, index);
-            }
-
-            void popFront() {
-                range.popFront();
-                index += 1;
-            }
-
-            static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
-                FrontBack back() {
-                    return FrontBack(range.back, index);
-                }
-
-                void popBack() {
-                    range.popBack();
-                    index += 1;
-                }
-            }
+    static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
+        FrontBack back() {
+            return FrontBack(range.back, index);
         }
 
-        return Range(range, start);
+        void popBack() {
+            range.popBack();
+            index += 1;
+        }
     }
 }
 
-auto map(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
+// NOTE: This type is mixing map and filter into one idea. Just me trying things.
+struct TransformedRange(R, F) {
+    R range;
+    F func;
+    bool isFilter;
+
+    void skipToNext(bool canIncludeSelf) {
+        if (!canIncludeSelf) range.popFront();
+        while (!range.empty && !func(range.front)) range.popFront();
+    }
+
+    bool empty() {
+        if (isFilter) {
+            skipToNext(true);
+            return range.empty;
+        }
+        return range.empty;
+    }
+
+    auto front() {
+        if (isFilter) {
+            return range.front;
+        }
+        return func(range.front);
+    }
+
+    void popFront() {
+        if (isFilter) {
+            skipToNext(false);
+            return;
+        }
+        range.popFront();
+    }
+
+    static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
+        auto back() {
+            if (isFilter) assert(0, "Can't use filter with `foreach_reverse`.");
+            return func(range.back);
+        }
+
+        void popBack() {
+            if (isFilter) assert(0, "Can't use filter with `foreach_reverse`.");
+            range.popBack();
+        }
+    }
+}
+
+@safe nothrow @nogc pure {
+    alias toRange = range;
+
+    NumericRange range(Nrv start, Nrv stop, Nrv step = 1) {
+        return NumericRange(start, stop, step, start);
+    }
+
+    NumericRange range(Nrv stop) {
+        return range(0, stop);
+    }
+
+    @trusted
+    SliceRange!T range(T)(const(T)[] slice) {
+        return SliceRange!T(slice.ptr, cast(Nrv) slice.length);
+    }
+
+
+    EnumeratedRange!R enumerate(R)(R range, Nrv start = 0) if (rangeIsNotStaticArrayType!R) {
+        static if (is(R : const(T)[], T)) {
+            return enumerate(range.toRange());
+        } else {
+            return EnumeratedRange!R(range, start);
+        }
+    }
+}
+
+TransformedRange!(R, F) map(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
     static if (is(R : const(T)[], T)) {
         return map(range.toRange(), func);
     } else {
-        static struct Range {
-            R range;
-            F func;
-
-            bool empty() {
-                return range.empty;
-            }
-
-            auto front() {
-                return func(range.front);
-            }
-
-            void popFront() {
-                range.popFront();
-            }
-
-            static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
-                auto back() {
-                    return func(range.back);
-                }
-
-                void popBack() {
-                    range.popBack();
-                }
-            }
-        }
-
-        return Range(range, func);
+        return TransformedRange!(R, F)(range, func);
     }
 }
 
-auto filter(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
+TransformedRange!(R, F) filter(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
     static if (is(R : const(T)[], T)) {
         return filter(range.toRange(), func);
     } else {
-        static struct Range {
-            R range;
-            F func;
-
-            void skipToNext(bool canIncludeSelf) {
-                if (!canIncludeSelf) range.popFront();
-                while (!range.empty && !func(range.front)) range.popFront();
-            }
-
-            bool empty() {
-                skipToNext(true);
-                return range.empty;
-            }
-
-            auto front() {
-                return range.front;
-            }
-
-            void popFront() {
-                skipToNext(false);
-            }
-        }
-
-        return Range(range, func);
+        return TransformedRange!(R, F)(range, func, true);
     }
 }
 
-auto filterBack(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
-    static if (is(R : const(T)[], T)) {
-        return filterBack(range.toRange(), func);
-    } else {
-        static struct Range {
-            R range;
-            F func;
-
-            void skipToNext(bool canIncludeSelf) {
-                if (!canIncludeSelf) range.popBack();
-                while (!range.empty && !func(range.back)) range.popBack();
-            }
-
-            bool empty() {
-                skipToNext(true);
-                return range.empty;
-            }
-
-            auto back() {
-                return range.back;
-            }
-
-            void popBack() {
-                skipToNext(false);
-            }
-        }
-
-        return Range(range, func);
-    }
-}
-
-auto reduce(R, F, T)(R range, F func, T initial) if (rangeIsNotStaticArrayType!R) {
+T reduce(R, F, T)(R range, F func, T initial) if (rangeIsNotStaticArrayType!R) {
     static if (is(R : const(T)[], T)) {
         return reduce(range.toRange(), func, initial);
     } else {
