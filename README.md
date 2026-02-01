@@ -94,9 +94,8 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
-By default, this creates a project with the basic template.
+This creates a project with the basic template by default.
 The command `dub init -t parin -- entity` provides a template with an entity and state system.
-It's best to check the [examples](examples/) before using this one.
 
 For instructions on building without DUB, check the ["How can I build without DUB?"](#how-can-i-build-without-dub) section.
 
@@ -182,6 +181,7 @@ No. The following projects might be useful:
 
 - [wren-port](https://github.com/AuburnSounds/wren-port): A port of the Wren programming language to D.
 - [arsd.script](https://arsd-official.dpldocs.info/arsd.script.html): The language is based on a hybrid of D and Javascript.
+- [bindbc-lua](https://github.com/BindBC/bindbc-lua): Static & dynamic D bindings to the C API of Lua.
 
 ### Any other helpful libraries that I can use?
 

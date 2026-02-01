@@ -31,7 +31,7 @@ struct NumericRange {
     Nrv step;
     Nrv index;
 
-    @safe nothrow @nogc:
+    pragma(inline, true) @safe nothrow @nogc:
 
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
@@ -54,6 +54,43 @@ struct NumericRange {
     }
 }
 
+// NOTE: It's using a pointer because it keeps the sturct small. Was something like 24LU with a slice.
+struct SliceRange(T) {
+    const(T)* slice;
+    Nrv sliceLength;
+    Nrv index;
+
+    pragma(inline, true) @trusted nothrow @nogc:
+
+    bool empty() {
+        return index >= sliceLength;
+    }
+
+    T front() {
+        return slice[index];
+    }
+
+    void popFront() {
+        index += 1;
+    }
+
+    T back() {
+        return slice[sliceLength - index - 1];
+    }
+
+    void popBack() {
+        index += 1;
+    }
+
+    Nrv length() {
+        return cast(Nrv) sliceLength;
+    }
+
+    T opIndex(Sz i) {
+        return slice[i];
+    }
+}
+
 NumericRange range(Nrv start, Nrv stop, Nrv step = 1) {
     return NumericRange(start, stop, step, start);
 }
@@ -63,46 +100,11 @@ NumericRange range(Nrv stop) {
 }
 
 @trusted
-auto toRange(T)(const(T)[] slice) {
-    static struct Range {
-        // NOTE: It's using a pointer because it keeps the sturct small. Was something like 24LU with a slice.
-        const(T)* slice;
-        Nrv sliceLength;
-        Nrv index;
-
-        @trusted nothrow @nogc:
-
-        bool empty() {
-            return index >= sliceLength;
-        }
-
-        T front() {
-            return slice[index];
-        }
-
-        void popFront() {
-            index += 1;
-        }
-
-        T back() {
-            return slice[sliceLength - index - 1];
-        }
-
-        void popBack() {
-            index += 1;
-        }
-
-        Nrv length() {
-            return cast(Nrv) sliceLength;
-        }
-
-        T opIndex(Sz i) {
-            return slice[i];
-        }
-    }
-
-    return Range(slice.ptr, cast(Nrv) slice.length);
+SliceRange!T range(T)(const(T)[] slice) {
+    return SliceRange!T(slice.ptr, cast(Nrv) slice.length);
 }
+
+alias toRange = range;
 
 auto enumerate(R)(R range, Nrv start = 0) if (rangeIsNotStaticArrayType!R) {
     static if (is(R : const(T)[], T)) {
