@@ -98,8 +98,7 @@ version (JokaNoTypes) {
 
 // --- Core
 
-MemoryState _memoryState;
-
+// NOTE: Memory tracking related things are here.
 debug {
     version (D_BetterC) {
         enum isTrackingMemory = false;
@@ -174,6 +173,7 @@ struct AllocationGroup {
 
 @system nothrow:
 
+// NOTE: This part has the main allocation functions.
 // NOTE: Some `JokaCustomMemory` functions are defined also in `types.d`.
 version (JokaCustomMemory) {
     extern(C) nothrow       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
@@ -186,6 +186,8 @@ version (JokaCustomMemory) {
     }
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
+
+    MemoryState _memoryState;
 
     extern(C) nothrow @nogc
     void _jokaRestoreDefaultAllocatorSetup() {
@@ -266,6 +268,8 @@ version (JokaCustomMemory) {
         import stdlibc = parin.joka.stdc;
         import stringc = parin.joka.stdc; // NOTE: Used for `JokaNoTypes`.
     }
+
+    MemoryState _memoryState;
 
     extern(C) nothrow @nogc
     void _jokaRestoreDefaultAllocatorSetup() {
