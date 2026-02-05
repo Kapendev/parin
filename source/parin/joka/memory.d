@@ -139,6 +139,8 @@ debug {
     enum isTrackingMemory = false;
 }
 
+MemoryState __memoryState;
+
 struct MemoryState {
     void* allocatorState;
     AllocatorMallocFunc allocatorMallocFunc; // NOTE: If this is null, then we should return to the default allocator setup.
@@ -180,6 +182,11 @@ version (JokaCustomMemory) {
     extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow @nogc void  jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
+    extern(C) nothrow @nogc
+    void _jokaRestoreDefaultAllocatorSetup(MemoryState* state) {
+        state = MemoryState();
+    }
+
     version (JokaNoTypes) {
         private extern(C) nothrow @nogc pure void* jokaMemset(void* ptr, int value, Sz size);
         private extern(C) nothrow @nogc pure void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
@@ -187,14 +194,12 @@ version (JokaCustomMemory) {
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
 
-    MemoryState ___memoryState__;
-
     extern(C) nothrow @nogc
-    void _jokaRestoreDefaultAllocatorSetup() {
-        __memoryState.allocatorState = null;
-        __memoryState.allocatorMallocFunc = &_jokaAllocatorMalloc;
-        __memoryState.allocatorReallocFunc = &_jokaAllocatorRealloc;
-        __memoryState.allocatorFreeFunc = &_jokaAllocatorFree;
+    void _jokaRestoreDefaultAllocatorSetup(MemoryState* state) {
+        state.allocatorState = null;
+        state.allocatorMallocFunc = &_jokaAllocatorMalloc;
+        state.allocatorReallocFunc = &_jokaAllocatorRealloc;
+        state.allocatorFreeFunc = &_jokaAllocatorFree;
     }
 
     extern(C) nothrow
@@ -210,7 +215,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryState.allocatorMallocFunc == null) {
-            _jokaRestoreDefaultAllocatorSetup();
+            _jokaRestoreDefaultAllocatorSetup(&__memoryState);
         }
         return __memoryState.allocatorMallocFunc(&__memoryState.allocatorState, 0, size, file, line);
     }
@@ -228,7 +233,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryState.allocatorMallocFunc == null) {
-            _jokaRestoreDefaultAllocatorSetup();
+            _jokaRestoreDefaultAllocatorSetup(&__memoryState);
         }
         return __memoryState.allocatorReallocFunc(&__memoryState.allocatorState, 0, ptr, oldSize, size, file, line);
     }
@@ -244,7 +249,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryState.allocatorMallocFunc == null) {
-            _jokaRestoreDefaultAllocatorSetup();
+            _jokaRestoreDefaultAllocatorSetup(&__memoryState);
         }
         __memoryState.allocatorFreeFunc(&__memoryState.allocatorState, 0, ptr, oldSize, file, line);
     }
@@ -269,14 +274,12 @@ version (JokaCustomMemory) {
         import stringc = parin.joka.stdc; // NOTE: Used for `JokaNoTypes`.
     }
 
-    MemoryState __memoryState;
-
     extern(C) nothrow @nogc
-    void _jokaRestoreDefaultAllocatorSetup() {
-        __memoryState.allocatorState = null;
-        __memoryState.allocatorMallocFunc = &_jokaAllocatorMalloc;
-        __memoryState.allocatorReallocFunc = &_jokaAllocatorRealloc;
-        __memoryState.allocatorFreeFunc = &_jokaAllocatorFree;
+    void _jokaRestoreDefaultAllocatorSetup(MemoryState* state) {
+        state.allocatorState = null;
+        state.allocatorMallocFunc = &_jokaAllocatorMalloc;
+        state.allocatorReallocFunc = &_jokaAllocatorRealloc;
+        state.allocatorFreeFunc = &_jokaAllocatorFree;
     }
 
     extern(C) nothrow
@@ -299,7 +302,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryState.allocatorMallocFunc == null) {
-            _jokaRestoreDefaultAllocatorSetup();
+            _jokaRestoreDefaultAllocatorSetup(&__memoryState);
         }
         return __memoryState.allocatorMallocFunc(&__memoryState.allocatorState, 0, size, file, line);
     }
@@ -346,7 +349,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryState.allocatorMallocFunc == null) {
-            _jokaRestoreDefaultAllocatorSetup();
+            _jokaRestoreDefaultAllocatorSetup(&__memoryState);
         }
         return __memoryState.allocatorReallocFunc(&__memoryState.allocatorState, 0, ptr, oldSize, size, file, line);
     }
@@ -383,7 +386,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryState.allocatorMallocFunc == null) {
-            _jokaRestoreDefaultAllocatorSetup();
+            _jokaRestoreDefaultAllocatorSetup(&__memoryState);
         }
         __memoryState.allocatorFreeFunc(&__memoryState.allocatorState, 0, ptr, oldSize, file, line);
     }
@@ -623,6 +626,7 @@ struct List(T) {
     alias Item = T;
     alias Data = T[];
 
+    // NOTE: I know this is slop code, but I don't care MONKEYYY! STOP MAKING ME FEEL BAD :(
     enum isBasicContainer = true;
     enum isBufferContainer = false;
     enum hasFixedCapacity = false;
@@ -630,14 +634,20 @@ struct List(T) {
     Data items;
     Sz capacity;
     bool canIgnoreLeak;
+    MemoryState capture;
 
     @safe nothrow:
 
     mixin sliceOps!(Self, Item);
 
     pragma(inline, true) @trusted {
-        this(const(T)[] args...) {
+        this(ref MemoryState capture, const(T)[] args...) {
+            this.capture = capture;
             append(args);
+        }
+
+        this(const(T)[] args...) {
+            this(__memoryState, args);
         }
 
         @nogc
@@ -658,10 +668,17 @@ struct List(T) {
 
     @trusted
     bool appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
+        if (capture.allocatorMallocFunc == null) {
+            capture = __memoryState;
+        }
+
         Sz newLength = length + 1;
         if (newLength > capacity) {
             auto targetCapacity = findListCapacityFastAndAssumeOneAddedItemInLength(newLength, capacity);
-            auto rawPtr = jokaRealloc(items.ptr, targetCapacity * T.sizeof, capacity, file, line);
+            // NOTE/TODO: This part coult maybe be better with a helper function???
+            auto rawPtr = (capture.allocatorMallocFunc == null)
+                ? jokaRealloc(items.ptr, targetCapacity, capacity, file, line)
+                : capture.allocatorReallocFunc(capture.allocatorState, 0, items.ptr, capacity, targetCapacity * T.sizeof, file, line);
             if (rawPtr == null) return true;
             static if (isTrackingMemory) {
                 if (canIgnoreLeak) rawPtr.ignoreLeak();
@@ -722,9 +739,15 @@ struct List(T) {
 
     @trusted
     bool reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+        if (capture.allocatorMallocFunc == null) {
+            capture = __memoryState;
+        }
+
         auto targetCapacity = findListCapacity(newCapacity, capacity);
         if (targetCapacity > capacity) {
-            auto rawPtr = jokaRealloc(items.ptr, targetCapacity * T.sizeof, capacity, file, line);
+            auto rawPtr = (capture.allocatorMallocFunc == null)
+                ? jokaRealloc(items.ptr, targetCapacity, capacity, file, line)
+                : capture.allocatorReallocFunc(capture.allocatorState, 0, items.ptr, capacity, targetCapacity * T.sizeof, file, line);
             if (rawPtr == null) return true;
             static if (isTrackingMemory) {
                 if (canIgnoreLeak) rawPtr.ignoreLeak();
@@ -767,7 +790,15 @@ struct List(T) {
 
     @trusted @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
-        jokaFree(items.ptr, capacity, file, line);
+        if (capture.allocatorMallocFunc == null) {
+            capture = __memoryState;
+        }
+
+        if (capture.allocatorMallocFunc == null) {
+            jokaFree(items.ptr, capacity, file, line);
+        } else {
+            capture.allocatorFreeFunc(capture.allocatorState, 0, items.ptr, capacity, file, line);
+        }
         items = null;
         capacity = 0;
         canIgnoreLeak = false;
@@ -1577,49 +1608,32 @@ struct Arena {
     Sz capacity;
     Sz offset;
     Sz checkpointOffset;
-    bool isOwning;
-    bool canIgnoreLeak;
     // Extra data for users of this type.
     Arena* next;
 
-    @trusted nothrow:
+    @trusted nothrow @nogc:
 
-    this(Sz capacity, IStr file = __FILE__, Sz line = __LINE__) {
-        ready(capacity, file, line);
-    }
-
-    @nogc
     this(ubyte* data, Sz capacity) {
         ready(data, capacity);
     }
 
-    @nogc
     this(ubyte[] data) {
         ready(data);
     }
 
-    void ready(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
-        free(file, line);
-        auto rawPtr = jokaMalloc(newCapacity, file, line);
-        static if (isTrackingMemory) {
-            if (canIgnoreLeak) rawPtr.ignoreLeak();
-        }
-        data = cast(ubyte*) rawPtr;
-        capacity = newCapacity;
-        isOwning = true;
-    }
-
-    @trusted nothrow @nogc:
-
-    void ready(ubyte* newData, Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
-        free(file, line);
+    void ready(ubyte* newData, Sz newCapacity) {
         data = newData;
         capacity = newCapacity;
+        offset = 0;
+        checkpointOffset = 0;
+        next = null;
     }
 
     void ready(ubyte[] newData) {
         ready(newData.ptr, newData.length);
     }
+
+    // NOTE: The file and line arguments are here for metraprogramming reasons. It keeps the API of arena types the same.
 
     void* malloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
         Sz alignedOffset = void;
@@ -1713,19 +1727,11 @@ struct Arena {
         checkpointOffset = 0;
     }
 
-    void free(IStr file = __FILE__, Sz line = __LINE__) {
-        if (isOwning) jokaFree(data, capacity, file, line);
+    void reset(IStr file = __FILE__, Sz line = __LINE__) {
         data = null;
         capacity = 0;
-        clear();
-        isOwning = false;
-        canIgnoreLeak = false;
-    }
-
-    Arena ignoreLeak() {
-        canIgnoreLeak = true;
-        data.ignoreLeak();
-        return this;
+        offset = 0;
+        checkpointOffset = 0;
     }
 }
 
@@ -1733,56 +1739,34 @@ struct GrowingArena {
     Arena* head;
     Arena* current;
     Sz chunkCapacity;
-    bool canIgnoreLeak;
 
     @trusted nothrow:
 
-    this(Sz chunkCapacity, Sz chunkCount = 1, IStr file = __FILE__, Sz line = __LINE__) {
-        ready(chunkCapacity, chunkCount, file, line);
+    this(Sz chunkCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+        ready(chunkCapacity, file, line);
     }
 
-    void ready(Sz newChunkCapacity, Sz newChunkCount = 1, IStr file = __FILE__, Sz line = __LINE__) {
+    void ready(Sz newChunkCapacity, IStr file = __FILE__, Sz line = __LINE__) {
         free();
-        head = jokaMake(Arena(newChunkCapacity, file, line), file, line);
-        static if (isTrackingMemory) {
-            // To be, or not to be, that is the question.
-            if (canIgnoreLeak) {
-                .ignoreLeak(head);
-                head.ignoreLeak();
-            }
-        }
+        head = cast(Arena*) _jokaMalloc(Arena.sizeof, file, line);
+        head.ready(cast(ubyte*) _jokaMalloc(newChunkCapacity, file, line), newChunkCapacity);
         current = head;
         chunkCapacity = newChunkCapacity;
-        auto chunk = head;
-        foreach (i; 1 .. newChunkCount) {
-            chunk.next = jokaMake(Arena(newChunkCapacity, file, line), file, line);
-            static if (isTrackingMemory) {
-                if (canIgnoreLeak) {
-                    .ignoreLeak(chunk.next);
-                    chunk.next.ignoreLeak();
-                }
-            }
-            chunk = chunk.next;
-        }
     }
 
     void* malloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
         auto pp = current.malloc(size, alignment);
         if (pp == null) {
-            // NOTE: Active next pointer + T being bigger than the memory of the next pointer will return a null.
-            //   Should probably be fine for most cases. I will keep it like that for now.
-            auto chunk = current.next
-                ? current.next
-                : jokaMake(Arena(size > chunkCapacity ? size : chunkCapacity, file, line), file, line);
-            static if (isTrackingMemory) {
-                if (current.next == null && canIgnoreLeak) {
-                    .ignoreLeak(chunk);
-                    chunk.ignoreLeak();
-                }
+            auto chunk = cast(Arena*) null;
+            if (current.next) {
+                chunk = current.next;
+            } else {
+                chunk = cast(Arena*) _jokaMalloc(Arena.sizeof, file, line);
+                chunk.ready(cast(ubyte*) _jokaMalloc(chunkCapacity, file, line), chunkCapacity);
+                current.next = chunk;
+                current = chunk;
             }
             pp = chunk.malloc(size, alignment);
-            current.next = chunk;
-            current = chunk;
         }
         return pp;
     }
@@ -1790,20 +1774,16 @@ struct GrowingArena {
     void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
         auto pp = current.realloc(ptr, oldSize, newSize, alignment);
         if (pp == null) {
-            // NOTE: Active next pointer + T being bigger than the memory of the next pointer will return a null.
-            //   Should probably be fine for most cases. I will keep it like that for now.
-            auto chunk = current.next
-                ? current.next
-                : jokaMake(Arena(newSize > chunkCapacity ? newSize : chunkCapacity, file, line), file, line);
-            static if (isTrackingMemory) {
-                if (current.next == null && canIgnoreLeak) {
-                    .ignoreLeak(chunk);
-                    chunk.ignoreLeak();
-                }
+            auto chunk = cast(Arena*) null;
+            if (current.next) {
+                chunk = current.next;
+            } else {
+                chunk = cast(Arena*) _jokaMalloc(Arena.sizeof, file, line);
+                chunk.ready(cast(ubyte*) _jokaMalloc(chunkCapacity, file, line), chunkCapacity);
+                current.next = chunk;
+                current = chunk;
             }
             pp = chunk.realloc(ptr, oldSize, newSize, alignment);
-            current.next = chunk;
-            current = chunk;
         }
         return pp;
     }
@@ -1859,8 +1839,9 @@ struct GrowingArena {
     void clear() {
         auto chunk = head;
         while (chunk) {
+            auto next = chunk.next;
             chunk.clear();
-            chunk = chunk.next;
+            chunk = next;
         }
         current = head;
     }
@@ -1868,24 +1849,14 @@ struct GrowingArena {
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         auto chunk = head;
         while (chunk) {
-            chunk.free(file, line);
-            jokaFree(chunk, chunk.capacity, file, line);
-            chunk = chunk.next;
+            auto next = chunk.next;
+            _jokaFree(chunk.data, file, line);
+            _jokaFree(chunk, file, line);
+            chunk = next;
         }
         head = null;
         current = null;
         chunkCapacity = 0;
-        canIgnoreLeak = false;
-    }
-
-    GrowingArena ignoreLeak() {
-        canIgnoreLeak = true;
-        auto chunk = head;
-        while (chunk) {
-            .ignoreLeak(chunk);
-            chunk.ignoreLeak();
-        }
-        return this;
     }
 }
 
@@ -2504,8 +2475,7 @@ unittest {
     int* number;
     ubyte[512] buffer;
 
-    arena = Arena(512);
-    assert(arena.isOwning == true);
+    arena = Arena(buffer);
     assert(arena.capacity == 512);
     assert(arena.offset == 0);
     assert(arena.data != null);
@@ -2518,33 +2488,12 @@ unittest {
     assert(arena.data != null);
     assert(arena.malloc(512, 1) != null);
     assert(arena.malloc(512, 1) == null);
-    arena.free();
+    arena.reset();
     assert(arena.capacity == 0);
     assert(arena.offset == 0);
     assert(arena.data == null);
-    assert(arena.isOwning == false);
 
     arena = Arena(buffer);
-    assert(arena.isOwning == false);
-    assert(arena.capacity == 512);
-    assert(arena.offset == 0);
-    assert(arena.data != null);
-    number = arena.make(69);
-    assert(*number == 69);
-    number = arena.make(420);
-    assert(*number == 420);
-    arena.clear();
-    assert(arena.offset == 0);
-    assert(arena.data != null);
-    assert(arena.malloc(512, 1) != null);
-    assert(arena.malloc(512, 1) == null);
-    arena.free();
-    assert(arena.capacity == 0);
-    assert(arena.offset == 0);
-    assert(arena.data == null);
-    assert(arena.isOwning == false);
-
-    arena = Arena(512);
     with (ScopedArena(arena)) {
         make!char('C');
         with (ScopedArena(arena)) {
@@ -2555,7 +2504,7 @@ unittest {
         assert(arena.offset == 1);
     }
     assert(arena.offset == 0);
-    arena.free();
+    arena.reset();
 
     arena = Arena(buffer);
     auto dynamicArray = BStr(arena.makeSlice!char(2));
