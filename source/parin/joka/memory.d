@@ -187,14 +187,14 @@ version (JokaCustomMemory) {
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
 
-    MemoryState _memoryState;
+    MemoryState ___memoryState__;
 
     extern(C) nothrow @nogc
     void _jokaRestoreDefaultAllocatorSetup() {
-        _memoryState.allocatorState = null;
-        _memoryState.allocatorMallocFunc = &_jokaAllocatorMalloc;
-        _memoryState.allocatorReallocFunc = &_jokaAllocatorRealloc;
-        _memoryState.allocatorFreeFunc = &_jokaAllocatorFree;
+        __memoryState.allocatorState = null;
+        __memoryState.allocatorMallocFunc = &_jokaAllocatorMalloc;
+        __memoryState.allocatorReallocFunc = &_jokaAllocatorRealloc;
+        __memoryState.allocatorFreeFunc = &_jokaAllocatorFree;
     }
 
     extern(C) nothrow
@@ -209,10 +209,10 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (_memoryState.allocatorMallocFunc == null) {
+        if (__memoryState.allocatorMallocFunc == null) {
             _jokaRestoreDefaultAllocatorSetup();
         }
-        return _memoryState.allocatorMallocFunc(&_memoryState.allocatorState, 0, size, file, line);
+        return __memoryState.allocatorMallocFunc(&__memoryState.allocatorState, 0, size, file, line);
     }
 
     extern(C) nothrow
@@ -227,10 +227,10 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (_memoryState.allocatorMallocFunc == null) {
+        if (__memoryState.allocatorMallocFunc == null) {
             _jokaRestoreDefaultAllocatorSetup();
         }
-        return _memoryState.allocatorReallocFunc(&_memoryState.allocatorState, 0, ptr, oldSize, size, file, line);
+        return __memoryState.allocatorReallocFunc(&__memoryState.allocatorState, 0, ptr, oldSize, size, file, line);
     }
 
     extern(C) nothrow @nogc
@@ -243,10 +243,10 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (_memoryState.allocatorMallocFunc == null) {
+        if (__memoryState.allocatorMallocFunc == null) {
             _jokaRestoreDefaultAllocatorSetup();
         }
-        _memoryState.allocatorFreeFunc(&_memoryState.allocatorState, 0, ptr, oldSize, file, line);
+        __memoryState.allocatorFreeFunc(&__memoryState.allocatorState, 0, ptr, oldSize, file, line);
     }
 
     version (JokaNoTypes) {
@@ -269,14 +269,14 @@ version (JokaCustomMemory) {
         import stringc = parin.joka.stdc; // NOTE: Used for `JokaNoTypes`.
     }
 
-    MemoryState _memoryState;
+    MemoryState __memoryState;
 
     extern(C) nothrow @nogc
     void _jokaRestoreDefaultAllocatorSetup() {
-        _memoryState.allocatorState = null;
-        _memoryState.allocatorMallocFunc = &_jokaAllocatorMalloc;
-        _memoryState.allocatorReallocFunc = &_jokaAllocatorRealloc;
-        _memoryState.allocatorFreeFunc = &_jokaAllocatorFree;
+        __memoryState.allocatorState = null;
+        __memoryState.allocatorMallocFunc = &_jokaAllocatorMalloc;
+        __memoryState.allocatorReallocFunc = &_jokaAllocatorRealloc;
+        __memoryState.allocatorFreeFunc = &_jokaAllocatorFree;
     }
 
     extern(C) nothrow
@@ -298,10 +298,10 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (_memoryState.allocatorMallocFunc == null) {
+        if (__memoryState.allocatorMallocFunc == null) {
             _jokaRestoreDefaultAllocatorSetup();
         }
-        return _memoryState.allocatorMallocFunc(&_memoryState.allocatorState, 0, size, file, line);
+        return __memoryState.allocatorMallocFunc(&__memoryState.allocatorState, 0, size, file, line);
     }
 
     extern(C) nothrow
@@ -345,10 +345,10 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (_memoryState.allocatorMallocFunc == null) {
+        if (__memoryState.allocatorMallocFunc == null) {
             _jokaRestoreDefaultAllocatorSetup();
         }
-        return _memoryState.allocatorReallocFunc(&_memoryState.allocatorState, 0, ptr, oldSize, size, file, line);
+        return __memoryState.allocatorReallocFunc(&__memoryState.allocatorState, 0, ptr, oldSize, size, file, line);
     }
 
     extern(C) nothrow @nogc
@@ -382,10 +382,10 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (_memoryState.allocatorMallocFunc == null) {
+        if (__memoryState.allocatorMallocFunc == null) {
             _jokaRestoreDefaultAllocatorSetup();
         }
-        _memoryState.allocatorFreeFunc(&_memoryState.allocatorState, 0, ptr, oldSize, file, line);
+        __memoryState.allocatorFreeFunc(&__memoryState.allocatorState, 0, ptr, oldSize, file, line);
     }
 
     version (JokaNoTypes) {
