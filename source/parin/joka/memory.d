@@ -135,18 +135,43 @@ debug {
 }
 
 struct AllocationGroup {
-    IStr _currentGroup;
+    IStr _currentAllocationGroup;
 
     @safe nothrow:
 
     this(IStr group) {
-        this._currentGroup = group;
+        this._currentAllocationGroup = group;
         beginAllocationGroup(group);
     }
 
     @nogc
     ~this() {
         endAllocationGroup();
+    }
+}
+
+struct ScopedMemoryState {
+    MemoryState _previousMemoryState;
+    MemoryState _currentMemoryState;
+
+    @trusted nothrow @nogc:
+
+    this(MemoryState newState) {
+        this._previousMemoryState = __memoryState;
+        this._currentMemoryState = newState;
+        __memoryState = newState;
+    }
+
+    this(ref Arena arena) {
+        this(arena.toMemoryState());
+    }
+
+    this(ref GrowingArena arena) {
+        this(arena.toMemoryState());
+    }
+
+    ~this() {
+        __memoryState = _previousMemoryState;
     }
 }
 
@@ -157,18 +182,18 @@ struct MemoryState {
     AllocatorFreeFunc allocatorFreeFunc;
 }
 
-extern(C) nothrow {
+nothrow {
     alias AllocatorMallocFunc = void* function(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line);
     alias AllocatorReallocFunc = void* function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line);
 }
 
-extern(C) nothrow @nogc {
+nothrow @nogc {
     alias AllocatorFreeFunc = void function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
 }
 
 MemoryState __memoryState;
 
-@system nothrow:
+@system nothrow { // BEGIN: MEMORY(@systen nothrow)
 
 // NOTE: Memory allocation related things are here.
 version (JokaCustomMemory) {
@@ -218,7 +243,7 @@ version (JokaCustomMemory) {
         return memoryd.GC.malloc(size);
     }
 
-    extern(C) nothrow
+    nothrow
     void* jokaAllocatorMalloc(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
         return jokaSystemMalloc(size, file, line);
     }
@@ -234,7 +259,7 @@ version (JokaCustomMemory) {
         return memoryd.GC.realloc(ptr, size);
     }
 
-    extern(C) nothrow
+    nothrow
     void* jokaAllocatorRealloc(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);
     }
@@ -248,7 +273,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow @nogc
     void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 
-    extern(C) nothrow @nogc
+    nothrow @nogc
     void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
     }
@@ -303,7 +328,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    extern(C) nothrow
+    nothrow
     void* jokaAllocatorMalloc(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
         return jokaSystemMalloc(size, file, line);
     }
@@ -348,7 +373,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    extern(C) nothrow
+    nothrow
     void* jokaAllocatorRealloc(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);
     }
@@ -383,7 +408,7 @@ version (JokaCustomMemory) {
         }
     }
 
-    extern(C) nothrow @nogc
+    nothrow @nogc
     void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
     }
@@ -537,6 +562,8 @@ void endAllocationGroup() {
         if (_memoryTrackingState.currentGroupStack.length) _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
     }
 }
+
+} // END: MEMORY(@systen nothrow)
 
 /// Joint allocation test.
 unittest {
@@ -1726,6 +1753,15 @@ struct Arena {
         offset = 0;
         checkpointOffset = 0;
     }
+
+    MemoryState toMemoryState() {
+        auto result = MemoryState();
+        result.allocatorState = &this;
+        result.allocatorMallocFunc = &arenaAllocatorMallocWrapper;
+        result.allocatorReallocFunc = &arenaAllocatorReallocWrapper;
+        result.allocatorFreeFunc = &arenaAllocatorFreeWrapper;
+        return result;
+    }
 }
 
 struct GrowingArena {
@@ -1851,6 +1887,15 @@ struct GrowingArena {
         current = null;
         chunkCapacity = 0;
     }
+
+    MemoryState toMemoryState() {
+        auto result = MemoryState();
+        result.allocatorState = &this;
+        result.allocatorMallocFunc = &growingArenaAllocatorMallocWrapper;
+        result.allocatorReallocFunc = &growingArenaAllocatorReallocWrapper;
+        result.allocatorFreeFunc = &growingArenaAllocatorFreeWrapper;
+        return result;
+    }
 }
 
 struct _ScopedArena(T) {
@@ -1916,6 +1961,36 @@ struct _ScopedArena(T) {
 @trusted
 _ScopedArena!T ScopedArena(T)(ref T arena) {
     return _ScopedArena!T(arena);
+}
+
+@trusted @nogc
+void* arenaAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+    return (cast(Arena*) allocatorState).malloc(size, alignment, file, line);
+}
+
+@trusted @nogc
+void* arenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    return (cast(Arena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
+}
+
+@nogc
+void arenaAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
+    // It's a no-op.
+}
+
+@trusted
+void* growingArenaAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+    return (cast(GrowingArena*) allocatorState).malloc(size, alignment, file, line);
+}
+
+@trusted
+void* growingArenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    return (cast(GrowingArena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
+}
+
+@nogc
+void growingArenaAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
+    // It's a no-op.
 }
 
 pragma(inline, true) @trusted @nogc {
