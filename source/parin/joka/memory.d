@@ -128,31 +128,10 @@ debug {
             _MallocGroupInfo[_MallocInfo] groupBuffer;
         }
 
-        version (JokaGlobalTracking) {
-            pragma(msg, "Joka: Using global (non-TLS) tracking.");
-            __gshared _MemoryTrackingState _memoryTrackingState;
-        } else {
-            _MemoryTrackingState _memoryTrackingState;
-        }
+        _MemoryTrackingState _memoryTrackingState;
     }
 } else {
     enum isTrackingMemory = false;
-}
-
-struct MemoryState {
-    void* allocatorState;
-    AllocatorMallocFunc allocatorMallocFunc; // NOTE: If this is null, then we should return to the default allocator setup.
-    AllocatorReallocFunc allocatorReallocFunc;
-    AllocatorFreeFunc allocatorFreeFunc;
-}
-
-extern(C) nothrow {
-    alias AllocatorMallocFunc = void* function(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line);
-    alias AllocatorReallocFunc = void* function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line);
-}
-
-extern(C) nothrow @nogc {
-    alias AllocatorFreeFunc = void function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
 }
 
 struct AllocationGroup {
@@ -171,12 +150,27 @@ struct AllocationGroup {
     }
 }
 
+struct MemoryState {
+    void* allocatorState;
+    AllocatorMallocFunc allocatorMallocFunc;   // NOTE: If null, then the default allocator setup should be used.
+    AllocatorReallocFunc allocatorReallocFunc;
+    AllocatorFreeFunc allocatorFreeFunc;
+}
+
+extern(C) nothrow {
+    alias AllocatorMallocFunc = void* function(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line);
+    alias AllocatorReallocFunc = void* function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line);
+}
+
+extern(C) nothrow @nogc {
+    alias AllocatorFreeFunc = void function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
+}
+
 MemoryState __memoryState;
 
 @system nothrow:
 
-// NOTE: This part has the main allocation functions.
-// NOTE: Some `JokaCustomMemory` functions are defined also in `types.d`.
+// NOTE: Memory allocation related things are here.
 version (JokaCustomMemory) {
     extern(C) nothrow       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
@@ -202,6 +196,7 @@ version (JokaCustomMemory) {
         jokaFree(ptr, 0, file, line);
     }
 
+    // NOTE: Some `JokaNoTypes` functions are defined also in `types.d`.
     version (JokaNoTypes) {
         private extern(C) nothrow @nogc pure void* jokaMemset(void* ptr, int value, Sz size);
         private extern(C) nothrow @nogc pure void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
@@ -264,6 +259,7 @@ version (JokaCustomMemory) {
         __memoryState.allocatorFreeFunc(&__memoryState.allocatorState, 0, ptr, oldSize, file, line);
     }
 
+    // NOTE: Some `JokaNoTypes` functions are defined also in `types.d`.
     version (JokaNoTypes) {
         extern(C) nothrow @nogc pure
         void* jokaMemset(void* ptr, int value, Sz size) {
@@ -398,6 +394,7 @@ version (JokaCustomMemory) {
         __memoryState.allocatorFreeFunc(&__memoryState.allocatorState, 0, ptr, oldSize, file, line);
     }
 
+    // NOTE: Some `JokaNoTypes` functions are defined also in `types.d`.
     version (JokaNoTypes) {
         extern(C) nothrow @nogc pure
         void* jokaMemset(void* ptr, int value, Sz size) {
@@ -415,43 +412,6 @@ void jokaEnsureCapture(MemoryState* capture) {
     if (capture.allocatorMallocFunc != null) return;
     if (__memoryState.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryState);
     *capture = __memoryState;
-}
-
-@trusted @nogc
-auto ignoreLeak(T)(T ptr) {
-    static if (is(T : const(A)[], A)) {
-        static if (isTrackingMemory) {
-            if (auto mallocValue = ptr.ptr in _memoryTrackingState.table) {
-                mallocValue.canIgnore = true;
-            }
-        }
-        return ptr;
-    } else static if (is(T : const(void)*)) {
-        static if (isTrackingMemory) {
-            if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                mallocValue.canIgnore = true;
-            }
-        }
-        return ptr;
-    } else static if (__traits(hasMember, T, "ignoreLeak")) {
-        return ptr.ignoreLeak();
-    } else {
-        static assert(0, "Type doesn't implement the `ignoreLeak` function.");
-    }
-}
-
-@trusted
-void beginAllocationGroup(IStr group) {
-    static if (isTrackingMemory) {
-        _memoryTrackingState.currentGroupStack ~= group.idup;
-    }
-}
-
-@trusted @nogc
-void endAllocationGroup() {
-    static if (isTrackingMemory) {
-        if (_memoryTrackingState.currentGroupStack.length) _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
-    }
 }
 
 @trusted
@@ -539,6 +499,43 @@ T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
         offset += typeof(member[0]).sizeof * lengths[i];
     }
     return result;
+}
+
+@trusted @nogc
+auto ignoreLeak(T)(T ptr) {
+    static if (is(T : const(A)[], A)) {
+        static if (isTrackingMemory) {
+            if (auto mallocValue = ptr.ptr in _memoryTrackingState.table) {
+                mallocValue.canIgnore = true;
+            }
+        }
+        return ptr;
+    } else static if (is(T : const(void)*)) {
+        static if (isTrackingMemory) {
+            if (auto mallocValue = ptr in _memoryTrackingState.table) {
+                mallocValue.canIgnore = true;
+            }
+        }
+        return ptr;
+    } else static if (__traits(hasMember, T, "ignoreLeak")) {
+        return ptr.ignoreLeak();
+    } else {
+        static assert(0, "Type doesn't implement the `ignoreLeak` function.");
+    }
+}
+
+@trusted
+void beginAllocationGroup(IStr group) {
+    static if (isTrackingMemory) {
+        _memoryTrackingState.currentGroupStack ~= group.idup;
+    }
+}
+
+@trusted @nogc
+void endAllocationGroup() {
+    static if (isTrackingMemory) {
+        if (_memoryTrackingState.currentGroupStack.length) _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
+    }
 }
 
 /// Joint allocation test.
