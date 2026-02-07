@@ -11,6 +11,8 @@
 
 module parin.joka.memory;
 
+MemoryContext __memoryContext;
+
 enum defaultJokaMemoryAlignment = 16;
 
 version (JokaNoTypes) {
@@ -152,11 +154,18 @@ struct AllocationGroup {
     }
 }
 
+struct MemoryContext {
+    void* allocatorState;
+    AllocatorMallocFunc allocatorMallocFunc;   // NOTE: If null, then the default allocator setup should be used.
+    AllocatorReallocFunc allocatorReallocFunc;
+    AllocatorFreeFunc allocatorFreeFunc;
+}
+
 struct ScopedMemoryContext {
     MemoryContext _previousMemoryContext;
     MemoryContext _currentMemoryContext;
 
-    @trusted nothrow @nogc:
+    @safe nothrow @nogc:
 
     this(MemoryContext newContext) {
         this._previousMemoryContext = __memoryContext;
@@ -177,23 +186,36 @@ struct ScopedMemoryContext {
     }
 }
 
-struct MemoryContext {
-    void* allocatorState;
-    AllocatorMallocFunc allocatorMallocFunc;   // NOTE: If null, then the default allocator setup should be used.
-    AllocatorReallocFunc allocatorReallocFunc;
-    AllocatorFreeFunc allocatorFreeFunc;
+struct _ScopedDefaultMemoryContext {
+    MemoryContext _previousMemoryContext;
+
+    @safe nothrow @nogc:
+
+    // NOTE: It's a reference to avoid a copy and to make it harder for people to use.
+    this(ref MemoryContext tempContext) {
+        jokaRestoreDefaultAllocatorSetup(tempContext);
+        this._previousMemoryContext = __memoryContext;
+        __memoryContext = tempContext;
+    }
+
+    ~this() {
+        __memoryContext = _previousMemoryContext;
+    }
+}
+
+_ScopedDefaultMemoryContext ScopedDefaultMemoryContext() {
+    auto tempContext = MemoryContext();
+    return _ScopedDefaultMemoryContext(tempContext);
 }
 
 nothrow {
-    alias AllocatorMallocFunc = void* function(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line);
+    alias AllocatorMallocFunc  = void* function(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line);
     alias AllocatorReallocFunc = void* function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line);
 }
 
 nothrow @nogc {
     alias AllocatorFreeFunc = void function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
 }
-
-MemoryContext __memoryContext;
 
 @system nothrow { // BEGIN: MEMORY(@systen nothrow)
 
@@ -203,9 +225,12 @@ version (JokaCustomMemory) {
     extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow @nogc void  jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
-    extern(C) nothrow @nogc
-    void jokaRestoreDefaultAllocatorSetup(MemoryContext* context) {
-        context = MemoryContext();
+    extern(C) @safe nothrow @nogc
+    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
+        context.allocatorState = null;
+        context.allocatorMallocFunc = null;
+        context.allocatorReallocFunc = null;
+        context.allocatorFreeFunc = null;
     }
 
     extern(C) nothrow
@@ -232,8 +257,8 @@ version (JokaCustomMemory) {
     import memoryd = core.memory;
     import stringc = core.stdc.string;
 
-    extern(C) nothrow @nogc
-    void jokaRestoreDefaultAllocatorSetup(MemoryContext* context) {
+    extern(C) @safe nothrow @nogc
+    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.allocatorMallocFunc = &jokaAllocatorMalloc;
         context.allocatorReallocFunc = &jokaAllocatorRealloc;
@@ -252,7 +277,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
+        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         return __memoryContext.allocatorMallocFunc(&__memoryContext.allocatorState, 0, size, file, line);
     }
 
@@ -268,7 +293,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
+        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         return __memoryContext.allocatorReallocFunc(&__memoryContext.allocatorState, 0, ptr, oldSize, size, file, line);
     }
 
@@ -282,7 +307,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
+        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.allocatorFreeFunc(&__memoryContext.allocatorState, 0, ptr, oldSize, file, line);
     }
 
@@ -306,8 +331,8 @@ version (JokaCustomMemory) {
         import stringc = parin.joka.stdc; // NOTE: Used for `JokaNoTypes`.
     }
 
-    extern(C) nothrow @nogc
-    void jokaRestoreDefaultAllocatorSetup(MemoryContext* context) {
+    extern(C) @safe nothrow @nogc
+    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.allocatorMallocFunc = &jokaAllocatorMalloc;
         context.allocatorReallocFunc = &jokaAllocatorRealloc;
@@ -337,7 +362,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
+        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         return __memoryContext.allocatorMallocFunc(&__memoryContext.allocatorState, 0, size, file, line);
     }
 
@@ -382,7 +407,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
+        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         return __memoryContext.allocatorReallocFunc(&__memoryContext.allocatorState, 0, ptr, oldSize, size, file, line);
     }
 
@@ -417,7 +442,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow @nogc
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
+        if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.allocatorFreeFunc(&__memoryContext.allocatorState, 0, ptr, oldSize, file, line);
     }
 
@@ -435,10 +460,10 @@ version (JokaCustomMemory) {
 }
 
 pragma(inline, true) @trusted @nogc
-void jokaEnsureCapture(MemoryContext* capture) {
+void jokaEnsureCapture(ref MemoryContext capture) {
     if (capture.allocatorMallocFunc != null) return;
-    if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(&__memoryContext);
-    *capture = __memoryContext;
+    if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
+    capture = __memoryContext;
 }
 
 @trusted
@@ -710,7 +735,7 @@ struct List(T) {
     bool appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
         Sz newLength = length + 1;
         if (newLength > capacity) {
-            jokaEnsureCapture(&capture);
+            jokaEnsureCapture(capture);
             auto targetCapacity = findListCapacityFastAndAssumeOneAddedItemInLength(newLength, capacity);
             // NOTE/TODO: This part coult maybe be better with a helper function???
             auto rawPtr = capture.allocatorReallocFunc(capture.allocatorState, 0, items.ptr, capacity * T.sizeof, targetCapacity * T.sizeof, file, line);
@@ -776,7 +801,7 @@ struct List(T) {
     bool reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
         auto targetCapacity = findListCapacity(newCapacity, capacity);
         if (targetCapacity > capacity) {
-            jokaEnsureCapture(&capture);
+            jokaEnsureCapture(capture);
             auto rawPtr = capture.allocatorReallocFunc(capture.allocatorState, 0, items.ptr, capacity * T.sizeof, targetCapacity * T.sizeof, file, line);
             if (rawPtr == null) return true;
             static if (isTrackingMemory) {
