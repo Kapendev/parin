@@ -11,96 +11,12 @@
 
 module parin.joka.memory;
 
-MemoryContext __memoryContext;
-
-enum defaultJokaMemoryAlignment = 16;
-
-version (JokaNoTypes) {
-    pragma(msg, "Joka: Defining missing `types.d` symbols for `memory.d`.");
-
-    private alias Sz = size_t;
-    private alias IStr = const(char)[];
-    private alias Str = char[];
-
-    private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
-    private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
-
-    private struct StaticArray(T, Sz N) {
-        alias Self = StaticArray!(T, N);
-        enum length = N;
-        enum capacity = N;
-
-        align(T.alignof) ubyte[T.sizeof * N] _data;
-
-        pragma(inline, true) @trusted nothrow @nogc:
-
-        mixin sliceOps!(Self, T);
-
-        this(const(T)[] items...) {
-            if (items.length > N) assert(0, "Too many items.");
-            auto me = this.items;
-            foreach (i; 0 .. N) me[i] = cast(T) items[i];
-        }
-
-        T[] items() {
-            return (cast(T*) _data.ptr)[0 .. N];
-        }
-
-        T* ptr() {
-            return cast(T*) _data.ptr;
-        }
-    }
-
-    private mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, "items")) {
-        pragma(inline, true) @trusted nothrow @nogc {
-            TT[] opSlice(Sz dim)(Sz i, Sz j) {
-                return mixin(itemsMemberName, "[i .. j]");
-            }
-
-            TT[] opIndex() {
-                return mixin(itemsMemberName, "[]");
-            }
-
-            TT[] opIndex(TT[] slice) {
-                return slice;
-            }
-
-            ref TT opIndex(Sz i) {
-                return mixin(itemsMemberName, "[i]");
-            }
-
-            void opIndexAssign(const(TT) rhs, Sz i) {
-                mixin(itemsMemberName, "[i] = cast(TT) rhs;");
-            }
-
-            void opIndexOpAssign(const(char)[] op)(const(TT) rhs, Sz i) {
-                mixin(itemsMemberName, "[i]", op, "= cast(TT) rhs;");
-            }
-
-            Sz opDollar(Sz dim)() {
-                return mixin(itemsMemberName, ".length");
-            }
-        }
-    }
-
-    private IStr __getEmptyString() @nogc pure nothrow @safe {
-        return "";
-    }
-    private struct InterpolationHeader {
-        alias toString = __getEmptyString;
-    }
-    private struct InterpolationFooter {
-        alias toString = __getEmptyString;
-    }
-
-    private @safe nothrow @nogc IStr toStr(IStr value) { return value; }
-    private @safe nothrow @nogc IStr toStr(long value) { return ""; }
-    private enum defaultAsciiFmtArgStr = "{}";
-} else {
-    import parin.joka.types;
-}
+import parin.joka.types;
 
 // --- Core
+
+MemoryContext __memoryContext;
+enum defaultJokaMemoryAlignment = 16;
 
 // NOTE: Memory tracking related things are here.
 debug {
@@ -228,9 +144,9 @@ version (JokaCustomMemory) {
     extern(C) @safe nothrow @nogc
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
-        context.allocatorMallocFunc = null;
-        context.allocatorReallocFunc = null;
-        context.allocatorFreeFunc = null;
+        context.allocatorMallocFunc = &jokaAllocatorMalloc;
+        context.allocatorReallocFunc = &jokaAllocatorRealloc;
+        context.allocatorFreeFunc = &jokaAllocatorFree;
     }
 
     extern(C) nothrow
@@ -238,9 +154,19 @@ version (JokaCustomMemory) {
         return jokaMalloc(size, file, line);
     }
 
+    nothrow
+    void* jokaAllocatorMalloc(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+        return jokaSystemMalloc(size, file, line);
+    }
+
     extern(C) nothrow
     void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         return jokaRealloc(ptr, size, 0, file, line);
+    }
+
+    nothrow
+    void* jokaAllocatorRealloc(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+        return jokaSystemRealloc(oldPtr, newSize, file, line);
     }
 
     extern(C) nothrow @nogc
@@ -248,10 +174,9 @@ version (JokaCustomMemory) {
         jokaFree(ptr, 0, file, line);
     }
 
-    // NOTE: Some `JokaNoTypes` functions are defined also in `types.d`.
-    version (JokaNoTypes) {
-        private extern(C) nothrow @nogc pure void* jokaMemset(void* ptr, int value, Sz size);
-        private extern(C) nothrow @nogc pure void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    nothrow @nogc
+    void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
+        return jokaSystemFree(oldPtr, file, line);
     }
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
@@ -310,25 +235,11 @@ version (JokaCustomMemory) {
         if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.allocatorFreeFunc(&__memoryContext.allocatorState, 0, ptr, oldSize, file, line);
     }
-
-    // NOTE: Some `JokaNoTypes` functions are defined also in `types.d`.
-    version (JokaNoTypes) {
-        extern(C) nothrow @nogc pure
-        void* jokaMemset(void* ptr, int value, Sz size) {
-            return stringc.memset(ptr, value, size);
-        }
-        extern(C) nothrow @nogc pure
-        void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-            return stringc.memcpy(ptr, source, size);
-        }
-    }
 } else {
     version(JokaPhobosStdc) {
         import stdlibc = core.stdc.stdlib;
-        import stringc = core.stdc.string; // NOTE: Used for `JokaNoTypes`.
     } else {
         import stdlibc = parin.joka.stdc;
-        import stringc = parin.joka.stdc; // NOTE: Used for `JokaNoTypes`.
     }
 
     extern(C) @safe nothrow @nogc
@@ -444,18 +355,6 @@ version (JokaCustomMemory) {
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryContext.allocatorMallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.allocatorFreeFunc(&__memoryContext.allocatorState, 0, ptr, oldSize, file, line);
-    }
-
-    // NOTE: Some `JokaNoTypes` functions are defined also in `types.d`.
-    version (JokaNoTypes) {
-        extern(C) nothrow @nogc pure
-        void* jokaMemset(void* ptr, int value, Sz size) {
-            return stringc.memset(ptr, value, size);
-        }
-        extern(C) nothrow @nogc pure
-        void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-            return stringc.memcpy(ptr, source, size);
-        }
     }
 }
 
@@ -2285,12 +2184,8 @@ unittest {
     assert(text.length == 0);
     assert(text.capacity == defaultListCapacity * 2);
 
-    version (JokaNoTypes) {
-        // NOTE: YOU SHOULD NOT USE `fmtIntoList` WITH THIS VERSION!!!
-    } else {
-        assert(text.fmtIntoList("Hello {}!", "world") == "Hello world!");
-        assert(text.fmtIntoList("({}, {})", -69, -420) == "(-69, -420)");
-    }
+    assert(text.fmtIntoList("Hello {}!", "world") == "Hello world!");
+    assert(text.fmtIntoList("({}, {})", -69, -420) == "(-69, -420)");
 
     text.free();
 }
