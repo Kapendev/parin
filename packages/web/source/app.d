@@ -30,7 +30,9 @@ enum cflags      = [
     "-DPLATFORM_WEB",
     "-sEXPORTED_RUNTIME_METHODS=HEAPF32,requestFullscreen",
     "-sUSE_GLFW=3",
-    "-sERROR_ON_UNDEFINED_SYMBOLS=0"
+    "-sERROR_ON_UNDEFINED_SYMBOLS=0",
+    "-sINITIAL_MEMORY=67108864",
+    "-sALLOW_MEMORY_GROWTH=1",
 ];
 enum cflagsExtraForRl = [
     "-sASYNCIFY",
@@ -124,6 +126,8 @@ int doGcProject(IStr sourceDir, bool isSimpProject) {
     args ~= "-L=-DPLATFORM_WEB";
     args ~= "-L=-sUSE_GLFW=3";
     args ~= "-L=-sERROR_ON_UNDEFINED_SYMBOLS=0";
+    args ~= "-L=-sINITIAL_MEMORY=67108864";
+    args ~= "-L=-sALLOW_MEMORY_GROWTH=1";
     args ~= "-L=--shell-file";
     args ~= "-L=" ~ shellFile;
     // Check if the assets folder is empty because emcc will cry about it.

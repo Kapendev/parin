@@ -209,7 +209,10 @@ The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
 Parin includes a build script for the web in the [packages](packages/) folder.
 Building for the web requires [Emscripten](https://emscripten.org/) (the latest version is recommended).
-By default, Parin's web builds use the `betterC` flag, meaning only projects compatible with it can be compiled.
+
+> [!WARNING]
+> The defaults are using the `betterC` flag.
+> If your project requires the full D runtime (GC, classes, etc.), scroll down to the `gc` flag instructions.
 
 #### Running the script with DUB
 
@@ -224,7 +227,7 @@ dub run parin:web
 # Or: .\parin_package\scripts\web.bat
 ```
 
-Projects requiring the full D runtime can be built using the `gc` flag provided by the build script.
+Projects requiring the full **D runtime** can be built using the `gc` flag provided by the build script.
 This flag also requires [OpenD](https://opendlang.org/index.html).
 Note that exceptions are not supported and that currently some DUB related limitations apply like having to include all dependencies inside the source folder.
 Make sure `opend install xpack-emscripten` has been run at least once before using it.
