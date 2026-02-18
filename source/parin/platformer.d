@@ -164,8 +164,6 @@ struct BoxWorld {
         reserve(capacity, file, line);
     }
 
-    alias appendWall = pushWall;
-
     BoxWallId pushWall(Box box, BoxSide side = BoxSide.none, IStr file = __FILE__, Sz line = __LINE__) {
         auto data = BoxData(box, BoxProperties());
         data.properties.side = side;
@@ -178,7 +176,7 @@ struct BoxWorld {
         return id;
     }
 
-    alias appendActor = pushActor;
+    alias appendWall = pushWall;
 
     BoxActorId pushActor(Box box, BoxSide side = BoxSide.none, IStr file = __FILE__, Sz line = __LINE__) {
         auto data = BoxData(box, BoxProperties());
@@ -191,6 +189,8 @@ struct BoxWorld {
         }
         return id;
     }
+
+    alias appendActor = pushActor;
 
     Fault parseWallsCsv(IStr csv, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
         clearWalls();
@@ -243,6 +243,18 @@ struct BoxWorld {
         gridTileWidth = 0;
         gridTileHeight = 0;
         grid.clear();
+    }
+
+    void removeWall(BoxWallId id) {
+        if (id == boxNoneId) assert(0, boxErrorMessage);
+        // Goodbye, Mr. Anderson.
+        walls[id - 1].area.x = typeof(Box.position.x).max;
+    }
+
+    void removeActor(BoxWallId id) {
+        if (id == boxNoneId) assert(0, boxErrorMessage);
+        // Goodbye, Mr. Anderson.
+        actors[id - 1].area.x = typeof(Box.position.x).max;
     }
 
     void clearWalls() {
