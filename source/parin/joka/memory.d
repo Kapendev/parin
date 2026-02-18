@@ -209,7 +209,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow
     void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (size == 0) return;
+        if (size == 0) return null;
         return memoryd.GC.realloc(ptr, size);
     }
 
