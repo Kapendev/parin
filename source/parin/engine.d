@@ -534,7 +534,8 @@ struct ViewportId {
 struct Clip {
     Rect _clipArea;
 
-    @safe nothrow @nogc:
+    pragma(inline, true) @safe nothrow @nogc:
+    @disable this();
 
     this(Rect area) {
         this._clipArea = area;
@@ -574,7 +575,8 @@ struct Clip {
 struct _Attached(T) {
     T* _attachedObject;
 
-    @trusted nothrow @nogc:
+    pragma(inline, true) @trusted nothrow @nogc:
+    @disable this();
 
     this(ref T object) {
         this._attachedObject = &object;
@@ -617,7 +619,8 @@ struct DepthSortPair {
 struct _DepthSort {
     DepthSortMode _depthSortMode;
 
-    @safe nothrow @nogc:
+    pragma(inline, true) @safe nothrow @nogc:
+    @disable this();
 
     this(DepthSortMode mode) {
         this._depthSortMode = mode;
