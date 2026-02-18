@@ -248,13 +248,13 @@ struct BoxWorld {
     void removeWall(BoxWallId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         // Goodbye, Mr. Anderson.
-        walls[id - 1].area.x = typeof(Box.position.x).max;
+        walls[id - 1].area.x = cast(typeof(Box.position.x)) float.max;
     }
 
-    void removeActor(BoxWallId id) {
+    void removeActor(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         // Goodbye, Mr. Anderson.
-        actors[id - 1].area.x = typeof(Box.position.x).max;
+        actors[id - 1].area.x = cast(typeof(Box.position.x)) float.max;
     }
 
     void clearWalls() {
