@@ -359,98 +359,92 @@ version (JokaCustomMemory) {
     }
 }
 
-pragma(inline, true) @trusted @nogc
+@trusted {
+    T* jokaMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
+        return cast(T*) jokaMalloc(T.sizeof, file, line);
+    }
+
+    T* jokaMake(T)(IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = jokaMakeBlank!T(file, line);
+        if (result) *result = T.init;
+        return result;
+    }
+
+    T* jokaMake(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = jokaMakeBlank!T(file, line);
+        if (result) *result = cast(T) value;
+        return result;
+    }
+
+    T[] jokaMakeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = (cast(T*) jokaMalloc(T.sizeof * length, file, line))[0 .. length];
+        if (result.ptr) return result;
+        return [];
+    }
+
+    T[] jokaMakeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = jokaMakeSliceBlank!T(length, file, line);
+        foreach (ref item; result) item = T.init;
+        return result;
+    }
+
+    T[] jokaMakeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = jokaMakeSliceBlank!T(length, file, line);
+        foreach (ref item; result) item = value;
+        return result;
+    }
+
+    T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = jokaMakeSliceBlank!T(values.length, file, line);
+        if (result.ptr) jokaMemcpy(result.ptr, values.ptr, T.sizeof * values.length);
+        return result;
+    }
+
+    T[] jokaResizeSlice(T)(T* values, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = (cast(T*) jokaRealloc(values, T.sizeof * length, file, line))[0 .. length];
+        if (result.ptr) return result;
+        return [];
+    }
+
+    T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
+        enum commonAlignment = typeof(T.tupleof[0][0]).alignof;
+
+        if (lengths.length != T.tupleof.length) assert(0, "Lengths count doesn't match member count.");
+        auto result = T();
+
+        auto totalBytes = cast(Sz) 0;
+        static foreach (i, member; T.tupleof) {
+            static assert(
+                is(typeof(member) : const(M)[], M) || isBufferContainerType!(typeof(member)),
+                "Member `" ~ member.stringof ~ "` must be a slice or a buffer list.",
+            );
+            totalBytes = (totalBytes + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
+            totalBytes += typeof(member[0]).sizeof * lengths[i];
+        }
+
+        auto memory = cast(ubyte*) jokaMalloc(totalBytes);
+        if (memory == null) return result;
+        jokaMemset(memory, 0, totalBytes);
+
+        auto offset = cast(Sz) 0;
+        static foreach (i, member; T.tupleof) {
+            offset = (offset + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
+            static if (isBufferContainerType!(typeof(member))) {
+                mixin("result.", member.stringof, "= BufferList!(member.Item)(  (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]]  );");
+            } else {
+                mixin("result.", member.stringof, "= (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]];");
+            }
+            offset += typeof(member[0]).sizeof * lengths[i];
+        }
+        return result;
+    }
+}
+
+@trusted @nogc
 void jokaEnsureCapture(ref MemoryContext capture) {
     if (capture.reallocFunc != null) return;
     if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
     capture = __memoryContext;
-}
-
-pragma(inline, true) @trusted
-T* jokaMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
-    return cast(T*) jokaMalloc(T.sizeof, file, line);
-}
-
-@trusted
-T* jokaMake(T)(IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = jokaMakeBlank!T(file, line);
-    if (result) *result = T.init;
-    return result;
-}
-
-@trusted
-T* jokaMake(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = jokaMakeBlank!T(file, line);
-    if (result) *result = cast(T) value;
-    return result;
-}
-
-pragma(inline, true) @trusted
-T[] jokaMakeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = (cast(T*) jokaMalloc(T.sizeof * length, file, line))[0 .. length];
-    if (result.ptr) return result;
-    return [];
-}
-
-@trusted
-T[] jokaMakeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = jokaMakeSliceBlank!T(length, file, line);
-    foreach (ref item; result) item = T.init;
-    return result;
-}
-
-@trusted
-T[] jokaMakeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = jokaMakeSliceBlank!T(length, file, line);
-    foreach (ref item; result) item = value;
-    return result;
-}
-
-@trusted
-T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = jokaMakeSliceBlank!T(values.length, file, line);
-    if (result.ptr) jokaMemcpy(result.ptr, values.ptr, T.sizeof * values.length);
-    return result;
-}
-
-@trusted
-T[] jokaResizeSlice(T)(T* values, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-    auto result = (cast(T*) jokaRealloc(values, T.sizeof * length, file, line))[0 .. length];
-    if (result.ptr) return result;
-    return [];
-}
-
-T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
-    enum commonAlignment = typeof(T.tupleof[0][0]).alignof;
-
-    if (lengths.length != T.tupleof.length) assert(0, "Lengths count doesn't match member count.");
-    auto result = T();
-
-    auto totalBytes = cast(Sz) 0;
-    static foreach (i, member; T.tupleof) {
-        static assert(
-            is(typeof(member) : const(M)[], M) || isBufferContainerType!(typeof(member)),
-            "Member `" ~ member.stringof ~ "` must be a slice or a buffer list.",
-        );
-        totalBytes = (totalBytes + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
-        totalBytes += typeof(member[0]).sizeof * lengths[i];
-    }
-
-    auto memory = cast(ubyte*) jokaMalloc(totalBytes);
-    if (memory == null) return result;
-    jokaMemset(memory, 0, totalBytes);
-
-    auto offset = cast(Sz) 0;
-    static foreach (i, member; T.tupleof) {
-        offset = (offset + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
-        static if (isBufferContainerType!(typeof(member))) {
-            mixin("result.", member.stringof, "= BufferList!(member.Item)(  (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]]  );");
-        } else {
-            mixin("result.", member.stringof, "= (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]];");
-        }
-        offset += typeof(member[0]).sizeof * lengths[i];
-    }
-    return result;
 }
 
 @trusted @nogc
@@ -572,7 +566,7 @@ unittest {
 
 @safe nothrow:
 
-enum defaultListCapacity = 16; /// The default list capacity. It is also the smallest list capacity.
+enum defaultListCapacity = 8; /// The default list capacity. It is also the smallest list capacity.
 
 alias LStr         = List!char;            /// A dynamic string of chars.
 alias LStr16       = List!wchar;           /// A dynamic string of wchars.
@@ -586,53 +580,47 @@ alias FStr32(Sz N) = FixedList!(dchar, N); /// A dynamic string of dchars alloca
 
 /// A dynamic array.
 struct List(T) {
-    alias Self = List!T;
-    alias Item = T;
-    alias Data = T[];
-
-    // NOTE: I know this is slop code, but I don't care MONKEYYY! STOP MAKING ME FEEL BAD :(
     enum isBasicContainer = true;
     enum isBufferContainer = false;
     enum hasFixedCapacity = false;
+    alias Item = T;
+    alias Data = T[];
 
     Data items;
     Sz capacity;
-    bool canIgnoreLeak;
     MemoryContext capture;
+    bool canIgnoreLeak;
 
     @safe nothrow:
 
-    mixin sliceOps!(Self, Item);
+    mixin sliceOps!(List!T, T);
 
-    pragma(inline, true) @trusted {
-        this(MemoryContext capture, const(T)[] args...) {
-            this.capture = capture;
-            append(args);
-        }
+    this(MemoryContext capture, const(T)[] args...) {
+        this.capture = capture;
+        append(args);
+    }
 
-        this(ref Arena arena, const(T)[] args...) {
-            this(arena.toMemoryContext(), args);
-        }
+    this(ref Arena arena, const(T)[] args...) {
+        this(arena.toMemoryContext(), args);
+    }
 
-        this(ref GrowingArena arena, const(T)[] args...) {
-            this(arena.toMemoryContext(), args);
-        }
+    this(ref GrowingArena arena, const(T)[] args...) {
+        this(arena.toMemoryContext(), args);
+    }
 
-        this(const(T)[] args...) {
-            this(__memoryContext, args);
-        }
+    this(const(T)[] args...) {
+        this(__memoryContext, args);
+    }
 
-        @nogc
+    pragma(inline, true) @trusted @nogc {
         Sz length() {
             return items.length;
         }
 
-        @nogc
         T* ptr() {
             return items.ptr;
         }
 
-        @nogc
         bool isEmpty() {
             return length == 0;
         }
@@ -751,6 +739,7 @@ struct List(T) {
 
     @trusted @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
+        jokaEnsureCapture(capture);
         capture.free(0, items.ptr, capacity * T.sizeof, file, line);
         items = null;
         capacity = 0;
@@ -776,13 +765,11 @@ struct List(T) {
 /// A dynamic array that uses external memory provided at runtime.
 // The API is almost 1-1 with `List` to make meta programming easier.
 struct BufferList(T) {
-    alias Self = BufferList!T;
-    alias Item = T;
-    alias Data = T[];
-
     enum isBasicContainer = true;
     enum isBufferContainer = true;
     enum hasFixedCapacity = true;
+    alias Item = T;
+    alias Data = T[];
 
     Data data;
     Sz length;
@@ -819,14 +806,14 @@ struct BufferList(T) {
 
     @safe nothrow @nogc:
 
-    mixin sliceOps!(Self, Item);
+    mixin sliceOps!(BufferList!T, T);
+
+    this(T[] data, const(T)[] args...) {
+        this.data = data;
+        append(args);
+    }
 
     pragma(inline, true) @trusted {
-        this(T[] data, const(T)[] args...) {
-            this.data = data;
-            append(args);
-        }
-
         T[] items() {
             return data.ptr[0 .. length];
         }
@@ -917,6 +904,8 @@ struct BufferList(T) {
 
     void free(IStr file = __FILE__, Sz line = __LINE__) {}
     void ignoreLeak() {}
+    MemoryContext capture() { return MemoryContext(); }
+    void capture(MemoryContext value) {}
 
     IStr toStr() {
         static if (is(T == char)) { // isCharType
@@ -932,26 +921,24 @@ struct BufferList(T) {
 //   Could make both use one type, but I think it's OK to repeat code here.
 //   Keeps things simple and easy to read.
 struct FixedList(T, Sz N) {
-    alias Self = FixedList!(T, N);
-    alias Item = T;
-    alias Data = StaticArray!(T, N);
-
     enum isBasicContainer = true;
     enum isBufferContainer = false;
     enum hasFixedCapacity = true;
+    alias Item = T;
+    alias Data = StaticArray!(T, N);
 
     Data data = void;
     Sz length;
 
     @safe nothrow @nogc:
 
-    mixin sliceOps!(Self, Item);
+    mixin sliceOps!(FixedList!(T, N), T);
+
+    this(const(T)[] args...) {
+        append(args);
+    }
 
     pragma(inline, true) @trusted {
-        this(const(T)[] args...) {
-            append(args);
-        }
-
         T[] items() {
             return data.ptr[0 .. length];
         }
@@ -963,9 +950,9 @@ struct FixedList(T, Sz N) {
         bool isEmpty() {
             return length == 0;
         }
-
-        enum capacity = N;
     }
+
+    enum capacity = N;
 
     @trusted
     bool appendBlank(IStr file = __FILE__, Sz line = __LINE__) {
@@ -1040,6 +1027,8 @@ struct FixedList(T, Sz N) {
 
     void free(IStr file = __FILE__, Sz line = __LINE__) {}
     void ignoreLeak() {}
+    MemoryContext capture() { return MemoryContext(); }
+    void capture(MemoryContext value) {}
 
     IStr toStr() {
         static if (is(T == char)) { // isCharType
@@ -1053,21 +1042,17 @@ struct FixedList(T, Sz N) {
 /// An item of a sparse array.
 struct SparseListItem(T) {
     alias Item = T;
-
     Item value;
     bool flag;
 }
 
 /// A dynamic sparse array.
 struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsValid!(T, D)) {
-    alias Self = SparseList!(T, D);
-    alias Item = D.Item;
-    alias Data = D;
-
     enum isBasicContainer = false;
     enum isBufferContainer = false;
     enum hasFixedCapacity = D.hasFixedCapacity;
-    enum isSparseContainer = true;
+    alias Item = D.Item;
+    alias Data = D;
 
     Data data;
     Sz hotIndex;
@@ -1076,36 +1061,43 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
 
     @safe nothrow:
 
-    this(const(T)[] args...) {
+    this(MemoryContext capture, const(T)[] args...) {
+        data.capture = capture;
         append(args);
     }
 
-    @trusted @nogc
-    ref T opIndex(Sz i) {
-        if (!has(i)) assert(0, indexErrorMessage(i));
-        return data[i].value;
+    this(ref Arena arena, const(T)[] args...) {
+        this(arena.toMemoryContext(), args);
     }
 
-    @trusted @nogc
-    void opIndexAssign(const(T) rhs, Sz i) {
-        if (!has(i)) assert(0, indexErrorMessage(i));
-        data[i].value = cast(T) rhs;
+    this(ref GrowingArena arena, const(T)[] args...) {
+        this(arena.toMemoryContext(), args);
     }
 
-    @trusted @nogc
-    void opIndexOpAssign(IStr op)(const(T) rhs, Sz i) {
-        if (!has(i)) assert(0, indexErrorMessage(i));
-        mixin("data[i].value", op, "= cast(T) rhs;");
+    this(const(T)[] args...) {
+        this(__memoryContext, args);
+    }
+
+    @trusted @nogc {
+        ref T opIndex(Sz i) {
+            if (!has(i)) assert(0, indexErrorMessage(i));
+            return data[i].value;
+        }
+
+        void opIndexAssign(const(T) rhs, Sz i) {
+            if (!has(i)) assert(0, indexErrorMessage(i));
+            data[i].value = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(IStr op)(const(T) rhs, Sz i) {
+            if (!has(i)) assert(0, indexErrorMessage(i));
+            mixin("data[i].value", op, "= cast(T) rhs;");
+        }
     }
 
     @nogc
     Sz capacity() {
         return data.capacity;
-    }
-
-    @trusted @nogc
-    Item* ptr() {
-        return data.ptr;
     }
 
     @nogc
@@ -1294,37 +1286,39 @@ struct GenIndex {
     }
 }
 
-struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboValid!(T, D) && isBasicContainerType!G) {
-    alias Self = GenList!(T, D);
-    alias Item = D.Item;
-    alias Data = D;
-    alias DataGen = G;
-
+/// A dynamic generational array.
+struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(T, D, G)) {
     enum isBasicContainer = false;
     enum isBufferContainer = false;
-    enum hasFixedCapacity = D.hasFixedCapacity && G.hasFixedCapacity;
+    enum hasFixedCapacity = D.hasFixedCapacity;
+    alias Item = D.Item;
+    alias Data = D;
 
     Data data;
-    DataGen generations;
+    G generations;
 
     @safe nothrow:
 
-    @trusted @nogc
-    ref T opIndex(GenIndex i) {
-        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
-        return data[i.value];
+    this(MemoryContext capture) {
+        data.data.capture = capture;
+        generations.capture = capture;
     }
 
-    @trusted @nogc
-    void opIndexAssign(const(T) rhs, GenIndex i) {
-        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
-        data[i.value] = cast(T) rhs;
-    }
+    @trusted @nogc {
+        ref T opIndex(GenIndex i) {
+            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
+            return data[i.value];
+        }
 
-    @trusted @nogc
-    void opIndexOpAssign(IStr op)(const(T) rhs, GenIndex i) {
-        if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
-        mixin("data[i.value]", op, "= cast(T) rhs;");
+        void opIndexAssign(const(T) rhs, GenIndex i) {
+            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
+            data[i.value] = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(IStr op)(const(T) rhs, GenIndex i) {
+            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
+            mixin("data[i.value]", op, "= cast(T) rhs;");
+        }
     }
 
     @nogc
@@ -1335,11 +1329,6 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
     @nogc
     Sz capacity() {
         return data.capacity;
-    }
-
-    @trusted @nogc
-    Item* ptr() {
-        return data.ptr;
     }
 
     @nogc
@@ -1359,9 +1348,7 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
         return GenIndex(cast(Gen) data.hotIndex, generations[data.hotIndex]);
     }
 
-    GenIndex push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
-        return append(arg, file, line);
-    }
+    alias push = append;
 
     @nogc
     void remove(GenIndex i) {
@@ -1446,13 +1433,11 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isSparseContainerComboVali
 }
 
 struct Grid(T, D = List!T) if (isBasicContainerType!D) {
-    alias Self = Grid!(T, D);
-    alias Item = D.Item;
-    alias Data = D;
-
     enum isBasicContainer = false;
     enum isBufferContainer = false;
     enum hasFixedCapacity = D.hasFixedCapacity;
+    alias Item = D.Item;
+    alias Data = D;
 
     Data tiles;
     Sz rowCount;
@@ -1460,7 +1445,17 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
 
     @safe nothrow:
 
+    this(MemoryContext capture) {
+        tiles.capture = capture;
+    }
+
     this(Sz rowCount, Sz colCount, T value = T.init, IStr file = __FILE__, Sz line = __LINE__) {
+        resizeBlank(rowCount, colCount, file, line);
+        fill(value);
+    }
+
+    this(MemoryContext capture, Sz rowCount, Sz colCount, T value = T.init, IStr file = __FILE__, Sz line = __LINE__) {
+        tiles.capture = capture;
         resizeBlank(rowCount, colCount, file, line);
         fill(value);
     }
@@ -1533,7 +1528,7 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         colCount = newColCount;
     }
 
-    @trusted @nogc
+    @nogc
     void fill(T value) {
         tiles.fill(value);
     }
@@ -1545,7 +1540,7 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         colCount = 0;
     }
 
-    @trusted @nogc
+    @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         tiles.free(file, line);
         rowCount = 0;
@@ -2065,22 +2060,21 @@ bool isBufferContainerType(T)() {
     }
 }
 
-bool isSparseContainerType(T)() {
-    static if (__traits(hasMember, T, "isSparseContainer")) {
-        return T.isSparseContainer;
+bool isFixedContainerType(T)() {
+    static if (__traits(hasMember, T, "hasFixedCapacity")) {
+        return T.hasFixedCapacity;
     } else {
         return false;
     }
 }
 
-bool isSparseContainerItemType(T)() {
-    return __traits(hasMember, T, "Item") && __traits(hasMember, T, "flag");
-}
-
+// NOTE:
+//   D=List,BufferList,FixedList
+//   D.Item=SparseListItem
 bool isSparseContainerPartsValid(T, D)() {
-    static if (isBasicContainerType!D) {
-        static if (isSparseContainerItemType!(D.Item)) {
-            return is(T == D.Item.Item);
+    static if (__traits(hasMember, D, "isBasicContainer")) {
+        static if (D.isBasicContainer && __traits(hasMember, D.Item, "value") && __traits(hasMember, D.Item, "flag")) {
+            return is(D.Item.Item == T);
         } else {
             return false;
         }
@@ -2089,10 +2083,17 @@ bool isSparseContainerPartsValid(T, D)() {
     }
 }
 
-bool isSparseContainerComboValid(T, D)() {
-    static if (isSparseContainerType!D) {
-        static if (is(T == D.Item.Item)) {
-            return true;
+// NOTE:
+//   D=SparseList
+//   G=List,BufferList,FixedList
+bool isGenContainerPartsValid(T, D, G)() {
+    static if (__traits(hasMember, D, "isBasicContainer")) {
+        static if (isSparseContainerPartsValid!(T, D.Data)) {
+            static if (__traits(hasMember, G, "isBasicContainer")) {
+                return G.isBasicContainer && G.hasFixedCapacity == D.hasFixedCapacity;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }
@@ -2114,7 +2115,7 @@ bool isFStrType(T)() {
 }
 
 bool isStrContainerType(T)() {
-    return isLStrType!T || isBStrType!T || isFStrType!T;
+    return is(T == List!char) || is(T == BufferList!char) || is(T == FixedList!(char, N), Sz N);
 }
 
 // Function test.
@@ -2122,19 +2123,20 @@ unittest {
     assert(findListCapacity(0) == defaultListCapacity);
     assert(findListCapacity(defaultListCapacity) == defaultListCapacity);
     assert(findListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
-    assert(findListCapacity(defaultListCapacity + 1) == defaultListCapacity * 2);
+    assert(findListCapacity(defaultListCapacity + 2) == defaultListCapacity * 2);
 
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(0, 0) == 16);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(16, 0) == 16);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(17, 0) == 32);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(18, 0) == 16);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(0, 0) == defaultListCapacity);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(defaultListCapacity, 0) == defaultListCapacity);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(defaultListCapacity + 1, 0) == defaultListCapacity * 2);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(defaultListCapacity + 2, 0) == defaultListCapacity);
 
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(0, 32) == 32);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(16, 32) == 32);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(17, 32) == 32);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(18, 32) == 32);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(32, 32) == 32);
-    assert(findListCapacityFastAndAssumeOneAddedItemInLength(33, 32) == 64);
+    enum x2 = defaultListCapacity * 2;
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(0, x2) == x2);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(x2 - 1, x2) == x2);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(x2 - 2, x2) == x2);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(x2, x2) == x2);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(x2 + 1, x2) == x2 * 2);
+    assert(findListCapacityFastAndAssumeOneAddedItemInLength(x2 + 2, x2) == x2);
 }
 
 // TODO: Write better tests.
@@ -2158,7 +2160,6 @@ unittest {
 
     text = LStr("Hello world!");
     assert(text.length == "Hello world!".length);
-    assert(text.capacity == defaultListCapacity);
     assert(text.ptr != null);
     assert(text[] == text.items);
     assert(text[0] == text.items[0]);
@@ -2173,15 +2174,12 @@ unittest {
     text.resize(0);
     assert(text[] == "");
     assert(text.length == 0);
-    assert(text.capacity == defaultListCapacity);
     text.resize(1);
     assert(text[0] == char.init);
     assert(text.length == 1);
-    assert(text.capacity == defaultListCapacity);
     text.clear();
     text.reserve(5);
     assert(text.length == 0);
-    assert(text.capacity == defaultListCapacity);
     text.reserve(defaultListCapacity + 1);
     assert(text.length == 0);
     assert(text.capacity == defaultListCapacity * 2);
@@ -2295,14 +2293,12 @@ unittest {
     numbers = SparseList!int();
     assert(numbers.length == 0);
     assert(numbers.capacity == 0);
-    assert(numbers.ptr == null);
     assert(numbers.hotIndex == 0);
     assert(numbers.openIndex == 0);
 
     numbers = SparseList!int(1, 2, 3);
     assert(numbers.length == 3);
     assert(numbers.capacity == defaultListCapacity);
-    assert(numbers.ptr != null);
     assert(numbers.hotIndex == 2);
     assert(numbers.openIndex == 3);
     assert(numbers[0] == 1);
@@ -2347,7 +2343,6 @@ unittest {
     numbers.free();
     assert(numbers.length == 0);
     assert(numbers.capacity == 0);
-    assert(numbers.ptr == null);
     assert(numbers.hotIndex == 0);
     assert(numbers.openIndex == 0);
 
@@ -2373,12 +2368,10 @@ unittest {
     numbers = GenList!int();
     assert(numbers.length == 0);
     assert(numbers.capacity == 0);
-    assert(numbers.ptr == null);
 
     index = numbers.append(1);
     assert(numbers.length == 1);
     assert(numbers.capacity == defaultListCapacity);
-    assert(numbers.ptr != null);
     assert(index.value == 0);
     assert(index.generation == 0);
     assert(numbers[index] == 1);
@@ -2386,7 +2379,6 @@ unittest {
     index = numbers.append(2);
     assert(numbers.length == 2);
     assert(numbers.capacity == defaultListCapacity);
-    assert(numbers.ptr != null);
     assert(index.value == 1);
     assert(index.generation == 0);
     assert(numbers[index] == 2);
@@ -2394,7 +2386,6 @@ unittest {
     index = numbers.append(3);
     assert(numbers.length == 3);
     assert(numbers.capacity == defaultListCapacity);
-    assert(numbers.ptr != null);
     assert(index.value == 2);
     assert(index.generation == 0);
     assert(numbers[index] == 3);
@@ -2430,7 +2421,6 @@ unittest {
     numbers.free();
     assert(numbers.length == 0);
     assert(numbers.capacity == 0);
-    assert(numbers.ptr == null);
 }
 
 // Grid test
