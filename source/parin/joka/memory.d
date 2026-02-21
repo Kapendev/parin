@@ -451,7 +451,7 @@ void* nullAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldP
     return null;
 }
 
-@nogc
+@trusted @nogc
 void nullAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
 
 @trusted @nogc
