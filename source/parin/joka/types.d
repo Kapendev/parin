@@ -59,7 +59,6 @@ enum Fault : ubyte {
 /// A static array.
 /// It exists mainly because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
-    alias Self = StaticArray!(T, N);
     enum length = N;   /// The length of the array.
     enum capacity = N; /// The capacity of the array. This member exists to make metaprogramming easier.
 
@@ -67,7 +66,7 @@ struct StaticArray(T, Sz N) {
 
     pragma(inline, true) @trusted nothrow @nogc:
 
-    mixin sliceOps!(Self, T);
+    mixin sliceOps!(StaticArray!(T, N), T);
 
     this(const(T)[] items...) {
         if (items.length > N) assert(0, "Too many items.");
@@ -89,8 +88,6 @@ struct StaticArray(T, Sz N) {
 /// Represents an optional value.
 /// It can also hold an error code when a value is missing, and errors are referred to as faults in Joka.
 struct Maybe(T) {
-    alias Base = T;
-
     T _data;
     Fault _fault = Fault.some;
 
@@ -245,7 +242,8 @@ struct Union(A...) if (A.length != 0) {
 
     ref T to(T)() {
         if (isType!T) {
-            return as!T;
+            // NOTE: Copy-pasted the `as` function here to avoid one template.
+            return mixin("return _data._m", typeOf!T, ";");
         } else {
             static foreach (TT; A) {
                 if (typeOf!TT == _type) {
@@ -286,7 +284,7 @@ struct Union(A...) if (A.length != 0) {
     }
 }
 
-T toUnion(T)(UnionType type) if (isUnionType!T) {
+T toUnion(T)(UnionType type) if (is(T : Union!A, A...)) {
     T result;
     static foreach (i, Type; T.Types) {
         if (i == type) {
@@ -298,7 +296,7 @@ T toUnion(T)(UnionType type) if (isUnionType!T) {
     return result;
 }
 
-T toUnion(T)(IStr typeName) if (isUnionType!T) {
+T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
     T result;
     static foreach (i, Type; T.Types) {
         if (Type.stringof == typeName) {
@@ -308,18 +306,6 @@ T toUnion(T)(IStr typeName) if (isUnionType!T) {
     }
     loopExit:
     return result;
-}
-
-bool isUnionType(T)() {
-    return is(T : Union!A, A...);
-}
-
-bool isStrType(T)() {
-    return is(T : IStr);
-}
-
-bool isStrzType(T)() {
-    return is(T : IStrz);
 }
 
 int findInAliasArgs(T, A...)() {
@@ -340,28 +326,14 @@ IStr funcImplementationErrorMessage(T, IStr func)() {
     return "Type `" ~ T.stringof ~ "` doesn't implement the `" ~ func ~ "` function.";
 }
 
-IStr toCleanNumber(alias i)() {
-    enum str = i.stringof;
-    static if (str[$ - 1] == 'L' || str[$ - 1] == 'l' || str[$ - 1] == 'U' || str[$ - 1] == 'u') {
-        static if (str[$ - 2] == 'L' || str[$ - 2] == 'l' || str[$ - 2] == 'U' || str[$ - 2] == 'u') {
-            return str[0 .. $ - 2];
-        } else {
-            return str[0 .. $ - 1];
-        }
-    } else {
-        return str;
+@safe nothrow @nogc pure {
+    bool isNan(float x) {
+        return !(x == x);
     }
-}
 
-@trusted
-Sz offsetOf(T, IStr member)() if (__traits(hasMember, T, member)) {
-    T temp = void;
-    return (cast(ubyte*) mixin("&temp.", member)) - (cast(ubyte*) &temp);
-}
-
-@safe nothrow @nogc pure
-bool isNan(double x) {
-    return !(x == x);
+    bool isNan(double x) {
+        return !(x == x);
+    }
 }
 
 mixin template distinct(T) {
@@ -378,9 +350,6 @@ mixin template distinct(T) {
         }
     }
 }
-
-deprecated("Use `sliceOps` instead.")
-alias addSliceOps = sliceOps;
 
 mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, "items")) {
     pragma(inline, true) @trusted nothrow @nogc {
@@ -417,7 +386,6 @@ mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasM
 // Function test.
 unittest {
     alias Number = Union!(float, double);
-    struct Foo { int x; byte y; byte z; int w; }
 
     assert(toUnion!Number(Number.typeOf!float).as!float.isNan == true);
     assert(toUnion!Number(Number.typeOf!double).as!double.isNan == true);
@@ -426,11 +394,6 @@ unittest {
 
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
-
-    assert(offsetOf!(Foo, "x") == 0);
-    assert(offsetOf!(Foo, "y") == 4);
-    assert(offsetOf!(Foo, "z") == 5);
-    assert(offsetOf!(Foo, "w") == 8);
 }
 
 // Maybe test.

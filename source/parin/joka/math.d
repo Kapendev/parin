@@ -69,7 +69,7 @@ enum gray    = gray2;               /// Gray gray.
 /// The common color type.
 alias Color = Rgba;
 
-// These types are removed for compile time reasons.
+// Some types are removed for compile-time reasons.
 /*
 alias BVec2 = GVec2!byte;   /// A 2D vector using bytes.
 alias UVec2 = GVec2!uint;   /// A 2D vector using uints.

@@ -441,46 +441,43 @@ version (JokaCustomMemory) {
     }
 }
 
-@trusted @nogc
-void* nullAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-    return null;
-}
+@trusted @nogc {
+    void* nullAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+        return null;
+    }
 
-@trusted @nogc
-void* nullAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-    return null;
-}
+    void* nullAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+        return null;
+    }
 
-@trusted @nogc
-void nullAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
+    void nullAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
 
-@trusted @nogc
-void jokaEnsureCapture(ref MemoryContext capture) {
-    if (capture.reallocFunc != null) return;
-    if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-    capture = __memoryContext;
-}
+    void jokaEnsureCapture(ref MemoryContext capture) {
+        if (capture.reallocFunc != null) return;
+        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
+        capture = __memoryContext;
+    }
 
-@trusted @nogc
-auto ignoreLeak(T)(T ptr) {
-    static if (is(T : const(A)[], A)) {
-        static if (isTrackingMemory) {
-            if (auto mallocValue = ptr.ptr in _memoryTrackingState.table) {
-                mallocValue.canIgnore = true;
+    auto ignoreLeak(T)(T ptr) {
+        static if (is(T : const(A)[], A)) {
+            static if (isTrackingMemory) {
+                if (auto mallocValue = ptr.ptr in _memoryTrackingState.table) {
+                    mallocValue.canIgnore = true;
+                }
             }
-        }
-        return ptr;
-    } else static if (is(T : const(void)*)) {
-        static if (isTrackingMemory) {
-            if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                mallocValue.canIgnore = true;
+            return ptr;
+        } else static if (is(T : const(void)*)) {
+            static if (isTrackingMemory) {
+                if (auto mallocValue = ptr in _memoryTrackingState.table) {
+                    mallocValue.canIgnore = true;
+                }
             }
+            return ptr;
+        } else static if (__traits(hasMember, T, "ignoreLeak")) {
+            return ptr.ignoreLeak();
+        } else {
+            static assert(0, "Type doesn't implement the `ignoreLeak` function.");
         }
-        return ptr;
-    } else static if (__traits(hasMember, T, "ignoreLeak")) {
-        return ptr.ignoreLeak();
-    } else {
-        static assert(0, "Type doesn't implement the `ignoreLeak` function.");
     }
 }
 
@@ -642,20 +639,24 @@ unittest {
 enum defaultListCapacity = 8; /// The default list capacity. It is also the smallest list capacity.
 
 alias LStr         = List!char;            /// A dynamic string of chars.
+alias BStr         = BufferList!char;      /// A dynamic string of chars backed by external memory.
+alias FStr(Sz N)   = FixedList!(char, N);  /// A dynamic string of chars allocated on the stack.
+
+// Some types are removed for compile-time reasons.
+/*
 alias LStr16       = List!wchar;           /// A dynamic string of wchars.
 alias LStr32       = List!dchar;           /// A dynamic string of dchars.
-alias BStr         = BufferList!char;      /// A dynamic string of chars backed by external memory.
 alias BStr16       = BufferList!wchar;     /// A dynamic string of wchars backed by external memory.
 alias BStr32       = BufferList!dchar;     /// A dynamic string of dchars backed by external memory.
-alias FStr(Sz N)   = FixedList!(char, N);  /// A dynamic string of chars allocated on the stack.
 alias FStr16(Sz N) = FixedList!(wchar, N); /// A dynamic string of wchars allocated on the stack.
 alias FStr32(Sz N) = FixedList!(dchar, N); /// A dynamic string of dchars allocated on the stack.
+*/
 
 /// A dynamic array.
 struct List(T) {
-    enum isBasicContainer = true;
+    enum isBasicContainer  = true;
     enum isBufferContainer = false;
-    enum hasFixedCapacity = false;
+    enum hasFixedCapacity  = false;
     alias Item = T;
     alias Data = T[];
 
@@ -838,9 +839,9 @@ struct List(T) {
 /// A dynamic array that uses external memory provided at runtime.
 // The API is almost 1-1 with `List` to make meta programming easier.
 struct BufferList(T) {
-    enum isBasicContainer = true;
+    enum isBasicContainer  = true;
     enum isBufferContainer = true;
-    enum hasFixedCapacity = true;
+    enum hasFixedCapacity  = true;
     alias Item = T;
     alias Data = T[];
 
@@ -975,11 +976,6 @@ struct BufferList(T) {
         length = 0;
     }
 
-    void free(IStr file = __FILE__, Sz line = __LINE__) {}
-    void ignoreLeak() {}
-    MemoryContext capture() { return MemoryContext(); }
-    void capture(MemoryContext value) {}
-
     IStr toStr() {
         static if (is(T == char)) { // isCharType
             return items;
@@ -987,6 +983,11 @@ struct BufferList(T) {
             assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
+
+    void free(IStr file = __FILE__, Sz line = __LINE__) {}
+    void ignoreLeak() {}
+    MemoryContext capture() { return MemoryContext(); }
+    void capture(MemoryContext value) {}
 }
 
 /// A dynamic array allocated on the stack.
@@ -994,9 +995,9 @@ struct BufferList(T) {
 //   Could make both use one type, but I think it's OK to repeat code here.
 //   Keeps things simple and easy to read.
 struct FixedList(T, Sz N) {
-    enum isBasicContainer = true;
+    enum isBasicContainer  = true;
     enum isBufferContainer = false;
-    enum hasFixedCapacity = true;
+    enum hasFixedCapacity  = true;
     alias Item = T;
     alias Data = StaticArray!(T, N);
 
@@ -1098,11 +1099,6 @@ struct FixedList(T, Sz N) {
         length = 0;
     }
 
-    void free(IStr file = __FILE__, Sz line = __LINE__) {}
-    void ignoreLeak() {}
-    MemoryContext capture() { return MemoryContext(); }
-    void capture(MemoryContext value) {}
-
     IStr toStr() {
         static if (is(T == char)) { // isCharType
             return items;
@@ -1110,6 +1106,11 @@ struct FixedList(T, Sz N) {
             assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
+
+    void free(IStr file = __FILE__, Sz line = __LINE__) {}
+    void ignoreLeak() {}
+    MemoryContext capture() { return MemoryContext(); }
+    void capture(MemoryContext value) {}
 }
 
 /// An item of a sparse array.
@@ -1121,9 +1122,9 @@ struct SparseListItem(T) {
 
 /// A dynamic sparse array.
 struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsValid!(T, D)) {
-    enum isBasicContainer = false;
+    enum isBasicContainer  = false;
     enum isBufferContainer = false;
-    enum hasFixedCapacity = D.hasFixedCapacity;
+    enum hasFixedCapacity  = D.hasFixedCapacity;
     alias Item = D.Item;
     alias Data = D;
 
@@ -1361,9 +1362,9 @@ struct GenIndex {
 
 /// A dynamic generational array.
 struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(T, D, G)) {
-    enum isBasicContainer = false;
+    enum isBasicContainer  = false;
     enum isBufferContainer = false;
-    enum hasFixedCapacity = D.hasFixedCapacity;
+    enum hasFixedCapacity  = D.hasFixedCapacity;
     alias Item = D.Item;
     alias Data = D;
 
@@ -1514,9 +1515,9 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
 }
 
 struct Grid(T, D = List!T) if (isBasicContainerType!D) {
-    enum isBasicContainer = false;
+    enum isBasicContainer  = false;
     enum isBufferContainer = false;
-    enum hasFixedCapacity = D.hasFixedCapacity;
+    enum hasFixedCapacity  = D.hasFixedCapacity;
     alias Item = D.Item;
     alias Data = D;
 

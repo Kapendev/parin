@@ -52,7 +52,33 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - No external dependencies
 - Cross-platform: Windows, Linux, Web, macOS (needs testing)
 
-## Simple Editor Example
+## Examples
+
+### Basic Window
+
+```d
+import parin;
+
+// Called once when the game starts.
+void ready() {
+    lockResolution(320, 180);
+}
+
+// Called every frame while the game is running.
+// If true is returned, then the game will stop running.
+bool update(float dt) {
+    drawText("Hello world!", Vec2(8));
+    return false;
+}
+
+// Called once when the game ends.
+void finish() {}
+
+// Creates a main function that calls the given functions.
+mixin runGame!(ready, update, finish);
+```
+
+### Simple Editor
 
 ```d
 import parin, parin.addons.microui;
@@ -70,7 +96,9 @@ void ready() {
 }
 
 bool update(float dt) {
+    // The game code. It's just a rectangle.
     drawRect(Rect(game.point.x, game.point.y, game.width, game.height));
+    // The editor code.
     beginUi();
     if (beginWindow("Edit", UiRect(500, 80, 350, 370))) {
         headerAndMembers(game, 125);
