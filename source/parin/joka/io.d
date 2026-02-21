@@ -264,63 +264,6 @@ noreturn todo(IStr text = defaultCodePathMessage, IStr file = __FILE__, Sz line 
     assert(0, "TODO({}:{}): {}".fmt(file, line, text));
 }
 
-@trusted nothrow
-IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
-    static if (isTrackingMemory) {
-        // TODO: This needs to be simpler because it was so hard to remember how it works.
-        static void _updateGroupBuffer(T)(ref T table) {
-            _memoryTrackingState.groupBuffer.clear();
-            foreach (key, value; table) {
-                if (value.canIgnore) continue;
-                auto groupKey = _MallocInfo(value.file, value.line, 0, false, value.group);
-                if (auto groupValue = groupKey in _memoryTrackingState.groupBuffer) {
-                    groupValue.size += value.size;
-                    groupValue.count += 1;
-                } else {
-                    _memoryTrackingState.groupBuffer[groupKey] = _MallocGroupInfo(value.size, 1);
-                }
-            }
-        }
-
-        try {
-            _memoryTrackingState.infoBuffer.length = 0;
-            auto finalLength = _memoryTrackingState.table.length;
-            foreach (key, value; _memoryTrackingState.table) if (value.canIgnore) finalLength -= 1;
-            auto ignoreCount = _memoryTrackingState.table.length - finalLength;
-            auto ignoreText = ignoreCount ? ", {} ignored".fmt(ignoreCount) : "";
-            auto filterText = pathFilter.length ? fmt("Filter: \"{}\"\n", pathFilter) : "";
-
-            if (canShowEmpty ? true : finalLength != 0) {
-                _memoryTrackingState.infoBuffer ~= fmt("Memory Leaks: {} (total {} bytes{})\n{}", finalLength, _memoryTrackingState.totalBytes, ignoreText, filterText);
-            }
-            _updateGroupBuffer(_memoryTrackingState.table);
-            foreach (key, value; _memoryTrackingState.groupBuffer) {
-                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
-                _memoryTrackingState.infoBuffer ~= fmt("  {} leak, {} bytes, {}:{}{}\n", value.count, value.size, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
-            }
-            if (canShowEmpty ? true : _memoryTrackingState.invalidFreeTable.length != 0) {
-                _memoryTrackingState.infoBuffer ~= fmt("Invalid Frees: {}\n{}", _memoryTrackingState.invalidFreeTable.length, filterText);
-            }
-            _updateGroupBuffer(_memoryTrackingState.invalidFreeTable);
-            foreach (key, value; _memoryTrackingState.groupBuffer) {
-                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
-                _memoryTrackingState.infoBuffer ~= fmt("  {} free, {}:{}{}\n", value.count, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
-            }
-        } catch (Exception e) {
-            return "No memory tracking data available.\n";
-        }
-        return _memoryTrackingState.infoBuffer;
-    } else {
-        debug {
-            version (D_BetterC) {
-                return "No memory tracking data available in BetterC builds.\n";
-            }
-        } else {
-            return "No memory tracking data available in release builds.\n";
-        }
-    }
-}
-
 @safe nothrow:
 
 @trusted

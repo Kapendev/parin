@@ -75,9 +75,10 @@ struct MemoryContext {
     AllocatorReallocFunc reallocFunc; // NOTE: If this is null, then the default allocator setup should be used.
     AllocatorFreeFunc freeFunc;       // NOTE: This can be null for things like arenas.
 
-    // NOTE: The functions here are just helpers that pass the allocator state by default.
+    // NOTE: The functions here are just helpers that pass the allocator state.
     //  They avoid `void*` mistakes.
     //  Could have more helpers, but it's better to keep things simple.
+    //  The `nullAllocatorReallocWrapper` and `nullAllocatorFreeWrapper` can be used to ignore allocations.
 
     pragma(inline, true) @system nothrow:
 
@@ -152,7 +153,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         // NOTE: You should not call `jokaMalloc`, `jokaRealloc` or `jokaFree` from system functions, but in this case it's fine.
-        //   The idea is that there is no global memory context to deal with in this version, so you can just call anything you want.
+        //   The idea is that there is no global memory context in this version, so you can call anything you want.
         return jokaMalloc(size, file, line);
     }
 
@@ -441,6 +442,19 @@ version (JokaCustomMemory) {
 }
 
 @trusted @nogc
+void* nullAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+    return null;
+}
+
+@trusted @nogc
+void* nullAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    return null;
+}
+
+@nogc
+void nullAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
+
+@trusted @nogc
 void jokaEnsureCapture(ref MemoryContext capture) {
     if (capture.reallocFunc != null) return;
     if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
@@ -480,12 +494,71 @@ void beginAllocationGroup(IStr group) {
 @trusted @nogc
 void endAllocationGroup() {
     static if (isTrackingMemory) {
-        if (_memoryTrackingState.currentGroupStack.length) _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
+        if (_memoryTrackingState.currentGroupStack.length) {
+            _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
+        }
     }
 }
 } // END: MEMORY(@systen nothrow)
 
-/// Joint allocation test.
+@trusted nothrow
+IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
+    static if (isTrackingMemory) {
+        // TODO: This needs to be simpler because it was so hard to remember how it works.
+        static void _updateGroupBuffer(T)(ref T table) {
+            _memoryTrackingState.groupBuffer.clear();
+            foreach (key, value; table) {
+                if (value.canIgnore) continue;
+                auto groupKey = _MallocInfo(value.file, value.line, 0, false, value.group);
+                if (auto groupValue = groupKey in _memoryTrackingState.groupBuffer) {
+                    groupValue.size += value.size;
+                    groupValue.count += 1;
+                } else {
+                    _memoryTrackingState.groupBuffer[groupKey] = _MallocGroupInfo(value.size, 1);
+                }
+            }
+        }
+
+        try {
+            _memoryTrackingState.infoBuffer.length = 0;
+            auto finalLength = _memoryTrackingState.table.length;
+            foreach (key, value; _memoryTrackingState.table) if (value.canIgnore) finalLength -= 1;
+            auto ignoreCount = _memoryTrackingState.table.length - finalLength;
+            auto ignoreText = ignoreCount ? ", {} ignored".fmt(ignoreCount) : "";
+            auto filterText = pathFilter.length ? fmt("Filter: \"{}\"\n", pathFilter) : "";
+
+            if (canShowEmpty ? true : finalLength != 0) {
+                _memoryTrackingState.infoBuffer ~= fmt("Memory Leaks: {} (total {} bytes{})\n{}", finalLength, _memoryTrackingState.totalBytes, ignoreText, filterText);
+            }
+            _updateGroupBuffer(_memoryTrackingState.table);
+            foreach (key, value; _memoryTrackingState.groupBuffer) {
+                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
+                _memoryTrackingState.infoBuffer ~= fmt("  {} leak, {} bytes, {}:{}{}\n", value.count, value.size, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
+            }
+            if (canShowEmpty ? true : _memoryTrackingState.invalidFreeTable.length != 0) {
+                _memoryTrackingState.infoBuffer ~= fmt("Invalid Frees: {}\n{}", _memoryTrackingState.invalidFreeTable.length, filterText);
+            }
+            _updateGroupBuffer(_memoryTrackingState.invalidFreeTable);
+            foreach (key, value; _memoryTrackingState.groupBuffer) {
+                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
+                _memoryTrackingState.infoBuffer ~= fmt("  {} free, {}:{}{}\n", value.count, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
+            }
+        } catch (Exception e) {
+            return "No memory tracking data available.\n";
+        }
+        return _memoryTrackingState.infoBuffer;
+    } else {
+        debug {
+            version (D_BetterC) {
+                return "No memory tracking data available in BetterC builds.\n";
+            }
+        } else {
+            return "No memory tracking data available in release builds.\n";
+        }
+    }
+}
+
+// Joint allocation test.
 unittest {
     // First Jai example.
     static struct Vector2 { float x, y; }
@@ -1304,6 +1377,14 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
         generations.capture = capture;
     }
 
+    this(ref Arena arena) {
+        this(arena.toMemoryContext());
+    }
+
+    this(ref GrowingArena arena) {
+        this(arena.toMemoryContext());
+    }
+
     @trusted @nogc {
         ref T opIndex(GenIndex i) {
             if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
@@ -1447,6 +1528,14 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
 
     this(MemoryContext capture) {
         tiles.capture = capture;
+    }
+
+    this(ref Arena arena) {
+        this(arena.toMemoryContext());
+    }
+
+    this(ref GrowingArena arena) {
+        this(arena.toMemoryContext());
     }
 
     this(Sz rowCount, Sz colCount, T value = T.init, IStr file = __FILE__, Sz line = __LINE__) {
@@ -1909,8 +1998,7 @@ void* arenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* old
     return (cast(Arena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
 }
 
-@nogc
-void arenaAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
+alias arenaAllocatorFreeWrapper = nullAllocatorFreeWrapper;
 
 @trusted
 void* growingArenaAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
@@ -1922,7 +2010,7 @@ void* growingArenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, vo
     return (cast(GrowingArena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
 }
 
-alias growingArenaAllocatorFreeWrapper = arenaAllocatorFreeWrapper;
+alias growingArenaAllocatorFreeWrapper = nullAllocatorFreeWrapper;
 
 pragma(inline, true) @trusted @nogc {
     IStr indexErrorMessage(Sz i) {
