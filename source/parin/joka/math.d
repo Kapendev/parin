@@ -200,9 +200,6 @@ enum Hook : ubyte {
     bottomRight, /// The bottom right point.
 }
 
-deprecated("Use `xyzwOps` instead.")
-alias addXyzwOps = xyzwOps;
-
 mixin template xyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMember, T, "items") && N >= 2 && N <= 4 && N == form.length) {
     pragma(inline, true) @trusted nothrow @nogc {
         T opUnary(IStr op)() {

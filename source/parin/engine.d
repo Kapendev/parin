@@ -46,16 +46,16 @@ version (WebAssembly) {
     enum defaultEngineScreenshotTargetPathCapacity = 1 * kilobyte;
     enum defaultEngineEnvArgsCapacity              = 16;
     enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-    enum defaultEngineEngineTasksCapacity          = 64;
-    enum defaultEngineArenaCapacity                = 1 * megabyte;
+    enum defaultEngineEngineTasksCapacity          = 32;
+    enum defaultEngineArenaCapacity                = 2 * megabyte;
     enum defaultEngineDprintCapacity               = 2 * kilobyte;
 } else {
     enum defaultEngineAssetsPathCapacity           = 8 * kilobyte;
     enum defaultEngineScreenshotTargetPathCapacity = 2 * kilobyte;
     enum defaultEngineEnvArgsCapacity              = 64;
     enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-    enum defaultEngineEngineTasksCapacity          = 128;
-    enum defaultEngineArenaCapacity                = 2 * megabyte;
+    enum defaultEngineEngineTasksCapacity          = 64;
+    enum defaultEngineArenaCapacity                = 4 * megabyte;
     enum defaultEngineDprintCapacity               = 4 * kilobyte;
 }
 
@@ -957,6 +957,11 @@ T[] frameMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE_
 /// Resizes an array of type `T` with the given slice pointer and length.
 T[] frameResizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
     return _engineState.arena.resizeSlice!T(values, oldLength, newLength, file, line);
+}
+
+/// Returns a memory context from the frame allocator.
+MemoryContext frameMemoryContext() {
+    return _engineState.arena.toMemoryContext();
 }
 
 /// Allocates a temporary text buffer for this frame.
@@ -2106,9 +2111,24 @@ void drawRect(Rect area, Rgba color = white, float thickness = -1.0f) {
     bk.drawRect(isPixelSnapped ? area.floor() : area, color, thickness);
 }
 
+/// Draws a rectangle with the specified area and color.
+void drawRect(Vec2 position, Vec2 size, Rgba color = white, float thickness = -1.0f) {
+    drawRect(Rect(position, size), color, thickness);
+}
+
+/// Draws a rectangle with the specified area and color.
+void drawRect(float x, float y, float w, float h, Rgba color = white, float thickness = -1.0f) {
+    drawRect(Rect(x, y, w, h), color, thickness);
+}
+
 /// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f) {
     drawRect(Rect(point, thickness, thickness).centerArea, color);
+}
+
+/// Draws a point at the specified location with the given size and color.
+void drawVec2(float x, float y, Rgba color = white, float thickness = 9.0f) {
+    drawVec2(Vec2(x, y), color, thickness);
 }
 
 /// Draws a circle with the specified area and color.
@@ -2116,9 +2136,29 @@ void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f) {
     bk.drawCirc(isPixelSnapped ? area.floor() : area, color, thickness);
 }
 
+/// Draws a circle with the specified area and color.
+void drawCirc(Vec2 position, float radius, Rgba color = white, float thickness = -1.0f) {
+    drawCirc(Circ(position, radius), color, thickness);
+}
+
+/// Draws a circle with the specified area and color.
+void drawCirc(float x, float y, float radius, Rgba color = white, float thickness = -1.0f) {
+    drawCirc(Circ(x, y, radius), color, thickness);
+}
+
 /// Draws a line with the specified area, thickness, and color.
 void drawLine(Line area, Rgba color = white, float thickness = 9.0f) {
     bk.drawLine(isPixelSnapped ? area.floor() : area, color, thickness);
+}
+
+/// Draws a line with the specified area, thickness, and color.
+void drawLine(Vec2 a, Vec2 b, Rgba color = white, float thickness = 9.0f) {
+    drawLine(Line(a, b), color, thickness);
+}
+
+/// Draws a line with the specified area, thickness, and color.
+void drawLine(float x1, float y1, float x2, float y2, Rgba color = white, float thickness = 9.0f) {
+    drawLine(Line(x1, y1, x2, y2), color, thickness);
 }
 
 /// Draws the surface at the given position with the specified draw options.

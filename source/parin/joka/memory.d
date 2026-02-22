@@ -736,14 +736,14 @@ struct List(T) {
         return false;
     }
 
-    pragma(inline, true) @trusted
+    @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         if (appendBlank(file, line)) return true;
         items.ptr[items.length - 1] = cast(T) arg;
         return false;
     }
 
-    pragma(inline, true) @trusted @nogc
+    @trusted @nogc
     void remove(Sz i) {
         items[i] = items.ptr[items.length - 1];
         items = items.ptr[0 .. items.length - 1];
@@ -755,7 +755,7 @@ struct List(T) {
         items = items[0 .. $ - 1];
     }
 
-    pragma(inline, true) @trusted @nogc
+    @trusted @nogc
     void pop() {
         if (length) items = items.ptr[0 .. items.length - 1];
     }
@@ -926,14 +926,14 @@ struct BufferList(T) {
         return append(args);
     }
 
-    pragma(inline, true) @trusted
+    @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = appendBlank(file, line);
         if (!result) data.ptr[length - 1] = cast(T) arg;
         return result;
     }
 
-    pragma(inline, true) @trusted
+    @trusted
     void remove(Sz i) {
         items[i] = items.ptr[items.length - 1];
         length -= 1;
@@ -944,7 +944,6 @@ struct BufferList(T) {
         length -= 1;
     }
 
-    pragma(inline, true)
     void pop() {
         if (length) length -= 1;
     }
@@ -1049,14 +1048,14 @@ struct FixedList(T, Sz N) {
         return append(args);
     }
 
-    pragma(inline, true) @trusted
+    @trusted
     bool push(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = appendBlank(file, line);
         if (!result) data.ptr[length - 1] = cast(T) arg;
         return result;
     }
 
-    pragma(inline, true) @trusted
+    @trusted
     void remove(Sz i) {
         items[i] = items.ptr[items.length - 1];
         length -= 1;
@@ -1067,7 +1066,6 @@ struct FixedList(T, Sz N) {
         length -= 1;
     }
 
-    pragma(inline, true)
     void pop() {
         if (length) length -= 1;
     }
