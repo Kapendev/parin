@@ -44,6 +44,20 @@ bool update(float dt) {
     fmt(i"Time $(i): $(elapsedTime)");
     fmtIntoBuffer(buffer[], i"Time $(i): $(elapsedTime)");
     fmtIntoList(buffer, i"Time $(i): $(elapsedTime)");
+
+    // Also a basic allocator test because why not?
+    // Just wanted to see if the context versions are working.
+    auto context = frameMemoryContext();
+    byte[3] values = [1, 2, 3];
+    jokaMakeBlank!byte(context);
+    jokaMake!byte(context);
+    jokaMake!byte(context, 69);
+    jokaMakeSliceBlank!byte(context, 4);
+    jokaMakeSlice!byte(context, 4);
+    jokaMakeSlice!byte(context, 4, 69);
+    auto slice = jokaMakeSlice!byte(context, values);
+    slice = jokaResizeSlice!byte(context, slice.ptr, 8, slice.length);
+
     return false;
 }
 

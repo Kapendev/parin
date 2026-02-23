@@ -365,10 +365,22 @@ version (JokaCustomMemory) {
         return cast(T*) jokaMalloc(T.sizeof, file, line);
     }
 
+    T* jokaMakeBlank(T)(MemoryContext context, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeBlank!T(file, line);
+        }
+    }
+
     T* jokaMake(T)(IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeBlank!T(file, line);
         if (result) *result = T.init;
         return result;
+    }
+
+    T* jokaMake(T)(MemoryContext context, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMake!T(file, line);
+        }
     }
 
     T* jokaMake(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
@@ -377,10 +389,22 @@ version (JokaCustomMemory) {
         return result;
     }
 
+    T* jokaMake(T)(MemoryContext context, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMake!T(value, file, line);
+        }
+    }
+
     T[] jokaMakeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = (cast(T*) jokaMalloc(T.sizeof * length, file, line))[0 .. length];
         if (result.ptr) return result;
         return [];
+    }
+
+    T[] jokaMakeSliceBlank(T)(MemoryContext context, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeSliceBlank!T(length, file, line);
+        }
     }
 
     T[] jokaMakeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
@@ -389,10 +413,22 @@ version (JokaCustomMemory) {
         return result;
     }
 
+    T[] jokaMakeSlice(T)(MemoryContext context, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeSlice!T(length, file, line);
+        }
+    }
+
     T[] jokaMakeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeSliceBlank!T(length, file, line);
         foreach (ref item; result) item = value;
         return result;
+    }
+
+    T[] jokaMakeSlice(T)(MemoryContext context, Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeSlice!T(length, value, file, line);
+        }
     }
 
     T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
@@ -401,10 +437,31 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    T[] jokaResizeSlice(T)(T* values, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = (cast(T*) jokaRealloc(values, T.sizeof * length, file, line))[0 .. length];
+    T[] jokaMakeSlice(T)(MemoryContext context, const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeSlice!T(values, file, line);
+        }
+    }
+
+    // NOTE: The resize and joint functions below are kinda part of the "blank" functions.
+    //   The first one will not initialize new memory, and the second one will zero new memory instead of default initializing it.
+    //   Joint allocations work like that because it's harder to initialize them manually.
+    //
+    //   In theory, you would want three versions,
+    //   so `jokaResizeSlice`, `jokaResizeSliceBlank`, and `jokaResizeZero` for example,
+    //   but that is starting to look ugly.
+    //   I don't want to repeat the mistake that some libraries make where you have 20+ functions for basic stuff that you can do manually anyway.
+
+    T[] jokaResizeSlice(T)(T* values, Sz length, Sz oldLength = 0, IStr file = __FILE__, Sz line = __LINE__) {
+        auto result = (cast(T*) jokaRealloc(values, T.sizeof * length, T.sizeof * oldLength, file, line))[0 .. length];
         if (result.ptr) return result;
         return [];
+    }
+
+    T[] jokaResizeSlice(T)(MemoryContext context, T* values, Sz length, Sz oldLength = 0, IStr file = __FILE__, Sz line = __LINE__) {
+        with (ScopedMemoryContext(context)) {
+            return jokaResizeSlice!T(values, length, oldLength, file, line);
+        }
     }
 
     T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
@@ -438,6 +495,12 @@ version (JokaCustomMemory) {
             offset += typeof(member[0]).sizeof * lengths[i];
         }
         return result;
+    }
+
+    T jokaMakeJoint(T)(MemoryContext context, Sz[] lengths...) if (is(T == struct)) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeJoint!T(lengths);
+        }
     }
 }
 

@@ -164,6 +164,8 @@ enum Keyboard : ubyte {
 }
 
 /// An alias for the `Keyboard` enum.
+/// It's useful for keeping code concise.
+/// For function parameters, prefer using the original enum.
 alias Key = Keyboard;
 
 /// A limited set of mouse keys.
