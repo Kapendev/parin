@@ -96,7 +96,7 @@ void ready() {
 }
 
 bool update(float dt) {
-    // The game code. It's just a rectangle.
+    // The game code.
     drawRect(Rect(game.point.x, game.point.y, game.width, game.height));
     // The editor code.
     beginUi();

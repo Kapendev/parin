@@ -143,13 +143,6 @@ version (JokaCustomMemory) {
     extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow @nogc void  jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
-    extern(C) @safe nothrow @nogc
-    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
-        context.allocatorState = null;
-        context.reallocFunc = &jokaAllocatorRealloc;
-        context.freeFunc = &jokaAllocatorFree;
-    }
-
     extern(C) nothrow
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         // NOTE: You should not call `jokaMalloc`, `jokaRealloc` or `jokaFree` from system functions, but in this case it's fine.
@@ -181,9 +174,6 @@ version (JokaCustomMemory) {
     void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
     }
-} else version (JokaGcMemory) {
-    import memoryd = core.memory;
-    import stringc = core.stdc.string;
 
     extern(C) @safe nothrow @nogc
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
@@ -191,6 +181,9 @@ version (JokaCustomMemory) {
         context.reallocFunc = &jokaAllocatorRealloc;
         context.freeFunc = &jokaAllocatorFree;
     }
+} else version (JokaGcMemory) {
+    import memoryd = core.memory;
+    import stringc = core.stdc.string;
 
     extern(C) nothrow
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -238,18 +231,18 @@ version (JokaCustomMemory) {
         if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.free(0, ptr, oldSize, file, line);
     }
-} else {
-    version(JokaPhobosStdc) {
-        import stdlibc = core.stdc.stdlib;
-    } else {
-        import stdlibc = parin.joka.stdc;
-    }
 
     extern(C) @safe nothrow @nogc
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.reallocFunc = &jokaAllocatorRealloc;
         context.freeFunc = &jokaAllocatorFree;
+    }
+} else {
+    version(JokaPhobosStdc) {
+        import stdlibc = core.stdc.stdlib;
+    } else {
+        import stdlibc = parin.joka.stdc;
     }
 
     extern(C) nothrow
@@ -358,6 +351,13 @@ version (JokaCustomMemory) {
         if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.free(0, ptr, oldSize, file, line);
     }
+
+    extern(C) @safe nothrow @nogc
+    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
+        context.allocatorState = null;
+        context.reallocFunc = &jokaAllocatorRealloc;
+        context.freeFunc = &jokaAllocatorFree;
+    }
 }
 
 @trusted {
@@ -451,6 +451,13 @@ version (JokaCustomMemory) {
     }
 
     void nullAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
+
+    extern(C)
+    void jokaRestoreNullAllocatorSetup(ref MemoryContext context) {
+        context.allocatorState = null;
+        context.reallocFunc = &nullAllocatorReallocWrapper;
+        context.freeFunc = &nullAllocatorFreeWrapper;
+    }
 
     void jokaEnsureCapture(ref MemoryContext capture) {
         if (capture.reallocFunc != null) return;

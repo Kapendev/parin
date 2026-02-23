@@ -41,23 +41,13 @@ enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assig
 enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Can't load {} from \"{}\"";
 enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Can't save {} to \"{}\"";
 
-version (WebAssembly) {
-    enum defaultEngineAssetsPathCapacity           = 4 * kilobyte;
-    enum defaultEngineScreenshotTargetPathCapacity = 1 * kilobyte;
-    enum defaultEngineEnvArgsCapacity              = 16;
-    enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-    enum defaultEngineEngineTasksCapacity          = 32;
-    enum defaultEngineArenaCapacity                = 2 * megabyte;
-    enum defaultEngineDprintCapacity               = 2 * kilobyte;
-} else {
-    enum defaultEngineAssetsPathCapacity           = 8 * kilobyte;
-    enum defaultEngineScreenshotTargetPathCapacity = 2 * kilobyte;
-    enum defaultEngineEnvArgsCapacity              = 64;
-    enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-    enum defaultEngineEngineTasksCapacity          = 64;
-    enum defaultEngineArenaCapacity                = 4 * megabyte;
-    enum defaultEngineDprintCapacity               = 4 * kilobyte;
-}
+enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
+enum defaultEngineEnvArgsCapacity              = (64 / defaultEngineResourceScaleDenominator);
+enum defaultEngineEngineTasksCapacity          = (64 / defaultEngineResourceScaleDenominator);
+enum defaultEngineAssetsPathCapacity           = (8  / defaultEngineResourceScaleDenominator) * kilobyte;
+enum defaultEngineScreenshotTargetPathCapacity = (2  / defaultEngineResourceScaleDenominator) * kilobyte;
+enum defaultEngineArenaCapacity                = (4  / defaultEngineResourceScaleDenominator) * megabyte;
+enum defaultEngineDprintCapacity               = (4  / defaultEngineResourceScaleDenominator) * kilobyte;
 
 enum defaultEngineDprintPosition       = Vec2(3, 3);
 enum defaultEngineDprintLineCountLimit = 13;
@@ -1193,16 +1183,16 @@ void _updateEngineMouseBuffer(Vec2 value) {
 void _updateEngineWasdBuffer() {
     with (Keyboard) {
         _engineState.wasdBuffer = Vec2(
-            (d.isDown || right.isDown) - (a.isDown || left.isDown),
-            (s.isDown || down.isDown) - (w.isDown || up.isDown),
+            (d.isDown || right.isDown || Gamepad.right.isDown) - (a.isDown || left.isDown || Gamepad.left.isDown),
+            (s.isDown || down.isDown  || Gamepad.down.isDown)  - (w.isDown || up.isDown   || Gamepad.up.isDown),
         );
         _engineState.wasdPressedBuffer = Vec2(
-            (d.isPressed || right.isPressed) - (a.isPressed || left.isPressed),
-            (s.isPressed || down.isPressed) - (w.isPressed || up.isPressed),
+            (d.isPressed || right.isPressed || Gamepad.right.isPressed) - (a.isPressed || left.isPressed || Gamepad.left.isPressed),
+            (s.isPressed || down.isPressed  || Gamepad.down.isPressed)  - (w.isPressed || up.isPressed   || Gamepad.up.isPressed),
         );
         _engineState.wasdReleasedBuffer = Vec2(
-            (d.isReleased || right.isReleased) - (a.isReleased || left.isReleased),
-            (s.isReleased || down.isReleased) - (w.isReleased || up.isReleased),
+            (d.isReleased || right.isReleased || Gamepad.right.isReleased) - (a.isReleased || left.isReleased || Gamepad.left.isReleased),
+            (s.isReleased || down.isReleased  || Gamepad.down.isReleased)  - (w.isReleased || up.isReleased   || Gamepad.up.isReleased),
         );
     }
 }

@@ -17,6 +17,13 @@ alias ResourceId = GenIndex;
 
 @safe nothrow @nogc:
 
+// People. Are a resource. Money on the table. PEOPLE! ARE! THE FOUNDATION! OF WHAT! WE! ARE! BUILDING HERE!
+version (WebAssembly) {
+    enum defaultEngineResourceScaleDenominator = 2;
+} else {
+    enum defaultEngineResourceScaleDenominator = 1;
+}
+
 /// Flipping orientations.
 enum Flip : ubyte {
     none, /// No flipping.
@@ -155,6 +162,9 @@ enum Keyboard : ubyte {
     f11,          /// The f11 key.
     f12,          /// The f12 key.
 }
+
+/// An alias for the `Keyboard` enum.
+alias Key = Keyboard;
 
 /// A limited set of mouse keys.
 enum Mouse : ubyte {
