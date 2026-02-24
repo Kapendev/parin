@@ -484,12 +484,12 @@ version (JokaCustomMemory) {
     pragma(msg, "Joka: Using GC memory.");
     import stringc = core.stdc.string;
 
-    extern(C) nothrow @nogc pure
+    nothrow @nogc pure
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stringc.memset(ptr, value, size);
     }
 
-    extern(C) nothrow @nogc pure
+    nothrow @nogc pure
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stringc.memcpy(ptr, source, size);
     }
@@ -501,12 +501,12 @@ version (JokaCustomMemory) {
         import stringc = parin.joka.stdc;
     }
 
-    extern(C) nothrow @nogc pure
+    nothrow @nogc pure
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stringc.memset(ptr, value, size);
     }
 
-    extern(C) nothrow @nogc pure
+    nothrow @nogc pure
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stringc.memcpy(ptr, source, size);
     }
@@ -514,13 +514,14 @@ version (JokaCustomMemory) {
 
 version (JokaRuntimeSymbols) {
     pragma(msg, "Joka: Defining missing runtime symbols.");
-    extern(C) @trusted nothrow @nogc pure {
-        void __chkstk() {}
 
-        void _d_array_slice_copy(void* dst, Sz dstlen, void* src, Sz srclen, Sz elemsz) {
-            if (dstlen != srclen) assert(0, "Lengths don't match for slice copy.");
-            jokaMemcpy(dst, src, dstlen * elemsz);
-        }
+    extern(C) @trusted nothrow @nogc pure /* __chkstk */
+    void __chkstk() {}
+
+    extern(C) @trusted nothrow @nogc pure /* _d_array_slice_copy */
+    void _d_array_slice_copy(void* dst, Sz dstlen, void* src, Sz srclen, Sz elemsz) {
+        if (dstlen != srclen) assert(0, "Lengths don't match for slice copy.");
+        jokaMemcpy(dst, src, dstlen * elemsz);
     }
 }
 
@@ -628,7 +629,7 @@ static if (__traits(compiles, { import core.interpolation; })) {
 
 // NOTE: A BetterC fix. It's only needed when using IES.
 version (D_BetterC) {
-    extern(C) @nogc pure nothrow @safe
+    extern(C) @nogc pure nothrow @safe /* IES */
     IStr _D4core13interpolation16__getEmptyStringFNaNbNiNfZAya() { return ""; }
 }
 
