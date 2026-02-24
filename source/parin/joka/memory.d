@@ -7,7 +7,7 @@
 
 /// The `memory` module provides functions for dealing with memory and various general-purpose containers.
 /// `List`, `BufferList`, and `FixedList` are the "basic" containers.
-/// Most other containers can accept one of these to adjust their allocation strategy.
+/// Most other containers can accept one of those to adjust their allocation strategy.
 
 module parin.joka.memory;
 
@@ -58,6 +58,7 @@ struct AllocationGroup {
     IStr _currentAllocationGroup;
 
     @safe nothrow:
+    @disable this();
 
     this(IStr group) {
         this._currentAllocationGroup = group;
@@ -169,13 +170,6 @@ version (JokaCustomMemory) {
     void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
     }
-
-    @safe @nogc
-    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
-        context.allocatorState = null;
-        context.reallocFunc = &jokaAllocatorRealloc;
-        context.freeFunc = &jokaAllocatorFree;
-    }
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
     import stringc = core.stdc.string;
@@ -219,13 +213,6 @@ version (JokaCustomMemory) {
     void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.free(0, ptr, oldSize, file, line);
-    }
-
-    @safe @nogc
-    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
-        context.allocatorState = null;
-        context.reallocFunc = &jokaAllocatorRealloc;
-        context.freeFunc = &jokaAllocatorFree;
     }
 } else {
     version(JokaPhobosStdc) {
@@ -355,13 +342,6 @@ version (JokaCustomMemory) {
         if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         __memoryContext.free(0, ptr, oldSize, file, line);
     }
-
-    @safe @nogc
-    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
-        context.allocatorState = null;
-        context.reallocFunc = &jokaAllocatorRealloc;
-        context.freeFunc = &jokaAllocatorFree;
-    }
 }
 
 @trusted {
@@ -451,7 +431,7 @@ version (JokaCustomMemory) {
     //   The first one will not initialize new memory, and the second one will zero new memory instead of default initializing it.
     //   Joint allocations work like that because it's harder to initialize them manually.
     //
-    //   In theory, you would want three versions,
+    //   In theory, you would want maybe three versions,
     //   so `jokaResizeSlice`, `jokaResizeSliceBlank`, and `jokaResizeZero` for example,
     //   but that is starting to look ugly.
     //   I don't want to repeat the mistake that some libraries make where you have 20+ functions for basic stuff that you can do manually anyway.
@@ -468,13 +448,11 @@ version (JokaCustomMemory) {
         }
     }
 
-    T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
+    T jokaMakeJointBlank(T)(Sz* outTotalBytes, Sz[] lengths...) if (is(T == struct)) {
         enum commonAlignment = typeof(T.tupleof[0][0]).alignof;
-
         if (lengths.length != T.tupleof.length) assert(0, "Lengths count doesn't match member count.");
-        auto result = T();
 
-        auto totalBytes = cast(Sz) 0;
+        Sz totalBytes;
         static foreach (i, member; T.tupleof) {
             static assert(
                 is(typeof(member) : const(M)[], M) || isBufferContainerType!(typeof(member)),
@@ -485,9 +463,14 @@ version (JokaCustomMemory) {
         }
 
         auto memory = cast(ubyte*) jokaMalloc(totalBytes);
-        if (memory == null) return result;
-        jokaMemset(memory, 0, totalBytes);
+        if (memory) {
+            if (outTotalBytes) *outTotalBytes = totalBytes;
+        } else {
+            if (outTotalBytes) *outTotalBytes = 0;
+            return T();
+        }
 
+        auto result = T();
         auto offset = cast(Sz) 0;
         static foreach (i, member; T.tupleof) {
             offset = (offset + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
@@ -498,6 +481,19 @@ version (JokaCustomMemory) {
             }
             offset += typeof(member[0]).sizeof * lengths[i];
         }
+        return result;
+    }
+
+    T jokaMakeJointBlank(T)(MemoryContext context, Sz* outTotalBytes, Sz[] lengths...) if (is(T == struct)) {
+        with (ScopedMemoryContext(context)) {
+            return jokaMakeJointBlank!T(outTotalBytes, lengths);
+        }
+    }
+
+    T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
+        Sz totalBytes;
+        auto result = jokaMakeJointBlank!T(&totalBytes, lengths);
+        if (totalBytes) jokaMemset(result.tupleof[0].ptr, 0, totalBytes);
         return result;
     }
 
@@ -523,6 +519,12 @@ version (JokaCustomMemory) {
         context.allocatorState = null;
         context.reallocFunc = &nullAllocatorReallocWrapper;
         context.freeFunc = &nullAllocatorFreeWrapper;
+    }
+
+    void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
+        context.allocatorState = null;
+        context.reallocFunc = &jokaAllocatorRealloc;
+        context.freeFunc = &jokaAllocatorFree;
     }
 
     void jokaEnsureCapture(ref MemoryContext capture) {
@@ -557,7 +559,9 @@ version (JokaCustomMemory) {
 @trusted
 void beginAllocationGroup(IStr group) {
     static if (isTrackingMemory) {
-        _memoryTrackingState.currentGroupStack ~= group.idup;
+        // NOTE: It doesn't make a copy of the string.
+        //   A group string is treated just like a file string.
+        _memoryTrackingState.currentGroupStack ~= group;
     }
 }
 
@@ -659,7 +663,13 @@ unittest {
     assert(mesh.uvs.length == 24);
 
     assert(mesh.name[0] == '\0');
+    assert(mesh.name[$ - 1] == '\0');
+    assert(mesh.positions[0] == Vector3(0, 0, 0));
+    assert(mesh.positions[$ - 1] == Vector3(0, 0, 0));
     assert(mesh.indices[0] == 0);
+    assert(mesh.indices[$ - 1] == 0);
+    assert(mesh.uvs[0] == Vector2(0, 0));
+    assert(mesh.uvs[$ - 1] == Vector2(0, 0));
     mesh.free();
 
     // Second Jai example.

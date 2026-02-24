@@ -249,12 +249,14 @@ struct BoxWorld {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         // Goodbye, Mr. Anderson.
         walls[id - 1].area.x = cast(typeof(Box.position.x)) float.max;
+        walls[id - 1].properties.flags |= BoxFlag.isPassable;
     }
 
     void removeActor(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         // Goodbye, Mr. Anderson.
         actors[id - 1].area.x = cast(typeof(Box.position.x)) float.max;
+        actors[id - 1].properties.flags |= BoxFlag.isPassable;
     }
 
     void clearWalls() {
@@ -323,7 +325,7 @@ struct BoxWorld {
                     auto i = (taggedId & ~boxUnionTypeBit) - 1;
                     auto isActor = taggedId & boxUnionTypeBit;
                     if (isActor) continue;
-                    if (walls[i].area.hasIntersection(box) && ~walls[i].properties.flags & BoxFlag.isPassable) {
+                    if ((~walls[i].properties.flags & BoxFlag.isPassable) && walls[i].area.hasIntersection(box)) {
                         collisionIdsBuffer.push(cast(BoxId) (i + 1));
                         if (canStopAtFirst) return collisionIdsBuffer[];
                     }
@@ -331,7 +333,7 @@ struct BoxWorld {
             }}
         } else {
             foreach (i, wall; walls) {
-                if (wall.area.hasIntersection(box) && ~wall.properties.flags & BoxFlag.isPassable) {
+                if ((~wall.properties.flags & BoxFlag.isPassable) && wall.area.hasIntersection(box)) {
                     collisionIdsBuffer.push(cast(BoxId) (i + 1));
                     if (canStopAtFirst) return collisionIdsBuffer[];
                 }
@@ -367,7 +369,7 @@ struct BoxWorld {
                     auto i = (taggedId & ~boxUnionTypeBit) - 1;
                     auto isWall = !(taggedId & boxUnionTypeBit);
                     if (isWall) continue;
-                    if (actors[i].area.hasIntersection(box) && ~actors[i].properties.flags & BoxFlag.isPassable) {
+                    if ((~actors[i].properties.flags & BoxFlag.isPassable) && actors[i].area.hasIntersection(box)) {
                         collisionIdsBuffer.push(cast(BoxId) (i + 1));
                         if (canStopAtFirst) return collisionIdsBuffer[];
                     }
@@ -375,7 +377,7 @@ struct BoxWorld {
             }}
         } else {
             foreach (i, actor; actors) {
-                if (actor.area.hasIntersection(box) && ~actor.properties.flags & BoxFlag.isPassable) {
+                if ((~actor.properties.flags & BoxFlag.isPassable) && actor.area.hasIntersection(box)) {
                     collisionIdsBuffer.push(cast(BoxId) (i + 1));
                     if (canStopAtFirst) return collisionIdsBuffer[];
                 }
@@ -428,7 +430,7 @@ struct BoxWorld {
                         break;
                 }
             }
-            if (~properties.flags & BoxFlag.isPassable && wallId) {
+            if ((~properties.flags & BoxFlag.isPassable) && wallId) {
                 return wallId;
             } else {
                 // Move.
@@ -504,7 +506,7 @@ struct BoxWorld {
                         break;
                 }
             }
-            if (~properties.flags & BoxFlag.isPassable && wallId) {
+            if ((~properties.flags & BoxFlag.isPassable) && wallId) {
                 return wallId;
             } else {
                 // Move.
@@ -613,7 +615,7 @@ struct BoxWorld {
             foreach (i, ref actorData; actors) {
                 auto actorProperties = &actorData.properties;
                 actorProperties.flags &= ~BoxFlag.isRiding;
-                if (!actorProperties.side || actorProperties.flags & BoxFlag.isPassable) continue;
+                if (!actorProperties.side || (actorProperties.flags & BoxFlag.isPassable)) continue;
                 auto rideBox = actorData.area;
                 final switch (actorProperties.side) with (BoxSide) {
                     case none: break;
