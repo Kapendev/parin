@@ -59,9 +59,6 @@ enum Fault : ubyte {
 /// A static array.
 /// It exists mainly because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
-    enum length = N;   /// The length of the array.
-    enum capacity = N; /// The capacity of the array. This member exists to make metaprogramming easier.
-
     align(T.alignof) ubyte[T.sizeof * N] _data;
 
     pragma(inline, true) @trusted nothrow @nogc:
@@ -73,6 +70,12 @@ struct StaticArray(T, Sz N) {
         auto me = this.items;
         foreach (i; 0 .. N) me[i] = cast(T) items[i];
     }
+
+    /// The length of the array.
+    enum length = N;
+
+    /// The capacity of the array.
+    enum capacity = N;
 
     /// Returns the items of the array.
     T[] items() {
@@ -179,11 +182,10 @@ struct Maybe(T) {
 
 struct Union(A...) if (A.length != 0) {
     alias Types = A;
-    alias Base = A[0];
-
+    alias Base  = A[0];
     union UnionData {
         static foreach (i, T; A) {
-            mixin("T _m", typeOf!T, ";");
+            mixin("T _m", i, ";");
         }
     }
 
@@ -192,11 +194,14 @@ struct Union(A...) if (A.length != 0) {
 
     @trusted
     auto call(IStr func, AA...)(AA args) {
-        // NOTE: Copy-pasted the `funcImplementationErrorMessage` function here to avoid one template.
         switch (_type) {
-            static foreach (T; A) {
-                static assert(__traits(hasMember, T, func), "Type `" ~ T.stringof ~ "` doesn't implement the `" ~ func ~ "` function.");
-                mixin("case ", typeOf!T, ": return _data._m", typeOf!T, ".", func, "(args);");
+            static foreach (i, T; A) {
+                // NOTE: Copy-pasted the `funcImplementationErrorMessage` function inside the assert to avoid a template.
+                static assert(
+                    __traits(hasMember, T, func),
+                    "Type `" ~ T.stringof ~ "` doesn't implement the `" ~ func ~ "` function.",
+                );
+                mixin("case i: return _data.tupleof[i].", func, "(args);");
             }
             default: assert(0, "WTF!");
         }
@@ -204,49 +209,52 @@ struct Union(A...) if (A.length != 0) {
 
     @trusted nothrow @nogc:
 
-    static foreach (T; A) {
+    static foreach (i, T; A) {
         this(const(T) value) {
             opAssign(value);
         }
 
         void opAssign(const(T) rhs) {
             *(cast(T*) &_data) = cast(T) rhs;
-            _type = cast(UnionType) typeOf!T;
+            _type = cast(UnionType) i;
         }
-    }
-
-    UnionType type() {
-        return _type;
     }
 
     IStr typeName() {
         switch (_type) {
-            static foreach (T; A) {
-                mixin("case ", typeOf!T, ": return T.stringof;");
+            static foreach (i, T; A) {
+                mixin("case i: return T.stringof;");
             }
             default: assert(0, "WTF!");
         }
     }
 
-    bool isType(T)() {
-        return _type == typeOf!T;
-    }
+    pragma(inline, true) {
+        UnionType type() {
+            return _type;
+        }
 
-    ref Base base() {
-        return _data._m0;
-    }
+        bool isType(T)() {
+            return _type == typeOf!T;
+        }
 
-    ref T as(T)() {
-        mixin("return _data._m", typeOf!T, ";");
+        ref Base base() {
+            return _data.tupleof[0];
+        }
+
+        ref T as(T)() {
+            return _data.tupleof[typeOf!T];
+        }
     }
 
     ref T to(T)() {
-        if (isType!T) {
-            // NOTE: Copy-pasted the `as` function here to avoid one template.
-            return mixin("return _data._m", typeOf!T, ";");
+        // NOTE: Copy-pasted the `isType` function inside the if to avoid a template.
+        if (_type == typeOf!T) {
+            // NOTE: Copy-pasted the `as` function here to avoid a template.
+            return _data.tupleof[typeOf!T];
         } else {
-            static foreach (TT; A) {
-                if (typeOf!TT == _type) {
+            static foreach (i, TT; A) {
+                if (_type == i) {
                     assert(0, "Value is `" ~ A[i].stringof ~ "` and not `" ~ T.stringof ~ "`.");
                 }
             }
@@ -274,12 +282,12 @@ struct Union(A...) if (A.length != 0) {
     enum isBaseAliasingSafe = _isBaseAliasingSafe();
 
     template typeOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
+        static assert(isInAliasArgs!(T, A), "Type is not part of the variant.");
         enum typeOf = findInAliasArgs!(T, A);
     }
 
     template typeNameOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type `" ~ T.stringof ~ "` is not part of the variant.");
+        static assert(isInAliasArgs!(T, A), "Type is not part of the variant.");
         enum typeNameOf = T.stringof;
     }
 }
@@ -351,7 +359,7 @@ mixin template distinct(T) {
     }
 }
 
-mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, "items")) {
+mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, itemsMemberName)) {
     pragma(inline, true) @trusted nothrow @nogc {
         TT[] opSlice(Sz dim)(Sz i, Sz j) {
             return mixin(itemsMemberName, "[i .. j]");

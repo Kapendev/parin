@@ -27,10 +27,10 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
 
 ## Why Parin
 
-- **Focused on games.** It's opinionated in ways that make game development tasks (rendering, input) easier out of the box than in general-purpose engines.
-- **Code-driven design.** There's no imposed architecture, allowing freedom on how a game is structured.
-- **A guided workflow.** It assumes a few common patterns like a fixed aspect ratio, debug UI and a frame allocator to smooth out the development experience.
-- **Flexible abstraction.** Leverage the GC of D for convenience, or drop down to manual memory management when needed.
+- **Focused on games**: It's opinionated in ways that make game development tasks (rendering, input) easier out of the box than in general-purpose engines.
+- **Code-driven design**: There's no imposed architecture, allowing freedom on how a game is structured.
+- **A guided workflow**: It assumes a few common patterns like a fixed aspect ratio, debug UI and a frame allocator to smooth out the development experience.
+- **Flexible abstraction**: Leverage the GC of D for convenience, or drop down to manual memory management when needed.
 
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity.
 It offers more direction than small ones, but far less overhead and "magic" than big ones.
@@ -48,9 +48,9 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Efficient tile map structures
 - Intuitive immediate-mode UI (WIP)
 - Includes extras like [microui](examples/integrations/microui.d) and memory allocators ([tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25))
-- Mixed memory model: manual control, GC, or both
+- Mixed memory model (manual, GC, or both)
 - No external dependencies
-- Cross-platform: Windows, Linux, Web, macOS (needs testing)
+- Support for Windows, Linux, Web, and macOS (needs testing)
 
 ## Examples
 
@@ -122,34 +122,31 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing the message "Hello world!".
-This creates a project with the basic template by default.
-The command `dub init -t parin -- entity` provides a template with an entity and state system.
-
-For instructions on building without DUB, check the ["How can I build without DUB?"](#how-can-i-build-without-dub) section.
+For instructions on building without DUB, check the ["How can I build without DUB?"](#how-can-i-build-without-dub) section in the FAQ.
 
 ### Required Libraries on Linux
 
 Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.
 
-#### Ubuntu
+**Ubuntu**:
 
 ```sh
 sudo apt install libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
-#### Fedora
+**Fedora**:
 
 ```sh
 sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel libatomic
 ```
 
-#### Arch
+**Arch**:
 
 ```sh
 sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ```
 
-#### Void
+**Void**:
 
 ```sh
 sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel mesa MesaLib-devel
@@ -166,6 +163,7 @@ The [`parin.types`](source/parin/types.d) and [`parin.engine`](source/parin/engi
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except ECS.
+Sorry ECS people.
 
 ## Devlogs
 
@@ -239,34 +237,34 @@ Parin includes a build script for the web in the [packages](packages/) folder.
 Building for the web requires [Emscripten](https://emscripten.org/) (the latest version is recommended).
 
 > [!WARNING]
-> The defaults are using the `betterC` flag.
-> If your project requires the full D runtime (GC, classes, etc.), scroll down to the `gc` flag instructions.
+> The defaults are using the `-betterC` flag.
+> If your project requires the D runtime (GC, classes, etc.), scroll down to the `gc` flag instructions.
 
-#### Running the script with DUB
+**Running the script with DUB**:
 
 ```sh
 dub run parin:web
 ```
 
-#### Without DUB
+**Without DUB**:
 
 ```sh
 ./parin_package/scripts/web
 # Or: .\parin_package\scripts\web.bat
 ```
 
-Projects requiring the full **D runtime** can be built using the `gc` flag provided by the build script.
+Projects requiring the D runtime can be built using the `gc` flag provided by the build script.
 This flag also requires [OpenD](https://opendlang.org/index.html).
 Note that exceptions are not supported and that currently some DUB related limitations apply like having to include all dependencies inside the source folder.
 Make sure `opend install xpack-emscripten` has been run at least once before using it.
 
-#### Using the flag with DUB
+**Using the flag with DUB**:
 
 ```sh
 dub run parin:web -- gc
 ```
 
-#### Without DUB
+**Without DUB**:
 
 ```sh
 ./parin_package/scripts/web gc
@@ -275,36 +273,36 @@ dub run parin:web -- gc
 
 To speed up build times, use the `debug` flag.
 The `build` flag can be used to build the project without running the game.
+
+Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are partially supported through the `rl` flag.
+A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
+Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
+
 Below are installation commands for Emscripten for some Linux distributions.
 Note that some of these may not install the latest version.
 
-#### Ubuntu
+**Ubuntu**:
 
 ```sh
 sudo apt install emscripten
 ```
 
-#### Fedora
+**Fedora**:
 
 ```sh
 sudo dnf install emscripten
 ```
 
-#### Arch
+**Arch**:
 
 ```sh
 yay -S emscripten
 # Or: sudo pacman -S emscripten
 ```
 
-Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are partially supported through the `rl` flag.
-A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
-Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
-
 ### How do I upload web builds to itch.io?
 
 1. Open the web folder.
-
 2. Select these files and add them to a ZIP file:
 
     ```
@@ -316,13 +314,9 @@ Using both `gc` and `rl` should provide the best compatibility for most raylib-d
     ```
 
 3. Go to itch.io and create a new project.
-
 4. Under "Kind of project", choose "HTML."
-
 5. Upload the ZIP file.
-
 6. Enable the option "This file will be played in the browser."
-
 7. Save the changes.
 
 The web build script provides the `itch` flag to automate the first two steps.
@@ -331,9 +325,9 @@ Contributions to add Windows support are welcome.
 
 ### How can I build without DUB?
 
-Create a new folder and run inside the following commands:
+Create a new folder and run inside the following commands.
 
-#### Prepare folder
+**Prepare folder**:
 
 ```sh
 git clone --depth 1 https://github.com/Kapendev/parin parin_package
@@ -341,7 +335,7 @@ git clone --depth 1 https://github.com/Kapendev/parin parin_package
 # Or: .\parin_package\scripts\prepare.bat
 ```
 
-#### Compile & run
+**Run project**:
 
 ```sh
 ./parin_package/scripts/run

@@ -350,6 +350,8 @@ version (JokaCustomMemory) {
     }
 
     T* jokaMakeBlank(T)(MemoryContext context, IStr file = __FILE__, Sz line = __LINE__) {
+        // NOTE: In `JokaCustomMemory`, this does nothing and will use the default allocator.
+        //   Do we care? Ehh. I think it's fine for now.
         with (ScopedMemoryContext(context)) {
             return jokaMakeBlank!T(file, line);
         }
@@ -743,7 +745,7 @@ struct List(T) {
     alias Item = T;
     alias Data = T[];
 
-    Data items;
+    T[] items;
     Sz capacity;
     MemoryContext capture;
     bool canIgnoreLeak;
@@ -928,7 +930,7 @@ struct BufferList(T) {
     alias Item = T;
     alias Data = T[];
 
-    Data data;
+    T[] data;
     Sz length;
 
     bool growCapacity(C)(ref C arena) {
@@ -1083,7 +1085,7 @@ struct FixedList(T, Sz N) {
     alias Item = T;
     alias Data = StaticArray!(T, N);
 
-    Data data = void;
+    StaticArray!(T, N) data = void;
     Sz length;
 
     @safe nothrow @nogc:
@@ -1209,7 +1211,7 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
     alias Item = D.Item;
     alias Data = D;
 
-    Data data;
+    D data;
     Sz hotIndex;
     Sz openIndex;
     Sz length;
@@ -1449,7 +1451,7 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
     alias Item = D.Item;
     alias Data = D;
 
-    Data data;
+    D data;
     G generations;
 
     @safe nothrow:
@@ -1602,7 +1604,7 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     alias Item = D.Item;
     alias Data = D;
 
-    Data tiles;
+    D tiles;
     Sz rowCount;
     Sz colCount;
 

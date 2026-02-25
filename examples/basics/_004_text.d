@@ -17,7 +17,8 @@ bool update(float dt) {
     extra.visibilityRatio = fmod(elapsedTime * 0.3, 1.5);
     extra.isRightToLeft = true;
     drawRect(
-        Rect(textPosition, drawText(text, textPosition, options, extra)),
+        textPosition,
+        drawText(text, textPosition, options, extra),
         black.alpha(80),
     );
     return false;

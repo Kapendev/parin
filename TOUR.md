@@ -15,9 +15,9 @@ dub init -t parin
 If everything is set up correctly, there should be some new files inside the folder.
 Three of them are particularly important:
 
-- `source`: Contains the source code
-- `assets`: Contains the game assets
-- `web`: Used for exporting to the web
+- `source`: It contains the source code.
+- `assets`: It contains the game assets.
+- `web`: It contains web related files.
 
 Additionally, an app.d file is inside the source folder that looks like this:
 
@@ -519,6 +519,8 @@ T[] frameMakeSlice(T)(Sz length, const(T) value);
 T[] frameMakeSlice(T)(const(T)[] values);
 /// Resizes an array of type `T` with the given slice pointer and length.
 T[] frameResizeSlice(T)(T* values, Sz oldLength, Sz newLength);
+/// Returns a memory context from the frame allocator.
+MemoryContext frameMemoryContext();
 ```
 
 The engine uses this allocator internally for functions like `loadTempText` and `prepareTempText`.
