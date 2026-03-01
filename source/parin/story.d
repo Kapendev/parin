@@ -856,35 +856,35 @@ bool isMaybeStoryWord(IStr value) {
 
 @nogc
 Maybe!StoryLineKind toStoryLineKind(char from) {
-    with (Maybe!StoryLineKind) with (StoryLineKind) switch (from) {
-        case ' ': return some(empty);
-        case '#': return some(comment);
-        case '*': return some(label);
-        case '|': return some(text);
-        case '.': return some(pause);
-        case '^': return some(menu);
-        case '$': return some(expression);
-        case '!': return some(procedure);
-        default: return none(Fault.invalid);
+    with (StoryLineKind) switch (from) {
+        case ' ': return Maybe!StoryLineKind(empty);
+        case '#': return Maybe!StoryLineKind(comment);
+        case '*': return Maybe!StoryLineKind(label);
+        case '|': return Maybe!StoryLineKind(text);
+        case '.': return Maybe!StoryLineKind(pause);
+        case '^': return Maybe!StoryLineKind(menu);
+        case '$': return Maybe!StoryLineKind(expression);
+        case '!': return Maybe!StoryLineKind(procedure);
+        default : return Maybe!StoryLineKind(Fault.invalid);
     }
 }
 
 @nogc
 Maybe!StoryOp toStoryOp(IStr from) {
-    with (Maybe!StoryOp) with (StoryOp) switch (from) {
-        case "+": return some(ADD);
-        case "-": return some(SUB);
-        case "*": return some(MUL);
-        case "/": return some(DIV);
-        case "%": return some(MOD);
-        case "&": return some(AND);
-        case "|": return some(OR);
-        case "<": return some(LESS);
-        case ">": return some(GREATER);
-        case "=": return some(EQUAL);
-        case "!": return some(NOT);
-        case "~": return some(POP);
-        default: break;
+    with (StoryOp) switch (from) {
+        case "+": return Maybe!StoryOp(ADD);
+        case "-": return Maybe!StoryOp(SUB);
+        case "*": return Maybe!StoryOp(MUL);
+        case "/": return Maybe!StoryOp(DIV);
+        case "%": return Maybe!StoryOp(MOD);
+        case "&": return Maybe!StoryOp(AND);
+        case "|": return Maybe!StoryOp(OR);
+        case "<": return Maybe!StoryOp(LESS);
+        case ">": return Maybe!StoryOp(GREATER);
+        case "=": return Maybe!StoryOp(EQUAL);
+        case "!": return Maybe!StoryOp(NOT);
+        case "~": return Maybe!StoryOp(POP);
+        default : break;
     }
     return toEnum!StoryOp(from);
 }

@@ -60,15 +60,13 @@ enum Fault : ubyte {
 /// It exists mainly because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
     align(T.alignof) ubyte[T.sizeof * N] _data;
+    alias items this;
 
-    pragma(inline, true) @trusted nothrow @nogc:
-
-    mixin sliceOps!(StaticArray!(T, N), T);
+    @trusted nothrow @nogc:
 
     this(const(T)[] items...) {
         if (items.length > N) assert(0, "Too many items.");
-        auto me = this.items;
-        foreach (i; 0 .. N) me[i] = cast(T) items[i];
+        foreach (i; 0 .. N) (cast(T*) _data.ptr)[i] = cast(T) items[i];
     }
 
     /// The length of the array.
@@ -78,13 +76,9 @@ struct StaticArray(T, Sz N) {
     enum capacity = N;
 
     /// Returns the items of the array.
+    pragma(inline, true)
     T[] items() {
         return (cast(T*) _data.ptr)[0 .. N];
-    }
-
-    /// Returns the pointer of the array.
-    T* ptr() {
-        return cast(T*) _data.ptr;
     }
 }
 
@@ -122,14 +116,6 @@ struct Maybe(T) {
 
     void opAssign(Fault rhs) {
         _fault = rhs;
-    }
-
-    static Maybe!T some(T newValue) {
-        return Maybe!T(newValue);
-    }
-
-    static Maybe!T none(Fault newFault = Fault.some) {
-        return Maybe!T(newFault);
     }
 
     /// Returns the value without fault checking.
@@ -196,14 +182,9 @@ struct Union(A...) if (A.length != 0) {
     auto call(IStr func, AA...)(AA args) {
         switch (_type) {
             static foreach (i, T; A) {
-                // NOTE: Copy-pasted the `funcImplementationErrorMessage` function inside the assert to avoid a template.
-                static assert(
-                    __traits(hasMember, T, func),
-                    "Type `" ~ T.stringof ~ "` doesn't implement the `" ~ func ~ "` function.",
-                );
                 mixin("case i: return _data.tupleof[i].", func, "(args);");
             }
-            default: assert(0, "WTF!");
+            default: assert(0, "Type not in union.");
         }
     }
 
@@ -225,7 +206,7 @@ struct Union(A...) if (A.length != 0) {
             static foreach (i, T; A) {
                 mixin("case i: return T.stringof;");
             }
-            default: assert(0, "WTF!");
+            default: assert(0, "Type not in union.");
         }
     }
 
@@ -255,14 +236,14 @@ struct Union(A...) if (A.length != 0) {
         } else {
             static foreach (i, TT; A) {
                 if (_type == i) {
-                    assert(0, "Value is `" ~ A[i].stringof ~ "` and not `" ~ T.stringof ~ "`.");
+                    assert(0, "Union type mismatch.");
                 }
             }
-            assert(0, "WTF!");
+            assert(0, "Type not in union.");
         }
     }
 
-    static bool _isBaseAliasingSafe() {
+    enum isBaseAliasingSafe = () {
         bool result = true;
         foreach (T; A[1 .. $]) {
             static if (is(T == struct)) {
@@ -276,18 +257,15 @@ struct Union(A...) if (A.length != 0) {
             }
         }
         return result;
-    }
-
-    // NOTE: Did not know how to make it one thing, so it's two things. Monkeyy I don't careee, OK?
-    enum isBaseAliasingSafe = _isBaseAliasingSafe();
+    }();
 
     template typeOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type is not part of the variant.");
+        static assert(isInAliasArgs!(T, A), "Type not in union.");
         enum typeOf = findInAliasArgs!(T, A);
     }
 
     template typeNameOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type is not part of the variant.");
+        static assert(isInAliasArgs!(T, A), "Type not in union.");
         enum typeNameOf = T.stringof;
     }
 }
@@ -328,10 +306,6 @@ int findInAliasArgs(T, A...)() {
 
 bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
-}
-
-IStr funcImplementationErrorMessage(T, IStr func)() {
-    return "Type `" ~ T.stringof ~ "` doesn't implement the `" ~ func ~ "` function.";
 }
 
 @safe nothrow @nogc pure {

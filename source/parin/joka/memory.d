@@ -752,8 +752,6 @@ struct List(T) {
 
     @safe nothrow:
 
-    mixin sliceOps!(List!T, T);
-
     this(MemoryContext capture, const(T)[] args...) {
         this.capture = capture;
         append(args);
@@ -919,6 +917,38 @@ struct List(T) {
             assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
+
+    // NOTE: This is the `sliceOps` mixin. It was replaced with this to make compile-times faster.
+    //   Original: mixin sliceOps!(List!T, T);
+    pragma(inline, true) @trusted nothrow @nogc {
+        T[] opSlice(Sz dim)(Sz i, Sz j) {
+            return items[i .. j];
+        }
+
+        T[] opIndex() {
+            return items[];
+        }
+
+        T[] opIndex(T[] slice) {
+            return slice;
+        }
+
+        ref T opIndex(Sz i) {
+            return items[i];
+        }
+
+        void opIndexAssign(const(T) rhs, Sz i) {
+            items[i] = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(const(char)[] op)(const(T) rhs, Sz i) {
+            mixin("items[i]", op, "= cast(T) rhs;");
+        }
+
+        Sz opDollar(Sz dim)() {
+            return items.length;
+        }
+    }
 }
 
 /// A dynamic array that uses external memory provided at runtime.
@@ -964,8 +994,6 @@ struct BufferList(T) {
     }
 
     @safe nothrow @nogc:
-
-    mixin sliceOps!(BufferList!T, T);
 
     this(T[] data, const(T)[] args...) {
         this.data = data;
@@ -1072,6 +1100,38 @@ struct BufferList(T) {
     void ignoreLeak() {}
     MemoryContext capture() { return MemoryContext(); }
     void capture(MemoryContext value) {}
+
+    // NOTE: This is the `sliceOps` mixin. It was replaced with this to make compile-times faster.
+    //   Original: mixin sliceOps!(BufferList!T, T);
+    pragma(inline, true) @trusted nothrow @nogc {
+        T[] opSlice(Sz dim)(Sz i, Sz j) {
+            return items[i .. j];
+        }
+
+        T[] opIndex() {
+            return items[];
+        }
+
+        T[] opIndex(T[] slice) {
+            return slice;
+        }
+
+        ref T opIndex(Sz i) {
+            return items[i];
+        }
+
+        void opIndexAssign(const(T) rhs, Sz i) {
+            items[i] = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(const(char)[] op)(const(T) rhs, Sz i) {
+            mixin("items[i]", op, "= cast(T) rhs;");
+        }
+
+        Sz opDollar(Sz dim)() {
+            return items.length;
+        }
+    }
 }
 
 /// A dynamic array allocated on the stack.
@@ -1089,8 +1149,6 @@ struct FixedList(T, Sz N) {
     Sz length;
 
     @safe nothrow @nogc:
-
-    mixin sliceOps!(FixedList!(T, N), T);
 
     this(const(T)[] args...) {
         append(args);
@@ -1194,6 +1252,38 @@ struct FixedList(T, Sz N) {
     void ignoreLeak() {}
     MemoryContext capture() { return MemoryContext(); }
     void capture(MemoryContext value) {}
+
+    // NOTE: This is the `sliceOps` mixin. It was replaced with this to make compile-times faster.
+    //   Original: mixin sliceOps!(FixedList!(T, N), T);
+    pragma(inline, true) @trusted nothrow @nogc {
+        T[] opSlice(Sz dim)(Sz i, Sz j) {
+            return items[i .. j];
+        }
+
+        T[] opIndex() {
+            return items[];
+        }
+
+        T[] opIndex(T[] slice) {
+            return slice;
+        }
+
+        ref T opIndex(Sz i) {
+            return items[i];
+        }
+
+        void opIndexAssign(const(T) rhs, Sz i) {
+            items[i] = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(const(char)[] op)(const(T) rhs, Sz i) {
+            mixin("items[i]", op, "= cast(T) rhs;");
+        }
+
+        Sz opDollar(Sz dim)() {
+            return items.length;
+        }
+    }
 }
 
 /// An item of a sparse array.
@@ -1233,23 +1323,6 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
 
     this(const(T)[] args...) {
         this(__memoryContext, args);
-    }
-
-    @trusted @nogc {
-        ref T opIndex(Sz i) {
-            if (!has(i)) assert(0, indexErrorMessage(i));
-            return data[i].value;
-        }
-
-        void opIndexAssign(const(T) rhs, Sz i) {
-            if (!has(i)) assert(0, indexErrorMessage(i));
-            data[i].value = cast(T) rhs;
-        }
-
-        void opIndexOpAssign(IStr op)(const(T) rhs, Sz i) {
-            if (!has(i)) assert(0, indexErrorMessage(i));
-            mixin("data[i].value", op, "= cast(T) rhs;");
-        }
     }
 
     @nogc
@@ -1424,6 +1497,23 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
         while (id < data.length && !data[id].flag) id += 1;
         return Range(data.items, id);
     }
+
+    @trusted @nogc {
+        ref T opIndex(Sz i) {
+            if (!has(i)) assert(0, indexErrorMessage(i));
+            return data[i].value;
+        }
+
+        void opIndexAssign(const(T) rhs, Sz i) {
+            if (!has(i)) assert(0, indexErrorMessage(i));
+            data[i].value = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(IStr op)(const(T) rhs, Sz i) {
+            if (!has(i)) assert(0, indexErrorMessage(i));
+            mixin("data[i].value", op, "= cast(T) rhs;");
+        }
+    }
 }
 
 alias Gen = int;
@@ -1467,23 +1557,6 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
 
     this(ref GrowingArena arena) {
         this(arena.toMemoryContext());
-    }
-
-    @trusted @nogc {
-        ref T opIndex(GenIndex i) {
-            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
-            return data[i.value];
-        }
-
-        void opIndexAssign(const(T) rhs, GenIndex i) {
-            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
-            data[i.value] = cast(T) rhs;
-        }
-
-        void opIndexOpAssign(IStr op)(const(T) rhs, GenIndex i) {
-            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
-            mixin("data[i.value]", op, "= cast(T) rhs;");
-        }
     }
 
     @nogc
@@ -1595,6 +1668,23 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
         while (id < data.data.length && !data.data[id].flag) id += 1;
         return Range(generations.items, data.data.items, id);
     }
+
+    @trusted @nogc {
+        ref T opIndex(GenIndex i) {
+            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
+            return data[i.value];
+        }
+
+        void opIndexAssign(const(T) rhs, GenIndex i) {
+            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
+            data[i.value] = cast(T) rhs;
+        }
+
+        void opIndexOpAssign(IStr op)(const(T) rhs, GenIndex i) {
+            if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
+            mixin("data[i.value]", op, "= cast(T) rhs;");
+        }
+    }
 }
 
 struct Grid(T, D = List!T) if (isBasicContainerType!D) {
@@ -1638,18 +1728,20 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
             return tiles[0 .. length];
         }
 
+        // NOTE: A normal assert is used here because it might make things faster in release builds.
+        //   A grid is just a basic 1D array, so the cost of a bug is not that high in my opinion.
         ref T opIndex(Sz row, Sz col) {
-            if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+            assert(has(row, col), gridIndexErrorMessage(row, col));
             return tiles[findGridIndex(row, col, colCount)];
         }
 
         void opIndexAssign(T rhs, Sz row, Sz col) {
-            if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+            assert(has(row, col), gridIndexErrorMessage(row, col));
             tiles[findGridIndex(row, col, colCount)] = rhs;
         }
 
         void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
-            if (!has(row, col)) assert(0, gridIndexErrorMessage(row, col));
+            assert(has(row, col), gridIndexErrorMessage(row, col));
             mixin("tiles[findGridIndex(row, col, colCount)]", op, "= rhs;");
         }
 
