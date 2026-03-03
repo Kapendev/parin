@@ -82,6 +82,33 @@ struct StaticArray(T, Sz N) {
     }
 }
 
+/// A static bit set.
+struct GBitSet(T) if (__traits(isUnsigned, T)) {
+    T bits;
+
+    enum zero     = cast(T) 0;
+    enum one      = cast(T) 1;
+    enum length   = cast(T) (bits.sizeof * 8);
+    enum capacity = cast(T) (bits.sizeof * 8);
+
+    pragma(inline, true) @trusted nothrow @nogc pure:
+
+    bool opIndex(Sz i) {
+        return (bits >> i) & one;
+    }
+
+    void opIndexAssign(const(bool) rhs, Sz i) {
+        if (rhs) {
+            bits |= (one << i);
+        } else {
+            bits &= ~(one << i);
+        }
+    }
+}
+
+/// The common bit set type.
+alias BitSet = GBitSet!ulong;
+
 /// Represents an optional value.
 /// It can also hold an error code when a value is missing, and errors are referred to as faults in Joka.
 struct Maybe(T) {
@@ -294,28 +321,22 @@ T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
     return result;
 }
 
-int findInAliasArgs(T, A...)() {
-    int result = -1;
-    static foreach (i, TT; A) {
-        static if (is(T == TT)) {
-            result = i;
-        }
-    }
-    return result;
+pragma(inline, true) @trusted nothrow @nogc
+IStr indexErrorMessage(Sz i) {
+    IStr[1] fmtStrs = [
+        "Index {} does not exist.",
+    ];
+    return fmtSignedGroup(fmtStrs, i);
 }
 
-bool isInAliasArgs(T, A...)() {
-    return findInAliasArgs!(T, A) != -1;
+pragma(inline, true) @safe nothrow @nogc pure
+bool isNan(float x) {
+    return !(x == x);
 }
 
-@safe nothrow @nogc pure {
-    bool isNan(float x) {
-        return !(x == x);
-    }
-
-    bool isNan(double x) {
-        return !(x == x);
-    }
+pragma(inline, true) @safe nothrow @nogc pure
+bool isNan(double x) {
+    return !(x == x);
 }
 
 mixin template distinct(T) {
@@ -331,6 +352,20 @@ mixin template distinct(T) {
             this._data = value._data;
         }
     }
+}
+
+int findInAliasArgs(T, A...)() {
+    int result = -1;
+    static foreach (i, TT; A) {
+        static if (is(T == TT)) {
+            result = i;
+        }
+    }
+    return result;
+}
+
+bool isInAliasArgs(T, A...)() {
+    return findInAliasArgs!(T, A) != -1;
 }
 
 mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, itemsMemberName)) {

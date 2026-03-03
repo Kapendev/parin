@@ -140,12 +140,14 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 // NOTE: Memory allocation related things are here.
 @system nothrow { // BEGIN: MEMORY(@systen nothrow)
 version (JokaCustomMemory) {
+    // NOTE: I should maybe replace these extern functions with something like `jokaExternMalloc`.
+    //   Right now this version is a bit special. It avoids context switching. Maybe it's a good thing?
     extern(C) nothrow       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
     extern(C) nothrow @nogc void  jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        // NOTE: You should not call `jokaMalloc` from `system*`, but it's fine because there is no global memory context.
+        // NOTE: Calling `jokaMalloc` from a system function is bad, but it's fine here because of no context.
         return jokaMalloc(size, file, line);
     }
 
@@ -1687,6 +1689,158 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
     }
 }
 
+struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
+    enum isBasicContainer  = false;
+    enum isBufferContainer = false;
+    enum hasFixedCapacity  = D.hasFixedCapacity;
+    alias Item = D.Item;
+    alias Data = D;
+
+    D buckets;
+    Sz length;
+
+    enum zero            = cast(Item) 0;
+    enum one             = cast(Item) 1;
+    enum bucketLength    = cast(Item) (Item.sizeof * 8);
+    enum bucketCapacity  = cast(Item) (Item.sizeof * 8);
+    enum bucketIndexMask = bucketCapacity - 1;
+
+    enum bucketShiftAmount = () {
+        auto value = bucketCapacity;
+        auto shift = zero;
+        while (value > one) {
+            value >>= one;
+            shift += one;
+        }
+        return shift;
+    }();
+
+    @safe nothrow:
+
+    this(MemoryContext capture) {
+        buckets.capture = capture;
+    }
+
+    this(ref Arena arena) {
+        this(arena.toMemoryContext());
+    }
+
+    this(ref GrowingArena arena) {
+        this(arena.toMemoryContext());
+    }
+
+    pragma(inline, true) @nogc {
+        Sz capacity() {
+            return buckets.length * bucketCapacity;
+        }
+
+        bool isEmpty() {
+            return length == 0;
+        }
+    }
+
+    bool append(const(bool)[] args...) {
+        foreach (arg; args) {
+            if (push(arg)) return true;
+        }
+        return false;
+    }
+
+    bool appendSource(IStr file = __FILE__, Sz line = __LINE__, const(bool)[] args = []...) {
+        foreach (arg; args) {
+            if (push(arg, file, line)) return true;
+        }
+        return false;
+    }
+
+    bool push(const(bool) arg, IStr file = __FILE__, Sz line = __LINE__) {
+        if (length >= capacity) {
+            if (buckets.push(zero, file, line)) return true;
+        }
+        length += 1;
+        opIndexAssign(arg, length - 1);
+        return false;
+    }
+
+    @nogc
+    void remove(Sz i) {
+        opIndexAssign(opIndex(length - 1), i);
+        length -= 1;
+    }
+
+    @nogc
+    void removeShift(Sz i) {
+        foreach (j; i .. length - 1) {
+            opIndexAssign(opIndex(j + 1), j);
+        }
+        length -= 1;
+    }
+
+    @nogc
+    void pop() {
+        if (length) length -= 1;
+    }
+
+    @nogc
+    void popFront() {
+        if (length) removeShift(0);
+    }
+
+    bool reserve(Sz newCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+        return buckets.reserve(newCapacity, file, line);
+    }
+
+    /* TODO: Too lazy to add.
+    bool resizeBlank(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
+    bool resize(Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
+    */
+
+    @nogc
+    void fill(const(bool) value) {
+        foreach (i; 0 .. length) opIndexAssign(value, i);
+    }
+
+    @trusted @nogc
+    void clear() {
+        if (buckets.ptr) {
+            // NOTE: This is a thing because you might care about the bits.
+            jokaMemset(buckets.ptr, 0, buckets.capacity * buckets.Item.sizeof);
+        }
+        buckets.clear();
+        length = 0;
+    }
+
+    @nogc
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        buckets.free(file, line);
+        length = 0;
+    }
+
+    @nogc
+    void ignoreLeak() {
+        buckets.ignoreLeak();
+    }
+
+    @trusted @nogc {
+        bool opIndex(Sz i) {
+            if (i >= length) assert(0, indexErrorMessage(i));
+            return (buckets[i >> bucketShiftAmount] >> (i & bucketIndexMask)) & one;
+        }
+
+        void opIndexAssign(const(bool) rhs, Sz i) {
+            if (i >= length) assert(0, indexErrorMessage(i));
+            auto mask = one << (i & bucketIndexMask);
+            if (rhs) {
+                buckets[i >> bucketShiftAmount] |= mask;
+            } else {
+                buckets[i >> bucketShiftAmount] &= ~mask;
+            }
+        }
+    }
+}
+
+alias BitList = GBitList!ulong;
+
 struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     enum isBasicContainer  = false;
     enum isBufferContainer = false;
@@ -1724,6 +1878,26 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     }
 
     pragma(inline, true) @trusted nothrow @nogc {
+        Sz length() {
+            return tiles.length;
+        }
+
+        T* ptr() {
+            return tiles.ptr;
+        }
+
+        Sz capacity() {
+            return tiles.capacity;
+        }
+
+        bool has(Sz row, Sz col) {
+            return row < rowCount && col < colCount;
+        }
+
+        bool isEmpty() {
+            return tiles.isEmpty;
+        }
+
         T[] opIndex() {
             return tiles[0 .. length];
         }
@@ -1753,26 +1927,6 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
             } else {
                 static assert(0, "WTF!");
             }
-        }
-
-        Sz length() {
-            return tiles.length;
-        }
-
-        T* ptr() {
-            return tiles.ptr;
-        }
-
-        Sz capacity() {
-            return tiles.capacity;
-        }
-
-        bool has(Sz row, Sz col) {
-            return row < rowCount && col < colCount;
-        }
-
-        bool isEmpty() {
-            return tiles.isEmpty;
         }
     }
 
@@ -2189,13 +2343,6 @@ void* growingArenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, vo
 alias growingArenaAllocatorFreeWrapper = nullAllocatorFreeWrapper;
 
 pragma(inline, true) @trusted @nogc {
-    IStr indexErrorMessage(Sz i) {
-        IStr[1] fmtStrs = [
-            "Index {} does not exist.",
-        ];
-        return fmtSignedGroup(fmtStrs, i);
-    }
-
     IStr gridIndexErrorMessage(Sz row, Sz col) {
         IStr[2] fmtStrs = [
             "Index {}",
@@ -2685,6 +2832,43 @@ unittest {
     numbers.free();
     assert(numbers.length == 0);
     assert(numbers.capacity == 0);
+}
+
+// BitList test
+unittest {
+    auto bits = BitList();
+
+    bits.push(true);
+    bits.push(false);
+    bits.push(true);
+
+    assert(bits.length == 3);
+    assert(bits[0] == true);
+    assert(bits[1] == false);
+    assert(bits[2] == true);
+
+    bits[1] = true;
+    assert(bits[1] == true);
+
+    foreach (i; 0 .. 30) {
+        bits.push(false);
+    }
+    bits.push(true);
+
+    bits.remove(0);
+    assert(bits.length == 33);
+    assert(bits[0] == true);
+
+    bits.removeShift(1);
+    assert(bits.length == 32);
+    assert(bits[1] == true);
+
+    bits.clear();
+    assert(bits.length == 0);
+    assert(bits.isEmpty());
+
+    bits.push(true);
+    assert(bits[0] == true);
 }
 
 // Grid test
