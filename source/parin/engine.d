@@ -667,8 +667,40 @@ extern(C) @trusted nothrow @nogc {
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
-    bk.openWindow(width, height, title, vsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState = jokaMake!EngineState();
+
+    if (args.length) {
+        static struct EngineArgOptions {
+            bool vsyncOff;
+            bool vsyncOn;   // Yes.
+            bool debugMode;
+            bool largeWindow;
+        }
+
+        enum argEnginePrefix = "-parin=";
+        enum argEngineSep = "+";
+        auto argOptions = EngineArgOptions();
+        foreach (arg; args) {
+            _engineState.envArgsBuffer.append(arg);
+            if (arg.startsWith(argEnginePrefix)) {
+                auto parts = arg[argEnginePrefix.length .. $].split(argEngineSep);
+                foreach (part; parts) {
+                    static foreach (i, member; argOptions.tupleof) {
+                        if (part == member.stringof) argOptions.tupleof[i] = true;
+                    }
+                }
+            }
+        }
+        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+
+        // NOTE: This will not work with `openWindowC`, but who cares? Only me.
+        if (argOptions.vsyncOff)    vsync = false;
+        if (argOptions.vsyncOn)     vsync = true;
+        if (argOptions.debugMode)   setIsDebugMode(true);
+        if (argOptions.largeWindow) { width *= 2; height *= 2; }
+    }
+
+    bk.openWindow(width, height, title, vsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
     _engineState.viewport.data = loadViewport(0, 0, gray);
@@ -678,11 +710,6 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
     loadTexture(cast(const(ubyte)[]) import("parin_minigram.png")).loadFont(3, 6);
     engineFontSmall.setRuneSpacing(1); // NOTE: Could maybe be part of `loadFont`.
     engineFontSmall.setLineSpacing(9); // NOTE: Could maybe be part of `loadFont`.
-
-    if (args.length) {
-        foreach (arg; args) _engineState.envArgsBuffer.append(arg);
-        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
-    }
 }
 
 /// Opens the window with the given information using C strings.

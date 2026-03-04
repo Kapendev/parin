@@ -23,9 +23,9 @@ alias Nrv = NumericRangeValue;
 
 static assert(Nrv.min < 0, "Type `NumericRangeValue` should be a signed type.");
 
-struct ValueIndex(V, I) {
+struct ValueIndex(V) {
     V value;
-    I index;
+    NumericRangeValue index;
     alias value this;
 }
 
@@ -97,7 +97,7 @@ struct SliceRange(T) {
 }
 
 struct EnumeratedRange(R) {
-    alias FrontBack = ValueIndex!(typeof(R.front()), Nrv);
+    alias FrontBack = ValueIndex!(typeof(R.front()));
 
     R range;
     Nrv index;
@@ -270,14 +270,14 @@ template rangeIsNotStaticArrayType(R) {
 }
 
 template rangeHasValueIndexType(R) {
-    enum rangeHasValueIndexType = is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I);
+    enum rangeHasValueIndexType = is(typeof(R.front()) : const(ValueIndex!V), V);
 }
 
 template rangeFrontType(R) {
     static if (is(R : const(S)[], S)) {
         R temp;
         alias rangeFrontType = typeof(temp[0]);
-    } else static if (is(typeof(R.front()) : const(ValueIndex!(V, I)), V, I)) {
+    } else static if (is(typeof(R.front()) : const(ValueIndex!V), V)) {
         alias rangeFrontType = typeof(R.front().value);
     } else {
         alias rangeFrontType = typeof(R.front());

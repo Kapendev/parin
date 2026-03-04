@@ -479,9 +479,9 @@ version (JokaCustomMemory) {
         static foreach (i, member; T.tupleof) {
             offset = (offset + (typeof(member[0]).alignof - 1)) & ~(typeof(member[0]).alignof - 1);
             static if (isBufferContainerType!(typeof(member))) {
-                mixin("result.", member.stringof, "= BufferList!(member.Item)(  (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]]  );");
+                result.tupleof[i] = BufferList!(member.Item)(  (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]]  );
             } else {
-                mixin("result.", member.stringof, "= (cast(typeof(member[0])*) (memory + offset))[0 .. lengths[i]];");
+                result.tupleof[i] = (  cast(typeof(member[0])*) (memory + offset)  )[0 .. lengths[i]];
             }
             offset += typeof(member[0]).sizeof * lengths[i];
         }

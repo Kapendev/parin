@@ -298,7 +298,7 @@ struct Union(A...) if (A.length != 0) {
 IStr typeName(U)(in const(U) unionValue) if (is(U : Union!A, A...)) {
     switch (unionValue._type) {
         static foreach (i, T; U.Types) {
-            mixin("case i: return T.stringof;");
+            case i: return T.stringof;
         }
         default: assert(0, "Type not in union.");
     }
