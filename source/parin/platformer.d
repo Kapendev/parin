@@ -21,7 +21,7 @@ import parin.engine;
 @safe nothrow:
 
 enum boxNoneId        = 0;
-enum boxUnionTypeBit  = 1 << 31;
+enum boxUnionTypeBit  = (cast(BoxUnionId) 1) << (BoxUnionId.sizeof * 8 - 1);
 enum boxErrorMessage  = "Box is invalid or was never assigned.";
 
 alias BoxId              = ushort;
@@ -149,6 +149,7 @@ struct BoxMover {
     }
 }
 
+// NOTE: The spatial grid needs some work I think. Some function do not support it? No idea.
 struct BoxWorld {
     List!BoxData walls;
     List!BoxData actors;

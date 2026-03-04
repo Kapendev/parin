@@ -117,7 +117,7 @@ struct Maybe(T) {
 
     @safe nothrow @nogc:
 
-    this(const(T) value) {
+    this(in const(T) value) {
         opAssign(value);
     }
 
@@ -125,13 +125,14 @@ struct Maybe(T) {
         opAssign(fault);
     }
 
-    this(const(T) value, Fault fault) {
+    this(in const(T) value, Fault fault) {
         if (fault) this(fault);
         else this(value);
     }
 
-    void opAssign(Maybe!T rhs) {
-        _data = rhs._data;
+    @trusted
+    void opAssign(in Maybe!T rhs) {
+        _data = cast(T) rhs._data;
         _fault = rhs._fault;
     }
 
@@ -146,11 +147,13 @@ struct Maybe(T) {
     }
 
     /// Returns the value without fault checking.
+    pragma(inline, true)
     ref T xx() {
         return _data;
     }
 
     /// Returns the fault.
+    pragma(inline, true)
     Fault fault() {
         return _fault;
     }
@@ -218,22 +221,13 @@ struct Union(A...) if (A.length != 0) {
     @trusted nothrow @nogc:
 
     static foreach (i, T; A) {
-        this(const(T) value) {
+        this(in const(T) value) {
             opAssign(value);
         }
 
-        void opAssign(const(T) rhs) {
+        void opAssign(in const(T) rhs) {
             *(cast(T*) &_data) = cast(T) rhs;
             _type = cast(UnionType) i;
-        }
-    }
-
-    IStr typeName() {
-        switch (_type) {
-            static foreach (i, T; A) {
-                mixin("case i: return T.stringof;");
-            }
-            default: assert(0, "Type not in union.");
         }
     }
 
@@ -294,6 +288,19 @@ struct Union(A...) if (A.length != 0) {
     template typeNameOf(T) {
         static assert(isInAliasArgs!(T, A), "Type not in union.");
         enum typeNameOf = T.stringof;
+    }
+}
+
+// NOTE: The name of the function is generic because it used to be a method of `Union`.
+//   If it's a problem, we could create an alias or even rename it.
+//   The reason it's not a method now is to avoid compile-time work.
+//   This is also one of the few functions that uses `in` LOL.
+IStr typeName(U)(in const(U) unionValue) if (is(U : Union!A, A...)) {
+    switch (unionValue._type) {
+        static foreach (i, T; U.Types) {
+            mixin("case i: return T.stringof;");
+        }
+        default: assert(0, "Type not in union.");
     }
 }
 
