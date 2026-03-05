@@ -478,6 +478,7 @@ UiResFlags header(const(char)[] label) {
     return mu_header(&uiContext, label);
 }
 
+// TODO: Needs cleaning. It looks likes this because I just wanted to get something to work.
 void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) {
     auto window = getCurrentUiContainer();
     row(0, labelWidth, -1);

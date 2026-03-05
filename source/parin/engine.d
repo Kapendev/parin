@@ -670,9 +670,11 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
     _engineState = jokaMake!EngineState();
 
     if (args.length) {
+        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
+
         static struct EngineArgOptions {
             bool vsyncOff;
-            bool vsyncOn;   // Yes.
+            bool vsyncOn; // YES! YES! YES! YES!
             bool debugMode;
             bool largeWindow;
         }
@@ -691,9 +693,6 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
                 }
             }
         }
-        _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
-
-        // NOTE: This will not work with `openWindowC`, but who cares? Only me.
         if (argOptions.vsyncOff)    vsync = false;
         if (argOptions.vsyncOn)     vsync = true;
         if (argOptions.debugMode)   setIsDebugMode(true);
@@ -715,11 +714,10 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
 /// Opens the window with the given information using C strings.
 /// Avoid calling this function manually.
 void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin", bool vsync = defaultEngineVsync) {
-    openWindow(width, height, null, title.strzToStr(), vsync);
-    if (argc) {
-        foreach (i; 0 .. argc) _engineState.envArgsBuffer.append(argv[i].strzToStr());
-        _engineState.assetsPath.append(pathConcat(_engineState.envArgsBuffer[0].pathDirName, "assets"));
-    }
+    IStr[128] argsBuffer = void;
+    auto args = argsBuffer[0 .. argc];
+    foreach (i, ref arg; args) arg = argv[i].toStr();
+    openWindow(width, height, args, title.strzToStr(), vsync);
 }
 
 /// Starts the main window loop. Accepts an update function and optional debug callbacks.

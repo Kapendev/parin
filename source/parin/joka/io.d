@@ -38,7 +38,7 @@ struct ArgToken {
     @safe nothrow @nogc:
 
     IStr toStr() {
-        return "{}".fmt(name);
+        return name;
     }
 
     alias toString = toStr;

@@ -20,7 +20,6 @@ version (JokaNoTypes) {
     private alias Sz = size_t;
     private alias IStr = const(char)[];
     private alias Str = char[];
-
     private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
     private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
 } else {

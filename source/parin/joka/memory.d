@@ -138,38 +138,25 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 }
 
 // NOTE: Memory allocation related things are here.
-@system nothrow { // BEGIN: MEMORY(@systen nothrow)
+//   The attributes here might feel a bit random.
+//   For example, you could make malloc functions trusted.
+//   I am not the best at adding attributes, and I don't really care.
+@system nothrow { // BEGIN MEMORY_BLOCK
 version (JokaCustomMemory) {
-    // NOTE: I should maybe replace these extern functions with something like `jokaExternMalloc`.
-    //   Right now this version is a bit special. It avoids context switching. Maybe it's a good thing?
-    extern(C) nothrow       void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) nothrow       void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) nothrow @nogc void  jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow       void* jokaSystemMalloc  (Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow       void* jokaSystemRealloc (void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow @nogc void  jokaSystemFree    (void* ptr, IStr file = __FILE__, Sz line = __LINE__);
 
-    void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        // NOTE: Calling `jokaMalloc` from a system function is bad, but it's fine here because of no context.
-        return jokaMalloc(size, file, line);
-    }
-
-    void* jokaAllocatorMalloc(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+    void* jokaSystemMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
         return jokaSystemMalloc(size, file, line);
     }
 
-    void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        return jokaRealloc(ptr, size, 0, file, line);
-    }
-
-    void* jokaAllocatorRealloc(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);
     }
 
     @nogc
-    void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {
-        jokaFree(ptr, 0, file, line);
-    }
-
-    @nogc
-    void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
+    void jokaSystemFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
     }
 } else version (JokaGcMemory) {
@@ -180,13 +167,8 @@ version (JokaCustomMemory) {
         return memoryd.GC.malloc(size);
     }
 
-    void* jokaAllocatorMalloc(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+    void* jokaSystemMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
         return jokaSystemMalloc(size, file, line);
-    }
-
-    void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-        return __memoryContext.malloc(0, size, file, line);
     }
 
     void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -194,27 +176,16 @@ version (JokaCustomMemory) {
         return memoryd.GC.realloc(ptr, size);
     }
 
-    void* jokaAllocatorRealloc(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
-
-    void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-        return __memoryContext.realloc(0, ptr, oldSize, size, file, line);
     }
 
     @nogc
     void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 
     @nogc
-    void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
+    void jokaSystemFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
-    }
-
-    @nogc
-    void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-        __memoryContext.free(0, ptr, oldSize, file, line);
     }
 } else {
     version(JokaPhobosStdc) {
@@ -241,13 +212,8 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    void* jokaAllocatorMalloc(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
+    void* jokaSystemMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
         return jokaSystemMalloc(size, file, line);
-    }
-
-    void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-        return __memoryContext.malloc(0, size, file, line);
     }
 
     void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -295,13 +261,8 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    void* jokaAllocatorRealloc(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
-
-    void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-        return __memoryContext.realloc(0, ptr, oldSize, size, file, line);
     }
 
     @nogc
@@ -335,15 +296,25 @@ version (JokaCustomMemory) {
     }
 
     @nogc
-    void jokaAllocatorFree(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
+    void jokaSystemFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         return jokaSystemFree(oldPtr, file, line);
     }
+}
 
-    @nogc
-    void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
-        if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
-        __memoryContext.free(0, ptr, oldSize, file, line);
-    }
+void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+    if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
+    return __memoryContext.malloc(0, size, file, line);
+}
+
+void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
+    if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
+    return __memoryContext.realloc(0, ptr, oldSize, size, file, line);
+}
+
+@nogc
+void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
+    if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
+    __memoryContext.free(0, ptr, oldSize, file, line);
 }
 
 @trusted {
@@ -352,8 +323,6 @@ version (JokaCustomMemory) {
     }
 
     T* jokaMakeBlank(T)(MemoryContext context, IStr file = __FILE__, Sz line = __LINE__) {
-        // NOTE: In `JokaCustomMemory`, this does nothing and will use the default allocator.
-        //   Do we care? Ehh. I think it's fine for now.
         with (ScopedMemoryContext(context)) {
             return jokaMakeBlank!T(file, line);
         }
@@ -452,6 +421,7 @@ version (JokaCustomMemory) {
         }
     }
 
+    // NOTE: This function can be optimized by using only one `static foreach`.
     T jokaMakeJointBlank(T)(Sz* outTotalBytes, Sz[] lengths...) if (is(T == struct)) {
         enum commonAlignment = typeof(T.tupleof[0][0]).alignof;
         if (lengths.length != T.tupleof.length) assert(0, "Lengths count doesn't match member count.");
@@ -527,8 +497,8 @@ version (JokaCustomMemory) {
 
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
-        context.reallocFunc = &jokaAllocatorRealloc;
-        context.freeFunc = &jokaAllocatorFree;
+        context.reallocFunc = &jokaSytemReallocWrapper;
+        context.freeFunc = &jokaSystemFreeWrapper;
     }
 
     void jokaEnsureCapture(ref MemoryContext capture) {
@@ -577,7 +547,7 @@ void endAllocationGroup() {
         }
     }
 }
-} // END: MEMORY(@systen nothrow)
+} // END MEMORY_BLOCK
 
 @trusted nothrow
 IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
@@ -1839,7 +1809,7 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
     }
 }
 
-alias BitList = GBitList!ulong;
+alias BitList = GBitList!BitSetCommonDataType;
 
 struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     enum isBasicContainer  = false;

@@ -25,7 +25,7 @@ static assert(Nrv.min < 0, "Type `NumericRangeValue` should be a signed type.");
 
 struct ValueIndex(V) {
     V value;
-    NumericRangeValue index;
+    Nrv index;
     alias value this;
 }
 

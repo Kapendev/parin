@@ -106,8 +106,10 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
     }
 }
 
+/// The common bit set data type.
+alias BitSetCommonDataType = uint;
 /// The common bit set type.
-alias BitSet = GBitSet!ulong;
+alias BitSet = GBitSet!BitSetCommonDataType;
 
 /// Represents an optional value.
 /// It can also hold an error code when a value is missing, and errors are referred to as faults in Joka.
@@ -1554,6 +1556,7 @@ Maybe!double toFloating(char c) {
     }
 }
 
+// NOTE: I think this can be optimized for compile times, but no idea how.
 /// Converts the string to an enum value.
 @trusted
 Maybe!T toEnum(T, bool noCase = false, bool canIgnoreSpaceAndSymbol = false)(IStr str) if (is(T == enum)) {

@@ -25,6 +25,7 @@ void ready() {
     toggleIsDebugMode();
 }
 
+// The game code.
 bool update(float dt) {
     setWindowBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
     drawRect(
@@ -34,6 +35,7 @@ bool update(float dt) {
     return false;
 }
 
+// The editor code.
 void inspect() {
     beginUi();
     if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
