@@ -649,3 +649,23 @@ bool update(float dt) {
 
 mixin runGame!(ready, update, null);
 ```
+
+## CLI Flags
+
+Every project by default can accept predefined CLI flags that toggle engine features on and off, or modify their behavior.
+For example, `vsync` can be disabled by passing:  `-parin=vsyncOff`.
+The `+` character can be used to include multiple flags in one CLI argument: `-parin=vsyncOff+debugMode`.
+
+Below is a list of all the available flags:
+
+```d
+static struct EngineArgOptions {
+    bool vsyncOff;
+    bool vsyncOn;
+    bool debugMode;
+    bool largeWindow;
+}
+
+enum argEnginePrefix = "-parin=";
+enum argEngineSep = "+";
+```
