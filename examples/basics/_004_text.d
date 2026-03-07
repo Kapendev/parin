@@ -21,6 +21,10 @@ bool update(float dt) {
         drawText(text, textPosition, options, extra),
         black.alpha(80),
     );
+
+    // The engine by default provides two pixel fonts.
+    drawText(engineFont, "The basic font.", textPosition + Vec2(50, 70));
+    drawText(engineFontSmall, "The small font.", textPosition + Vec2(51, 86));
     return false;
 }
 

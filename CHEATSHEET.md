@@ -230,9 +230,9 @@ MemoryContext frameMemoryContext();
 BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 
 /// Schedules a task to run every interval.
-EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
+EngineTaskId repeatTask(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
 /// Cancels a scheduled task by its ID.
-void cancel(EngineTaskId id);
+void cancelTask(EngineTaskId id);
 ```
 
 ## Input
