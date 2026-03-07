@@ -672,31 +672,32 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
     if (args.length) {
         _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
 
-        static struct EngineArgOptions {
-            bool vsyncOff;
-            bool vsyncOn; // YES! YES! YES! YES!
-            bool debugMode;
-            bool largeWindow;
+        static struct EngineArgFlags {
+            bool vsyncOff;    // Disables VSync.
+            bool vsyncOn;     // Enables VSync.
+            bool debugMode;   // Starts a project in debug mode.
+            bool largeWindow; // Opens a window that is 2X larger.
         }
 
-        enum argEnginePrefix = "-parin=";
-        enum argEngineSep = "+";
-        auto argOptions = EngineArgOptions();
+        enum argPrefix = "-parin=";
+        enum argSep    = "+";
+
+        auto argFlags = EngineArgFlags();
         foreach (arg; args) {
             _engineState.envArgsBuffer.append(arg);
-            if (arg.startsWith(argEnginePrefix)) {
-                auto parts = arg[argEnginePrefix.length .. $].split(argEngineSep);
+            if (arg.startsWith(argPrefix)) {
+                auto parts = arg[argPrefix.length .. $].split(argSep);
                 foreach (part; parts) {
-                    static foreach (i, member; argOptions.tupleof) {
-                        if (part == member.stringof) argOptions.tupleof[i] = true;
+                    static foreach (i, member; argFlags.tupleof) {
+                        if (part == member.stringof) argFlags.tupleof[i] = true;
                     }
                 }
             }
         }
-        if (argOptions.vsyncOff)    vsync = false;
-        if (argOptions.vsyncOn)     vsync = true;
-        if (argOptions.debugMode)   setIsDebugMode(true);
-        if (argOptions.largeWindow) { width *= 2; height *= 2; }
+        if (argFlags.vsyncOff)    vsync = false;
+        if (argFlags.vsyncOn)     vsync = true;
+        if (argFlags.debugMode)   setIsDebugMode(true);
+        if (argFlags.largeWindow) { width *= 2; height *= 2; }
     }
 
     bk.openWindow(width, height, title, vsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
@@ -744,7 +745,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             bk.beginDroppedPaths();
             _engineState.debugModePreviousState = isDebugMode;
             foreach (id; _engineState.tasks.ids) {
-                if (_engineState.tasks[id].update(deltaTime)) cancel(id);
+                if (_engineState.tasks[id].update(deltaTime)) cancelTask(id);
             }
             result = _engineState.updateFunc(deltaTime);
             if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
@@ -988,15 +989,21 @@ BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr fil
 /// Schedules a task to run every interval.
 /// Set `count` to limit how many times it runs. Use -1 to run indefinitely.
 /// If `canCallNow` is true, the task runs immediately.
-EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false) {
+EngineTaskId repeatTask(UpdateFunc func, float interval, int count = -1, bool canCallNow = false) {
     return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
 }
 
+deprecated("Use `repeatTask`.")
+alias every = repeatTask;
+
 /// Cancels a scheduled task by its ID.
-void cancel(EngineTaskId id) {
+void cancelTask(EngineTaskId id) {
     if (id.value == 0) return;
     _engineState.tasks.remove(id);
 }
+
+deprecated("Use `cancelTask`.")
+alias cancel = cancelTask;
 
 /// Loads a surface file (PNG) with default filter and wrap modes.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.

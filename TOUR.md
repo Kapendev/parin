@@ -597,10 +597,13 @@ void toggleIsDebugMode();
 void setDebugModeKey(Keyboard value);
 ```
 
-Additionally, you can pass an `inspect` function to `runGame`. When debug mode is on, this function runs after `update` and can be used for debug tools. For example:
+Additionally, you can pass an `inspect` function to `runGame`.
+When debug mode is on, this function runs after `update` and can be used for debug tools.
+
+For example:
 
 ```d
-// It assumes you are using: https://github.com/Kapendev/microui-d
+// It assumes you are using: `parin.addons.microui`
 void inspect() {
     if (beginWindow("Window", UiRect(200, 80, 350, 370))) {
         headerAndMembers(game, 125);
@@ -620,9 +623,9 @@ Scheduled functions run before `update`.
 
 ```d
 /// Schedules a task to run every interval.
-EngineTaskId every(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
+EngineTaskId repeatTask(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
 /// Cancels a scheduled task by its ID.
-void cancel(EngineTaskId id);
+void cancelTask(EngineTaskId id);
 ```
 
 Example:
@@ -639,7 +642,7 @@ bool updateText(float dt) {
 
 void ready() {
     lockResolution(320, 180);
-    every(&updateText, 0.5);
+    repeatTask(&updateText, 0.5);
 }
 
 bool update(float dt) {
@@ -653,19 +656,19 @@ mixin runGame!(ready, update, null);
 ## CLI Flags
 
 Every project by default can accept predefined CLI flags that toggle engine features on and off, or modify their behavior.
-For example, `vsync` can be disabled by passing:  `-parin=vsyncOff`.
-The `+` character can be used to include multiple flags in one CLI argument: `-parin=vsyncOff+debugMode`.
+For example, `vsync` can be disabled by passing the  `-parin=vsyncOff` argument.
+The `+` character can be used to include multiple flags in one argument: `-parin=vsyncOff+debugMode`.
 
 Below is a list of all the available flags:
 
 ```d
-static struct EngineArgOptions {
-    bool vsyncOff;
-    bool vsyncOn;
-    bool debugMode;
-    bool largeWindow;
+struct EngineArgFlags {
+    bool vsyncOff;    // Disables VSync.
+    bool vsyncOn;     // Enables VSync.
+    bool debugMode;   // Starts a project in debug mode.
+    bool largeWindow; // Opens a window that is 2X larger.
 }
 
-enum argEnginePrefix = "-parin=";
-enum argEngineSep = "+";
+enum argPrefix = "-parin=";
+enum argSep    = "+";
 ```

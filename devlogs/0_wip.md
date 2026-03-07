@@ -15,3 +15,5 @@
 * Project templates.
 * Better swizzle stuff.
 * Joint allocations.
+* Allocators.
+* CLI flags.

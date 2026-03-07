@@ -163,7 +163,6 @@ The [`parin.types`](source/parin/types.d) and [`parin.engine`](source/parin/engi
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except ECS.
-Sorry ECS people.
 
 ## Devlogs
 
@@ -180,6 +179,7 @@ While it is possible use any tool with Parin, these open-source ones are simple 
 - Levels: [Tiled](https://www.mapeditor.org/)
 - Sounds: [Bfxr](https://www.bfxr.net/) or [Jfxr](https://jfxr.frozenfractal.com/)
 - Music: [MilkyTracker](https://milkytracker.org/)
+- Assets: [Open Game Art](https://opengameart.org/)
 
 ## Frequently Asked Questions
 
@@ -198,7 +198,7 @@ Check the [examples](examples/ui) folder for more information about how the curr
 
 The following libraries are also compatible with Parin:
 
-- [microui-d](examples/integrations/microui.d): A tiny immediate-mode UI library.
+- [microui-d](examples/integrations/microui.d): A tiny immediate-mode UI library. Included by default in `parin.addons`.
 - [Fluid](examples/integrations/fluid.d): A declarative cross-platform user interface library.
 
 ### Does Parin have a scripting language?
