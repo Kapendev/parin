@@ -10,4 +10,5 @@ bool update(float dt) {
     return false;
 }
 
+// There is also a `runGameMinimal` mixin for cases that don't need all the options.
 mixin runGame!(null, update, null);
