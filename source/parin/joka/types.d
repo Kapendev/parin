@@ -77,7 +77,7 @@ struct StaticArray(T, Sz N) {
 
     /// Returns the items of the array.
     pragma(inline, true)
-    T[] items() {
+    inout(T)[] items() inout {
         return (cast(T*) _data.ptr)[0 .. N];
     }
 }
@@ -179,7 +179,7 @@ struct Maybe(T) {
 
     /// Returns the value. Returns a default value when there is a fault.
     T getOr() {
-        return _data;
+        return _fault ? T.init : _data;
     }
 
     /// Returns true when there is a fault.
@@ -202,9 +202,7 @@ struct Union(A...) if (A.length != 0) {
     alias Types = A;
     alias Base  = A[0];
     union UnionData {
-        static foreach (i, T; A) {
-            mixin("T _m", i, ";");
-        }
+        static foreach (i, T; A) { mixin("T _m", i, ";"); }
     }
 
     UnionData _data;
