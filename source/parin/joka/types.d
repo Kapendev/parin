@@ -56,6 +56,9 @@ enum Fault : ubyte {
     cannotWrite,   /// A write permissions error.
 }
 
+/// A marker for types that support "no data" things. The Rust `Result` type is a good example of this.
+struct NoData {}
+
 /// A static array.
 /// It exists mainly because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
@@ -133,19 +136,19 @@ struct Maybe(T) {
     }
 
     @trusted
-    void opAssign(in Maybe!T rhs) {
-        _data = cast(T) rhs._data;
-        _fault = rhs._fault;
-    }
-
-    @trusted
-    void opAssign(const(T) rhs) {
+    void opAssign(in const(T) rhs) {
         _data = cast(T) rhs;
         _fault = Fault.none;
     }
 
     void opAssign(Fault rhs) {
         _fault = rhs;
+    }
+
+    @trusted
+    void opAssign(in Maybe!T rhs) {
+        _data = cast(T) rhs._data;
+        _fault = rhs._fault;
     }
 
     /// Returns the value without fault checking.
@@ -249,21 +252,6 @@ struct Union(A...) if (A.length != 0) {
         }
     }
 
-    ref T to(T)() {
-        // NOTE: Copy-pasted the `isType` function inside the if to avoid a template.
-        if (_type == typeOf!T) {
-            // NOTE: Copy-pasted the `as` function here to avoid a template.
-            return _data.tupleof[typeOf!T];
-        } else {
-            static foreach (i, TT; A) {
-                if (_type == i) {
-                    assert(0, "Union type mismatch.");
-                }
-            }
-            assert(0, "Type not in union.");
-        }
-    }
-
     enum isBaseAliasingSafe = () {
         bool result = true;
         foreach (T; A[1 .. $]) {
@@ -281,13 +269,17 @@ struct Union(A...) if (A.length != 0) {
     }();
 
     template typeOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type not in union.");
-        enum typeOf = findInAliasArgs!(T, A);
-    }
+        enum typeOf = () {
+            int result = -1;
+            static foreach (i, TT; A) {
+                static if (is(T == TT)) {
+                    result = i;
+                }
+            }
+            return result;
+        }();
 
-    template typeNameOf(T) {
-        static assert(isInAliasArgs!(T, A), "Type not in union.");
-        enum typeNameOf = T.stringof;
+        static assert(typeOf != -1, "Type not in union.");
     }
 }
 
@@ -413,8 +405,8 @@ unittest {
 
     assert(toUnion!Number(Number.typeOf!float).as!float.isNan == true);
     assert(toUnion!Number(Number.typeOf!double).as!double.isNan == true);
-    assert(toUnion!Number(Number.typeNameOf!float).as!float.isNan == true);
-    assert(toUnion!Number(Number.typeNameOf!double).as!double.isNan == true);
+    assert(toUnion!Number("float").as!float.isNan == true);
+    assert(toUnion!Number("double").as!double.isNan == true);
 
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
@@ -456,8 +448,6 @@ unittest {
     assert(Number(0.0).as!double == 0);
     assert(Number.typeOf!float == 0);
     assert(Number.typeOf!double == 1);
-    assert(Number.typeNameOf!float == "float");
-    assert(Number.typeNameOf!double == "double");
 
     auto number = Number();
     number = 0.0;
