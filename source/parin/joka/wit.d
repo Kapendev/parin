@@ -22,42 +22,14 @@ alias WitSz     = size_t; // A helper to change the type used for sizes.
 alias WitString = WitList!(WitCharU8);
 alias WitNoData = NoData; // Can be used with `WitResult`.
 
-alias WitList = ForeignSlice;
-
-struct WitOption(T) {
-    WitBool isSome;
-    T data;
-
-    @trusted nothrow @nogc:
-
-    this(in const(T) data) {
-        opAssign(data);
-    }
-
-    void opAssign(in WitOption!T rhs) {
-        isSome = rhs.isSome;
-        data = cast(T) rhs.data;
-    }
-
-    void opAssign(in const(T) rhs) {
-        isSome = true;
-        data = cast(T) rhs;
-    }
-
-    pragma(inline, true)
-    bool isNone() {
-        return !isSome;
-    }
-
-    void clear() {
-        isSome = false;
-    }
-}
+alias WitList   = ForeignSlice;
+alias WitOption = Option;
 
 // NOTE: There are some weird cases that might need special checks.
 //   result<u32>     // no data associated with the error case
 //   result<_, u32>  // no data associated with the success case
 //   result          // no data associated with either case
+// NOTE: I could add a result type in `joka.types`, but I don't like them.
 struct WitResult(T, E) {
     union WitResultUnion {
         T value;

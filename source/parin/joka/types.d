@@ -56,20 +56,20 @@ enum Fault : ubyte {
     cannotWrite,   /// A write permissions error.
 }
 
-/// A marker for types that support "no data" things. The Rust `Result` type is a good example of this.
+/// A marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
 struct NoData {}
 
 /// A static array.
 /// It exists because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
-    align(T.alignof) ubyte[T.sizeof * N] _data;
+    align(T.alignof) ubyte[T.sizeof * N] data;
     alias items this;
 
     @trusted nothrow @nogc:
 
     this(const(T)[] items...) {
         if (items.length > N) assert(0, "Too many items.");
-        foreach (i; 0 .. N) (cast(T*) _data.ptr)[i] = cast(T) items[i];
+        foreach (i; 0 .. N) (cast(T*) data.ptr)[i] = cast(T) items[i];
     }
 
     /// The length of the array.
@@ -81,7 +81,7 @@ struct StaticArray(T, Sz N) {
     /// Returns the items of the array.
     pragma(inline, true)
     inout(T)[] items() inout {
-        return (cast(T*) _data.ptr)[0 .. N];
+        return (cast(T*) data.ptr)[0 .. N];
     }
 }
 
@@ -126,12 +126,12 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
     pragma(inline, true) @trusted nothrow @nogc:
 
     bool opIndex(Sz i) {
-        assert(i < capacity, indexErrorMessage(i));
+        assert(i < length, indexErrorMessage(i));
         return (bits >> i) & one;
     }
 
     void opIndexAssign(const(bool) rhs, Sz i) {
-        assert(i < capacity, indexErrorMessage(i));
+        assert(i < length, indexErrorMessage(i));
         if (rhs) {
             bits |= (one << i);
         } else {
@@ -145,11 +145,11 @@ alias BitSetCommonDataType = ulong;
 /// The common bit set type.
 alias BitSet = GBitSet!BitSetCommonDataType;
 
-/// Represents an optional value.
-/// It can also hold an error code when a value is missing, and errors are referred to as faults in Joka.
+/// Represents an optional value with an error code.
+/// Errors are referred to as faults in Joka.
 struct Maybe(T) {
-    T _data;
-    Fault _fault = Fault.some;
+    Fault fault = Fault.some;
+    T data;
 
     @safe nothrow @nogc:
 
@@ -162,78 +162,156 @@ struct Maybe(T) {
     }
 
     this(in const(T) value, Fault fault) {
-        if (fault) this(fault);
-        else this(value);
+        if (fault) {
+            this(fault);
+        } else {
+            this(value);
+        }
     }
 
     @trusted
     void opAssign(in const(T) rhs) {
-        _data = cast(T) rhs;
-        _fault = Fault.none;
+        fault = Fault.none;
+        data = cast(T) rhs;
     }
 
     void opAssign(Fault rhs) {
-        _fault = rhs;
+        fault = rhs;
     }
 
     @trusted
     void opAssign(in Maybe!T rhs) {
-        _data = cast(T) rhs._data;
-        _fault = rhs._fault;
+        fault = rhs.fault;
+        data = cast(T) rhs.data;
     }
 
-    /// Returns the value without fault checking.
+    /// Returns the value without checking if it exists.
     pragma(inline, true)
-    ref T xx() {
-        return _data;
+    T xx() {
+        return data;
     }
 
-    /// Returns the fault.
-    pragma(inline, true)
-    Fault fault() {
-        return _fault;
-    }
-
-    /// Returns the value and traps the fault if it exists.
-    ref T get(ref Fault trap) {
-        trap = _fault;
-        return _data;
+    /// Returns the value and traps the fault check to avoid an assert.
+    T get(ref Fault trap) {
+        trap = fault;
+        return data;
     }
 
     /// Returns the value, or asserts if a fault exists.
-    ref T get() {
-        if (_fault) assert(0, "Fault was detected.");
-        return _data;
+    T get() {
+        if (fault) assert(0, "Fault was detected.");
+        return data;
     }
 
     /// Returns the value. Returns a default value when there is a fault.
     T getOr(T other) {
-        return _fault ? other : _data;
+        return fault ? other : data;
     }
 
     /// Returns the value. Returns a default value when there is a fault.
     T getOr() {
-        return _fault ? T.init : _data;
+        return fault ? T.init : data;
     }
 
     /// Returns true when there is a fault.
     pragma(inline, true)
     bool isNone() {
-        return _fault != 0;
+        return fault != Fault.none;
     }
 
     /// Returns true when there is a value.
     pragma(inline, true)
     bool isSome() {
-        return _fault == 0;
+        return fault == Fault.none;
     }
 
     /// Clears the value, making it none.
     void clear() {
-        _fault = Fault.some;
+        fault = Fault.some;
     }
 }
 
+/// Represents an optional value.
+/// Prefer using `Maybe` in most cases.
+/// Note: the `isSome` member depends on `T`.
+/// If `T` is a value, then `isSome` is a field.
+/// If `T` is a pointer, then `isSome` is a property (function).
+struct Option(T) {
+    enum isPtr = is(T : const(void)*);
+
+    static if (!isPtr) {
+        bool isSome;
+    }
+    T data;
+
+    @trusted nothrow @nogc:
+
+    this(in const(T) data) {
+        opAssign(data);
+    }
+
+    void opAssign(in const(T) rhs) {
+        isSome = true;
+        data = cast(T) rhs;
+    }
+
+    void opAssign(in Option!T rhs) {
+        isSome = rhs.isSome;
+        data = cast(T) rhs.data;
+    }
+
+    /// Returns the value without checking if it exists.
+    pragma(inline, true)
+    T xx() {
+        return data;
+    }
+
+    /// Returns the value and traps the `isSome` check to avoid an assert.
+    T get(ref bool trap) {
+        trap = isSome;
+        return data;
+    }
+
+    /// Returns the value, or asserts if it does not exists.
+    T get() {
+        if (!isSome) assert(0, "Fault was detected.");
+        return data;
+    }
+
+    /// Returns the value. Returns a default value when there is none.
+    T getOr(T other) {
+        return !isSome ? other : data;
+    }
+
+    /// Returns the value. Returns a default value when there is none.
+    T getOr() {
+        return !isSome ? T.init : data;
+    }
+
+    /// Returns true when there is no value.
+    pragma(inline, true)
+    bool isNone() {
+        return !isSome;
+    }
+
+    /// Clears the value, making it none.
+    void clear() {
+        isSome = false;
+    }
+
+    static if (isPtr) {
+        pragma(inline, true)
+        bool isSome() {
+            return data != null;
+        }
+
+        void isSome(bool value) {
+            if (!value) data = null;
+        }
+    }
+}
+
+/// A tagged union.
 struct Union(A...) if (A.length != 0) {
     alias Types = A;
     alias Base  = A[0];
@@ -292,6 +370,7 @@ struct Union(A...) if (A.length != 0) {
         }
 
         ref T as(T)() {
+            assert(_type == typeOf!T, "Type not active.");
             return _data.tupleof[typeOf!T];
         }
     }
