@@ -22,33 +22,7 @@ alias WitSz     = size_t; // A helper to change the type used for sizes.
 alias WitString = WitList!(WitCharU8);
 alias WitNoData = NoData; // Can be used with `WitResult`.
 
-struct WitList(T) {
-    T* ptr;
-    WitSz length;
-
-    alias items this;
-
-    @trusted nothrow @nogc:
-
-    this(T* ptr, WitSz length) {
-        this.ptr = ptr;
-        this.length = length;
-    }
-
-    this(T[] slice) {
-        opAssign(slice);
-    }
-
-    void opAssign(T[] slice) {
-        ptr = slice.ptr;
-        length = cast(WitSz) slice.length;
-    }
-
-    pragma(inline, true)
-    inout(T)[] items() inout {
-        return ptr[0 .. length];
-    }
-}
+alias WitList = ForeignSlice;
 
 struct WitOption(T) {
     WitBool isSome;

@@ -60,7 +60,7 @@ enum Fault : ubyte {
 struct NoData {}
 
 /// A static array.
-/// It exists mainly because of BetterC + `struct[N]`.
+/// It exists because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
     align(T.alignof) ubyte[T.sizeof * N] _data;
     alias items this;
@@ -82,6 +82,35 @@ struct StaticArray(T, Sz N) {
     pragma(inline, true)
     inout(T)[] items() inout {
         return (cast(T*) _data.ptr)[0 .. N];
+    }
+}
+
+/// A slice using a foreign memory layout.
+/// It can be used to interface with languages that define slices differently.
+struct ForeignSlice(T) {
+    T* ptr;
+    Sz length;
+    alias items this;
+
+    @trusted nothrow @nogc:
+
+    this(T* ptr, Sz length) {
+        this.ptr = ptr;
+        this.length = length;
+    }
+
+    this(T[] slice) {
+        opAssign(slice);
+    }
+
+    void opAssign(T[] slice) {
+        ptr = slice.ptr;
+        length = slice.length;
+    }
+
+    pragma(inline, true)
+    inout(T)[] items() inout {
+        return ptr[0 .. length];
     }
 }
 
@@ -112,7 +141,7 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
 }
 
 /// The common bit set data type.
-alias BitSetCommonDataType = uint;
+alias BitSetCommonDataType = ulong;
 /// The common bit set type.
 alias BitSet = GBitSet!BitSetCommonDataType;
 

@@ -16,11 +16,8 @@
 /// The `ranges` module includes functions that work with ranges.
 module parin.joka.ranges;
 
-import parin.joka.types;
-
-alias NumericRangeValue = int;
-alias Nrv = NumericRangeValue;
-
+// A numeric range value.
+alias Nrv = int;
 static assert(Nrv.min < 0, "Type `NumericRangeValue` should be a signed type.");
 
 struct ValueIndex(V) {
@@ -91,7 +88,7 @@ struct SliceRange(T) {
         return cast(Nrv) sliceLength;
     }
 
-    T opIndex(Sz i) {
+    T opIndex(size_t i) {
         return slice[i];
     }
 }
@@ -165,12 +162,12 @@ struct TransformedRange(R, F) {
 
     static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
         auto back() {
-            if (isFilter) assert(0, "Can't use filter with `foreach_reverse`.");
+            if (isFilter) assert(0, "Can't use filter or map with `foreach_reverse`.");
             return func(range.back);
         }
 
         void popBack() {
-            if (isFilter) assert(0, "Can't use filter with `foreach_reverse`.");
+            if (isFilter) assert(0, "Can't use filter or map with `foreach_reverse`.");
             range.popBack();
         }
     }
