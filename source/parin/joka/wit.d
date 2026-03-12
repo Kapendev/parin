@@ -1,5 +1,7 @@
-/// The `wit` module provides types used by WIT files.
+/// The `wit` module provides some types used by WIT files.
 module parin.joka.wit;
+
+import parin.joka.types;
 
 // --- Built-in Types
 
@@ -18,6 +20,7 @@ alias WitChar   = dchar;
 alias WitCharU8 = char;   // A helper to avoid using `WitU8` for strings.
 alias WitSz     = size_t; // A helper to change the type used for sizes.
 alias WitString = WitList!(WitCharU8);
+alias WitNoData = NoData; // Can be used with `WitResult`.
 
 struct WitList(T) {
     T* ptr;
@@ -41,6 +44,7 @@ struct WitList(T) {
         length = cast(WitSz) slice.length;
     }
 
+    pragma(inline, true)
     inout(T)[] items() inout {
         return ptr[0 .. length];
     }
@@ -66,13 +70,15 @@ struct WitOption(T) {
         data = cast(T) rhs;
     }
 
+    pragma(inline, true)
+    bool isNone() {
+        return !isSome;
+    }
+
     void clear() {
         isSome = false;
     }
 }
-
-// NOTE: Can be used with `WitResult`.
-struct WitNoData {}
 
 // NOTE: There are some weird cases that might need special checks.
 //   result<u32>     // no data associated with the error case
@@ -112,6 +118,11 @@ struct WitResult(T, E) {
         data.error = cast(E) rhs;
     }
 
+    pragma(inline, true)
+    bool isNone() {
+        return !isSome;
+    }
+
     void clear() {
         isSome = false;
     }
@@ -122,61 +133,9 @@ struct WitResult(T, E) {
 
 // --- User-defined Types
 
-// NOTE: Translate members that are not types to a distinct struct using `alias this`.
-struct WitVariant(A...) if (A.length != 0) {
-    alias Types = A;
-    union WitVariantUnion {
-        static foreach (i, T; A) { mixin("T _m", i, ";"); }
-    }
-
-    static if (A.length <= WitU8.max) {
-        alias WitVariantType = WitU8;
-    } else static if (A.length <= WitU16.max) {
-        alias WitVariantType = WitU16;
-    } else {
-        alias WitVariantType = WitU32;
-    }
-
-    WitVariantType type;
-    WitVariantUnion data;
-
-    @trusted nothrow @nogc:
-
-    static foreach (i, T; A) {
-        this(in const(T) value) {
-            opAssign(value);
-        }
-
-        void opAssign(in const(T) rhs) {
-            type = cast(WitVariantType) i;
-            *(cast(T*) &data) = cast(T) rhs;
-        }
-    }
-
-    pragma(inline, true) {
-        bool isType(T)() {
-            return type == typeOf!T;
-        }
-
-        ref T as(T)() {
-            return data.tupleof[typeOf!T];
-        }
-    }
-
-    template typeOf(T) {
-        enum typeOf = () {
-            int result = -1;
-            static foreach (i, TT; A) {
-                static if (is(T == TT)) {
-                    result = i;
-                }
-            }
-            return result;
-        }();
-
-        static assert(typeOf != -1, "Type not in union.");
-    }
-}
+// NOTE: Translate members that are not types to distinct structs that use `alias this`.
+//   The layout of a Joka union is the same as a WIT variant: type first and then data.
+alias WitVariant = Union;
 
 // A `WitEnum` is just an enum.
 

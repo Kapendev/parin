@@ -25,7 +25,7 @@ alias IStrz   = const(char)*;   /// A C string of constant chars.
 alias IStrz16 = const(wchar)*;  /// A C string of constant wchars.
 alias IStrz32 = const(dchar)*;  /// A C string of constant dchars.
 
-alias UnionType       = ubyte; /// The type of a tagged union.
+alias UnionType       = ubyte; /// The common union type of a tagged union.
 alias AliasArgs(A...) = A;     /// The type of compile time alias arguments.
 
 enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
@@ -94,13 +94,15 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
     enum length   = cast(T) (bits.sizeof * 8);
     enum capacity = cast(T) (bits.sizeof * 8);
 
-    pragma(inline, true) @trusted nothrow @nogc pure:
+    pragma(inline, true) @trusted nothrow @nogc:
 
     bool opIndex(Sz i) {
+        assert(i < capacity, indexErrorMessage(i));
         return (bits >> i) & one;
     }
 
     void opIndexAssign(const(bool) rhs, Sz i) {
+        assert(i < capacity, indexErrorMessage(i));
         if (rhs) {
             bits |= (one << i);
         } else {
@@ -186,11 +188,13 @@ struct Maybe(T) {
     }
 
     /// Returns true when there is a fault.
+    pragma(inline, true)
     bool isNone() {
         return _fault != 0;
     }
 
     /// Returns true when there is a value.
+    pragma(inline, true)
     bool isSome() {
         return _fault == 0;
     }
@@ -204,12 +208,23 @@ struct Maybe(T) {
 struct Union(A...) if (A.length != 0) {
     alias Types = A;
     alias Base  = A[0];
+
     union UnionData {
-        static foreach (i, T; A) { mixin("T _m", i, ";"); }
+        static foreach (i, T; A) {
+            mixin("T _m", i, ";");
+        }
     }
 
-    UnionData _data;
+    static if (A.length <= ubyte.max) {
+        alias UnionType = ubyte;
+    } else static if (A.length <= ushort.max) {
+        alias UnionType = ushort;
+    } else {
+        alias UnionType = ulong;
+    }
+
     UnionType _type;
+    UnionData _data;
 
     @trusted
     auto call(IStr func, AA...)(AA args) {
