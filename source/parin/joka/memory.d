@@ -74,12 +74,11 @@ struct AllocationGroup {
 struct MemoryContext {
     void* allocatorState;
     AllocatorReallocFunc reallocFunc; // NOTE: If this is null, then the default allocator setup should be used.
-    AllocatorFreeFunc freeFunc;       // NOTE: This can be null for things like arenas.
 
     // NOTE: The functions here are just helpers that pass the allocator state.
     //  They avoid `void*` mistakes.
     //  Could have more helpers, but it's better to keep things simple.
-    //  The `nullAllocatorReallocWrapper` and `nullAllocatorFreeWrapper` can be used to ignore allocations.
+    //  The `nullAllocatorReallocWrapper` function can be used to ignore allocations.
 
     pragma(inline, true) @system nothrow:
 
@@ -91,19 +90,15 @@ struct MemoryContext {
         return reallocFunc(allocatorState, alignment, oldPtr, oldSize, newSize, file, line);
     }
 
-    @nogc
     void free(Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
-        freeFunc(allocatorState, alignment, oldPtr, oldSize, file, line);
+        reallocFunc(allocatorState, alignment, oldPtr, oldSize, 0, file, line);
     }
 }
 
 nothrow {
     alias AllocatorMallocFunc  = void* function(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line);
     alias AllocatorReallocFunc = void* function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line);
-}
-
-nothrow @nogc {
-    alias AllocatorFreeFunc = void function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
+    alias AllocatorFreeFunc    = void  function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
 }
 
 struct ScopedMemoryContext {
@@ -143,21 +138,12 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 //   I am not the best at adding attributes, and I don't really care.
 @system nothrow { // BEGIN MEMORY_BLOCK
 version (JokaCustomMemory) {
-    extern(C) nothrow       void* jokaSystemMalloc  (Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) nothrow       void* jokaSystemRealloc (void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) nothrow @nogc void  jokaSystemFree    (void* ptr, IStr file = __FILE__, Sz line = __LINE__);
-
-    void* jokaSystemMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-        return jokaSystemMalloc(size, file, line);
-    }
+    extern(C) nothrow void* jokaSystemMalloc  (Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow void* jokaSystemRealloc (void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) nothrow void  jokaSystemFree    (void* ptr, IStr file = __FILE__, Sz line = __LINE__);
 
     void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
-
-    @nogc
-    void jokaSystemFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
-        return jokaSystemFree(oldPtr, file, line);
     }
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
@@ -167,25 +153,15 @@ version (JokaCustomMemory) {
         return memoryd.GC.malloc(size);
     }
 
-    void* jokaSystemMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-        return jokaSystemMalloc(size, file, line);
-    }
-
     void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) return null;
         return memoryd.GC.realloc(ptr, size);
     }
 
-    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-        return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
-
-    @nogc
     void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
 
-    @nogc
-    void jokaSystemFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
-        return jokaSystemFree(oldPtr, file, line);
+    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+        return jokaSystemRealloc(oldPtr, newSize, file, line);
     }
 } else {
     version(JokaPhobosStdc) {
@@ -210,10 +186,6 @@ version (JokaCustomMemory) {
             }
         }
         return result;
-    }
-
-    void* jokaSystemMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-        return jokaSystemMalloc(size, file, line);
     }
 
     void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -261,11 +233,6 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-        return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
-
-    @nogc
     void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
@@ -295,9 +262,8 @@ version (JokaCustomMemory) {
         }
     }
 
-    @nogc
-    void jokaSystemFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
-        return jokaSystemFree(oldPtr, file, line);
+    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+        return jokaSystemRealloc(oldPtr, newSize, file, line);
     }
 }
 
@@ -311,7 +277,6 @@ void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz l
     return __memoryContext.realloc(0, ptr, oldSize, size, file, line);
 }
 
-@nogc
 void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
     if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
     __memoryContext.free(0, ptr, oldSize, file, line);
@@ -479,26 +444,18 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
 }
 
 @trusted @nogc {
-    void* nullAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-        return null;
-    }
-
     void* nullAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return null;
     }
 
-    void nullAllocatorFreeWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {}
-
     void jokaRestoreNullAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.reallocFunc = &nullAllocatorReallocWrapper;
-        context.freeFunc = &nullAllocatorFreeWrapper;
     }
 
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.reallocFunc = &jokaSytemReallocWrapper;
-        context.freeFunc = &jokaSystemFreeWrapper;
     }
 
     void jokaEnsureCapture(ref MemoryContext capture) {
@@ -866,7 +823,7 @@ struct List(T) {
         items = items[0 .. 0];
     }
 
-    @trusted @nogc
+    @trusted
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         jokaEnsureCapture(capture);
         capture.free(0, items.ptr, capacity * T.sizeof, file, line);
@@ -1407,7 +1364,6 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
         length = 0;
     }
 
-    @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         data.free(file, line);
         hotIndex = 0;
@@ -1577,7 +1533,6 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
         foreach (id; ids) remove(id);
     }
 
-    @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         data.free(file, line);
         generations.free(file, line);
@@ -1780,7 +1735,6 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
         length = 0;
     }
 
-    @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         buckets.free(file, line);
         length = 0;
@@ -1929,7 +1883,6 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         colCount = 0;
     }
 
-    @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         tiles.free(file, line);
         rowCount = 0;
@@ -2078,11 +2031,7 @@ struct Arena {
     }
 
     MemoryContext toMemoryContext() {
-        auto result = MemoryContext();
-        result.allocatorState = &this;
-        result.reallocFunc = &arenaAllocatorReallocWrapper;
-        result.freeFunc = &arenaAllocatorFreeWrapper;
-        return result;
+        return MemoryContext(&this, &arenaAllocatorReallocWrapper);
     }
 }
 
@@ -2189,18 +2138,6 @@ struct GrowingArena {
         return [];
     }
 
-    @trusted nothrow @nogc:
-
-    void clear() {
-        auto chunk = head;
-        while (chunk) {
-            auto next = chunk.next;
-            chunk.clear();
-            chunk = next;
-        }
-        current = head;
-    }
-
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         auto chunk = head;
         while (chunk) {
@@ -2214,12 +2151,20 @@ struct GrowingArena {
         chunkCapacity = 0;
     }
 
+    @trusted nothrow @nogc:
+
+    void clear() {
+        auto chunk = head;
+        while (chunk) {
+            auto next = chunk.next;
+            chunk.clear();
+            chunk = next;
+        }
+        current = head;
+    }
+
     MemoryContext toMemoryContext() {
-        auto result = MemoryContext();
-        result.allocatorState = &this;
-        result.reallocFunc = &growingArenaAllocatorReallocWrapper;
-        result.freeFunc = &growingArenaAllocatorFreeWrapper;
-        return result;
+        return MemoryContext(&this, &growingArenaAllocatorReallocWrapper);
     }
 }
 
@@ -2289,28 +2234,14 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
 }
 
 @trusted @nogc
-void* arenaAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-    return (cast(Arena*) allocatorState).malloc(size, alignment, file, line);
-}
-
-@trusted @nogc
 void* arenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
     return (cast(Arena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
-}
-
-alias arenaAllocatorFreeWrapper = nullAllocatorFreeWrapper;
-
-@trusted
-void* growingArenaAllocatorMallocWrapper(void* allocatorState, Sz alignment, Sz size, IStr file, Sz line) {
-    return (cast(GrowingArena*) allocatorState).malloc(size, alignment, file, line);
 }
 
 @trusted
 void* growingArenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
     return (cast(GrowingArena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
 }
-
-alias growingArenaAllocatorFreeWrapper = nullAllocatorFreeWrapper;
 
 pragma(inline, true) @trusted @nogc {
     IStr gridIndexErrorMessage(Sz row, Sz col) {

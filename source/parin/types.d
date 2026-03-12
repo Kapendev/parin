@@ -249,6 +249,13 @@ struct Surface {
         this(jokaMakeSlice!Rgba(width * height, file, line), width, height);
     }
 
+    /// Frees the memory if it is owning it and resets the state.
+    @trusted nothrow
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        if (isOwning) jokaFree(pixels.ptr);
+        this = Surface();
+    }
+
     @safe nothrow @nogc:
 
     /// Creates a new surface with the specified pixels, width, and height.
@@ -273,13 +280,6 @@ struct Surface {
     /// Fills the entire surface with a single color.
     void fill(Rgba color) {
         foreach (ref pixel; pixels) pixel = color;
-    }
-
-    /// Frees the memory if it is owning it and resets the state.
-    @trusted
-    void free(IStr file = __FILE__, Sz line = __LINE__) {
-        if (isOwning) jokaFree(pixels.ptr);
-        this = Surface();
     }
 }
 

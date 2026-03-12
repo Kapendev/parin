@@ -238,6 +238,16 @@ struct BoxWorld {
         }
     }
 
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        walls.free(file, line);
+        actors.free(file, line);
+        grid.free(file, line);
+        collisionIdsBuffer.clear();
+        squishedIdsBuffer.clear();
+        gridTileWidth = 0;
+        gridTileHeight = 0;
+    }
+
     @safe nothrow @nogc:
 
     void disableGrid() {
@@ -744,16 +754,6 @@ struct BoxWorld {
         walls.clear();
         actors.clear();
         foreach (ref group; grid) group.clear();
-    }
-
-    void free(IStr file = __FILE__, Sz line = __LINE__) {
-        walls.free(file, line);
-        actors.free(file, line);
-        grid.free(file, line);
-        collisionIdsBuffer.clear();
-        squishedIdsBuffer.clear();
-        gridTileWidth = 0;
-        gridTileHeight = 0;
     }
 
     void ignoreLeak() {

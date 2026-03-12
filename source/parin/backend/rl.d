@@ -196,6 +196,22 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
     }
 }
 
+void closeWindow() {
+    freeAllTextures(false);
+    freeAllFonts(false, false);
+    freeAllSounds(false);
+    freeAllViewports(false);
+
+    foreach (ref buffer; _backendState.surfaceTextureBuffers) {
+        rl.UnloadTexture(buffer.data);
+    }
+    jokaFree(_backendState);
+    _backendState = null;
+
+    rl.CloseAudioDevice();
+    rl.CloseWindow();
+}
+
 Maybe!Surface loadSurface(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto image = rl.LoadImage(path.toStrz().getOr());
     if (image.data == null) return Maybe!Surface(Fault.cannotFind);
@@ -306,22 +322,6 @@ Maybe!ResourceId loadSound(IStr path, float volume, float pitch, bool canRepeat,
 }
 
 @trusted nothrow @nogc:
-
-void closeWindow() {
-    freeAllTextures(false);
-    freeAllFonts(false, false);
-    freeAllSounds(false);
-    freeAllViewports(false);
-
-    foreach (ref buffer; _backendState.surfaceTextureBuffers) {
-        rl.UnloadTexture(buffer.data);
-    }
-    jokaFree(_backendState);
-    _backendState = null;
-
-    rl.CloseAudioDevice();
-    rl.CloseWindow();
-}
 
 bool isBackendNull() {
     return _backendState != null;

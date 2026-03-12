@@ -339,6 +339,10 @@ struct TileMap {
         foreach (ref layer; layers) layer.resizeBlank(rowCount, colCount, file, line);
     }
 
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        layers.free(file, line);
+    }
+
     @safe nothrow @nogc:
 
     void resize(Sz newRowCount, Sz newColCount) {
@@ -358,10 +362,6 @@ struct TileMap {
 
     void clear(Sz layerId) {
         layers[layerId].fill(-1);
-    }
-
-    void free(IStr file = __FILE__, Sz line = __LINE__) {
-        layers.free(file, line);
     }
 
     void ignoreLeak() {

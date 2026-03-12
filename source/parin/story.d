@@ -804,7 +804,6 @@ struct Story {
         variables.reserve(capacity, file, line);
     }
 
-    @nogc
     void free(IStr file = __FILE__, Sz line = __LINE__) {
         script.free(file, line);
         pairs.free(file, line);
