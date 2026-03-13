@@ -3,6 +3,8 @@ module parin.joka.wit;
 
 import parin.joka.types;
 
+@trusted nothrow @nogc:
+
 // --- Built-in Types
 
 alias WitBool   = bool;
@@ -25,54 +27,17 @@ alias WitNoData = NoData; // Can be used with `WitResult`.
 alias WitList   = ForeignSlice;
 alias WitOption = Option;
 
+pure
+WitList!T wit(T)(T[] value) {
+    return WitList!T(value);
+}
+
 // NOTE: There are some weird cases that might need special checks.
 //   result<u32>     // no data associated with the error case
 //   result<_, u32>  // no data associated with the success case
 //   result          // no data associated with either case
 // NOTE: I could add a result type in `joka.types`, but I don't like them.
-struct WitResult(T, E) {
-    union WitResultUnion {
-        T value;
-        E error;
-    }
-
-    WitBool isSome;
-    WitResultUnion data;
-
-    @trusted nothrow @nogc:
-
-    this(in const(T) value) {
-        opAssign(value);
-    }
-
-    this(in const(E) value) {
-        opAssign(value);
-    }
-
-    void opAssign(in WitResult!(T, E) rhs) {
-        isSome = rhs.isSome;
-        data = cast(WitResultUnion) rhs.data;
-    }
-
-    void opAssign(in const(T) rhs) {
-        isSome = true;
-        data.value = cast(T) rhs;
-    }
-
-    void opAssign(in const(E) rhs) {
-        isSome = false;
-        data.error = cast(E) rhs;
-    }
-
-    pragma(inline, true)
-    bool isNone() {
-        return !isSome;
-    }
-
-    void clear() {
-        isSome = false;
-    }
-}
+alias WitResult = Result;
 
 // A `WitTuple` and a `WitRecord` are just structs.
 //   In D, you can also use the `tupleof` property to access fields with a number.
@@ -97,6 +62,7 @@ unittest {
     assert(x1.length == 3);
     assert(x1.ptr != null);
     assert(x1[0] == 1);
+    assert(buffer.wit.length == 3);
 
     auto x2 = WitOption!int();
     assert(x2.isSome == false);

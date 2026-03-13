@@ -235,7 +235,7 @@ struct Maybe(T) {
 /// Prefer using `Maybe` in most cases.
 /// Note: the `isSome` member depends on `T`.
 /// If `T` is a value, then `isSome` is a field.
-/// If `T` is a pointer, then `isSome` is a property (function).
+/// If `T` is a pointer, then `isSome` is a property.
 struct Option(T) {
     enum isPtr = is(T : const(void)*);
 
@@ -274,7 +274,7 @@ struct Option(T) {
 
     /// Returns the value, or asserts if it does not exists.
     T get() {
-        if (!isSome) assert(0, "Fault was detected.");
+        if (!isSome) assert(0, "Value doesn't exist.");
         return data;
     }
 
@@ -308,6 +308,80 @@ struct Option(T) {
         void isSome(bool value) {
             if (!value) data = null;
         }
+    }
+}
+
+/// Represents a success or error value.
+/// Prefer using `Maybe` in most cases.
+struct Result(T, E) {
+    union ResultUnion {
+        T value;
+        E error;
+    }
+
+    bool isSome;
+    ResultUnion data;
+
+    @trusted nothrow @nogc:
+
+    this(in const(T) value) {
+        opAssign(value);
+    }
+
+    this(in const(E) value) {
+        opAssign(value);
+    }
+
+    void opAssign(in const(T) rhs) {
+        isSome = true;
+        data.value = cast(T) rhs;
+    }
+
+    void opAssign(in const(E) rhs) {
+        isSome = false;
+        data.error = cast(E) rhs;
+    }
+
+    void opAssign(in Result!(T, E) rhs) {
+        isSome = rhs.isSome;
+        data = cast(ResultUnion) rhs.data;
+    }
+
+    /// Returns the value without checking if it exists.
+    pragma(inline, true)
+    T xx() {
+        return data.value;
+    }
+
+    /// Returns the value and traps the `isSome` check to avoid an assert.
+    T get(ref E trap) {
+        if (!isSome) trap = data.error;
+        return data.value;
+    }
+
+    /// Returns the value, or asserts if it does not exists.
+    T get() {
+        if (!isSome) assert(0, "Error was detected.");
+        return data.value;
+    }
+
+    /// Returns the value. Returns a default value when there is none.
+    T getOr(T other) {
+        return !isSome ? other : data.value;
+    }
+
+    /// Returns the value. Returns a default value when there is none.
+    T getOr() {
+        return !isSome ? T.init : data.value;
+    }
+
+    pragma(inline, true)
+    bool isNone() {
+        return !isSome;
+    }
+
+    void clear() {
+        isSome = false;
     }
 }
 
