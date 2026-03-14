@@ -25,8 +25,7 @@ version (LDC) {
 }
 
 // Functions from the math.h header.
-private { // BEGIN STDC_PRIVATE
-@trusted nothrow @nogc {
+pragma(inline, true) private @trusted nothrow @nogc {
     version(JokaMathStubs) {
         pragma(msg, "Joka: Defining missing `math.h` symbols for `math.d`.");
 
@@ -183,20 +182,13 @@ private { // BEGIN STDC_PRIVATE
     }
 
     version (LDC) {
-        version (WebAssembly) {
-            // NOTE: No idea why the symbol does not exist in wasm32.
-            float stdc_roundf(float x)  => roundX(x);
-            double stdc_round(double x) => roundX64(x);
-        } else {
-            float stdc_roundf(float x)  => ldc.llvm_round(x);
-            double stdc_round(double x) => ldc.llvm_round(x);
-        }
+        float stdc_roundf(float x)  => ldc.llvm_round(x);
+        double stdc_round(double x) => ldc.llvm_round(x);
     } else {
         extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
         extern(C) pragma(mangle, "round")  double stdc_round(double x);
     }
 }
-} // END STDC_PRIVATE
 
 @safe nothrow @nogc:
 
