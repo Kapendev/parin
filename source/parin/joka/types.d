@@ -710,6 +710,7 @@ version (JokaCustomMemory) {
     extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
 } else version (JokaGcMemory) {
     pragma(msg, "Joka: Using GC memory.");
+
     import stringc = core.stdc.string;
 
     nothrow @nogc

@@ -138,9 +138,17 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 //   I am not the best at adding attributes, and I don't really care.
 @system nothrow { // BEGIN MEMORY_BLOCK
 version (JokaCustomMemory) {
-    extern(C) nothrow void* jokaSystemMalloc  (Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) nothrow void* jokaSystemRealloc (void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
-    extern(C) nothrow void  jokaSystemFree    (void* ptr, IStr file = __FILE__, Sz line = __LINE__);
+    extern(C) void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
+
+    extern(C)
+    void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+        return jokaSystemRealloc(null, size, file, line);
+    }
+
+    extern(C)
+    void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {
+        jokaSystemRealloc(ptr, 0, file, line);
+    }
 
     void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return jokaSystemRealloc(oldPtr, newSize, file, line);

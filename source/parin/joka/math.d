@@ -14,8 +14,8 @@ version (JokaNoTypes) {
     private alias Sz = size_t;
     private alias IStr = const(char)[];
     private alias Str = char[];
-    private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...) { return ""; }
-    private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) { return ""; }
+    private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...)     => "";
+    private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) => "";
 } else {
     import parin.joka.types;
 }
@@ -25,21 +25,24 @@ version (LDC) {
 }
 
 // Functions from the math.h header.
-pragma(inline, true) private @trusted nothrow @nogc {
+private @trusted nothrow @nogc pragma(inline, true) {
     version(JokaMathStubs) {
         pragma(msg, "Joka: Defining missing `math.h` symbols for `math.d`.");
 
-        float stdc_asinf(float x)  => 0.0f;
-        double stdc_asin(double x) => 0.0;
+        float stdc_asinf(float x)  => 0;
+        double stdc_asin(double x) => 0;
 
-        float stdc_acosf(float x)  => 0.0f;
-        double stdc_acos(double x) => 0.0;
+        float stdc_acosf(float x)  => 0;
+        double stdc_acos(double x) => 0;
 
-        float stdc_atanf(float x)  => 0.0f;
-        double stdc_atan(double x) => 0.0;
+        float stdc_atanf(float x)  => 0;
+        double stdc_atan(double x) => 0;
 
-        float stdc_atan2f(float y, float x)  => 0.0f;
-        double stdc_atan2(double y, double x) => 0.0;
+        float stdc_atan2f(float y, float x)   => 0;
+        double stdc_atan2(double y, double x) => 0;
+
+        float stdc_tanf(float x)  => 0;
+        double stdc_tan(double x) => 0;
     } else {
         extern(C) pragma(mangle, "asinf") float stdc_asinf(float x);
         extern(C) pragma(mangle, "asin") double stdc_asin(double x);
@@ -52,141 +55,192 @@ pragma(inline, true) private @trusted nothrow @nogc {
 
         extern(C) pragma(mangle, "atan2f") float stdc_atan2f(float y, float x);
         extern(C) pragma(mangle, "atan2") double stdc_atan2(double y, double x);
-    }
 
-    version (LDC) {
-        version (WebAssembly) {
-            float stdc_tanf(float x)  => ldc.llvm_sin(x) / ldc.llvm_cos(x);
-            double stdc_tan(double x) => ldc.llvm_sin(x) / ldc.llvm_cos(x);
-        } else {
-            extern(C) pragma(mangle, "tanf") float stdc_tanf(float x);
-            extern(C) pragma(mangle, "tan")  double stdc_tan(double x);
-        }
-    } else {
         extern(C) pragma(mangle, "tanf") float stdc_tanf(float x);
         extern(C) pragma(mangle, "tan")  double stdc_tan(double x);
     }
 
-    version (LDC) {
-        version (WebAssembly) {
-            float stdc_remainderf(float x, float y)   => (y == 0) ? float.nan  : x - ldc.llvm_round(x / y) * y;
-            double stdc_remainder(double x, double y) => (y == 0) ? double.nan : x - ldc.llvm_round(x / y) * y;
-        } else {
-            extern(C) pragma(mangle, "remainderf") float stdc_remainderf(float x, float y);
-            extern(C) pragma(mangle, "remainder")  double stdc_remainder(double x, double y);
+    version(JokaMathStubs) {
+        float stdc_remainderf(float x, float y) {
+            if (y == 0) return x;
+            auto q = x / y;
+            auto n = cast(int) (q >= 0 ? q + 0.5f : q - 0.5f);
+            return x - n * y;
+        }
+
+        double stdc_remainder(double x, double y) {
+            if (y == 0) return x;
+            auto q = x / y;
+            auto n = cast(long) (q >= 0 ? q + 0.5 : q - 0.5);
+            return x - n * y;
         }
     } else {
         extern(C) pragma(mangle, "remainderf") float stdc_remainderf(float x, float y);
         extern(C) pragma(mangle, "remainder")  double stdc_remainder(double x, double y);
     }
 
-    version (LDC) {
-        version (WebAssembly) {
-            float stdc_fmodf(float x, float y)   => x - ldc.llvm_trunc(x / y) * y;
-            double stdc_fmod(double x, double y) => x - ldc.llvm_trunc(x / y) * y;
-        } else {
-            extern(C) pragma(mangle, "fmodf") float stdc_fmodf(float x, float y);
-            extern(C) pragma(mangle, "fmod")  double stdc_fmod(double x, double y);
-        }
+    version(JokaMathStubs) {
+        float stdc_fmodf(float x, float y)   => x - (cast(int) (x / y)) * y;
+        double stdc_fmod(double x, double y) => x - (cast(long) (x / y)) * y;
     } else {
         extern(C) pragma(mangle, "fmodf") float stdc_fmodf(float x, float y);
         extern(C) pragma(mangle, "fmod")  double stdc_fmod(double x, double y);
     }
 
-    version (LDC) {
-        float stdc_expf(float x)  => ldc.llvm_exp(x);
-        double stdc_exp(double x) => ldc.llvm_exp(x);
+    version(JokaMathStubs) {
+        float stdc_expf(float x)  => 0;
+        double stdc_exp(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "expf") float stdc_expf(float x);
-        extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
+        version (LDC) {
+            float stdc_expf(float x)  => ldc.llvm_exp(x);
+            double stdc_exp(double x) => ldc.llvm_exp(x);
+        } else {
+            extern(C) pragma(mangle, "expf") float stdc_expf(float x);
+            extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
-        double stdc_exp2(double x) => ldc.llvm_exp2(x);
+    version(JokaMathStubs) {
+        float stdc_exp2f(float x)  => 0;
+        double stdc_exp2(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
-        extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
+        version (LDC) {
+            float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
+            double stdc_exp2(double x) => ldc.llvm_exp2(x);
+        } else {
+            extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
+            extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_logf(float x)  => ldc.llvm_log(x);
-        double stdc_log(double x) => ldc.llvm_log(x);
+    version(JokaMathStubs) {
+        float stdc_logf(float x)  => 0;
+        double stdc_log(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "logf") float stdc_logf(float x);
-        extern(C) pragma(mangle, "log")  double stdc_log(double x);
+        version (LDC) {
+            float stdc_logf(float x)  => ldc.llvm_log(x);
+            double stdc_log(double x) => ldc.llvm_log(x);
+        } else {
+            extern(C) pragma(mangle, "logf") float stdc_logf(float x);
+            extern(C) pragma(mangle, "log")  double stdc_log(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_log10f(float x)  => ldc.llvm_log10(x);
-        double stdc_log10(double x) => ldc.llvm_log10(x);
+    version(JokaMathStubs) {
+        float stdc_log10f(float x)  => 0;
+        double stdc_log10(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
-        extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
+        version (LDC) {
+            float stdc_log10f(float x)  => ldc.llvm_log10(x);
+            double stdc_log10(double x) => ldc.llvm_log10(x);
+        } else {
+            extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
+            extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_log2f(float x)  => ldc.llvm_log2(x);
-        double stdc_log2(double x) => ldc.llvm_log2(x);
+    version(JokaMathStubs) {
+        float stdc_log2f(float x)  => 0;
+        double stdc_log2(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
-        extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
+        version (LDC) {
+            float stdc_log2f(float x)  => ldc.llvm_log2(x);
+            double stdc_log2(double x) => ldc.llvm_log2(x);
+        } else {
+            extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
+            extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_powf(float base, float exp)   => ldc.llvm_pow(base, exp);
-        double stdc_pow(double base, double exp) => ldc.llvm_pow(base, exp);
+    version(JokaMathStubs) {
+        float stdc_powf(float base, float exp)   => 0;
+        double stdc_pow(double base, double exp) => 0;
     } else {
-        extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
-        extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
+        version (LDC) {
+            float stdc_powf(float base, float exp)   => ldc.llvm_pow(base, exp);
+            double stdc_pow(double base, double exp) => ldc.llvm_pow(base, exp);
+        } else {
+            extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
+            extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
+        }
     }
 
-    version (LDC) {
-        float stdc_sqrtf(float x)  => ldc.llvm_sqrt(x);
-        double stdc_sqrt(double x) => ldc.llvm_sqrt(x);
+    version(JokaMathStubs) {
+        float stdc_sqrtf(float x)  => 0;
+        double stdc_sqrt(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
-        extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
+        version (LDC) {
+            float stdc_sqrtf(float x)  => ldc.llvm_sqrt(x);
+            double stdc_sqrt(double x) => ldc.llvm_sqrt(x);
+        } else {
+            extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
+            extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_sinf(float x)  => ldc.llvm_sin(x);
-        double stdc_sin(double x) => ldc.llvm_sin(x);
+    version(JokaMathStubs) {
+        float stdc_sinf(float x)  => 0;
+        double stdc_sin(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
-        extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
+        version (LDC) {
+            float stdc_sinf(float x)  => ldc.llvm_sin(x);
+            double stdc_sin(double x) => ldc.llvm_sin(x);
+        } else {
+            extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
+            extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_cosf(float x)  => ldc.llvm_cos(x);
-        double stdc_cos(double x) => ldc.llvm_cos(x);
+    version(JokaMathStubs) {
+        float stdc_cosf(float x)  => 0;
+        double stdc_cos(double x) => 0;
     } else {
-        extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
-        extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
+        version (LDC) {
+            float stdc_cosf(float x)  => ldc.llvm_cos(x);
+            double stdc_cos(double x) => ldc.llvm_cos(x);
+        } else {
+            extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
+            extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_ceilf(float x)  => ldc.llvm_ceil(x);
-        double stdc_ceil(double x) => ldc.llvm_ceil(x);
+    version(JokaMathStubs) {
+        float stdc_ceilf(float x)  => ceilX(x);
+        double stdc_ceil(double x) => ceilX64(x);
     } else {
-        extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
-        extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
+        version (LDC) {
+            float stdc_ceilf(float x)  => ldc.llvm_ceil(x);
+            double stdc_ceil(double x) => ldc.llvm_ceil(x);
+        } else {
+            extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
+            extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_floorf(float x)  => ldc.llvm_floor(x);
-        double stdc_floor(double x) => ldc.llvm_floor(x);
+    version(JokaMathStubs) {
+        float stdc_floorf(float x)  => floorX(x);
+        double stdc_floor(double x) => floorX64(x);
     } else {
-        extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
-        extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
+        version (LDC) {
+            float stdc_floorf(float x)  => ldc.llvm_floor(x);
+            double stdc_floor(double x) => ldc.llvm_floor(x);
+        } else {
+            extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
+            extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
+        }
     }
 
-    version (LDC) {
-        float stdc_roundf(float x)  => ldc.llvm_round(x);
-        double stdc_round(double x) => ldc.llvm_round(x);
+    version(JokaMathStubs) {
+        float stdc_roundf(float x)  => roundX(x);
+        double stdc_round(double x) => roundX64(x);
     } else {
-        extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
-        extern(C) pragma(mangle, "round")  double stdc_round(double x);
+        version (LDC) {
+            float stdc_roundf(float x)  => ldc.llvm_round(x);
+            double stdc_round(double x) => ldc.llvm_round(x);
+        } else {
+            extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
+            extern(C) pragma(mangle, "round")  double stdc_round(double x);
+        }
     }
 }
 
