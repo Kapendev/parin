@@ -722,21 +722,19 @@ version (JokaCustomMemory) {
         return stringc.memcpy(ptr, source, size);
     }
 } else {
-    version(JokaPhobosStdc) {
-        pragma(msg, "Joka: Using Phobos `stdc` modules.");
-        import stringc = core.stdc.string;
-    } else {
-        import stringc = parin.joka.stdc;
+    private {
+        extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+        extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
     }
 
     nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
-        return stringc.memset(ptr, value, size);
+        return stdc_memset(ptr, value, size);
     }
 
     nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stringc.memcpy(ptr, source, size);
+        return stdc_memcpy(ptr, source, size);
     }
 }
 

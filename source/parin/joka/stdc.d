@@ -191,15 +191,9 @@ int ferror(FILE* stream);
 // --- stdlib.h
 
 alias STDLIB_QSORT_FUNC = int function(const(void)* a, const(void)* b);
-
-void* malloc(size_t size);
-void* realloc(void* ptr, size_t size);
-void free(void* ptr);
 void qsort(void* ptr, size_t count, size_t size, STDLIB_QSORT_FUNC comp);
 
 // --- string.h
 
 int memcmp(const(void)* lhs, const(void)* rhs, size_t count);
-void* memset(void* dest, int ch, size_t count);
-void* memcpy(void* dest, const(void)* src, size_t count);
 size_t strlen(const(char)* str);

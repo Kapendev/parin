@@ -25,6 +25,7 @@ version (LDC) {
 }
 
 // Functions from the math.h header.
+private { // BEGIN STDC_PRIVATE
 @trusted nothrow @nogc {
     version(JokaMathStubs) {
         pragma(msg, "Joka: Defining missing `math.h` symbols for `math.d`.");
@@ -189,6 +190,7 @@ version (LDC) {
         extern(C) pragma(mangle, "round")  double stdc_round(double x);
     }
 }
+} // END STDC_PRIVATE
 
 @safe nothrow @nogc:
 
