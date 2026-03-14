@@ -183,8 +183,14 @@ private { // BEGIN STDC_PRIVATE
     }
 
     version (LDC) {
-        float stdc_roundf(float x)  => ldc.llvm_round(x);
-        double stdc_round(double x) => ldc.llvm_round(x);
+        version (WebAssembly) {
+            // NOTE: No idea why the symbol does not exist in wasm32.
+            float stdc_roundf(float x)  => roundX(x);
+            double stdc_round(double x) => roundX64(x);
+        } else {
+            float stdc_roundf(float x)  => ldc.llvm_round(x);
+            double stdc_round(double x) => ldc.llvm_round(x);
+        }
     } else {
         extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
         extern(C) pragma(mangle, "round")  double stdc_round(double x);
