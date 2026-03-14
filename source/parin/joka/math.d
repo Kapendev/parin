@@ -8,12 +8,6 @@
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
-version (JokaPhobosStdc) {
-    import stdc = core.stdc.math;
-} else {
-    import stdc = parin.joka.stdc;
-}
-
 version (JokaNoTypes) {
     pragma(msg, "Joka: Defining missing `types.d` symbols for `math.d`.");
 
@@ -26,8 +20,177 @@ version (JokaNoTypes) {
     import parin.joka.types;
 }
 
-// I don't care about `pure`, but I'm a nice person.
-@safe nothrow @nogc pure:
+version (LDC) {
+    import ldc = ldc.intrinsics;
+}
+
+// Functions from the math.h header.
+@trusted nothrow @nogc {
+    version(JokaMathStubs) {
+        pragma(msg, "Joka: Defining missing `math.h` symbols for `math.d`.");
+
+        float stdc_asinf(float x)  => 0.0f;
+        double stdc_asin(double x) => 0.0;
+
+        float stdc_acosf(float x)  => 0.0f;
+        double stdc_acos(double x) => 0.0;
+
+        float stdc_atanf(float x)  => 0.0f;
+        double stdc_atan(double x) => 0.0;
+
+        float stdc_atan2f(float y, float x)  => 0.0f;
+        double stdc_atan2(double y, double x) => 0.0;
+    } else {
+        extern(C) pragma(mangle, "asinf") float stdc_asinf(float x);
+        extern(C) pragma(mangle, "asin") double stdc_asin(double x);
+
+        extern(C) pragma(mangle, "acosf") float stdc_acosf(float x);
+        extern(C) pragma(mangle, "acos") double stdc_acos(double x);
+
+        extern(C) pragma(mangle, "atanf") float stdc_atanf(float x);
+        extern(C) pragma(mangle, "atan") double stdc_atan(double x);
+
+        extern(C) pragma(mangle, "atan2f") float stdc_atan2f(float y, float x);
+        extern(C) pragma(mangle, "atan2") double stdc_atan2(double y, double x);
+    }
+
+    version (LDC) {
+        version (WebAssembly) {
+            float stdc_tanf(float x)  => ldc.llvm_sin(x) / ldc.llvm_cos(x);
+            double stdc_tan(double x) => ldc.llvm_sin(x) / ldc.llvm_cos(x);
+        } else {
+            extern(C) pragma(mangle, "tanf") float stdc_tanf(float x);
+            extern(C) pragma(mangle, "tan")  double stdc_tan(double x);
+        }
+    } else {
+        extern(C) pragma(mangle, "tanf") float stdc_tanf(float x);
+        extern(C) pragma(mangle, "tan")  double stdc_tan(double x);
+    }
+
+    version (LDC) {
+        version (WebAssembly) {
+            float stdc_remainderf(float x, float y)   => (y == 0) ? float.nan  : x - ldc.llvm_round(x / y) * y;
+            double stdc_remainder(double x, double y) => (y == 0) ? double.nan : x - ldc.llvm_round(x / y) * y;
+        } else {
+            extern(C) pragma(mangle, "remainderf") float stdc_remainderf(float x, float y);
+            extern(C) pragma(mangle, "remainder")  double stdc_remainder(double x, double y);
+        }
+    } else {
+        extern(C) pragma(mangle, "remainderf") float stdc_remainderf(float x, float y);
+        extern(C) pragma(mangle, "remainder")  double stdc_remainder(double x, double y);
+    }
+
+    version (LDC) {
+        version (WebAssembly) {
+            float stdc_fmodf(float x, float y)   => x - ldc.llvm_trunc(x / y) * y;
+            double stdc_fmod(double x, double y) => x - ldc.llvm_trunc(x / y) * y;
+        } else {
+            extern(C) pragma(mangle, "fmodf") float stdc_fmodf(float x, float y);
+            extern(C) pragma(mangle, "fmod")  double stdc_fmod(double x, double y);
+        }
+    } else {
+        extern(C) pragma(mangle, "fmodf") float stdc_fmodf(float x, float y);
+        extern(C) pragma(mangle, "fmod")  double stdc_fmod(double x, double y);
+    }
+
+    version (LDC) {
+        float stdc_expf(float x)  => ldc.llvm_exp(x);
+        double stdc_exp(double x) => ldc.llvm_exp(x);
+    } else {
+        extern(C) pragma(mangle, "expf") float stdc_expf(float x);
+        extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
+    }
+
+    version (LDC) {
+        float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
+        double stdc_exp2(double x) => ldc.llvm_exp2(x);
+    } else {
+        extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
+        extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
+    }
+
+    version (LDC) {
+        float stdc_logf(float x)  => ldc.llvm_log(x);
+        double stdc_log(double x) => ldc.llvm_log(x);
+    } else {
+        extern(C) pragma(mangle, "logf") float stdc_logf(float x);
+        extern(C) pragma(mangle, "log")  double stdc_log(double x);
+    }
+
+    version (LDC) {
+        float stdc_log10f(float x)  => ldc.llvm_log10(x);
+        double stdc_log10(double x) => ldc.llvm_log10(x);
+    } else {
+        extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
+        extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
+    }
+
+    version (LDC) {
+        float stdc_log2f(float x)  => ldc.llvm_log2(x);
+        double stdc_log2(double x) => ldc.llvm_log2(x);
+    } else {
+        extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
+        extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
+    }
+
+    version (LDC) {
+        float stdc_powf(float base, float exp)   => ldc.llvm_pow(base, exp);
+        double stdc_pow(double base, double exp) => ldc.llvm_pow(base, exp);
+    } else {
+        extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
+        extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
+    }
+
+    version (LDC) {
+        float stdc_sqrtf(float x)  => ldc.llvm_sqrt(x);
+        double stdc_sqrt(double x) => ldc.llvm_sqrt(x);
+    } else {
+        extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
+        extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
+    }
+
+    version (LDC) {
+        float stdc_sinf(float x)  => ldc.llvm_sin(x);
+        double stdc_sin(double x) => ldc.llvm_sin(x);
+    } else {
+        extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
+        extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
+    }
+
+    version (LDC) {
+        float stdc_cosf(float x)  => ldc.llvm_cos(x);
+        double stdc_cos(double x) => ldc.llvm_cos(x);
+    } else {
+        extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
+        extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
+    }
+
+    version (LDC) {
+        float stdc_ceilf(float x)  => ldc.llvm_ceil(x);
+        double stdc_ceil(double x) => ldc.llvm_ceil(x);
+    } else {
+        extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
+        extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
+    }
+
+    version (LDC) {
+        float stdc_floorf(float x)  => ldc.llvm_floor(x);
+        double stdc_floor(double x) => ldc.llvm_floor(x);
+    } else {
+        extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
+        extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
+    }
+
+    version (LDC) {
+        float stdc_roundf(float x)  => ldc.llvm_round(x);
+        double stdc_round(double x) => ldc.llvm_round(x);
+    } else {
+        extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
+        extern(C) pragma(mangle, "round")  double stdc_round(double x);
+    }
+}
+
+@safe nothrow @nogc:
 
 enum epsilon = 0.0001;                                /// The value of epsilon.
 enum euler   = 2.71828182845904523536028747135266249; /// The value of Euler's number.
@@ -350,7 +513,7 @@ mixin template xyzwOps(T, TT, Sz N, IStr form = "xyzw") if (__traits(hasMember, 
         }
     }
 
-    @trusted nothrow @nogc pure {
+    @trusted nothrow @nogc {
         T _swizzleN(G)(const(G)[] args...) {
             if (args.length != N) assert(0, "Wrong swizzle length.");
             T result = void;
@@ -417,7 +580,7 @@ struct Rgba {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     mixin xyzwOps!(Rgba, ubyte, length, form);
 
@@ -500,7 +663,7 @@ struct GVec2(T) {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     mixin xyzwOps!(GVec2!T, T, length, form);
 
@@ -670,7 +833,7 @@ struct GVec3(T) {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     mixin xyzwOps!(GVec3!T, T, length, form);
 
@@ -868,7 +1031,7 @@ struct GVec4(T) {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     mixin xyzwOps!(GVec4!T, T, length, form);
 
@@ -1095,7 +1258,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     pragma(inline, true) {
         this(GVec2!P position, GVec2!S size) {
@@ -1548,7 +1711,7 @@ struct GCirc(T) {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     pragma(inline, true) {
         this(GVec2!T position, T radius) {
@@ -1662,7 +1825,7 @@ struct GLine(T) {
 
     alias toString = toStr;
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     pragma(inline, true) {
         this(GVec2!T a, GVec2!T b) {
@@ -1771,7 +1934,7 @@ struct GTween(T) {
     Easing type;           /// Easing function used for interpolation.
     bool isYoyoing;        /// True if the tween is currently reversing direction (for yoyo mode).
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     /// Creates a new tween.
     this(T a, T b, float duration, TweenMode mode = TweenMode.bomb, Easing type = Easing.linear) {
@@ -1853,7 +2016,7 @@ struct SmoothToggle {
     float progress = 0.0f; /// Current progress, between 0.0 and 1.0 (inclusive).
     bool state;            /// Current target state.
 
-    @safe nothrow @nogc pure:
+    @safe nothrow @nogc:
 
     /// Creates a new toggle.
     this(bool state) {
@@ -1980,23 +2143,11 @@ pragma(inline, true) @trusted {
     }
 
     float fmod(float x, float y) {
-        version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x, float y) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.fmodf;
-            return pureFunction(x, y);
-        } else {
-            return stdc.fmodf(x, y);
-        }
+        return stdc_fmodf(x, y);
     }
 
     double fmod64(double x, double y) {
-        version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x, double y) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.fmod;
-            return pureFunction(x, y);
-        } else {
-            return stdc.fmod(x, y);
-        }
+        return stdc_fmod(x, y);
     }
 
     T _fmod(T)(T x, T y) {
@@ -2010,203 +2161,67 @@ pragma(inline, true) @trusted {
     }
 
     float remainder(float x, float y) {
-        version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x, float y) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.remainderf;
-            return pureFunction(x, y);
-        } else {
-            return stdc.remainderf(x, y);
-        }
+        return stdc_remainderf(x, y);
     }
 
     double remainder64(double x, double y) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x, double y) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.remainder;
-            return pureFunction(x, y);
-        } else {
-            return stdc.remainder(x, y);
-        }
+        return stdc_remainder(x, y);
     }
 
     float exp(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.expf;
-            return pureFunction(x);
-        } else {
-            return stdc.expf(x);
-        }
+        return stdc_expf(x);
     }
 
     double exp64(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.exp;
-            return pureFunction(x);
-        } else {
-            return stdc.exp(x);
-        }
+        return stdc_exp(x);
     }
 
     float exp2(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.exp2f;
-            return pureFunction(x);
-        } else {
-            return stdc.exp2f(x);
-        }
+        return stdc_exp2f(x);
     }
 
     double exp264(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.exp2;
-            return pureFunction(x);
-        } else {
-            return stdc.exp2(x);
-        }
-    }
-
-    float expm1(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.expm1f;
-            return pureFunction(x);
-        } else {
-            return stdc.expm1f(x);
-        }
-    }
-
-    double expm164(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.expm1;
-            return pureFunction(x);
-        } else {
-            return stdc.expm1(x);
-        }
+        return stdc_exp2(x);
     }
 
     float log(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.logf;
-            return pureFunction(x);
-        } else {
-            return stdc.logf(x);
-        }
+        return stdc_logf(x);
     }
 
     double log64(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log;
-            return pureFunction(x);
-        } else {
-            return stdc.log(x);
-        }
+        return stdc_log(x);
     }
 
     float log10(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log10f;
-            return pureFunction(x);
-        } else {
-            return stdc.log10f(x);
-        }
+        return stdc_log10f(x);
     }
 
     double log1064(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log10;
-            return pureFunction(x);
-        } else {
-            return stdc.log10(x);
-        }
+        return stdc_log10(x);
     }
 
     float log2(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log2f;
-            return pureFunction(x);
-        } else {
-            return stdc.log2f(x);
-        }
+        return stdc_log2f(x);
     }
 
     double log264(double x) {
-      version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log2;
-            return pureFunction(x);
-        } else {
-            return stdc.log2(x);
-        }
-    }
-
-    float log1p(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log1pf;
-            return pureFunction(x);
-        } else {
-            return stdc.log1pf(x);
-        }
-    }
-
-    double log1p64(double x) {
-      version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.log1p;
-            return pureFunction(x);
-        } else {
-            return stdc.log1p(x);
-        }
+        return stdc_log2(x);
     }
 
     float pow(float base, float exponent) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float base, float exponent) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.powf;
-            return pureFunction(base, exponent);
-        } else {
-            return stdc.powf(base, exponent);
-        }
+        return stdc_powf(base, exponent);
     }
 
     double pow64(double base, double exponent) {
-      version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double base, double exponent) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.pow;
-            return pureFunction(base, exponent);
-        } else {
-            return stdc.pow(base, exponent);
-        }
+        return stdc_pow(base, exponent);
     }
 
     float atan2(float y, float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float y, float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.atan2f;
-            return pureFunction(y, x);
-        } else {
-            return stdc.atan2f(y, x);
-        }
+        return stdc_atan2f(y, x);
     }
 
     double atan264(double y, double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double y, double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.atan2;
-            return pureFunction(y, x);
-        } else {
-            return stdc.atan2(y, x);
-        }
+        return stdc_atan2(y, x);
     }
 
     auto _atan2(T)(T y, T x) {
@@ -2215,14 +2230,6 @@ pragma(inline, true) @trusted {
         } else {
             return atan264(y, x);
         }
-    }
-
-    float cbrt(float x) {
-        return stdc.cbrtf(x);
-    }
-
-    double cbrt64(double x) {
-        return stdc.cbrt(x);
     }
 
     float roundNothing(float x) {
@@ -2246,11 +2253,11 @@ pragma(inline, true) @trusted {
     }
 
     float floor(float x) {
-        return stdc.floorf(x);
+        return stdc_floorf(x);
     }
 
     double floor64(double  x) {
-        return stdc.floor(x);
+        return stdc_floor(x);
     }
 
     T _floor(T)(T x) {
@@ -2276,11 +2283,11 @@ pragma(inline, true) @trusted {
     }
 
     float round(float x) {
-        return stdc.roundf(x);
+        return stdc_roundf(x);
     }
 
     double round64(double x) {
-        return stdc.round(x);
+        return stdc_round(x);
     }
 
     T _round(T)(T x) {
@@ -2306,11 +2313,11 @@ pragma(inline, true) @trusted {
     }
 
     float ceil(float x) {
-        return stdc.ceilf(x);
+        return stdc_ceilf(x);
     }
 
     double ceil64(double x) {
-        return stdc.ceil(x);
+        return stdc_ceil(x);
     }
 
     T _ceil(T)(T x) {
@@ -2332,23 +2339,11 @@ pragma(inline, true) @trusted {
     }
 
     float sqrt(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.sqrtf;
-            return pureFunction(x);
-        } else {
-            return stdc.sqrtf(x);
-        }
+        return stdc_sqrtf(x);
     }
 
     double sqrt64(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.sqrt;
-            return pureFunction(x);
-        } else {
-            return stdc.sqrt(x);
-        }
+        return stdc_sqrt(x);
     }
 
     auto _sqrt(T)(T x) {
@@ -2360,11 +2355,11 @@ pragma(inline, true) @trusted {
     }
 
     float sin(float x) {
-        return stdc.sinf(x);
+        return stdc_sinf(x);
     }
 
     double sin64(double x) {
-        return stdc.sin(x);
+        return stdc_sin(x);
     }
 
     auto _sin(T)(T x) {
@@ -2376,11 +2371,11 @@ pragma(inline, true) @trusted {
     }
 
     float cos(float x) {
-        return stdc.cosf(x);
+        return stdc_cosf(x);
     }
 
     double cos64(double x) {
-        return stdc.cos(x);
+        return stdc_cos(x);
     }
 
     auto _cos(T)(T x) {
@@ -2392,11 +2387,11 @@ pragma(inline, true) @trusted {
     }
 
     float tan(float x) {
-        return stdc.tanf(x);
+        return stdc_tanf(x);
     }
 
     double tan64(double x) {
-        return stdc.tan(x);
+        return stdc_tan(x);
     }
 
     auto _tan(T)(T x) {
@@ -2408,23 +2403,11 @@ pragma(inline, true) @trusted {
     }
 
     float asin(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.asinf;
-            return pureFunction(x);
-        } else {
-            return stdc.asinf(x);
-        }
+        return stdc_asinf(x);
     }
 
     double asin64(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.asin;
-            return pureFunction(x);
-        } else {
-            return stdc.asin(x);
-        }
+        return stdc_asin(x);
     }
 
     auto _asin(T)(T x) {
@@ -2436,23 +2419,11 @@ pragma(inline, true) @trusted {
     }
 
     float acos(float x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) float function(float x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.acosf;
-            return pureFunction(x);
-        } else {
-            return stdc.acosf(x);
-        }
+        return stdc_acosf(x);
     }
 
     double acos64(double x) {
-       version (JokaPhobosStdc) {
-            alias Pure = extern(C) double function(double x) @trusted nothrow @nogc pure;
-            auto pureFunction = cast(Pure) &stdc.acos;
-            return pureFunction(x);
-        } else {
-            return stdc.acos(x);
-        }
+        return stdc_acos(x);
     }
 
     auto _acos(T)(T x) {
@@ -2464,11 +2435,11 @@ pragma(inline, true) @trusted {
     }
 
     float atan(float x) {
-        return stdc.atanf(x);
+        return stdc_atanf(x);
     }
 
     double atan64(double x) {
-        return stdc.atan(x);
+        return stdc_atan(x);
     }
 
     auto _atan(T)(T x) {

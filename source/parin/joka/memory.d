@@ -1450,7 +1450,7 @@ struct GenIndex {
     Gen value;
     Gen generation;
 
-    pragma(inline, true) @safe nothrow @nogc pure:
+    pragma(inline, true) @safe nothrow @nogc:
 
     bool isNone() {
         return value < 0;
@@ -1656,7 +1656,7 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
 
     pragma(inline, true) @nogc {
         Sz capacity() {
-            return buckets.length * bucketCapacity;
+            return cast(Sz) (buckets.length * bucketCapacity);
         }
 
         bool isEmpty() {

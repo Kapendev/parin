@@ -33,7 +33,7 @@ struct NumericRange {
     Nrv step;
     Nrv index;
 
-    pragma(inline, true) @safe nothrow @nogc pure:
+    pragma(inline, true) @safe nothrow @nogc:
 
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
@@ -62,7 +62,7 @@ struct SliceRange(T) {
     Nrv sliceLength;
     Nrv index;
 
-    pragma(inline, true) @trusted nothrow @nogc pure:
+    pragma(inline, true) @trusted nothrow @nogc:
 
     bool empty() {
         return index >= sliceLength;
@@ -99,7 +99,7 @@ struct EnumeratedRange(R) {
     R range;
     Nrv index;
 
-    pragma(inline, true) @safe nothrow @nogc pure:
+    pragma(inline, true) @safe nothrow @nogc:
 
     bool empty() {
         return range.empty;
@@ -173,7 +173,7 @@ struct TransformedRange(R, F) {
     }
 }
 
-@safe nothrow @nogc pure {
+@safe nothrow @nogc {
     alias toRange = range;
 
     NumericRange range(Nrv start, Nrv stop, Nrv step = 1) {

@@ -153,19 +153,19 @@ struct Maybe(T) {
 
     @safe nothrow @nogc:
 
-    this(in const(T) value) {
-        opAssign(value);
+    this(in const(T) data) {
+        opAssign(data);
     }
 
     this(Fault fault) {
         opAssign(fault);
     }
 
-    this(in const(T) value, Fault fault) {
+    this(in const(T) data, Fault fault) {
         if (fault) {
             this(fault);
         } else {
-            this(value);
+            this(data);
         }
     }
 
@@ -230,6 +230,11 @@ struct Maybe(T) {
         fault = Fault.some;
     }
 }
+
+/// Maybe not.
+alias MaybeNot = Maybe;
+/// Not sure.
+alias NotSure = Maybe;
 
 /// Represents an optional value.
 /// Prefer using `Maybe` in most cases.
@@ -517,22 +522,34 @@ T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
     return result;
 }
 
+pragma(inline, true) @safe nothrow @nogc {
+    ForeignSlice!T toForeign(T)(T[] value) {
+        return ForeignSlice!T(value);
+    }
+
+    Option!T toForeign(T)(Maybe!T value) {
+        if (value.isSome) {
+            return Option!T(value.data);
+        } else {
+            return Option!T();
+        }
+    }
+
+    bool isNan(float x) {
+        return !(x == x);
+    }
+
+    bool isNan(double x) {
+        return !(x == x);
+    }
+}
+
 pragma(inline, true) @trusted nothrow @nogc
 IStr indexErrorMessage(Sz i) {
     IStr[1] fmtStrs = [
         "Index {} does not exist.",
     ];
     return fmtSignedGroup(fmtStrs, i);
-}
-
-pragma(inline, true) @safe nothrow @nogc pure
-bool isNan(float x) {
-    return !(x == x);
-}
-
-pragma(inline, true) @safe nothrow @nogc pure
-bool isNan(double x) {
-    return !(x == x);
 }
 
 mixin template distinct(T) {
@@ -689,18 +706,18 @@ unittest {
 version (JokaCustomMemory) {
     pragma(msg, "Joka: Using custom memory.");
 
-    extern(C) nothrow @nogc pure void* jokaMemset(void* ptr, int value, Sz size);
-    extern(C) nothrow @nogc pure void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
+    extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
 } else version (JokaGcMemory) {
     pragma(msg, "Joka: Using GC memory.");
     import stringc = core.stdc.string;
 
-    nothrow @nogc pure
+    nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stringc.memset(ptr, value, size);
     }
 
-    nothrow @nogc pure
+    nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stringc.memcpy(ptr, source, size);
     }
@@ -712,12 +729,12 @@ version (JokaCustomMemory) {
         import stringc = parin.joka.stdc;
     }
 
-    nothrow @nogc pure
+    nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stringc.memset(ptr, value, size);
     }
 
-    nothrow @nogc pure
+    nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stringc.memcpy(ptr, source, size);
     }
@@ -726,10 +743,10 @@ version (JokaCustomMemory) {
 version (JokaRuntimeSymbols) {
     pragma(msg, "Joka: Defining missing runtime symbols.");
 
-    extern(C) @trusted nothrow @nogc pure /* __chkstk */
+    extern(C) @trusted nothrow @nogc /* __chkstk */
     void __chkstk() {}
 
-    extern(C) @trusted nothrow @nogc pure /* _d_array_slice_copy */
+    extern(C) @trusted nothrow @nogc /* _d_array_slice_copy */
     void _d_array_slice_copy(void* dst, Sz dstlen, void* src, Sz srclen, Sz elemsz) {
         if (dstlen != srclen) assert(0, "Lengths don't match for slice copy.");
         jokaMemcpy(dst, src, dstlen * elemsz);
@@ -814,7 +831,7 @@ static if (__traits(compiles, { import core.interpolation; })) {
 
     // Functions below are copy-pasted from core.interpolation.
 
-    public IStr __getEmptyString() @nogc pure nothrow @safe {
+    public IStr __getEmptyString() @nogc nothrow @safe {
         return "";
     }
 
@@ -827,7 +844,7 @@ static if (__traits(compiles, { import core.interpolation; })) {
     }
 
     struct InterpolatedLiteral(IStr text) {
-        static IStr toString() @nogc pure nothrow @safe {
+        static IStr toString() @nogc nothrow @safe {
             return text;
         }
     }
@@ -840,7 +857,7 @@ static if (__traits(compiles, { import core.interpolation; })) {
 
 // NOTE: A BetterC fix. It's only needed when using IES.
 version (D_BetterC) {
-    extern(C) @nogc pure nothrow @safe /* IES */
+    extern(C) @nogc nothrow @safe /* IES */
     IStr _D4core13interpolation16__getEmptyStringFNaNbNiNfZAya() { return ""; }
 }
 
