@@ -28,7 +28,7 @@ alias WitNoData = NoData; // Can be used with `WitResult`.
 alias WitList   = ForeignSlice;
 alias WitOption = Option;
 
-alias wit = toForeign;
+alias toWit = toForeign;
 
 // NOTE: There are some weird cases that might need special checks.
 //   result<u32>     // no data associated with the error case
@@ -60,7 +60,7 @@ unittest {
     assert(x1.length == 3);
     assert(x1.ptr != null);
     assert(x1[0] == 1);
-    assert(buffer.wit.length == 3);
+    assert(buffer.toWit().length == 3);
 
     auto x2 = WitOption!int();
     assert(x2.isSome == false);
@@ -70,8 +70,8 @@ unittest {
     assert(x2.data == 4);
     x2.clear();
     assert(x2.isSome == false);
-    assert(Maybe!int().wit.isNone == true);
-    assert(Maybe!int(4).wit.isSome == true);
+    assert(Maybe!int().toWit().isNone == true);
+    assert(Maybe!int(4).toWit().isSome == true);
 
     auto x3 = WitResult!(int, WitNoData)();
     assert(x3.isSome == false);

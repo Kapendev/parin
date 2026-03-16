@@ -10,20 +10,21 @@ module parin.joka.types;
 
 // --- Core
 
-alias Sz      = size_t;         /// The result of sizeof.
-alias Pd      = ptrdiff_t;      /// The result of pointer math.
-alias Str     = char[];         /// A string slice of chars.
-alias Str16   = wchar[];        /// A string slice of wchars.
-alias Str32   = dchar[];        /// A string slice of dchars.
-alias IStr    = const(char)[];  /// A string slice of constant chars.
-alias IStr16  = const(wchar)[]; /// A string slice of constant wchars.
-alias IStr32  = const(dchar)[]; /// A string slice of constant dchars.
-alias Strz    = char*;          /// A C string of chars.
-alias Strz16  = wchar*;         /// A C string of wchars.
-alias Strz32  = dchar*;         /// A C string of dchars.
-alias IStrz   = const(char)*;   /// A C string of constant chars.
-alias IStrz16 = const(wchar)*;  /// A C string of constant wchars.
-alias IStrz32 = const(dchar)*;  /// A C string of constant dchars.
+alias Sz      = size_t;            /// The result of sizeof.
+alias Pd      = ptrdiff_t;         /// The result of pointer math.
+alias Str     = char[];            /// A string slice of chars.
+alias Str16   = wchar[];           /// A string slice of wchars.
+alias Str32   = dchar[];           /// A string slice of dchars.
+alias IStr    = const(char)[];     /// A string slice of constant chars.
+alias IStr16  = const(wchar)[];    /// A string slice of constant wchars.
+alias IStr32  = const(dchar)[];    /// A string slice of constant dchars.
+alias Strz    = char*;             /// A C string of chars.
+alias Strz16  = wchar*;            /// A C string of wchars.
+alias Strz32  = dchar*;            /// A C string of dchars.
+alias IStrz   = const(char)*;      /// A C string of constant chars.
+alias IStrz16 = const(wchar)*;     /// A C string of constant wchars.
+alias IStrz32 = const(dchar)*;     /// A C string of constant dchars.
+alias DStr    = immutable(char)[]; /// A immutable D string.
 
 alias UnionType       = ubyte; /// The common union type of a tagged union.
 alias AliasArgs(A...) = A;     /// The type of compile time alias arguments.
@@ -527,6 +528,11 @@ pragma(inline, true) @safe nothrow @nogc {
         return ForeignSlice!T(value);
     }
 
+    @trusted
+    ForeignSlice!(const(ubyte)) toForeignBytes(const(char)[] value) {
+        return ForeignSlice!(const(ubyte))( cast(const(ubyte)[]) value );
+    }
+
     Option!T toForeign(T)(Maybe!T value) {
         if (value.isSome) {
             return Option!T(value.data);
@@ -739,6 +745,23 @@ version (JokaCustomMemory) {
     }
 }
 
+version (JokaTypesStubs) {
+    pragma(msg, "Joka: Defining missing `string.h` symbols for `types.d`.");
+
+    private {
+        extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
+            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
+            return dest;
+        }
+
+        extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
+            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+            return dest;
+        }
+    }
+}
+
+// TODO: Replace that with something good. The name is too generic and the code is Windows specific.
 version (JokaRuntimeSymbols) {
     pragma(msg, "Joka: Defining missing runtime symbols.");
 
