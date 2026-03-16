@@ -524,22 +524,31 @@ T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
 }
 
 pragma(inline, true) @safe nothrow @nogc {
-    ForeignSlice!T toForeign(T)(T[] value) {
-        return ForeignSlice!T(value);
-    }
-
-    @trusted
-    ForeignSlice!(const(ubyte)) toForeignBytes(const(char)[] value) {
-        return ForeignSlice!(const(ubyte))( cast(const(ubyte)[]) value );
-    }
-
-    Option!T toForeign(T)(Maybe!T value) {
+    Option!T toForeignMaybe(T)(Maybe!T value) {
         if (value.isSome) {
             return Option!T(value.data);
         } else {
             return Option!T();
         }
     }
+
+    ForeignSlice!T toForeignSlice(T)(T[] value) {
+        return ForeignSlice!T(value);
+    }
+
+    @trusted
+    ForeignSlice!(const(ubyte)) toForeignBytes(const(char)[] value) {
+        return ForeignSlice!(const(ubyte))(  cast(const(ubyte)[]) value  );
+    }
+
+    @trusted
+    ForeignSlice!(ubyte) toForeignBytesMut(char[] value) {
+        return ForeignSlice!(ubyte)(  cast(ubyte[]) value  );
+    }
+
+    // OMG IS THIS ODIN'S "explicit overloading" IN MY D CODE?
+    alias toForeign = toForeignMaybe;
+    alias toForeign = toForeignSlice;
 
     bool isNan(float x) {
         return !(x == x);

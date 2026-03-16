@@ -1,5 +1,5 @@
-/// The `p1` module provides functions available in WASI preview 1.
-module parin.joka.wasi.p1;
+/// The `wasip1` module provides types and functions available in WASI preview 1.
+module parin.joka.wasip1;
 
 import parin.joka.types;
 
@@ -8,12 +8,6 @@ version (LDC) {
     private alias llvmAttr = ldc.llvmAttr;
 } else {
     private struct llvmAttr { DStr a, b; }
-}
-
-enum Fd : uint {
-    input  = 0,
-    output = 1,
-    error  = 2,
 }
 
 enum Errno : ushort {
@@ -96,9 +90,22 @@ enum Errno : ushort {
     notcapable = 76,
 }
 
-alias Iovec  = ForeignSlice!(ubyte);
-alias Ciovec = ForeignSlice!(const(ubyte));
+enum ClockId : uint {
+    realtime = 0,
+    monotonic = 1,
+    processCputimeId = 2,
+    threadCputimeId = 3,
+}
 
+enum fdStdin  = Fd(0);
+enum fdStdout = Fd(1);
+enum fdStderr = Fd(2);
+
+alias ExitCode = uint;
+alias Fd       = uint;
+alias Iovec    = ForeignSlice!(ubyte);
+alias toIovec  = toForeignBytesMut;
+alias Ciovec   = ForeignSlice!(const(ubyte));
 alias toCiovec = toForeignBytes;
 
 enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
@@ -106,26 +113,26 @@ enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
 
 extern(C) nothrow @nogc @wasi {
     @importName("fd_write")
-    Errno fd_write(Fd fd, const(Ciovec)* iovs, Sz iovs_len, Sz* nwritten);
+    Errno fdWrite(Fd fd, const(Ciovec)* iovs, Sz iovs_len, Sz* nwritten);
 
     @importName("fd_read")
-    Errno fd_read(Fd fd, const(Ciovec)* iovs, Sz iovs_len, Sz* nread);
+    Errno fdRead(Fd fd, Iovec* iovs, Sz iovs_len, Sz* nread);
 
     @importName("args_sizes_get")
-    Errno args_sizes_get(Sz* argc, Sz* argv_buf_size);
+    Errno argsSizesGet(Sz* argc, Sz* argv_buf_size);
 
     @importName("args_get")
-    Errno args_get(ubyte** argv, ubyte* argv_buf);
+    Errno argsGet(ubyte** argv, ubyte* argv_buf);
 
     @importName("environ_sizes_get")
-    Errno environ_sizes_get(Sz* env_count, Sz* env_buf_size);
+    Errno environSizesGet(Sz* env_count, Sz* env_buf_size);
 
     @importName("environ_get")
-    Errno environ_get(ubyte** environ, ubyte* environ_buf);
+    Errno environGet(ubyte** environ, ubyte* environ_buf);
 
     @importName("clock_time_get")
-    Errno clock_time_get(uint clock_id, ulong precision, ulong* time);
+    Errno clockTimeGet(ClockId clock_id, ulong precision, ulong* time);
 
     @importName("proc_exit")
-    void proc_exit(uint rval);
+    void procExit(ExitCode rval);
 }
