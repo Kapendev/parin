@@ -101,38 +101,117 @@ enum fdStdin  = Fd(0);
 enum fdStdout = Fd(1);
 enum fdStderr = Fd(2);
 
-alias ExitCode = uint;
-alias Fd       = uint;
-alias Iovec    = ForeignSlice!(ubyte);
-alias toIovec  = toForeignBytesMut;
-alias Ciovec   = ForeignSlice!(const(ubyte));
-alias toCiovec = toForeignBytes;
+alias LookupFlags = uint;
+enum LookupFlag : LookupFlags {
+    none          = 0x0,
+    symlinkFollow = 0x1,
+}
+
+alias OFlags = ushort;
+enum OFlag : OFlags {
+    none      = 0x0,
+    creat     = 0x1,
+    directory = 0x2,
+    excl      = 0x4,
+    trunc     = 0x8,
+}
+
+alias Rights = ulong;
+enum Right : Rights {
+    none                 = 0UL,
+    fdDatasync           = 1UL << 0,
+    fdRead               = 1UL << 1,
+    fdSeek               = 1UL << 2,
+    fdFdstatSetFlags     = 1UL << 3,
+    fdSync               = 1UL << 4,
+    fdTell               = 1UL << 5,
+    fdWrite              = 1UL << 6,
+    fdAdvise             = 1UL << 7,
+    fdAllocate           = 1UL << 8,
+    pathCreateDirectory  = 1UL << 9,
+    pathCreateFile       = 1UL << 10,
+    pathLinkSource       = 1UL << 11,
+    pathLinkTarget       = 1UL << 12,
+    pathOpen             = 1UL << 13,
+    fdReaddir            = 1UL << 14,
+    pathReadlink         = 1UL << 15,
+    pathRenameSource     = 1UL << 16,
+    pathRenameTarget     = 1UL << 17,
+    pathFilestatGet      = 1UL << 18,
+    pathFilestatSetSize  = 1UL << 19,
+    pathFilestatSetTimes = 1UL << 20,
+    fdFilestatGet        = 1UL << 21,
+    fdFilestatSetSize    = 1UL << 22,
+    fdFilestatSetTimes   = 1UL << 23,
+    pathSymlink          = 1UL << 24,
+    pathRemoveDirectory  = 1UL << 25,
+    pathUnlinkFile       = 1UL << 26,
+    pollFdReadwrite      = 1UL << 27,
+    sockShutdown         = 1UL << 28,
+    sockAccept           = 1UL << 29,
+}
+
+alias FdFlags = ushort;
+enum FdFlag : FdFlags {
+    none     = 0x00,
+    append   = 0x01,
+    dsync    = 0x02,
+    nonblock = 0x04,
+    rsync    = 0x08,
+    sync     = 0x10,
+}
+
+alias ExitCode    = uint;
+alias Fd          = uint;
+alias Iovec       = ForeignSlice!(ubyte);
+alias toIovec     = toForeignBytesMut;
+alias Ciovec      = ForeignSlice!(const(ubyte));
+alias toCiovec    = toForeignBytes;
 
 enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
 @safe nothrow @nogc llvmAttr importName(DStr name) => llvmAttr("wasm-import-name", name);
 
 extern(C) nothrow @nogc @wasi {
     @importName("fd_write")
-    Errno fdWrite(Fd fd, const(Ciovec)* iovs, Sz iovs_len, Sz* nwritten);
+    Errno fdWrite(Fd fd, const(Ciovec)* iovs, Sz iovsLen, Sz* nwritten);
 
     @importName("fd_read")
-    Errno fdRead(Fd fd, Iovec* iovs, Sz iovs_len, Sz* nread);
+    Errno fdRead(Fd fd, Iovec* iovs, Sz iovsLen, Sz* nread);
 
     @importName("args_sizes_get")
-    Errno argsSizesGet(Sz* argc, Sz* argv_buf_size);
+    Errno argsSizesGet(Sz* argc, Sz* argvBufSize);
 
     @importName("args_get")
-    Errno argsGet(ubyte** argv, ubyte* argv_buf);
+    Errno argsGet(ubyte** argv, ubyte* argvBuf);
 
     @importName("environ_sizes_get")
-    Errno environSizesGet(Sz* env_count, Sz* env_buf_size);
+    Errno environSizesGet(Sz* envCount, Sz* envBufSize);
 
     @importName("environ_get")
-    Errno environGet(ubyte** environ, ubyte* environ_buf);
+    Errno environGet(ubyte** environ, ubyte* environBuf);
 
     @importName("clock_time_get")
-    Errno clockTimeGet(ClockId clock_id, ulong precision, ulong* time);
+    Errno clockTimeGet(ClockId clockId, ulong precision, ulong* time);
 
     @importName("proc_exit")
     void procExit(ExitCode rval);
+
+    @importName("random_get")
+    Errno randomGet(ubyte* buf, Sz bufLen);
+
+    @importName("path_open")
+    Errno pathOpen(
+        Fd fd,
+        LookupFlags dirflags,
+        const(char)* path,
+        Sz pathLen,
+        OFlags oflags,
+        Rights fsRightsBase,
+        Rights fsRightsInheriting,
+        FdFlags fdflags,
+        Fd* openedFd,
+    );
+
+    @importName("fd_close")
+    Errno fdClose(Fd fd);
 }

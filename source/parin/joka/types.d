@@ -723,6 +723,7 @@ version (JokaCustomMemory) {
 
     extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
     extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
 } else version (JokaGcMemory) {
     pragma(msg, "Joka: Using GC memory.");
 
@@ -737,10 +738,16 @@ version (JokaCustomMemory) {
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stringc.memcpy(ptr, source, size);
     }
+
+    nothrow @nogc
+    int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
+        return stringc.memcpy(ptr1, ptr2, size);
+    }
 } else {
     private {
         extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
         extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+        extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
     }
 
     nothrow @nogc
@@ -751,6 +758,11 @@ version (JokaCustomMemory) {
     nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stdc_memcpy(ptr, source, size);
+    }
+
+    nothrow @nogc
+    int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
+        return stdc_memcmp(ptr1, ptr2, size);
     }
 }
 
@@ -766,6 +778,15 @@ version (JokaTypesStubs) {
         extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
             foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
             return dest;
+        }
+
+        extern(C) pragma(mangle, "memcmp") nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
+            auto p1 = cast(const(ubyte)*) s1;
+            auto p2 = cast(const(ubyte)*) s2;
+            foreach (i; 0 .. count) {
+                if (p1[i] != p2[i]) return p1[i] - p2[i];
+            }
+            return 0;
         }
     }
 }
