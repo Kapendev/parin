@@ -9,8 +9,6 @@
 module parin.joka.math;
 
 version (JokaNoTypes) {
-    pragma(msg, "Joka: Defining missing `types.d` symbols for `math.d`.");
-
     private alias Sz = size_t;
     private alias IStr = const(char)[];
     private alias Str = char[];
@@ -23,12 +21,13 @@ version (JokaNoTypes) {
 version (LDC) {
     import ldc = ldc.intrinsics;
 }
+version (WASI) {
+    version = JokaMathStubs;
+}
 
 // Functions from the math.h header.
 private @trusted nothrow @nogc pragma(inline, true) {
     version(JokaMathStubs) {
-        pragma(msg, "Joka: Defining missing `math.h` symbols for `math.d`.");
-
         float stdc_asinf(float x)  => 0;
         double stdc_asin(double x) => 0;
 

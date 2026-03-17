@@ -13,6 +13,10 @@ module parin.joka.memory;
 
 import parin.joka.types;
 
+version (WASI) {
+    version = JokaMemoryStubs;
+}
+
 // --- Core
 
 MemoryContext __memoryContext;
@@ -138,25 +142,16 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 //   I am not the best at adding attributes, and I don't really care.
 @system nothrow { // BEGIN MEMORY_BLOCK
 version (JokaCustomMemory) {
-    extern(C) void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
-
-    // TODO: Read comment about `JokaCustomMemory` in `types.d`.
-    version (JokaMemoryStubs) {
-        extern(C) void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) { return null; }
-    }
+    extern(C) void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
     extern(C)
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
-        return jokaSystemRealloc(null, size, file, line);
+        return jokaSystemRealloc(null, size, 0, file, line);
     }
 
     extern(C)
-    void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {
-        jokaSystemRealloc(ptr, 0, file, line);
-    }
-
-    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-        return jokaSystemRealloc(oldPtr, newSize, file, line);
+    void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
+        jokaSystemRealloc(ptr, 0, oldSize, file, line);
     }
 } else version (JokaGcMemory) {
     import memoryd = core.memory;
@@ -165,28 +160,22 @@ version (JokaCustomMemory) {
         return memoryd.GC.malloc(size);
     }
 
-    void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+    void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) return null;
         return memoryd.GC.realloc(ptr, size);
     }
 
-    void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {}
-
-    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-        return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
+    void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
-    private {
-        extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size);
-        extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size);
-        extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr);
+    private extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size);
+    private extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size);
+    private extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr);
 
-        // TODO: Read comment about `JokaCustomMemory` in `types.d`.
-        version (JokaMemoryStubs) {
-            extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size) { return null; }
-            extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size) { return null; }
-            extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr) {}
-        }
+    // TODO: Read comment about `JokaCustomMemory` in `types.d`.
+    version (JokaMemoryStubs) {
+        private extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size) { return null; }
+        private extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size) { return null; }
+        private extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr) {}
     }
 
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -207,7 +196,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+    void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) {
             jokaSystemFree(ptr);
             return null;
@@ -252,7 +241,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
-    void jokaSystemFree(void* ptr, IStr file = __FILE__, Sz line = __LINE__) {
+    void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
@@ -280,10 +269,10 @@ version (JokaCustomMemory) {
             stdc_free(ptr);
         }
     }
+}
 
-    void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-        return jokaSystemRealloc(oldPtr, newSize, file, line);
-    }
+void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+    return jokaSystemRealloc(oldPtr, newSize, oldSize, file, line);
 }
 
 void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -2161,8 +2150,8 @@ struct GrowingArena {
         auto chunk = head;
         while (chunk) {
             auto next = chunk.next;
-            jokaSystemFree(chunk.data, file, line);
-            jokaSystemFree(chunk, file, line);
+            jokaSystemFree(chunk.data, chunk.capacity, file, line);
+            jokaSystemFree(chunk, typeof(*chunk).sizeof, file, line);
             chunk = next;
         }
         head = null;

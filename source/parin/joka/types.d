@@ -8,6 +8,10 @@
 /// The `types` module provides basic type definitions, compile-time functions and ASCII string helpers.
 module parin.joka.types;
 
+version (WASI) {
+    version = JokaTypesStubs;
+}
+
 // --- Core
 
 alias Sz      = size_t;            /// The result of sizeof.
@@ -719,40 +723,10 @@ unittest {
 
 // NOTE: Some `JokaCustomMemory` functions are defined also in `memory.d`.
 version (JokaCustomMemory) {
-    pragma(msg, "Joka: Using custom memory.");
-
-    // TODO: Copy-pasted of the default version code in block.
-    //   It's a hack. You can make the version code look much better.
-    //   The `JokaCustomMemory` version is trying to do too much maybe. I need to think about it the version codeeeee.
-    version (JokaTypesStubs) {
-        private {
-            extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-            extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-            extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
-        }
-
-        nothrow @nogc
-        void* jokaMemset(void* ptr, int value, Sz size) {
-            return stdc_memset(ptr, value, size);
-        }
-
-        nothrow @nogc
-        void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-            return stdc_memcpy(ptr, source, size);
-        }
-
-        nothrow @nogc
-        int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
-            return stdc_memcmp(ptr1, ptr2, size);
-        }
-    } else {
-        extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
-        extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
-        extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
-    }
+    extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
+    extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
 } else version (JokaGcMemory) {
-    pragma(msg, "Joka: Using GC memory.");
-
     import stringc = core.stdc.string;
 
     nothrow @nogc
@@ -770,10 +744,29 @@ version (JokaCustomMemory) {
         return stringc.memcpy(ptr1, ptr2, size);
     }
 } else {
-    private {
-        extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-        extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-        extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+    private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+    private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+    private extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+
+    version (JokaTypesStubs) {
+        private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
+            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
+            return dest;
+        }
+
+        private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
+            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+            return dest;
+        }
+
+        private extern(C) pragma(mangle, "memcmp") nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
+            auto p1 = cast(const(ubyte)*) s1;
+            auto p2 = cast(const(ubyte)*) s2;
+            foreach (i; 0 .. count) {
+                if (p1[i] != p2[i]) return p1[i] - p2[i];
+            }
+            return 0;
+        }
     }
 
     nothrow @nogc
@@ -792,35 +785,8 @@ version (JokaCustomMemory) {
     }
 }
 
-version (JokaTypesStubs) {
-    pragma(msg, "Joka: Defining missing `string.h` symbols for `types.d`.");
-
-    private {
-        extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
-            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
-            return dest;
-        }
-
-        extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
-            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
-            return dest;
-        }
-
-        extern(C) pragma(mangle, "memcmp") nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
-            auto p1 = cast(const(ubyte)*) s1;
-            auto p2 = cast(const(ubyte)*) s2;
-            foreach (i; 0 .. count) {
-                if (p1[i] != p2[i]) return p1[i] - p2[i];
-            }
-            return 0;
-        }
-    }
-}
-
 // TODO: Replace that with something good. The name is too generic and the code is Windows specific.
 version (JokaRuntimeSymbols) {
-    pragma(msg, "Joka: Defining missing runtime symbols.");
-
     extern(C) @trusted nothrow @nogc /* __chkstk */
     void __chkstk() {}
 
@@ -836,7 +802,7 @@ version (JokaRuntimeSymbols) {
 @safe:
 
 version (JokaSmallFootprint) {
-    pragma(msg, "Joka: Using less memory for buffers.");
+    pragma(msg, "Joka: Using less memory for static buffers.");
     enum defaultAsciiBufferCount = 4;
     enum defaultAsciiBufferSize  = 1024;
 } else {
@@ -905,8 +871,6 @@ struct Floating {
 static if (__traits(compiles, { import core.interpolation; })) {
     public import core.interpolation;
 } else {
-    pragma(msg, "Joka: Using custom interpolation functions.");
-
     // Functions below are copy-pasted from core.interpolation.
 
     public IStr __getEmptyString() @nogc nothrow @safe {

@@ -10,6 +10,16 @@ version (LDC) {
     private struct llvmAttr { DStr a, b; }
 }
 
+version (WASI) {
+    @trusted nothrow @nogc
+    extern(C) noreturn __assert(IStrz exp, IStrz file, Sz line) {
+        Size bytes = void;
+        auto text = "ASSERT({}:{}): {}\n".fmt(file, line, exp).toCiovec();
+        fdWrite(stderr, &text, 1, &bytes);
+        procExit(1);
+    }
+}
+
 /// Error codes returned by functions.
 /// Not all of these error codes are returned by the functions provided by this API;
 /// some are used in higher-level library layers, and others are provided merely for alignment with POSIX.
@@ -457,7 +467,7 @@ extern(C) nothrow @nogc @wasi {
     /// An exit code of 0 indicates successful termination of the program.
     /// The meanings of other values is dependent on the environment.
     @importName("proc_exit")
-    void procExit(ExitCode code);
+    noreturn procExit(ExitCode code);
 
     /// Write high-quality random data into a buffer.
     /// This function blocks when the implementation is unable to immediately provide sufficient high-quality random data.
