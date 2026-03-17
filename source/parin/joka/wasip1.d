@@ -95,18 +95,25 @@ enum Errno : ushort {
 
 /// Identifiers for clocks.
 enum ClockId : uint {
-    realtime = 0,         /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
-    monotonic = 1,        /// The store-wide monotonic clock, which is defined as a clock measuring real time, whose value cannot be adjusted and which cannot have negative clock jumps. The epoch of this clock is undefined. The absolute time value of this clock therefore has no meaning.
-    processCpuTimeId = 2, /// The CPU-time clock associated with the current process.
-    threadCpuTimeId = 3,  /// The CPU-time clock associated with the current thread.
+    realtime = 0,       /// The clock measuring real time. Time value zero corresponds with 1970-01-01T00:00:00Z.
+    monotonic = 1,      /// The store-wide monotonic clock, which is defined as a clock measuring real time, whose value cannot be adjusted and which cannot have negative clock jumps. The epoch of this clock is undefined. The absolute time value of this clock therefore has no meaning.
+    processCpuTime = 2, /// The CPU-time clock associated with the current process.
+    threadCpuTime = 3,  /// The CPU-time clock associated with the current thread.
+}
+
+/// Type of a subscription to an event or its occurrence.
+enum EventType : ubyte {
+    clock,  /// The time value of clock subscription_clock::id has reached timestamp subscription_clock::timeout.
+    fdRead, /// File descriptor subscription_fd_readwrite::file_descriptor has data available for reading. This event always triggers for regular files.
+    fdWrite /// File descriptor subscription_fd_readwrite::file_descriptor has capacity available for writing. This event always triggers for regular files.
 }
 
 /// The "standard error" descriptor number.
-enum fdStdin  = Fd(0);
+enum stdin  = Fd(0);
 /// The "standard input" descriptor number.
-enum fdStdout = Fd(1);
+enum stdout = Fd(1);
 /// The "standard output" descriptor number.
-enum fdStderr = Fd(2);
+enum stderr = Fd(2);
 
 /// Flags determining the method of how paths are resolved.
 alias LookupFlags = uint;
@@ -132,26 +139,26 @@ alias Rights = ulong;
 /// File descriptor rights, determining which actions may be performed.
 enum Right : Rights {
     none                 = 0UL,       /// None.
-    fdDataSync           = 1UL << 0,  /// The right to invoke fd_datasync. If path_open is set, includes the right to invoke path_open with fdflags::dsync.
-    fdRead               = 1UL << 1,  /// The right to invoke fd_read and sock_recv. If rights::fd_seek is set, includes the right to invoke fd_pread.
-    fdSeek               = 1UL << 2,  /// The right to invoke fd_seek. This flag implies rights::fd_tell.
+    fdDataSync           = 1UL << 0,  /// The right to invoke fd_datasync. If path_open is set, includes the right to invoke path_open with FdFlags.dsync.
+    fdRead               = 1UL << 1,  /// The right to invoke fdRead and sock_recv. If Rights.fdSeek is set, includes the right to invoke fd_pread.
+    fdSeek               = 1UL << 2,  /// The right to invoke fd_seek. This flag implies Rights.fdTell.
     fdFdStatSetFlags     = 1UL << 3,  /// The right to invoke fd_fdstat_set_flags.
-    fdSync               = 1UL << 4,  /// The right to invoke fd_sync. If path_open is set, includes the right to invoke path_open with fdflags::rsync and fdflags::dsync.
-    fdTell               = 1UL << 5,  /// The right to invoke fd_seek in such a way that the file offset remains unaltered (i.e., whence::cur with offset zero), or to invoke fd_tell.
-    fdWrite              = 1UL << 6,  /// The right to invoke fd_write and sock_send. If rights::fd_seek is set, includes the right to invoke fd_pwrite.
+    fdSync               = 1UL << 4,  /// The right to invoke fd_sync. If path_open is set, includes the right to invoke path_open with FdFlags.rsync and FdFlags.dsync.
+    fdTell               = 1UL << 5,  /// The right to invoke fd_seek in such a way that the file offset remains unaltered (i.e., Whence.cur with offset zero), or to invoke fd_tell.
+    fdWrite              = 1UL << 6,  /// The right to invoke fdWrite and sock_send. If Rights.fdSeek is set, includes the right to invoke fd_pwrite.
     fdAdvise             = 1UL << 7,  /// The right to invoke fd_advise.
     fdAllocate           = 1UL << 8,  /// The right to invoke fd_allocate.
     pathCreateDirectory  = 1UL << 9,  /// The right to invoke path_create_directory.
-    pathCreateFile       = 1UL << 10, /// If path_open is set, the right to invoke path_open with oflags::creat.
+    pathCreateFile       = 1UL << 10, /// If path_open is set, the right to invoke path_open with OFlags.creat.
     pathLinkSource       = 1UL << 11, /// The right to invoke path_link with the file descriptor as the source directory.
     pathLinkTarget       = 1UL << 12, /// The right to invoke path_link with the file descriptor as the target directory.
     pathOpen             = 1UL << 13, /// The right to invoke path_open.
-    fdReadDir            = 1UL << 14, /// The right to invoke fd_readdir.
+    fdReadDir            = 1UL << 14, /// The right to invoke fdReadDir.
     pathReadLink         = 1UL << 15, /// The right to invoke path_readlink.
     pathRenameSource     = 1UL << 16, /// The right to invoke path_rename with the file descriptor as the source directory.
     pathRenameTarget     = 1UL << 17, /// The right to invoke path_rename with the file descriptor as the target directory.
     pathFileStatGet      = 1UL << 18, /// The right to invoke path_filestat_get.
-    pathFileStatSetSize  = 1UL << 19, /// The right to change a file's size. If path_open is set, includes the right to invoke path_open with oflags::trunc. Note: there is no function named path_filestat_set_size. This follows POSIX design, which only has ftruncate and does not provide ftruncateat. While such function would be desirable from the API design perspective, there are virtually no use cases for it since no code written for POSIX systems would use it.
+    pathFileStatSetSize  = 1UL << 19, /// The right to change a file's size. If path_open is set, includes the right to invoke path_open with OFlags.trunc. Note: there is no function named path_filestat_set_size. This follows POSIX design, which only has ftruncate and does not provide ftruncateat. While such function would be desirable from the API design perspective, there are virtually no use cases for it since no code written for POSIX systems would use it.
     pathFileStatSetTimes = 1UL << 20, /// The right to invoke path_filestat_set_times.
     fdFileStatGet        = 1UL << 21, /// The right to invoke fd_filestat_get.
     fdFileStatSetSize    = 1UL << 22, /// The right to invoke fd_filestat_set_size.
@@ -159,7 +166,7 @@ enum Right : Rights {
     pathSymlink          = 1UL << 24, /// The right to invoke path_symlink.
     pathRemoveDirectory  = 1UL << 25, /// The right to invoke path_remove_directory.
     pathUnlinkFile       = 1UL << 26, /// The right to invoke path_unlink_file.
-    pollFdReadwrite      = 1UL << 27, /// If rights::fd_read is set, includes the right to invoke poll_oneoff to subscribe to eventtype::fd_read. If rights::fd_write is set, includes the right to invoke poll_oneoff to subscribe to eventtype::fd_write.
+    pollFdReadwrite      = 1UL << 27, /// If Rights.fdRead is set, includes the right to invoke poll_oneoff to subscribe to EventType.fdRead. If Rights.fdWrite is set, includes the right to invoke poll_oneoff to subscribe to EventType.fdWrite.
     sockShutdown         = 1UL << 28, /// The right to invoke sock_shutdown.
     sockAccept           = 1UL << 29, /// The right to invoke sock_accept.
 }
@@ -172,7 +179,7 @@ enum FdFlag : FdFlags {
     append   = 0x01, /// Append mode: Data written to the file is always appended to the file's end.
     dsync    = 0x02, /// Write according to synchronized I/O data integrity completion. Only the data stored in the file is synchronized. This feature is not available on all platforms and therefore path_open and other such functions which accept fdflags may return errno.notsup in the case that this flag is set.
     nonblock = 0x04, /// Non-blocking mode.
-    rsync    = 0x08, /// ynchronized read I/O operations. This feature is not available on all platforms and therefore path_open and other such functions which accept fdflags may return errno.notsup in the case that this flag is set.
+    rsync    = 0x08, /// Synchronized read I/O operations. This feature is not available on all platforms and therefore path_open and other such functions which accept fdflags may return errno.notsup in the case that this flag is set.
     sync     = 0x10, /// Write according to synchronized I/O file integrity completion. In addition to synchronizing the data stored in the file, the implementation may also synchronously update the file's metadata. This feature is not available on all platforms and therefore path_open and other such functions which accept fdflags may return errno.notsup in the case that this flag is set.
 }
 
@@ -180,11 +187,11 @@ enum FdFlag : FdFlags {
 alias FstFlags = ushort;
 /// Which file time attributes to adjust.
 enum FstFlag : FstFlags {
-    none    = 0x0, /// None.
-    atim    = 0x1, /// Adjust the last data access timestamp to the value stored in filestat::atim.
-    atimNow = 0x2, /// Adjust the last data access timestamp to the time of clock clockid::realtime.
-    mtim    = 0x4, /// Adjust the last data modification timestamp to the value stored in filestat::mtim.
-    mtimNow = 0x8, /// Adjust the last data modification timestamp to the time of clock clockid::realtime.
+    none    = 0x0,  /// None.
+    atime    = 0x1, /// Adjust the last data access timestamp to the value stored in FileStat.atime.
+    atimeNow = 0x2, /// Adjust the last data access timestamp to the time of clock clockid::realtime.
+    mtime    = 0x4, /// Adjust the last data modification timestamp to the value stored in FileStat.mtime.
+    mtimeNow = 0x8, /// Adjust the last data modification timestamp to the time of clock clockid::realtime.
 }
 
 /// File or memory access pattern advisory information.
@@ -216,29 +223,40 @@ enum Whence : ubyte {
     end = 2, /// Seek relative to end-of-file.
 }
 
+/// The contents of a $prestat when type is preopentype::dir.
+struct PrestatDir {
+    Size nameLen; /// The length of the directory name for use with fdPrestatDirName.
+}
+
+/// Information about a pre-opened capability.
+alias Prestat = Union!(PrestatDir);
+static if ((void*).sizeof == 4) {
+    static assert(Prestat.sizeof == 8 && Prestat.alignof == 4);
+}
+
 /// File descriptor attributes.
 struct FdStat {
-    FileType fsFiletype;       /// File type.
-    FdFlags fsFlags;           /// File descriptor flags.
-    Rights fsRightsBase;       /// Rights that apply to this file descriptor.
-    Rights fsRightsInheriting; /// Maximum set of rights that may be installed on new file descriptors that are created through this file descriptor, e.g., through path_open.
+    FileType type;           /// File type.
+    FdFlags flags;           /// File descriptor flags.
+    Rights rightsBase;       /// Rights that apply to this file descriptor.
+    Rights rightsInheriting; /// Maximum set of rights that may be installed on new file descriptors that are created through this file descriptor, e.g., through path_open.
 }
 
 /// File attributes.
 struct FileStat {
-    Device dev;        /// Device ID of device containing the file.
-    Inode ino;         /// File serial number.
-    FileType fileType; /// File type.
-    LinkCount nlink;   /// Number of hard links to the file.
-    FileSize size;     /// For regular files, the file size in bytes. For symbolic links, the length in bytes of the pathname contained in the symbolic link.
-    TimeStamp atim;    /// Last data access timestamp.
-    TimeStamp mtim;    /// Last data modification timestamp.
-    TimeStamp ctim;    /// Last file status change timestamp.
+    Device dev;      /// Device ID of device containing the file.
+    Inode ino;       /// File serial number.
+    FileType type;   /// File type.
+    LinkCount nlink; /// Number of hard links to the file.
+    FileSize size;   /// For regular files, the file size in bytes. For symbolic links, the length in bytes of the pathname contained in the symbolic link.
+    TimeStamp atime; /// Last data access timestamp.
+    TimeStamp mtime; /// Last data modification timestamp.
+    TimeStamp ctime; /// Last file status change timestamp.
 }
 
-// NOTE: It's a U32 in the docs.
+// NOTE: The `Size` type is a U32 in the docs.
 /// A size value in bytes.
-alias Size = Sz;
+alias Size = size_t;
 /// Number of hard links to an inode.
 alias LinkCount = ulong;
 /// File serial number that is unique within its file system.
@@ -338,7 +356,7 @@ extern(C) nothrow @nogc @wasi {
     /// Adjust the rights associated with a file descriptor.
     /// This can only be used to remove rights, and returns errno::notcapable if called in a way that would attempt to add rights.
     @importName("fd_fdstat_set_rights")
-    Errno fdFdStatSetRights(Fd fd, Rights fsRightsBase, Rights fsRightsInheriting);
+    Errno fdFdStatSetRights(Fd fd, Rights rightsBase, Rights rightsInheriting);
 
     /// Return the attributes of an open file.
     @importName("fd_filestat_get")
@@ -353,14 +371,32 @@ extern(C) nothrow @nogc @wasi {
     /// Adjust the timestamps of an open file or directory.
     /// Note: This is similar to futimens in POSIX.
     @importName("fd_filestat_set_times")
-    Errno fdFileStatSetTimes(Fd fd, TimeStamp atim, TimeStamp mtim, FstFlags fstFlags);
+    Errno fdFileStatSetTimes(Fd fd, TimeStamp atime, TimeStamp mtime, FstFlags fstFlags);
 
-    // ------- NOTE: I stopped here last time when I was copy-pasting functions. Something for me, for later.
+    /// Read from a file descriptor, without using and updating the file descriptor's offset.
+    /// Note: This is similar to preadv in Linux (and other Unix-es).
+    @importName("fd_pread")
+    Errno fdPread(Fd fd, Iovec* iovs, Size iovsLen, FileSize offset, Size* outSize);
+
+    /// Return a description of the given preopened file descriptor.
+    @importName("fd_prestat_dir_name")
+    Errno fdPrestatDirName(Fd fd, ubyte* path, Size pathLen);
+
+    /// Return a description of the given preopened file descriptor.
+    @importName("fd_prestat_get")
+    Errno fdPrestatGet(Fd fd, Prestat* outPrestat);
+
+    /// Write to a file descriptor, without using and updating the file descriptor's offset.
+    /// Note: This is similar to pwritev in Linux (and other Unix-es).
+    /// Like Linux (and other Unix-es), any calls of pwrite (and other functions to read or write)
+    /// for a regular file by other threads in the WASI process should not be interleaved while pwrite is executed.
+    @importName("fd_pwrite")
+    Errno fdPwrite(Fd fd, const(Ciovec)* iovs, Size iovsLen, FileSize offset, Size* outSize);
 
     /// Read from a file descriptor.
     /// Note: This is similar to readv in POSIX.
     @importName("fd_read")
-    Errno fdRead(Fd fd, Iovec* iovs, Sz iovsLen, Sz* nread);
+    Errno fdRead(Fd fd, Iovec* iovs, Size iovsLen, Size* nread);
 
     /// Read directory entries from a directory.
     /// When successful, the contents of the output buffer consist of a sequence of directory entries.
@@ -380,7 +416,7 @@ extern(C) nothrow @nogc @wasi {
     /// Move the offset of a file descriptor.
     /// Note: This is similar to lseek in POSIX.
     @importName("fd_seek")
-    Errno fdSeek(Fd fd, FileDelta offset, Whence whence, FileSize* newOffset);
+    Errno fdSeek(Fd fd, FileDelta offset, Whence whence, FileSize* outOffset);
 
     /// Synchronize the data and metadata of a file to disk.
     /// Note: This is similar to fsync in POSIX.
@@ -390,24 +426,13 @@ extern(C) nothrow @nogc @wasi {
     /// Return the current offset of a file descriptor.
     /// Note: This is similar to lseek(fd, 0, SEEK_CUR) in POSIX.
     @importName("fd_tell")
-    Errno fdTell(Fd fd, FileSize* currentOffset);
+    Errno fdTell(Fd fd, FileSize* outOffset);
 
     /// Write to a file descriptor. Note: This is similar to writev in POSIX.
     /// Like POSIX, any calls of write (and other functions to read or write) for a regular file
     /// by other threads in the WASI process should not be interleaved while write is executed.
     @importName("fd_write")
-    Errno fdWrite(Fd fd, const(Ciovec)* iovs, Sz iovsLen, Sz* nwritten);
-
-    /// Terminate the process normally.
-    /// An exit code of 0 indicates successful termination of the program.
-    /// The meanings of other values is dependent on the environment.
-    @importName("proc_exit")
-    void procExit(ExitCode rval);
-
-    /// Write high-quality random data into a buffer.
-    /// This function blocks when the implementation is unable to immediately provide sufficient high-quality random data.
-    @importName("random_get")
-    Errno randomGet(ubyte* buf, Sz bufLen);
+    Errno fdWrite(Fd fd, const(Ciovec)* iovs, Size iovsLen, Size* nwritten);
 
     /// Open a file or directory.
     /// The returned file descriptor is not guaranteed to be the lowest-numbered file descriptor not currently open;
@@ -420,11 +445,22 @@ extern(C) nothrow @nogc @wasi {
         Fd fd,
         LookupFlags dirFlags,
         const(char)* path,
-        Sz pathLen,
+        Size pathLen,
         OFlags oFlags,
-        Rights fsRightsBase,
-        Rights fsRightsInheriting,
+        Rights rightsBase,
+        Rights rightsInheriting,
         FdFlags fdFlags,
         Fd* openedFd,
     );
+
+    /// Terminate the process normally.
+    /// An exit code of 0 indicates successful termination of the program.
+    /// The meanings of other values is dependent on the environment.
+    @importName("proc_exit")
+    void procExit(ExitCode code);
+
+    /// Write high-quality random data into a buffer.
+    /// This function blocks when the implementation is unable to immediately provide sufficient high-quality random data.
+    @importName("random_get")
+    Errno randomGet(ubyte* buf, Size bufLen);
 }
