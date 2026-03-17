@@ -187,7 +187,7 @@ enum FdFlag : FdFlags {
 alias FstFlags = ushort;
 /// Which file time attributes to adjust.
 enum FstFlag : FstFlags {
-    none    = 0x0,  /// None.
+    none     = 0x0, /// None.
     atime    = 0x1, /// Adjust the last data access timestamp to the value stored in FileStat.atime.
     atimeNow = 0x2, /// Adjust the last data access timestamp to the time of clock clockid::realtime.
     mtime    = 0x4, /// Adjust the last data modification timestamp to the value stored in FileStat.mtime.

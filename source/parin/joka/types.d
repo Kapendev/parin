@@ -721,9 +721,35 @@ unittest {
 version (JokaCustomMemory) {
     pragma(msg, "Joka: Using custom memory.");
 
-    extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
-    extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
-    extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
+    // TODO: Copy-pasted of the default version code in block.
+    //   It's a hack. You can make the version code look much better.
+    //   The `JokaCustomMemory` version is trying to do too much maybe. I need to think about it the version codeeeee.
+    version (JokaTypesStubs) {
+        private {
+            extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+            extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+            extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+        }
+
+        nothrow @nogc
+        void* jokaMemset(void* ptr, int value, Sz size) {
+            return stdc_memset(ptr, value, size);
+        }
+
+        nothrow @nogc
+        void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+            return stdc_memcpy(ptr, source, size);
+        }
+
+        nothrow @nogc
+        int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
+            return stdc_memcmp(ptr1, ptr2, size);
+        }
+    } else {
+        extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
+        extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+        extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
+    }
 } else version (JokaGcMemory) {
     pragma(msg, "Joka: Using GC memory.");
 

@@ -8,9 +8,17 @@
 /// The `io` module provides input and output functions such as file reading.
 module parin.joka.io;
 
-import stdc = parin.joka.stdc;
 import parin.joka.memory;
 import parin.joka.types;
+
+// TODO: Should be changed with something better?
+//   I added this import to get the print functions working with WASI P1.
+//   Can be removed later.
+version (WASI) {
+    import wasi = parin.joka.wasip1;
+} else {
+    import stdc = parin.joka.stdc;
+}
 
 @trusted:
 
@@ -22,62 +30,6 @@ enum StdStream : ubyte {
     error,
 }
 
-/// Command-line argument types.
-enum ArgType {
-    singleItem,  /// A standalone argument (e.g. file.txt)
-    shortOption, /// A short option (e.g. -v)
-    longOption,  /// A long option (e.g. --verbose)
-}
-
-/// A parsed token from the command-line arguments.
-struct ArgToken {
-    ArgType type; /// The type of the argument.
-    IStr name;    /// The name of the argument. Always present.
-    IStr value;   /// The value of the argument. May be empty.
-
-    @safe nothrow @nogc:
-
-    IStr toStr() {
-        return name;
-    }
-
-    alias toString = toStr;
-}
-
-/// A range of parsed tokens from the command-line arguments.
-struct ArgTokenRange {
-    const(IStr)[] args;
-
-    @safe nothrow @nogc:
-
-    @trusted
-    this(const(IStr)[] args...) {
-        this.args = args;
-    }
-
-    bool empty() {
-        return args.length == 0;
-    }
-
-    ArgToken front() {
-        auto cleanArg = args[0].trim();
-        auto equalIndex = cleanArg.findEnd("=");
-        if (cleanArg.length == 0) return ArgToken();
-        else if (cleanArg == "-") return ArgToken(ArgType.singleItem, "-", "");
-        else if (cleanArg == "--") return ArgToken(ArgType.singleItem, "--", "");
-
-        auto a = cleanArg.startsWith("-") ? (cleanArg.startsWith("--") ? ArgType.longOption : ArgType.shortOption) : ArgType.singleItem;
-        auto startIndex = a == ArgType.singleItem ? 0 : a == ArgType.shortOption ? 1 : 2;
-        auto b = cleanArg[startIndex .. equalIndex != -1 ? equalIndex : $];
-        auto c = cleanArg[equalIndex != -1 ? equalIndex + 1 : $ .. $];
-        return ArgToken(a, b, c);
-    }
-
-    void popFront() {
-        args = args[1 .. $];
-    }
-}
-
 void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
@@ -85,7 +37,13 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
     if (text.length == 0 || text.length == textData.length) return;
     textData[text.length] = '\0';
-    stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
+    version (WASI) {
+        auto bytes = wasi.Size();
+        auto wasiText = wasi.toCiovec(textData[0 .. text.length]);
+        wasi.fdWrite(stream == StdStream.output ? wasi.stdout : wasi.stderr, &wasiText, 1, &bytes);
+    } else {
+        stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
+    }
 }
 
 void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
@@ -113,7 +71,13 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     if (text.length == 0 || text.length == textData.length || text.length + 1 == textData.length) return;
     textData[text.length] = '\n';
     textData[text.length + 1] = '\0';
-    stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
+    version (WASI) {
+        auto bytes = wasi.Size();
+        auto wasiText = wasi.toCiovec(textData[0 .. text.length + 1]);
+        wasi.fdWrite(stream == StdStream.output ? wasi.stdout : wasi.stderr, &wasiText, 1, &bytes);
+    } else {
+        stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
+    }
 }
 
 void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
@@ -173,83 +137,6 @@ void eprintln(StdStream stream = StdStream.output, A...)(A args) {
     println!(StdStream.error)(args);
 }
 
-IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
-    static if (isStrContainerType!S) {
-        return fmtIntoList!true(buffer, fmtStr, args);
-    } else {
-        return fmtIntoBuffer(buffer, fmtStr, args);
-    }
-}
-
-void sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
-    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLitType!T) { result ~= args[i].toString(); }
-            else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
-    }();
-    enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLitType!T || isInterExpType!T) {}
-            else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
-    }();
-    mixin("sprintf(buffer, fmtStr,", fmtArgs, ");");
-}
-
-IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
-    auto text = sprintf(buffer, fmtStr, args);
-    if (text.length == 0) return "";
-    static if (isStrContainerType!S) {
-        static if (isLStrType!S) {
-            buffer.append('\n');
-            return buffer[];
-        } else {
-            if (text.length == buffer.capacity) return "";
-            buffer.append('\n');
-            return buffer[];
-        }
-    } else {
-        if (text.length == buffer.length) return "";
-        buffer[text.length] = '\n';
-        return buffer[0 .. text.length + 1];
-    }
-}
-
-void sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
-    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLitType!T) { result ~= args[i].toString(); }
-            else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
-    }();
-    enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
-            static if (isInterLitType!T || isInterExpType!T) {}
-            else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
-    }();
-    mixin("sprintfln(buffer, fmtStr,", fmtArgs, ");");
-}
-
-void sprint(S = LStr, A...)(ref S buffer, A args) {
-    static if (is(A[0] == Sep)) {
-        foreach (i, arg; args[1 .. $]) {
-            if (i) sprintf(buffer, "{}", args[0].value);
-            sprintf(buffer, "{}", arg);
-        }
-    } else {
-        foreach (arg; args) sprintf(buffer, "{}", arg);
-    }
-}
-
-void sprintln(S = LStr, A...)(ref S buffer, A args) {
-    sprint(buffer, args);
-    sprint(buffer, "\n");
-}
-
 void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
     printf("TRACE({}:{}):", file, line);
     foreach (arg; args) printf(" {}", arg);
@@ -268,36 +155,40 @@ noreturn todo(IStr text = defaultCodePathMessage, IStr file = __FILE__, Sz line 
 
 @trusted
 Fault readFileIntoBuffer(L = LStr)(IStr path, ref L listBuffer, bool binaryMode) {
-    auto file = stdc.fopen(toStrz(path).getOr(), binaryMode ? "rb" : "r");
-    if (file == null) return Fault.cannotOpen;
+    version (WASI) {
+        return Fault.some;
+    } else {
+        auto file = stdc.fopen(toStrz(path).getOr(), binaryMode ? "rb" : "r");
+        if (file == null) return Fault.cannotOpen;
 
-    if (stdc.fseek(file, 0, stdc.SEEK_END) != 0) {
-        stdc.fclose(file);
-        return Fault.cannotRead;
-    }
-    auto fileSize = stdc.ftell(file);
-    if (fileSize < 0) {
-        stdc.fclose(file);
-        return Fault.cannotRead;
-    }
-    if (stdc.fseek(file, 0, stdc.SEEK_SET) != 0) {
-        stdc.fclose(file);
-        return Fault.cannotRead;
-    }
-
-    static if (L.hasFixedCapacity) {
-        if (listBuffer.capacity < fileSize) {
+        if (stdc.fseek(file, 0, stdc.SEEK_END) != 0) {
             stdc.fclose(file);
-            return Fault.overflow;
+            return Fault.cannotRead;
         }
+        auto fileSize = stdc.ftell(file);
+        if (fileSize < 0) {
+            stdc.fclose(file);
+            return Fault.cannotRead;
+        }
+        if (stdc.fseek(file, 0, stdc.SEEK_SET) != 0) {
+            stdc.fclose(file);
+            return Fault.cannotRead;
+        }
+
+        static if (L.hasFixedCapacity) {
+            if (listBuffer.capacity < fileSize) {
+                stdc.fclose(file);
+                return Fault.overflow;
+            }
+        }
+        listBuffer.resizeBlank(fileSize);
+        if (stdc.fread(listBuffer.items.ptr, 1, fileSize, file) != fileSize) {
+            stdc.fclose(file);
+            return Fault.cannotRead;
+        }
+        if (stdc.fclose(file) != 0) return Fault.cannotClose;
+        return Fault.none;
     }
-    listBuffer.resizeBlank(fileSize);
-    if (stdc.fread(listBuffer.items.ptr, 1, fileSize, file) != fileSize) {
-        stdc.fclose(file);
-        return Fault.cannotRead;
-    }
-    if (stdc.fclose(file) != 0) return Fault.cannotClose;
-    return Fault.none;
 }
 
 Fault readTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
@@ -325,16 +216,20 @@ Maybe!LStr readBytes(IStr path, bool binaryMode) {
 
 @trusted @nogc
 Fault writeFile(IStr path, IStr text, bool binaryMode) {
-    auto file = stdc.fopen(toStrz(path).getOr(), binaryMode ? "wb" : "w");
-    if (file == null) return Fault.cannotOpen;
-    if (stdc.fwrite(text.ptr, char.sizeof, text.length, file) != text.length) {
-        stdc.fclose(file);
-        return Fault.cannotWrite;
+    version (WASI) {
+        return Fault.some;
+    } else {
+        auto file = stdc.fopen(toStrz(path).getOr(), binaryMode ? "wb" : "w");
+        if (file == null) return Fault.cannotOpen;
+        if (stdc.fwrite(text.ptr, char.sizeof, text.length, file) != text.length) {
+            stdc.fclose(file);
+            return Fault.cannotWrite;
+        }
+        if (stdc.fclose(file) != 0) {
+            return Fault.cannotClose;
+        }
+        return Fault.none;
     }
-    if (stdc.fclose(file) != 0) {
-        return Fault.cannotClose;
-    }
-    return Fault.none;
 }
 
 @nogc
@@ -351,32 +246,4 @@ Fault writeBytes(IStr path, IStr bytes) {
 unittest {
     assert(readText("").isSome == false);
     assert(writeText("", "") != Fault.none);
-}
-
-// Arg test.
-unittest {
-    foreach (token; ArgTokenRange("b", "-c", "--d")) {
-        with (ArgType) final switch (token.type) {
-            case singleItem: assert(token.name == "b"); break;
-            case shortOption: assert(token.name == "c"); break;
-            case longOption: assert(token.name == "d"); break;
-        }
-    }
-
-    foreach (token; ArgTokenRange("b=2", "-c=3", "--d=4")) {
-        with (ArgType) final switch (token.type) {
-            case singleItem:
-                assert(token.name == "b");
-                assert(token.value == "2");
-                break;
-            case shortOption:
-                assert(token.name == "c");
-                assert(token.value == "3");
-                break;
-            case longOption:
-                assert(token.name == "d");
-                assert(token.value == "4");
-                break;
-        }
-    }
 }

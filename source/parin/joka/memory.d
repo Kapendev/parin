@@ -140,6 +140,11 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 version (JokaCustomMemory) {
     extern(C) void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__);
 
+    // TODO: Read comment about `JokaCustomMemory` in `types.d`.
+    version (JokaMemoryStubs) {
+        extern(C) void* jokaSystemRealloc(void* ptr, Sz size, IStr file = __FILE__, Sz line = __LINE__) { return null; }
+    }
+
     extern(C)
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         return jokaSystemRealloc(null, size, file, line);
@@ -175,6 +180,13 @@ version (JokaCustomMemory) {
         extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size);
         extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size);
         extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr);
+
+        // TODO: Read comment about `JokaCustomMemory` in `types.d`.
+        version (JokaMemoryStubs) {
+            extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size) { return null; }
+            extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size) { return null; }
+            extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr) {}
+        }
     }
 
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -2342,6 +2354,83 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, Interpolati
         } return result;
     }();
     return mixin("fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ")");
+}
+
+IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
+    static if (isStrContainerType!S) {
+        return fmtIntoList!true(buffer, fmtStr, args);
+    } else {
+        return fmtIntoBuffer(buffer, fmtStr, args);
+    }
+}
+
+void sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLitType!T) { result ~= args[i].toString(); }
+            else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLitType!T || isInterExpType!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    mixin("sprintf(buffer, fmtStr,", fmtArgs, ");");
+}
+
+IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
+    auto text = sprintf(buffer, fmtStr, args);
+    if (text.length == 0) return "";
+    static if (isStrContainerType!S) {
+        static if (isLStrType!S) {
+            buffer.append('\n');
+            return buffer[];
+        } else {
+            if (text.length == buffer.capacity) return "";
+            buffer.append('\n');
+            return buffer[];
+        }
+    } else {
+        if (text.length == buffer.length) return "";
+        buffer[text.length] = '\n';
+        return buffer[0 .. text.length + 1];
+    }
+}
+
+void sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
+    enum fmtStr = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLitType!T) { result ~= args[i].toString(); }
+            else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
+        } return result;
+    }();
+    enum fmtArgs = () {
+        Str result; static foreach (i, T; A) {
+            static if (isInterLitType!T || isInterExpType!T) {}
+            else { result ~= "args[" ~ i.stringof ~ "],"; }
+        } return result;
+    }();
+    mixin("sprintfln(buffer, fmtStr,", fmtArgs, ");");
+}
+
+void sprint(S = LStr, A...)(ref S buffer, A args) {
+    static if (is(A[0] == Sep)) {
+        foreach (i, arg; args[1 .. $]) {
+            if (i) sprintf(buffer, "{}", args[0].value);
+            sprintf(buffer, "{}", arg);
+        }
+    } else {
+        foreach (arg; args) sprintf(buffer, "{}", arg);
+    }
+}
+
+void sprintln(S = LStr, A...)(ref S buffer, A args) {
+    sprint(buffer, args);
+    sprint(buffer, "\n");
 }
 
 void freeOnlyItems(T)(ref T container, IStr file = __FILE__, Sz line = __LINE__) {

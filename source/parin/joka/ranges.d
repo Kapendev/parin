@@ -16,6 +16,8 @@
 /// The `ranges` module includes functions that work with ranges.
 module parin.joka.ranges;
 
+import parin.joka.types;
+
 // A numeric range value.
 alias Nrv = int;
 static assert(Nrv.min < 0, "Type `NumericRangeValue` should be a signed type.");
@@ -170,6 +172,62 @@ struct TransformedRange(R, F) {
             if (isFilter) assert(0, "Can't use filter or map with `foreach_reverse`.");
             range.popBack();
         }
+    }
+}
+
+/// Command-line argument types.
+enum ArgType {
+    singleItem,  /// A standalone argument (e.g. file.txt)
+    shortOption, /// A short option (e.g. -v)
+    longOption,  /// A long option (e.g. --verbose)
+}
+
+/// A parsed token from the command-line arguments.
+struct ArgToken {
+    ArgType type; /// The type of the argument.
+    IStr name;    /// The name of the argument. Always present.
+    IStr value;   /// The value of the argument. May be empty.
+
+    @safe nothrow @nogc:
+
+    IStr toStr() {
+        return name;
+    }
+
+    alias toString = toStr;
+}
+
+/// A range of parsed tokens from the command-line arguments.
+struct ArgTokenRange {
+    const(IStr)[] args;
+
+    @safe nothrow @nogc:
+
+    @trusted
+    this(const(IStr)[] args...) {
+        this.args = args;
+    }
+
+    bool empty() {
+        return args.length == 0;
+    }
+
+    ArgToken front() {
+        auto cleanArg = args[0].trim();
+        auto equalIndex = cleanArg.findEnd("=");
+        if (cleanArg.length == 0) return ArgToken();
+        else if (cleanArg == "-") return ArgToken(ArgType.singleItem, "-", "");
+        else if (cleanArg == "--") return ArgToken(ArgType.singleItem, "--", "");
+
+        auto a = cleanArg.startsWith("-") ? (cleanArg.startsWith("--") ? ArgType.longOption : ArgType.shortOption) : ArgType.singleItem;
+        auto startIndex = a == ArgType.singleItem ? 0 : a == ArgType.shortOption ? 1 : 2;
+        auto b = cleanArg[startIndex .. equalIndex != -1 ? equalIndex : $];
+        auto c = cleanArg[equalIndex != -1 ? equalIndex + 1 : $ .. $];
+        return ArgToken(a, b, c);
+    }
+
+    void popFront() {
+        args = args[1 .. $];
     }
 }
 
@@ -332,4 +390,32 @@ unittest {
             .reduce((Nrv a, Nrv b) => cast(Nrv) (a + b))
         == 14
     );
+}
+
+// Arg test.
+unittest {
+    foreach (token; ArgTokenRange("b", "-c", "--d")) {
+        with (ArgType) final switch (token.type) {
+            case singleItem: assert(token.name == "b"); break;
+            case shortOption: assert(token.name == "c"); break;
+            case longOption: assert(token.name == "d"); break;
+        }
+    }
+
+    foreach (token; ArgTokenRange("b=2", "-c=3", "--d=4")) {
+        with (ArgType) final switch (token.type) {
+            case singleItem:
+                assert(token.name == "b");
+                assert(token.value == "2");
+                break;
+            case shortOption:
+                assert(token.name == "c");
+                assert(token.value == "3");
+                break;
+            case longOption:
+                assert(token.name == "d");
+                assert(token.value == "4");
+                break;
+        }
+    }
 }
