@@ -168,6 +168,8 @@ version (JokaCustomMemory) {
 
     void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
+    private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size);
+
     version (JokaMemoryStubs) {
         version (JokaSmallFootprint) {
             enum __jokaMemoryGlobalArenaDataCapacity = 16 * kilobyte;
@@ -177,14 +179,19 @@ version (JokaCustomMemory) {
 
         extern(C) ubyte[__jokaMemoryGlobalArenaDataCapacity] __jokaMemoryGlobalArenaData = void;
         extern(C) Arena __jokaMemoryGlobalArena;
-
-        private nothrow @nogc void* stdc_realloc(void* ptr, size_t size, size_t oldSize) {
+        private nothrow @nogc void* __joka_stdc_realloc(void* ptr, size_t size, size_t oldSize) {
             if (__jokaMemoryGlobalArena.capacity == 0) __jokaMemoryGlobalArena.ready(__jokaMemoryGlobalArenaData);
             return __jokaMemoryGlobalArena.realloc(ptr, oldSize, size, 0);
         }
-    } else {
-        private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size);
 
+        private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size) {
+            return __joka_stdc_realloc(ptr, size, 0);
+        }
+
+        private nothrow @nogc void* stdc_realloc(void* ptr, size_t size, size_t oldSize) {
+            return __joka_stdc_realloc(ptr, size, oldSize);
+        }
+    } else {
         private nothrow @nogc void* stdc_realloc(void* ptr, size_t size, size_t oldSize) {
             return _stdc_realloc(ptr, size);
         }

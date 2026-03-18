@@ -27,7 +27,7 @@ version (WASI) {
 
 // Functions from the math.h header.
 private @trusted nothrow @nogc pragma(inline, true) {
-    version(JokaMathStubs) {
+    version (JokaMathStubs) {
         float stdc_asinf(float x)  => 0;
         double stdc_asin(double x) => 0;
         float stdc_acosf(float x)  => 0;
@@ -97,58 +97,56 @@ private @trusted nothrow @nogc pragma(inline, true) {
         double stdc_floor(double x) => floorX64(x);
         float stdc_roundf(float x)  => roundX(x);
         double stdc_round(double x) => roundX64(x);
+    } else version (LDC) {
+        float stdc_expf(float x)  => ldc.llvm_exp(x);
+        double stdc_exp(double x) => ldc.llvm_exp(x);
+        float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
+        double stdc_exp2(double x) => ldc.llvm_exp2(x);
+        float stdc_logf(float x)  => ldc.llvm_log(x);
+        double stdc_log(double x) => ldc.llvm_log(x);
+        float stdc_log10f(float x)  => ldc.llvm_log10(x);
+        double stdc_log10(double x) => ldc.llvm_log10(x);
+        float stdc_log2f(float x)  => ldc.llvm_log2(x);
+        double stdc_log2(double x) => ldc.llvm_log2(x);
+        float stdc_powf(float base, float exp)   => ldc.llvm_pow(base, exp);
+        double stdc_pow(double base, double exp) => ldc.llvm_pow(base, exp);
+        float stdc_sqrtf(float x)  => ldc.llvm_sqrt(x);
+        double stdc_sqrt(double x) => ldc.llvm_sqrt(x);
+        float stdc_sinf(float x)  => ldc.llvm_sin(x);
+        double stdc_sin(double x) => ldc.llvm_sin(x);
+        float stdc_cosf(float x)  => ldc.llvm_cos(x);
+        double stdc_cos(double x) => ldc.llvm_cos(x);
+        float stdc_ceilf(float x)  => ldc.llvm_ceil(x);
+        double stdc_ceil(double x) => ldc.llvm_ceil(x);
+        float stdc_floorf(float x)  => ldc.llvm_floor(x);
+        double stdc_floor(double x) => ldc.llvm_floor(x);
+        float stdc_roundf(float x)  => ldc.llvm_round(x);
+        double stdc_round(double x) => ldc.llvm_round(x);
     } else {
-        version (LDC) {
-            float stdc_expf(float x)  => ldc.llvm_exp(x);
-            double stdc_exp(double x) => ldc.llvm_exp(x);
-            float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
-            double stdc_exp2(double x) => ldc.llvm_exp2(x);
-            float stdc_logf(float x)  => ldc.llvm_log(x);
-            double stdc_log(double x) => ldc.llvm_log(x);
-            float stdc_log10f(float x)  => ldc.llvm_log10(x);
-            double stdc_log10(double x) => ldc.llvm_log10(x);
-            float stdc_log2f(float x)  => ldc.llvm_log2(x);
-            double stdc_log2(double x) => ldc.llvm_log2(x);
-            float stdc_powf(float base, float exp)   => ldc.llvm_pow(base, exp);
-            double stdc_pow(double base, double exp) => ldc.llvm_pow(base, exp);
-            float stdc_sqrtf(float x)  => ldc.llvm_sqrt(x);
-            double stdc_sqrt(double x) => ldc.llvm_sqrt(x);
-            float stdc_sinf(float x)  => ldc.llvm_sin(x);
-            double stdc_sin(double x) => ldc.llvm_sin(x);
-            float stdc_cosf(float x)  => ldc.llvm_cos(x);
-            double stdc_cos(double x) => ldc.llvm_cos(x);
-            float stdc_ceilf(float x)  => ldc.llvm_ceil(x);
-            double stdc_ceil(double x) => ldc.llvm_ceil(x);
-            float stdc_floorf(float x)  => ldc.llvm_floor(x);
-            double stdc_floor(double x) => ldc.llvm_floor(x);
-            float stdc_roundf(float x)  => ldc.llvm_round(x);
-            double stdc_round(double x) => ldc.llvm_round(x);
-        } else {
-            extern(C) pragma(mangle, "expf") float stdc_expf(float x);
-            extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
-            extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
-            extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
-            extern(C) pragma(mangle, "logf") float stdc_logf(float x);
-            extern(C) pragma(mangle, "log")  double stdc_log(double x);
-            extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
-            extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
-            extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
-            extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
-            extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
-            extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
-            extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
-            extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
-            extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
-            extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
-            extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
-            extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
-            extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
-            extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
-            extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
-            extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
-            extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
-            extern(C) pragma(mangle, "round")  double stdc_round(double x);
-        }
+        extern(C) pragma(mangle, "expf") float stdc_expf(float x);
+        extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
+        extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
+        extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
+        extern(C) pragma(mangle, "logf") float stdc_logf(float x);
+        extern(C) pragma(mangle, "log")  double stdc_log(double x);
+        extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
+        extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
+        extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
+        extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
+        extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
+        extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
+        extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
+        extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
+        extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
+        extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
+        extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
+        extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
+        extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
+        extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
+        extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
+        extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
+        extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
+        extern(C) pragma(mangle, "round")  double stdc_round(double x);
     }
 }
 

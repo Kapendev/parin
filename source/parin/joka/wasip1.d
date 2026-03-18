@@ -1,3 +1,10 @@
+// ---
+// Copyright 2025 Alexandros F. G. Kapretsos
+// SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/joka
+// ---
+
 /// The `wasip1` module provides types and functions available in WASI preview 1.
 module parin.joka.wasip1;
 

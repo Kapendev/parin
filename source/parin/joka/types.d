@@ -8,7 +8,10 @@
 /// The `types` module provides basic type definitions, compile-time functions and ASCII string helpers.
 module parin.joka.types;
 
-version (WASI) {
+version (LDC) {
+    import ldc = ldc.intrinsics;
+}
+version (WebAssembly) {
     version = JokaTypesStubs;
 }
 
@@ -744,28 +747,49 @@ version (JokaCustomMemory) {
         return stringc.memcpy(ptr1, ptr2, size);
     }
 } else {
-    private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-    private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-    private extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
-
-    version (JokaTypesStubs) {
-        private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
-            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
+    version (WASI) {
+        private nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
+            ldc.llvm_memset(dest, cast(ubyte) ch, count);
             return dest;
         }
 
-        private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
-            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+        private nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
+            ldc.llvm_memcpy(dest, src, count);
             return dest;
         }
 
-        private extern(C) pragma(mangle, "memcmp") nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
+        private nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
             auto p1 = cast(const(ubyte)*) s1;
             auto p2 = cast(const(ubyte)*) s2;
             foreach (i; 0 .. count) {
                 if (p1[i] != p2[i]) return p1[i] - p2[i];
             }
             return 0;
+        }
+    } else {
+        private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+        private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+        private extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+
+        version (JokaTypesStubs) {
+            private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
+                foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
+                return dest;
+            }
+
+            private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
+                foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+                return dest;
+            }
+
+            private extern(C) pragma(mangle, "memcmp") nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
+                auto p1 = cast(const(ubyte)*) s1;
+                auto p2 = cast(const(ubyte)*) s2;
+                foreach (i; 0 .. count) {
+                    if (p1[i] != p2[i]) return p1[i] - p2[i];
+                }
+                return 0;
+            }
         }
     }
 
@@ -833,14 +857,14 @@ enum symbolChars   = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"; /// The set of symbol
 enum hexDigitChars = "0123456789abcdefABCDEF";             /// The set of hexadecimal numeric characters.
 
 version (Windows) {
-    enum pathSep = '\\';
-    enum pathSepStr = "\\";
-    enum pathSepOther = '/';
+    enum pathSep         = '\\';
+    enum pathSepStr      = "\\";
+    enum pathSepOther    = '/';
     enum pathSepOtherStr = "/";
 } else {
-    enum pathSep = '/';          /// The primary OS path separator as a character.
-    enum pathSepStr = "/";       /// The primary OS path separator as a string.
-    enum pathSepOther = '\\';    /// The complementary OS path separator as a character.
+    enum pathSep         = '/';  /// The primary OS path separator as a character.
+    enum pathSepStr      = "/";  /// The primary OS path separator as a string.
+    enum pathSepOther    = '\\'; /// The complementary OS path separator as a character.
     enum pathSepOtherStr = "\\"; /// The complementary OS path separator as a string.
 }
 

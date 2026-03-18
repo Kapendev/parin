@@ -1,3 +1,10 @@
+// ---
+// Copyright 2025 Alexandros F. G. Kapretsos
+// SPDX-License-Identifier: MIT
+// Email: alexandroskapretsos@gmail.com
+// Project: https://github.com/Kapendev/joka
+// ---
+
 /// The `wit` module provides types used in WIT files.
 /// Since they are often similar to equivalent Rust types, they may also be useful when interacting with Rust code.
 module parin.joka.wit;
