@@ -170,9 +170,9 @@ version (JokaCustomMemory) {
 } else {
     version (JokaMemoryStubs) {
         version (JokaSmallFootprint) {
-            enum __jokaMemoryGlobalArenaDataCapacity = 8 * megabyte;
+            enum __jokaMemoryGlobalArenaDataCapacity = 16 * kilobyte;
         } else {
-            enum __jokaMemoryGlobalArenaDataCapacity = 16 * megabyte;
+            enum __jokaMemoryGlobalArenaDataCapacity = 8 * megabyte;
         }
 
         extern(C) ubyte[__jokaMemoryGlobalArenaDataCapacity] __jokaMemoryGlobalArenaData = void;

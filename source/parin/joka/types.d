@@ -803,18 +803,26 @@ version (JokaRuntimeSymbols) {
 
 version (JokaSmallFootprint) {
     pragma(msg, "Joka: Using less memory for static buffers.");
-    enum defaultAsciiBufferCount = 4;
-    enum defaultAsciiBufferSize  = 1024;
+    enum defaultAsciiBufferCount          = 4;
+    enum defaultAsciiBufferSize           = 512;
+    enum defaultAsciiBufferCountForSlices = 64;
+
+    enum defaultAsciiFmtArgBufferCount = 16;
+    enum defaultAsciiFmtArgBufferSize  = 256;
+    enum defaultAsciiFmtBufferCount    = 4;
+    enum defaultAsciiFmtBufferSize     = 1024;
 } else {
-    enum defaultAsciiBufferCount = 8;    /// Generic string count.
-    enum defaultAsciiBufferSize  = 2048; /// Generic string length.
+    enum defaultAsciiBufferCount          = 8;    /// Generic string count.
+    enum defaultAsciiBufferSize           = 1024; /// Generic string length.
+    enum defaultAsciiBufferCountForSlices = 128;  /// Generic slice count.
+
+    enum defaultAsciiFmtArgBufferCount = 16;   /// Format argument count.
+    enum defaultAsciiFmtArgBufferSize  = 1024; /// Format argument length.
+    enum defaultAsciiFmtBufferCount    = 16;   /// Format string count.
+    enum defaultAsciiFmtBufferSize     = 2048; /// Format string length.
 }
 
-enum defaultAsciiFmtArgStr         = "{}"; /// The format argument symbol.
-enum defaultAsciiFmtArgBufferCount = 16;   /// Format argument count.
-enum defaultAsciiFmtArgBufferSize  = 1024; /// Format argument length.
-enum defaultAsciiFmtBufferCount    = 16;   /// Format string count.
-enum defaultAsciiFmtBufferSize     = 2048; /// Format string length.
+enum defaultAsciiFmtArgStr = "{}"; /// The format argument symbol.
 
 enum digitChars    = "0123456789";                         /// The set of decimal numeric characters.
 enum upperChars    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";         /// The set of uppercase letters.
@@ -1374,7 +1382,7 @@ IStr concat(IStr[] args...) {
 /// Splits the string using a static buffer and returns the result.
 @trusted
 IStr[] split(IStr str, IStr sep) {
-    static IStr[defaultAsciiBufferSize][defaultAsciiBufferCount] buffers = void;
+    static IStr[defaultAsciiBufferSize][defaultAsciiBufferCountForSlices] buffers = void;
     static byte bufferIndex = 0;
 
     bufferIndex = (bufferIndex + 1) % buffers.length;
@@ -1534,7 +1542,7 @@ IStr pathConcat(PathSepStyle style, IStr[] args...) {
 /// Splits the path using a static buffer and returns the result.
 @trusted
 IStr[] pathSplit(IStr str, PathSepStyle style = PathSepStyle.native) {
-    static IStr[defaultAsciiBufferSize][defaultAsciiBufferCount] buffers = void;
+    static IStr[defaultAsciiBufferSize][defaultAsciiBufferCountForSlices] buffers = void;
     static byte bufferIndex = 0;
 
     bufferIndex = (bufferIndex + 1) % buffers.length;
