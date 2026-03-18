@@ -8,7 +8,6 @@
 /// The `memory` module provides functions for dealing with memory and various general-purpose containers.
 /// `List`, `BufferList`, and `FixedList` are the "basic" containers.
 /// Most other containers can accept one of those to adjust their allocation strategy.
-
 module parin.joka.memory;
 
 import parin.joka.types;
@@ -16,6 +15,8 @@ import parin.joka.types;
 version (WASI) {
     version = JokaMemoryStubs;
 }
+
+// TODO: Maybe I should make the arena API more like the allocator API??
 
 // --- Core
 
@@ -167,20 +168,31 @@ version (JokaCustomMemory) {
 
     void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {}
 } else {
-    private extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size);
-    private extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size);
-    private extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr);
-
-    // TODO: Read comment about `JokaCustomMemory` in `types.d`.
     version (JokaMemoryStubs) {
-        private extern(C) pragma(mangle, "malloc")  nothrow @nogc void* stdc_malloc(size_t size) { return null; }
-        private extern(C) pragma(mangle, "realloc") nothrow @nogc void* stdc_realloc(void* ptr, size_t size) { return null; }
-        private extern(C) pragma(mangle, "free")    nothrow @nogc void  stdc_free(void* ptr) {}
+        version (JokaSmallFootprint) {
+            enum __jokaMemoryGlobalArenaDataCapacity = 8 * megabyte;
+        } else {
+            enum __jokaMemoryGlobalArenaDataCapacity = 16 * megabyte;
+        }
+
+        extern(C) ubyte[__jokaMemoryGlobalArenaDataCapacity] __jokaMemoryGlobalArenaData = void;
+        extern(C) Arena __jokaMemoryGlobalArena;
+
+        private nothrow @nogc void* stdc_realloc(void* ptr, size_t size, size_t oldSize) {
+            if (__jokaMemoryGlobalArena.capacity == 0) __jokaMemoryGlobalArena.ready(__jokaMemoryGlobalArenaData);
+            return __jokaMemoryGlobalArena.realloc(ptr, oldSize, size, 0);
+        }
+    } else {
+        private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size);
+
+        private nothrow @nogc void* stdc_realloc(void* ptr, size_t size, size_t oldSize) {
+            return _stdc_realloc(ptr, size);
+        }
     }
 
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) return null;
-        auto result = stdc_malloc(size);
+        auto result = stdc_realloc(null, size, 0);
         static if (isTrackingMemory) {
             if (result) {
                 _memoryTrackingState.table[result] = _MallocInfo(
@@ -206,7 +218,7 @@ version (JokaCustomMemory) {
         if (ptr) {
             static if (isTrackingMemory) {
                 if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                    result = stdc_realloc(ptr, size);
+                    result = stdc_realloc(ptr, size, oldSize);
                     if (result) {
                         _memoryTrackingState.table[result] = _MallocInfo(
                             file,
@@ -233,7 +245,7 @@ version (JokaCustomMemory) {
                     }
                 }
             } else {
-                result = stdc_realloc(ptr, size);
+                result = stdc_realloc(ptr, size, oldSize);
             }
         } else {
             result = jokaSystemMalloc(size, file, line);
@@ -245,7 +257,7 @@ version (JokaCustomMemory) {
         static if (isTrackingMemory) {
             if (ptr == null) return;
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
-                stdc_free(ptr);
+                stdc_realloc(ptr, 0, oldSize);
                 debug {
                     _memoryTrackingState.totalBytes -= mallocValue.size;
                     _memoryTrackingState.table.remove(ptr);
@@ -266,7 +278,7 @@ version (JokaCustomMemory) {
                 }
             }
         } else {
-            stdc_free(ptr);
+            stdc_realloc(ptr, 0, oldSize);
         }
     }
 }
@@ -1908,6 +1920,8 @@ struct Arena {
     Sz capacity;
     Sz offset;
     Sz checkpointOffset;
+    Sz previousOffset;
+    void* lastPtr;
     // Extra data for users of this type.
     Arena* next;
 
@@ -1946,20 +1960,29 @@ struct Arena {
             alignedOffset = (offset + (alignment - 1)) & ~(alignment - 1);
         }
         if (alignedOffset + size > capacity) return null;
+        previousOffset = offset;
         offset = alignedOffset + size;
-        return cast(void*) (data + alignedOffset);
+        lastPtr = cast(void*) (data + alignedOffset);
+        return lastPtr;
     }
 
     void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
         if (alignment == 0) alignment = defaultJokaMemoryAlignment;
 
+        auto shouldMemcpy = true;
         if (ptr == null) return malloc(newSize, alignment);
+        if (ptr == lastPtr) {
+            offset = previousOffset;
+            shouldMemcpy = false;
+        }
         auto newPtr = malloc(newSize, alignment);
         if (newPtr == null) return null;
-        if (oldSize <= newSize) {
-            jokaMemcpy(newPtr, ptr, oldSize);
-        } else {
-            jokaMemcpy(newPtr, ptr, newSize);
+        if (shouldMemcpy) {
+            if (oldSize <= newSize) {
+                jokaMemcpy(newPtr, ptr, oldSize);
+            } else {
+                jokaMemcpy(newPtr, ptr, newSize);
+            }
         }
         return newPtr;
     }
@@ -2015,11 +2038,13 @@ struct Arena {
     }
 
     void rollback() {
-        offset = checkpointOffset;
+        rollback(checkpointOffset);
     }
 
     void rollback(Sz value) {
         offset = value;
+        previousOffset = value;
+        lastPtr = null;
     }
 
     void dropCheckpoint() {
@@ -2027,15 +2052,14 @@ struct Arena {
     }
 
     void clear() {
-        offset = 0;
         checkpointOffset = 0;
+        rollback(0);
     }
 
     void reset(IStr file = __FILE__, Sz line = __LINE__) {
         data = null;
         capacity = 0;
-        offset = 0;
-        checkpointOffset = 0;
+        clear();
     }
 
     MemoryContext toMemoryContext() {
