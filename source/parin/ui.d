@@ -322,7 +322,7 @@ void uiText(Rect area, IStr text, UiOptions options = UiOptions()) {
 bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
     auto m = uiMouse;
     auto id = _uiState.itemId + 1;
-    auto isHot = area.hasPointInclusive(m);
+    auto isHot = area.hasPoint(m);
     if (isHot) {
         _uiState.previousMaxHotItemIdBuffer = cast(short) id;
     }
@@ -334,7 +334,7 @@ bool updateUiButton(Rect area, IStr text, UiOptions options = UiOptions()) {
     if (_uiState.isActOnPress) {
         isClicked = isClicked && _uiState.mouseClickAction.isPressed;
     } else {
-        auto isHotFromMousePressedPosition = area.hasPointInclusive(_uiState.mousePressedPosition);
+        auto isHotFromMousePressedPosition = area.hasPoint(_uiState.mousePressedPosition);
         isClicked = isClicked && isHotFromMousePressedPosition && _uiState.mouseClickAction.isReleased;
     }
 

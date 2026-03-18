@@ -98,14 +98,6 @@ struct Tile {
             return hasIntersection(otherTile.area);
         }
 
-        bool hasIntersectionInclusive(Rect otherArea) {
-            return area.hasIntersectionInclusive(otherArea);
-        }
-
-        bool hasIntersectionInclusive(Tile otherTile) {
-            return hasIntersectionInclusive(otherTile.area);
-        }
-
         Rect intersection(Rect otherArea) {
             return area.intersection(otherArea);
         }
