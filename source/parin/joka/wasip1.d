@@ -17,6 +17,11 @@ version (LDC) {
     private struct llvmAttr { DStr a, b; }
 }
 
+/// The WASI Preview 1 module import.
+enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
+/// The WASI Preview 1 name import.
+auto importName(DStr name) => llvmAttr("wasm-import-name", name);
+
 version (WASI) {
     @trusted nothrow @nogc
     extern(C) noreturn __assert(IStrz exp, IStrz file, Sz line) {
@@ -300,11 +305,6 @@ alias Ciovec = ForeignSlice!(const(ubyte));
 alias toIovec = toForeignBytesMut;
 /// Convert a string to a `Ciovec`.
 alias toCiovec = toForeignBytes;
-
-/// The WASI Preview 1 module import.
-enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
-/// The WASI Preview 1 name import.
-auto importName(DStr name) => llvmAttr("wasm-import-name", name);
 
 // NOTE: The order of the functions in this block are based on: https://chicory.dev/docs/usage/wasi/#supported-features
 extern(C) nothrow @nogc @wasi {
