@@ -18,9 +18,9 @@ version (LDC) {
     private struct llvmAttr { immutable(char)[] a, b; }
 }
 
-/// The WASM-4 module import.
+/// The WASM-4 import module.
 enum wasm4 = llvmAttr("wasm-import-module", "env");
-/// The WASM-4 name import.
+/// The WASM-4 import name.
 auto importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
 
 // ┌───────────────────────────────────────────────────────────────────────────┐

@@ -802,7 +802,6 @@ version (JokaRuntimeSymbols) {
 @safe:
 
 version (JokaSmallFootprint) {
-    pragma(msg, "Joka: Using less memory for static buffers.");
     enum defaultAsciiBufferCount          = 4;
     enum defaultAsciiBufferSize           = 512;
     enum defaultAsciiBufferCountForSlices = 64;

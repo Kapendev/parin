@@ -17,9 +17,9 @@ version (LDC) {
     private struct llvmAttr { DStr a, b; }
 }
 
-/// The WASI Preview 1 module import.
+/// The WASI Preview 1 import module.
 enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
-/// The WASI Preview 1 name import.
+/// The WASI Preview 1 import name.
 auto importName(DStr name) => llvmAttr("wasm-import-name", name);
 
 version (WASI) {
