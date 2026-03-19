@@ -87,10 +87,59 @@ private @trusted nothrow @nogc pragma(inline, true) {
         double stdc_pow(double base, double exp) => 0;
         float stdc_sqrtf(float x)  => 0;
         double stdc_sqrt(double x) => 0;
-        float stdc_sinf(float x)  => 0;
-        double stdc_sin(double x) => 0;
-        float stdc_cosf(float x)  => 0;
-        double stdc_cos(double x) => 0;
+
+        float stdc_sinf(float x) {
+            while (x > pi)  x -= 2.0f * pi;
+            while (x < -pi) x += 2.0f * pi;
+            auto term = x;
+            auto sinX = x;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0f * i) * (2.0f * i + 1.0f));
+                sinX += term;
+            }
+            return sinX;
+        }
+
+        double stdc_sin(double x) {
+            while (x > pi)  x -= 2.0 * pi;
+            while (x < -pi) x += 2.0 * pi;
+            auto term = x;
+            auto sinX = x;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0 * i) * (2.0 * i + 1.0));
+                sinX += term;
+            }
+            return sinX;
+        }
+
+        float stdc_cosf(float x) {
+            while (x > pi)  x -= 2.0f * pi;
+            while (x < -pi) x += 2.0f * pi;
+            auto term = 1.0f;
+            auto cosX = 1.0f;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0f * i - 1.0f) * (2.0f * i));
+                cosX += term;
+            }
+            return cosX;
+        }
+
+        double stdc_cos(double x) {
+            while (x > pi)  x -= 2.0 * pi;
+            while (x < -pi) x += 2.0 * pi;
+            auto term = 1.0;
+            auto cosX = 1.0;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0 * i - 1.0) * (2.0 * i));
+                cosX += term;
+            }
+            return cosX;
+        }
+
         float stdc_ceilf(float x)  => ceilX(x);
         double stdc_ceil(double x) => ceilX64(x);
         float stdc_floorf(float x)  => floorX(x);
