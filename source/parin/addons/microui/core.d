@@ -33,15 +33,16 @@
 /// A tiny immediate-mode UI library.
 module parin.addons.microui.core;
 
+import parin.joka.types;
+import parin.joka.math;
+import parin.types;
+
 private extern(C) nothrow @nogc {
     // External dependencies required by microui.
     alias STDLIB_QSORT_FUNC = int function(const(void)* a, const(void)* b);
     int sprintf(char* buffer, const(char)* format, ...);
     double strtod(const(char)* str, char** str_end);
     void qsort(void* ptr, size_t count, size_t size, STDLIB_QSORT_FUNC comp);
-    void* memset(void* dest, int ch, size_t count);
-    void* memcpy(void* dest, const(void)* src, size_t count);
-    size_t strlen(const(char)* str);
 }
 
 /// Used for getting the width of the text.
@@ -205,58 +206,7 @@ enum : mu_KeyFlags {
 }
 
 /// A static array allocated on the stack.
-// It exists mainly because of weird BetterC stuff.
-struct mu_Array(T, size_t N) {
-    align(T.alignof) ubyte[T.sizeof * N] data;
-
-    enum length = N;
-
-    pragma(inline, true) @trusted nothrow @nogc:
-
-    this(const(T)[] items...) {
-        if (items.length > N) assert(0, "Too many items.");
-        auto datadata = this.items;
-        foreach (i; 0 .. N) datadata[i] = cast(T) items[i];
-    }
-
-    T[] opSlice(size_t dim)(size_t i, size_t j) {
-        return items[i .. j];
-    }
-
-    T[] opIndex() {
-        return items[];
-    }
-
-    T[] opIndex(T[] slice) {
-        return slice;
-    }
-
-    ref T opIndex(size_t i) {
-        return items[i];
-    }
-
-    void opIndexAssign(const(T) rhs, size_t i) {
-        items[i] = cast(T) rhs;
-    }
-
-    void opIndexOpAssign(const(char)[] op)(const(T) rhs, size_t i) {
-        mixin("items[i]", op, "= cast(T) rhs;");
-    }
-
-    size_t opDollar(size_t dim)() {
-        return N;
-    }
-
-    /// Returns the items of the array.
-    T[] items() {
-        return (cast(T*) data.ptr)[0 .. N];
-    }
-
-    /// Returns the pointer of the array.
-    T* ptr() {
-        return cast(T*) data.ptr;
-    }
-}
+alias mu_Array = StaticArray;
 
 /// A static stack allocated on the stack.
 struct mu_Stack(T, size_t N) {
@@ -280,39 +230,15 @@ struct mu_Stack(T, size_t N) {
 }
 
 /// A RGBA color using ubytes.
-struct mu_Color {
-    ubyte r, g, b, a;
-}
-
+alias mu_Color = Rgba;
 /// A 2D rectangle using ints.
-struct mu_Rect {
-    int x, y, w, h;
-
-    pragma(inline, true) @safe nothrow @nogc pure:
-
-    mu_Rect expand(int n) {
-        return mu_expand_rect(this, n);
-    }
-
-    mu_Rect intersect(mu_Rect r2) {
-        return mu_intersect_rects(this, r2);
-    }
-
-    bool overlaps(mu_Vec2 p) {
-        return mu_rect_overlaps_vec2(this, p);
-    }
-
-    bool hasSize() {
-        return mu_rect_has_size(this);
-    }
-}
-
+alias mu_Rect = IRect;
 /// A 2D vector using ints.
-struct mu_Vec2 { int x, y; }
+alias mu_Vec2 = IVec2;
 /// A 2D vector using floats.
-struct mu_FVec2 { mu_Real x = 0, y = 0; }
+alias mu_FVec2 = Vec2;
 /// A set of 4 integer margins for left, top, right, and bottom.
-struct mu_Margin { int left, top, right, bottom; }
+alias mu_Margin = Margin;
 
 /// A part of a 9-slice with source and target rectangles for drawing.
 struct mu_SlicePart {
@@ -322,6 +248,7 @@ struct mu_SlicePart {
     bool canTile;
     mu_Vec2 tileCount;
 }
+
 /// The parts of a 9-slice.
 alias mu_SliceParts = mu_Array!(mu_SlicePart, 9);
 
@@ -481,7 +408,7 @@ private @trusted {
 
     void push_layout(mu_Context* ctx, mu_Rect body, mu_Vec2 scroll) {
         mu_Layout layout;
-        memset(&layout, 0, layout.sizeof);
+        jokaMemset(&layout, 0, layout.sizeof);
         layout.body = mu_rect(body.x - scroll.x, body.y - scroll.y, body.w, body.h);
         layout.max = mu_vec2(-0x1000000, -0x1000000);
         ctx.layoutStack.push(layout);
@@ -518,7 +445,7 @@ private @trusted {
         /* container not found in pool: init new container */
         idx = mu_pool_init(ctx, ctx.containerPool.ptr, MU_CONTAINERPOOL_SIZE, id);
         cnt = &ctx.containers[idx];
-        memset(cnt, 0, (*cnt).sizeof);
+        jokaMemset(cnt, 0, (*cnt).sizeof);
         cnt.open = true;
         mu_bring_to_front(ctx, cnt);
         return cnt;
@@ -576,7 +503,7 @@ private @trusted {
         /* update pool ref */
         if (idx >= 0) {
             if (active) { mu_pool_update(ctx, ctx.treeNodePool.ptr, idx); }
-            else { memset(&ctx.treeNodePool[idx], 0, mu_PoolItem.sizeof); }
+            else { jokaMemset(&ctx.treeNodePool[idx], 0, mu_PoolItem.sizeof); }
         } else if (active) {
             mu_pool_init(ctx, ctx.treeNodePool.ptr, MU_TREENODEPOOL_SIZE, id);
         }
@@ -660,7 +587,7 @@ private @trusted {
     }
 }
 
-pragma(inline, true) @safe nothrow @nogc pure {
+pragma(inline, true) @safe nothrow @nogc {
     T mu_min(T)(T a, T b) {
         return ((a) < (b) ? (a) : (b));
     }
@@ -820,7 +747,7 @@ pragma(inline, true) @safe nothrow @nogc pure {
 
 nothrow @nogc
 void mu_init(mu_Context* ctx, mu_Font font = null, int font_scale = 1) {
-    memset(ctx, 0, (*ctx).sizeof);
+    jokaMemset(ctx, 0, (*ctx).sizeof);
     ctx.drawFrame = &draw_frame;
     ctx.textWidth = &mu_temp_text_width_func;
     ctx.textHeight = &mu_temp_text_height_func;
@@ -1065,7 +992,7 @@ nothrow @nogc {
         size_t len = ctx.inputTextSlice.length;
         size_t size = text.length;
         mu_expect(len + size < ctx.inputText.sizeof);
-        memcpy(ctx.inputText.ptr + len, text.ptr, size);
+        jokaMemcpy(ctx.inputText.ptr + len, text.ptr, size);
         // Added this to make it work with slices.
         ctx.inputText[len + size] = '\0';
         ctx.inputTextSlice = ctx.inputText[0 .. len + size];
@@ -1147,7 +1074,7 @@ void mu_draw_text(mu_Context* ctx, mu_Font font, const(char)[] str, mu_Vec2 pos,
     /* add command */
     cmd = mu_push_command(ctx, MU_COMMAND_TEXT, mu_TextCommand.sizeof + str.length);
     mu_expect(str.length < MU_STR_SIZE, "String is too big. See `MU_STR_SIZE`.");
-    memcpy(cmd.text.str.ptr, str.ptr, str.length);
+    jokaMemcpy(cmd.text.str.ptr, str.ptr, str.length);
     cmd.text.str.ptr[str.length] = '\0';
     cmd.text.len = cast(int) str.length;
     cmd.text.pos = pos;
@@ -1196,7 +1123,7 @@ void mu_layout_row_legacy(mu_Context* ctx, int items, const(int)* widths, int he
     mu_Layout* layout = get_layout(ctx);
     if (widths) {
         mu_expect(items <= MU_MAX_WIDTHS);
-        memcpy(layout.widths.ptr, widths, items * widths[0].sizeof);
+        jokaMemcpy(layout.widths.ptr, widths, items * widths[0].sizeof);
     }
     layout.items = items;
     layout.pos = mu_vec2(layout.indent, layout.nextRow);
@@ -1273,7 +1200,7 @@ void mu_draw_control_frame(mu_Context* ctx, mu_Id id, mu_Rect rect, mu_ColorEnum
 }
 
 void mu_draw_control_text_legacy(mu_Context* ctx, const(char)* str, mu_Rect rect, mu_ColorEnum colorid, mu_OptFlags opt) {
-    mu_draw_control_text(ctx, str[0 .. (str ? strlen(str) : 0)], rect, colorid, opt);
+    mu_draw_control_text(ctx, str[0 .. (str ? strzLength(str) : 0)], rect, colorid, opt);
 }
 
 void mu_draw_control_text(mu_Context* ctx, const(char)[] str, mu_Rect rect, mu_ColorEnum colorid, mu_OptFlags opt) {
@@ -1322,7 +1249,7 @@ void mu_update_control(mu_Context* ctx, mu_Id id, mu_Rect rect, mu_OptFlags opt,
 }
 
 void mu_text_legacy(mu_Context* ctx, const(char)* text) {
-    mu_text(ctx, text[0 .. (text ? strlen(text) : 0)]);
+    mu_text(ctx, text[0 .. (text ? strzLength(text) : 0)]);
 }
 
 /// It handles both D strings and C strings, so you can also pass null-terminated buffers directly.
@@ -1357,7 +1284,7 @@ void mu_text(mu_Context* ctx, const(char)[] text) {
 }
 
 void mu_label_legacy(mu_Context* ctx, const(char)* text) {
-    mu_label(ctx, text[0 .. (text ? strlen(text) : 0)]);
+    mu_label(ctx, text[0 .. (text ? strzLength(text) : 0)]);
 }
 
 void mu_label(mu_Context* ctx, const(char)[] text) {
@@ -1424,12 +1351,12 @@ mu_ResFlags mu_textbox_raw_legacy(mu_Context* ctx, char* buf, size_t bufsz, mu_I
     mu_ResFlags res;
     mu_update_control(ctx, id, r, opt | MU_OPT_HOLDFOCUS);
 
-    size_t buflen = strlen(buf);
+    size_t buflen = strzLength(buf);
     if (ctx.focus == id) {
         /* handle text input */
         int n = mu_min((cast(int) bufsz) - (cast(int) buflen) - 1, cast(int) ctx.inputTextSlice.length);
         if (n > 0) {
-            memcpy(buf + buflen, ctx.inputText.ptr, n);
+            jokaMemcpy(buf + buflen, ctx.inputText.ptr, n);
             buflen += n;
             buf[buflen] = '\0';
             res |= MU_RES_CHANGE;
@@ -1516,7 +1443,7 @@ mu_ResFlags mu_slider_ex(mu_Context* ctx, mu_Real* value, mu_Real low, mu_Real h
     // Used for the `sprintf` function.
     char[MU_MAX_FMT + 1] fmt_buf = void;
     mu_expect(fmt_buf.length > fmt.length);
-    memcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
+    jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
     fmt_buf[fmt.length] = '\0';
 
     char[MU_MAX_FMT + 1] buf = void;
@@ -1576,7 +1503,7 @@ mu_ResFlags mu_number_ex(mu_Context* ctx, mu_Real* value, mu_Real step, const(ch
     // Used for the `sprintf` function.
     char[MU_MAX_FMT + 1] fmt_buf = void;
     mu_expect(fmt_buf.length > fmt.length);
-    memcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
+    jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
     fmt_buf[fmt.length] = '\0';
 
     char[MU_MAX_FMT + 1] buf = void;
