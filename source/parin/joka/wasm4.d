@@ -5,9 +5,6 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
-// NOTE: This file exists because I don't want to use the w4 tool to get the bindings.
-//   It also avoids the need to use the `-L--allow-undefined` flag to compile.
-
 /// The `wasm4` module provides variables and functions available in WASM-4.
 module parin.joka.wasm4;
 
@@ -17,11 +14,10 @@ version (LDC) {
 } else {
     private struct llvmAttr { immutable(char)[] a, b; }
 }
+private llvmAttr importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
 
 /// The WASM-4 import module.
 enum wasm4 = llvmAttr("wasm-import-module", "env");
-/// The WASM-4 import name.
-auto importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
 
 // ┌───────────────────────────────────────────────────────────────────────────┐
 // │                                                                           │

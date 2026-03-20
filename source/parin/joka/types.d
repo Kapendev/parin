@@ -323,13 +323,23 @@ struct Option(T) {
 
 /// Represents a success or error value.
 /// Prefer using `Maybe` in most cases.
-struct Result(T, E) {
+struct Result(T, E, Sz tagSize = 0) {
     union ResultUnion {
         T value;
         E error;
     }
 
-    bool isSome;
+    static if (tagSize == 2) {
+        alias Tag = ushort;
+    } else static if (tagSize == 4) {
+        alias Tag = uint;
+    } else static if (tagSize == 8) {
+        alias Tag = ulong;
+    } else {
+        alias Tag = bool;
+    }
+
+    Tag isSome;
     ResultUnion data;
 
     @trusted nothrow @nogc:
@@ -1728,13 +1738,14 @@ Maybe!ulong toUnsigned(IStr str) {
     if (str.length == 0 || str.length >= 18) {
         return Maybe!ulong(Fault.overflow);
     } else {
-        if (str.length == 1 && str[0] == '+') {
+        if (str.length == 1 && str[0].isSymbol) {
             return Maybe!ulong(Fault.invalid);
         }
         ulong value = 0;
         ulong level = 1;
         foreach_reverse (i, c; str[(str[0] == '+' ? 1 : 0) .. $]) {
-            if (isDigit(c)) {
+            if (c == '_') {
+            } else if (isDigit(c)) {
                 value += (c - '0') * level;
                 level *= 10;
             } else {
@@ -2042,8 +2053,8 @@ unittest {
     assert(toBool("T", false, true).isSome == true);
     assert(toBool("t", false, true).isSome == false);
 
-    assert(toUnsigned("1_069").isSome == false);
-    assert(toUnsigned("1_069").getOr() == 0);
+    assert(toUnsigned("1_069").isSome == true);
+    assert(toUnsigned("1_069").getOr() == 1069);
     assert(toUnsigned("+1069").isSome == true);
     assert(toUnsigned("+1069").getOr() == 1069);
     assert(toUnsigned("1069").isSome == true);
@@ -2055,8 +2066,8 @@ unittest {
     assert(toUnsigned('9').isSome == true);
     assert(toUnsigned('9').getOr() == 9);
 
-    assert(toSigned("1_069").isSome == false);
-    assert(toSigned("1_069").getOr() == 0);
+    assert(toSigned("1_069").isSome == true);
+    assert(toSigned("1_069").getOr() == 1069);
     assert(toSigned("-1069").isSome == true);
     assert(toSigned("-1069").getOr() == -1069);
     assert(toSigned("+1069").isSome == true);
@@ -2070,7 +2081,7 @@ unittest {
     assert(toSigned('9').isSome == true);
     assert(toSigned('9').getOr() == 9);
 
-    assert(toFloating("1_069").isSome == false);
+    assert(toFloating("1_069").isSome == true);
     assert(toFloating(".1069").isSome == false);
     assert(toFloating("1069.").isSome == false);
     assert(toFloating(".").isSome == false);

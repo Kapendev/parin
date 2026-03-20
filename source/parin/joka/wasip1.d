@@ -14,13 +14,12 @@ version (LDC) {
     import ldc = ldc.attributes;
     private alias llvmAttr = ldc.llvmAttr;
 } else {
-    private struct llvmAttr { DStr a, b; }
+    private struct llvmAttr { immutable(char)[] a, b; }
 }
+private llvmAttr importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
 
 /// The WASI Preview 1 import module.
 enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
-/// The WASI Preview 1 import name.
-auto importName(DStr name) => llvmAttr("wasm-import-name", name);
 
 version (WASI) {
     @trusted nothrow @nogc
@@ -276,11 +275,88 @@ struct FileStat {
     TimeStamp ctime; /// Last file status change timestamp.
 }
 
-// NOTE: The `Size` type is a U32 in the docs.
+/// Flags determining how to interpret the timestamp provided in subscription_clock::timeout.
+alias SubscriptionClockFlags = ushort;
+/// Flags determining how to interpret the timestamp provided in subscription_clock::timeout.
+enum SubscriptionClockFlag : SubscriptionClockFlags {
+    none    = 0x0, /// None.
+    absTime = 0x1, /// If set, treat the timestamp provided in subscription_clock::timeout as an absolute timestamp of clock subscription_clock::id. If clear, treat the timestamp provided in subscription_clock::timeout relative to the current time value of clock subscription_clock::id.
+}
+
+/// The contents of a subscription when type is eventtype::clock.
+struct SubscriptionClock {
+    ClockId id;                   /// The clock against which to compare the timestamp.
+    TimeStamp timeout;            /// The absolute or relative timestamp.
+    TimeStamp precision;          /// The amount of time that the implementation may wait additionally to coalesce with other events.
+    SubscriptionClockFlags flags; /// Flags specifying whether the timeout is absolute or relative
+}
+
+/// The contents of a subscription when type is type is eventtype::fd_read or eventtype::fd_write.
+struct SubscriptionFdReadWrite {
+    Fd fd; /// The file descriptor on which to wait for it to become ready for reading or writing.
+}
+
+/// The contents of a subscription.
+struct SubscriptionU {
+    union Data {
+        SubscriptionClock clock;
+        SubscriptionFdReadWrite fdRead;
+        SubscriptionFdReadWrite fdWrite;
+    }
+
+    ubyte type; /// The tag.
+    Data data;  /// The data.
+}
+
+/// Subscription to an event.
+struct Subscription {
+    UserData userData;      /// User-provided value that is attached to the subscription in the implementation and returned through event::userdata.
+    SubscriptionU contents; /// The type of the event to which to subscribe, and its contents
+}
+static if ((void*).sizeof == 4) {
+    static assert(Subscription.sizeof == 48 && Subscription.alignof == 8);
+}
+
+/// The state of the file descriptor subscribed to with eventtype::fd_read or eventtype::fd_write.
+alias EventRwFlags = ushort;
+/// The state of the file descriptor subscribed to with eventtype::fd_read or eventtype::fd_write.
+enum EventRwFlag : EventRwFlags {
+    none = 0x0,                /// None.
+    fd_readwrite_hangup = 0x1, /// The peer of this socket has closed or disconnected.
+}
+
+/// The contents of an event when type is eventtype::fd_read or eventtype::fd_write.
+struct EventFdReadWrite {
+    FileSize nbytes;    /// The number of bytes available for reading or writing.
+    EventRwFlags flags; /// The state of the file descriptor.
+}
+
+/// An event that occurred.
+struct Event {
+    UserData userData;            /// User-provided value that got attached to subscription::userdata.
+    Errno error;                  /// If non-zero, an error that occurred while processing the subscription request.
+    EventType type;               /// The type of event that occurred.
+    EventFdReadWrite fdReadWrite; /// The contents of the event, if it is an eventtype::fd_read or eventtype::fd_write. eventtype::clock events ignore this field.
+}
+static if ((void*).sizeof == 4) {
+    static assert(Event.sizeof == 32 && Event.alignof == 8);
+}
+
+/// Which channels on a socket to shut down.
+alias SdFlags = ubyte;
+/// Which channels on a socket to shut down.
+enum SdFlag : SdFlags {
+    none = 0x0, /// None.
+    rd   = 0x1, /// Disables further receive operations.
+    wr   = 0x2, /// Disables further send operations.
+}
+
 /// A size value in bytes.
 alias Size = size_t;
 /// Number of hard links to an inode.
 alias LinkCount = ulong;
+/// User-provided value that may be attached to objects that is retained when extracted from the implementation.
+alias UserData = ulong;
 /// File serial number that is unique within its file system.
 alias Inode = ulong;
 /// Identifier for a device containing a file system. Can be used in combination with inode to uniquely identify a file or directory in the filesystem.
@@ -299,10 +375,10 @@ alias Fd = uint;
 alias TimeStamp = ulong;
 /// A region of memory for scatter/gather reads.
 alias Iovec = ForeignSlice!(ubyte);
-/// A region of memory for scatter/gather writes.
-alias Ciovec = ForeignSlice!(const(ubyte));
 /// Convert a string to a `Iovec`.
 alias toIovec = toForeignBytesMut;
+/// A region of memory for scatter/gather writes.
+alias Ciovec = ForeignSlice!(const(ubyte));
 /// Convert a string to a `Ciovec`.
 alias toCiovec = toForeignBytes;
 
@@ -451,6 +527,22 @@ extern(C) nothrow @nogc @wasi {
     @importName("fd_write")
     Errno fdWrite(Fd fd, const(Ciovec)* iovs, Size iovsLen, Size* nwritten);
 
+    /// Create a directory. Note: This is similar to mkdirat in POSIX.
+    @importName("path_create_directory")
+    Errno pathCreateDirectory(Fd fd, const(char)* path, Size pathLen);
+
+    /// Return the attributes of a file or directory. Note: This is similar to stat in POSIX.
+    @importName("path_filestat_get")
+    Errno pathFileStatGet(Fd fd, LookupFlags flags, const(char)* path, Size pathLen, FileStat* fileStatOut);
+
+    /// Adjust the timestamps of a file or directory. Note: This is similar to utimensat in POSIX.
+    @importName("path_filestat_set_times")
+    Errno pathFileStatSetTimes(Fd fd, LookupFlags flags, const(char)* path, Size pathLen, TimeStamp atime, TimeStamp mtime, FstFlags fstFlags);
+
+    /// Create a hard link. Note: This is similar to linkat in POSIX.
+    @importName("path_link")
+    Errno pathLink(Fd fd, LookupFlags oldFlags, const(char)* oldPath, Size oldPathLen, Fd newFd, const(char)* newPath, Size newPathLen);
+
     /// Open a file or directory.
     /// The returned file descriptor is not guaranteed to be the lowest-numbered file descriptor not currently open;
     /// it is randomized to prevent applications from depending on making assumptions about indexes,
@@ -470,6 +562,31 @@ extern(C) nothrow @nogc @wasi {
         Fd* openedFd,
     );
 
+    /// Read the contents of a symbolic link. Note: This is similar to readlinkat in POSIX.
+    @importName("path_readlink")
+    Errno pathReadLink(Fd fd, const(char)* path, Size pathLen, ubyte* buf, Size size, Size* outSize);
+
+    /// Remove a directory. Return errno::notempty if the directory is not empty. Note: This is similar to unlinkat(fd, path, AT_REMOVEDIR) in POSIX.
+    @importName("path_remove_directory")
+    Errno pathRemoveDirectory(Fd fd, const(char)* path, Size pathLen);
+
+    /// Rename a file or directory. Note: This is similar to renameat in POSIX.
+    @importName("path_rename")
+    Errno pathRename(Fd fd, const(char)* oldPath, Size oldPathLen, Fd newFd, const(char)* newPath, Size newPathLen);
+
+    /// Create a symbolic link. Note: This is similar to symlinkat in POSIX.
+    @importName("path_symlink")
+    Errno pathSymlink(const(char)* oldPath, Size oldPathLen, Fd fd, const(char)* newPath, Size newPathLen);
+
+    /// Unlink a file. Return errno::isdir if the path refers to a directory. Note: This is similar to unlinkat(fd, path, 0) in POSIX.
+    @importName("path_unlink_file")
+    Errno pathUnlinkFile(Fd fd, const(char)* path, Size pathLen);
+
+    /// Concurrently poll for the occurrence of a set of events.
+    /// If nsubscriptions is 0, returns errno::inval.
+    @importName("poll_oneoff")
+    Errno pollOneoff(const(Subscription)* input, Event* output, Size nsubscriptions, Sz* outSize);
+
     /// Terminate the process normally.
     /// An exit code of 0 indicates successful termination of the program.
     /// The meanings of other values is dependent on the environment.
@@ -480,4 +597,12 @@ extern(C) nothrow @nogc @wasi {
     /// This function blocks when the implementation is unable to immediately provide sufficient high-quality random data.
     @importName("random_get")
     Errno randomGet(ubyte* buf, Size bufLen);
+
+    /// Temporarily yield execution of the calling thread. Note: This is similar to sched_yield in POSIX.
+    @importName("sched_yield")
+    Errno schedYield();
+
+    /// Shut down socket send and receive channels. Note: This is similar to shutdown in POSIX.
+    @importName("sock_shutdown")
+    Errno sockShutdown(Fd fd, SdFlags how);
 }
