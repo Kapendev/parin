@@ -1351,6 +1351,16 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         );
     }
 
+    P sliceX(P count, P spacing = 0) {
+        if (count <= 1) return cast(P) size.x;
+        return cast(P) ((size.x - (spacing * (count - 1))) / count);
+    }
+
+    P sliceY(P count, P spacing = 0) {
+        if (count <= 1) return cast(P) size.y;
+        return cast(P) ((size.y - (spacing * (count - 1))) / count);
+    }
+
     Self addLeft(P amount) {
         position.x -= amount;
         size.x += amount;
@@ -1375,28 +1385,32 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         return Self(position.x, h, size.x, cast(S) amount);
     }
 
-    Self subLeft(P amount) {
+    Self subLeft(P amount, P spacing = 0) {
         auto x = position.x;
-        position.x = cast(P) min(position.x + amount, position.x + size.x);
-        size.x = cast(S) max(size.x - amount, 0);
+        auto move = cast(P) (amount + spacing);
+        position.x = cast(P) min(position.x + move, position.x + size.x);
+        size.x = cast(S) max(size.x - move, 0);
         return Self(x, position.y, cast(S) amount, size.y);
     }
 
-    Self subRight(P amount) {
-        size.x = cast(S) max(size.x - amount, 0);
-        return Self(cast(P) (position.x + size.x), position.y, cast(S) amount, size.y);
+    Self subRight(P amount, P spacing = 0) {
+        auto move = cast(P) (amount + spacing);
+        size.x = cast(S) max(size.x - move, 0);
+        return Self(cast(P) (position.x + size.x + spacing), position.y, cast(S) amount, size.y);
     }
 
-    Self subTop(P amount) {
+    Self subTop(P amount, P spacing = 0) {
         auto y = position.y;
-        position.y = cast(P) min(position.y + amount, position.y + size.y);
-        size.y = cast(S) max(size.y - amount, 0);
+        auto move = cast(P) (amount + spacing);
+        position.y = cast(P) min(position.y + move, position.y + size.y);
+        size.y = cast(S) max(size.y - move, 0);
         return Self(position.x, y, size.x, cast(S) amount);
     }
 
-    Self subBottom(P amount) {
-        size.y = cast(S) max(size.y - amount, 0);
-        return Self(position.x, cast(P) (position.y + size.y), size.x, cast(S) amount);
+    Self subBottom(P amount, P spacing = 0) {
+        auto move = cast(P) (amount + spacing);
+        size.y = cast(S) max(size.y - move, 0);
+        return Self(position.x, cast(P) (position.y + size.y + spacing), size.x, cast(S) amount);
     }
 
     Self addLeftRight(P amount) {

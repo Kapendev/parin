@@ -352,7 +352,7 @@ enum SdFlag : SdFlags {
 }
 
 /// A size value in bytes.
-alias Size = size_t;
+alias Size = Sz;
 /// Number of hard links to an inode.
 alias LinkCount = ulong;
 /// User-provided value that may be attached to objects that is retained when extracted from the implementation.
