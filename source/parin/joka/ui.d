@@ -5,8 +5,9 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
-// NOTE: Last time I worked on focus.
-//  It works. Now I need to add text support. Already added the types and enum member, but stopped there.
+// NOTE: Last time I worked on text and alignment.
+//   Got text working. Alignment not.
+//   Have to also think how that RPGMaker thing will work with the buttons acting like sliders.
 
 /// The `ui` module includes a UI library.
 module parin.joka.ui;
@@ -16,9 +17,13 @@ import parin.joka.types;
 
 version (JokaSmallFootprint) {
     enum defaultUiCommandsCapacity = 128;
+    enum defaultUiCharDataCapacity = 4 * kilobyte;
 } else {
     enum defaultUiCommandsCapacity = 512;
+    enum defaultUiCharDataCapacity = 128 * kilobyte;
 }
+
+enum defaultUiOptionFlags = UiOptionFlag.alignCenter;
 
 /// The UI font type.
 alias UiFont = void*;
@@ -47,6 +52,7 @@ struct UiStyle {
     UiColors colors;
     int fontScale;
     int border;
+    int padding;
 }
 
 alias UiMouseButtonFlags = ubyte;
@@ -156,6 +162,7 @@ struct UiCommandRect {
 struct UiCommandText {
     UiCommandBase base;
     UiColorType colorType;
+    ushort dataLength;
     IVec2 position;
     IStrz data;
     alias data this;
@@ -212,6 +219,13 @@ enum UiControlFlag : UiControlFlags {
     active    = 0x01, /// Control is active (e.g. active window).
     submitted = 0x02, /// Control value submitted (e.g. clicked button).
     changed   = 0x04, /// Control value changed (e.g. modified text).
+}
+
+alias UiOptionFlags = ubyte;
+enum UiOptionFlag : UiOptionFlags {
+    none        = 0x0000,
+    alignCenter = 0x0001,
+    alignRight  = 0x0002,
 }
 
 struct UiFocusState {
@@ -281,15 +295,15 @@ struct UiLayout {
         }
     }
 
-    UiControlFlags button(IStr label, bool span = false) {
+    UiControlFlags button(IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags, bool span = false) {
         if (!_area.hasSize) return UiControlFlags();
         if (span) {
-            return _isVertical ? _uiContext.button(_area.subTop(_area.h), label) : _uiContext.button(_area.subLeft(_area.w), label);
+            return _isVertical ? _uiContext.button(_area.subTop(_area.h), label, optionFlags) : _uiContext.button(_area.subLeft(_area.w), label, optionFlags);
         }
         if (_isVertical) {
-            return _uiContext.button(_isFlipped ? _area.subBottom(_slice, _spacing) : _area.subTop(_slice, _spacing), label);
+            return _uiContext.button(_isFlipped ? _area.subBottom(_slice, _spacing) : _area.subTop(_slice, _spacing), label, optionFlags);
         } else {
-            return _uiContext.button(_isFlipped ? _area.subRight(_slice, _spacing) : _area.subLeft(_slice, _spacing), label);
+            return _uiContext.button(_isFlipped ? _area.subRight(_slice, _spacing) : _area.subLeft(_slice, _spacing), label, optionFlags);
         }
     }
 }
@@ -302,6 +316,9 @@ struct UiContext {
     UiStyle* style;
     UiStyle _style;
     UiInput input;
+
+    char[defaultUiCharDataCapacity] charData;
+    Sz charDataLength;
 
     @safe nothrow @nogc:
 
@@ -328,6 +345,7 @@ struct UiContext {
             style.colors[buttonFocus]  = Rgba(79,  140, 255, 255);
         }
         style.border = 1;
+        style.padding = 5;
 
         // A color palette made by a really nice AI. We trust AI. We love AI. We believe in AI. Pick colors from here.
         // mu_Array!(mu_Color, 14)(
@@ -367,6 +385,19 @@ struct UiContext {
     }
 
     @trusted
+    IStrz makeStrzCopy(IStr text) {
+        auto charsNeeded = text.length + 1;
+        auto newCharDataLength = charDataLength + charsNeeded;
+        if (newCharDataLength > defaultUiCharDataCapacity) return null;
+
+        auto result = charData.ptr + charDataLength;
+        jokaMemcpy(result, text.ptr, text.length);
+        result[text.length] = '\0';
+        charDataLength = newCharDataLength;
+        return result;
+    }
+
+    @trusted
     void drawRect(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool border) {
         auto command = UiCommand();
         command.base.type = UiCommandType.rect;
@@ -388,6 +419,25 @@ struct UiContext {
         drawRect(area, colorType, hover, active, focus, false);
     }
 
+    @trusted
+    void drawText(IStr text, UiColorType colorType, IRect area, UiOptionFlags optionFlags) {
+        auto command = UiCommand();
+        command.base.type = UiCommandType.text;
+        command.text.data = makeStrzCopy(text);
+        command.text.dataLength = cast(ushort) text.length;
+        command.text.colorType = colorType;
+        // TODO: The align code is broken and a bit weird. Change later.
+        //   I am still not sure how I should handle it. User-side? Me-side? A mix of them?
+        if (optionFlags & UiOptionFlag.alignCenter) {
+            command.text.position = area.point(Hook.center);
+        } else if (optionFlags & UiOptionFlag.alignRight) {
+            command.text.position = area.point(Hook.right) - style.padding;
+        } else {
+            command.text.position = area.position + style.padding;
+        }
+        commands.appendRef(command);
+    }
+
     void handleKeyNavigationWithoutWrappingCurrentFocusId() {
         if (input.keyNavigationUpAction) {
             focusState.currentFocusId -= 1;
@@ -400,6 +450,7 @@ struct UiContext {
 
     void begin() {
         commands.clear();
+        charDataLength = 0;
 
         focusState.focusIdCounter = 0;
         if (focusState.nextFocusId) {
@@ -434,7 +485,7 @@ struct UiContext {
         input.clear();
     }
 
-    UiControlFlags button(IRect area, IStr label) {
+    UiControlFlags button(IRect area, IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags) {
         auto result = UiControlFlags();
         auto focusId = ++focusState.focusIdCounter; // NOTE: Will never have a value of zero.
         auto hover = area.hasPoint(input.mousePosition);
@@ -454,15 +505,16 @@ struct UiContext {
             : (  focus ? UiColorType.buttonFocus : (hover ? UiColorType.buttonHover : UiColorType.button)  );
 
         drawRectWithBorder(area, colorType, hover, active, focus);
+        drawText(label, UiColorType.text, area, optionFlags);
         return result;
     }
 
-    UiControlFlags button(IVec2 position, IVec2 size, IStr label) {
-        return button(IRect(position, size), label);
+    UiControlFlags button(IVec2 position, IVec2 size, IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return button(IRect(position, size), label, optionFlags);
     }
 
-    UiControlFlags button(int x, int y, int w, int h, IStr label) {
-        return button(IRect(x, y, w, h), label);
+    UiControlFlags button(int x, int y, int w, int h, IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return button(IRect(x, y, w, h), label, optionFlags);
     }
 }
 
@@ -471,10 +523,10 @@ unittest {
     auto ui = UiContext(null, null, null);
 
     ui.begin();
-    ui.button(0, 0, 60, 20, "My Button");
+    ui.button(IRect(0, 0, 60, 20), "My Button");
     ui.end();
 
-    assert(ui.commands.length == 2);
+    assert(ui.commands.length == 3);
     foreach (ref command; ui.commands) {
         with (UiCommandType) final switch (command.type) {
             case none: break;
