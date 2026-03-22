@@ -5,8 +5,8 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
-// NOTE: Last time I was working on buttons, layout and rendering.
-//   They work. The buttons are not done.
+// NOTE: Last time I worked on focus.
+//  It works. Now I need to add text support. Already added the types and enum member, but stopped there.
 
 /// The `ui` module includes a UI library.
 module parin.joka.ui;
@@ -57,15 +57,72 @@ enum UiMouseButtonFlag : UiMouseButtonFlags {
     middle = 0x4,
 }
 
+alias UiKeyFlags = ubyte;
+enum UiKeyFlag : UiKeyFlags {
+    none  = 0,
+    left  = 1U << 1,
+    right = 1U << 2,
+    up    = 1U << 3,
+    down  = 1U << 4,
+    tab   = 1U << 5,
+    enter = 1U << 6,
+}
+
+enum UiKeyNavigation : ubyte {
+    none,
+    verticalOrHorizontal,
+    vertical,
+    horizontal,
+}
+
 struct UiInput {
     IVec2 mousePosition;
+    IVec2 mousePressedPosition;
     UiMouseButtonFlags mouseButtonDown;
     UiMouseButtonFlags mouseButtonPressed;
+    UiMouseButtonFlags mouseButtonReleased;
+    bool mouseActionOnRelease;
+
+    UiKeyFlags keyDown;
+    UiKeyFlags keyPressed;
+    UiKeyFlags keyReleased;
+    UiKeyNavigation keyNavigation;
+    UiKeyNavigation nextKeyNavigation;
 
     @safe nothrow @nogc:
 
+    bool mouseAction(IRect area) {
+        return mouseActionOnRelease
+            ? ((mouseButtonReleased & UiMouseButtonFlag.left) && area.hasPoint(mousePressedPosition))
+            : (mouseButtonPressed & UiMouseButtonFlag.left);
+    }
+
+    bool keyNavigationUpAction() {
+        with (UiKeyNavigation) final switch (keyNavigation) {
+            case none:
+            case verticalOrHorizontal: return (keyPressed & UiKeyFlag.up) || (keyPressed & UiKeyFlag.left);
+            case vertical: return (keyPressed & UiKeyFlag.up) != 0;
+            case horizontal: return (keyPressed & UiKeyFlag.left) != 0;
+        }
+    }
+
+    bool keyNavigationDownAction() {
+        with (UiKeyNavigation) final switch (keyNavigation) {
+            case none:
+            case verticalOrHorizontal: return (keyPressed & UiKeyFlag.tab) || (keyPressed & UiKeyFlag.down) || (keyPressed & UiKeyFlag.right);
+            case vertical: return (keyPressed & UiKeyFlag.tab) || (keyPressed & UiKeyFlag.down);
+            case horizontal: return (keyPressed & UiKeyFlag.tab) || (keyPressed & UiKeyFlag.right);
+        }
+    }
+
+    bool keyNavigationAction() {
+        return keyNavigationUpAction || keyNavigationDownAction;
+    }
+
     void clear() {
+        auto tempMousePressedPosition = mousePressedPosition;
         this = UiInput();
+        mousePressedPosition = tempMousePressedPosition;
     }
 }
 
@@ -81,6 +138,7 @@ enum UiCommandFlag : UiCommandFlags {
 enum UiCommandType : ubyte {
     none,
     rect,
+    text,
 }
 
 struct UiCommandBase {
@@ -95,10 +153,19 @@ struct UiCommandRect {
     alias data this;
 }
 
+struct UiCommandText {
+    UiCommandBase base;
+    UiColorType colorType;
+    IVec2 position;
+    IStrz data;
+    alias data this;
+}
+
 union UiCommand {
     UiCommandType type;
     UiCommandBase base;
     UiCommandRect rect;
+    UiCommandText text;
 }
 
 struct UiCommands {
@@ -142,36 +209,94 @@ struct UiCommands {
 alias UiControlFlags = ubyte;
 enum UiControlFlag : UiControlFlags {
     none      = 0x00, /// None.
-    active    = 0x01, /// Control is active (e.g. button down).
+    active    = 0x01, /// Control is active (e.g. active window).
     submitted = 0x02, /// Control value submitted (e.g. clicked button).
-    changed   = 0x04, /// Control value changed (e.g. modified text input).
+    changed   = 0x04, /// Control value changed (e.g. modified text).
 }
 
-struct UiLayout {
-    UiContext* context;
-    IRect area;
-    short slice;
-    short spacing;
-    bool isVertical;
-    bool isFlipped;
+struct UiFocusState {
+    int currentFocusId;
+    int nextFocusId;       // Can be used to force a new current ID for the next frame.
+    IVec2 nextFocusIdWrap; // Can be used to force a specific start and end value when wrapping at the end.
+    int focusIdCounter;
+    bool focusIsActive;
 
     @safe nothrow @nogc:
 
-    UiControlFlags button(IStr label, bool span = false) {
-        if (!area.hasSize) return UiControlFlags();
-        if (span) {
-            return isVertical ? context.button(area.subTop(area.h), label) : context.button(area.subLeft(area.w), label);
+    bool isFocused(int id) {
+        return focusIsActive && currentFocusId == id;
+    }
+
+    void setCurrentFocusId(int id) {
+        currentFocusId = id;
+        focusIsActive = true;
+    }
+
+    void wrapCurrentFocusIdIfNeeded(int startInclusive, int endInclusive) {
+        if (focusIdCounter == 0) return;
+        if (currentFocusId < startInclusive) currentFocusId = endInclusive;
+        if (currentFocusId > endInclusive) currentFocusId = startInclusive;
+    }
+}
+
+struct ScopedUiFocus {
+    UiContext* _uiContext;
+    int _previousFocusIdCounter;
+
+    pragma(inline, true) @safe nothrow @nogc:
+    @disable this();
+
+    @trusted
+    this(ref UiContext context, UiKeyNavigation keyNavigation = UiKeyNavigation.none) {
+        _uiContext = &context;
+        _previousFocusIdCounter = context.focusState.focusIdCounter;
+        _uiContext.input.nextKeyNavigation = keyNavigation;
+    }
+
+    ~this() {
+        auto count = _uiContext.focusState.focusIdCounter - _previousFocusIdCounter;
+        if (count && _uiContext.input.keyNavigationAction) {
+            _uiContext.focusState.nextFocusIdWrap = IVec2(_previousFocusIdCounter + 1, _uiContext.focusState.focusIdCounter);
         }
-        if (isVertical) {
-            return context.button(isFlipped ? area.subBottom(slice, spacing) : area.subTop(slice, spacing), label);
+    }
+}
+
+struct UiLayout {
+    UiContext* _uiContext;
+    IRect _area;
+    short _slice;
+    short _spacing;
+    bool _isVertical;
+    bool _isFlipped;
+
+    @safe nothrow @nogc:
+
+    void gap() {
+        if (_isVertical) {
+            if (_isFlipped) _area.subBottom(_slice, _spacing);
+            else _area.subTop(_slice, _spacing);
         } else {
-            return context.button(isFlipped ? area.subRight(slice, spacing) : area.subLeft(slice, spacing), label);
+            if (_isFlipped) _area.subRight(_slice, _spacing);
+            else _area.subLeft(_slice, _spacing);
+        }
+    }
+
+    UiControlFlags button(IStr label, bool span = false) {
+        if (!_area.hasSize) return UiControlFlags();
+        if (span) {
+            return _isVertical ? _uiContext.button(_area.subTop(_area.h), label) : _uiContext.button(_area.subLeft(_area.w), label);
+        }
+        if (_isVertical) {
+            return _uiContext.button(_isFlipped ? _area.subBottom(_slice, _spacing) : _area.subTop(_slice, _spacing), label);
+        } else {
+            return _uiContext.button(_isFlipped ? _area.subRight(_slice, _spacing) : _area.subLeft(_slice, _spacing), label);
         }
     }
 }
 
 struct UiContext {
     UiCommands commands;
+    UiFocusState focusState;
     UiTextWidthFunc textWidth;   /// The function used for getting the width of the text.
     UiTextHeightFunc textHeight; /// The function used for getting the height of the text.
     UiStyle* style;
@@ -180,11 +305,13 @@ struct UiContext {
 
     @safe nothrow @nogc:
 
-    this(UiTextWidthFunc textWidth, UiTextHeightFunc textHeight, UiFont font, int fontScale = 1) {
-        ready(textWidth, textHeight, font, fontScale);
+    this(UiTextWidthFunc textWidthFunc, UiTextHeightFunc textHeightFunc, UiFont font, int fontScale = 1) {
+        ready(textWidthFunc, textHeightFunc, font, fontScale);
     }
 
-    void ready(UiTextWidthFunc textWidth, UiTextHeightFunc textHeight, UiFont font, int fontScale = 1) {
+    void ready(UiTextWidthFunc textWidthFunc, UiTextHeightFunc textHeightFunc, UiFont font, int fontScale = 1) {
+        textWidth = textWidthFunc;
+        textHeight = textHeightFunc;
         restoreDefaultStyle();
         applyDefaultStyle();
         style.font = font;
@@ -202,7 +329,7 @@ struct UiContext {
         }
         style.border = 1;
 
-        // A color palette made by a really nice AI. We trust AI. We love AI. We believe in AI.
+        // A color palette made by a really nice AI. We trust AI. We love AI. We believe in AI. Pick colors from here.
         // mu_Array!(mu_Color, 14)(
         //    mu_Color(210, 215, 225, 255), /* MU_COLOR_TEXT - Soft off-white */
         //    mu_Color(40,  44,  52,  255), /* MU_COLOR_BORDER - Darker, integrated border */
@@ -223,6 +350,10 @@ struct UiContext {
 
     void restoreDefaultStyle() {
         style = &_style;
+    }
+
+    ScopedUiFocus scopedFocus(UiKeyNavigation keyNavigation = UiKeyNavigation.none) {
+        return ScopedUiFocus(this, keyNavigation);
     }
 
     @trusted
@@ -248,25 +379,81 @@ struct UiContext {
         commands.appendRef(command);
     }
 
-    void begin() {
-        commands.clear();
-    }
-
-    void end() {
-        input.clear();
-    }
-
-    UiControlFlags button(IRect area, IStr label) {
-        auto result = UiControlFlags();
-        auto hover = area.hasPoint(input.mousePosition);
-        auto active = hover && (input.mouseButtonDown & UiMouseButtonFlag.left);
-        auto color = active ? UiColorType.buttonActive : (hover ? UiColorType.buttonHover : UiColorType.button);
+    void drawRectWithBorder(IRect area, UiColorType colorType, bool hover, bool active, bool focus) {
         if (style.border) {
             auto borderArea = area;
             borderArea.addAll(style.border);
             drawRect(borderArea, UiColorType.border, false, false, false, true);
         }
-        drawRect(area, color, hover, active, false, false);
+        drawRect(area, colorType, hover, active, focus, false);
+    }
+
+    void handleKeyNavigationWithoutWrappingCurrentFocusId() {
+        if (input.keyNavigationUpAction) {
+            focusState.currentFocusId -= 1;
+            focusState.focusIsActive = true;
+        } else if (input.keyNavigationDownAction) {
+            focusState.currentFocusId += 1;
+            focusState.focusIsActive = true;
+        }
+    }
+
+    void begin() {
+        commands.clear();
+
+        focusState.focusIdCounter = 0;
+        if (focusState.nextFocusId) {
+            focusState.setCurrentFocusId(focusState.nextFocusId);
+            focusState.nextFocusId = 0;
+        }
+
+        if (input.mouseButtonPressed & UiMouseButtonFlag.left) {
+            input.mousePressedPosition = input.mousePosition;
+            focusState.focusIsActive = false;
+        }
+    }
+
+    void end() {
+        if (input.nextKeyNavigation) {
+            // NOTE: This part depending on a temp variable is a bit ugly. Maybe change that later.
+            auto previousKeyNavigation = input.keyNavigation;
+            input.keyNavigation = input.nextKeyNavigation;
+            handleKeyNavigationWithoutWrappingCurrentFocusId();
+            input.keyNavigation = previousKeyNavigation;
+            input.nextKeyNavigation = UiKeyNavigation.none;
+        } else {
+            handleKeyNavigationWithoutWrappingCurrentFocusId();
+        }
+
+        if (focusState.nextFocusIdWrap.isZero) {
+            focusState.wrapCurrentFocusIdIfNeeded(1, focusState.focusIdCounter);
+        } else {
+            focusState.wrapCurrentFocusIdIfNeeded(focusState.nextFocusIdWrap.x, focusState.nextFocusIdWrap.y);
+            focusState.nextFocusIdWrap = IVec2();
+        }
+        input.clear();
+    }
+
+    UiControlFlags button(IRect area, IStr label) {
+        auto result = UiControlFlags();
+        auto focusId = ++focusState.focusIdCounter; // NOTE: Will never have a value of zero.
+        auto hover = area.hasPoint(input.mousePosition);
+        auto active = hover && (input.mouseButtonDown & UiMouseButtonFlag.left);
+
+        if (hover && (input.mouseButtonPressed & UiMouseButtonFlag.left)) {
+            focusState.currentFocusId = focusId;
+            focusState.focusIsActive = false;
+        }
+
+        auto focus = focusState.isFocused(focusId);
+        auto submittedByKeyboard = focus && (input.keyPressed & UiKeyFlag.enter);
+        if (hover && input.mouseAction(area) || submittedByKeyboard) result |= UiControlFlag.submitted;
+
+        auto colorType = active
+            ? UiColorType.buttonActive
+            : (  focus ? UiColorType.buttonFocus : (hover ? UiColorType.buttonHover : UiColorType.button)  );
+
+        drawRectWithBorder(area, colorType, hover, active, focus);
         return result;
     }
 
@@ -292,6 +479,7 @@ unittest {
         with (UiCommandType) final switch (command.type) {
             case none: break;
             case rect: break;
+            case text: break;
         }
     }
 }
