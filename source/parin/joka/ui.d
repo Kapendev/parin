@@ -6,8 +6,10 @@
 // ---
 
 // NOTE: Last time I worked on text and alignment.
-//   Got text working. Alignment not.
-//   Have to also think how that RPGMaker thing will work with the buttons acting like sliders.
+//   Works.
+//   I want to now think about how that RPGMaker thing will work with the buttons acting like sliders.
+//   Also maybe how to do grid layouts. Maybe even navigation there???
+//   And add icon support to buttons.
 
 /// The `ui` module includes a UI library.
 module parin.joka.ui;
@@ -29,10 +31,11 @@ enum defaultUiOptionFlags = UiOptionFlag.alignCenter;
 alias UiFont = void*;
 /// The UI texture type.
 alias UiTexture = void*;
-/// A function used for getting the width of the text.
-alias UiTextWidthFunc  = int function(UiFont font, IStr text);
-/// A function used for getting the height of the text.
-alias UiTextHeightFunc = int function(UiFont font);
+
+@trusted nothrow @nogc {
+    /// A function used for getting the width and height of the text.
+    alias UiTextSizeFunc  = IVec2 function(UiFont font, IStr text);
+}
 
 enum UiColorType : ubyte {
     border,       /// Default border color.
@@ -311,8 +314,7 @@ struct UiLayout {
 struct UiContext {
     UiCommands commands;
     UiFocusState focusState;
-    UiTextWidthFunc textWidth;   /// The function used for getting the width of the text.
-    UiTextHeightFunc textHeight; /// The function used for getting the height of the text.
+    UiTextSizeFunc textSize; /// The function used for getting the size of the text.
     UiStyle* style;
     UiStyle _style;
     UiInput input;
@@ -322,13 +324,12 @@ struct UiContext {
 
     @safe nothrow @nogc:
 
-    this(UiTextWidthFunc textWidthFunc, UiTextHeightFunc textHeightFunc, UiFont font, int fontScale = 1) {
-        ready(textWidthFunc, textHeightFunc, font, fontScale);
+    this(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1) {
+        ready(textSizeFunc, font, fontScale);
     }
 
-    void ready(UiTextWidthFunc textWidthFunc, UiTextHeightFunc textHeightFunc, UiFont font, int fontScale = 1) {
-        textWidth = textWidthFunc;
-        textHeight = textHeightFunc;
+    void ready(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1) {
+        textSize = textSizeFunc ? textSizeFunc : &tempUiTextSizeFunc;
         restoreDefaultStyle();
         applyDefaultStyle();
         style.font = font;
@@ -426,15 +427,18 @@ struct UiContext {
         command.text.data = makeStrzCopy(text);
         command.text.dataLength = cast(ushort) text.length;
         command.text.colorType = colorType;
-        // TODO: The align code is broken and a bit weird. Change later.
-        //   I am still not sure how I should handle it. User-side? Me-side? A mix of them?
+        // NOTE: Text is always drawn from a top left point and alignment moves that point around.
+        auto areaCenter = area.centerPoint;
+        auto textArea = IRect(area.position, textSize(style.font, text) * style.fontScale);
+        auto textTarget = IVec2(0, areaCenter.y - textArea.h / 2);
         if (optionFlags & UiOptionFlag.alignCenter) {
-            command.text.position = area.point(Hook.center);
+            textTarget.x = areaCenter.x - textArea.w / 2;
         } else if (optionFlags & UiOptionFlag.alignRight) {
-            command.text.position = area.point(Hook.right) - style.padding;
+            textTarget.x = area.x + area.w - textArea.w - style.padding;
         } else {
-            command.text.position = area.position + style.padding;
+            textTarget.x = area.x + style.padding;
         }
+        command.text.position = textTarget;
         commands.appendRef(command);
     }
 
@@ -518,9 +522,35 @@ struct UiContext {
     }
 }
 
+@safe nothrow @nogc
+IVec2 tempUiTextSizeFunc(UiFont font, IStr text) {
+    enum charWidth = 8;
+    enum charHeight = 8;
+
+    auto maxHorizontalLength = 0;
+    auto maxVerticalLength = 1;
+    auto horizontalLengthCounter = 0;
+    foreach (c; text) {
+        if (c == '\n') {
+            if (maxHorizontalLength < horizontalLengthCounter) maxHorizontalLength = horizontalLengthCounter;
+            maxVerticalLength += 1;
+            horizontalLengthCounter = 0;
+        } else {
+            horizontalLengthCounter += 1;
+        }
+    }
+    if (maxHorizontalLength == 0 && horizontalLengthCounter) maxHorizontalLength = horizontalLengthCounter;
+    if (horizontalLengthCounter == 0) maxVerticalLength = 0;
+
+    return IVec2(
+        maxHorizontalLength ? (maxHorizontalLength * charWidth - 1) : 0,
+        maxVerticalLength ? (maxVerticalLength * charHeight - 1) : 0,
+    );
+}
+
 // UI test.
 unittest {
-    auto ui = UiContext(null, null, null);
+    auto ui = UiContext(null, null);
 
     ui.begin();
     ui.button(IRect(0, 0, 60, 20), "My Button");
