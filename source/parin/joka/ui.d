@@ -166,9 +166,8 @@ struct UiCommandText {
     UiCommandBase base;
     UiOptionFlags flags;
     UiColorType colorType;
-    ushort dataLength;
     IVec2 position;
-    IStrz data;
+    IStr data;
     alias data this;
 }
 
@@ -311,6 +310,8 @@ struct UiContext {
 
     char[defaultUiCharDataCapacity] charData;
     Sz charDataLength;
+    int charHeight;
+    int charOffset;
 
     @safe nothrow @nogc:
 
@@ -322,8 +323,14 @@ struct UiContext {
         textSize = textSizeFunc ? textSizeFunc : &tempUiTextSizeFunc;
         restoreDefaultStyle();
         applyDefaultStyle();
+        setFont(font, fontScale);
+    }
+
+    void setFont(UiFont font, int fontScale = 1) {
         style.font = font;
         style.fontScale = fontScale;
+        charHeight = textSize(style.font, "A").y * style.fontScale;
+        charOffset = (textSize(style.font, "A\nA").y * style.fontScale) - charHeight * 2;
     }
 
     void applyDefaultStyle() {
@@ -413,26 +420,42 @@ struct UiContext {
     @trusted
     void drawText(IStr text, UiColorType colorType, IRect area, UiOptionFlags optionFlags) {
         if (text.length == 0) return;
-        auto command = UiCommand();
-        command.base.type = UiCommandType.text;
-        command.text.data = makeStrzCopy(text);
-        command.text.dataLength = cast(ushort) text.length;
-        command.text.colorType = colorType;
-        command.text.flags = optionFlags;
-        // NOTE: Text is drawn like a rectangle and the passed alignment moves the position of the rectangle around.
-        //   The alignment of lines is user-defined and not part of the UI.
-        auto areaCenter = area.centerPoint;
-        auto textArea = IRect(textSize(style.font, text) * style.fontScale);
-        textArea.y = areaCenter.y - textArea.h / 2;
+
+        auto baseTextArea = IRect(textSize(style.font, text) * style.fontScale);
+        baseTextArea.y = area.centerPoint.y - baseTextArea.h / 2;
         if (optionFlags & UiOptionFlag.alignCenter) {
-            textArea.x = areaCenter.x - textArea.w / 2;
+            baseTextArea.x = area.centerPoint.x - baseTextArea.w / 2;
         } else if (optionFlags & UiOptionFlag.alignRight) {
-            textArea.x = area.x + area.w - textArea.w - style.padding;
+            baseTextArea.x = area.x + area.w - baseTextArea.w - style.padding;
         } else {
-            textArea.x = area.x + style.padding;
+            baseTextArea.x = area.x + style.padding;
         }
-        command.text.position = textArea.position;
-        commands.appendRef(command);
+
+        Sz lineStartIndex;
+        foreach (i, c; text) {
+            if (c == '\n' || i == text.length - 1) {
+                auto line = text[lineStartIndex .. i + (i == text.length - 1)];
+                auto lineArea = baseTextArea;
+                lineArea.w = textSize(style.font, line).x * style.fontScale;
+                lineArea.h = charHeight;
+                lineArea.y += lineStartIndex ? (lineArea.h + charOffset) : 0;
+                if (optionFlags & UiOptionFlag.alignCenter) {
+                    lineArea.x = baseTextArea.centerPoint.x - lineArea.w / 2;
+                } else if (optionFlags & UiOptionFlag.alignRight) {
+                    lineArea.x = baseTextArea.x + baseTextArea.w - lineArea.w;
+                } else {
+                    lineArea.x = baseTextArea.x;
+                }
+                auto lineCommand = UiCommand();
+                lineCommand.base.type = UiCommandType.text;
+                lineCommand.text.data = makeStrzCopy(line)[0 .. line.length];
+                lineCommand.text.position = lineArea.position;
+                lineCommand.text.colorType = colorType;
+                lineCommand.text.flags = optionFlags;
+                commands.appendRef(lineCommand);
+                lineStartIndex = i + 1;
+            }
+        }
     }
 
     void handleKeyNavigationWithoutWrappingCurrentFocusId() {
