@@ -259,18 +259,22 @@ struct UiFocusState {
 struct ScopedUiFocus {
     UiContext* _uiContext;
     int _previousFocusIdCounter;
+    bool _canIgnore;
 
     pragma(inline, true) @safe nothrow @nogc:
     @disable this();
 
     @trusted
-    this(ref UiContext context, UiKeyNavigation keyNavigation = UiKeyNavigation.none) {
+    this(ref UiContext context, UiKeyNavigation keyNavigation = UiKeyNavigation.none, bool canIgnore = false) {
         _uiContext = &context;
         _previousFocusIdCounter = context.focusState.focusIdCounter;
+        _canIgnore = canIgnore;
+        if (_canIgnore) return;
         _uiContext.input.nextKeyNavigation = keyNavigation;
     }
 
     ~this() {
+        if (_canIgnore) return;
         auto count = _uiContext.focusState.focusIdCounter - _previousFocusIdCounter;
         if (count && _uiContext.input.keyNavigationAction) {
             _uiContext.focusState.nextFocusIdWrap = IVec2(_previousFocusIdCounter + 1, _uiContext.focusState.focusIdCounter);
@@ -368,8 +372,8 @@ struct UiContext {
         style = &_style;
     }
 
-    ScopedUiFocus scopedFocus(UiKeyNavigation keyNavigation = UiKeyNavigation.none) {
-        return ScopedUiFocus(this, keyNavigation);
+    ScopedUiFocus captureFocus(UiKeyNavigation keyNavigation = UiKeyNavigation.none, bool canIgnore = false) {
+        return ScopedUiFocus(this, keyNavigation, canIgnore);
     }
 
     static @trusted
