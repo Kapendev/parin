@@ -164,6 +164,7 @@ struct UiCommandRect {
 
 struct UiCommandText {
     UiCommandBase base;
+    UiOptionFlags flags;
     UiColorType colorType;
     ushort dataLength;
     IVec2 position;
@@ -279,34 +280,23 @@ struct ScopedUiFocus {
 }
 
 struct UiLayout {
-    UiContext* _uiContext;
-    IRect _area;
-    short _slice;
-    short _spacing;
-    bool _isVertical;
-    bool _isFlipped;
+    IRect area;
+    short slice;
+    short spacing;
+    bool isVertical;
+    bool isStartingfromBottomOrRight;
 
     @safe nothrow @nogc:
 
-    void gap() {
-        if (_isVertical) {
-            if (_isFlipped) _area.subBottom(_slice, _spacing);
-            else _area.subTop(_slice, _spacing);
-        } else {
-            if (_isFlipped) _area.subRight(_slice, _spacing);
-            else _area.subLeft(_slice, _spacing);
-        }
-    }
-
-    UiControlFlags button(IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags, bool span = false) {
-        if (!_area.hasSize) return UiControlFlags();
+    IRect pop(bool span = false) {
+        if (!area.hasSize) return IRect();
         if (span) {
-            return _isVertical ? _uiContext.button(_area.subTop(_area.h), label, optionFlags) : _uiContext.button(_area.subLeft(_area.w), label, optionFlags);
+            return isVertical ? area.subTop(area.h) : area.subLeft(area.w);
         }
-        if (_isVertical) {
-            return _uiContext.button(_isFlipped ? _area.subBottom(_slice, _spacing) : _area.subTop(_slice, _spacing), label, optionFlags);
+        if (isVertical) {
+            return isStartingfromBottomOrRight ? area.subBottom(slice, spacing) : area.subTop(slice, spacing);
         } else {
-            return _uiContext.button(_isFlipped ? _area.subRight(_slice, _spacing) : _area.subLeft(_slice, _spacing), label, optionFlags);
+            return isStartingfromBottomOrRight ? area.subRight(slice, spacing) : area.subLeft(slice, spacing);
         }
     }
 }
@@ -375,14 +365,14 @@ struct UiContext {
         return ScopedUiFocus(this, keyNavigation);
     }
 
-    @trusted
-    UiLayout row(IRect area, int count, int spacing, bool isFlipped = false) {
-        return UiLayout(&this, area, cast(short) area.sliceX(count, spacing), cast(short) spacing, false, isFlipped);
+    static @trusted
+    UiLayout row(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false) {
+        return UiLayout(area, cast(short) area.sliceX(areaCount, spacing), cast(short) spacing, false, isStartingfromBottomOrRight);
     }
 
-    @trusted
-    UiLayout column(IRect area, int count, int spacing, bool isFlipped = false) {
-        return UiLayout(&this, area, cast(short) area.sliceY(count, spacing), cast(short) spacing, true, isFlipped);
+    static @trusted
+    UiLayout col(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false) {
+        return UiLayout(area, cast(short) area.sliceY(areaCount, spacing), cast(short) spacing, true, isStartingfromBottomOrRight);
     }
 
     @trusted
@@ -422,23 +412,26 @@ struct UiContext {
 
     @trusted
     void drawText(IStr text, UiColorType colorType, IRect area, UiOptionFlags optionFlags) {
+        if (text.length == 0) return;
         auto command = UiCommand();
         command.base.type = UiCommandType.text;
         command.text.data = makeStrzCopy(text);
         command.text.dataLength = cast(ushort) text.length;
         command.text.colorType = colorType;
-        // NOTE: Text is always drawn from a top left point and alignment moves that point around.
+        command.text.flags = optionFlags;
+        // NOTE: Text is drawn like a rectangle and the passed alignment moves the position of the rectangle around.
+        //   The alignment of lines is user-defined and not part of the UI.
         auto areaCenter = area.centerPoint;
-        auto textArea = IRect(area.position, textSize(style.font, text) * style.fontScale);
-        auto textTarget = IVec2(0, areaCenter.y - textArea.h / 2);
+        auto textArea = IRect(textSize(style.font, text) * style.fontScale);
+        textArea.y = areaCenter.y - textArea.h / 2;
         if (optionFlags & UiOptionFlag.alignCenter) {
-            textTarget.x = areaCenter.x - textArea.w / 2;
+            textArea.x = areaCenter.x - textArea.w / 2;
         } else if (optionFlags & UiOptionFlag.alignRight) {
-            textTarget.x = area.x + area.w - textArea.w - style.padding;
+            textArea.x = area.x + area.w - textArea.w - style.padding;
         } else {
-            textTarget.x = area.x + style.padding;
+            textArea.x = area.x + style.padding;
         }
-        command.text.position = textTarget;
+        command.text.position = textArea.position;
         commands.appendRef(command);
     }
 
@@ -489,7 +482,20 @@ struct UiContext {
         input.clear();
     }
 
-    UiControlFlags button(IRect area, IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+    UiControlFlags label(IRect area, IStr text, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        drawText(text, UiColorType.text, area, optionFlags);
+        return UiControlFlag.none;
+    }
+
+    UiControlFlags label(IVec2 position, IVec2 size, IStr text, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(IRect(position, size), text, optionFlags);
+    }
+
+    UiControlFlags label(int x, int y, int w, int h, IStr text, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(IRect(x, y, w, h), text, optionFlags);
+    }
+
+    UiControlFlags button(IRect area, IStr text, UiOptionFlags optionFlags = defaultUiOptionFlags) {
         auto result = UiControlFlags();
         auto focusId = ++focusState.focusIdCounter; // NOTE: Will never have a value of zero.
         auto hover = area.hasPoint(input.mousePosition);
@@ -509,16 +515,16 @@ struct UiContext {
             : (  focus ? UiColorType.buttonFocus : (hover ? UiColorType.buttonHover : UiColorType.button)  );
 
         drawRectWithBorder(area, colorType, hover, active, focus);
-        drawText(label, UiColorType.text, area, optionFlags);
+        drawText(text, UiColorType.text, area, optionFlags);
         return result;
     }
 
-    UiControlFlags button(IVec2 position, IVec2 size, IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        return button(IRect(position, size), label, optionFlags);
+    UiControlFlags button(IVec2 position, IVec2 size, IStr text, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return button(IRect(position, size), text, optionFlags);
     }
 
-    UiControlFlags button(int x, int y, int w, int h, IStr label, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        return button(IRect(x, y, w, h), label, optionFlags);
+    UiControlFlags button(int x, int y, int w, int h, IStr text, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return button(IRect(x, y, w, h), text, optionFlags);
     }
 }
 
@@ -539,7 +545,7 @@ IVec2 tempUiTextSizeFunc(UiFont font, IStr text) {
             horizontalLengthCounter += 1;
         }
     }
-    if (maxHorizontalLength == 0 && horizontalLengthCounter) maxHorizontalLength = horizontalLengthCounter;
+    if (maxHorizontalLength < horizontalLengthCounter) maxHorizontalLength = horizontalLengthCounter;
     if (horizontalLengthCounter == 0) maxVerticalLength = 0;
 
     return IVec2(

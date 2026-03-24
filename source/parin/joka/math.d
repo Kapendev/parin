@@ -1351,14 +1351,14 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         );
     }
 
-    P sliceX(P count, P spacing = 0) {
-        if (count <= 1) return cast(P) size.x;
-        return cast(P) ((size.x - (spacing * (count - 1))) / count);
+    P sliceX(P areaCount, P spacing = 0) {
+        if (areaCount <= 1) return cast(P) size.x;
+        return cast(P) ((size.x - (spacing * (areaCount - 1))) / areaCount);
     }
 
-    P sliceY(P count, P spacing = 0) {
-        if (count <= 1) return cast(P) size.y;
-        return cast(P) ((size.y - (spacing * (count - 1))) / count);
+    P sliceY(P areaCount, P spacing = 0) {
+        if (areaCount <= 1) return cast(P) size.y;
+        return cast(P) ((size.y - (spacing * (areaCount - 1))) / areaCount);
     }
 
     Self addLeft(P amount) {
@@ -1396,7 +1396,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
     Self subRight(P amount, P spacing = 0) {
         auto move = cast(P) (amount + spacing);
         size.x = cast(S) max(size.x - move, 0);
-        return Self(cast(P) (position.x + size.x + spacing), position.y, cast(S) amount, size.y);
+        return Self(cast(P) (position.x + size.x + (size.x ? spacing : 0)), position.y, cast(S) amount, size.y);
     }
 
     Self subTop(P amount, P spacing = 0) {
@@ -1410,7 +1410,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
     Self subBottom(P amount, P spacing = 0) {
         auto move = cast(P) (amount + spacing);
         size.y = cast(S) max(size.y - move, 0);
-        return Self(position.x, cast(P) (position.y + size.y + spacing), size.x, cast(S) amount);
+        return Self(position.x, cast(P) (position.y + size.y + (size.y ? spacing : 0)), size.x, cast(S) amount);
     }
 
     Self addLeftRight(P amount) {
