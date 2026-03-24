@@ -814,7 +814,7 @@ version (JokaRuntimeSymbols) {
 version (JokaSmallFootprint) {
     enum defaultAsciiBufferCount          = 4;
     enum defaultAsciiBufferSize           = 512;
-    enum defaultAsciiBufferCountForSlices = 64;
+    enum defaultAsciiBufferCountForSlices = 32;
 
     enum defaultAsciiFmtArgBufferCount = 16;
     enum defaultAsciiFmtArgBufferSize  = 256;
