@@ -1389,6 +1389,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         auto x = position.x;
         auto move = cast(P) (amount + spacing);
         position.x = cast(P) min(position.x + move, position.x + size.x);
+        if (position.x < x) position.x = x + move; // Overflow fix.
         size.x = cast(S) max(size.x - move, 0);
         return Self(x, position.y, cast(S) amount, size.y);
     }
@@ -1403,6 +1404,7 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
         auto y = position.y;
         auto move = cast(P) (amount + spacing);
         position.y = cast(P) min(position.y + move, position.y + size.y);
+        if (position.y < y) position.y = y + move; // Overflow fix.
         size.y = cast(S) max(size.y - move, 0);
         return Self(position.x, y, size.x, cast(S) amount);
     }

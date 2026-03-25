@@ -5,9 +5,9 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `uiNew` module functions as a immediate mode UI library.
+/// The `ui2` module functions as a immediate mode UI library.
 /// It will replace the old UI module.
-module parin.uiNew;
+module parin.ui2;
 
 import parin.engine;
 public import parin.joka.ui;
@@ -29,7 +29,7 @@ IVec2 parinTempUiTextSizeFunc(UiFont font, const(char)[] text) {
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
 @trusted
-void readyForEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+void readyWithEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
     ui.ready(&parinTempUiTextSizeFunc, data, fontScale, iconSizeFunc);
     if (data) {
@@ -49,8 +49,8 @@ void readyForEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, UiI
 }
 
 /// Initializes the microui context and sets temporary text size functions.
-void readyForEngine(ref UiContext ui, int fontScale, UiIconIdSizeFunc iconSizeFunc = null) {
-    ui.readyForEngine(null, fontScale, iconSizeFunc);
+void readyWithEngine(ref UiContext ui, int fontScale, UiIconIdSizeFunc iconSizeFunc = null) {
+    ui.readyWithEngine(null, fontScale, iconSizeFunc);
 }
 
 /// Handles input events and updates the microui context accordingly.
@@ -89,6 +89,10 @@ void handleUiInput(ref UiContext ui) {
     ui.input.keyDown |= Key.enter.isDown ? UiKeyFlag.enter : 0;
     ui.input.keyPressed |= Key.enter.isPressed ? UiKeyFlag.enter : 0;
     ui.input.keyReleased |= Key.enter.isReleased ? UiKeyFlag.enter : 0;
+
+    ui.input.keyDown |= Key.esc.isDown ? UiKeyFlag.esc : 0;
+    ui.input.keyPressed |= Key.esc.isPressed ? UiKeyFlag.esc : 0;
+    ui.input.keyReleased |= Key.esc.isReleased ? UiKeyFlag.esc : 0;
 }
 
 /// Draws the microui context to the screen.

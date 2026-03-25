@@ -8,6 +8,7 @@
 // NOTE: Last time I added on/off states. Works.
 //   I now want to think about how that RPGMaker thing will work with the buttons acting like sliders.
 //   Also maybe how to do grid layouts. Maybe even navigation there???
+//   Maybe there is a bug with `fontScale`, but no idea. Needs testing.
 
 /// The `ui` module includes a UI library.
 module parin.joka.ui;
@@ -81,6 +82,7 @@ enum UiKeyFlag : UiKeyFlags {
     down  = 1U << 4,
     tab   = 1U << 5,
     enter = 1U << 6,
+    esc   = 1U << 7,
 }
 
 enum UiKeyNavigation : ubyte {
@@ -302,9 +304,19 @@ struct UiLayout {
     int slice;
     int spacing;
     bool isVertical;
-    bool isStartingfromBottomOrRight;
+    bool fromRightOrBottom;
 
     @safe nothrow @nogc:
+
+    pragma(inline, true);
+    int w() {
+        return area.w;
+    }
+
+    pragma(inline, true);
+    int h() {
+        return area.h;
+    }
 
     IRect pop(bool span = false) {
         if (!area.hasSize) return IRect();
@@ -312,9 +324,9 @@ struct UiLayout {
             return isVertical ? area.subTop(area.h) : area.subLeft(area.w);
         }
         if (isVertical) {
-            return isStartingfromBottomOrRight ? area.subBottom(slice, spacing) : area.subTop(slice, spacing);
+            return fromRightOrBottom ? area.subBottom(slice, spacing) : area.subTop(slice, spacing);
         } else {
-            return isStartingfromBottomOrRight ? area.subRight(slice, spacing) : area.subLeft(slice, spacing);
+            return fromRightOrBottom ? area.subRight(slice, spacing) : area.subLeft(slice, spacing);
         }
     }
 }
@@ -356,20 +368,20 @@ struct UiContext {
 
     void applyDefaultStyle() {
         with (UiColorType) {
-            // Borders
+            // Borders & Backgrounds
             style.colors[border]       = Rgba(40,  44,  52,  255);
             style.colors[borderOff]    = Rgba(33,  37,  43,  255);
             // Foreground Elements
-            style.colors[icon]         = Rgba(255, 255, 255, 200); // Soft white
-            style.colors[iconOff]      = Rgba(100, 110, 125, 255);
+            style.colors[icon]         = Rgba(255, 255, 255, 180); // Slightly more transparent
+            style.colors[iconOff]      = Rgba(90,  95,  110, 255);
             style.colors[text]         = Rgba(210, 215, 225, 255);
-            style.colors[textOff]      = Rgba(100, 110, 125, 255);
+            style.colors[textOff]      = Rgba(90,  95,  110, 255);
             // Interaction Elements
             style.colors[button]       = Rgba(55,  61,  72,  255);
             style.colors[buttonOff]    = Rgba(45,  50,  60,  255);
-            style.colors[buttonHover]  = Rgba(70,  78,  92,  255);
-            style.colors[buttonActive] = Rgba(79,  140, 255, 255); // Vibrant Blue
-            style.colors[buttonFocus]  = Rgba(97,  175, 239, 255); // Soft Blue highlight
+            style.colors[buttonHover]  = Rgba(80,  90,  110, 255);
+            style.colors[buttonActive] = Rgba(100, 130, 180, 255);
+            style.colors[buttonFocus]  = Rgba(80,  110, 150, 255);
         }
         style.border = 1;
         style.padding = 5;
@@ -383,26 +395,46 @@ struct UiContext {
         return ScopedUiFocus(this, keyNavigation, canIgnore);
     }
 
-    static @trusted
-    UiLayout row(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false, int infiniteSlice = 0) {
-        if (infiniteSlice && !isStartingfromBottomOrRight) {
+    static
+    UiLayout _row(IRect area, int areaCount, int spacing, bool fromRight, int infiniteSlice) {
+        if (infiniteSlice && !fromRight) {
             auto infiniteArea = area;
             infiniteArea.w = int.max;
-            return UiLayout(infiniteArea, infiniteSlice, spacing, false, isStartingfromBottomOrRight);
+            return UiLayout(infiniteArea, infiniteSlice, spacing, false, fromRight);
         } else {
-            return UiLayout(area, area.sliceX(areaCount, spacing), spacing, false, isStartingfromBottomOrRight);
+            return UiLayout(area, area.sliceX(areaCount, spacing), spacing, false, fromRight);
         }
     }
 
-    static @trusted
-    UiLayout col(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false, int infiniteSlice = 0) {
-        if (infiniteSlice && !isStartingfromBottomOrRight) {
+    static
+    UiLayout rowItems(IRect area, int count, int spacing, bool fromRight = false) {
+        return _row(area, count, spacing, fromRight, 0);
+    }
+
+    static
+    UiLayout rowSlice(IRect area, int slice, int spacing) {
+        return _row(area, 0, spacing, false, slice);
+    }
+
+    static
+    UiLayout _col(IRect area, int areaCount, int spacing, bool fromBottom, int infiniteSlice) {
+        if (infiniteSlice && !fromBottom) {
             auto infiniteArea = area;
             infiniteArea.h = int.max;
-            return UiLayout(infiniteArea, infiniteSlice, spacing, true, isStartingfromBottomOrRight);
+            return UiLayout(infiniteArea, infiniteSlice, spacing, true, fromBottom);
         } else {
-            return UiLayout(area, area.sliceY(areaCount, spacing), spacing, true, isStartingfromBottomOrRight);
+            return UiLayout(area, area.sliceY(areaCount, spacing), spacing, true, fromBottom);
         }
+    }
+
+    static
+    UiLayout colItems(IRect area, int count, int spacing, bool fromBottom = false) {
+        return _col(area, count, spacing, fromBottom, 0);
+    }
+
+    static
+    UiLayout colSlice(IRect area, int slice, int spacing) {
+        return _col(area, 0, spacing, false, slice);
     }
 
     @trusted
@@ -530,12 +562,14 @@ struct UiContext {
     }
 
     void handleKeyNavigationWithoutWrappingCurrentFocusId() {
-        if (input.keyNavigationUpAction) {
-            focusState.currentFocusId -= 1;
-            focusState.focusIsActive = true;
-        } else if (input.keyNavigationDownAction) {
-            focusState.currentFocusId += 1;
-            focusState.focusIsActive = true;
+        if (input.keyPressed & UiKeyFlag.tab) focusState.focusIsActive = true;
+        if (input.keyPressed & UiKeyFlag.esc) focusState.focusIsActive = false;
+        if (focusState.focusIsActive) {
+            if (input.keyNavigationUpAction) {
+                focusState.currentFocusId -= 1;
+            } else if (input.keyNavigationDownAction) {
+                focusState.currentFocusId += 1;
+            }
         }
     }
 
@@ -614,6 +648,8 @@ struct UiContext {
 
         auto focus = focusState.isFocused(focusId) && !(optionFlags & UiOptionFlag.turnOff);
         auto submittedByKeyboard = focus && (input.keyPressed & UiKeyFlag.enter);
+        auto submittedByKeyboardDown = focus && (input.keyDown & UiKeyFlag.enter);
+        active = active || submittedByKeyboardDown;
         if (hover && input.mouseAction(area) || submittedByKeyboard) result |= UiControlFlag.submitted;
 
         auto colorType = active
