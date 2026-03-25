@@ -5,8 +5,8 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
-// NOTE: Last time I added icon support and it works.
-//   I want to now think about how that RPGMaker thing will work with the buttons acting like sliders.
+// NOTE: Last time I added on/off states. Works.
+//   I now want to think about how that RPGMaker thing will work with the buttons acting like sliders.
 //   Also maybe how to do grid layouts. Maybe even navigation there???
 
 /// The `ui` module includes a UI library.
@@ -25,24 +25,28 @@ version (JokaSmallFootprint) {
 
 enum defaultUiOptionFlags = UiOptionFlag.alignCenter;
 
-/// The UI icon type.
-alias UiIcon = uint;
 /// The UI font type.
 alias UiFont = void*;
 /// The UI texture type.
 alias UiTexture = void*;
+/// The UI icon ID type.
+alias UiIconId = uint;
 
 @trusted nothrow @nogc {
     /// A function used for getting the width and height of the text.
     alias UiTextSizeFunc = IVec2 function(UiFont font, IStr text);
-    alias UiIconSizeFunc = IVec2 function(UiIcon icon);
+    alias UiIconIdSizeFunc = IVec2 function(UiIconId iconId);
 }
 
 enum UiColorType : ubyte {
     border,       /// Default border color.
+    borderOff,    /// Border color on no interaction.
     icon,         /// Default icon color.
+    iconOff,      /// Icon color on no interaction.
     text,         /// Default text color.
+    textOff,      /// Text color on no interaction.
     button,       /// Default button color.
+    buttonOff,    /// Button color on no interaction.
     buttonHover,  /// Button color on hover.
     buttonActive, /// Button color on press.
     buttonFocus,  /// Button color on focus.
@@ -139,11 +143,12 @@ struct UiInput {
 
 alias UiCommandFlags = ubyte;
 enum UiCommandFlag : UiCommandFlags {
-    none   = 0x0,
-    hover  = 0x1,
-    active = 0x2,
-    focus  = 0x4,
-    border = 0x8,
+    none   = 0x00,
+    hover  = 0x01,
+    active = 0x02,
+    focus  = 0x04,
+    border = 0x08,
+    off    = 0x10,
 }
 
 enum UiCommandType : ubyte {
@@ -175,7 +180,7 @@ struct UiCommandText {
 struct UiCommandIcon {
     UiCommandBase base;
     IRect area;
-    UiIcon data;
+    UiIconId data;
     alias data this;
 }
 
@@ -218,9 +223,9 @@ struct UiCommands {
         length = 0;
     }
 
-    bool nextIsRectWith(Sz i, UiCommandFlags flags) {
-        if (i + 1 >= length) return false;
-        auto next = &items[i + 1];
+    bool nextIsRectWith(Sz currentIndex, UiCommandFlags flags) {
+        if (currentIndex + 1 >= length) return false;
+        auto next = &items[currentIndex + 1];
         return next.type == UiCommandType.rect && next.rect.flags & flags;
     }
 }
@@ -238,6 +243,7 @@ enum UiOptionFlag : UiOptionFlags {
     none        = 0x0000,
     alignCenter = 0x0001,
     alignRight  = 0x0002,
+    turnOff     = 0x0004,
 }
 
 struct UiFocusState {
@@ -293,8 +299,8 @@ struct ScopedUiFocus {
 
 struct UiLayout {
     IRect area;
-    short slice;
-    short spacing;
+    int slice;
+    int spacing;
     bool isVertical;
     bool isStartingfromBottomOrRight;
 
@@ -317,7 +323,7 @@ struct UiContext {
     UiCommands commands;
     UiFocusState focusState;
     UiTextSizeFunc textSize; /// The function used for getting the size of the text.
-    UiIconSizeFunc iconSize;
+    UiIconIdSizeFunc iconSize;
     UiStyle* style;
     UiStyle _style;
     UiInput input;
@@ -329,11 +335,11 @@ struct UiContext {
 
     @safe nothrow @nogc:
 
-    this(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1, UiIconSizeFunc iconSizeFunc = null) {
+    this(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
         ready(textSizeFunc, font, fontScale, iconSizeFunc);
     }
 
-    void ready(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1, UiIconSizeFunc iconSizeFunc = null) {
+    void ready(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
         textSize = textSizeFunc ? textSizeFunc : &tempUiTextSizeFunc;
         restoreDefaultStyle();
         applyDefaultStyle();
@@ -350,34 +356,23 @@ struct UiContext {
 
     void applyDefaultStyle() {
         with (UiColorType) {
+            // Borders
             style.colors[border]       = Rgba(40,  44,  52,  255);
-            style.colors[icon]         = Rgba(255, 255, 255, 255);
+            style.colors[borderOff]    = Rgba(33,  37,  43,  255);
+            // Foreground Elements
+            style.colors[icon]         = Rgba(255, 255, 255, 200); // Soft white
+            style.colors[iconOff]      = Rgba(100, 110, 125, 255);
             style.colors[text]         = Rgba(210, 215, 225, 255);
+            style.colors[textOff]      = Rgba(100, 110, 125, 255);
+            // Interaction Elements
             style.colors[button]       = Rgba(55,  61,  72,  255);
+            style.colors[buttonOff]    = Rgba(45,  50,  60,  255);
             style.colors[buttonHover]  = Rgba(70,  78,  92,  255);
-            style.colors[buttonActive] = Rgba(79,  140, 255, 255);
-            style.colors[buttonFocus]  = Rgba(79,  140, 255, 255);
+            style.colors[buttonActive] = Rgba(79,  140, 255, 255); // Vibrant Blue
+            style.colors[buttonFocus]  = Rgba(97,  175, 239, 255); // Soft Blue highlight
         }
         style.border = 1;
         style.padding = 5;
-
-        // A color palette made by a really nice AI. We trust AI. We love AI. We believe in AI. Pick colors from here.
-        // mu_Array!(mu_Color, 14)(
-        //    mu_Color(210, 215, 225, 255), /* MU_COLOR_TEXT - Soft off-white */
-        //    mu_Color(40,  44,  52,  255), /* MU_COLOR_BORDER - Darker, integrated border */
-        //    mu_Color(28,  32,  40,  255), /* MU_COLOR_WINDOWBG - Deep navy-slate */
-        //    mu_Color(35,  39,  48,  255), /* MU_COLOR_TITLEBG - Slightly lighter than window */
-        //    mu_Color(255, 255, 255, 255), /* MU_COLOR_TITLETEXT - Pure white for clarity */
-        //    mu_Color(0,   0,   0,   0  ), /* MU_COLOR_PANELBG */
-        //    mu_Color(55,  61,  72,  255), /* MU_COLOR_BUTTON - Muted slate */
-        //    mu_Color(70,  78,  92,  255), /* MU_COLOR_BUTTONHOVER - Subtle highlight */
-        //    mu_Color(79,  140, 255, 255), /* MU_COLOR_BUTTONFOCUS - Cobalt Accent */
-        //    mu_Color(33,  37,  46,  255), /* MU_COLOR_BASE - Input fields / track */
-        //    mu_Color(45,  50,  60,  255), /* MU_COLOR_BASEHOVER */
-        //    mu_Color(79,  140, 255, 255), /* MU_COLOR_BASEFOCUS - Cobalt Accent */
-        //    mu_Color(38,  42,  51,  255), /* MU_COLOR_SCROLLBASE */
-        //    mu_Color(65,  72,  85,  255), /* MU_COLOR_SCROLLTHUMB */
-        // )
     }
 
     void restoreDefaultStyle() {
@@ -389,13 +384,25 @@ struct UiContext {
     }
 
     static @trusted
-    UiLayout row(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false) {
-        return UiLayout(area, cast(short) area.sliceX(areaCount, spacing), cast(short) spacing, false, isStartingfromBottomOrRight);
+    UiLayout row(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false, int infiniteSlice = 0) {
+        if (infiniteSlice && !isStartingfromBottomOrRight) {
+            auto infiniteArea = area;
+            infiniteArea.w = int.max;
+            return UiLayout(infiniteArea, infiniteSlice, spacing, false, isStartingfromBottomOrRight);
+        } else {
+            return UiLayout(area, area.sliceX(areaCount, spacing), spacing, false, isStartingfromBottomOrRight);
+        }
     }
 
     static @trusted
-    UiLayout col(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false) {
-        return UiLayout(area, cast(short) area.sliceY(areaCount, spacing), cast(short) spacing, true, isStartingfromBottomOrRight);
+    UiLayout col(IRect area, int areaCount, int spacing, bool isStartingfromBottomOrRight = false, int infiniteSlice = 0) {
+        if (infiniteSlice && !isStartingfromBottomOrRight) {
+            auto infiniteArea = area;
+            infiniteArea.h = int.max;
+            return UiLayout(infiniteArea, infiniteSlice, spacing, true, isStartingfromBottomOrRight);
+        } else {
+            return UiLayout(area, area.sliceY(areaCount, spacing), spacing, true, isStartingfromBottomOrRight);
+        }
     }
 
     @trusted
@@ -412,7 +419,9 @@ struct UiContext {
     }
 
     @trusted
-    void drawRect(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool border) {
+    void drawRect(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool border, bool off) {
+        if (!area.hasSize) return;
+
         auto command = UiCommand();
         command.base.type = UiCommandType.rect;
         command.base.colorType = colorType;
@@ -421,27 +430,30 @@ struct UiContext {
         if (active) command.rect.flags |= UiCommandFlag.active;
         if (focus)  command.rect.flags |= UiCommandFlag.focus;
         if (border) command.rect.flags |= UiCommandFlag.border;
+        if (off)    command.rect.flags |= UiCommandFlag.off;
         commands.appendRef(command);
     }
 
-    void drawBorder(IRect area, UiColorType colorType) {
+    void drawBorder(IRect area, UiColorType colorType, bool off) {
         if (style.border == 0) return;
         auto borderArea = area;
         borderArea.addAll(style.border);
-        drawRect(borderArea, UiColorType.border, false, false, false, true);
+        drawRect(borderArea, off ? UiColorType.borderOff : UiColorType.border, false, false, false, true, off);
     }
 
-    void drawBox(IRect area, UiColorType colorType, bool hover, bool active, bool focus) {
-        drawBorder(area, colorType);
-        drawRect(area, colorType, hover, active, focus, false);
+    void drawBox(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool off) {
+        drawBorder(area, colorType, off);
+        drawRect(area, colorType, hover, active, focus, false, off);
     }
 
-    void drawIcon(UiIcon icon, UiColorType colorType, IRect area, UiOptionFlags optionFlags) {
+    void drawIcon(UiIconId iconId, UiColorType colorType, IRect area, UiOptionFlags optionFlags) {
+        if (iconId == 0) return;
+
         auto command = UiCommand();
         command.base.type = UiCommandType.icon;
         command.base.colorType = colorType;
-        command.icon.data = icon;
-        auto iconArea = IRect(iconSize(icon) * style.fontScale);
+        command.icon.data = iconId;
+        auto iconArea = IRect(iconSize(iconId) * style.fontScale);
         iconArea.y = area.centerPoint.y - iconArea.h / 2;
         if (optionFlags & UiOptionFlag.alignCenter) {
             iconArea.x = area.centerPoint.x - iconArea.w / 2;
@@ -495,6 +507,28 @@ struct UiContext {
         }
     }
 
+    void drawLabelContent(IRect area, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        auto iconColorType = (optionFlags & UiOptionFlag.turnOff) ? UiColorType.iconOff : UiColorType.icon;
+        auto textColorType = (optionFlags & UiOptionFlag.turnOff) ? UiColorType.textOff : UiColorType.text;
+        if (iconId && iconSize && !iconSize(iconId).isZero) {
+            if (optionFlags & UiOptionFlag.alignCenter) {
+                drawIcon(iconId, iconColorType, area, optionFlags);
+            } else if (optionFlags & UiOptionFlag.alignRight) {
+                auto newArea = area;
+                drawIcon(iconId, iconColorType, newArea.subRight(iconSize(iconId).x), optionFlags);
+                newArea.subRight(style.padding);
+                drawText(text, textColorType, newArea, optionFlags);
+            } else {
+                auto newArea = area;
+                drawIcon(iconId, iconColorType, newArea.subLeft(iconSize(iconId).x), optionFlags);
+                newArea.subLeft(style.padding);
+                drawText(text, textColorType, newArea, optionFlags);
+            }
+        } else {
+            drawText(text, textColorType, area, optionFlags);
+        }
+    }
+
     void handleKeyNavigationWithoutWrappingCurrentFocusId() {
         if (input.keyNavigationUpAction) {
             focusState.currentFocusId -= 1;
@@ -542,83 +576,64 @@ struct UiContext {
         input.clear();
     }
 
-    UiControlFlags label(IRect area, IStr text, UiIcon icon = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        // NOTE: Could maybe refactor that icon part into a function.
-        if (icon && iconSize && !iconSize(icon).isZero) {
-            if (optionFlags & UiOptionFlag.alignCenter) {
-                drawIcon(icon, UiColorType.icon, area, optionFlags);
-            } else if (optionFlags & UiOptionFlag.alignRight) {
-                auto newArea = area;
-                drawIcon(icon, UiColorType.icon, newArea.subRight(iconSize(icon).x), optionFlags);
-                newArea.subRight(style.padding);
-                drawText(text, UiColorType.text, newArea, optionFlags);
-            } else {
-                auto newArea = area;
-                drawIcon(icon, UiColorType.icon, newArea.subLeft(iconSize(icon).x), optionFlags);
-                newArea.subLeft(style.padding);
-                drawText(text, UiColorType.text, newArea, optionFlags);
-            }
-        } else {
-            drawText(text, UiColorType.text, area, optionFlags);
-        }
+    UiControlFlags label(IRect area, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        drawLabelContent(area, text, iconId, optionFlags);
         return UiControlFlag.none;
     }
 
-    UiControlFlags label(IVec2 position, IVec2 size, IStr text, UiIcon icon = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        return label(IRect(position, size), text, optionFlags);
+    UiControlFlags label(IVec2 position, IVec2 size, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(IRect(position, size), text, iconId, optionFlags);
     }
 
-    UiControlFlags label(int x, int y, int w, int h, IStr text, UiIcon icon = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        return label(IRect(x, y, w, h), text, optionFlags);
+    UiControlFlags label(int x, int y, int w, int h, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(IRect(x, y, w, h), text, iconId, optionFlags);
     }
 
-    UiControlFlags button(IRect area, IStr text, UiIcon icon = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+    UiControlFlags icon(IRect area, UiIconId iconId, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(area, "", iconId, optionFlags);
+    }
+
+    UiControlFlags icon(IVec2 position, IVec2 size, UiIconId iconId, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(position, size, "", iconId, optionFlags);
+    }
+
+    UiControlFlags icon(int x, int y, int w, int h, UiIconId iconId, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return label(x, y, w, h, "", iconId, optionFlags);
+    }
+
+    UiControlFlags button(IRect area, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
         auto result = UiControlFlags();
         auto focusId = ++focusState.focusIdCounter; // NOTE: Will never have a value of zero.
-        auto hover = area.hasPoint(input.mousePosition);
-        auto active = hover && (input.mouseButtonDown & UiMouseButtonFlag.left);
+        auto hover = area.hasPoint(input.mousePosition) && !(optionFlags & UiOptionFlag.turnOff) ;
+        auto active = hover && (input.mouseButtonDown & UiMouseButtonFlag.left) && !(optionFlags & UiOptionFlag.turnOff) ;
 
         if (hover && (input.mouseButtonPressed & UiMouseButtonFlag.left)) {
             focusState.currentFocusId = focusId;
             focusState.focusIsActive = false;
         }
 
-        auto focus = focusState.isFocused(focusId);
+        auto focus = focusState.isFocused(focusId) && !(optionFlags & UiOptionFlag.turnOff);
         auto submittedByKeyboard = focus && (input.keyPressed & UiKeyFlag.enter);
         if (hover && input.mouseAction(area) || submittedByKeyboard) result |= UiControlFlag.submitted;
 
         auto colorType = active
             ? UiColorType.buttonActive
             : (  focus ? UiColorType.buttonFocus : (hover ? UiColorType.buttonHover : UiColorType.button)  );
-
-        if (icon && iconSize && !iconSize(icon).isZero) {
-            drawBox(area, colorType, hover, active, focus);
-            if (optionFlags & UiOptionFlag.alignCenter) {
-                drawIcon(icon, UiColorType.icon, area, optionFlags);
-            } else if (optionFlags & UiOptionFlag.alignRight) {
-                auto newArea = area;
-                drawIcon(icon, UiColorType.icon, newArea.subRight(iconSize(icon).x), optionFlags);
-                newArea.subRight(style.padding);
-                drawText(text, UiColorType.text, newArea, optionFlags);
-            } else {
-                auto newArea = area;
-                drawIcon(icon, UiColorType.icon, newArea.subLeft(iconSize(icon).x), optionFlags);
-                newArea.subLeft(style.padding);
-                drawText(text, UiColorType.text, newArea, optionFlags);
-            }
-        } else {
-            drawBox(area, colorType, hover, active, focus);
-            drawText(text, UiColorType.text, area, optionFlags);
+        if (optionFlags & UiOptionFlag.turnOff) {
+            colorType = UiColorType.buttonOff;
         }
+
+        drawBox(area, colorType, hover, active, focus, (optionFlags & UiOptionFlag.turnOff) != 0);
+        drawLabelContent(area, text, iconId, optionFlags);
         return result;
     }
 
-    UiControlFlags button(IVec2 position, IVec2 size, IStr text, UiIcon icon = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        return button(IRect(position, size), text, icon, optionFlags);
+    UiControlFlags button(IVec2 position, IVec2 size, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return button(IRect(position, size), text, iconId, optionFlags);
     }
 
-    UiControlFlags button(int x, int y, int w, int h, IStr text, UiIcon icon = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
-        return button(IRect(x, y, w, h), text, icon, optionFlags);
+    UiControlFlags button(int x, int y, int w, int h, IStr text, UiIconId iconId = 0, UiOptionFlags optionFlags = defaultUiOptionFlags) {
+        return button(IRect(x, y, w, h), text, iconId, optionFlags);
     }
 }
 
