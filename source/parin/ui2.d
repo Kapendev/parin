@@ -29,7 +29,7 @@ IVec2 parinTempUiTextSizeFunc(UiFont font, const(char)[] text) {
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
 @trusted
-void readyWithEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+void readyUiWithEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
     ui.ready(&parinTempUiTextSizeFunc, data, fontScale, iconSizeFunc);
     if (data) {
@@ -49,8 +49,8 @@ void readyWithEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, Ui
 }
 
 /// Initializes the microui context and sets temporary text size functions.
-void readyWithEngine(ref UiContext ui, int fontScale, UiIconIdSizeFunc iconSizeFunc = null) {
-    ui.readyWithEngine(null, fontScale, iconSizeFunc);
+void readyUiWithEngine(ref UiContext ui, int fontScale, UiIconIdSizeFunc iconSizeFunc = null) {
+    ui.readyUiWithEngine(null, fontScale, iconSizeFunc);
 }
 
 /// Handles input events and updates the microui context accordingly.
@@ -123,13 +123,13 @@ void drawUiState(ref UiContext ui) {
 }
 
 /// Begins input handling and UI processing.
-void beginFrame(ref UiContext ui) {
+void beginUiFrame(ref UiContext ui) {
     ui.handleUiInput();
     ui.begin();
 }
 
 /// Ends UI processing and performs drawing.
-void endFrame(ref UiContext ui) {
+void endUiFrame(ref UiContext ui) {
     ui.end();
     ui.drawUiState();
 }

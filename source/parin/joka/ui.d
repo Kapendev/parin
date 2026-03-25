@@ -619,24 +619,8 @@ struct UiContext {
         return UiResultFlag.none;
     }
 
-    UiResultFlags label(IVec2 position, IVec2 size, IStr text, UiIconId iconId = 0, UiFlags optionFlags = defaultUiFlags) {
-        return label(IRect(position, size), text, iconId, optionFlags);
-    }
-
-    UiResultFlags label(int x, int y, int w, int h, IStr text, UiIconId iconId = 0, UiFlags optionFlags = defaultUiFlags) {
-        return label(IRect(x, y, w, h), text, iconId, optionFlags);
-    }
-
     UiResultFlags icon(IRect area, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
         return label(area, "", iconId, optionFlags);
-    }
-
-    UiResultFlags icon(IVec2 position, IVec2 size, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
-        return label(position, size, "", iconId, optionFlags);
-    }
-
-    UiResultFlags icon(int x, int y, int w, int h, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
-        return label(x, y, w, h, "", iconId, optionFlags);
     }
 
     UiResultFlags buttonWithIcon(IRect area, IStr text, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
@@ -684,24 +668,74 @@ struct UiContext {
         return result;
     }
 
-    UiResultFlags buttonWithIcon(IVec2 position, IVec2 size, IStr text, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
-        return buttonWithIcon(IRect(position, size), text, iconId, optionFlags);
-    }
-
-    UiResultFlags buttonWithIcon(int x, int y, int w, int h, IStr text, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
-        return buttonWithIcon(IRect(x, y, w, h), text, iconId, optionFlags);
-    }
-
     UiResultFlags button(IRect area, IStr text, UiFlags optionFlags = defaultUiFlags) {
         return buttonWithIcon(area, text, 0, optionFlags);
     }
 
-    UiResultFlags button(IVec2 position, IVec2 size, IStr text, UiFlags optionFlags = defaultUiFlags) {
-        return buttonWithIcon(position, size, text, 0, optionFlags);
+    UiResultFlags stepper(T)(IRect area, ref T number, T startInclusive, T stopInclusive, T step, bool canLoop, IStr fmtStr = defaultAsciiFmtArgStr, UiFlags optionFlags = defaultUiFlags) {
+        auto flags = button(area, fmtStr.fmt(number), optionFlags | UiFlag.checkNavigation);
+        if (!flags) return UiResultFlag.none;
+
+        if (flags & (UiResultFlag.pressedUp | UiResultFlag.pressedRight | UiResultFlag.submitted)) {
+            if (number + step > stopInclusive) {
+                number = canLoop ? startInclusive : stopInclusive;
+            } else {
+                number += step;
+            }
+        } else if (flags & (UiResultFlag.pressedDown | UiResultFlag.pressedLeft)) {
+            if (number < startInclusive + step) {
+                number = canLoop ? stopInclusive : startInclusive;
+            } else {
+                number -= step;
+            }
+        }
+        return flags;
     }
 
-    UiResultFlags button(int x, int y, int w, int h, IStr text, UiFlags optionFlags = defaultUiFlags) {
-        return buttonWithIcon(x, y, w, h, text, 0, optionFlags);
+    UiResultFlags stepperRpgm(T)(IRect area, ref T number, UiFlags optionFlags = defaultUiFlags) {
+        auto flags = optionFlags;
+        flags = flags & (~UiFlag.alignCenter);
+        flags |= UiFlag.alignRight;
+        return stepper(area, number, 0, 100, 20, true, "{}%", flags);
+    }
+
+    UiResultFlags cycler(T)(IRect area, ref T enumNumber, bool canLoop, bool canKeepFirstChar = false, UiFlags optionFlags = defaultUiFlags) {
+        int number = enumNumber;
+        int startInclusive = T.min;
+        int stopInclusive = T.max;
+        int step = 1;
+
+        auto enumStr = enumNumber.toStr();
+        if (!canKeepFirstChar) enumStr = "{}{}".fmt(enumStr[0].toUpper, enumStr[1 .. $]);
+
+        auto flags = button(area, enumStr, optionFlags | UiFlag.checkNavigation);
+        if (!flags) return UiResultFlag.none;
+
+        if (flags & (UiResultFlag.pressedUp | UiResultFlag.pressedRight | UiResultFlag.submitted)) {
+            if (number + step > stopInclusive) {
+                number = canLoop ? startInclusive : stopInclusive;
+            } else {
+                number += step;
+            }
+        } else if (flags & (UiResultFlag.pressedDown | UiResultFlag.pressedLeft)) {
+            if (number < startInclusive + step) {
+                number = canLoop ? stopInclusive : startInclusive;
+            } else {
+                number -= step;
+            }
+        }
+        enumNumber = cast(T) number;
+        return flags;
+    }
+
+    UiResultFlags toggle(IRect area, ref bool state, IStr offText = "OFF", IStr onText = "ON", UiFlags optionFlags = defaultUiFlags) {
+        auto flags = button(area, state ? onText : offText, optionFlags | UiFlag.checkNavigation);
+        if (!flags) return UiResultFlag.none;
+
+        if (flags & (UiResultFlag.pressedUp | UiResultFlag.pressedRight | UiResultFlag.submitted | UiResultFlag.pressedDown | UiResultFlag.pressedLeft)) {
+            state = !state;
+        }
+        return flags;
     }
 }
 

@@ -5,33 +5,36 @@ import parin.ui2;
 
 void ready() {
     lockResolution(320, 180);
-    ui.readyWithEngine();
+    ui.readyUiWithEngine();
 }
 
 bool update(float dt) {
     auto screen = IRect(resolutionWidth, resolutionHeight);
     screen.subAll(8);
 
-    ui.beginFrame();
-    scope (exit) ui.endFrame();
+    ui.beginUiFrame();
+    scope (exit) ui.endUiFrame();
 
-    // Use TAB and ENTER to select those buttons using the keyboard.
+    // Use TAB, ARROW KEYS, and ENTER to press buttons.
     with (ui.captureFocus(UiKeyNavigation.horizontal)) {
-        static number = 5;
-        auto menu = ui.rowItems(screen.subTop(15), 8, 8);
+        auto menu = ui.rowItems(screen.subTop(20), 7, 6);
         if (ui.button(menu.pop(), "A")) println("A!");
         if (ui.button(menu.pop(), "B")) println("B!");
         if (ui.button(menu.pop(), "C")) println("C!");
-        if (ui.button(menu.pop(), "D")) println("D!");
-        if (auto flags = ui.button(menu.pop(), number.toStr(), defaultUiFlags | UiFlag.checkNavigation)) {
-            if (flags & UiResultFlag.submitted) number += 1;
-            if (flags & UiResultFlag.pressedUp) number += 1;
-            if (flags & UiResultFlag.pressedDown) number -= 1;
-            println("New value is: ", number);
-        }
+
+        static number = 20;
+        if (ui.stepperRpgm(menu.pop(), number)) println("New number is: ", number);
+
+        static state = false;
+        if (ui.toggle(menu.pop(), state)) println("New state is: ", state);
+
+        enum Animal { cat, dog, moose }
+        static animal = Animal.moose;
+        if (ui.cycler(menu.pop(), animal, true)) println("New animal is: ", animal);
+
     }
 
-    // Use layouts and options to control how UI elements works.
+    // Use layouts and options to control how UI elements.
     auto testText = "Hello\nWorldoo";
     auto testPart = ui.colSlice(IRect(screen.x, 40, 75, 130), 24, 7);
     {
@@ -45,7 +48,7 @@ bool update(float dt) {
         auto testSubPart = ui.rowSlice(testPart.pop(), testPart.w, 7);
         if (ui.button(testSubPart.pop(), testText, UiFlag.alignRight))
             println("Pressed 3!");
-        if (ui.button(testSubPart.pop(), testText, Key.space.isDown ? 0 : UiFlag.turnOff))
+        if (ui.button(testSubPart.pop(), testText, UiFlag.turnOff))
             println("Pressed 4!");
     }
 
