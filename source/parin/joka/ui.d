@@ -72,7 +72,7 @@ enum UiMouseButtonFlag : UiMouseButtonFlags {
     middle = 0x4,
 }
 
-alias UiKeyFlags = ubyte;
+alias UiKeyFlags = ushort;
 enum UiKeyFlag : UiKeyFlags {
     none  = 0,
     left  = 1U << 1,
@@ -82,6 +82,7 @@ enum UiKeyFlag : UiKeyFlags {
     tab   = 1U << 5,
     enter = 1U << 6,
     esc   = 1U << 7,
+    shift = 1U << 8,
 }
 
 enum UiKeyNavigation : ubyte {
@@ -114,20 +115,36 @@ struct UiInput {
     }
 
     bool keyNavigationUpAction() {
+        /*
+        auto goDownwardTab = false;
+        if (keyDown & UiKeyFlag.shift) {
+            goDownwardTab = (keyPressed & UiKeyFlag.tab) != 0;
+        } else {
+        }
+        */
+        auto goDownwardTab = false;
         with (UiKeyNavigation) final switch (keyNavigation) {
             case none:
-            case verticalOrHorizontal: return (keyPressed & UiKeyFlag.up) || (keyPressed & UiKeyFlag.left);
-            case vertical: return (keyPressed & UiKeyFlag.up) != 0;
-            case horizontal: return (keyPressed & UiKeyFlag.left) != 0;
+            case verticalOrHorizontal: return goDownwardTab || (keyPressed & UiKeyFlag.up) || (keyPressed & UiKeyFlag.left);
+            case vertical: return goDownwardTab || ((keyPressed & UiKeyFlag.up) != 0);
+            case horizontal: return goDownwardTab || ((keyPressed & UiKeyFlag.left) != 0);
         }
     }
 
     bool keyNavigationDownAction() {
+        /*
+        auto goForwardTab = false;
+        if (keyDown & UiKeyFlag.shift) {
+        } else {
+            goForwardTab = (keyPressed & UiKeyFlag.tab) != 0;
+        }
+        */
+        auto goForwardTab = (keyPressed & UiKeyFlag.tab) != 0;
         with (UiKeyNavigation) final switch (keyNavigation) {
             case none:
-            case verticalOrHorizontal: return (keyPressed & UiKeyFlag.tab) || (keyPressed & UiKeyFlag.down) || (keyPressed & UiKeyFlag.right);
-            case vertical: return (keyPressed & UiKeyFlag.tab) || (keyPressed & UiKeyFlag.down);
-            case horizontal: return (keyPressed & UiKeyFlag.tab) || (keyPressed & UiKeyFlag.right);
+            case verticalOrHorizontal: return goForwardTab || (keyPressed & UiKeyFlag.down) || (keyPressed & UiKeyFlag.right);
+            case vertical: return goForwardTab || (keyPressed & UiKeyFlag.down);
+            case horizontal: return goForwardTab || (keyPressed & UiKeyFlag.right);
         }
     }
 
@@ -335,6 +352,15 @@ struct UiLayout {
     }
 }
 
+static struct UiControlInteraction {
+    bool submittedByKeyboard;
+    bool hover;
+    bool active;
+    bool focus;
+    uint focusId;
+    bool mouseAction;
+}
+
 struct UiContext {
     UiCommands commands;
     UiFocusState focusState;
@@ -391,6 +417,7 @@ struct UiContext {
         style.padding = 5;
     }
 
+    @trusted
     void restoreDefaultStyle() {
         style = &_style;
     }
@@ -614,34 +641,26 @@ struct UiContext {
         input.clear();
     }
 
-    UiResultFlags label(IRect area, IStr text, UiIconId iconId = 0, UiFlags optionFlags = defaultUiFlags) {
-        drawLabelContent(area, text, iconId, optionFlags);
-        return UiResultFlag.none;
-    }
-
-    UiResultFlags icon(IRect area, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
-        return label(area, "", iconId, optionFlags);
-    }
-
-    UiResultFlags buttonWithIcon(IRect area, IStr text, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
-        auto result = UiResultFlags();
-        auto focusId = ++focusState.focusIdCounter; // NOTE: Will never have a value of zero.
-        auto hover = area.hasPoint(input.mousePosition) && !(optionFlags & UiFlag.turnOff) ;
-        auto active = hover && (input.mouseButtonDown & UiMouseButtonFlag.left) && !(optionFlags & UiFlag.turnOff) ;
-
-        if (hover && (input.mouseButtonPressed & UiMouseButtonFlag.left)) {
-            focusState.currentFocusId = focusId;
+    UiControlInteraction registerControlInteraction(IRect area, UiFlags optionFlags) {
+        auto result = UiControlInteraction();
+        result.focusId = ++focusState.focusIdCounter; // NOTE: Will never have a value of zero.
+        result.hover = area.hasPoint(input.mousePosition) && !(optionFlags & UiFlag.turnOff) ;
+        result.active = result.hover && (input.mouseButtonDown & UiMouseButtonFlag.left) && !(optionFlags & UiFlag.turnOff) ;
+        if (result.hover && (input.mouseButtonPressed & UiMouseButtonFlag.left)) {
+            focusState.currentFocusId = result.focusId;
             focusState.focusIsActive = false;
         }
+        result.focus = focusState.isFocused(result.focusId) && !(optionFlags & UiFlag.turnOff);
+        result.submittedByKeyboard = result.focus && (input.keyPressed & UiKeyFlag.enter);
+        result.active = result.active || (result.focus && (input.keyDown & UiKeyFlag.enter));
+        result.mouseAction = input.mouseAction(area);
+        return result;
+    }
 
-        auto focus = focusState.isFocused(focusId) && !(optionFlags & UiFlag.turnOff);
-        auto submittedByKeyboard = focus && (input.keyPressed & UiKeyFlag.enter);
-        auto submittedByKeyboardDown = focus && (input.keyDown & UiKeyFlag.enter);
-        active = active || submittedByKeyboardDown;
-        if (hover && input.mouseAction(area) || submittedByKeyboard) result |= UiResultFlag.submitted;
-
-        import parin.joka.io;
-        if (focus && (optionFlags & UiFlag.checkNavigation)) {
+    UiResultFlags handleButtonInteraction(UiControlInteraction interaction, IRect area, UiFlags optionFlags) {
+        auto result = UiResultFlags();
+        if (interaction.hover && interaction.mouseAction || interaction.submittedByKeyboard) result |= UiResultFlag.submitted;
+        if (interaction.focus && (optionFlags & UiFlag.checkNavigation)) {
             with (UiKeyNavigation) final switch (input.nextKeyNavigation) {
                 case none:
                 case verticalOrHorizontal: break;
@@ -655,15 +674,31 @@ struct UiContext {
                     break;
             }
         }
+        return result;
+    }
 
-        auto colorType = active
+    UiResultFlags label(IRect area, IStr text, UiIconId iconId = 0, UiFlags optionFlags = defaultUiFlags) {
+        drawLabelContent(area, text, iconId, optionFlags);
+        return UiResultFlag.none;
+    }
+
+    UiResultFlags icon(IRect area, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
+        return label(area, "", iconId, optionFlags);
+    }
+
+    UiResultFlags buttonWithIcon(IRect area, IStr text, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
+        auto interaction = registerControlInteraction(area, optionFlags);
+        auto result = handleButtonInteraction(interaction, area, optionFlags);
+
+        auto colorType = interaction.active
             ? UiColorType.buttonActive
-            : (  focus ? UiColorType.buttonFocus : (hover ? UiColorType.buttonHover : UiColorType.button)  );
-        if (optionFlags & UiFlag.turnOff) {
-            colorType = UiColorType.buttonOff;
-        }
+            : ( interaction.focus
+                ? UiColorType.buttonFocus
+                : (interaction.hover ? UiColorType.buttonHover : UiColorType.button)
+            );
 
-        drawBox(area, colorType, hover, active, focus, (optionFlags & UiFlag.turnOff) != 0);
+        if (optionFlags & UiFlag.turnOff) colorType = UiColorType.buttonOff;
+        drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0);
         drawLabelContent(area, text, iconId, optionFlags);
         return result;
     }
@@ -693,10 +728,7 @@ struct UiContext {
     }
 
     UiResultFlags stepperRpgm(T)(IRect area, ref T number, UiFlags optionFlags = defaultUiFlags) {
-        auto flags = optionFlags;
-        flags = flags & (~UiFlag.alignCenter);
-        flags |= UiFlag.alignRight;
-        return stepper(area, number, 0, 100, 20, true, "{}%", flags);
+        return stepper(area, number, 0, 100, 20, true, "{}%", optionFlags);
     }
 
     UiResultFlags cycler(T)(IRect area, ref T enumNumber, bool canLoop, bool canKeepFirstChar = false, UiFlags optionFlags = defaultUiFlags) {
@@ -704,7 +736,6 @@ struct UiContext {
         int startInclusive = T.min;
         int stopInclusive = T.max;
         int step = 1;
-
         auto enumStr = enumNumber.toStr();
         if (!canKeepFirstChar) enumStr = "{}{}".fmt(enumStr[0].toUpper, enumStr[1 .. $]);
 

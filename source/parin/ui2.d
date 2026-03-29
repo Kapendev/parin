@@ -93,6 +93,10 @@ void handleUiInput(ref UiContext ui) {
     ui.input.keyDown |= Key.esc.isDown ? UiKeyFlag.esc : 0;
     ui.input.keyPressed |= Key.esc.isPressed ? UiKeyFlag.esc : 0;
     ui.input.keyReleased |= Key.esc.isReleased ? UiKeyFlag.esc : 0;
+
+    ui.input.keyDown |= Key.shift.isDown ? UiKeyFlag.shift : 0;
+    ui.input.keyPressed |= Key.shift.isPressed ? UiKeyFlag.shift : 0;
+    ui.input.keyReleased |= Key.shift.isReleased ? UiKeyFlag.shift : 0;
 }
 
 /// Draws the microui context to the screen.
