@@ -15,9 +15,8 @@ import parin.addons.microui.wrapper;
 
 @trusted:
 
-// Temporary text measurement function for prototyping.
-private nothrow @nogc
-int tempTextWidthFunc(UiFont font, const(char)[] str) {
+nothrow @nogc
+int microuiTempUiTextWidthFunc(UiFont font, const(char)[] str) {
     auto data = cast(FontId*) font;
     return cast(int) measureTextSize(
         *data,
@@ -26,10 +25,9 @@ int tempTextWidthFunc(UiFont font, const(char)[] str) {
         TextOptions()
     ).x;
 }
-// Temporary text measurement function for prototyping.
 
-private nothrow @nogc
-int tempTextHeightFunc(UiFont font) {
+nothrow @nogc
+int microuiTempUiTextHeightFunc(UiFont font) {
     auto data = cast(FontId*) font;
     return data.size * uiStyle.fontScale;
 }
@@ -38,7 +36,7 @@ int tempTextHeightFunc(UiFont font) {
 nothrow @nogc
 void readyUi(UiFont font = null, int fontScale = 1) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
-    readyUiCore(&tempTextWidthFunc, &tempTextHeightFunc, data, fontScale);
+    readyUiCore(&microuiTempUiTextWidthFunc, &microuiTempUiTextHeightFunc, data, fontScale);
     if (data) {
         auto size = data.size * uiStyle.fontScale;
         // No idea, these values just look good sometimes.
@@ -154,7 +152,7 @@ void handleUiInput() {
 }
 
 /// Draws the microui context to the screen.
-void drawUi() {
+void drawUiState() {
     auto styleFont = cast(FontId*) uiStyle.font;
     auto styleTexture = cast(TextureId*) uiStyle.texture;
     auto parinOptions = DrawOptions(); // NOTE: Can be weird, but works if you are not a noob.
@@ -269,5 +267,5 @@ void beginUi() {
 /// Ends UI processing and performs drawing.
 void endUi() {
     endUiCore();
-    drawUi();
+    drawUiState();
 }

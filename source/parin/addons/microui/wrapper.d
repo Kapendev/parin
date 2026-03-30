@@ -14,7 +14,7 @@ module parin.addons.microui.wrapper;
 
 import parin.addons.microui.core;
 
-__gshared UiContext uiContext;
+UiContext uiContext;
 
 alias UiTextWidthFunc  = mu_TextWidthFunc;  /// Used for getting the width of the text.
 alias UiTextHeightFunc = mu_TextHeightFunc; /// Used for getting the height of the text.
