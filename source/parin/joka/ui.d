@@ -7,21 +7,12 @@
 
 // NOTE: Last time I added RPGMaker style buttons.
 //   Maybe think about how to do grid layouts and navigation there.
-//   There is a bug with `fontScale`. Needs testing.
 
 /// The `ui` module includes a UI library.
 module parin.joka.ui;
 
 import parin.joka.math;
 import parin.joka.types;
-
-version (JokaSmallFootprint) {
-    enum defaultUiCommandsCapacity = 64;
-    enum defaultUiCharDataCapacity = 1 * kilobyte;
-} else {
-    enum defaultUiCommandsCapacity = 512;
-    enum defaultUiCharDataCapacity = 128 * kilobyte;
-}
 
 enum defaultUiFlags = UiFlag.alignCenter;
 
@@ -34,7 +25,7 @@ alias UiIconId = uint;
 
 @trusted nothrow @nogc {
     /// A function used for getting the width and height of the text.
-    alias UiTextSizeFunc = IVec2 function(UiFont font, IStr text);
+    alias UiTextSizeFunc = IVec2 function(UiFont font, int fontScale, IStr text);
     alias UiIconIdSizeFunc = IVec2 function(UiIconId iconId);
 }
 
@@ -211,18 +202,29 @@ union UiCommand {
 }
 
 struct UiCommands {
-    StaticArray!(UiCommand, defaultUiCommandsCapacity) data = void;
+    UiCommand[] data;
     Sz length;
     alias items this;
 
     @safe nothrow @nogc:
 
-    pragma(inline, true) @trusted
-    UiCommand[] items() {
-        return data.ptr[0 .. length];
-    }
+    pragma(inline, true) @trusted {
+        UiCommand[] items() {
+            return data.ptr[0 .. length];
+        }
 
-    enum capacity = defaultUiCommandsCapacity;
+        UiCommand* ptr() {
+            return data.ptr;
+        }
+
+        bool isEmpty() {
+            return length == 0;
+        }
+
+        Sz capacity() {
+            return data.length;
+        }
+    }
 
     bool appendBlank() {
         if (length >= capacity) return true;
@@ -370,30 +372,36 @@ struct UiContext {
     UiStyle _style;
     UiInput input;
 
-    char[defaultUiCharDataCapacity] charData;
+    char[] charDataBuffer;
     Sz charDataLength;
     int charHeight;
     int charOffset;
 
     @safe nothrow @nogc:
 
-    this(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
-        ready(textSizeFunc, font, fontScale, iconSizeFunc);
+    this(UiTextSizeFunc textSizeFunc, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+        ready(textSizeFunc, commandsBuffer, charDataBuffer, font, fontScale, iconSizeFunc);
     }
 
-    void ready(UiTextSizeFunc textSizeFunc, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+    void ready(UiTextSizeFunc textSizeFunc, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
         textSize = textSizeFunc ? textSizeFunc : &tempUiTextSizeFunc;
+        setBuffers(commandsBuffer, charDataBuffer);
         restoreDefaultStyle();
         applyDefaultStyle();
         setFont(font, fontScale);
         iconSize = iconSizeFunc;
     }
 
+    void setBuffers(UiCommand[] newCommandsBuffer, char[] newCharDataBuffer) {
+        commands = UiCommands(newCommandsBuffer);
+        charDataBuffer = newCharDataBuffer;
+    }
+
     void setFont(UiFont font, int fontScale = 1) {
         style.font = font;
         style.fontScale = fontScale;
-        charHeight = textSize(style.font, "A").y * style.fontScale;
-        charOffset = (textSize(style.font, "A\nA").y * style.fontScale) - charHeight * 2;
+        charHeight = textSize(font, fontScale, "A").y;
+        charOffset = (textSize(font, fontScale, "A\nA").y) - charHeight * 2;
     }
 
     void applyDefaultStyle() {
@@ -472,9 +480,9 @@ struct UiContext {
     IStrz makeStrzCopy(IStr text) {
         auto charsNeeded = text.length + 1;
         auto newCharDataLength = charDataLength + charsNeeded;
-        if (newCharDataLength > defaultUiCharDataCapacity) return null;
+        if (newCharDataLength > charDataBuffer.length) return null;
 
-        auto result = charData.ptr + charDataLength;
+        auto result = charDataBuffer.ptr + charDataLength;
         jokaMemcpy(result, text.ptr, text.length);
         result[text.length] = '\0';
         charDataLength = newCharDataLength;
@@ -533,7 +541,7 @@ struct UiContext {
     void drawText(IStr text, UiColorType colorType, IRect area, UiFlags optionFlags) {
         if (text.length == 0) return;
 
-        auto baseTextArea = IRect(textSize(style.font, text) * style.fontScale);
+        auto baseTextArea = IRect(textSize(style.font, style.fontScale, text));
         baseTextArea.y = area.centerPoint.y - baseTextArea.h / 2;
         if (optionFlags & UiFlag.alignCenter) {
             baseTextArea.x = area.centerPoint.x - baseTextArea.w / 2;
@@ -548,7 +556,7 @@ struct UiContext {
             if (c == '\n' || i == text.length - 1) {
                 auto line = text[lineStartIndex .. i + (i == text.length - 1)];
                 auto lineArea = baseTextArea;
-                lineArea.w = textSize(style.font, line).x * style.fontScale;
+                lineArea.w = textSize(style.font, style.fontScale, line).x;
                 lineArea.h = charHeight;
                 lineArea.y += lineStartIndex ? (lineArea.h + charOffset) : 0;
                 // NOTE: Could maybe refactor that alignment part into a function.
@@ -562,8 +570,9 @@ struct UiContext {
                 auto lineCommand = UiCommand();
                 lineCommand.base.type = UiCommandType.text;
                 lineCommand.base.colorType = colorType;
-                lineCommand.text.data = makeStrzCopy(line)[0 .. line.length];
                 lineCommand.text.area = lineArea;
+                lineCommand.text.data = makeStrzCopy(line)[0 .. line.length];
+                if (lineCommand.text.data.ptr == null) return;
                 commands.appendRef(lineCommand);
                 lineStartIndex = i + 1;
             }
@@ -771,13 +780,13 @@ struct UiContext {
 }
 
 @safe nothrow @nogc
-IVec2 tempUiTextSizeFunc(UiFont font, IStr text) {
-    enum charWidth = 8;
-    enum charHeight = 8;
-
+IVec2 tempUiTextSizeFunc(UiFont font, int fontScale, IStr text) {
+    auto charWidth = 8 * fontScale;
+    auto charHeight = 8 * fontScale;
     auto maxHorizontalLength = 0;
     auto maxVerticalLength = 1;
     auto horizontalLengthCounter = 0;
+
     foreach (c; text) {
         if (c == '\n') {
             if (maxHorizontalLength < horizontalLengthCounter) maxHorizontalLength = horizontalLengthCounter;
@@ -798,13 +807,13 @@ IVec2 tempUiTextSizeFunc(UiFont font, IStr text) {
 
 // UI test.
 unittest {
-    auto ui = UiContext(null, null);
+    auto ui = UiContext(null, null, null, null);
 
     ui.begin();
     ui.button(IRect(0, 0, 60, 20), "My Button");
     ui.end();
 
-    assert(ui.commands.length == 3);
+    assert(ui.commands.length == 0);
     foreach (ref command; ui.commands) {
         with (UiCommandType) final switch (command.type) {
             case none: break;

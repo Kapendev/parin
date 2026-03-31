@@ -12,26 +12,20 @@ module parin.ui2;
 import parin.engine;
 public import parin.joka.ui;
 
-auto ui = UiContext();
-
 @safe nothrow @nogc:
 
 @trusted
-IVec2 parinTempUiTextSizeFunc(UiFont font, const(char)[] text) {
+IVec2 parinTempUiTextSizeFunc(UiFont font, int fontScale, const(char)[] text) {
     auto data = cast(FontId*) font;
-    return measureTextSize(
-        *data,
-        text,
-        DrawOptions(Vec2(ui.style.fontScale, ui.style.fontScale)),
-        TextOptions(),
-    ).toIVec();
+    auto scale = Vec2(fontScale);
+    return measureTextSize(*data, text, DrawOptions(scale)).toIVec();
 }
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
 @trusted
-void readyUiWithEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+void readyUiWithEngine(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
-    ui.ready(&parinTempUiTextSizeFunc, data, fontScale, iconSizeFunc);
+    ui.ready(&parinTempUiTextSizeFunc, commandsBuffer, charDataBuffer, data, fontScale, iconSizeFunc);
     if (data) {
         auto size = data.size * ui.style.fontScale;
         // No idea, these values just look good sometimes.
@@ -46,11 +40,6 @@ void readyUiWithEngine(ref UiContext ui, UiFont font = null, int fontScale = 1, 
             ui.style.padding += 8;
         }
     }
-}
-
-/// Initializes the microui context and sets temporary text size functions.
-void readyUiWithEngine(ref UiContext ui, int fontScale, UiIconIdSizeFunc iconSizeFunc = null) {
-    ui.readyUiWithEngine(null, fontScale, iconSizeFunc);
 }
 
 /// Handles input events and updates the microui context accordingly.

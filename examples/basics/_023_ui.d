@@ -3,18 +3,20 @@
 import parin;
 import parin.ui2;
 
+auto ui = UiContext();
+
 void ready() {
     lockResolution(320, 180);
-    ui.readyUiWithEngine();
+    ui.readyUiWithEngine(null, null);
 }
 
 bool update(float dt) {
-    auto screen = IRect(resolutionWidth, resolutionHeight);
-    screen.subAll(8);
-
+    ui.setBuffers(frameMakeSlice!UiCommand(256), frameMakeSlice!char(2048));
     ui.beginUiFrame();
     scope (exit) ui.endUiFrame();
 
+    auto screen = IRect(resolutionWidth, resolutionHeight);
+    screen.subAll(8);
     // Use TAB, ARROW KEYS, and ENTER to press buttons.
     with (ui.captureFocus(UiKeyNavigation.horizontal)) {
         auto menu = ui.rowItems(screen.subTop(20), 7, 6);
