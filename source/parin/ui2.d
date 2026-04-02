@@ -15,7 +15,7 @@ public import parin.joka.ui;
 @safe nothrow @nogc:
 
 @trusted
-IVec2 parinTempUiTextSizeFunc(UiFont font, int fontScale, const(char)[] text) {
+IVec2 parinTempUiTextSizeFunc(UiFont font, uint fontScale, const(char)[] text) {
     auto data = cast(FontId*) font;
     auto scale = Vec2(fontScale);
     return measureTextSize(*data, text, DrawOptions(scale)).toIVec();
@@ -23,9 +23,10 @@ IVec2 parinTempUiTextSizeFunc(UiFont font, int fontScale, const(char)[] text) {
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
 @trusted
-void readyUiWithEngine(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font = null, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+void readyUiWithEngine(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font = null, uint fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
     ui.ready(&parinTempUiTextSizeFunc, commandsBuffer, charDataBuffer, data, fontScale, iconSizeFunc);
+    ui.manualBordersMode = true;
     if (data) {
         auto size = data.size * ui.style.fontScale;
         // No idea, these values just look good sometimes.
@@ -103,7 +104,15 @@ void drawUiState(ref UiContext ui) {
             case none:
                 break;
             case rect:
-                drawRect(command.rect.toRect(), color);
+                if (ui.manualBordersMode) {
+                    auto borderColor = ui.style.colors[(command.rect.flags & UiCommandFlag.off) ? UiColorType.borderOff : UiColorType.border];
+                    auto borderRect = command.rect.data;
+                    borderRect.addAll(ui.style.border);
+                    drawRect(borderRect.toRect(), borderColor);
+                    drawRect(command.rect.toRect(), color);
+                } else {
+                    drawRect(command.rect.toRect(), color);
+                }
                 break;
             case text:
                 parinOptions.scale = Vec2(ui.style.fontScale);

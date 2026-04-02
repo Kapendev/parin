@@ -25,7 +25,7 @@ alias UiIconId = uint;
 
 @trusted nothrow @nogc {
     /// A function used for getting the width and height of the text.
-    alias UiTextSizeFunc = IVec2 function(UiFont font, int fontScale, IStr text);
+    alias UiTextSizeFunc = IVec2 function(UiFont font, uint fontScale, IStr text);
     alias UiIconIdSizeFunc = IVec2 function(UiIconId iconId);
 }
 
@@ -50,9 +50,9 @@ struct UiStyle {
     UiFont font;
     UiTexture texture;
     UiColors colors;
-    int fontScale;
-    int border;
-    int padding;
+    uint fontScale;
+    uint border;
+    uint padding;
 }
 
 alias UiMouseButtonFlags = ubyte;
@@ -156,8 +156,7 @@ enum UiCommandFlag : UiCommandFlags {
     hover  = 0x01,
     active = 0x02,
     focus  = 0x04,
-    border = 0x08,
-    off    = 0x10,
+    off    = 0x08,
 }
 
 enum UiCommandType : ubyte {
@@ -175,6 +174,7 @@ struct UiCommandBase {
 struct UiCommandRect {
     UiCommandBase base;
     UiCommandFlags flags;
+    ushort border;
     IRect data;
     alias data this;
 }
@@ -371,6 +371,7 @@ struct UiContext {
     UiStyle* style;
     UiStyle _style;
     UiInput input;
+    bool manualBordersMode;
 
     char[] charDataBuffer;
     Sz charDataLength;
@@ -379,11 +380,11 @@ struct UiContext {
 
     @safe nothrow @nogc:
 
-    this(UiTextSizeFunc textSizeFunc, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+    this(UiTextSizeFunc textSizeFunc, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font, uint fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
         ready(textSizeFunc, commandsBuffer, charDataBuffer, font, fontScale, iconSizeFunc);
     }
 
-    void ready(UiTextSizeFunc textSizeFunc, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font, int fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+    void ready(UiTextSizeFunc textSizeFunc, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font, uint fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
         textSize = textSizeFunc ? textSizeFunc : &tempUiTextSizeFunc;
         setBuffers(commandsBuffer, charDataBuffer);
         restoreDefaultStyle();
@@ -397,7 +398,7 @@ struct UiContext {
         charDataBuffer = newCharDataBuffer;
     }
 
-    void setFont(UiFont font, int fontScale = 1) {
+    void setFont(UiFont font, uint fontScale = 1) {
         style.font = font;
         style.fontScale = fontScale;
         charHeight = textSize(font, fontScale, "A").y;
@@ -490,31 +491,35 @@ struct UiContext {
     }
 
     @trusted
-    void drawRect(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool border, bool off) {
+    void drawRect(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool off, uint border) {
         if (!area.hasSize) return;
 
         auto command = UiCommand();
         command.base.type = UiCommandType.rect;
         command.base.colorType = colorType;
+        command.rect.border = cast(ushort) border;
         command.rect.data = area;
         if (hover)  command.rect.flags |= UiCommandFlag.hover;
         if (active) command.rect.flags |= UiCommandFlag.active;
         if (focus)  command.rect.flags |= UiCommandFlag.focus;
-        if (border) command.rect.flags |= UiCommandFlag.border;
         if (off)    command.rect.flags |= UiCommandFlag.off;
         commands.appendRef(command);
     }
 
-    void drawBorder(IRect area, UiColorType colorType, bool off) {
-        if (style.border == 0) return;
+    void drawBorder(IRect area, bool off, uint border) {
+        if (border == 0) return;
         auto borderArea = area;
-        borderArea.addAll(style.border);
-        drawRect(borderArea, off ? UiColorType.borderOff : UiColorType.border, false, false, false, true, off);
+        borderArea.addAll(border);
+        drawRect(borderArea, off ? UiColorType.borderOff : UiColorType.border, false, false, false, off, border);
     }
 
-    void drawBox(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool off) {
-        drawBorder(area, colorType, off);
-        drawRect(area, colorType, hover, active, focus, false, off);
+    void drawBox(IRect area, UiColorType colorType, bool hover, bool active, bool focus, bool off, uint border) {
+        if (manualBordersMode) {
+            drawRect(area, colorType, hover, active, focus, off, border);
+        } else {
+            drawBorder(area, off, border);
+            drawRect(area, colorType, hover, active, focus, off, 0);
+        }
     }
 
     void drawIcon(UiIconId iconId, UiColorType colorType, IRect area, UiFlags optionFlags) {
@@ -707,7 +712,7 @@ struct UiContext {
             );
 
         if (optionFlags & UiFlag.turnOff) colorType = UiColorType.buttonOff;
-        drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0);
+        drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0, style.border);
         drawLabelContent(area, text, iconId, optionFlags);
         return result;
     }
@@ -780,7 +785,7 @@ struct UiContext {
 }
 
 @safe nothrow @nogc
-IVec2 tempUiTextSizeFunc(UiFont font, int fontScale, IStr text) {
+IVec2 tempUiTextSizeFunc(UiFont font, uint fontScale, IStr text) {
     auto charWidth = 8 * fontScale;
     auto charHeight = 8 * fontScale;
     auto maxHorizontalLength = 0;
