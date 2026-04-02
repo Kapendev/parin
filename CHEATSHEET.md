@@ -205,9 +205,9 @@ void freeAllResourceIds();
 void clearAllEngineTasks();
 
 /// Allocates raw memory from the frame arena.
-void* frameMalloc(Sz size, Sz alignment);
+void* frameMalloc(Sz alignment, Sz size);
 /// Reallocates memory from the frame arena.
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+void* frameRealloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize);
 /// Allocates uninitialized memory for a single value of type `T`.
 T* frameMakeBlank(T)();
 /// Allocates and initializes a single value of type `T`.

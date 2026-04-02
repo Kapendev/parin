@@ -737,21 +737,23 @@ version (JokaCustomMemory) {
     extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
     extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
 } else version (JokaGcMemory) {
-    import stringc = core.stdc.string;
+    private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+    private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+    private extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
 
     nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
-        return stringc.memset(ptr, value, size);
+        return stdc_memset(ptr, value, size);
     }
 
     nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stringc.memcpy(ptr, source, size);
+        return stdc_memcpy(ptr, source, size);
     }
 
     nothrow @nogc
     int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
-        return stringc.memcpy(ptr1, ptr2, size);
+        return stdc_memcmp(ptr1, ptr2, size);
     }
 } else {
     private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);

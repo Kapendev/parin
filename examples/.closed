@@ -9,8 +9,6 @@
 # And maybe have an OS variable that we can concat with paths. For example: ./vendor/$os
 # Btw I always get the paths mixed and stuff. Maybe fix that? Feels weird how it is not the same with the others.
 -L=-L../packages/setup/source/vendor/linux_x86_64
-# This is just for me.
--D=-betterC
 
 [mac]
 -o=../example

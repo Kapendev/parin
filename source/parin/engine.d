@@ -926,13 +926,13 @@ void dprintfln(A...)(InterpolationHeader header, A args, InterpolationFooter foo
 @trusted nothrow:
 
 /// Allocates raw memory from the frame arena.
-void* frameMalloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
-    return _engineState.arena.malloc(size, alignment, file, line);
+void* frameMalloc(Sz alignment, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.malloc(alignment, size, file, line);
 }
 
 /// Reallocates memory from the frame arena.
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
-    return _engineState.arena.realloc(ptr, oldSize, newSize, alignment, file, line);
+void* frameRealloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file = __FILE__, Sz line = __LINE__) {
+    return _engineState.arena.realloc(alignment, oldPtr, oldSize, newSize, file, line);
 }
 
 /// Allocates uninitialized memory for a single value of type `T`.

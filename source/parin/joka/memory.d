@@ -172,7 +172,7 @@ version (JokaCustomMemory) {
 
     version (JokaMemoryStubs) {
         version (JokaSmallFootprint) {
-            enum __jokaMemoryGlobalArenaDataCapacity = 16 * kilobyte;
+            enum __jokaMemoryGlobalArenaDataCapacity = 8 * kilobyte;
         } else {
             enum __jokaMemoryGlobalArenaDataCapacity = 8 * megabyte;
         }
@@ -181,7 +181,7 @@ version (JokaCustomMemory) {
         extern(C) Arena __jokaMemoryGlobalArena;
         private nothrow @nogc void* __joka_stdc_realloc(void* ptr, size_t size, size_t oldSize) {
             if (__jokaMemoryGlobalArena.capacity == 0) __jokaMemoryGlobalArena.ready(__jokaMemoryGlobalArenaData);
-            return __jokaMemoryGlobalArena.realloc(ptr, oldSize, size, 0);
+            return __jokaMemoryGlobalArena.realloc(0, ptr, oldSize, size);
         }
 
         private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size) {
@@ -1956,7 +1956,7 @@ struct Arena {
 
     // NOTE: The file and line arguments are here for metraprogramming reasons. It keeps the API of arena types the same.
 
-    void* malloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
+    void* malloc(Sz alignment, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (alignment == 0) alignment = defaultJokaMemoryAlignment;
 
         Sz alignedOffset = void;
@@ -1973,29 +1973,29 @@ struct Arena {
         return lastPtr;
     }
 
-    void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
+    void* realloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file = __FILE__, Sz line = __LINE__) {
         if (alignment == 0) alignment = defaultJokaMemoryAlignment;
 
         auto shouldMemcpy = true;
-        if (ptr == null) return malloc(newSize, alignment);
-        if (ptr == lastPtr) {
+        if (oldPtr == null) return malloc(alignment, newSize, file, line);
+        if (oldPtr == lastPtr) {
             offset = previousOffset;
             shouldMemcpy = false;
         }
-        auto newPtr = malloc(newSize, alignment);
+        auto newPtr = malloc(alignment, newSize, file, line);
         if (newPtr == null) return null;
         if (shouldMemcpy) {
             if (oldSize <= newSize) {
-                jokaMemcpy(newPtr, ptr, oldSize);
+                jokaMemcpy(newPtr, oldPtr, oldSize);
             } else {
-                jokaMemcpy(newPtr, ptr, newSize);
+                jokaMemcpy(newPtr, oldPtr, newSize);
             }
         }
         return newPtr;
     }
 
     T* makeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
-        return cast(T*) malloc(T.sizeof, T.alignof);
+        return cast(T*) malloc(T.alignof, T.sizeof);
     }
 
     T* make(T)(IStr file = __FILE__, Sz line = __LINE__) {
@@ -2011,7 +2011,7 @@ struct Arena {
     }
 
     T[] makeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = (cast(T*) malloc(T.sizeof * length, T.alignof))[0 .. length];
+        auto result = (cast(T*) malloc(T.alignof, T.sizeof * length))[0 .. length];
         if (result.ptr) return result;
         return [];
     }
@@ -2035,7 +2035,7 @@ struct Arena {
     }
 
     T[] resizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = (cast(T*) realloc(values, T.sizeof * oldLength, T.sizeof * newLength, T.alignof))[0 .. newLength];
+        auto result = (cast(T*) realloc(T.alignof, values, T.sizeof * oldLength, T.sizeof * newLength))[0 .. newLength];
         if (result.ptr) return result;
         return [];
     }
@@ -2093,10 +2093,10 @@ struct GrowingArena {
         chunkCapacity = newChunkCapacity;
     }
 
-    void* malloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
+    void* malloc(Sz alignment, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (alignment == 0) alignment = defaultJokaMemoryAlignment;
 
-        auto pp = current.malloc(size, alignment);
+        auto pp = current.malloc(alignment, size, file, line);
         if (pp == null) {
             auto chunk = cast(Arena*) null;
             if (current.next) {
@@ -2107,15 +2107,15 @@ struct GrowingArena {
                 current.next = chunk;
                 current = chunk;
             }
-            pp = chunk.malloc(size, alignment);
+            pp = chunk.malloc(alignment, size, file, line);
         }
         return pp;
     }
 
-    void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
+    void* realloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file = __FILE__, Sz line = __LINE__) {
         if (alignment == 0) alignment = defaultJokaMemoryAlignment;
 
-        auto pp = current.realloc(ptr, oldSize, newSize, alignment);
+        auto pp = current.realloc(alignment, oldPtr, oldSize, newSize);
         if (pp == null) {
             auto chunk = cast(Arena*) null;
             if (current.next) {
@@ -2126,13 +2126,13 @@ struct GrowingArena {
                 current.next = chunk;
                 current = chunk;
             }
-            pp = chunk.realloc(ptr, oldSize, newSize, alignment);
+            pp = chunk.realloc(alignment, oldPtr, oldSize, newSize);
         }
         return pp;
     }
 
     T* makeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
-        return cast(T*) malloc(T.sizeof, T.alignof, file, line);
+        return cast(T*) malloc(T.alignof, T.sizeof, file, line);
     }
 
     T* make(T)(IStr file = __FILE__, Sz line = __LINE__) {
@@ -2148,7 +2148,7 @@ struct GrowingArena {
     }
 
     T[] makeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = (cast(T*) malloc(T.sizeof * length, T.alignof, file, line))[0 .. length];
+        auto result = (cast(T*) malloc(T.alignof, T.sizeof * length, file, line))[0 .. length];
         if (result.ptr) return result;
         return [];
     }
@@ -2172,7 +2172,7 @@ struct GrowingArena {
     }
 
     T[] resizeSlice(T)(T* values, Sz oldLength, Sz newLength, IStr file = __FILE__, Sz line = __LINE__) {
-        auto result = (cast(T*) realloc(values, T.sizeof * oldLength, T.sizeof * newLength, T.alignof))[0 .. newLength];
+        auto result = (cast(T*) realloc(T.alignof, values, T.sizeof * oldLength, T.sizeof * newLength))[0 .. newLength];
         if (result.ptr) return result;
         return [];
     }
@@ -2230,12 +2230,12 @@ struct _ScopedArena(T) {
         }
     }
 
-    void* malloc(Sz size, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
-        return _currentArena.malloc(size, alignment, file, line);
+    void* malloc(Sz alignment, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+        return _currentArena.malloc(alignment, size, file, line);
     }
 
-    void* realloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment, IStr file = __FILE__, Sz line = __LINE__) {
-        return _currentArena.realloc(ptr, oldSize, newSize, alignment, file, line);
+    void* realloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file = __FILE__, Sz line = __LINE__) {
+        return _currentArena.realloc(alignment, oldPtr, oldSize, newSize, file, line);
     }
 
     T* makeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
@@ -2274,12 +2274,12 @@ _ScopedArena!T ScopedArena(T)(ref T arena) {
 
 @trusted @nogc
 void* arenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-    return (cast(Arena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
+    return (cast(Arena*) allocatorState).realloc(alignment, oldPtr, oldSize, newSize, file, line);
 }
 
 @trusted
 void* growingArenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
-    return (cast(GrowingArena*) allocatorState).realloc(oldPtr, oldSize, newSize, alignment, file, line);
+    return (cast(GrowingArena*) allocatorState).realloc(alignment, oldPtr, oldSize, newSize, file, line);
 }
 
 pragma(inline, true) @trusted @nogc {

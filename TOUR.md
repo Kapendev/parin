@@ -500,9 +500,9 @@ This is useful for short-lived data such as strings or small objects that only n
 
 ```d
 /// Allocates raw memory from the frame arena.
-void* frameMalloc(Sz size, Sz alignment);
+void* frameMalloc(Sz alignment, Sz size);
 /// Reallocates memory from the frame arena.
-void* frameRealloc(void* ptr, Sz oldSize, Sz newSize, Sz alignment);
+void* frameRealloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize);
 /// Allocates uninitialized memory for a single value of type `T`.
 T* frameMakeBlank(T)();
 /// Allocates and initializes a single value of type `T`.
@@ -635,6 +635,7 @@ import parin;
 
 auto text = "GNU!";
 
+// A function (task) that will run every N seconds.
 bool updateText(float dt) {
     text ~= '!';
     return false;
@@ -642,6 +643,7 @@ bool updateText(float dt) {
 
 void ready() {
     lockResolution(320, 180);
+    // Repeat this function every 5 seconds.
     repeatTask(&updateText, 0.5);
 }
 
