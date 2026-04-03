@@ -210,7 +210,7 @@ Maybe!LStr readText(IStr path) {
     return readFile(path, false);
 }
 
-Maybe!LStr readBytes(IStr path, bool binaryMode) {
+Maybe!LStr readBytes(IStr path) {
     return readFile(path, true);
 }
 

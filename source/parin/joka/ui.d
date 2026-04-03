@@ -25,7 +25,7 @@ alias UiIconId = uint;
 
 @trusted nothrow @nogc {
     /// A function used for getting the width and height of the text.
-    alias UiTextSizeFunc = IVec2 function(UiFont font, uint fontScale, IStr text);
+    alias UiTextSizeFunc   = IVec2 function(UiFont font, uint fontScale, IStr text);
     alias UiIconIdSizeFunc = IVec2 function(UiIconId iconId);
 }
 
@@ -743,7 +743,7 @@ struct UiContext {
             drawLabelContent(labelArea.subLeft(area.w / 2), info, 0, labelFlags);
             drawLabelContent(labelArea, (fmtStr.findStart(defaultAsciiFmtArgStr) != -1) ? fmtStr.fmt(number) : fmtStr, 0, labelFlags | UiFlag.alignRight);
         } else {
-            // TODO: Fmt should maybe be more chill and not throw an error with bad format strings?
+            // TODO: Fmt should maybe be more chill and not throw an error with bad format strings? Or find some way to make it chill.
             flags = button(area, (fmtStr.findStart(defaultAsciiFmtArgStr) != -1) ? fmtStr.fmt(number) : fmtStr, optionFlags | UiFlag.checkNavigation);
         }
         if (!flags) return UiResultFlag.none;

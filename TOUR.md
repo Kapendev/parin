@@ -454,6 +454,15 @@ SoundId loadSound(IStr path, float volume, float pitch, bool canRepeat, float pi
 /// Loads a viewport with default filter and wrap modes.
 ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.alpha);
 
+/// Loads bytes from a file and returns the contents as a list.
+LStr loadBytes(IStr path);
+/// Loads bytes from a file into a temporary buffer for the current frame.
+IStr loadTempBytes(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity);
+/// Loads bytes from a file into the given buffer.
+Fault loadBytesIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
+/// Saves bytes into a file with the given content.
+Fault saveBytes(IStr path, IStr bytes);
+
 /// Loads a text file and returns the contents as a list.
 LStr loadText(IStr path);
 /// Loads a text file into a temporary buffer for the current frame.

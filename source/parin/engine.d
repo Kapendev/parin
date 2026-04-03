@@ -1120,6 +1120,42 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
     return ViewportId();
 }
 
+/// Loads bytes from a file and returns the contents as a list.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
+LStr loadBytes(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = readBytes(path.toAssetsPath());
+    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path))) return result.get();
+    return LStr();
+}
+
+/// Loads bytes from a file into a temporary buffer for the current frame.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
+IStr loadTempBytes(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity, IStr file = __FILE__, Sz line = __LINE__) {
+    auto tempBytes = BStr(frameMakeSliceBlank!char(capacity, file, line));
+    loadBytesIntoBuffer(path, tempBytes, file, line);
+    return tempBytes.items;
+}
+
+/// Loads bytes from a file into the given buffer.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
+Fault loadBytesIntoBuffer(L = LStr)(IStr path, ref L listBuffer, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = readBytesIntoBuffer(path.toAssetsPath(), listBuffer);
+    didLoadOrSaveSucceed(result, fmt(defaultEngineLoadErrorMessage, file, line, "bytes", path));
+    return result;
+}
+
+/// Saves bytes into a file with the given content.
+/// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
+/// Path separators are normalized to the platform's native format.
+Fault saveBytes(IStr path, IStr bytes, IStr file = __FILE__, Sz line = __LINE__) {
+    auto result = writeBytes(path.toAssetsPath(), bytes);
+    didLoadOrSaveSucceed(result, fmt(defaultEngineSaveErrorMessage, file, line, "bytes", path));
+    return result;
+}
+
 /// Loads a text file and returns the contents as a list.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
 /// Path separators are normalized to the platform's native format.

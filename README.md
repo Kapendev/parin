@@ -179,7 +179,6 @@ While it is possible use any tool with Parin, these open-source ones are simple 
 - Levels: [Tiled](https://www.mapeditor.org/)
 - Sounds: [Bfxr](https://www.bfxr.net/) or [Jfxr](https://jfxr.frozenfractal.com/)
 - Music: [MilkyTracker](https://milkytracker.org/)
-- Assets: [Open Game Art](https://opengameart.org/)
 
 ## Frequently Asked Questions
 
@@ -220,6 +219,7 @@ No. The following projects might be useful:
 
 The `Vec2` type is provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
 An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in the Joka repository.
+It's a good idea to learn how Joka works in general.
 
 ### How can I load an asset outside of the assets folder?
 
