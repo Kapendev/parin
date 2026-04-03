@@ -419,8 +419,8 @@ struct UiContext {
             style.colors[button]       = Rgba(55,  61,  72,  255);
             style.colors[buttonOff]    = Rgba(45,  50,  60,  255);
             style.colors[buttonHover]  = Rgba(80,  90,  110, 255);
-            style.colors[buttonActive] = Rgba(100, 130, 180, 255);
-            style.colors[buttonFocus]  = Rgba(80,  110, 150, 255);
+            style.colors[buttonActive] = Rgba(95,  105, 130, 255);
+            style.colors[buttonFocus]  = Rgba(70,  80,  100, 255);
         }
         style.border = 1;
         style.padding = 5;
@@ -710,8 +710,8 @@ struct UiContext {
                 ? UiColorType.buttonFocus
                 : (interaction.hover ? UiColorType.buttonHover : UiColorType.button)
             );
-
         if (optionFlags & UiFlag.turnOff) colorType = UiColorType.buttonOff;
+
         drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0, style.border);
         drawLabelContent(area, text, iconId, optionFlags);
         return result;
@@ -721,66 +721,73 @@ struct UiContext {
         return buttonWithIcon(area, text, 0, optionFlags);
     }
 
-    UiResultFlags stepper(T)(IRect area, ref T number, T startInclusive, T stopInclusive, T step, bool canLoop, IStr fmtStr = defaultAsciiFmtArgStr, UiFlags optionFlags = defaultUiFlags) {
-        auto flags = button(area, fmtStr.fmt(number), optionFlags | UiFlag.checkNavigation);
+    UiResultFlags stepper(T)(IRect area, ref T number, T startInclusive, T stopInclusive, T step, IStr info = "", bool canLoop = true, IStr fmtStr = defaultAsciiFmtArgStr, UiFlags optionFlags = defaultUiFlags) {
+        auto flags = UiResultFlags();
+        if (info.length) {
+            // TODO: Some of the code inside this block could be inside a `doButtonAndHaveFun` function.
+            auto interaction = registerControlInteraction(area, optionFlags);
+            flags = handleButtonInteraction(interaction, area, optionFlags);
+
+            auto colorType = interaction.active
+                ? UiColorType.buttonActive
+                : ( interaction.focus
+                    ? UiColorType.buttonFocus
+                    : (interaction.hover ? UiColorType.buttonHover : UiColorType.button)
+                );
+            if (optionFlags & UiFlag.turnOff) colorType = UiColorType.buttonOff;
+
+            drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0, style.border);
+            auto labelArea = area;
+            auto labelFlags = optionFlags;
+            labelFlags &= ~(UiFlag.alignCenter | UiFlag.alignRight);
+            drawLabelContent(labelArea.subLeft(area.w / 2), info, 0, labelFlags);
+            drawLabelContent(labelArea, (fmtStr.findStart(defaultAsciiFmtArgStr) != -1) ? fmtStr.fmt(number) : fmtStr, 0, labelFlags | UiFlag.alignRight);
+        } else {
+            // TODO: Fmt should maybe be more chill and not throw an error with bad format strings?
+            flags = button(area, (fmtStr.findStart(defaultAsciiFmtArgStr) != -1) ? fmtStr.fmt(number) : fmtStr, optionFlags | UiFlag.checkNavigation);
+        }
         if (!flags) return UiResultFlag.none;
 
         if (flags & (UiResultFlag.pressedUp | UiResultFlag.pressedRight | UiResultFlag.submitted)) {
-            if (number + step > stopInclusive) {
-                number = canLoop ? startInclusive : stopInclusive;
+            static if (is(T == bool)) {
+                number = !number;
             } else {
-                number += step;
+                if (number + step > stopInclusive) {
+                    number = canLoop ? startInclusive : stopInclusive;
+                } else {
+                    number += step;
+                }
             }
         } else if (flags & (UiResultFlag.pressedDown | UiResultFlag.pressedLeft)) {
-            if (number < startInclusive + step) {
-                number = canLoop ? stopInclusive : startInclusive;
+            static if (is(T == bool)) {
+                number = !number;
             } else {
-                number -= step;
+                if (number < startInclusive + step) {
+                    number = canLoop ? stopInclusive : startInclusive;
+                } else {
+                    number -= step;
+                }
             }
         }
         return flags;
     }
 
-    UiResultFlags stepperRpgm(T)(IRect area, ref T number, UiFlags optionFlags = defaultUiFlags) {
-        return stepper(area, number, 0, 100, 20, true, "{}%", optionFlags);
+    UiResultFlags stepper(IRect area, ref int number, IStr info = "", bool canLoop = true, IStr fmtStr = "{}%", UiFlags optionFlags = defaultUiFlags) {
+        return stepper(area, number, 0, 100, 20, info, canLoop, fmtStr, optionFlags);
     }
 
-    UiResultFlags cycler(T)(IRect area, ref T enumNumber, bool canLoop, bool canKeepFirstChar = false, UiFlags optionFlags = defaultUiFlags) {
-        int number = enumNumber;
-        int startInclusive = T.min;
-        int stopInclusive = T.max;
-        int step = 1;
-        auto enumStr = enumNumber.toStr();
-        if (!canKeepFirstChar) enumStr = "{}{}".fmt(enumStr[0].toUpper, enumStr[1 .. $]);
+    UiResultFlags cycler(T)(IRect area, ref T enumNumber, IStr info = "", bool canLoop = true, bool canKeepFirstChar = false, UiFlags optionFlags = defaultUiFlags) {
+        auto enumText = enumNumber.toStr();
+        if (!canKeepFirstChar) enumText = "{}{}".fmt(enumText[0].toUpper, enumText[1 .. $]);
 
-        auto flags = button(area, enumStr, optionFlags | UiFlag.checkNavigation);
-        if (!flags) return UiResultFlag.none;
-
-        if (flags & (UiResultFlag.pressedUp | UiResultFlag.pressedRight | UiResultFlag.submitted)) {
-            if (number + step > stopInclusive) {
-                number = canLoop ? startInclusive : stopInclusive;
-            } else {
-                number += step;
-            }
-        } else if (flags & (UiResultFlag.pressedDown | UiResultFlag.pressedLeft)) {
-            if (number < startInclusive + step) {
-                number = canLoop ? stopInclusive : startInclusive;
-            } else {
-                number -= step;
-            }
-        }
+        auto number = cast(int) enumNumber;
+        auto flags = stepper(area, number, cast(int) T.min, cast(int) T.max, 1, info, canLoop, enumText, optionFlags);
         enumNumber = cast(T) number;
         return flags;
     }
 
-    UiResultFlags toggle(IRect area, ref bool state, IStr offText = "OFF", IStr onText = "ON", UiFlags optionFlags = defaultUiFlags) {
-        auto flags = button(area, state ? onText : offText, optionFlags | UiFlag.checkNavigation);
-        if (!flags) return UiResultFlag.none;
-
-        if (flags & (UiResultFlag.pressedUp | UiResultFlag.pressedRight | UiResultFlag.submitted | UiResultFlag.pressedDown | UiResultFlag.pressedLeft)) {
-            state = !state;
-        }
-        return flags;
+    UiResultFlags toggle(IRect area, ref bool state, IStr info = "", IStr offText = "OFF", IStr onText = "ON", UiFlags optionFlags = defaultUiFlags) {
+        return stepper(area, state, false, true, true, info, true, state ? onText : offText, optionFlags);
     }
 }
 

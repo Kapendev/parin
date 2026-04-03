@@ -1,4 +1,5 @@
 /// This example shows how to use the new UI library.
+/// EXPERIMENTAL!!!
 
 import parin;
 import parin.ui2;
@@ -17,7 +18,8 @@ bool update(float dt) {
 
     auto screen = IRect(resolutionWidth, resolutionHeight);
     screen.subAll(8);
-    // Use TAB, ARROW KEYS, and ENTER to press buttons.
+
+    // Use TAB, ARROW KEYS, and ENTER to interact with the buttons.
     with (ui.captureFocus(UiKeyNavigation.horizontal)) {
         auto menu = ui.rowItems(screen.subTop(20), 7, 6);
         if (ui.button(menu.pop(), "A")) println("A!");
@@ -25,32 +27,43 @@ bool update(float dt) {
         if (ui.button(menu.pop(), "C")) println("C!");
 
         static number = 20;
-        if (ui.stepperRpgm(menu.pop(), number)) println("New number is: ", number);
+        if (ui.stepper(menu.pop(), number)) println("New number is: ", number);
 
-        static state = false;
+        static state = true;
         if (ui.toggle(menu.pop(), state)) println("New state is: ", state);
 
         enum Animal { cat, dog, moose }
         static animal = Animal.moose;
-        if (ui.cycler(menu.pop(), animal, true)) println("New animal is: ", animal);
+        if (ui.cycler(menu.pop(), animal)) println("New animal is: ", animal);
     }
 
-    // Use layouts and options to control how UI elements.
+    // Use layouts and options to control the UI elements.
     auto testText = "Hello\nWorldoo";
-    auto testPart = ui.colSlice(IRect(screen.x, 40, 75, 130), 24, 7);
+    auto testPart = ui.colSlice(IRect(screen.x, 45, 75, 130), 24, 7);
     {
-        auto testSubPart = ui.rowSlice(testPart.pop(), testPart.w, 7);
-        if (ui.button(testSubPart.pop(), testText, UiFlag.none))
-            println("Pressed 1!");
-        if (ui.button(testSubPart.pop(), testText, UiFlag.alignCenter))
-            println("Pressed 2!");
+        auto subPart = ui.rowSlice(testPart.pop(), testPart.w, 7);
+        ui.button(subPart.pop(), testText, UiFlag.none);
+        ui.button(subPart.pop(), testText, UiFlag.alignCenter);
     }
     {
-        auto testSubPart = ui.rowSlice(testPart.pop(), testPart.w, 7);
-        if (ui.button(testSubPart.pop(), testText, UiFlag.alignRight))
-            println("Pressed 3!");
-        if (ui.button(testSubPart.pop(), testText, UiFlag.turnOff))
-            println("Pressed 4!");
+        auto subPart = ui.rowSlice(testPart.pop(), testPart.w, 7);
+        ui.button(subPart.pop(), testText, UiFlag.alignRight);
+        ui.button(subPart.pop(), testText, UiFlag.turnOff);
+    }
+    {
+        static numberWithName = 80;
+        ui.stepper(
+            ui.rowSlice(testPart.pop(), testPart.w * 2 + testPart.spacing, 0).pop(),
+            numberWithName,
+            "BGM Volume",
+        );
+
+        static stateWithName = false;
+        ui.toggle(
+            ui.rowSlice(testPart.pop(), testPart.w * 2 + testPart.spacing, 0).pop(),
+            stateWithName,
+            "Always Dash",
+        );
     }
 
     return false;
