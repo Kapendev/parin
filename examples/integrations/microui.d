@@ -37,12 +37,13 @@ bool update(float dt) {
 
 // The editor code.
 void inspect() {
-    beginUi();
+    beginUiFrame();
+    scope (exit) endUiFrame();
+
     if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
         headerAndMembers(game, 125);
         endWindow();
     }
-    endUi();
 }
 
 mixin runGame!(ready, update, null, 960, 540, "Title", inspect);

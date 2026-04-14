@@ -8,7 +8,7 @@ auto ui = UiContext();
 
 void ready() {
     lockResolution(320, 180);
-    ui.readyUiWithEngine(null, null);
+    ui.readyUi(null, null);
 }
 
 bool update(float dt) {

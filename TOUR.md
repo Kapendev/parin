@@ -471,6 +471,7 @@ IStr loadTempText(IStr path, Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 Fault loadTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer);
 /// Saves a text file with the given content.
 Fault saveText(IStr path, IStr text);
+
 /// Saves an image taken from the given viewport.
 Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha);
 ```
@@ -614,12 +615,16 @@ For example:
 ```d
 // It assumes you are using: `parin.addons.microui`
 void inspect() {
-    if (beginWindow("Window", UiRect(200, 80, 350, 370))) {
+    beginUiFrame();
+    scope (exit) endUiFrame();
+
+    if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
         headerAndMembers(game, 125);
         endWindow();
     }
 }
-mixin runGame!(ready, update, finish, 960, 540, "Parin", inspect, beginUi, endUi);
+
+mixin runGame!(ready, update, finish, 960, 540, "Parin", inspect);
 ```
 
 The above code is part of a full example in the [examples](examples/integrations/microui.d).

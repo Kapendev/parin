@@ -23,7 +23,7 @@ IVec2 parinTempUiTextSizeFunc(UiFont font, uint fontScale, const(char)[] text) {
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
 @trusted
-void readyUiWithEngine(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font = null, uint fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+void readyUi(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font = null, uint fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
     ui.ready(&parinTempUiTextSizeFunc, commandsBuffer, charDataBuffer, data, fontScale, iconSizeFunc);
     ui.manualBordersMode = true;

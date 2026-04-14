@@ -259,13 +259,19 @@ void drawUiState() {
 }
 
 /// Begins input handling and UI processing.
-void beginUi() {
+void beginUiFrame() {
     handleUiInput();
     beginUiCore();
 }
 
+/// The old name of the `beginUiFrame` function.
+alias beginUi = beginUiFrame;
+
 /// Ends UI processing and performs drawing.
-void endUi() {
+void endUiFrame() {
     endUiCore();
     drawUiState();
 }
+
+/// The old name of the `endUiFrame` function.
+alias endUi = endUiFrame;
