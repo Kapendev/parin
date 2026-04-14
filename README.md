@@ -3,38 +3,23 @@
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
 Parin is designed to make game development fast and fun. It's easy to set up, hackable, and comes with the essentials built in.
 
-<div align="center">
-<table>
-    <tr>
-        <th><div align="center">Twenty Seconds, Twenty Steps</div></th>
-        <th><div align="center">Worms Within</div></th>
-    </tr>
-    <tr>
-        <td align="center">
-            <a href="https://kapendev.itch.io/twenty-seconds-twenty-steps">
-            <img alt="A Short Metamorphosis" src="https://img.itch.zone/aW1hZ2UvNDExODcyMy8yNDU0NDYzMy5wbmc=/original/G9%2B%2BMo.png" width="480">
-            </a>
-        </td>
-        <td align="center">
-            <a href="https://kapendev.itch.io/worms-within">
-            <img alt="Worms Within" src="https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png" width="480">
-            </a>
-        </td>
-    </tr>
-</table>
-<p>A list of projects made with Parin is available in the <a href="PROJECTS.md">projects page</a>.</p>
-</div>
+*Some games made with Parin (more in the [projects page](PROJECTS.md)):*
+
+| Twenty Seconds, Twenty Steps | Worms Within |
+| :--------------------------: | :----------: |
+| [![Twenty Seconds, Twenty Steps](https://img.itch.zone/aW1hZ2UvNDExODcyMy8yNDU0NDYzMy5wbmc=/original/G9%2B%2BMo.png)](https://kapendev.itch.io/twenty-seconds-twenty-steps) | [![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within) |
 
 ## Why Parin
-
-- **Focused on games**: It's opinionated in ways that make game development tasks (rendering, input) easier out of the box than in general-purpose engines.
-- **Code-driven design**: There's no imposed architecture, allowing freedom on how a game is structured.
-- **A guided workflow**: It assumes a few common patterns like a fixed aspect ratio, debug UI and a frame allocator to smooth out the development experience.
-- **Flexible abstraction**: Leverage the GC of D for convenience, or drop down to manual memory management when needed.
 
 Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity.
 It offers more direction than small ones, but far less overhead and "magic" than big ones.
 It's especially well-suited for retro games, with helper functions and two pixel fonts included.
+More specifically:
+
+- **Focused on games**: Opinionated in ways that make rendering, input, and other common game tasks easier out of the box.
+- **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
+- **A guided workflow**: A fixed aspect ratio, debug UI, and a frame allocator are assumed, so less time is spent on boilerplate.
+- **Flexible abstraction**: The GC is available for convenience, with the option to drop to manual management when performance matters.
 
 > [!NOTE]
 > The project is still early in development.
@@ -52,9 +37,7 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - No external dependencies
 - Support for Windows, Linux, Web, and macOS (needs testing)
 
-## Examples
-
-### Basic Window
+## Basic Window Example
 
 ```d
 import parin;
@@ -76,39 +59,6 @@ void finish() {}
 
 // Creates a main function that calls the given functions.
 mixin runGame!(ready, update, finish);
-```
-
-### Simple Editor
-
-```d
-import parin, parin.addons.microui;
-
-Game game;
-
-struct Game {
-    int width = 50;
-    int height = 50;
-    IVec2 point = IVec2(70, 50);
-}
-
-void ready() {
-    readyUi(engineFont, 2);
-}
-
-bool update(float dt) {
-    // The game code.
-    drawRect(Rect(game.point.x, game.point.y, game.width, game.height));
-    // The editor code.
-    beginUi();
-    if (beginWindow("Edit", UiRect(500, 80, 350, 370))) {
-        headerAndMembers(game, 125);
-        endWindow();
-    }
-    endUi();
-    return false;
-}
-
-mixin runGame!(ready, update, null);
 ```
 
 ## Quick Start
