@@ -691,6 +691,17 @@ struct UiContext {
         return result;
     }
 
+    UiColorType handleButtonColorType(UiControlInteraction interaction, UiFlags optionFlags) {
+        auto result = interaction.active
+            ? UiColorType.buttonActive
+            : ( interaction.focus
+                ? UiColorType.buttonFocus
+                : (interaction.hover ? UiColorType.buttonHover : UiColorType.button)
+            );
+        if (optionFlags & UiFlag.turnOff) result = UiColorType.buttonOff;
+        return result;
+    }
+
     UiResultFlags label(IRect area, IStr text, UiIconId iconId = 0, UiFlags optionFlags = defaultUiFlags) {
         drawLabelContent(area, text, iconId, optionFlags);
         return UiResultFlag.none;
@@ -703,15 +714,7 @@ struct UiContext {
     UiResultFlags buttonWithIcon(IRect area, IStr text, UiIconId iconId, UiFlags optionFlags = defaultUiFlags) {
         auto interaction = registerControlInteraction(area, optionFlags);
         auto result = handleButtonInteraction(interaction, area, optionFlags);
-
-        auto colorType = interaction.active
-            ? UiColorType.buttonActive
-            : ( interaction.focus
-                ? UiColorType.buttonFocus
-                : (interaction.hover ? UiColorType.buttonHover : UiColorType.button)
-            );
-        if (optionFlags & UiFlag.turnOff) colorType = UiColorType.buttonOff;
-
+        auto colorType = handleButtonColorType(interaction, optionFlags);
         drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0, style.border);
         drawLabelContent(area, text, iconId, optionFlags);
         return result;
@@ -727,15 +730,7 @@ struct UiContext {
             // TODO: Some of the code inside this block could be inside a `doButtonAndHaveFun` function.
             auto interaction = registerControlInteraction(area, optionFlags);
             flags = handleButtonInteraction(interaction, area, optionFlags);
-
-            auto colorType = interaction.active
-                ? UiColorType.buttonActive
-                : ( interaction.focus
-                    ? UiColorType.buttonFocus
-                    : (interaction.hover ? UiColorType.buttonHover : UiColorType.button)
-                );
-            if (optionFlags & UiFlag.turnOff) colorType = UiColorType.buttonOff;
-
+            auto colorType = handleButtonColorType(interaction, optionFlags);
             drawBox(area, colorType, interaction.hover, interaction.active, interaction.focus, (optionFlags & UiFlag.turnOff) != 0, style.border);
             auto labelArea = area;
             auto labelFlags = optionFlags;
@@ -743,7 +738,6 @@ struct UiContext {
             drawLabelContent(labelArea.subLeft(area.w / 2), info, 0, labelFlags);
             drawLabelContent(labelArea, (fmtStr.findStart(defaultAsciiFmtArgStr) != -1) ? fmtStr.fmt(number) : fmtStr, 0, labelFlags | UiFlag.alignRight);
         } else {
-            // TODO: Fmt should maybe be more chill and not throw an error with bad format strings? Or find some way to make it chill.
             flags = button(area, (fmtStr.findStart(defaultAsciiFmtArgStr) != -1) ? fmtStr.fmt(number) : fmtStr, optionFlags | UiFlag.checkNavigation);
         }
         if (!flags) return UiResultFlag.none;

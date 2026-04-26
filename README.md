@@ -3,7 +3,7 @@
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
 Parin is designed to make game development fast and fun. It's easy to set up, hackable, and comes with the essentials built in.
 
-*Some games made with Parin (more in the [projects page](PROJECTS.md)):*
+*Some games made with Parin:*
 
 | Twenty Seconds, Twenty Steps | Worms Within |
 | :--------------------------: | :----------: |
@@ -16,10 +16,10 @@ It offers more direction than small ones, but far less overhead and "magic" than
 It's especially well-suited for retro games, with helper functions and two pixel fonts included.
 More specifically:
 
-- **Focused on games**: Opinionated in ways that make rendering, input, and other common game tasks easier out of the box.
+- **Focused on games**: Opinionated defaults make drawing and other common game tasks easier out of the box.
 - **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
-- **A guided workflow**: A fixed aspect ratio, debug UI, and a frame allocator are assumed, so less time is spent on boilerplate.
-- **Flexible abstraction**: The GC is available for convenience, with the option to drop to manual management when performance matters.
+- **Batteries included**: Arcady physics, debug UI, frame allocator, fixed aspect ratio...
+- **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management when needed.
 
 > [!NOTE]
 > The project is still early in development.
@@ -306,6 +306,10 @@ A custom backend may be added in the future, but it's not a priority.
 ### What are Parin's priorities?
 
 The goal is a smooth experience, similar to Godot or Unity.
+
+### Is there a list of games made with Parin?
+
+Yes. Check the [projects](PROJECTS.md) page.
 
 ### The end?
 
