@@ -383,6 +383,7 @@ struct Rgba {
     enum form = "rgba";           /// The form of the color.
     enum zero = Rgba(0, 0, 0, 0); /// The zero value of the color.
     enum one  = Rgba(1, 1, 1, 1); /// The one value of the color.
+    enum length = 4;              /// The length of the color.
 
     @safe nothrow @nogc:
 
