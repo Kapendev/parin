@@ -462,9 +462,10 @@ struct GVec2(T) {
 
     alias items this;
 
-    enum form = "xy";       /// The form of the vector.
-    enum zero = GVec2!T(0); /// The zero value of the vector.
-    enum one  = GVec2!T(1);  /// The one value of the vector.
+    enum form   = "xy";       /// The form of the vector.
+    enum zero   = GVec2!T(0); /// The zero value of the vector.
+    enum one    = GVec2!T(1); /// The one value of the vector.
+    enum length = 2;          /// The length of the vector.
 
     static if (T.sizeof > float.sizeof) {
         enum is64 = true;
@@ -673,7 +674,8 @@ struct GVec3(T) {
 
     enum form = "xyz";      /// The form of the vector.
     enum zero = GVec3!T(0); /// The zero value of the vector.
-    enum one  = GVec3!T(1);  /// The one value of the vector.
+    enum one  = GVec3!T(1); /// The one value of the vector.
+    enum length = 3;        /// The length of the vector.
 
     static if (T.sizeof > float.sizeof) {
         enum is64 = true;
@@ -887,6 +889,7 @@ struct GVec4(T) {
     enum form = "xyzw";     /// The form of the vector.
     enum zero = GVec4!T(0); /// The zero value of the vector.
     enum one = GVec4!T(1);  /// The one value of the vector.
+    enum length = 4;        /// The length of the vector.
 
     static if (T.sizeof > float.sizeof) {
         enum is64 = true;

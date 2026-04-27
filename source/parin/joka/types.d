@@ -737,41 +737,41 @@ version (JokaCustomMemory) {
     extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
     extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
 } else version (JokaGcMemory) {
-    private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-    private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-    private extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+    private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+    private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+    private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
 
-    nothrow @nogc
+    @system nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stdc_memset(ptr, value, size);
     }
 
-    nothrow @nogc
+    @system nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stdc_memcpy(ptr, source, size);
     }
 
-    nothrow @nogc
+    @system nothrow @nogc
     int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
         return stdc_memcmp(ptr1, ptr2, size);
     }
 } else {
-    private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-    private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-    private extern(C) pragma(mangle, "memcmp") nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+    private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+    private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+    private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
 
     version (JokaTypesStubs) {
-        private extern(C) pragma(mangle, "memset") nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
+        private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
             foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
             return dest;
         }
 
-        private extern(C) pragma(mangle, "memcpy") nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
+        private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
             foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
             return dest;
         }
 
-        private extern(C) pragma(mangle, "memcmp") nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
+        private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
             auto p1 = cast(const(ubyte)*) s1;
             auto p2 = cast(const(ubyte)*) s2;
             foreach (i; 0 .. count) {
@@ -781,17 +781,17 @@ version (JokaCustomMemory) {
         }
     }
 
-    nothrow @nogc
+    @system nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stdc_memset(ptr, value, size);
     }
 
-    nothrow @nogc
+    @system nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stdc_memcpy(ptr, source, size);
     }
 
-    nothrow @nogc
+    @system nothrow @nogc
     int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
         return stdc_memcmp(ptr1, ptr2, size);
     }
