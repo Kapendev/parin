@@ -1471,23 +1471,6 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
     }
 }
 
-alias Gen = int;
-
-struct GenIndex {
-    Gen value;
-    Gen generation;
-
-    pragma(inline, true) @safe nothrow @nogc:
-
-    bool isNone() {
-        return value < 0;
-    }
-
-    bool isSome() {
-        return value >= 0;
-    }
-}
-
 /// A dynamic generational array.
 struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(T, D, G)) {
     enum isBasicContainer  = false;
@@ -1547,7 +1530,7 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
     void remove(GenIndex i) {
         if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
         data.remove(i.value);
-        generations[data.hotIndex] += 1;
+        generations[data.hotIndex] = (generations[data.hotIndex] + 1) % Gen.max;
     }
 
     void reserve(Sz capacity, IStr file = __FILE__, Sz line = __LINE__) {

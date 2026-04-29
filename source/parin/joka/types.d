@@ -14,24 +14,27 @@ version (WebAssembly) {
 
 // --- Core
 
-alias Sz      = size_t;            /// The result of sizeof.
-alias Pd      = ptrdiff_t;         /// The result of pointer math.
-alias Str     = char[];            /// A string slice of chars.
-alias Str16   = wchar[];           /// A string slice of wchars.
-alias Str32   = dchar[];           /// A string slice of dchars.
-alias IStr    = const(char)[];     /// A string slice of constant chars.
-alias IStr16  = const(wchar)[];    /// A string slice of constant wchars.
-alias IStr32  = const(dchar)[];    /// A string slice of constant dchars.
-alias Strz    = char*;             /// A C string of chars.
-alias Strz16  = wchar*;            /// A C string of wchars.
-alias Strz32  = dchar*;            /// A C string of dchars.
-alias IStrz   = const(char)*;      /// A C string of constant chars.
-alias IStrz16 = const(wchar)*;     /// A C string of constant wchars.
-alias IStrz32 = const(dchar)*;     /// A C string of constant dchars.
-alias DStr    = immutable(char)[]; /// A immutable D string.
+alias AliasArgs(A...) = A; /// The type of compile time alias arguments.
 
-alias UnionType       = ubyte; /// The common union type of a tagged union.
-alias AliasArgs(A...) = A;     /// The type of compile time alias arguments.
+alias Sz = size_t;    /// The result of sizeof.
+alias Pd = ptrdiff_t; /// The result of pointer math.
+
+alias Str    = char[];         /// A string slice of chars.
+alias Str16  = wchar[];        /// A string slice of wchars.
+alias Str32  = dchar[];        /// A string slice of dchars.
+alias IStr   = const(char)[];  /// A string slice of constant chars.
+alias IStr16 = const(wchar)[]; /// A string slice of constant wchars.
+alias IStr32 = const(dchar)[]; /// A string slice of constant dchars.
+
+alias Strz    = char*;         /// A C string of chars.
+alias Strz16  = wchar*;        /// A C string of wchars.
+alias Strz32  = dchar*;        /// A C string of dchars.
+alias IStrz   = const(char)*;  /// A C string of constant chars.
+alias IStrz16 = const(wchar)*; /// A C string of constant wchars.
+alias IStrz32 = const(dchar)*; /// A C string of constant dchars.
+
+alias UnionType = ubyte; /// The common union type of a tagged union.
+alias Gen       = int;   /// The type of a generation.
 
 enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
 enum megabyte = 1024 * kilobyte; /// The size of one megabyte in bytes.
@@ -63,6 +66,22 @@ enum Fault : ubyte {
 
 /// A marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
 struct NoData {}
+
+// A generational index.
+struct GenIndex {
+    Gen value;
+    Gen generation;
+
+    pragma(inline, true) @safe nothrow @nogc:
+
+    bool isNone() {
+        return value < 0;
+    }
+
+    bool isSome() {
+        return value >= 0;
+    }
+}
 
 /// A static array.
 /// It exists because of BetterC + `struct[N]`.
@@ -155,6 +174,7 @@ alias BitSet = GBitSet!BitSetCommonDataType;
 struct Maybe(T) {
     Fault fault = Fault.some;
     T data;
+    alias fault this;
 
     @safe nothrow @nogc:
 
@@ -253,6 +273,7 @@ struct Option(T) {
         bool isSome;
     }
     T data;
+    alias isSome this;
 
     @trusted nothrow @nogc:
 
@@ -865,11 +886,10 @@ enum PathSepStyle {
     windows, /// The `\` separator.
 }
 
-/// A string pair.
-struct IStrPair { IStr a; IStr b; }
-
 /// Separator marker for printing.
 struct Sep { IStr value; }
+/// A string pair.
+struct StrPair { IStr a, b; }
 
 /// A wrapper type for priting floats and doubles.
 struct Floating {
@@ -990,10 +1010,12 @@ IStr fmtIntoBufferWithStrs(Str buffer, IStr fmtStr, IStr[] args...) {
     return result;
 }
 
+// Fmt arguments.
 char[defaultAsciiFmtArgBufferSize][defaultAsciiFmtArgBufferCount] _fmtIntoBufferDataBuffer = void;
-IStr[defaultAsciiFmtArgBufferCount]                               _fmtIntoBufferSliceBuffer = void;
-char[defaultAsciiFmtBufferSize][defaultAsciiFmtBufferCount]       _fmtBuffer = void;
-byte                                                              _fmtBufferIndex = 0;
+IStr[defaultAsciiFmtArgBufferCount] _fmtIntoBufferSliceBuffer = void;
+// Fmt temporary strings.
+char[defaultAsciiFmtBufferSize][defaultAsciiFmtBufferCount] _fmtBuffer = void;
+byte _fmtBufferIndex = 0;
 
 /// Formats the given string by replacing `{}` placeholders with argument values in order.
 /// Options within placeholders are not supported.
@@ -1434,11 +1456,11 @@ bool isAbsolutePath(IStr path, PathSepStyle style = PathSepStyle.native) {
 }
 
 /// Returns the main and alternate separators for the given style.
-IStrPair pathSepStrPair(PathSepStyle style) {
+StrPair pathSepStrPair(PathSepStyle style) {
     with (PathSepStyle) final switch (style) {
-        case native: return IStrPair(pathSepStr, pathSepOtherStr);
-        case posix: return IStrPair("/", "\\");
-        case windows: return IStrPair("\\", "/");
+        case native: return StrPair(pathSepStr, pathSepOtherStr);
+        case posix: return StrPair("/", "\\");
+        case windows: return StrPair("\\", "/");
     }
 }
 
