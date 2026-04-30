@@ -141,7 +141,8 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 //   The attributes here might feel a bit random.
 //   For example, you could make malloc functions trusted.
 //   I am not the best at adding attributes, and I don't really care.
-@system nothrow { // BEGIN MEMORY_BLOCK
+// === BEGIN MEMORY BLOCK
+@system nothrow {
 version (JokaCustomMemory) {
     extern(C) void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
@@ -530,8 +531,8 @@ void endAllocationGroup() {
             _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
         }
     }
-}
-} // END MEMORY_BLOCK
+}}
+// === END MEMORY BLOCK
 
 @trusted nothrow
 IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {

@@ -67,7 +67,7 @@ enum Fault : ubyte {
 /// A marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
 struct NoData {}
 
-// A generational index.
+/// A generational index.
 struct GenIndex {
     Gen value;
     Gen generation;
@@ -174,7 +174,7 @@ alias BitSet = GBitSet!BitSetCommonDataType;
 struct Maybe(T) {
     Fault fault = Fault.some;
     T data;
-    alias fault this;
+    alias isSome this;
 
     @safe nothrow @nogc:
 
@@ -269,9 +269,7 @@ alias NotSure = Maybe;
 struct Option(T) {
     enum isPtr = is(T : const(void)*);
 
-    static if (!isPtr) {
-        bool isSome;
-    }
+    static if (!isPtr) bool isSome;
     T data;
     alias isSome this;
 
@@ -362,6 +360,7 @@ struct Result(T, E, Sz tagSize = 0) {
 
     Tag isSome;
     ResultUnion data;
+    alias isSome this;
 
     @trusted nothrow @nogc:
 
@@ -886,7 +885,7 @@ enum PathSepStyle {
     windows, /// The `\` separator.
 }
 
-/// Separator marker for printing.
+/// A separator marker for printing.
 struct Sep { IStr value; }
 /// A string pair.
 struct StrPair { IStr a, b; }
@@ -905,8 +904,7 @@ struct Floating {
     alias toString = toStr;
 }
 
-// --- IES Support
-// ===
+// === BEGIN IES Support
 static if (__traits(compiles, { import core.interpolation; })) {
     public import core.interpolation;
 } else {
@@ -945,7 +943,7 @@ version (D_BetterC) {
 // NOTE: Helper functions.
 template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral!_, alias _); }
 template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
-// ===
+// === END IES Support
 
 /// Converts the value to its string representation.
 @trusted
