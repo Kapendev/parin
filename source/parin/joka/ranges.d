@@ -271,6 +271,22 @@ auto max(T)(T range) {
     return result;
 }
 
+/// Returns the sum of all elements in a range.
+auto sum(T)(T range) {
+    auto result = range.front;
+    range.popFront();
+    foreach (item; range) result += item;
+    return result;
+}
+
+/// Returns the product of all elements in a range.
+auto product(T)(T range) {
+    auto result = range.front;
+    range.popFront();
+    foreach (item; range) result *= item;
+    return result;
+}
+
 /// Returns the last element in a range.
 auto last(R)(R range) {
     auto result = range.front;
@@ -433,6 +449,10 @@ unittest {
     // last
     assert(range(0, 5).last == 4);
     assert(range(1, 2).last == 1);
+
+    // sum/product
+    assert(range(1, 6).sum == 15);
+    assert(range(1, 6).product == 120);
 }
 
 // Arg test.
