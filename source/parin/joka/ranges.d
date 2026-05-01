@@ -5,14 +5,6 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
-// NOTE: Maybe look at this for more ideas: https://github.com/opendlang/d/blob/main/source/odc/algorthimswishlist.md
-//   I'm fine with not including any allocation, sorting or mutation functions.
-//   Ideas from Monkyyy:
-//     most important: map filter reduce acc last count backwards chunks cycle chain stride
-//     important but hard: sort(nlogn) radixsort transposed takemap cache splitter joiner (grouped with splitter, not hard)
-//     old notes: find balencedpern swapkeyvalue half1 half2 enumerate repeat
-//     trivail: any all issorted max min sum product stripleft stripright padleft padright takeexact center drop take
-
 /// The `ranges` module includes functions that work with ranges.
 module parin.joka.ranges;
 
@@ -199,6 +191,123 @@ struct ChainRange(R1, R2) if (is(typeof(R1.front()) == typeof(R2.front()))) {
     }
 }
 
+/// A range that yields every Nth element of a range.
+struct StrideRange(R) {
+    R range;
+    Sz step;
+
+    @safe nothrow @nogc:
+
+    bool empty() {
+        return range.empty;
+    }
+
+    auto front() {
+        return range.front;
+    }
+
+    void popFront() {
+        foreach (i; 0 .. step) if (!range.empty) range.popFront();
+    }
+}
+
+/// A range that yields the running result of applying a function to all previous elements.
+struct AccumulateRange(R, F, T) {
+    R range;
+    F func;
+    T result;
+
+    @safe nothrow @nogc:
+
+    this(R range, F func, T initial) {
+        this.range = range;
+        this.func = func;
+        this.result = initial;
+        if (!range.empty) result = func(initial, range.front);
+    }
+
+    bool empty() {
+        return range.empty;
+    }
+
+    T front() {
+        return result;
+    }
+
+    void popFront() {
+        range.popFront();
+        if (!range.empty) result = func(result, range.front);
+    }
+}
+
+/// A range that yields successive non-overlapping chunks of a given size.
+struct ChunksRange(R) {
+    R range;
+    Sz size;
+
+    @safe nothrow @nogc:
+
+    bool empty() {
+        return range.empty;
+    }
+
+    auto front() {
+        return range.take(size);
+    }
+
+    void popFront() {
+        foreach (i; 0 .. size) if (!range.empty) range.popFront();
+    }
+}
+
+/// Command-line argument types.
+enum ArgType {
+    singleItem,  /// A standalone argument (e.g. file.txt)
+    shortOption, /// A short option (e.g. -v)
+    longOption,  /// A long option (e.g. --verbose)
+}
+
+/// A parsed token from the command-line arguments.
+struct ArgToken {
+    ArgType type; /// The type of the argument.
+    IStr name;    /// The name of the argument. Always present.
+    IStr value;   /// The value of the argument. May be empty.
+}
+
+/// A range of parsed tokens from the command-line arguments.
+struct ArgRange {
+    const(IStr)[] args;
+
+    @safe nothrow @nogc:
+
+    @trusted
+    this(const(IStr)[] args...) {
+        this.args = args;
+    }
+
+    bool empty() {
+        return args.length == 0;
+    }
+
+    ArgToken front() {
+        auto cleanArg = args[0].trim();
+        auto equalIndex = cleanArg.findEnd("=");
+        if (cleanArg.length == 0) return ArgToken();
+        else if (cleanArg == "-") return ArgToken(ArgType.singleItem, "-", "");
+        else if (cleanArg == "--") return ArgToken(ArgType.singleItem, "--", "");
+
+        auto a = cleanArg.startsWith("-") ? (cleanArg.startsWith("--") ? ArgType.longOption : ArgType.shortOption) : ArgType.singleItem;
+        auto startIndex = a == ArgType.singleItem ? 0 : a == ArgType.shortOption ? 1 : 2;
+        auto b = cleanArg[startIndex .. equalIndex != -1 ? equalIndex : $];
+        auto c = cleanArg[equalIndex != -1 ? equalIndex + 1 : $ .. $];
+        return ArgToken(a, b, c);
+    }
+
+    void popFront() {
+        args = args[1 .. $];
+    }
+}
+
 @safe nothrow @nogc {
     /// Returns a numeric range.
     NumericRange!I range(I)(I start, I stop, I step = 1) {
@@ -253,6 +362,21 @@ R dropWhile(R, F)(R range, F func) {
 /// Returns a range that iterates over two ranges in sequence.
 ChainRange!(R1, R2) chain(R1, R2)(R1 range1, R2 range2) {
     return ChainRange!(R1, R2)(range1, range2);
+}
+
+/// Returns a range that yields every Nth element.
+StrideRange!R stride(R)(R range, Sz step) {
+    return StrideRange!R(range, step);
+}
+
+/// Returns a range that yields the running result of applying a function cumulatively.
+AccumulateRange!(R, F, T) accumulate(R, F, T)(R range, F func, T initial) {
+    return AccumulateRange!(R, F, T)(range, func, initial);
+}
+
+/// Returns a range that yields successive non-overlapping chunks of a given size.
+ChunksRange!R chunks(R)(R range, Sz size) {
+    return ChunksRange!R(range, size);
 }
 
 /// Returns the smallest element in a range.
@@ -311,62 +435,6 @@ Sz countIf(R, F)(R range, F func) {
     auto result = Sz.init;
     foreach (item; range) result += func(item);
     return result;
-}
-
-/// Command-line argument types.
-enum ArgType {
-    singleItem,  /// A standalone argument (e.g. file.txt)
-    shortOption, /// A short option (e.g. -v)
-    longOption,  /// A long option (e.g. --verbose)
-}
-
-/// A parsed token from the command-line arguments.
-struct ArgToken {
-    ArgType type; /// The type of the argument.
-    IStr name;    /// The name of the argument. Always present.
-    IStr value;   /// The value of the argument. May be empty.
-
-    @safe nothrow @nogc:
-
-    IStr toStr() {
-        return name;
-    }
-
-    alias toString = toStr;
-}
-
-/// A range of parsed tokens from the command-line arguments.
-struct ArgTokenRange {
-    const(IStr)[] args;
-
-    @safe nothrow @nogc:
-
-    @trusted
-    this(const(IStr)[] args...) {
-        this.args = args;
-    }
-
-    bool empty() {
-        return args.length == 0;
-    }
-
-    ArgToken front() {
-        auto cleanArg = args[0].trim();
-        auto equalIndex = cleanArg.findEnd("=");
-        if (cleanArg.length == 0) return ArgToken();
-        else if (cleanArg == "-") return ArgToken(ArgType.singleItem, "-", "");
-        else if (cleanArg == "--") return ArgToken(ArgType.singleItem, "--", "");
-
-        auto a = cleanArg.startsWith("-") ? (cleanArg.startsWith("--") ? ArgType.longOption : ArgType.shortOption) : ArgType.singleItem;
-        auto startIndex = a == ArgType.singleItem ? 0 : a == ArgType.shortOption ? 1 : 2;
-        auto b = cleanArg[startIndex .. equalIndex != -1 ? equalIndex : $];
-        auto c = cleanArg[equalIndex != -1 ? equalIndex + 1 : $ .. $];
-        return ArgToken(a, b, c);
-    }
-
-    void popFront() {
-        args = args[1 .. $];
-    }
 }
 
 @safe nothrow @nogc
@@ -453,11 +521,29 @@ unittest {
     // sum/product
     assert(range(1, 6).sum == 15);
     assert(range(1, 6).product == 120);
+
+    // StrideRange
+    assert(range(0, 10).stride(3).reduce((int a, int b) => a + b, 0) == 18);
+    assert(range(0, 10).stride(1).reduce((int a, int b) => a + b, 0) == 45);
+
+    // AccumulateRange
+    assert(range(1, 5).accumulate((int a, int b) => a + b, 0).last == 10);
+    assert(range(1, 5).reduce((int a, int b) => a + b, 0) == 10);
+
+    // ChunksRange
+    auto c = range(0, 6).chunks(2);
+    assert(c.front.sum == 1);
+    c.popFront();
+    assert(c.front.sum == 5);
+    c.popFront();
+    assert(c.front.sum == 9);
+    c.popFront();
+    assert(c.empty == true);
 }
 
 // Arg test.
 unittest {
-    foreach (token; ArgTokenRange("b", "-c", "--d")) {
+    foreach (token; ArgRange("b", "-c", "--d")) {
         with (ArgType) final switch (token.type) {
             case singleItem: assert(token.name == "b"); break;
             case shortOption: assert(token.name == "c"); break;
@@ -465,7 +551,7 @@ unittest {
         }
     }
 
-    foreach (token; ArgTokenRange("b=2", "-c=3", "--d=4")) {
+    foreach (token; ArgRange("b=2", "-c=3", "--d=4")) {
         with (ArgType) final switch (token.type) {
             case singleItem:
                 assert(token.name == "b");
