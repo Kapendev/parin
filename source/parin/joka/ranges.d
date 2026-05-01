@@ -18,39 +18,32 @@ module parin.joka.ranges;
 
 import parin.joka.types;
 
-/// The common integer type used by the range module.
-alias Int = Pd;
-
 /// A value paired with its iteration index.
 struct IndexedValue(V) {
     V value;
-    Int index;
+    Sz index;
     alias value this;
 }
 
 /// A range that iterates over a numeric interval with a given step.
-struct NumericRange {
-    Int index;
-    Int stop;
-    Int step;
+struct NumericRange(I) {
+    I index;
+    I stop;
+    I step;
 
     pragma(inline, true) @safe nothrow @nogc:
 
-    this(Int start, Int stop, Int step = 1) {
+    this(I start, I stop, I step = 1) {
         this.index = start;
         this.stop = stop;
         this.step = step;
-    }
-
-    this(Int stop) {
-        this(0, stop);
     }
 
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
     }
 
-    Int front() {
+    I front() {
         return index;
     }
 
@@ -62,12 +55,12 @@ struct NumericRange {
 /// A range that iterates over a read-only view of an array.
 struct ArrayRange(T) {
     const(T)[] data;
-    Int index;
+    Sz index;
 
     pragma(inline, true) @safe nothrow @nogc:
 
     bool empty() {
-        return index >= length || index < 0;
+        return index >= data.length;
     }
 
     T front() {
@@ -78,11 +71,11 @@ struct ArrayRange(T) {
         index += 1;
     }
 
-    Int length() {
-        return cast(Int) data.length;
+    Sz length() {
+        return data.length;
     }
 
-    T opIndex(Int i) {
+    T opIndex(Sz i) {
         return data[i];
     }
 }
@@ -92,7 +85,7 @@ struct EnumeratedRange(R) {
     alias FrontType = IndexedValue!(typeof(R.front()));
 
     R range;
-    Int index;
+    Sz index;
 
     pragma(inline, true) @safe nothrow @nogc:
 
@@ -162,12 +155,8 @@ struct FilterRange(R, F) {
 }
 
 @safe nothrow @nogc {
-    NumericRange range(Int start, Int stop, Int step = 1) {
-        return NumericRange(start, stop, step);
-    }
-
-    NumericRange range(Int stop) {
-        return NumericRange(stop);
+    NumericRange!I range(I)(I start, I stop, I step = 1) {
+        return NumericRange!I(start, stop, step);
     }
 
     ArrayRange!T range(T)(const(T)[] data) {
@@ -175,7 +164,7 @@ struct FilterRange(R, F) {
     }
 }
 
-EnumeratedRange!R enumerate(R)(R range, Int start = 0) {
+EnumeratedRange!R enumerate(R)(R range, Sz start = 0) {
     return EnumeratedRange!R(range, start);
 }
 
@@ -187,11 +176,10 @@ FilterRange!(R, F) filter(R, F)(R range, F func) {
     return FilterRange!(R, F)(range, func);
 }
 
-@trusted
 T reduce(R, F, T)(R range, F func, T initial) {
     auto result = initial;
     foreach (item; range) {
-        result = cast(T) func(result, item);
+        result = func(result, item);
     }
     return result;
 }
@@ -210,8 +198,8 @@ bool all(R, F)(R range, F func) {
     return true;
 }
 
-Int countIf(R, F)(R range, F func) {
-    auto result = Int.init;
+Sz countIf(R, F)(R range, F func) {
+    auto result = Sz.init;
     foreach (item; range) {
         result += func(item);
     }
@@ -276,73 +264,73 @@ struct ArgTokenRange {
 
 @safe nothrow @nogc
 unittest {
-    // NumericRange: forward iteration
-    Int temp = 0;
+    // NumericRange and forward iteration.
+    auto temp = 0;
     foreach (i; range(0, 4)) {
         assert(i == temp);
         temp += 1;
     }
 
-    // NumericRange: negative step
+    // NumericRange and negative step.
     temp = 0;
     foreach (i; range(0, -4, -1)) {
         assert(i == temp);
         temp -= 1;
     }
 
-    // NumericRange: single-arg shorthand
-    assert(range(0, 10).reduce((Int x, Int y) => x + y, 0) == 45);
+    // NumericRange and sum.
+    assert(range(0, 10).reduce((int x, int y) => x + y, 0) == 45);
 
-    // ArrayRange
-    Int[5] slice = [1, 2, 3, 4, 5];
-    assert(slice.range().reduce((Int x, Int y) => x + y, 0) == 15);
+    // ArrayRange.
+    int[5] slice = [1, 2, 3, 4, 5];
+    assert(slice.range().reduce((int x, int y) => x + y, 0) == 15);
     assert(slice.range()[2] == 3);
     assert(slice.range().length == 5);
 
-    // EnumeratedRange: index starts at 0
+    // EnumeratedRange and index starts at 0.
     temp = 0;
     foreach (item; range(10, 13).enumerate()) {
         assert(item.index == temp);
         temp += 1;
     }
 
-    // EnumeratedRange: non-zero start index
+    // EnumeratedRange and non-zero start index.
     temp = 5;
     foreach (item; range(10, 13).enumerate(5)) {
         assert(item.index == temp);
         temp += 1;
     }
 
-    // MapRange
-    assert(range(0, 4).map((Int x) => x * 2).reduce((Int x, Int y) => x + y, 0) == 12);
+    // MapRange.
+    assert(range(0, 4).map((int x) => x * 2).reduce((int x, int y) => x + y, 0) == 12);
 
-    // FilterRange: basic
-    assert(range(0, 9).filter((Int x) => x == 2 || x == 4).reduce((Int x, Int y) => x + y, 0) == 6);
+    // FilterRange.
+    assert(range(0, 9).filter((int x) => x == 2 || x == 4).reduce((int x, int y) => x + y, 0) == 6);
 
-    // FilterRange: empty() is idempotent
-    auto f = range(0, 5).filter((Int x) => x % 2 == 0);
+    // FilterRange and check if `empty` is idempotent.
+    auto f = range(0, 5).filter((int x) => x % 2 == 0);
     assert(!f.empty);
-    assert(!f.empty); // second call must not skip elements
+    assert(!f.empty); // Second call must not skip elements.
     assert(f.front == 0);
 
-    // FilterRange: all elements filtered out
-    assert(range(0, 5).filter((Int x) => x > 10).reduce((Int x, Int y) => x + y, 0) == 0);
+    // FilterRange and all elements filtered out.
+    assert(range(0, 5).filter((int x) => x > 10).reduce((int x, int y) => x + y, 0) == 0);
 
-    // map then filter then reduce
+    // Map then filter then reduce.
     assert(
         range(1, 5)
-            .map((Int x) => cast(Int) (x * 2))
-            .filter((Int x) => x > 4)
-            .reduce((Int a, Int b) => cast(Int) (a + b), cast(Int) 0)
+            .map((int x) => x * 2)
+            .filter((int x) => x > 4)
+            .reduce((int a, int b) => a + b, 0)
         == 14
     );
 
-    // any / all / countIf
-    assert(range(0, 5).any((Int x) => x == 3));
-    assert(!range(0, 5).any((Int x) => x == 9));
-    assert(range(1, 5).all((Int x) => x > 0));
-    assert(!range(0, 5).all((Int x) => x > 0));
-    assert(range(0, 10).countIf((Int x) => x % 2 == 0) == 5);
+    // Any/All/CountIf checks.
+    assert(range(0, 5).any((int x) => x == 3));
+    assert(!range(0, 5).any((int x) => x == 9));
+    assert(range(1, 5).all((int x) => x > 0));
+    assert(!range(0, 5).all((int x) => x > 0));
+    assert(range(0, 10).countIf((int x) => x % 2 == 0) == 5);
 }
 
 // Arg test.
