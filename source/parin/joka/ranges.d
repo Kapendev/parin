@@ -18,88 +18,81 @@ module parin.joka.ranges;
 
 import parin.joka.types;
 
-// A numeric range value.
-alias Nrv = int;
-static assert(Nrv.min < 0, "Type `NumericRangeValue` should be a signed type.");
+/// The common integer type used by the range module.
+alias Int = Pd;
 
-struct ValueIndex(V) {
+/// A value paired with its iteration index.
+struct IndexedValue(V) {
     V value;
-    Nrv index;
+    Int index;
     alias value this;
 }
 
-// NOTE: Maybe this should be a generic type, but ehhh.
+/// A range that iterates over a numeric interval with a given step.
 struct NumericRange {
-    Nrv start;
-    Nrv stop;
-    Nrv step;
-    Nrv index;
+    Int index;
+    Int stop;
+    Int step;
 
     pragma(inline, true) @safe nothrow @nogc:
+
+    this(Int start, Int stop, Int step = 1) {
+        this.index = start;
+        this.stop = stop;
+        this.step = step;
+    }
+
+    this(Int stop) {
+        this(0, stop);
+    }
 
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
     }
 
-    Nrv front() {
+    Int front() {
         return index;
     }
 
     void popFront() {
         index += step;
     }
-
-    Nrv back() {
-        return cast(Nrv) (stop - (index - start) - 1);
-    }
-
-    void popBack() {
-        index += step;
-    }
 }
 
-// NOTE: It's using a pointer because it keeps the sturct small. Was something like 24LU with a slice.
-struct SliceRange(T) {
-    const(T)* slice;
-    Nrv sliceLength;
-    Nrv index;
+/// A range that iterates over a read-only view of an array.
+struct ArrayRange(T) {
+    const(T)[] data;
+    Int index;
 
-    pragma(inline, true) @trusted nothrow @nogc:
+    pragma(inline, true) @safe nothrow @nogc:
 
     bool empty() {
-        return index >= sliceLength;
+        return index >= length || index < 0;
     }
 
     T front() {
-        return slice[index];
+        return data[index];
     }
 
     void popFront() {
         index += 1;
     }
 
-    T back() {
-        return slice[sliceLength - index - 1];
+    Int length() {
+        return cast(Int) data.length;
     }
 
-    void popBack() {
-        index += 1;
-    }
-
-    Nrv length() {
-        return cast(Nrv) sliceLength;
-    }
-
-    T opIndex(size_t i) {
-        return slice[i];
+    T opIndex(Int i) {
+        return data[i];
     }
 }
 
+/// A range that pairs each element of a range with its iteration index.
 struct EnumeratedRange(R) {
-    alias FrontBack = ValueIndex!(typeof(R.front()));
+    alias FrontType = IndexedValue!(typeof(R.front()));
 
     R range;
-    Nrv index;
+    Int index;
 
     pragma(inline, true) @safe nothrow @nogc:
 
@@ -107,72 +100,122 @@ struct EnumeratedRange(R) {
         return range.empty;
     }
 
-    FrontBack front() {
-        return FrontBack(range.front, index);
+    FrontType front() {
+        return FrontType(range.front, index);
     }
 
     void popFront() {
         range.popFront();
         index += 1;
     }
-
-    static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
-        FrontBack back() {
-            return FrontBack(range.back, index);
-        }
-
-        void popBack() {
-            range.popBack();
-            index += 1;
-        }
-    }
 }
 
-// NOTE: This type is mixing map and filter into one idea. Just me trying things.
-struct TransformedRange(R, F) {
+/// A range that applies a function to each element of a range.
+struct MapRange(R, F) {
     R range;
     F func;
-    bool isFilter;
 
-    void skipToNext(bool canIncludeSelf) {
-        if (!canIncludeSelf) range.popFront();
-        while (!range.empty && !func(range.front)) range.popFront();
-    }
+    pragma(inline, true) @safe nothrow @nogc:
 
     bool empty() {
-        if (isFilter) {
-            skipToNext(true);
-            return range.empty;
-        }
         return range.empty;
     }
 
     auto front() {
-        if (isFilter) {
-            return range.front;
-        }
         return func(range.front);
     }
 
     void popFront() {
-        if (isFilter) {
-            skipToNext(false);
-            return;
-        }
         range.popFront();
     }
+}
 
-    static if (__traits(hasMember, R, "back") && __traits(hasMember, R, "popBack")) {
-        auto back() {
-            if (isFilter) assert(0, "Can't use filter or map with `foreach_reverse`.");
-            return func(range.back);
-        }
+/// A range that skips elements of a range that do not satisfy a predicate.
+struct FilterRange(R, F) {
+    R range;
+    F func;
 
-        void popBack() {
-            if (isFilter) assert(0, "Can't use filter or map with `foreach_reverse`.");
-            range.popBack();
-        }
+    pragma(inline, true) @safe nothrow @nogc:
+
+    this(R range, F func) {
+        this.range = range;
+        this.func = func;
+        advance();
     }
+
+    void advance() {
+        while (!range.empty && !func(range.front)) range.popFront();
+    }
+
+    bool empty() {
+        return range.empty;
+    }
+
+    auto front() {
+        return range.front;
+    }
+
+    void popFront() {
+        range.popFront();
+        advance();
+    }
+}
+
+@safe nothrow @nogc {
+    NumericRange range(Int start, Int stop, Int step = 1) {
+        return NumericRange(start, stop, step);
+    }
+
+    NumericRange range(Int stop) {
+        return NumericRange(stop);
+    }
+
+    ArrayRange!T range(T)(const(T)[] data) {
+        return ArrayRange!T(data);
+    }
+}
+
+EnumeratedRange!R enumerate(R)(R range, Int start = 0) {
+    return EnumeratedRange!R(range, start);
+}
+
+MapRange!(R, F) map(R, F)(R range, F func) {
+    return MapRange!(R, F)(range, func);
+}
+
+FilterRange!(R, F) filter(R, F)(R range, F func) {
+    return FilterRange!(R, F)(range, func);
+}
+
+@trusted
+T reduce(R, F, T)(R range, F func, T initial) {
+    auto result = initial;
+    foreach (item; range) {
+        result = cast(T) func(result, item);
+    }
+    return result;
+}
+
+bool any(R, F)(R range, F func) {
+    foreach (item; range) {
+        if (func(item)) return true;
+    }
+    return false;
+}
+
+bool all(R, F)(R range, F func) {
+    foreach (item; range) {
+        if (!func(item)) return false;
+    }
+    return true;
+}
+
+Int countIf(R, F)(R range, F func) {
+    auto result = Int.init;
+    foreach (item; range) {
+        result += func(item);
+    }
+    return result;
 }
 
 /// Command-line argument types.
@@ -231,165 +274,75 @@ struct ArgTokenRange {
     }
 }
 
-@safe nothrow @nogc {
-    alias toRange = range;
-
-    NumericRange range(Nrv start, Nrv stop, Nrv step = 1) {
-        return NumericRange(start, stop, step, start);
-    }
-
-    NumericRange range(Nrv stop) {
-        return range(0, stop);
-    }
-
-    @trusted
-    SliceRange!T range(T)(const(T)[] slice) {
-        return SliceRange!T(slice.ptr, cast(Nrv) slice.length);
-    }
-
-
-    EnumeratedRange!R enumerate(R)(R range, Nrv start = 0) if (rangeIsNotStaticArrayType!R) {
-        static if (is(R : const(T)[], T)) {
-            return enumerate(range.toRange());
-        } else {
-            return EnumeratedRange!R(range, start);
-        }
-    }
-}
-
-TransformedRange!(R, F) map(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
-    static if (is(R : const(T)[], T)) {
-        return map(range.toRange(), func);
-    } else {
-        return TransformedRange!(R, F)(range, func);
-    }
-}
-
-TransformedRange!(R, F) filter(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
-    static if (is(R : const(T)[], T)) {
-        return filter(range.toRange(), func);
-    } else {
-        return TransformedRange!(R, F)(range, func, true);
-    }
-}
-
-T reduce(R, F, T)(R range, F func, T initial) if (rangeIsNotStaticArrayType!R) {
-    static if (is(R : const(T)[], T)) {
-        return reduce(range.toRange(), func, initial);
-    } else {
-        auto result = initial;
-        foreach (item; range) {
-            static if (rangeHasValueIndexType!R) {
-                result.value = func(result, item);
-            } else {
-                result = func(result, item);
-            }
-        }
-        return result;
-    }
-}
-
-auto reduce(R, F)(R range, F func) if (rangeIsNotStaticArrayType!R) {
-    static if (is(R : const(T)[], T)) {
-        return reduce(range.toRange(), func);
-    } else {
-        if (range.empty) return typeof(range.front()).init;
-        auto initial = range.front;
-        range.popFront();
-        return reduce(range, func, initial);
-    }
-}
-
-auto min(R)(R range) {
-    alias T = rangeFrontType!R;
-    return range.reduce((T x, T y) => x < y ? x : y);
-}
-
-auto max(R)(R range) {
-    alias T = rangeFrontType!R;
-    return range.reduce((T x, T y) => x > y ? x : y);
-}
-
-auto sum(R)(R range) {
-    alias T = rangeFrontType!R;
-    return range.reduce((T x, T y) => cast(T) (x + y));
-}
-
-auto product(R)(R range) {
-    alias T = rangeFrontType!R;
-    return range.reduce((T x, T y) => cast(T) (x * y));
-}
-
-template rangeIsNotStaticArrayType(R) {
-    enum rangeIsNotStaticArrayType = !(is(R : const(A)[N], A, Sz N));
-}
-
-template rangeHasValueIndexType(R) {
-    enum rangeHasValueIndexType = is(typeof(R.front()) : const(ValueIndex!V), V);
-}
-
-template rangeFrontType(R) {
-    static if (is(R : const(S)[], S)) {
-        R temp;
-        alias rangeFrontType = typeof(temp[0]);
-    } else static if (is(typeof(R.front()) : const(ValueIndex!V), V)) {
-        alias rangeFrontType = typeof(R.front().value);
-    } else {
-        alias rangeFrontType = typeof(R.front());
-    }
-}
-
 @safe nothrow @nogc
 unittest {
-    Nrv temp = 0;
-    Nrv start = 0;
-    Nrv stop = 4;
-    Nrv step = 1;
-    assert(range(temp, stop, step).sum == 6);
-    assert(range(temp, stop, step).enumerate().sum == 6);
-    foreach (i; range(temp, stop, step)) {
-        assert(i >= start && i < stop);
+    // NumericRange: forward iteration
+    Int temp = 0;
+    foreach (i; range(0, 4)) {
         assert(i == temp);
-        temp += step;
+        temp += 1;
     }
 
+    // NumericRange: negative step
     temp = 0;
-    start = 0;
-    stop = -4;
-    step = -1;
-    assert(range(temp, stop, step).sum == -6);
-    assert(range(temp, stop, step).enumerate().sum == -6);
-    foreach (i; range(temp, stop, step)) {
-        assert(i <= start && i > stop);
+    foreach (i; range(0, -4, -1)) {
         assert(i == temp);
-        temp += step;
+        temp -= 1;
     }
 
-    assert(range(10).sum == 45);
-    assert(range(10).enumerate().sum == 45);
+    // NumericRange: single-arg shorthand
+    assert(range(0, 10).reduce((Int x, Int y) => x + y, 0) == 45);
 
-    int[3] array = [2, 2, 2];
-    int[] slice = array[];
-    assert(slice.sum == 6);
+    // ArrayRange
+    Int[5] slice = [1, 2, 3, 4, 5];
+    assert(slice.range().reduce((Int x, Int y) => x + y, 0) == 15);
+    assert(slice.range()[2] == 3);
+    assert(slice.range().length == 5);
 
-    assert(range(3).map((Nrv x) => x * 2).sum == 6);
-    assert(range(9).filter((Nrv x) => x == 2 || x == 4).sum == 6);
-    assert(range(0, 4).reduce((Nrv x, Nrv y) => cast(Nrv) (x + y)) == 6);
-    assert(range(0, 4).reduce((Nrv x, Nrv y) => cast(Nrv) (x * y)) == 0);
-    assert(range(1, 4).reduce((Nrv x, Nrv y) => cast(Nrv) (x * y)) == 6);
-    assert(slice.reduce((int x, int y) => x + y) == 6);
-    assert(range(2, 6).min == 2);
-    assert(range(2, 6).max == 5);
-    assert(slice.min == 2);
-    assert(slice.max == 2);
+    // EnumeratedRange: index starts at 0
+    temp = 0;
+    foreach (item; range(10, 13).enumerate()) {
+        assert(item.index == temp);
+        temp += 1;
+    }
 
+    // EnumeratedRange: non-zero start index
+    temp = 5;
+    foreach (item; range(10, 13).enumerate(5)) {
+        assert(item.index == temp);
+        temp += 1;
+    }
+
+    // MapRange
+    assert(range(0, 4).map((Int x) => x * 2).reduce((Int x, Int y) => x + y, 0) == 12);
+
+    // FilterRange: basic
+    assert(range(0, 9).filter((Int x) => x == 2 || x == 4).reduce((Int x, Int y) => x + y, 0) == 6);
+
+    // FilterRange: empty() is idempotent
+    auto f = range(0, 5).filter((Int x) => x % 2 == 0);
+    assert(!f.empty);
+    assert(!f.empty); // second call must not skip elements
+    assert(f.front == 0);
+
+    // FilterRange: all elements filtered out
+    assert(range(0, 5).filter((Int x) => x > 10).reduce((Int x, Int y) => x + y, 0) == 0);
+
+    // map then filter then reduce
     assert(
         range(1, 5)
-            .map((Nrv x) => cast(Nrv) (x * 2))
-            .filter((Nrv x) => x > 4)
-            .reduce((Nrv a, Nrv b) => cast(Nrv) (a + b))
+            .map((Int x) => cast(Int) (x * 2))
+            .filter((Int x) => x > 4)
+            .reduce((Int a, Int b) => cast(Int) (a + b), cast(Int) 0)
         == 14
     );
+
+    // any / all / countIf
+    assert(range(0, 5).any((Int x) => x == 3));
+    assert(!range(0, 5).any((Int x) => x == 9));
+    assert(range(1, 5).all((Int x) => x > 0));
+    assert(!range(0, 5).all((Int x) => x > 0));
+    assert(range(0, 10).countIf((Int x) => x % 2 == 0) == 5);
 }
 
 // Arg test.
