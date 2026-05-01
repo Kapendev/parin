@@ -16,8 +16,6 @@ version (WASI) {
     version = JokaMemoryStubs;
 }
 
-// TODO: Maybe I should make the arena API more like the allocator API??
-
 // --- Core
 
 MemoryContext __memoryContext;
@@ -266,23 +264,19 @@ version (JokaCustomMemory) {
             if (ptr == null) return;
             if (auto mallocValue = ptr in _memoryTrackingState.table) {
                 stdc_realloc(ptr, 0, oldSize);
-                debug {
-                    _memoryTrackingState.totalBytes -= mallocValue.size;
-                    _memoryTrackingState.table.remove(ptr);
-                }
+                _memoryTrackingState.totalBytes -= mallocValue.size;
+                _memoryTrackingState.table.remove(ptr);
             } else {
-                debug {
-                    if (_memoryTrackingState.canIgnoreInvalidFree) {
-                        _memoryTrackingState.invalidFreeTable ~= _MallocInfo(
-                            file,
-                            line,
-                            0,
-                            false,
-                            _memoryTrackingState.currentGroupStack.length ? _memoryTrackingState.currentGroupStack[$ - 1] : "",
-                        );
-                    } else {
-                        assert(0, "Invalid free.");
-                    }
+                if (_memoryTrackingState.canIgnoreInvalidFree) {
+                    _memoryTrackingState.invalidFreeTable ~= _MallocInfo(
+                        file,
+                        line,
+                        0,
+                        false,
+                        _memoryTrackingState.currentGroupStack.length ? _memoryTrackingState.currentGroupStack[$ - 1] : "",
+                    );
+                } else {
+                    assert(0, "Invalid free.");
                 }
             }
         } else {
@@ -291,7 +285,7 @@ version (JokaCustomMemory) {
     }
 }
 
-void* jokaSytemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
+void* jokaSystemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
     return jokaSystemRealloc(oldPtr, newSize, oldSize, file, line);
 }
 
@@ -483,7 +477,7 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
 
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
-        context.reallocFunc = &jokaSytemReallocWrapper;
+        context.reallocFunc = &jokaSystemReallocWrapper;
     }
 
     void jokaEnsureCapture(ref MemoryContext capture) {
@@ -560,7 +554,7 @@ IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
             auto ignoreText = ignoreCount ? ", {} ignored".fmt(ignoreCount) : "";
             auto filterText = pathFilter.length ? fmt("Filter: \"{}\"\n", pathFilter) : "";
 
-            if (canShowEmpty ? true : finalLength != 0) {
+            if (canShowEmpty || finalLength != 0) {
                 _memoryTrackingState.infoBuffer ~= fmt("Memory Leaks: {} (total {} bytes{})\n{}", finalLength, _memoryTrackingState.totalBytes, ignoreText, filterText);
             }
             _updateGroupBuffer(_memoryTrackingState.table);
@@ -568,7 +562,7 @@ IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
                 if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
                 _memoryTrackingState.infoBuffer ~= fmt("  {} leak, {} bytes, {}:{}{}\n", value.count, value.size, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
             }
-            if (canShowEmpty ? true : _memoryTrackingState.invalidFreeTable.length != 0) {
+            if (canShowEmpty || _memoryTrackingState.invalidFreeTable.length != 0) {
                 _memoryTrackingState.infoBuffer ~= fmt("Invalid Frees: {}\n{}", _memoryTrackingState.invalidFreeTable.length, filterText);
             }
             _updateGroupBuffer(_memoryTrackingState.invalidFreeTable);
@@ -1637,8 +1631,8 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
 
     enum zero            = cast(Item) 0;
     enum one             = cast(Item) 1;
-    enum bucketLength    = cast(Item) (Item.sizeof * 8);
-    enum bucketCapacity  = cast(Item) (Item.sizeof * 8);
+    enum bucketLength    = cast(Sz) (Item.sizeof * 8);
+    enum bucketCapacity  = cast(Sz) (Item.sizeof * 8);
     enum bucketIndexMask = bucketCapacity - 1;
 
     enum bucketShiftAmount = () {
@@ -1764,11 +1758,11 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
 
         void opIndexAssign(const(bool) rhs, Sz i) {
             if (i >= length) assert(0, indexErrorMessage(i));
-            auto mask = one << (i & bucketIndexMask);
+            auto mask = cast(T) (one << (i & bucketIndexMask));
             if (rhs) {
                 buckets[i >> bucketShiftAmount] |= mask;
             } else {
-                buckets[i >> bucketShiftAmount] &= ~mask;
+                buckets[i >> bucketShiftAmount] &= cast(T) ~mask;
             }
         }
     }
@@ -2357,7 +2351,7 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, Interpolati
             else { result ~= "args[" ~ i.stringof ~ "],"; }
         } return result;
     }();
-    return mixin("fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ")");
+    mixin("return fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ");");
 }
 
 IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
@@ -2368,7 +2362,7 @@ IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     }
 }
 
-void sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+IStr sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
         Str result; static foreach (i, T; A) {
@@ -2382,7 +2376,7 @@ void sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, I
             else { result ~= "args[" ~ i.stringof ~ "],"; }
         } return result;
     }();
-    mixin("sprintf(buffer, fmtStr,", fmtArgs, ");");
+    mixin("return sprintf(buffer, fmtStr,", fmtArgs, ");");
 }
 
 IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
@@ -2404,7 +2398,7 @@ IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     }
 }
 
-void sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
+IStr sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
         Str result; static foreach (i, T; A) {
@@ -2418,7 +2412,7 @@ void sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args,
             else { result ~= "args[" ~ i.stringof ~ "],"; }
         } return result;
     }();
-    mixin("sprintfln(buffer, fmtStr,", fmtArgs, ");");
+    mixin("return sprintfln(buffer, fmtStr,", fmtArgs, ");");
 }
 
 void sprint(S = LStr, A...)(ref S buffer, A args) {

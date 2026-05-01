@@ -308,16 +308,14 @@ struct ArgRange {
     }
 }
 
-@safe nothrow @nogc {
-    /// Returns a numeric range.
-    NumericRange!I range(I)(I start, I stop, I step = 1) {
-        return NumericRange!I(start, stop, step);
-    }
+/// Returns a numeric range.
+NumericRange!I range(I)(I start, I stop, I step = 1) {
+    return NumericRange!I(start, stop, step);
+}
 
-    /// Returns an array range.
-    ArrayRange!T range(T)(const(T)[] data) {
-        return ArrayRange!T(data);
-    }
+/// Returns an array range.
+ArrayRange!T range(T)(const(T)[] data) {
+    return ArrayRange!T(data);
 }
 
 /// Returns a range that pairs each element with its iteration index.

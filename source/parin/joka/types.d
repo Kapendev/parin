@@ -144,10 +144,43 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
 
     enum zero     = cast(T) 0;
     enum one      = cast(T) 1;
-    enum length   = cast(T) (bits.sizeof * 8);
-    enum capacity = cast(T) (bits.sizeof * 8);
+    enum length   = cast(Sz) (bits.sizeof * 8);
+    enum capacity = cast(Sz) (bits.sizeof * 8);
+
+    @trusted nothrow @nogc:
+
+    T count() {
+        T n = bits;
+        T c = zero;
+        while (n) { n &= cast(T) (n - one); ++c; } // Brian Kernighan's trick.
+        return c;
+    }
 
     pragma(inline, true) @trusted nothrow @nogc:
+
+    bool any()  {
+        return bits != zero;
+    }
+
+    bool none() {
+        return bits == zero;
+    }
+
+    bool all() {
+        return bits == ~zero;
+    }
+
+    void flip(Sz i) {
+        bits ^= cast(T) (one << i);
+    }
+
+    void set() {
+        bits = cast(T) ~zero;
+    }
+
+    void reset() {
+        bits = zero;
+    }
 
     bool opIndex(Sz i) {
         assert(i < length, indexErrorMessage(i));
@@ -1150,6 +1183,11 @@ IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
         default:
             assert(0, "Argument count should be between 1 and 4.");
     }
+}
+
+/// Halts the program with a TODO message indicating unimplemented code.
+noreturn todo(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
+    assert(0, "TODO({}:{}): {}".fmt(file, line, text));
 }
 
 pragma(inline, true) {

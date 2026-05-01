@@ -727,7 +727,6 @@ struct UiContext {
     UiResultFlags stepper(T)(IRect area, ref T number, T startInclusive, T stopInclusive, T step, IStr info = "", bool canLoop = true, IStr fmtStr = defaultAsciiFmtArgStr, UiFlags optionFlags = defaultUiFlags) {
         auto flags = UiResultFlags();
         if (info.length) {
-            // TODO: Some of the code inside this block could be inside a `doButtonAndHaveFun` function.
             auto interaction = registerControlInteraction(area, optionFlags);
             flags = handleButtonInteraction(interaction, area, optionFlags);
             auto colorType = handleButtonColorType(interaction, optionFlags);

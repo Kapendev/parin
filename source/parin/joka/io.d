@@ -22,8 +22,6 @@ version (WASI) {
 
 @trusted:
 
-enum defaultCodePathMessage = "Reached unexpected code path.";
-
 enum StdStream : ubyte {
     input,
     output,
@@ -141,14 +139,6 @@ void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
     printf("TRACE({}:{}):", file, line);
     foreach (arg; args) printf(" {}", arg);
     printf("\n");
-}
-
-void warn(IStr text = defaultCodePathMessage, IStr file = __FILE__, Sz line = __LINE__) {
-    printf("WARN({}:{}): {}\n", file, line, text);
-}
-
-noreturn todo(IStr text = defaultCodePathMessage, IStr file = __FILE__, Sz line = __LINE__) {
-    assert(0, "TODO({}:{}): {}".fmt(file, line, text));
 }
 
 @safe nothrow:
