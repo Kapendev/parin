@@ -71,7 +71,7 @@ game_web.zip
 enum dubFileContent = `
 {
     "authors" : ["Name"],
-    "copyright" : "Copyright © 2025, Name",
+    "copyright" : "Copyright © 2026, Name",
     "description" : "A game made with Parin.",
     "license" : "proprietary",
     "name" : "game",

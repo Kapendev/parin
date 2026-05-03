@@ -1982,6 +1982,16 @@ float deltaWheel() {
     return bk.deltaWheel;
 }
 
+/// Shows the cursor in the window
+void showCursor() {
+    bk.showCursor();
+}
+
+/// Hides the cursor in the window
+void hideCursor() {
+    bk.hideCursor();
+}
+
 /// Returns true if the specified character is currently pressed.
 bool isDown(char key) {
     return key ? bk.isDown(key) : false;

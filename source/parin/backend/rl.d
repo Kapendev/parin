@@ -1144,6 +1144,14 @@ Vec2 deltaMouse() {
     return Vec2(rl.GetMouseDelta().x, rl.GetMouseDelta().y);
 }
 
+void showCursor() {
+    rl.ShowCursor();
+}
+
+void hideCursor() {
+    rl.HideCursor();
+}
+
 // TODO: The value still depends on target. Fix that one day?
 float deltaWheel() {
     float result = void;
