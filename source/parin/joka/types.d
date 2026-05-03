@@ -69,15 +69,17 @@ struct NoData {}
 
 /// A generational index.
 struct GenIndex {
-    Gen value;
-    Gen generation;
+    Gen value;      /// The index value.
+    Gen generation; /// The generation counter.
 
     pragma(inline, true) @safe nothrow @nogc:
 
+    /// Returns true if the index is invalid.
     bool isNone() {
         return value < 0;
     }
 
+    /// Returns true if the index is valid.
     bool isSome() {
         return value >= 0;
     }
@@ -96,11 +98,8 @@ struct StaticArray(T, Sz N) {
         foreach (i; 0 .. N) (cast(T*) data.ptr)[i] = cast(T) items[i];
     }
 
-    /// The length of the array.
-    enum length = N;
-
-    /// The capacity of the array.
-    enum capacity = N;
+    enum length = N;   /// The length of the array.
+    enum capacity = N; /// The capacity of the array.
 
     /// Returns the items of the array.
     pragma(inline, true)
@@ -112,8 +111,8 @@ struct StaticArray(T, Sz N) {
 /// A slice using a foreign memory layout.
 /// It can be used to interface with languages that define slices differently.
 struct ForeignSlice(T) {
-    T* ptr;
-    Sz length;
+    T* ptr;    /// The pointer of the slice.
+    Sz length; /// The length of the slice.
     alias items this;
 
     @trusted nothrow @nogc:
@@ -140,15 +139,16 @@ struct ForeignSlice(T) {
 
 /// A static bit set.
 struct GBitSet(T) if (__traits(isUnsigned, T)) {
-    T bits;
+    T bits; /// The underlying bit storage.
 
-    enum zero     = cast(T) 0;
-    enum one      = cast(T) 1;
-    enum length   = cast(Sz) (bits.sizeof * 8);
-    enum capacity = cast(Sz) (bits.sizeof * 8);
+    enum zero     = cast(T) 0;                  /// Typed zero constant.
+    enum one      = cast(T) 1;                  /// Typed one constant.
+    enum length   = cast(Sz) (bits.sizeof * 8); /// The length of the bit set.
+    enum capacity = cast(Sz) (bits.sizeof * 8); /// The capacity of the bit set.
 
     @trusted nothrow @nogc:
 
+    /// Returns the number of set bits.
     T count() {
         T n = bits;
         T c = zero;
@@ -158,26 +158,32 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
 
     pragma(inline, true) @trusted nothrow @nogc:
 
-    bool any()  {
+    /// Returns true if any bit is set.
+    bool any() {
         return bits != zero;
     }
 
+    /// Returns true if no bit is set.
     bool none() {
         return bits == zero;
     }
 
+    /// Returns true if the first bit is set.
     bool all() {
-        return bits == ~zero;
+        return bits == one;
     }
 
+    /// Flips the bit at the given index.
     void flip(Sz i) {
         bits ^= cast(T) (one << i);
     }
 
+    /// Sets the first bit.
     void set() {
-        bits = cast(T) ~zero;
+        bits = one;
     }
 
+    /// Clears all bits.
     void reset() {
         bits = zero;
     }
@@ -706,6 +712,62 @@ unittest {
 
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
+}
+
+// BitSet test.
+unittest {
+    BitSet bs;
+    assert(bs.none == true);
+    assert(bs.any == false);
+    assert(bs.all == false);
+    assert(bs.count == 0);
+
+    bs.set();
+    assert(bs.none == false);
+    assert(bs.any == true);
+    assert(bs.all == true);
+    assert(bs.count == 1);
+
+    bs.reset();
+    assert(bs.none == true);
+    assert(bs.any == false);
+    assert(bs.all == false);
+    assert(bs.count == 0);
+
+    bs[0] = true;
+    assert(bs[0] == true);
+    assert(bs.count == 1);
+
+    bs[3] = true;
+    assert(bs[3] == true);
+    assert(bs.count == 2);
+
+    bs[0] = false;
+    assert(bs[0] == false);
+    assert(bs.count == 1);
+
+    bs.flip(3);
+    assert(bs[3] == false);
+    assert(bs.none == true);
+
+    bs.flip(7);
+    assert(bs[7] == true);
+    assert(bs.count == 1);
+
+    bs.reset();
+    bs[1] = true;
+    bs[5] = true;
+    bs[62] = true;
+    assert(bs.count() == 3);
+    assert(bs.length == 64);
+
+    GBitSet!ubyte small;
+    assert(small.length == 8);
+    small[7] = true;
+    assert(small[7] == true);
+    assert(small.count == 1);
+    small.flip(7);
+    assert(small.none == true);
 }
 
 // Maybe test.

@@ -34,11 +34,7 @@ alias WitNoData = NoData; // Can be used with `WitResult`.
 
 alias WitList   = ForeignSlice;
 alias WitOption = Option;
-
 alias toWit = toForeign;
-
-deprecated("Use `WitSize`. This name is closer to the names inside the wasip1 module.")
-alias WitSz = WitSize;
 
 // NOTE: There are some weird cases that might need special checks.
 //   result<u32>     // no data associated with the error case
