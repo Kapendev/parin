@@ -2,12 +2,12 @@
 
 import parin;
 
-auto color = cyan;
 auto state = SmoothToggle();
+auto color = cyan;
 
 bool update(float dt) {
     if ('q'.isPressed && !state.isActive) state.toggle();
-    auto value = smoothstep(-resolutionHeight, resolutionHeight, state.update(dt));
+    auto y = smoothstep(-resolutionHeight, resolutionHeight, state.update(dt));
     if (state.isAtEnd) {
         state.toggleSnap();
         color.r = cast(ubyte) (randi % 255);
@@ -16,7 +16,7 @@ bool update(float dt) {
     };
 
     drawText("Press Q", resolution * 0.5, DrawOptions(Vec2(6), Hook.center));
-    drawRect(Rect(0, value, resolution), color);
+    drawRect(Rect(0, y, resolution), color);
     return false;
 }
 
