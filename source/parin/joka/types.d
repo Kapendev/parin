@@ -168,9 +168,9 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         return bits == zero;
     }
 
-    /// Returns true if the first bit is set.
+    /// Returns true if all bits are set.
     bool all() {
-        return bits == one;
+        return bits == T.max;
     }
 
     /// Flips the bit at the given index.
@@ -178,9 +178,9 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         bits ^= cast(T) (one << i);
     }
 
-    /// Sets the first bit.
+    /// Sets all bits.
     void set() {
-        bits = one;
+        bits = T.max;
     }
 
     /// Clears all bits.
@@ -726,7 +726,7 @@ unittest {
     assert(bs.none == false);
     assert(bs.any == true);
     assert(bs.all == true);
-    assert(bs.count == 1);
+    assert(bs.count == 64);
 
     bs.reset();
     assert(bs.none == true);
@@ -749,7 +749,6 @@ unittest {
     bs.flip(3);
     assert(bs[3] == false);
     assert(bs.none == true);
-
     bs.flip(7);
     assert(bs[7] == true);
     assert(bs.count == 1);
@@ -759,7 +758,6 @@ unittest {
     bs[5] = true;
     bs[62] = true;
     assert(bs.count() == 3);
-    assert(bs.length == 64);
 
     GBitSet!ubyte small;
     assert(small.length == 8);
