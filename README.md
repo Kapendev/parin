@@ -184,7 +184,7 @@ The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 ### How do I make a web build?
 
 Parin includes a build script for the web in the [packages](packages/) folder.
-Building for the web requires [Emscripten](https://emscripten.org/) (the latest version is recommended).
+Building for the web requires [Emscripten](https://emscripten.org/) (version `4.0.23` is recommended).
 
 > [!WARNING]
 > The defaults are using the `-betterC` flag.

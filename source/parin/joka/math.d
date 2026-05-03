@@ -1744,6 +1744,11 @@ struct SmoothToggle {
         return progress == 1.0f;
     }
 
+    /// Returns true if progress is not at the start (0.0) or the end (1.0).
+    bool isActive() {
+        return progress != 0.0f && progress != 1.0f;
+    }
+
     /// Returns the current progress (between 0.0 and 1.0).
     float now() {
         if (progress <= 0.0f) {
