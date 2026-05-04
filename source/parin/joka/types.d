@@ -142,17 +142,40 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
 
     enum zero     = cast(T) 0;                  /// Typed zero constant.
     enum one      = cast(T) 1;                  /// Typed one constant.
-    enum length   = cast(Sz) (bits.sizeof * 8); /// The length of the bit set.
     enum capacity = cast(Sz) (bits.sizeof * 8); /// The capacity of the bit set.
 
     @trusted nothrow @nogc:
 
     /// Returns the number of set bits.
-    T count() {
-        T n = bits;
-        T c = zero;
-        while (n) { n &= cast(T) (n - one); ++c; } // Brian Kernighan's trick.
+    Sz length() {
+        auto n = bits;
+        auto c = zero;
+        while (n) { n &= cast(T) (n - one); c += 1; } // Brian Kernighan's trick.
         return c;
+    }
+
+    /// Returns a range over the indices of all set bits.
+    auto setBits() {
+        static struct Range {
+            T remaining;
+
+            bool empty() {
+                return remaining == zero;
+            }
+
+            Sz front() {
+                auto n = remaining;
+                auto i = Sz(0);
+                while (!(n & one)) { n >>= one; i += 1; }
+                return i;
+            }
+
+            void popFront() {
+                remaining &= cast(T) (remaining - one);
+            }
+        }
+
+        return Range(bits);
     }
 
     pragma(inline, true) @trusted nothrow @nogc:
@@ -188,17 +211,13 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
     }
 
     bool opIndex(Sz i) {
-        assert(i < length, indexErrorMessage(i));
+        assert(i < capacity, indexErrorMessage(i));
         return (bits >> i) & one;
     }
 
     void opIndexAssign(const(bool) rhs, Sz i) {
-        assert(i < length, indexErrorMessage(i));
-        if (rhs) {
-            bits |= (one << i);
-        } else {
-            bits &= ~(one << i);
-        }
+        assert(i < capacity, indexErrorMessage(i));
+        bits = cast(T) (  rhs ? (bits | (one << i)) : (bits & ~(one << i))  );
     }
 }
 
@@ -719,50 +738,63 @@ unittest {
     assert(bs.none == true);
     assert(bs.any == false);
     assert(bs.all == false);
-    assert(bs.count == 0);
+    assert(bs.length == 0);
 
     bs.set();
     assert(bs.none == false);
     assert(bs.any == true);
     assert(bs.all == true);
-    assert(bs.count == 64);
+    assert(bs.length == 64);
 
     bs.reset();
     assert(bs.none == true);
     assert(bs.any == false);
     assert(bs.all == false);
-    assert(bs.count == 0);
+    assert(bs.length == 0);
 
     bs[0] = true;
     assert(bs[0] == true);
-    assert(bs.count == 1);
+    assert(bs.length == 1);
 
     bs[3] = true;
     assert(bs[3] == true);
-    assert(bs.count == 2);
+    assert(bs.length == 2);
 
     bs[0] = false;
     assert(bs[0] == false);
-    assert(bs.count == 1);
+    assert(bs.length == 1);
 
     bs.flip(3);
     assert(bs[3] == false);
     assert(bs.none == true);
     bs.flip(7);
     assert(bs[7] == true);
-    assert(bs.count == 1);
+    assert(bs.length == 1);
 
     bs.reset();
     bs[1] = true;
     bs[5] = true;
     bs[62] = true;
-    assert(bs.count == 3);
+    assert(bs.length == 3);
+
+    Sz[3] expected = [1, 5, 62];
+    Sz i = 0;
+    foreach (bit; bs.setBits) {
+        assert(bit == expected[i]);
+        i += 1;
+    }
+    assert(i == 3);
+
+    bs.reset();
+    Sz testCount = 0;
+    foreach (bit; bs.setBits) testCount += 1;
+    assert(testCount == 0);
 
     GBitSet!ubyte small;
-    assert(small.length == 8);
+    assert(small.capacity == 8);
     small[7] = true;
     assert(small[7] == true);
-    assert(small.count == 1);
+    assert(small.length == 1);
     small.flip(7);
     assert(small.none == true);
 }

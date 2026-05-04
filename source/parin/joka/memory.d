@@ -1677,7 +1677,6 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
 
     enum zero            = cast(Item) 0;
     enum one             = cast(Item) 1;
-    enum bucketLength    = cast(Sz) (Item.sizeof * 8);
     enum bucketCapacity  = cast(Sz) (Item.sizeof * 8);
     enum bucketIndexMask = bucketCapacity - 1;
 
