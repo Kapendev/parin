@@ -566,14 +566,14 @@ Specific allocations can be ignored with `ignoreLeak` like this:
 game = jokaMake!Game().ignoreLeak();
 ```
 
-Allocations can also be grouped to make it easier to understand what each allocation is used for with `AllocationGroup` like this:
+Allocations can also be grouped to make it easier to understand what each allocation is used for with `ScopedAllocationGroup` like this:
 
 ```d
 // This can also be done with the `beginAllocationGroup` and `endAllocationGroup` functions.
-with (AllocationGroup("World")) {
+with (ScopedAllocationGroup("World")) {
     allocateMonsters();
     allocateActors();
-    with (AllocationGroup("Contents")) {
+    with (ScopedAllocationGroup("Contents")) {
         allocateItems();
         allocateEvents();
     }

@@ -57,7 +57,8 @@ debug {
     enum isTrackingMemory = false;
 }
 
-struct AllocationGroup {
+/// Groups allocations under a name for tracking purposes.
+struct ScopedAllocationGroup {
     IStr _currentAllocationGroup;
 
     @safe nothrow:
@@ -74,25 +75,28 @@ struct AllocationGroup {
     }
 }
 
-struct MemoryContext {
-    void* allocatorState;
-    AllocatorReallocFunc reallocFunc; // NOTE: If this is null, then the default allocator setup should be used.
+deprecated("Use `ScopedAllocationGroup`.")
+alias AllocationGroup = ScopedAllocationGroup;
 
-    // NOTE: The functions here are just helpers that pass the allocator state.
-    //  They avoid `void*` mistakes.
-    //  Could have more helpers, but it's better to keep things simple.
-    //  The `nullAllocatorReallocWrapper` function can be used to ignore allocations.
+// NOTE: The methods of `MemoryContext` are helpers that avoid `void*` mistakes.
+/// A dynamic allocator API.
+struct MemoryContext {
+    void* allocatorState;             /// The state passed to the realloc function.
+    AllocatorReallocFunc reallocFunc; /// The realloc function. It defines how the state is used.
 
     pragma(inline, true) @system nothrow:
 
+    /// Allocates a block of memory.
     void* malloc(Sz alignment, Sz size, IStr file, Sz line) {
         return reallocFunc(allocatorState, alignment, null, 0, size, file, line);
     }
 
+    /// Reallocates a block of memory.
     void* realloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return reallocFunc(allocatorState, alignment, oldPtr, oldSize, newSize, file, line);
     }
 
+    /// Frees a block of memory.
     void free(Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line) {
         reallocFunc(allocatorState, alignment, oldPtr, oldSize, 0, file, line);
     }
@@ -104,6 +108,7 @@ nothrow {
     alias AllocatorFreeFunc    = void  function(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, IStr file, Sz line);
 }
 
+/// Replaces the global memory context for the current scope with the given allocator.
 struct ScopedMemoryContext {
     MemoryContext _previousMemoryContext;
 
@@ -128,6 +133,7 @@ struct ScopedMemoryContext {
     }
 }
 
+/// Replaces the global memory context for the current scope with the default allocator.
 @safe nothrow @nogc
 ScopedMemoryContext ScopedDefaultMemoryContext() {
     auto context = MemoryContext();
@@ -289,98 +295,115 @@ void* jokaSystemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr,
     return jokaSystemRealloc(oldPtr, newSize, oldSize, file, line);
 }
 
+/// Allocates a block of memory.
 void* jokaMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
     if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
     return __memoryContext.malloc(0, size, file, line);
 }
 
+/// Reallocates a block of memory.
 void* jokaRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
     if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
     return __memoryContext.realloc(0, ptr, oldSize, size, file, line);
 }
 
+/// Frees a block of memory.
 void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
     if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
     __memoryContext.free(0, ptr, oldSize, file, line);
 }
 
 @trusted {
+    /// Allocates memory for a value without initializing it.
     T* jokaMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
         return cast(T*) jokaMalloc(T.sizeof, file, line);
     }
 
+    /// Allocates memory for a value without initializing it.
     T* jokaMakeBlank(T)(MemoryContext context, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeBlank!T(file, line);
         }
     }
 
+    /// Allocates memory for a value and initializes it.
     T* jokaMake(T)(IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeBlank!T(file, line);
         if (result) *result = T.init;
         return result;
     }
 
+    /// Allocates memory for a value and initializes it.
     T* jokaMake(T)(MemoryContext context, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMake!T(file, line);
         }
     }
 
+    /// Allocates memory for a value and initializes it.
     T* jokaMake(T)(const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeBlank!T(file, line);
         if (result) *result = cast(T) value;
         return result;
     }
 
+    /// Allocates memory for a value and initializes it.
     T* jokaMake(T)(MemoryContext context, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMake!T(value, file, line);
         }
     }
 
+    /// Allocates a slice without initializing its elements.
     T[] jokaMakeSliceBlank(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = (cast(T*) jokaMalloc(T.sizeof * length, file, line))[0 .. length];
         if (result.ptr) return result;
         return [];
     }
 
+    /// Allocates a slice without initializing its elements.
     T[] jokaMakeSliceBlank(T)(MemoryContext context, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeSliceBlank!T(length, file, line);
         }
     }
 
+    /// Allocates a slice and initializes its elements.
     T[] jokaMakeSlice(T)(Sz length, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeSliceBlank!T(length, file, line);
         foreach (ref item; result) item = T.init;
         return result;
     }
 
+    /// Allocates a slice and initializes its elements.
     T[] jokaMakeSlice(T)(MemoryContext context, Sz length, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeSlice!T(length, file, line);
         }
     }
 
+    /// Allocates a slice and initializes its elements.
     T[] jokaMakeSlice(T)(Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeSliceBlank!T(length, file, line);
         foreach (ref item; result) item = value;
         return result;
     }
 
+    /// Allocates a slice and initializes its elements.
     T[] jokaMakeSlice(T)(MemoryContext context, Sz length, const(T) value, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeSlice!T(length, value, file, line);
         }
     }
 
+    /// Allocates a slice and initializes its elements.
     T[] jokaMakeSlice(T)(const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = jokaMakeSliceBlank!T(values.length, file, line);
         if (result.ptr) jokaMemcpy(result.ptr, values.ptr, T.sizeof * values.length);
         return result;
     }
 
+    /// Allocates a slice and initializes its elements.
     T[] jokaMakeSlice(T)(MemoryContext context, const(T)[] values, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeSlice!T(values, file, line);
@@ -396,12 +419,14 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
     //   but that is starting to look ugly.
     //   I don't want to repeat the mistake that some libraries make where you have 20+ functions for basic stuff that you can do manually anyway.
 
+    /// Resizes a slice, with the previous pointer getting freed.
     T[] jokaResizeSlice(T)(T* values, Sz length, Sz oldLength = 0, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = (cast(T*) jokaRealloc(values, T.sizeof * length, T.sizeof * oldLength, file, line))[0 .. length];
         if (result.ptr) return result;
         return [];
     }
 
+    /// Resizes a slice, with the previous pointer getting freed.
     T[] jokaResizeSlice(T)(MemoryContext context, T* values, Sz length, Sz oldLength = 0, IStr file = __FILE__, Sz line = __LINE__) {
         with (ScopedMemoryContext(context)) {
             return jokaResizeSlice!T(values, length, oldLength, file, line);
@@ -409,6 +434,8 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
     }
 
     // NOTE: This function can be optimized by using only one `static foreach`.
+    /// Allocates a struct's slice fields in a single contiguous block without initializing them.
+    /// Free the entire block by freeing the first field's pointer.
     T jokaMakeJointBlank(T)(Sz* outTotalBytes, Sz[] lengths...) if (is(T == struct)) {
         enum commonAlignment = typeof(T.tupleof[0][0]).alignof;
         if (lengths.length != T.tupleof.length) assert(0, "Lengths count doesn't match member count.");
@@ -445,12 +472,16 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
         return result;
     }
 
+    /// Allocates a struct's slice fields in a single contiguous block without initializing them.
+    /// Free the entire block by freeing the first field's pointer.
     T jokaMakeJointBlank(T)(MemoryContext context, Sz* outTotalBytes, Sz[] lengths...) if (is(T == struct)) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeJointBlank!T(outTotalBytes, lengths);
         }
     }
 
+    /// Allocates a struct's slice fields in a single contiguous block and initializes them to zero.
+    /// Free the entire block by freeing the first field's pointer.
     T jokaMakeJoint(T)(Sz[] lengths...) if (is(T == struct)) {
         Sz totalBytes;
         auto result = jokaMakeJointBlank!T(&totalBytes, lengths);
@@ -458,6 +489,8 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
         return result;
     }
 
+    /// Allocates a struct's slice fields in a single contiguous block and initializes them to zero.
+    /// Free the entire block by freeing the first field's pointer.
     T jokaMakeJoint(T)(MemoryContext context, Sz[] lengths...) if (is(T == struct)) {
         with (ScopedMemoryContext(context)) {
             return jokaMakeJoint!T(lengths);
@@ -466,26 +499,31 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
 }
 
 @trusted @nogc {
+    /// A realloc wrapper that always returns null.
     void* nullAllocatorReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
         return null;
     }
 
+    /// Configures a memory context to use the null allocator.
     void jokaRestoreNullAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.reallocFunc = &nullAllocatorReallocWrapper;
     }
 
+    /// Configures a memory context to use the default allocator.
     void jokaRestoreDefaultAllocatorSetup(ref MemoryContext context) {
         context.allocatorState = null;
         context.reallocFunc = &jokaSystemReallocWrapper;
     }
 
+    /// Sets a memory context to the global context if it has no realloc function.
     void jokaEnsureCapture(ref MemoryContext capture) {
         if (capture.reallocFunc != null) return;
         if (__memoryContext.reallocFunc == null) jokaRestoreDefaultAllocatorSetup(__memoryContext);
         capture = __memoryContext;
     }
 
+    /// Marks an allocation as ignored by the memory tracker.
     auto ignoreLeak(T)(T ptr) {
         static if (is(T : const(A)[], A)) {
             static if (isTrackingMemory) {
@@ -509,25 +547,33 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
     }
 }
 
+/// Begins a new allocation group for the memory tracker and returns the current group depth.
 @trusted
-void beginAllocationGroup(IStr group) {
+Sz beginAllocationGroup(IStr group) {
     static if (isTrackingMemory) {
-        // NOTE: It doesn't make a copy of the string.
-        //   A group string is treated just like a file string.
+        // NOTE: Doesn't make a copy. A group is treated just like a file.
         _memoryTrackingState.currentGroupStack ~= group;
+        return _memoryTrackingState.currentGroupStack.length;
+    } else {
+        return 0;
     }
 }
 
+/// Ends the current allocation group for the memory tracker and returns the current group depth.
 @trusted @nogc
-void endAllocationGroup() {
+Sz endAllocationGroup() {
     static if (isTrackingMemory) {
         if (_memoryTrackingState.currentGroupStack.length) {
             _memoryTrackingState.currentGroupStack = _memoryTrackingState.currentGroupStack[0 .. $ - 1];
         }
+        return _memoryTrackingState.currentGroupStack.length;
+    } else {
+        return 0;
     }
 }}
 // === END MEMORY BLOCK
 
+/// Returns a summary of memory leaks and invalid frees detected by the memory tracker.
 @trusted nothrow
 IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
     static if (isTrackingMemory) {

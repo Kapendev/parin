@@ -115,7 +115,7 @@ struct ForeignSlice(T) {
     Sz length; /// The length of the slice.
     alias items this;
 
-    @trusted nothrow @nogc:
+    pragma(inline, true) @trusted nothrow @nogc:
 
     this(T* ptr, Sz length) {
         this.ptr = ptr;
@@ -131,7 +131,6 @@ struct ForeignSlice(T) {
         length = slice.length;
     }
 
-    pragma(inline, true)
     inout(T)[] items() inout {
         return ptr[0 .. length];
     }
@@ -716,7 +715,7 @@ unittest {
 
 // BitSet test.
 unittest {
-    BitSet bs;
+    auto bs = BitSet();
     assert(bs.none == true);
     assert(bs.any == false);
     assert(bs.all == false);
@@ -757,7 +756,7 @@ unittest {
     bs[1] = true;
     bs[5] = true;
     bs[62] = true;
-    assert(bs.count() == 3);
+    assert(bs.count == 3);
 
     GBitSet!ubyte small;
     assert(small.length == 8);
