@@ -78,25 +78,25 @@ For instructions on building without DUB, check the ["How can I build without DU
 
 Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.
 
-**Ubuntu**:
+Ubuntu:
 
 ```sh
 sudo apt install libasound2-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libxcursor-dev libxinerama-dev libwayland-dev libxkbcommon-dev
 ```
 
-**Fedora**:
+Fedora:
 
 ```sh
 sudo dnf install alsa-lib-devel mesa-libGL-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel libatomic
 ```
 
-**Arch**:
+Arch:
 
 ```sh
 sudo pacman -S alsa-lib mesa libx11 libxrandr libxi libxcursor libxinerama
 ```
 
-**Void**:
+Void:
 
 ```sh
 sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel mesa MesaLib-devel
@@ -122,7 +122,7 @@ Most ideas are welcome, except ECS.
 
 ## Recommended Tools
 
-While it is possible use any tool with Parin, these open-source ones are simple to use and work well with it:
+While it is possible to use any tool with Parin, these open-source ones are simple to use and work well with it:
 
 - Editor: [Pulsar](https://pulsar-edit.dev/) or [Lite XL](https://lite-xl.com/)
 - Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama) or [GIMP](https://www.gimp.org/)
@@ -186,35 +186,33 @@ The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 Parin includes a build script for the web in the [packages](packages/) folder.
 Building for the web requires [Emscripten](https://emscripten.org/) (version `4.0.23` is recommended).
 
-> [!WARNING]
-> The defaults are using the `-betterC` flag.
-> If your project requires the D runtime (GC, classes, etc.), scroll down to the `gc` flag instructions.
-
-**Running the script with DUB**:
+Running the script with DUB:
 
 ```sh
 dub run parin:web
 ```
 
-**Without DUB**:
+Without DUB:
 
 ```sh
 ./parin_package/scripts/web
 # Or: .\parin_package\scripts\web.bat
 ```
 
+#### Building with the D runtime (GC, classes, etc.)
+
 Projects requiring the D runtime can be built using the `gc` flag provided by the build script.
 This flag also requires [OpenD](https://opendlang.org/index.html).
 Note that exceptions are not supported and that currently some DUB related limitations apply like having to include all dependencies inside the source folder.
 Make sure `opend install xpack-emscripten` has been run at least once before using it.
 
-**Using the flag with DUB**:
+Using the flag with DUB:
 
 ```sh
 dub run parin:web -- gc
 ```
 
-**Without DUB**:
+Without DUB:
 
 ```sh
 ./parin_package/scripts/web gc
@@ -224,26 +222,30 @@ dub run parin:web -- gc
 To speed up build times, use the `debug` flag.
 The `build` flag can be used to build the project without running the game.
 
+#### Building raylib-d projects
+
 Additionally, [raylib-d](https://github.com/schveiguy/raylib-d) projects are partially supported through the `rl` flag.
 A small subset of raylib-d is included by Parin to make it possible to compile at least 2D games with minimal changes.
 Using both `gc` and `rl` should provide the best compatibility for most raylib-d projects.
 
+#### Installation commands
+
 Below are installation commands for Emscripten for some Linux distributions.
 Note that some of these may not install the latest version.
 
-**Ubuntu**:
+Ubuntu:
 
 ```sh
 sudo apt install emscripten
 ```
 
-**Fedora**:
+Fedora:
 
 ```sh
 sudo dnf install emscripten
 ```
 
-**Arch**:
+Arch:
 
 ```sh
 yay -S emscripten
@@ -277,7 +279,7 @@ Contributions to add Windows support are welcome.
 
 Create a new folder and run inside the following commands.
 
-**Prepare folder**:
+Prepare folder:
 
 ```sh
 git clone --depth 1 https://github.com/Kapendev/parin parin_package
@@ -285,7 +287,7 @@ git clone --depth 1 https://github.com/Kapendev/parin parin_package
 # Or: .\parin_package\scripts\prepare.bat
 ```
 
-**Run project**:
+Run project:
 
 ```sh
 ./parin_package/scripts/run
@@ -311,6 +313,6 @@ The goal is a smooth experience, similar to Godot or Unity.
 
 Yes. Check the [projects](PROJECTS.md) page.
 
-### The end?
+## The end?
 
 [Yes.](https://youtu.be/jqKCwHHZH98?si=tWS3I68b8CaDzy-V)

@@ -1450,6 +1450,8 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
             Item[] items;
             Sz id;
 
+            @safe nothrow @nogc:
+
             bool empty() {
                 return id == items.length;
             }
@@ -1474,6 +1476,8 @@ struct SparseList(T, D = List!(SparseListItem!T)) if (isSparseContainerPartsVali
         static struct Range {
             Item[] items;
             Sz id;
+
+            @safe nothrow @nogc:
 
             bool empty() {
                 return id == items.length;
@@ -1602,6 +1606,8 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
             Item[] items;
             Gen id;
 
+            @safe nothrow @nogc:
+
             bool empty() {
                 return id == items.length;
             }
@@ -1627,6 +1633,8 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
             Gen[] generations;
             Item[] items;
             Gen id;
+
+            @safe nothrow @nogc:
 
             bool empty() {
                 return id == items.length;

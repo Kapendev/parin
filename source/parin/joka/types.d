@@ -155,19 +155,21 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
     }
 
     /// Returns a range over the indices of all set bits.
-    auto setBits() {
+    auto activeBits() {
         static struct Range {
             T remaining;
+
+            @safe nothrow @nogc:
 
             bool empty() {
                 return remaining == zero;
             }
 
             Sz front() {
+                auto result = Sz(0);
                 auto n = remaining;
-                auto i = Sz(0);
-                while (!(n & one)) { n >>= one; i += 1; }
-                return i;
+                while (!(n & one)) { n >>= one; result += 1; }
+                return result;
             }
 
             void popFront() {
@@ -201,12 +203,12 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
     }
 
     /// Sets all bits.
-    void set() {
+    void fill() {
         bits = T.max;
     }
 
     /// Clears all bits.
-    void reset() {
+    void clear() {
         bits = zero;
     }
 
@@ -740,13 +742,13 @@ unittest {
     assert(bs.all == false);
     assert(bs.length == 0);
 
-    bs.set();
+    bs.fill();
     assert(bs.none == false);
     assert(bs.any == true);
     assert(bs.all == true);
     assert(bs.length == 64);
 
-    bs.reset();
+    bs.clear();
     assert(bs.none == true);
     assert(bs.any == false);
     assert(bs.all == false);
@@ -771,7 +773,7 @@ unittest {
     assert(bs[7] == true);
     assert(bs.length == 1);
 
-    bs.reset();
+    bs.clear();
     bs[1] = true;
     bs[5] = true;
     bs[62] = true;
@@ -779,15 +781,15 @@ unittest {
 
     Sz[3] expected = [1, 5, 62];
     Sz i = 0;
-    foreach (bit; bs.setBits) {
+    foreach (bit; bs.activeBits) {
         assert(bit == expected[i]);
         i += 1;
     }
     assert(i == 3);
 
-    bs.reset();
+    bs.clear();
     Sz testCount = 0;
-    foreach (bit; bs.setBits) testCount += 1;
+    foreach (bit; bs.activeBits) testCount += 1;
     assert(testCount == 0);
 
     GBitSet!ubyte small;

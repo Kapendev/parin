@@ -261,7 +261,7 @@ struct ChunksRange(R) {
 }
 
 /// Command-line argument types.
-enum ArgType {
+enum ArgType : ubyte {
     singleItem,  /// A standalone argument (e.g. file.txt)
     shortOption, /// A short option (e.g. -v)
     longOption,  /// A long option (e.g. --verbose)
@@ -275,7 +275,7 @@ struct ArgToken {
 }
 
 /// A range of parsed tokens from the command-line arguments.
-struct ArgRange {
+struct ArgTokenRange {
     const(IStr)[] args;
 
     @safe nothrow @nogc:
@@ -306,6 +306,12 @@ struct ArgRange {
     void popFront() {
         args = args[1 .. $];
     }
+}
+
+/// Returns a command-line argument token range.
+@safe nothrow @nogc
+ArgTokenRange argTokens(const(IStr)[] args...) {
+    return ArgTokenRange(args);
 }
 
 /// Returns a numeric range.
@@ -541,7 +547,7 @@ unittest {
 
 // Arg test.
 unittest {
-    foreach (token; ArgRange("b", "-c", "--d")) {
+    foreach (token; argTokens("b", "-c", "--d")) {
         with (ArgType) final switch (token.type) {
             case singleItem: assert(token.name == "b"); break;
             case shortOption: assert(token.name == "c"); break;
@@ -549,7 +555,7 @@ unittest {
         }
     }
 
-    foreach (token; ArgRange("b=2", "-c=3", "--d=4")) {
+    foreach (token; argTokens("b=2", "-c=3", "--d=4")) {
         with (ArgType) final switch (token.type) {
             case singleItem:
                 assert(token.name == "b");
