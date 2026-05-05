@@ -1,5 +1,5 @@
 // ---
-// Copyright 2025 Alexandros F. G. Kapretsos
+// Copyright 2026 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
@@ -948,8 +948,8 @@ struct List(T) {
     }
 }
 
-/// A dynamic array that uses external memory provided at runtime.
 // The API is almost 1-1 with `List` to make meta programming easier.
+/// A dynamic array that uses external memory provided at runtime.
 struct BufferList(T) {
     enum isBasicContainer  = true;
     enum isBufferContainer = true;
@@ -1131,10 +1131,10 @@ struct BufferList(T) {
     }
 }
 
-/// A dynamic array allocated on the stack.
 // This is just a copy-paste of `BufferList`, but with a static array.
-//   Could make both use one type, but I think it's OK to repeat code here.
-//   Keeps things simple and easy to read.
+// Could make both use one type, but I think it's OK to repeat code here.
+// Keeps things simple and easy to read.
+/// A dynamic array allocated on the stack.
 struct FixedList(T, Sz N) {
     enum isBasicContainer  = true;
     enum isBufferContainer = false;

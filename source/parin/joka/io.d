@@ -1,5 +1,5 @@
 // ---
-// Copyright 2025 Alexandros F. G. Kapretsos
+// Copyright 2026 Alexandros F. G. Kapretsos
 // SPDX-License-Identifier: MIT
 // Email: alexandroskapretsos@gmail.com
 // Project: https://github.com/Kapendev/joka
@@ -28,6 +28,8 @@ enum StdStream : ubyte {
     error,
 }
 
+/// Prints formatted text to stdout.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
@@ -44,6 +46,8 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     }
 }
 
+/// Prints formatted text to stdout.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
@@ -61,6 +65,8 @@ void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader heade
     mixin("printf(fmtStr,", fmtArgs, ");");
 }
 
+/// Prints formatted text with a new line at the end to stdout.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
@@ -78,6 +84,8 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     }
 }
 
+/// Prints formatted text with a new line at the end to stdout.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
@@ -95,6 +103,7 @@ void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader hea
     mixin("printfln(fmtStr,", fmtArgs, ");");
 }
 
+/// Prints text to stdout.
 void print(StdStream stream = StdStream.output, A...)(A args) {
     static if (is(A[0] == Sep)) {
         foreach (i, arg; args[1 .. $]) {
@@ -106,35 +115,47 @@ void print(StdStream stream = StdStream.output, A...)(A args) {
     }
 }
 
+/// Prints text with a new line at the end to stdout.
 void println(StdStream stream = StdStream.output, A...)(A args) {
     print!stream(args);
     print!stream("\n");
 }
 
+/// Prints formatted text to stderr.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void eprintf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     printf!(StdStream.error)(fmtStr, args);
 }
 
+/// Prints formatted text to stderr.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void eprintf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     printf!(StdStream.error)(header, args, footer);
 }
 
+/// Prints formatted text with a new line at the end to stderr.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void eprintfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     printfln!(StdStream.error)(fmtStr, args);
 }
 
+/// Prints formatted text with a new line at the end to stderr.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 void eprintfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     printfln!(StdStream.error)(header, args, footer);
 }
 
+/// Prints text to stderr.
 void eprint(StdStream stream = StdStream.output, A...)(A args) {
     print!(StdStream.error)(args);
 }
 
+/// Prints text with a new line at the end to stderr.
 void eprintln(StdStream stream = StdStream.output, A...)(A args) {
     println!(StdStream.error)(args);
 }
 
+/// Prints values and their source location to stdout.
 void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
     printf("TRACE({}:{}):", file, line);
     foreach (arg; args) printf(" {}", arg);
@@ -143,6 +164,7 @@ void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
 
 @safe nothrow:
 
+/// Reads an file in one go and store the data inside a buffer.
 @trusted
 Fault readFileIntoBuffer(L = LStr)(IStr path, ref L listBuffer, bool binaryMode) {
     version (WASI) {
@@ -181,14 +203,17 @@ Fault readFileIntoBuffer(L = LStr)(IStr path, ref L listBuffer, bool binaryMode)
     }
 }
 
+/// Reads an file in one go and store the data inside a buffer.
 Fault readTextIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
     return readFileIntoBuffer(path, listBuffer, false);
 }
 
+/// Reads an file in one go and store the data inside a buffer.
 Fault readBytesIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
     return readFileIntoBuffer(path, listBuffer, true);
 }
 
+/// Reads an file in one go and store the data inside a new list. The list must be freed.
 Maybe!LStr readFile(IStr path, bool binaryMode) {
     LStr value;
     auto fault = readFileIntoBuffer(path, value, binaryMode);
@@ -196,14 +221,17 @@ Maybe!LStr readFile(IStr path, bool binaryMode) {
     return result;
 }
 
+/// Reads an file in one go and store the data inside a new list. The list must be freed.
 Maybe!LStr readText(IStr path) {
     return readFile(path, false);
 }
 
+/// Reads an file in one go and store the data inside a new list. The list must be freed.
 Maybe!LStr readBytes(IStr path) {
     return readFile(path, true);
 }
 
+/// Writes a file.
 @trusted @nogc
 Fault writeFile(IStr path, IStr text, bool binaryMode) {
     version (WASI) {
@@ -222,11 +250,13 @@ Fault writeFile(IStr path, IStr text, bool binaryMode) {
     }
 }
 
+/// Writes a file.
 @nogc
 Fault writeText(IStr path, IStr text) {
     return writeFile(path, text, false);
 }
 
+/// Writes a file.
 @nogc
 Fault writeBytes(IStr path, IStr bytes) {
     return writeFile(path, bytes, true);

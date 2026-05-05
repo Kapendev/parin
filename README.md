@@ -312,7 +312,3 @@ The goal is a smooth experience, similar to Godot or Unity.
 ### Is there a list of games made with Parin?
 
 Yes. Check the [projects](PROJECTS.md) page.
-
-## The end?
-
-[Yes.](https://youtu.be/jqKCwHHZH98?si=tWS3I68b8CaDzy-V)
