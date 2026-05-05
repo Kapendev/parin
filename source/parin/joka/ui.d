@@ -16,16 +16,14 @@ import parin.joka.types;
 
 enum defaultUiFlags = UiFlag.alignCenter;
 
-/// The UI font type.
-alias UiFont = void*;
-/// The UI texture type.
-alias UiTexture = void*;
-/// The UI icon ID type.
-alias UiIconId = uint;
+alias UiFont    = void*; /// The UI font type.
+alias UiTexture = void*; /// The UI texture type.
+alias UiIconId  = uint;  /// The UI icon ID type.
 
 @trusted nothrow @nogc {
     /// A function used for getting the width and height of the text.
     alias UiTextSizeFunc   = IVec2 function(UiFont font, uint fontScale, IStr text);
+    /// A function used for getting the width and height of an icon.
     alias UiIconIdSizeFunc = IVec2 function(UiIconId iconId);
 }
 

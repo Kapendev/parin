@@ -11,19 +11,14 @@ extern(C) nothrow @nogc:
 
 // --- config.d
 
-version (WebAssembly) {
-    static if ((void*).sizeof > int.sizeof) {
-        alias CLong = long;
-        alias CULong = ulong;
-    } else {
-        alias CLong = int;
-        alias CULong = uint;
-    }
-} else version (Windows) {
-    alias CLong = int;
+version (WebAssembly) version = CLongIsInt;
+version (Windows)     version = CLongIsInt;
+
+version (CLongIsInt) {
+    alias CLong  = int;
     alias CULong = uint;
 } else {
-    alias CLong = long;
+    alias CLong  = long;
     alias CULong = ulong;
 }
 
@@ -74,7 +69,7 @@ version (CRuntime_Microsoft) {
     ref int _errnop();
     alias errno = _errnop;
 } else {
-    // NOTE: Works with Emscripten, no idea about other stuff.
+    // TODO: Works with Emscripten, no idea about other stuff. Change later.
     ref int __errno_location();
     alias errno = __errno_location;
 }
@@ -174,6 +169,7 @@ version (CRuntime_Microsoft) {
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
 } else {
+    // TODO: Works with Emscripten, no idea about other stuff. Change later.
     extern __gshared FILE* stdin;
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
@@ -192,8 +188,3 @@ int ferror(FILE* stream);
 
 alias STDLIB_QSORT_FUNC = int function(const(void)* a, const(void)* b);
 void qsort(void* ptr, size_t count, size_t size, STDLIB_QSORT_FUNC comp);
-
-// --- string.h
-
-int memcmp(const(void)* lhs, const(void)* rhs, size_t count);
-size_t strlen(const(char)* str);

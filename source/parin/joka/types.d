@@ -165,6 +165,9 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         return c;
     }
 
+    /// Same as length. Returns the number of set bits.
+    alias popcount = length;
+
     /// Returns a range over the indices of all set bits.
     auto activeBits() {
         static struct Range {
@@ -189,6 +192,19 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         }
 
         return Range(bits);
+    }
+
+    /// Returns the index of the lowest active bit, or -1 if no bits are set.
+    int findLowestActiveBit() {
+        foreach (index; activeBits) return cast(int) index;
+        return -1;
+    }
+
+    /// Returns the index of the highest active bit, or -1 if no bits are set.
+    int findHighestActiveBit() {
+        auto high = Sz.max;
+        foreach (index; activeBits) high = index;
+        return (high == Sz.max) ? -1 : cast(int) high;
     }
 
     pragma(inline, true) @trusted nothrow @nogc:
@@ -1318,6 +1334,11 @@ pragma(inline, true) {
     /// Returns true if the character is an alphabetic letter (A-Z, a-z).
     bool isAlpha(char c) {
         return isLower(c) || isUpper(c);
+    }
+
+    /// Returns true if the character is an alphabetic letter (A-Z, a-z) or a digit (0-9).
+    bool isAlphaOrDigit(char c) {
+        return isAlpha(c) || isDigit(c);
     }
 
     /// Returns true if the character is a whitespace character (space, tab, ...).
