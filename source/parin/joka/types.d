@@ -90,10 +90,18 @@ struct StaticArray(T, Sz N) {
     }
 }
 
+/// A value paired with its iteration index.
+struct IndexedValue(V) {
+    V value;
+    Sz index;
+    alias value this;
+}
+
 /// A generational index.
 struct GenIndex {
     Sz value;       /// The index value.
     Gen generation; /// The generation counter.
+    alias isSome this;
 
     enum invalidData  = Gen.max; /// Data indicating an error.
     enum invalidIndex = GenIndex(invalidData, invalidData); /// An invalid generational index.
@@ -1094,14 +1102,14 @@ IStr toStr(T)(T value) {
         return signedToStr(value);
     } else static if (__traits(isFloating, T)) { // isFloating
         return floatingToStr(value, 2);
-    } else static if (is(T : IStr)) { // isStrType
-        return value;
-    } else static if (is(T : IStrz)) { // isStrzType
-        return strzToStr(value);
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {
         return value.toString();
+    } else static if (is(T : IStr)) { // isStrType
+        return value;
+    } else static if (is(T : IStrz)) { // isStrzType
+        return strzToStr(value);
     } else {
         static assert(0, "Type doesn't implement the `toStr` function.");
     }

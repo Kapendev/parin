@@ -169,6 +169,7 @@ struct EngineState {
 /// A texture identifier.
 struct TextureId {
     ResourceId data;
+    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -232,6 +233,7 @@ struct TextureId {
 /// A font identifier.
 struct FontId {
     ResourceId data;
+    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -311,6 +313,7 @@ struct FontId {
 /// A sound identifier.
 struct SoundId {
     ResourceId data;
+    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -424,6 +427,7 @@ struct SoundId {
 /// A viewport identifier.
 struct ViewportId {
     ResourceId data;
+    alias isValid this;
 
     @safe nothrow @nogc:
 

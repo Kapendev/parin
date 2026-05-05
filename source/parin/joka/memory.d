@@ -525,7 +525,9 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
 
     /// Marks an allocation as ignored by the memory tracker.
     auto ignoreLeak(T)(T ptr) {
-        static if (is(T : const(A)[], A)) {
+        static if (__traits(hasMember, T, "ignoreLeak")) {
+            return ptr.ignoreLeak();
+        } else static if (is(T : const(A)[], A)) {
             static if (isTrackingMemory) {
                 if (auto mallocValue = ptr.ptr in _memoryTrackingState.table) {
                     mallocValue.canIgnore = true;
@@ -539,8 +541,6 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
                 }
             }
             return ptr;
-        } else static if (__traits(hasMember, T, "ignoreLeak")) {
-            return ptr.ignoreLeak();
         } else {
             static assert(0, "Type doesn't implement the `ignoreLeak` function.");
         }

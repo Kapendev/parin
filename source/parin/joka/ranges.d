@@ -10,13 +10,6 @@ module parin.joka.ranges;
 
 import parin.joka.types;
 
-/// A value paired with its iteration index.
-struct IndexedValue(V) {
-    V value;
-    Sz index;
-    alias value this;
-}
-
 /// A range that iterates over a numeric interval with a given step.
 struct NumericRange(I) {
     I index;
