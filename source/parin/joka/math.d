@@ -1795,42 +1795,52 @@ struct SmoothToggle {
 }
 
 pragma(inline, true) @trusted {
+    /// Returns the absolute value of `x`.
     T abs(T)(T x) {
         return cast(T) (x < 0 ? -x : x);
     }
 
+    /// Returns the smaller of `a` and `b`.
     T min(T)(T a, T b) {
         return a < b ? a : b;
     }
 
+    /// Returns the smallest of `a`, `b`, and `c`.
     T min3(T)(T a, T b, T c) {
         return min(a, b).min(c);
     }
 
+    /// Returns the smallest of `a`, `b`, `c`, and `d`.
     T min4(T)(T a, T b, T c, T d) {
         return min(a, b).min(c).min(d);
     }
 
+    /// Returns the larger of `a` and `b`.
     T max(T)(T a, T b) {
         return a < b ? b : a;
     }
 
+    /// Returns the largest of `a`, `b`, and `c`.
     T max3(T)(T a, T b, T c) {
         return max(a, b).max(c);
     }
 
+    /// Returns the largest of `a`, `b`, `c`, and `d`.
     T max4(T)(T a, T b, T c, T d) {
         return max(a, b).max(c).max(d);
     }
 
+    /// Returns -1 if `x` is negative, 1 if positive, or 0 if zero.
     T sign(T)(T x) {
         return x < 0 ? -1 : x > 0 ? 1 : 0;
     }
 
+    /// Returns `x` clamped to the range [`a`, `b`].
     T clamp(T)(T x, T a, T b) {
         return max(x, a).min(b);
     }
 
+    /// Returns `x` wrapped to the range [`a`, `b`], wrapping around when out of bounds.
     T wrap(T)(T x, T a, T b) {
         T result = void;
         auto range = cast(T) (b - a);
@@ -1849,6 +1859,7 @@ pragma(inline, true) @trusted {
     }
 
     // TODO: Look at this again because I feel it returns weird values sometimes.
+    /// Returns `x` rounded to the nearest multiple of `step`.
     T snap(T)(T x, T step) {
         static if (__traits(isFloating, T)) {
             return (x / step).round() * step;
@@ -2061,88 +2072,114 @@ pragma(inline, true) @trusted {
         return stdc_atan(x);
     }
 
+    /// Returns the linear interpolation between `from` and `to` by `weight`.
+    /// A weight of 0 returns `from`, a weight of 1 returns `to`.
     float lerp(float from, float to, float weight) {
         return from + (to - from) * weight;
     }
 
+    /// Returns the linear interpolation between `from` and `to` by `weight`.
+    /// A weight of 0 returns `from`, a weight of 1 returns `to`.
     double lerp64(double from, double to, double weight) {
         return from + (to - from) * weight;
     }
 
+    /// Returns the smooth interpolation between `from` and `to` by `weight` using a cubic curve.
+    /// Eases in and out, with zero first-order derivatives at both endpoints.
     float smoothstep(float from, float to, float weight) {
         auto v = weight * weight * (3.0f - 2.0f * weight);
         return (to * v) + (from * (1.0f - v));
     }
 
+    /// Returns the smooth interpolation between `from` and `to` by `weight` using a cubic curve.
+    /// Eases in and out, with zero first-order derivatives at both endpoints.
     double smoothstep64(double from, double to, double weight) {
         auto v = weight * weight * (3.0 - 2.0 * weight);
         return (to * v) + (from * (1.0 - v));
     }
 
+    /// Returns the smoother interpolation between `from` and `to` by `weight` using a quintic curve.
+    /// Eases in and out, with zero first and second-order derivatives at both endpoints.
     float smootherstep(float from, float to, float weight) {
         auto v = weight * weight * weight * (weight * (weight * 6.0f - 15.0f) + 10.0f);
         return (to * v) + (from * (1.0f - v));
     }
 
+    /// Returns the smoother interpolation between `from` and `to` by `weight` using a quintic curve.
+    /// Eases in and out, with zero first and second-order derivatives at both endpoints.
     double smootherstep64(double from, double to, double weight) {
         auto v = weight * weight * weight * (weight * (weight * 6.0 - 15.0) + 10.0);
         return (to * v) + (from * (1.0 - v));
     }
 
+    /// Easing function with no acceleration. Returns `x` unchanged.
     float easeLinear(float x) {
         return x;
     }
 
+    /// Easing function that starts slow and accelerates using a sine curve.
     float easeInSine(float x) {
         return 1.0f - cos((x * pi) / 2.0f);
     }
 
+    /// Easing function that starts fast and decelerates using a sine curve.
     float easeOutSine(float x) {
         return sin((x * pi) / 2.0f);
     }
 
+    /// Easing function that accelerates then decelerates using a sine curve.
     float easeInOutSine(float x) {
         return -(cos(pi * x) - 1.0f) / 2.0f;
     }
 
+    /// Easing function that starts slow and accelerates using a cubic curve.
     float easeInCubic(float x) {
         return x * x * x;
     }
 
+    /// Easing function that starts fast and decelerates using a cubic curve.
     float easeOutCubic(float x) {
         return 1.0f - pow(1.0f - x, 3.0f);
     }
 
+    /// Easing function that accelerates then decelerates using a cubic curve.
     float easeInOutCubic(float x) {
         return x < 0.5f ? 4.0f * x * x * x : 1.0f - pow(-2.0f * x + 2.0f, 3.0f) / 2.0f;
     }
 
+    /// Easing function that starts slow and accelerates using a quintic curve.
     float easeInQuint(float x) {
         return x * x * x * x * x;
     }
 
+    /// Easing function that starts fast and decelerates using a quintic curve.
     float easeOutQuint(float x) {
         return 1.0f - pow(1.0f - x, 5.0f);
     }
 
+    /// Easing function that accelerates then decelerates using a quintic curve.
     float easeInOutQuint(float x) {
         return x < 0.5f ? 16.0f * x * x * x * x * x : 1.0f - pow(-2.0f * x + 2.0f, 5.0f) / 2.0f;
     }
 
+    /// Easing function that starts slow and accelerates along a circular arc.
     float easeInCirc(float x) {
         return 1.0f - sqrt(1.0f - pow(x, 2.0f));
     }
 
+    /// Easing function that starts fast and decelerates along a circular arc.
     float easeOutCirc(float x) {
         return sqrt(1.0f - pow(x - 1.0f, 2.0f));
     }
 
+    /// Easing function that accelerates then decelerates along a circular arc.
     float easeInOutCirc(float x) {
         return x < 0.5f
             ? (1.0f - sqrt(1.0f - pow(2.0f * x, 2.0f))) / 2.0f
             : (sqrt(1.0f - pow(-2.0f * x + 2.0f, 2.0f)) + 1.0f) / 2.0f;
     }
 
+    /// Easing function that overshoots the start with an elastic spring effect.
     float easeInElastic(float x) {
         enum c4 = (2.0f * pi) / 3.0f;
         return x == 0.0f
@@ -2152,6 +2189,7 @@ pragma(inline, true) @trusted {
             : -pow(2.0f, 10.0f * x - 10.0f) * sin((x * 10.0f - 10.75f) * c4);
     }
 
+    /// Easing function that overshoots the end with an elastic spring effect.
     float easeOutElastic(float x) {
         enum c4 = (2.0f * pi) / 3.0f;
         return x == 0.0f
@@ -2161,6 +2199,7 @@ pragma(inline, true) @trusted {
             : pow(2.0f, -10.0f * x) * sin((x * 10.0f - 0.75f) * c4) + 1.0f;
     }
 
+    /// Easing function that overshoots both ends with an elastic spring effect.
     float easeInOutElastic(float x) {
         enum c5 = (2.0f * pi) / 4.5f;
         return x == 0.0f
@@ -2172,38 +2211,47 @@ pragma(inline, true) @trusted {
             : (pow(2.0f, -20.0f * x + 10.0f) * sin((20.0f * x - 11.125f) * c5)) / 2.0f + 1.0f;
     }
 
+    /// Easing function that starts slow and accelerates using a quadratic curve.
     float easeInQuad(float x) {
         return x * x;
     }
 
+    /// Easing function that starts fast and decelerates using a quadratic curve.
     float easeOutQuad(float x) {
         return 1.0f - (1.0f - x) * (1.0f - x);
     }
 
+    /// Easing function that accelerates then decelerates using a quadratic curve.
     float easeInOutQuad(float x) {
         return x < 0.5f ? 2.0f * x * x : 1.0f - pow(-2.0f * x + 2.0f, 2.0f) / 2.0f;
     }
 
+    /// Easing function that starts slow and accelerates using a quartic curve.
     float easeInQuart(float x) {
         return x * x * x * x;
     }
 
+    /// Easing function that starts fast and decelerates using a quartic curve.
     float easeOutQuart(float x) {
         return 1.0f - pow(1.0f - x, 4.0f);
     }
 
+    /// Easing function that accelerates then decelerates using a quartic curve.
     float easeInOutQuart(float x) {
         return x < 0.5f ? 8.0f * x * x * x * x : 1.0f - pow(-2.0f * x + 2.0f, 4.0f) / 2.0f;
     }
 
+    /// Easing function that starts slow and accelerates exponentially.
     float easeInExpo(float x) {
         return x == 0.0f ? 0.0f : pow(2.0f, 10.0f * x - 10.0f);
     }
 
+    /// Easing function that starts fast and decelerates exponentially.
     float easeOutExpo(float x) {
         return x == 1.0f ? 1.0f : 1.0f - pow(2.0f, -10.0f * x);
     }
 
+    /// Easing function that accelerates then decelerates exponentially.
     float easeInOutExpo(float x) {
         return x == 0.0f
             ? 0.0f
@@ -2213,18 +2261,21 @@ pragma(inline, true) @trusted {
             : (2.0f - pow(2.0f, -20.0f * x + 10.0f)) / 2.0f;
     }
 
+    /// Easing function that pulls back slightly before accelerating forward.
     float easeInBack(float x) {
         enum c1 = 1.70158f;
         enum c3 = c1 + 1.0f;
         return c3 * x * x * x - c1 * x * x;
     }
 
+    /// Easing function that overshoots the target before settling.
     float easeOutBack(float x) {
         enum c1 = 1.70158f;
         enum c3 = c1 + 1.0f;
         return 1.0f + c3 * pow(x - 1.0f, 3.0f) + c1 * pow(x - 1.0f, 2.0f);
     }
 
+    /// Easing function that pulls back at the start and overshoots at the end.
     float easeInOutBack(float x) {
         enum c1 = 1.70158f;
         enum c2 = c1 * 1.525f;
@@ -2233,10 +2284,12 @@ pragma(inline, true) @trusted {
             : (pow(2.0f * x - 2.0f, 2.0f) * ((c2 + 1.0f) * (x * 2.0f - 2.0f) + c2) + 2.0f) / 2.0f;
     }
 
+    /// Easing function that starts with a bouncing effect before reaching the target.
     float easeInBounce(float x) {
         return 1.0f - easeOutBounce(1.0f - x);
     }
 
+    /// Easing function that ends with a bouncing effect after reaching the target.
     float easeOutBounce(float x) {
         enum n1 = 7.5625f;
         enum d1 = 2.75f;
@@ -2249,92 +2302,114 @@ pragma(inline, true) @trusted {
             : n1 * (x -= 2.625f / d1) * x + 0.984375f;
     }
 
+    /// Easing function that bounces at both the start and end.
     float easeInOutBounce(float x) {
         return x < 0.5f
             ? (1.0f - easeOutBounce(1.0f - 2.0f * x)) / 2.0f
             : (1.0f + easeOutBounce(2.0f * x - 1.0f)) / 2.0f;
     }
 
+    /// Returns true if `a` and `b` are within `localEpsilon` of each other.
     bool fequals(float a, float b, float localEpsilon = epsilon) {
         return abs(a - b) < localEpsilon;
     }
 
+    /// Returns true if `a` and `b` are within `localEpsilon` of each other.
     bool fequals64(double a, double b, double localEpsilon = epsilon) {
         return abs(a - b) < localEpsilon;
     }
 
+    /// Returns true if all components of `a` and `b` are within `localEpsilon` of each other.
     bool fequals(Vec2 a, Vec2 b, float localEpsilon = epsilon) {
         return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon);
     }
 
+    /// Returns true if all components of `a` and `b` are within `localEpsilon` of each other.
     bool fequals(Vec3 a, Vec3 b, float localEpsilon = epsilon) {
         return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon) && fequals(a.z, b.z, localEpsilon);
     }
 
+    /// Returns true if all components of `a` and `b` are within `localEpsilon` of each other.
     bool fequals(Vec4 a, Vec4 b, float localEpsilon = epsilon) {
         return fequals(a.x, b.x, localEpsilon) && fequals(a.y, b.y, localEpsilon) && fequals(a.z, b.z, localEpsilon) && fequals(a.w, b.w, localEpsilon);
     }
 
+    /// Converts degrees to radians.
     float toRadians(float degrees) {
         return degrees * pi180;
     }
 
+    /// Converts degrees to radians.
     double toRadians64(double degrees) {
         return degrees * pi180;
     }
 
+    /// Converts radians to degrees.
     float toDegrees(float radians) {
         return radians * dpi180;
     }
 
+    /// Converts radians to degrees.
     double toDegrees64(double radians) {
         return radians * dpi180;
     }
 
+    /// Converts a `Vec2` to an `IVec2` by truncating each component to an integer.
     IVec2 toIVec(Vec2 vec) {
         return IVec2(cast(int) vec.x, cast(int) vec.y);
     }
 
+    /// Converts a `Vec3` to an `IVec3` by truncating each component to an integer.
     IVec3 toIVec(Vec3 vec) {
         return IVec3(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z);
     }
 
+    /// Converts a `Vec4` to an `IVec4` by truncating each component to an integer.
     IVec4 toIVec(Vec4 vec) {
         return IVec4(cast(int) vec.x, cast(int) vec.y, cast(int) vec.z, cast(int) vec.w);
     }
 
+    /// Converts an `IVec2` to a `Vec2`.
     Vec2 toVec(IVec2 vec) {
         return Vec2(vec.x, vec.y);
     }
 
+    /// Converts a `GVec2!short` to a `Vec2`.
     Vec2 toVec(GVec2!short vec) {
         return Vec2(vec.x, vec.y);
     }
 
+    /// Converts an `IVec3` to a `Vec3`.
     Vec3 toVec(IVec3 vec) {
         return Vec3(vec.x, vec.y, vec.z);
     }
 
+    /// Converts an `IVec4` to a `Vec4`.
     Vec4 toVec(IVec4 vec) {
         return Vec4(vec.x, vec.y, vec.z, vec.w);
     }
 
+    /// Converts an `Rgba` color to a `Vec4` with components in the order `(r, g, b, a)`.
     Vec4 toVec(Rgba color) {
         return Vec4(color.r, color.g, color.b, color.a);
     }
 
+    /// Converts a `Rect` to an `IRect` by truncating position and size components to integers.
     IRect toIRect(Rect rect) {
         return IRect(rect.position.toIVec(), rect.size.toIVec());
     }
 
+    /// Converts an `IRect` to a `Rect`.
     Rect toRect(IRect rect) {
         return Rect(rect.position.toVec(), rect.size.toVec());
     }
 
+    /// Converts an `SRect` to a `Rect`.
     Rect toRect(SRect rect) {
         return Rect(rect.position.toVec(), rect.size.toVec());
     }
 
+    /// Converts a packed 24-bit RGB integer to an `Rgba` color with full opacity.
     Rgba toRgb(uint rgb) {
         return Rgba(
             (rgb & 0xFF0000) >> 16,
@@ -2343,6 +2418,7 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Converts a packed 32-bit RGBA integer to an `Rgba` color.
     Rgba toRgba(uint rgba) {
         return Rgba(
             (rgba & 0xFF000000) >> 24,
@@ -2354,6 +2430,7 @@ pragma(inline, true) @trusted {
 }
 
 @trusted {
+    /// Converts a `Vec3` to an `Rgba` color, clamping each component to the range [0, 255] with full opacity.
     Rgba toRgba(Vec3 vec) {
         return Rgba(
             cast(ubyte) clamp(vec.x, 0.0f, 255.0f),
@@ -2363,6 +2440,7 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Converts a `Vec4` to an `Rgba` color, clamping each component to the range [0, 255].
     Rgba toRgba(Vec4 vec) {
         return Rgba(
             cast(ubyte) clamp(vec.x, 0.0f, 255.0f),
@@ -2372,6 +2450,8 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Converts a hex color string (e.g. `"#RGB"`, `"RRGGBB"`, `"RRGGBBAA"`) to an `Rgba` color.
+    /// Returns `blank` if the string is invalid.
     Rgba toRgba(IStr str) {
         auto startsWithSymbol = str.length == 0 ? false : str[0] == '#';
         auto isRgb = str.length == 6 + startsWithSymbol;
@@ -2395,8 +2475,7 @@ pragma(inline, true) @trusted {
         return hex.toRgba();
     }
 
-    alias toColor = toRgba;
-
+    /// Returns the linear interpolation between `from` and `to` by `weight`, applied per component.
     Vec2 lerp(Vec2 from, Vec2 to, float weight) {
         return Vec2(
             lerp(from.x, to.x, weight),
@@ -2404,6 +2483,7 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Returns the linear interpolation between `from` and `to` by `weight`, applied per component.
     Vec3 lerp(Vec3 from, Vec3 to, float weight) {
         return Vec3(
             lerp(from.x, to.x, weight),
@@ -2412,6 +2492,7 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Returns the linear interpolation between `from` and `to` by `weight`, applied per component.
     Vec4 lerp(Vec4 from, Vec4 to, float weight) {
         return Vec4(
             lerp(from.x, to.x, weight),
@@ -2421,6 +2502,7 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Returns the rounding function corresponding to the given `Rounding` type.
     RoundingFunc rounding(Rounding type) {
         final switch (type) {
             case Rounding.none: return &roundNothing;
@@ -2430,6 +2512,7 @@ pragma(inline, true) @trusted {
         }
     }
 
+    /// Returns the 64-bit rounding function corresponding to the given `Rounding` type.
     Rounding64Func rounding64(Rounding type) {
         final switch (type) {
             case Rounding.none: return &roundNothing64;
@@ -2439,6 +2522,7 @@ pragma(inline, true) @trusted {
         }
     }
 
+    /// Returns the easing function corresponding to the given `Easing` type.
     EasingFunc easing(Easing type) {
         final switch (type) {
             case Easing.linear: return &easeLinear;
@@ -2475,36 +2559,43 @@ pragma(inline, true) @trusted {
         }
     }
 
+    /// Moves `from` toward 1 by `delta` if `to` is true, or toward 0 if false. Result is clamped to [0, 1].
     float moveToState(float from, bool to, float delta) {
         return to ? min(1.0f, from + delta) : max(0.0f, from - delta);
     }
 
+    /// Moves `from` toward 1 by `delta` if `to` is true, or toward 0 if false. Result is clamped to [0, 1].
     float moveToState64(double from, bool to, double delta) {
         return to ? min(1.0, from + delta) : max(0.0, from - delta);
     }
 
+    /// Moves `weight` by ref toward the `target` state by `speed` and returns the updated value.
     float followState(ref float weight, bool target, float speed) {
         weight = weight.moveToState(target, speed);
         return weight;
     }
 
+    /// Moves `weight` by ref toward the `target` state by `speed` and returns the updated value.
     double followState64(ref double weight, bool target, double speed) {
         weight = weight.moveToState64(target, speed);
         return weight;
     }
 
+    /// Moves `from` toward `to` by at most `delta`, stopping exactly at `to`.
     float moveTo(float from, float to, float delta) {
         return (abs(to - from) > abs(delta))
             ? from + sign(to - from) * delta
             : to;
     }
 
+    /// Moves `from` toward `to` by at most `delta`, stopping exactly at `to`.
     float moveTo64(double from, double to, double delta) {
         return (abs(to - from) > abs(delta))
             ? from + sign(to - from) * delta
             : to;
     }
 
+    /// Moves `from` toward `to` per component by at most `delta`, stopping exactly at `to`.
     Vec2 moveTo(Vec2 from, Vec2 to, Vec2 delta) {
         Vec2 result = void;
         auto offset = from.directionTo(to) * delta;
@@ -2515,6 +2606,7 @@ pragma(inline, true) @trusted {
         return result;
     }
 
+    /// Moves `from` toward `to` per component by at most `delta`, stopping exactly at `to`.
     Vec3 moveTo(Vec3 from, Vec3 to, Vec3 delta) {
         Vec3 result = void;
         auto offset = from.directionTo(to) * delta;
@@ -2527,6 +2619,7 @@ pragma(inline, true) @trusted {
         return result;
     }
 
+    /// Moves `from` toward `to` per component by at most `delta`, stopping exactly at `to`.
     Vec4 moveTo(Vec4 from, Vec4 to, Vec4 delta) {
         Vec4 result = void;
         auto offset = from.directionTo(to) * delta;
@@ -2541,18 +2634,24 @@ pragma(inline, true) @trusted {
         return result;
     }
 
+    /// Moves `from` toward `to` by `delta` each step, decelerating as it approaches using `slowdown`.
+    /// A `slowdown` value around 0.1 gives a natural deceleration feel.
     float moveToWithSlowdown(float from, float to, float delta, float slowdown) {
         if (from.fequals(to)) return to;
         auto target = ((from * (slowdown - 1.0f)) + to) / slowdown;
         return from + (target - from) * delta;
     }
 
+    /// Moves `from` toward `to` by `delta` each step, decelerating as it approaches using `slowdown`.
+    /// A `slowdown` value around 0.1 gives a natural deceleration feel.
     float moveToWithSlowdown64(double from, double to, double delta, double slowdown) {
         if (from.fequals64(to)) return to;
         auto target = ((from * (slowdown - 1.0)) + to) / slowdown;
         return from + (target - from) * delta;
     }
 
+    /// Moves `from` toward `to` per component by `delta`, decelerating as it approaches using `slowdown`.
+    /// A `slowdown` value around 0.1 gives a natural deceleration feel.
     Vec2 moveToWithSlowdown(Vec2 from, Vec2 to, Vec2 delta, float slowdown) {
         return Vec2(
             moveToWithSlowdown(from.x, to.x, delta.x, slowdown),
@@ -2560,6 +2659,8 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Moves `from` toward `to` per component by `delta`, decelerating as it approaches using `slowdown`.
+    /// A `slowdown` value around 0.1 gives a natural deceleration feel.
     Vec3 moveToWithSlowdown(Vec3 from, Vec3 to, Vec3 delta, float slowdown) {
         return Vec3(
             moveToWithSlowdown(from.x, to.x, delta.x, slowdown),
@@ -2568,6 +2669,8 @@ pragma(inline, true) @trusted {
         );
     }
 
+    /// Moves `from` toward `to` per component by `delta`, decelerating as it approaches using `slowdown`.
+    /// A `slowdown` value around 0.1 gives a natural deceleration feel.
     Vec4 moveToWithSlowdown(Vec4 from, Vec4 to, Vec4 delta, float slowdown) {
         return Vec4(
             moveToWithSlowdown(from.x, to.x, delta.x, slowdown),
