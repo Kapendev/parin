@@ -34,7 +34,7 @@ alias IStrz16 = const(wchar)*; /// A C string of constant wchars.
 alias IStrz32 = const(dchar)*; /// A C string of constant dchars.
 
 alias UnionType = ubyte; /// The common union type of a tagged union.
-alias Gen       = int;   /// The type of a generation.
+alias Gen       = uint;  /// The type of a generation.
 
 enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
 enum megabyte = 1024 * kilobyte; /// The size of one megabyte in bytes.
@@ -67,24 +67,6 @@ enum Fault : ubyte {
 /// A marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
 struct NoData {}
 
-/// A generational index.
-struct GenIndex {
-    Gen value;      /// The index value.
-    Gen generation; /// The generation counter.
-
-    pragma(inline, true) @safe nothrow @nogc:
-
-    /// Returns true if the index is invalid.
-    bool isNone() {
-        return value < 0;
-    }
-
-    /// Returns true if the index is valid.
-    bool isSome() {
-        return value >= 0;
-    }
-}
-
 /// A static array.
 /// It exists because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
@@ -105,6 +87,27 @@ struct StaticArray(T, Sz N) {
     pragma(inline, true)
     inout(T)[] items() inout {
         return (cast(T*) data.ptr)[0 .. N];
+    }
+}
+
+/// A generational index.
+struct GenIndex {
+    Sz value;       /// The index value.
+    Gen generation; /// The generation counter.
+
+    enum invalidData  = Gen.max; /// Data indicating an error.
+    enum invalidIndex = GenIndex(invalidData, invalidData); /// An invalid generational index.
+
+    pragma(inline, true) @safe nothrow @nogc:
+
+    /// Returns true if the index is invalid.
+    bool isNone() {
+        return generation == invalidData;
+    }
+
+    /// Returns true if the index is valid.
+    bool isSome() {
+        return generation != invalidData;
     }
 }
 

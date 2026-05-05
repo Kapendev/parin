@@ -1564,9 +1564,9 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
 
     GenIndex append(const(T) arg, IStr file = __FILE__, Sz line = __LINE__) {
         auto result = data.push(arg, file, line);
-        if (result) return GenIndex(-1, -1);
+        if (result) return GenIndex.invalidIndex;
         generations.resize(data.data.length, file, line);
-        return GenIndex(cast(Gen) data.hotIndex, generations[data.hotIndex]);
+        return GenIndex(data.hotIndex, generations[data.hotIndex]);
     }
 
     alias push = append;
@@ -1575,7 +1575,7 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
     void remove(GenIndex i) {
         if (!has(i)) assert(0, genIndexErrorMessage(i.value, i.generation));
         data.remove(i.value);
-        generations[data.hotIndex] = (generations[data.hotIndex] + 1) % Gen.max;
+        generations[data.hotIndex] = (generations[data.hotIndex] + 1) % GenIndex.invalidData;
     }
 
     void reserve(Sz capacity, IStr file = __FILE__, Sz line = __LINE__) {
