@@ -1673,6 +1673,7 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
     }
 }
 
+/// A dynamic bit array.
 struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
     enum isBasicContainer  = false;
     enum isBufferContainer = false;
@@ -1821,8 +1822,10 @@ struct GBitList(T, D = List!T) if (__traits(isUnsigned, T)) {
     }
 }
 
+/// The common bit array type.
 alias BitList = GBitList!BitSetCommonDataType;
 
+/// A dynamic 2D array.
 struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     enum isBasicContainer  = false;
     enum isBufferContainer = false;
@@ -1953,6 +1956,7 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
     }
 }
 
+/// A static arena allocator.
 struct Arena {
     ubyte* data;
     Sz capacity;
@@ -2105,6 +2109,7 @@ struct Arena {
     }
 }
 
+/// A dynamic arena allocator.
 struct GrowingArena {
     Arena* head;
     Arena* current;
@@ -2298,6 +2303,7 @@ struct _ScopedArena(T) {
     }
 }
 
+/// A RAII helper for arenas.
 @trusted
 _ScopedArena!T ScopedArena(T)(ref T arena) {
     return _ScopedArena!T(arena);
@@ -2390,6 +2396,9 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
     return list[];
 }
 
+/// Formats a string using a list and returns the resulting formatted string.
+/// The list is cleared before writing.
+/// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
 IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
@@ -2407,6 +2416,8 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, Interpolati
     mixin("return fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ");");
 }
 
+/// Prints formatted text to the given buffer.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     static if (isStrContainerType!S) {
         return fmtIntoList!true(buffer, fmtStr, args);
@@ -2415,6 +2426,8 @@ IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     }
 }
 
+/// Prints formatted text to the given buffer.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
@@ -2432,6 +2445,8 @@ IStr sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, I
     mixin("return sprintf(buffer, fmtStr,", fmtArgs, ");");
 }
 
+/// Prints formatted text with a new line at the end to the given buffer.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     auto text = sprintf(buffer, fmtStr, args);
     if (text.length == 0) return "";
@@ -2451,6 +2466,8 @@ IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     }
 }
 
+/// Prints formatted text with a new line at the end to the given buffer.
+/// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
@@ -2468,6 +2485,7 @@ IStr sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args,
     mixin("return sprintfln(buffer, fmtStr,", fmtArgs, ");");
 }
 
+/// Prints text to the given buffer.
 void sprint(S = LStr, A...)(ref S buffer, A args) {
     static if (is(A[0] == Sep)) {
         foreach (i, arg; args[1 .. $]) {
@@ -2479,11 +2497,14 @@ void sprint(S = LStr, A...)(ref S buffer, A args) {
     }
 }
 
+/// Prints text with a new line at the end to the given buffer.
 void sprintln(S = LStr, A...)(ref S buffer, A args) {
     sprint(buffer, args);
     sprint(buffer, "\n");
 }
 
+/// Frees only the items within the container without freeing the container itself.
+/// Calls `free` on each item, passing `file` and `line` if supported.
 void freeOnlyItems(T)(ref T container, IStr file = __FILE__, Sz line = __LINE__) {
     foreach (ref item; container.items) {
         static if (__traits(compiles, item.free(file, line))) {
@@ -2494,6 +2515,8 @@ void freeOnlyItems(T)(ref T container, IStr file = __FILE__, Sz line = __LINE__)
     }
 }
 
+/// Frees all items within the container and then frees the container itself.
+/// Equivalent to calling `freeOnlyItems` followed by `free` on the container.
 void freeWithItems(T)(ref T container, IStr file = __FILE__, Sz line = __LINE__) {
     container.freeOnlyItems(file, line);
     container.free(file, line);
