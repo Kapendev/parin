@@ -148,15 +148,16 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 // === BEGIN MEMORY BLOCK
 @system nothrow {
 version (JokaCustomMemory) {
+    /// Reallocates a block of memory.
     extern(C) void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
-    extern(C)
-    void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
+    /// Allocates a block of memory.
+    extern(C) void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         return jokaSystemRealloc(null, size, 0, file, line);
     }
 
-    extern(C)
-    void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
+    /// Frees a block of memory.
+    extern(C) void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         jokaSystemRealloc(ptr, 0, oldSize, file, line);
     }
 } else version (JokaGcMemory) {
@@ -291,6 +292,7 @@ version (JokaCustomMemory) {
     }
 }
 
+/// A realloc wrapper that uses the system allocator.
 void* jokaSystemReallocWrapper(void* allocatorState, Sz alignment, void* oldPtr, Sz oldSize, Sz newSize, IStr file, Sz line) {
     return jokaSystemRealloc(oldPtr, newSize, oldSize, file, line);
 }

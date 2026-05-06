@@ -92,8 +92,8 @@ struct StaticArray(T, Sz N) {
 
 /// A value paired with its iteration index.
 struct IndexedValue(V) {
-    V value;
-    Sz index;
+    V value;  /// The value.
+    Sz index; /// The index of the value.
     alias value this;
 }
 
@@ -128,11 +128,13 @@ struct ForeignSlice(T) {
 
     pragma(inline, true) @trusted nothrow @nogc:
 
+    /// Create from parts.
     this(T* ptr, Sz length) {
         this.ptr = ptr;
         this.length = length;
     }
 
+    /// Create from D slice.
     this(T[] slice) {
         opAssign(slice);
     }
@@ -142,6 +144,7 @@ struct ForeignSlice(T) {
         length = slice.length;
     }
 
+    /// The items of the slice.
     inout(T)[] items() inout {
         return ptr[0 .. length];
     }
@@ -264,14 +267,17 @@ struct Maybe(T) {
 
     @safe nothrow @nogc:
 
+    /// Create a value.
     this(in const(T) data) {
         opAssign(data);
     }
 
+    /// Create a fault.
     this(Fault fault) {
         opAssign(fault);
     }
 
+    /// Create a value if fault is none.
     this(in const(T) data, Fault fault) {
         if (fault) {
             this(fault);
@@ -610,6 +616,7 @@ struct Union(A...) if (A.length != 0) {
 //   If it's a problem, we could create an alias or even rename it.
 //   The reason it's not a method now is to avoid compile-time work.
 //   This is also one of the few functions that uses `in` LOL.
+/// Returns the current type name of the union.
 IStr typeName(U)(in const(U) unionValue) if (is(U : Union!A, A...)) {
     switch (unionValue._type) {
         static foreach (i, T; U.Types) {
@@ -619,6 +626,7 @@ IStr typeName(U)(in const(U) unionValue) if (is(U : Union!A, A...)) {
     }
 }
 
+/// Returns a union from a union type.
 T toUnion(T)(UnionType type) if (is(T : Union!A, A...)) {
     T result;
     static foreach (i, Type; T.Types) {
@@ -631,6 +639,7 @@ T toUnion(T)(UnionType type) if (is(T : Union!A, A...)) {
     return result;
 }
 
+/// Returns a union from a union type name.
 T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
     T result;
     static foreach (i, Type; T.Types) {
@@ -644,6 +653,7 @@ T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
 }
 
 pragma(inline, true) @safe nothrow @nogc {
+    /// Returns an option from a maybe.
     Option!T toForeignMaybe(T)(Maybe!T value) {
         if (value.isSome) {
             return Option!T(value.data);
@@ -652,15 +662,18 @@ pragma(inline, true) @safe nothrow @nogc {
         }
     }
 
+    /// Returns an foreign slice from a D slice.
     ForeignSlice!T toForeignSlice(T)(T[] value) {
         return ForeignSlice!T(value);
     }
 
+    /// Returns an foreign slice from a D slice.
     @trusted
     ForeignSlice!(const(ubyte)) toForeignBytes(const(char)[] value) {
         return ForeignSlice!(const(ubyte))(  cast(const(ubyte)[]) value  );
     }
 
+    /// Returns an foreign slice from a D slice.
     @trusted
     ForeignSlice!(ubyte) toForeignBytesMut(char[] value) {
         return ForeignSlice!(ubyte)(  cast(ubyte[]) value  );
@@ -670,15 +683,18 @@ pragma(inline, true) @safe nothrow @nogc {
     alias toForeign = toForeignMaybe;
     alias toForeign = toForeignSlice;
 
+    /// Returns true is value is NaN.
     bool isNan(float x) {
         return !(x == x);
     }
 
+    /// Returns true is value is NaN.
     bool isNan(double x) {
         return !(x == x);
     }
 }
 
+/// Returns an error message that can be used for array-like objects.
 pragma(inline, true) @trusted nothrow @nogc
 IStr indexErrorMessage(Sz i) {
     IStr[1] fmtStrs = [
@@ -687,6 +703,8 @@ IStr indexErrorMessage(Sz i) {
     return fmtSignedGroup(fmtStrs, i);
 }
 
+/// Can be used to make a distinct type. Useful for IDs.
+/// Usage: `struct Number { mixin distinct!int; }`
 mixin template distinct(T) {
     T _data;
     alias _data this;
@@ -702,6 +720,7 @@ mixin template distinct(T) {
     }
 }
 
+/// Returns the index of an item inside the given alias arguments or -1 on error.
 int findInAliasArgs(T, A...)() {
     int result = -1;
     static foreach (i, TT; A) {
@@ -712,10 +731,12 @@ int findInAliasArgs(T, A...)() {
     return result;
 }
 
+/// Returns true if an item is inside the given alias arguments.
 bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
 }
 
+/// Basic set of slice ops.
 mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, itemsMemberName)) {
     pragma(inline, true) @trusted nothrow @nogc {
         TT[] opSlice(Sz dim)(Sz i, Sz j) {
@@ -906,8 +927,11 @@ unittest {
 
 // NOTE: Some `JokaCustomMemory` functions are defined also in `memory.d`.
 version (JokaCustomMemory) {
+    /// Sets the first `size` bytes of `ptr` to `value`.
     extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
+    /// Copies `size` bytes from `source` to `ptr`.
     extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    /// Compares the first `size` bytes of `ptr1` and `ptr2`, returning 0 if equal.
     extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
 } else version (JokaGcMemory) {
     private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
@@ -1374,6 +1398,23 @@ pragma(inline, true) {
     /// Returns true if the character is a hexadecimal digit (0-9, A-F, a-f).
     bool isHexDigit(char c) {
         return isDigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+    }
+
+    /// Returns true if the character can start a variable name (letter or underscore).
+    bool isVariableNameStart(char c) {
+        return isAlpha(c) || c == '_';
+    }
+
+    /// Returns true if the character can appear in a variable name (letter, digit, or underscore).
+    bool isVariableNamePart(char c) {
+        return isAlphaOrDigit(c) || c == '_';
+    }
+
+    /// Returns true if the string is a valid variable name (starts with a letter or underscore, followed by letters, digits, or underscores).
+    bool isVariableName(IStr str) {
+        if (str.length == 0 || !str[0].isVariableNameStart) return false;
+        foreach (c; str[1 .. $]) if (!c.isVariableNamePart) return false;
+        return true;
     }
 
     /// Returns true if the string represents a C string.
