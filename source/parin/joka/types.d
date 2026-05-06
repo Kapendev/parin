@@ -1311,6 +1311,26 @@ noreturn todo(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
 }
 
 pragma(inline, true) {
+    /// Hashes a string using the FNV-1a algorithm with a 32-bit output.
+    uint hashFnv32a(IStr text) {
+        uint h = 2166136261U;
+        foreach (c; text) {
+            h ^= c;
+            h *= 16777619U;
+        }
+        return h;
+    }
+
+    /// Hashes a string using the FNV-1a algorithm with a 64-bit output.
+    ulong hashFnv64a(IStr text) {
+        ulong h = 14695981039346656037UL;
+        foreach (c; text) {
+            h ^= c;
+            h *= 1099511628211UL;
+        }
+        return h;
+    }
+
     /// Wraps a floating value with formatting options.
     Floating flo(double value, uint precision) {
         return Floating(value, precision);
@@ -2073,6 +2093,17 @@ unittest {
 
     char[128] buffer = void;
     Str str;
+
+    assert(hashFnv32a("") == 2166136261U);
+    assert(hashFnv32a("a") == 3826002220U);
+    assert(hashFnv32a("hello") == 1335831723U);
+    assert(hashFnv32a("hello") == hashFnv32a("hello"));
+    assert(hashFnv32a("hello") != hashFnv32a("world"));
+    assert(hashFnv64a("") == 14695981039346656037UL);
+    assert(hashFnv64a("a") == 12638187200555641996UL);
+    assert(hashFnv64a("hello") == 11831194018420276491uL);
+    assert(hashFnv64a("hello") == hashFnv64a("hello"));
+    assert(hashFnv64a("hello") != hashFnv64a("world"));
 
     assert(isDigit('?') == false);
     assert(isDigit('0') == true);

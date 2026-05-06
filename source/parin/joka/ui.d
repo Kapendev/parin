@@ -14,6 +14,7 @@ module parin.joka.ui;
 import parin.joka.math;
 import parin.joka.types;
 
+/// The default control flags.
 enum defaultUiFlags = UiFlag.alignCenter;
 
 alias UiFont    = void*; /// The UI font type.
@@ -27,6 +28,7 @@ alias UiIconId  = uint;  /// The UI icon ID type.
     alias UiIconIdSizeFunc = IVec2 function(UiIconId iconId);
 }
 
+/// A UI color.
 enum UiColorType : ubyte {
     border,       /// Default border color.
     borderOff,    /// Border color on no interaction.
@@ -41,44 +43,50 @@ enum UiColorType : ubyte {
     buttonFocus,  /// Button color on focus.
 }
 
+/// Static table of UI colors with `UiColorType` being the key.
 alias UiColors = StaticArray!(Rgba, UiColorType.max + 1);
 
-/// UI style including things like colors.
+/// A style defines the visual appearance of the UI.
 struct UiStyle {
-    UiFont font;
-    UiTexture texture;
-    UiColors colors;
-    uint fontScale;
-    uint border;
-    uint padding;
+    UiFont font;       /// The UI font.
+    UiTexture texture; /// The UI texture.
+    UiColors colors;   /// The UI colors.
+    uint fontScale;    /// The scale of the font.
+    uint border;       /// The size of borders.
+    uint padding;      /// The space between borders.
 }
 
+/// A bitmask type for mouse button state, combining one or more `UiMouseButtonFlag` values.
 alias UiMouseButtonFlags = ubyte;
+/// Individual mouse button flags for use in a `UiMouseButtonFlags` bitmask.
 enum UiMouseButtonFlag : UiMouseButtonFlags {
-    none   = 0x0,
-    left   = 0x1,
-    right  = 0x2,
-    middle = 0x4,
+    none   = 0x0, /// No mouse button.
+    left   = 0x1, /// The left mouse button.
+    right  = 0x2, /// The right mouse button.
+    middle = 0x4, /// The middle mouse button.
 }
 
+/// A bitmask type for keyboard key state, combining one or more `UiKeyFlag` values.
 alias UiKeyFlags = ushort;
+/// Individual key flags for use in a `UiKeyFlags` bitmask.
 enum UiKeyFlag : UiKeyFlags {
-    none  = 0,
-    left  = 1U << 1,
-    right = 1U << 2,
-    up    = 1U << 3,
-    down  = 1U << 4,
-    tab   = 1U << 5,
-    enter = 1U << 6,
-    esc   = 1U << 7,
-    shift = 1U << 8,
+    none  = 0,       /// No key.
+    left  = 1U << 1, /// The left arrow key.
+    right = 1U << 2, /// The right arrow key.
+    up    = 1U << 3, /// The up arrow key.
+    down  = 1U << 4, /// The down arrow key.
+    tab   = 1U << 5, /// The Tab key.
+    enter = 1U << 6, /// The Enter key.
+    esc   = 1U << 7, /// The Escape key.
+    shift = 1U << 8, /// The Shift key.
 }
 
+/// Controls which axis or axes keyboard navigation responds to.
 enum UiKeyNavigation : ubyte {
-    none,
-    verticalOrHorizontal,
-    vertical,
-    horizontal,
+    none,                 /// Keyboard navigation is disabled.
+    verticalOrHorizontal, /// Navigation responds to both axes.
+    vertical,             /// Navigation responds to the vertical axis only.
+    horizontal,           /// Navigation responds to the horizontal axis only.
 }
 
 struct UiInput {
@@ -248,7 +256,9 @@ struct UiCommands {
     }
 }
 
+/// The result of a UI control function.
 alias UiResultFlags = ubyte;
+/// The result values of a UI control function.
 enum UiResultFlag : UiResultFlags {
     none         = 0x00, /// None.
     active       = 0x01, /// Control is active (e.g. active window).
@@ -260,13 +270,15 @@ enum UiResultFlag : UiResultFlags {
     pressedDown  = 0x40, /// Pressed down on a active control in horizontal navigation mode.
 }
 
+/// The option flags of a UI control function.
 alias UiFlags = ubyte;
+/// The option flag values of a UI control function.
 enum UiFlag : UiFlags {
-    none            = 0x0000,
-    alignCenter     = 0x0001,
-    alignRight      = 0x0002,
-    turnOff         = 0x0004,
-    checkNavigation = 0x0008,
+    none            = 0x0000, /// None.
+    alignCenter     = 0x0001, /// Align to the center.
+    alignRight      = 0x0002, /// Align to the right.
+    turnOff         = 0x0004, /// Turn off interactions.
+    checkNavigation = 0x0008, /// Include key actions in result flags.
 }
 
 struct UiFocusState {
@@ -294,6 +306,7 @@ struct UiFocusState {
     }
 }
 
+/// A UI focus grabber.
 struct ScopedUiFocus {
     UiContext* _uiContext;
     int _previousFocusIdCounter;
@@ -320,6 +333,7 @@ struct ScopedUiFocus {
     }
 }
 
+/// A UI layout helper.
 struct UiLayout {
     IRect area;
     int slice;
@@ -361,6 +375,7 @@ static struct UiControlInteraction {
     bool mouseAction;
 }
 
+/// The UI context.
 struct UiContext {
     UiCommands commands;
     UiFocusState focusState;
