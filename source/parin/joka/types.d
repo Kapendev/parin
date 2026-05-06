@@ -522,6 +522,7 @@ struct Union(A...) if (A.length != 0) {
     alias Types = A;
     alias Base  = A[0];
 
+    //// The data.
     union UnionData {
         static foreach (i, T; A) {
             mixin("T _m", i, ";");
@@ -529,16 +530,18 @@ struct Union(A...) if (A.length != 0) {
     }
 
     static if (A.length <= ubyte.max) {
-        alias UnionType = ubyte;
+        alias UnionType = ubyte; /// The type.
     } else static if (A.length <= ushort.max) {
         alias UnionType = ushort;
     } else {
         alias UnionType = ulong;
     }
 
-    UnionType _type;
-    UnionData _data;
+    UnionType _type; /// The type of the union.
+    UnionData _data; /// The data of the union.
 
+    /// Calls the given method for the currently active type.
+    /// All types must implement this method.
     @trusted
     auto call(IStr func, AA...)(AA args) {
         switch (_type) {
@@ -552,6 +555,7 @@ struct Union(A...) if (A.length != 0) {
     @trusted nothrow @nogc:
 
     static foreach (i, T; A) {
+        /// Create from a value.
         this(in const(T) value) {
             opAssign(value);
         }
@@ -563,24 +567,29 @@ struct Union(A...) if (A.length != 0) {
     }
 
     pragma(inline, true) {
+        /// The currently active type.
         UnionType type() {
             return _type;
         }
 
+        /// Returns true if the given type is the same as the currently active type.
         bool isType(T)() {
             return _type == typeOf!T;
         }
 
+        /// Returns the data of the first union member. Only safe to use if all union members share a common first field.
         ref Base base() {
             return _data.tupleof[0];
         }
 
+        /// Returns the data of the given type. Will assert if the type is not the same as the currently active type.
         ref T as(T)() {
             assert(_type == typeOf!T, "Type not active.");
             return _data.tupleof[typeOf!T];
         }
     }
 
+    /// Returns true if all union members share a common first field.
     enum isBaseAliasingSafe = () {
         bool result = true;
         foreach (T; A[1 .. $]) {
@@ -597,6 +606,7 @@ struct Union(A...) if (A.length != 0) {
         return result;
     }();
 
+    /// Returns the type of the given type.
     template typeOf(T) {
         enum typeOf = () {
             int result = -1;
