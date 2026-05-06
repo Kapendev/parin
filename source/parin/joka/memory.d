@@ -148,15 +148,12 @@ ScopedMemoryContext ScopedDefaultMemoryContext() {
 // === BEGIN MEMORY BLOCK
 @system nothrow {
 version (JokaCustomMemory) {
-    /// Reallocates a block of memory.
     extern(C) void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__);
 
-    /// Allocates a block of memory.
     extern(C) void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         return jokaSystemRealloc(null, size, 0, file, line);
     }
 
-    /// Frees a block of memory.
     extern(C) void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         jokaSystemRealloc(ptr, 0, oldSize, file, line);
     }
@@ -203,6 +200,7 @@ version (JokaCustomMemory) {
         }
     }
 
+    /// Allocates a block of memory.
     void* jokaSystemMalloc(Sz size, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) return null;
         auto result = stdc_realloc(null, size, 0);
@@ -221,6 +219,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
+    /// Reallocates a block of memory.
     void* jokaSystemRealloc(void* ptr, Sz size, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         if (size == 0) {
             jokaSystemFree(ptr);
@@ -266,6 +265,7 @@ version (JokaCustomMemory) {
         return result;
     }
 
+    /// Frees a block of memory.
     void jokaSystemFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE__) {
         static if (isTrackingMemory) {
             if (ptr == null) return;

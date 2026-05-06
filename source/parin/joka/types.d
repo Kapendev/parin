@@ -522,7 +522,6 @@ struct Union(A...) if (A.length != 0) {
     alias Types = A;
     alias Base  = A[0];
 
-    //// The data.
     union UnionData {
         static foreach (i, T; A) {
             mixin("T _m", i, ";");
@@ -530,15 +529,15 @@ struct Union(A...) if (A.length != 0) {
     }
 
     static if (A.length <= ubyte.max) {
-        alias UnionType = ubyte; /// The type.
+        alias UnionType = ubyte;
     } else static if (A.length <= ushort.max) {
         alias UnionType = ushort;
     } else {
         alias UnionType = ulong;
     }
 
-    UnionType _type; /// The type of the union.
-    UnionData _data; /// The data of the union.
+    UnionType _type;
+    UnionData _data;
 
     /// Calls the given method for the currently active type.
     /// All types must implement this method.
@@ -555,7 +554,6 @@ struct Union(A...) if (A.length != 0) {
     @trusted nothrow @nogc:
 
     static foreach (i, T; A) {
-        /// Create from a value.
         this(in const(T) value) {
             opAssign(value);
         }
@@ -937,11 +935,8 @@ unittest {
 
 // NOTE: Some `JokaCustomMemory` functions are defined also in `memory.d`.
 version (JokaCustomMemory) {
-    /// Sets the first `size` bytes of `ptr` to `value`.
     extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
-    /// Copies `size` bytes from `source` to `ptr`.
     extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
-    /// Compares the first `size` bytes of `ptr1` and `ptr2`, returning 0 if equal.
     extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
 } else version (JokaGcMemory) {
     private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
@@ -988,16 +983,19 @@ version (JokaCustomMemory) {
         }
     }
 
+    /// Sets the first `size` bytes of `ptr` to `value`.
     @system nothrow @nogc
     void* jokaMemset(void* ptr, int value, Sz size) {
         return stdc_memset(ptr, value, size);
     }
 
+    /// Copies `size` bytes from `source` to `ptr`.
     @system nothrow @nogc
     void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
         return stdc_memcpy(ptr, source, size);
     }
 
+    /// Compares the first `size` bytes of `ptr1` and `ptr2`, returning 0 if equal.
     @system nothrow @nogc
     int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
         return stdc_memcmp(ptr1, ptr2, size);
@@ -1021,14 +1019,14 @@ version (JokaRuntimeSymbols) {
 @safe:
 
 version (JokaSmallFootprint) {
-    enum defaultAsciiBufferCount          = 4;
-    enum defaultAsciiBufferSize           = 512;
-    enum defaultAsciiBufferCountForSlices = 32;
+    enum defaultAsciiBufferCount          = 4;   /// Generic string count.
+    enum defaultAsciiBufferSize           = 512; /// Generic string length.
+    enum defaultAsciiBufferCountForSlices = 32;  /// Generic slice count.
 
-    enum defaultAsciiFmtArgBufferCount = 16;
-    enum defaultAsciiFmtArgBufferSize  = 256;
-    enum defaultAsciiFmtBufferCount    = 4;
-    enum defaultAsciiFmtBufferSize     = 1024;
+    enum defaultAsciiFmtArgBufferCount = 16;   /// Format argument count.
+    enum defaultAsciiFmtArgBufferSize  = 256;  /// Format argument length.
+    enum defaultAsciiFmtBufferCount    = 4;    /// Format string count.
+    enum defaultAsciiFmtBufferSize     = 1024; /// Format string length.
 } else {
     enum defaultAsciiBufferCount          = 8;    /// Generic string count.
     enum defaultAsciiBufferSize           = 1024; /// Generic string length.
@@ -1051,10 +1049,10 @@ enum symbolChars   = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"; /// The set of symbol
 enum hexDigitChars = "0123456789abcdefABCDEF";             /// The set of hexadecimal numeric characters.
 
 version (Windows) {
-    enum pathSep         = '\\';
-    enum pathSepStr      = "\\";
-    enum pathSepOther    = '/';
-    enum pathSepOtherStr = "/";
+    enum pathSep         = '\\'; /// The primary OS path separator as a character.
+    enum pathSepStr      = "\\"; /// The primary OS path separator as a string.
+    enum pathSepOther    = '/';  /// The complementary OS path separator as a character.
+    enum pathSepOtherStr = "/";  /// The complementary OS path separator as a string.
 } else {
     enum pathSep         = '/';  /// The primary OS path separator as a character.
     enum pathSepStr      = "/";  /// The primary OS path separator as a string.
@@ -1073,9 +1071,15 @@ enum PathSepStyle {
 }
 
 /// A separator marker for printing.
-struct Sep { IStr value; }
+struct Sep {
+    IStr value; /// The value.
+    alias value this;
+}
 /// A string pair.
-struct StrPair { IStr a, b; }
+struct StrPair {
+    IStr a; /// The first string.
+    IStr b; /// The second string.
+}
 
 /// A wrapper type for priting floats and doubles.
 struct Floating {
@@ -1084,10 +1088,12 @@ struct Floating {
 
     @safe nothrow @nogc:
 
+    /// Returns a temporary string representation.
     IStr toStr() {
         return floatingToStr(value, precision);
     }
 
+    /// Returns a temporary string representation.
     alias toString = toStr;
 }
 
