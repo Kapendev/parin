@@ -21,17 +21,14 @@ struct Game {
 }
 
 void ready() {
-    readyUi(engineFont, 2);
     toggleIsDebugMode();
+    readyUi(engineFont, 2);
 }
 
 // The game code.
 bool update(float dt) {
     setWindowBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
-    drawRect(
-        Rect(game.world, game.width, game.height),
-        game.reallyCoolFlag ? green : white,
-    );
+    drawRect(Rect(game.world, game.width, game.height), game.reallyCoolFlag ? green : white);
     return false;
 }
 
@@ -40,7 +37,7 @@ void inspect() {
     beginUiFrame();
     scope (exit) endUiFrame();
 
-    if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
+    if (beginWindow("Edit", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
         headerAndMembers(game, 125);
         endWindow();
     }

@@ -1093,7 +1093,6 @@ struct Floating {
         return floatingToStr(value, precision);
     }
 
-    /// Returns a temporary string representation.
     alias toString = toStr;
 }
 
