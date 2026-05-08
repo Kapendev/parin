@@ -2321,23 +2321,25 @@ void* growingArenaAllocatorReallocWrapper(void* allocatorState, Sz alignment, vo
     return (cast(GrowingArena*) allocatorState).realloc(alignment, oldPtr, oldSize, newSize, file, line);
 }
 
+@trusted @nogc
+IStr gridIndexErrorMessage(Sz row, Sz col) {
+    IStr[2] fmtStrs = [
+        "Index {}",
+        ", {} does not exist.",
+    ];
+    return fmtSignedGroup(fmtStrs, row, col);
+}
+
+@trusted @nogc
+IStr genIndexErrorMessage(Sz value, Sz generation) {
+    IStr[2] fmtStrs = [
+        "Index {} ",
+        "with generation {} does not exist.",
+    ];
+    return fmtSignedGroup(fmtStrs, value, generation);
+}
+
 pragma(inline, true) @trusted @nogc {
-    IStr gridIndexErrorMessage(Sz row, Sz col) {
-        IStr[2] fmtStrs = [
-            "Index {}",
-            ", {} does not exist.",
-        ];
-        return fmtSignedGroup(fmtStrs, row, col);
-    }
-
-    IStr genIndexErrorMessage(Sz value, Sz generation) {
-        IStr[2] fmtStrs = [
-            "Index {} ",
-            "with generation {} does not exist.",
-        ];
-        return fmtSignedGroup(fmtStrs, value, generation);
-    }
-
     Sz findListCapacity(Sz length, Sz currentCapacity = 0) {
         Sz result = currentCapacity ? currentCapacity : defaultListCapacity;
         if (result + 1 == length) return result + result;

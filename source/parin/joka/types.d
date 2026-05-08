@@ -128,23 +128,24 @@ struct ForeignSlice(T) {
 
     pragma(inline, true) @trusted nothrow @nogc:
 
-    /// Create from parts.
+    /// Creates a slice from parts.
     this(T* ptr, Sz length) {
         this.ptr = ptr;
         this.length = length;
     }
 
-    /// Create from D slice.
+    /// Copies the given D slice.
     this(T[] slice) {
         opAssign(slice);
     }
 
+    /// Copies the given D slice.
     void opAssign(T[] slice) {
         ptr = slice.ptr;
         length = slice.length;
     }
 
-    /// The items of the slice.
+    /// Returns the items of the slice.
     inout(T)[] items() inout {
         return ptr[0 .. length];
     }
@@ -242,11 +243,13 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         bits = zero;
     }
 
+    /// Returns the value of a bit.
     bool opIndex(Sz i) {
         assert(i < capacity, indexErrorMessage(i));
         return (bits >> i) & one;
     }
 
+    /// Sets the value of a bit.
     void opIndexAssign(const(bool) rhs, Sz i) {
         assert(i < capacity, indexErrorMessage(i));
         bits = cast(T) (  rhs ? (bits | (one << i)) : (bits & ~(one << i))  );
@@ -260,6 +263,7 @@ alias BitSet = GBitSet!BitSetCommonDataType;
 
 /// Represents an optional value with an error code.
 /// Errors are referred to as faults in Joka.
+/// The default value is an empty value.
 struct Maybe(T) {
     Fault fault = Fault.some;
     T data;
@@ -267,17 +271,17 @@ struct Maybe(T) {
 
     @safe nothrow @nogc:
 
-    /// Create a value.
+    /// Creates a value.
     this(in const(T) data) {
         opAssign(data);
     }
 
-    /// Create a fault.
+    /// Creates a fault.
     this(Fault fault) {
         opAssign(fault);
     }
 
-    /// Create a value if fault is none.
+    /// Creates a value if fault is none.
     this(in const(T) data, Fault fault) {
         if (fault) {
             this(fault);
@@ -286,16 +290,19 @@ struct Maybe(T) {
         }
     }
 
+    /// Creates a value.
     @trusted
     void opAssign(in const(T) rhs) {
         fault = Fault.none;
         data = cast(T) rhs;
     }
 
+    /// Creates a fault.
     void opAssign(Fault rhs) {
         fault = rhs;
     }
 
+    /// Copies the state of another optional value.
     @trusted
     void opAssign(in Maybe!T rhs) {
         fault = rhs.fault;
@@ -332,13 +339,13 @@ struct Maybe(T) {
 
     /// Returns true when there is a fault.
     pragma(inline, true)
-    bool isNone() {
+    bool isNone() const {
         return fault != Fault.none;
     }
 
     /// Returns true when there is a value.
     pragma(inline, true)
-    bool isSome() {
+    bool isSome() const {
         return fault == Fault.none;
     }
 
@@ -358,26 +365,34 @@ alias NotSure = Maybe;
 /// Note: the `isSome` member depends on `T`.
 /// If `T` is a value, then `isSome` is a field.
 /// If `T` is a pointer, then `isSome` is a property.
+/// The default value is an empty value.
 struct Option(T) {
-    enum isPtr = is(T : const(void)*);
+    enum isPtr = is(T : const(void)*); /// True if `T` is a pointer.
 
-    static if (!isPtr) bool isSome;
+    static if (!isPtr) bool _isSome;
     T data;
     alias isSome this;
 
     @trusted nothrow @nogc:
 
+    /// Creates a value.
     this(in const(T) data) {
         opAssign(data);
     }
 
+    /// Creates a value.
     void opAssign(in const(T) rhs) {
-        isSome = true;
+        static if (!isPtr) {
+            _isSome = true;
+        }
         data = cast(T) rhs;
     }
 
+    /// Copies the state of another optional value.
     void opAssign(in Option!T rhs) {
-        isSome = rhs.isSome;
+        static if (!isPtr) {
+            _isSome = rhs.isSome;
+        }
         data = cast(T) rhs.data;
     }
 
@@ -411,23 +426,26 @@ struct Option(T) {
 
     /// Returns true when there is no value.
     pragma(inline, true)
-    bool isNone() {
+    bool isNone() const {
         return !isSome;
+    }
+
+    /// Returns true when there is a value.
+    pragma(inline, true)
+    bool isSome() const {
+        static if (isPtr) {
+            return data != null;
+        } else {
+            return _isSome;
+        }
     }
 
     /// Clears the value, making it none.
     void clear() {
-        isSome = false;
-    }
-
-    static if (isPtr) {
-        pragma(inline, true)
-        bool isSome() {
-            return data != null;
-        }
-
-        void isSome(bool value) {
-            if (!value) data = null;
+        static if (isPtr) {
+            data = null;
+        } else {
+            _isSome = false;
         }
     }
 }
@@ -508,7 +526,7 @@ struct Result(T, E, Sz tagSize = 0) {
     }
 
     pragma(inline, true)
-    bool isNone() {
+    bool isNone() const {
         return !isSome;
     }
 
@@ -703,7 +721,7 @@ pragma(inline, true) @safe nothrow @nogc {
 }
 
 /// Returns an error message that can be used for array-like objects.
-pragma(inline, true) @trusted nothrow @nogc
+@trusted nothrow @nogc
 IStr indexErrorMessage(Sz i) {
     IStr[1] fmtStrs = [
         "Index {} does not exist.",

@@ -16,7 +16,7 @@ struct NumericRange(I) {
     I stop;
     I step;
 
-    pragma(inline, true) @safe nothrow @nogc:
+    @safe nothrow @nogc:
 
     this(I start, I stop, I step = 1) {
         this.index = start;
@@ -24,14 +24,17 @@ struct NumericRange(I) {
         this.step = step;
     }
 
+    pragma(inline, true)
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
     }
 
+    pragma(inline, true)
     I front() {
         return index;
     }
 
+    pragma(inline, true)
     void popFront() {
         index += step;
     }
