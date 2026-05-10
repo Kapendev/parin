@@ -74,6 +74,13 @@ dub run
 If everything is set up correctly, a window will appear showing the message "Hello world!".
 For instructions on building without DUB, check the ["How can I build without DUB?"](#how-can-i-build-without-dub) section in the FAQ.
 
+Available templates:
+
+```sh
+dub init -t parin -- basic
+dub init -t parin -- entity
+```
+
 ### Required Libraries on Linux
 
 Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.

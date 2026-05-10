@@ -1,3 +1,6 @@
+/// This example is a template that can be used as a starting point for a project.
+/// It includes the entity system from `_018_entity.d`.
+
 import parin;
 
 void ready() {

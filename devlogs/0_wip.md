@@ -15,5 +15,9 @@
 * Project templates.
 * Better swizzle stuff.
 * Joint allocations.
-* Allocators.
+* Allocators and APIs.
 * CLI flags.
+* Docs for Joka.
+* alias this for IDs and Maybes.
+* Can remove box from platformer.
+* Bit sets
