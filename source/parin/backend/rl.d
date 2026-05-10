@@ -1089,51 +1089,51 @@ void pumpEvents() {
 }
 
 bool isDown(char key) {
-    return rl.IsKeyDown(toRl(key));
+    return rl.IsKeyDown(key.toRl());
 }
 
 bool isDown(Keyboard key) {
-    return rl.IsKeyDown(toRl(key));
+    return rl.IsKeyDown(key.toRl());
 }
 
 bool isDown(Mouse key) {
-    return rl.IsMouseButtonDown(toRl(key));
+    return rl.IsMouseButtonDown(key.toRl());
 }
 
 bool isDown(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonDown(id, toRl(key));
+    return rl.IsGamepadButtonDown(id, key.toRl());
 }
 
 bool isPressed(char key) {
-    return rl.IsKeyPressed(toRl(key));
+    return rl.IsKeyPressed(key.toRl());
 }
 
 bool isPressed(Keyboard key) {
-    return rl.IsKeyPressed(toRl(key));
+    return rl.IsKeyPressed(key.toRl());
 }
 
 bool isPressed(Mouse key) {
-    return rl.IsMouseButtonPressed(toRl(key));
+    return rl.IsMouseButtonPressed(key.toRl());
 }
 
 bool isPressed(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonPressed(id, toRl(key));
+    return rl.IsGamepadButtonPressed(id, key.toRl());
 }
 
 bool isReleased(char key) {
-    return rl.IsKeyReleased(toRl(key));
+    return rl.IsKeyReleased(key.toRl());
 }
 
 bool isReleased(Keyboard key) {
-    return rl.IsKeyReleased(toRl(key));
+    return rl.IsKeyReleased(key.toRl());
 }
 
 bool isReleased(Mouse key) {
-    return rl.IsMouseButtonReleased(toRl(key));
+    return rl.IsMouseButtonReleased(key.toRl());
 }
 
 bool isReleased(Gamepad key, int id = 0) {
-    return rl.IsGamepadButtonReleased(id, toRl(key));
+    return rl.IsGamepadButtonReleased(id, key.toRl());
 }
 
 Vec2 mouse() {
@@ -1158,13 +1158,11 @@ float deltaWheel() {
 }
 
 Keyboard dequeuePressedKey() {
-    auto result = cast(Keyboard) rl.GetKeyPressed();
-    if (result.toStr() == "?") return Keyboard.none; // NOTE: Could maybe be better, but who cares.
-    return result;
+    return rl.GetKeyPressed().toPr();
 }
 
 dchar dequeuePressedRune() {
-    return rl.GetCharPressed();
+    return rl.GetCharPressed(); // NOTE: Don't need to convert because it's not an enum.
 }
 
 float masterVolume() {
@@ -1627,6 +1625,111 @@ pragma(inline, true) {
         }
     }
 
+    Keyboard toPr(RlKey from) {
+        with (Keyboard) switch (from) {
+            case rl.KEY_NULL: return none;
+            case rl.KEY_APOSTROPHE: return apostrophe;
+            case rl.KEY_COMMA: return comma;
+            case rl.KEY_MINUS: return minus;
+            case rl.KEY_PERIOD: return period;
+            case rl.KEY_SLASH: return slash;
+            case rl.KEY_ZERO: return n0;
+            case rl.KEY_ONE: return n1;
+            case rl.KEY_TWO: return n2;
+            case rl.KEY_THREE: return n3;
+            case rl.KEY_FOUR: return n4;
+            case rl.KEY_FIVE: return n5;
+            case rl.KEY_SIX: return n6;
+            case rl.KEY_SEVEN: return n7;
+            case rl.KEY_EIGHT: return n8;
+            case rl.KEY_NINE: return n9;
+            case rl.KEY_KP_0: return nn0;
+            case rl.KEY_KP_1: return nn1;
+            case rl.KEY_KP_2: return nn2;
+            case rl.KEY_KP_3: return nn3;
+            case rl.KEY_KP_4: return nn4;
+            case rl.KEY_KP_5: return nn5;
+            case rl.KEY_KP_6: return nn6;
+            case rl.KEY_KP_7: return nn7;
+            case rl.KEY_KP_8: return nn8;
+            case rl.KEY_KP_9: return nn9;
+            case rl.KEY_SEMICOLON: return semicolon;
+            case rl.KEY_EQUAL: return equal;
+            case rl.KEY_A: return a;
+            case rl.KEY_B: return b;
+            case rl.KEY_C: return c;
+            case rl.KEY_D: return d;
+            case rl.KEY_E: return e;
+            case rl.KEY_F: return f;
+            case rl.KEY_G: return g;
+            case rl.KEY_H: return h;
+            case rl.KEY_I: return i;
+            case rl.KEY_J: return j;
+            case rl.KEY_K: return k;
+            case rl.KEY_L: return l;
+            case rl.KEY_M: return m;
+            case rl.KEY_N: return n;
+            case rl.KEY_O: return o;
+            case rl.KEY_P: return p;
+            case rl.KEY_Q: return q;
+            case rl.KEY_R: return r;
+            case rl.KEY_S: return s;
+            case rl.KEY_T: return t;
+            case rl.KEY_U: return u;
+            case rl.KEY_V: return v;
+            case rl.KEY_W: return w;
+            case rl.KEY_X: return x;
+            case rl.KEY_Y: return y;
+            case rl.KEY_Z: return z;
+            case rl.KEY_LEFT_BRACKET: return bracketLeft;
+            case rl.KEY_RIGHT_BRACKET: return bracketRight;
+            case rl.KEY_BACKSLASH: return backslash;
+            case rl.KEY_GRAVE: return grave;
+            case rl.KEY_SPACE: return space;
+            case rl.KEY_ESCAPE: return esc;
+            case rl.KEY_ENTER: return enter;
+            case rl.KEY_TAB: return tab;
+            case rl.KEY_BACKSPACE: return backspace;
+            case rl.KEY_INSERT: return insert;
+            case rl.KEY_DELETE: return del;
+            case rl.KEY_RIGHT: return right;
+            case rl.KEY_LEFT: return left;
+            case rl.KEY_DOWN: return down;
+            case rl.KEY_UP: return up;
+            case rl.KEY_PAGE_UP: return pageUp;
+            case rl.KEY_PAGE_DOWN: return pageDown;
+            case rl.KEY_HOME: return home;
+            case rl.KEY_END: return end;
+            case rl.KEY_CAPS_LOCK: return capsLock;
+            case rl.KEY_SCROLL_LOCK: return scrollLock;
+            case rl.KEY_NUM_LOCK: return numLock;
+            case rl.KEY_PRINT_SCREEN: return printScreen;
+            case rl.KEY_PAUSE: return pause;
+            case rl.KEY_LEFT_SHIFT: return shift;
+            case rl.KEY_RIGHT_SHIFT: return shiftRight;
+            case rl.KEY_LEFT_CONTROL: return ctrl;
+            case rl.KEY_RIGHT_CONTROL: return ctrlRight;
+            case rl.KEY_LEFT_ALT: return alt;
+            case rl.KEY_RIGHT_ALT: return altRight;
+            case rl.KEY_LEFT_SUPER: return win;
+            case rl.KEY_RIGHT_SUPER: return winRight;
+            case rl.KEY_KB_MENU: return menu;
+            case rl.KEY_F1: return f1;
+            case rl.KEY_F2: return f2;
+            case rl.KEY_F3: return f3;
+            case rl.KEY_F4: return f4;
+            case rl.KEY_F5: return f5;
+            case rl.KEY_F6: return f6;
+            case rl.KEY_F7: return f7;
+            case rl.KEY_F8: return f8;
+            case rl.KEY_F9: return f9;
+            case rl.KEY_F10: return f10;
+            case rl.KEY_F11: return f11;
+            case rl.KEY_F12: return f12;
+            default: return none;
+        }
+    }
+
     RlKey toRl(Mouse from) {
         with (Mouse) final switch (from) {
             case none: return rl.MOUSE_BUTTON_LEFT; // NOTE: This is funny, but works.
@@ -1658,4 +1761,12 @@ pragma(inline, true) {
             case middle: return rl.GAMEPAD_BUTTON_MIDDLE;
         }
     }
+}
+
+unittest {
+    auto rlKey = rl.KEY_W;
+    auto prKey = Key.w;
+    assert(prKey != rlKey);
+    assert(prKey.toRl() == rlKey);
+    assert(rlKey.toPr() == prKey);
 }
