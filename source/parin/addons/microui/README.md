@@ -8,3 +8,4 @@
 * `readyUI(fontSize)` is new and does the same thing as the above function.
 * This version of microui depends on Joka.
 * Removed `_gshared` from wrapper. This change should be added to normal microui-d too.
+* Made it part of Joka and removed Libc from it.

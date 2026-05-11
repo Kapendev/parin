@@ -371,6 +371,39 @@ enum Hook : ubyte {
     bottomRight, /// The bottom right point.
 }
 
+/// A part of a 9-slice.
+struct SlicePart {
+    IRect source;    /// The source area on the atlas texture.
+    IRect target;    /// The target area on the canvas.
+    IVec2 tileCount; /// The number of source tiles that fit inside the target.
+    bool isCorner;   /// True if the part is a corner.
+    bool canTile;    /// True if the part is an edge or the center.
+}
+
+/// The parts of a 9-slice.
+alias SliceParts = StaticArray!(SlicePart, 9);
+
+/// A set of 4 integer margins.
+struct Margin {
+    int left;   /// The left side.
+    int top;    /// The top side.
+    int right;  /// The right side.
+    int bottom; /// The bottom side.
+
+    @safe nothrow @nogc:
+
+    this(int left, int top, int right, int bottom) {
+        this.left = left;
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
+    }
+
+    this(int left) {
+        this(left, left, left, left);
+    }
+}
+
 /// A RGBA color using ubytes.
 struct Rgba {
     ubyte r; /// The R component of the color.
@@ -2678,6 +2711,95 @@ pragma(inline, true) @trusted {
             moveToWithSlowdown(from.z, to.z, delta.z, slowdown),
             moveToWithSlowdown(from.w, to.w, delta.w, slowdown),
         );
+    }
+
+    /// Computes the parts of a 9-slice.
+    SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
+        SliceParts result;
+        if (!source.hasSize || !target.hasSize) return result;
+        auto canClipW = target.w - source.w < -margin.left - margin.right;
+        auto canClipH = target.h - source.h < -margin.top - margin.bottom;
+
+        // -- 1
+        result[0].source.x  = source.x;                                              result[0].source.y = source.y;
+        result[0].source.w  = margin.left;                                           result[0].source.h = margin.top;
+        result[0].target.x  = target.x;                                              result[0].target.y = target.y;
+        result[0].target.w  = margin.left;                                           result[0].target.h = margin.top;
+        result[0].isCorner = true;
+
+        result[1].source.x  = source.x + result[0].source.w;                         result[1].source.y = result[0].source.y;
+        result[1].source.w  = source.w - margin.left - margin.right;                 result[1].source.h = result[0].source.h;
+        result[1].target.x  = target.x + margin.left;                                result[1].target.y = result[0].target.y;
+        result[1].target.w  = target.w - margin.left - margin.right;                 result[1].target.h = result[0].target.h;
+        result[1].canTile = true;
+
+        result[2].source.x  = source.x + result[0].source.w + result[1].source.w;    result[2].source.y = result[0].source.y;
+        result[2].source.w  = margin.right;                                          result[2].source.h = result[0].source.h;
+        result[2].target.x  = target.x + target.w - margin.right;                    result[2].target.y = result[0].target.y;
+        result[2].target.w  = margin.right;                                          result[2].target.h = result[0].target.h;
+        result[2].isCorner = true;
+
+        // -- 2
+        result[3].source.x  = result[0].source.x;                                    result[3].source.y = source.y + margin.top;
+        result[3].source.w  = result[0].source.w;                                    result[3].source.h = source.h - margin.top - margin.bottom;
+        result[3].target.x  = result[0].target.x;                                    result[3].target.y = target.y + margin.top;
+        result[3].target.w  = result[0].target.w;                                    result[3].target.h = target.h - margin.top - margin.bottom;
+        result[3].canTile = true;
+
+        result[4].source.x  = result[1].source.x;                                    result[4].source.y = result[3].source.y;
+        result[4].source.w  = result[1].source.w;                                    result[4].source.h = result[3].source.h;
+        result[4].target.x  = result[1].target.x;                                    result[4].target.y = result[3].target.y;
+        result[4].target.w  = result[1].target.w;                                    result[4].target.h = result[3].target.h;
+        result[4].canTile = true;
+
+        result[5].source.x  = result[2].source.x;                                    result[5].source.y = result[3].source.y;
+        result[5].source.w  = result[2].source.w;                                    result[5].source.h = result[3].source.h;
+        result[5].target.x  = result[2].target.x;                                    result[5].target.y = result[3].target.y;
+        result[5].target.w  = result[2].target.w;                                    result[5].target.h = result[3].target.h;
+        result[5].canTile = true;
+
+        // -- 3
+        result[6].source.x  = result[0].source.x;                                    result[6].source.y = source.y + margin.top + result[3].source.h;
+        result[6].source.w  = result[0].source.w;                                    result[6].source.h = margin.bottom;
+        result[6].target.x  = result[0].target.x;                                    result[6].target.y = target.y + margin.top + result[3].target.h;
+        result[6].target.w  = result[0].target.w;                                    result[6].target.h = margin.bottom;
+        result[6].isCorner = true;
+
+        result[7].source.x  = result[1].source.x;                                    result[7].source.y = result[6].source.y;
+        result[7].source.w  = result[1].source.w;                                    result[7].source.h = result[6].source.h;
+        result[7].target.x  = result[1].target.x;                                    result[7].target.y = result[6].target.y;
+        result[7].target.w  = result[1].target.w;                                    result[7].target.h = result[6].target.h;
+        result[7].canTile = true;
+
+        result[8].source.x  = result[2].source.x;                                    result[8].source.y = result[6].source.y;
+        result[8].source.w  = result[2].source.w;                                    result[8].source.h = result[6].source.h;
+        result[8].target.x  = result[2].target.x;                                    result[8].target.y = result[6].target.y;
+        result[8].target.w  = result[2].target.w;                                    result[8].target.h = result[6].target.h;
+        result[8].isCorner = true;
+
+        if (canClipW) {
+            foreach (ref item; result) {
+                item.target.x = target.x;
+                item.target.w = target.w;
+            }
+        }
+        if (canClipH) {
+            foreach (ref item; result) {
+                item.target.y = target.y;
+                item.target.h = target.h;
+            }
+        }
+        result[1].tileCount.x = result[1].source.w ? result[1].target.w / result[1].source.w + 1 : 0;
+        result[1].tileCount.y = result[1].source.h ? result[1].target.h / result[1].source.h + 1 : 0;
+        result[3].tileCount.x = result[3].source.w ? result[3].target.w / result[3].source.w + 1 : 0;
+        result[3].tileCount.y = result[3].source.h ? result[3].target.h / result[3].source.h + 1 : 0;
+        result[4].tileCount.x = result[4].source.w ? result[4].target.w / result[4].source.w + 1 : 0;
+        result[4].tileCount.y = result[4].source.h ? result[4].target.h / result[4].source.h + 1 : 0;
+        result[5].tileCount.x = result[5].source.w ? result[5].target.w / result[5].source.w + 1 : 0;
+        result[5].tileCount.y = result[5].source.h ? result[5].target.h / result[5].source.h + 1 : 0;
+        result[7].tileCount.x = result[7].source.w ? result[7].target.w / result[7].source.w + 1 : 0;
+        result[7].tileCount.y = result[7].source.h ? result[7].target.h / result[7].source.h + 1 : 0;
+        return result;
     }
 }
 

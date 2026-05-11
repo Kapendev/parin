@@ -8,4 +8,3 @@
 module parin.addons.microui;
 
 public import parin.addons.microui.wrapper;
-public import parin.addons.microui.helper;

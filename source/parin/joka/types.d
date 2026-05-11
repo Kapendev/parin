@@ -735,14 +735,9 @@ mixin template distinct(T) {
     T _data;
     alias _data this;
 
-    @safe nothrow @nogc {
-        this(T value) {
-            this._data = value;
-        }
-
-        this(typeof(this) value) {
-            this._data = value._data;
-        }
+    @safe nothrow @nogc
+    this(T value) {
+        this._data = value;
     }
 }
 
@@ -1431,6 +1426,11 @@ pragma(inline, true) {
     /// Returns true if the character is a hexadecimal digit (0-9, A-F, a-f).
     bool isHexDigit(char c) {
         return isDigit(c) || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+    }
+
+    /// Returns true if the character is a autocomplete separator.
+    bool isAutocompleteSep(char c) {
+        return isSpace(c) || isSymbol(c);
     }
 
     /// Returns true if the character can start a variable name (letter or underscore).
