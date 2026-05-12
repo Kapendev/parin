@@ -113,11 +113,11 @@ void readyUiCore(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = n
 }
 
 void beginUiCore() {
-    mu_begin(&uiContext);
+    uiContext.begin();
 }
 
 void endUiCore() {
-    mu_end(&uiContext);
+    uiContext.end();
 }
 
 void setUifocus(UiId id) {

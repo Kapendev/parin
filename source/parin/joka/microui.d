@@ -172,7 +172,7 @@ struct MuStack(T, Sz N) {
 
     /// Pops a value off the stack.
     void pop() {
-        mu_expect(idx > 0);
+        assert(idx > 0);
         idx -= 1;
     }
 }
@@ -313,11 +313,11 @@ struct MuContext {
     }
 
     @trusted
-    void ready(MuFont font = null, int fontScale = 1) {
+    void ready(MuFont font, int fontScale = 1) {
         jokaMemset(&this, 0, typeof(this).sizeof);
-        drawFrame = &muDrawFrame;
-        textWidth = &muTempTextWidthFunc;
-        textHeight = &muTempTextHeightFunc;
+        drawFrame = &defaultMuDrawFrame;
+        textWidth = &tempMuTextWidthFunc;
+        textHeight = &tempMuTextHeightFunc;
         dragWindowKey = MuKeyFlag.f1;
         resizeWindowKey = MuKeyFlag.f2;
         _style = MuStyle(
@@ -347,33 +347,103 @@ struct MuContext {
         inputTextSlice = inputText[0 .. 0];
     }
 
-    void readyWithFuncs(MuTextWidthFunc width, MuTextHeightFunc height, MuFont font = null, int fontScale = 1) {
+    void readyWithFuncs(MuTextWidthFunc width, MuTextHeightFunc height, MuFont font, int fontScale = 1) {
         ready(font, fontScale);
         textWidth = width;
         textHeight = height;
     }
-}
 
-private @safe nothrow @nogc {
-    void muDrawFrame(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none) {
-        mu_draw_rect(ctx, rect, ctx.style.colors[colorid], atlasid);
-        if (colorid == MuColor.scrollBase || colorid == MuColor.scrollThumb || colorid == MuColor.titleBg) return;
-        /* draw border */
-        if (ctx.style.border && rect.hasSize) {
-            foreach (i; 1 .. ctx.style.border + 1) {
-                mu_draw_box(ctx, mu_expand_rect(rect, i), ctx.style.colors[MuColor.border]);
+    void begin() {
+        assert(textWidth && textHeight, "Missing text measurement functions (textWidth, textHeight).");
+        assert(!isExpectingEnd,         "Missing call to `end` after `begin` function.");
+
+        commandList.idx = 0;
+        rootList.idx = 0;
+        scrollTarget = null;
+        hoverRoot = nextHoverRoot;
+        nextHoverRoot = null;
+        mouseDelta.x = mousePos.x - lastMousePos.x;
+        mouseDelta.y = mousePos.y - lastMousePos.y;
+        frame += 1;
+        isExpectingEnd = true;
+        buttonCounter = 0;
+    }
+
+    @trusted
+    void end() {
+        /* check stacks */
+        assert(containerStack.idx == 0, "Container stack is not empty.");
+        assert(clipStack.idx      == 0, "Clip stack is not empty.");
+        assert(idStack.idx        == 0, "ID stack is not empty.");
+        assert(layoutStack.idx    == 0, "Layout stack is not empty.");
+        isExpectingEnd = false;
+        buttonCounter = 0;
+
+        /* handle scroll input */
+        if (scrollTarget) {
+            if (keyDown & MuKeyFlag.shift) scrollTarget.scroll.x += scrollDelta.x;
+            else scrollTarget.scroll.y += scrollDelta.y;
+        }
+
+        /* unset focus if focus id was not touched this frame */
+        if (!updatedFocus) { focus = 0; }
+        updatedFocus = false;
+
+        /* bring hover root to front if mouse was pressed */
+        if (mousePressed && nextHoverRoot && nextHoverRoot.zIndex < lastZIndex && nextHoverRoot.zIndex >= 0) {
+            if (nextHoverRoot.open) { mu_bring_to_front(&this, nextHoverRoot); }
+        }
+
+        /* reset input state */
+        keyPressed = 0;
+        inputText[0] = '\0';
+        inputTextSlice = inputText[0 .. 0];
+        mousePressed = 0;
+        scrollDelta = IVec2(0, 0);
+        lastMousePos = mousePos;
+
+        /* Old:
+           // sort root containers by z index
+           int n = rootList.idx;
+           qsort(rootList.items.ptr, n, (MuContainer*).sizeof, &mu_compare_zindex);
+        */
+
+        /* sort root containers by z index */
+        auto n = rootList.idx;
+        auto items = rootList.items[0 .. n];
+        foreach (i; 1 .. n) {
+            auto tmp = items[i];
+            auto j = i;
+            while (j > 0 && items[j - 1].zIndex > tmp.zIndex) {
+                items[j] = items[j - 1];
+                j -= 1;
+            }
+            items[j] = tmp;
+        }
+
+        /* set root container jump commands */
+        foreach (i; 0 .. n) {
+            MuContainer* cnt = rootList.items[i];
+            /* if this is the first container then make the first command jump to it.
+            ** otherwise set the previous container's tail to jump to this one */
+            if (i == 0) {
+                MuCommandData* cmd = cast(MuCommandData*) commandList.items;
+                cmd.jump.dst = cast(char*) cnt.head + MuJumpCommand.sizeof;
+            } else {
+                MuContainer* prev = rootList.items[i - 1];
+                prev.tail.jump.dst = cast(char*) cnt.head + MuJumpCommand.sizeof;
+            }
+            /* make the last container's tail jump to the end of command list */
+            if (i == n - 1) {
+                cnt.tail.jump.dst = commandList.items.ptr + commandList.idx;
             }
         }
     }
+}
 
+private @safe nothrow @nogc {
     @trusted
-    void muHash(MuId* hash, const(void)* data, Sz size) {
-        const(ubyte)* p = cast(const(ubyte)*) data;
-        while (size--) *hash = (*hash ^ *p++) * 16777619;
-    }
-
-    @trusted
-    void push_layout(MuContext* ctx, IRect body, IVec2 scroll) {
+    void _pushLayout(MuContext* ctx, IRect body, IVec2 scroll) {
         MuLayout layout;
         jokaMemset(&layout, 0, layout.sizeof);
         layout.body = IRect(body.x - scroll.x, body.y - scroll.y, body.w, body.h);
@@ -382,14 +452,14 @@ private @safe nothrow @nogc {
         mu_layout_row(ctx, 0, 0);
     }
 
-    MuLayout* get_layout(MuContext* ctx) {
-        mu_expect(ctx.layoutStack.idx != 0, "No layout available, or attempted to add control outside of a window.");
+    MuLayout* _getLayout(MuContext* ctx) {
+        assert(ctx.layoutStack.idx != 0, "No layout available, or attempted to add control outside of a window.");
         return &ctx.layoutStack.items[ctx.layoutStack.idx - 1];
     }
 
-    void pop_container(MuContext* ctx) {
+    void _popContainer(MuContext* ctx) {
         MuContainer* cnt = mu_get_current_container(ctx);
-        MuLayout* layout = get_layout(ctx);
+        MuLayout* layout = _getLayout(ctx);
         cnt.contentSize.x = layout.max.x - layout.body.x;
         cnt.contentSize.y = layout.max.y - layout.body.y;
         /* pop container, layout and id */
@@ -399,7 +469,7 @@ private @safe nothrow @nogc {
     }
 
     @trusted
-    MuContainer* get_container(MuContext* ctx, MuId id, MuOptFlags opt) {
+    MuContainer* _getContainer(MuContext* ctx, MuId id, MuOptFlags opt) {
         MuContainer* cnt;
         /* try to get existing container from pool */
         int idx = mu_pool_get(ctx, ctx.containerPool.ptr, muContainerPoolSize, id);
@@ -420,14 +490,14 @@ private @safe nothrow @nogc {
     }
 
     @trusted
-    MuCommandData* push_jump(MuContext* ctx, MuCommandData* dst) {
+    MuCommandData* _pushJump(MuContext* ctx, MuCommandData* dst) {
         MuCommandData* cmd;
         cmd = mu_push_command(ctx, MuCommand.jump, MuJumpCommand.sizeof);
         cmd.jump.dst = dst;
         return cmd;
     }
 
-    bool in_hover_root(MuContext* ctx) {
+    bool _inHoverRoot(MuContext* ctx) {
         int i = ctx.containerStack.idx;
         while (i--) {
             if (ctx.containerStack.items[i] == ctx.hoverRoot) { return true; }
@@ -438,7 +508,7 @@ private @safe nothrow @nogc {
         return false;
     }
 
-    MuResFlags number_textbox(MuContext* ctx, float* value, IRect r, MuId id) {
+    MuResFlags _numberTextbox(MuContext* ctx, float* value, IRect r, MuId id) {
         if (ctx.mousePressed & MuMouseFlag.left && ctx.keyDown & MuKeyFlag.shift && ctx.hover == id) {
             ctx.numberEdit = id;
             // Old: sprintf(ctx.numberEditBuffer.ptr, MU_REAL_FMT, *value);
@@ -458,7 +528,7 @@ private @safe nothrow @nogc {
     }
 
     @trusted
-    MuResFlags header(MuContext* ctx, IStr label, int istreenode, MuOptFlags opt) {
+    MuResFlags _header(MuContext* ctx, IStr label, int istreenode, MuOptFlags opt) {
         IRect r;
         int active, expanded;
         MuId id = mu_get_id_str(ctx, label);
@@ -493,7 +563,7 @@ private @safe nothrow @nogc {
         return expanded ? MuResFlag.active : 0;
     }
 
-    void scrollbars(MuContext* ctx, MuContainer* cnt, IRect* body) {
+    void _scrollbars(MuContext* ctx, MuContainer* cnt, IRect* body) {
         int sz = ctx.style.scrollbarSize;
         IVec2 cs = cnt.contentSize;
         cs.x += ctx.style.padding * 2;
@@ -508,20 +578,22 @@ private @safe nothrow @nogc {
     }
 
     @trusted
-    void push_container_body(MuContext* ctx, MuContainer* cnt, IRect body, MuOptFlags opt) {
-        if (~opt & MuOptFlag.noScroll) { scrollbars(ctx, cnt, &body); }
-        push_layout(ctx, mu_expand_rect(body, -ctx.style.padding), cnt.scroll);
+    void _pushContainerBody(MuContext* ctx, MuContainer* cnt, IRect body, MuOptFlags opt) {
+        if (~opt & MuOptFlag.noScroll) { _scrollbars(ctx, cnt, &body); }
+        auto layoutBody = body;
+        layoutBody.subAll(ctx.style.padding);
+        _pushLayout(ctx, layoutBody, cnt.scroll);
         cnt.body = body;
     }
 
-    void begin_root_container(MuContext* ctx, MuContainer* cnt) {
+    void _beginRootContainer(MuContext* ctx, MuContainer* cnt) {
         /* push container to roots list and push head command */
         ctx.containerStack.push(cnt);
         ctx.rootList.push(cnt);
-        cnt.head = push_jump(ctx, null);
+        cnt.head = _pushJump(ctx, null);
         /* set as hover root if the mouse is overlapping this container and it has a
         ** higher z index than the current hover root */
-        if (mu_overlaps_vec2(cnt.rect, ctx.mousePos) && (!ctx.nextHoverRoot || cnt.zIndex > ctx.nextHoverRoot.zIndex)) {
+        if (cnt.rect.hasPoint(ctx.mousePos) && (!ctx.nextHoverRoot || cnt.zIndex > ctx.nextHoverRoot.zIndex)) {
             ctx.nextHoverRoot = cnt;
         }
         /* clipping is reset here in case a root-container is made within
@@ -531,144 +603,42 @@ private @safe nothrow @nogc {
     }
 
     @trusted
-    void end_root_container(MuContext* ctx) {
+    void _endRootContainer(MuContext* ctx) {
         /* push tail 'goto' jump command and set head 'skip' command. the final steps
         ** on initing these are done in mu_end() */
         MuContainer* cnt = mu_get_current_container(ctx);
-        cnt.tail = push_jump(ctx, null);
+        cnt.tail = _pushJump(ctx, null);
         cnt.head.jump.dst = ctx.commandList.items.ptr + ctx.commandList.idx;
         /* pop base clip rect and container */
         mu_pop_clip_rect(ctx);
-        pop_container(ctx);
-    }
-
-    // The microui assert function.
-    nothrow @nogc pure
-    void mu_expect(bool x, IStr message = "Fatal microui error.") {
-        assert(x, message);
-    }
-
-    // Temporary text measurement function for prototyping.
-    nothrow @nogc pure
-    int muTempTextWidthFunc(MuFont font, IStr str) {
-        return 200;
-    }
-
-    // Temporary text measurement function for prototyping.
-    nothrow @nogc pure
-    int muTempTextHeightFunc(MuFont font) {
-        return 20;
-    }
-
-    pragma(inline, true) nothrow @nogc
-    IRect mu_expand_rect(IRect rect, int n) {
-        return IRect(rect.x - n, rect.y - n, rect.w + n * 2, rect.h + n * 2);
-    }
-
-    pragma(inline, true) nothrow @nogc
-    IRect mu_intersect_rects(IRect r1, IRect r2) {
-        int x1 = max(r1.x, r2.x);
-        int y1 = max(r1.y, r2.y);
-        int x2 = min(r1.x + r1.w, r2.x + r2.w);
-        int y2 = min(r1.y + r1.h, r2.y + r2.h);
-        if (x2 < x1) { x2 = x1; }
-        if (y2 < y1) { y2 = y1; }
-        return IRect(x1, y1, x2 - x1, y2 - y1);
-    }
-
-    pragma(inline, true) nothrow @nogc
-    bool mu_overlaps_vec2(IRect r, IVec2 p) {
-        return p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h;
+        _popContainer(ctx);
     }
 }
 
 @safe nothrow @nogc:
 
-void mu_begin(MuContext* ctx) {
-    mu_expect(ctx.textWidth && ctx.textHeight, "Missing text measurement functions (ctx.textWidth, ctx.textHeight).");
-    mu_expect(!ctx.isExpectingEnd, "Missing call to `mu_end` after `mu_begin` function.");
-
-    ctx.commandList.idx = 0;
-    ctx.rootList.idx = 0;
-    ctx.scrollTarget = null;
-    ctx.hoverRoot = ctx.nextHoverRoot;
-    ctx.nextHoverRoot = null;
-    ctx.mouseDelta.x = ctx.mousePos.x - ctx.lastMousePos.x;
-    ctx.mouseDelta.y = ctx.mousePos.y - ctx.lastMousePos.y;
-    ctx.frame += 1;
-    ctx.isExpectingEnd = true;
-    ctx.buttonCounter = 0;
+// Default microui draw frame function.
+void defaultMuDrawFrame(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none) {
+    mu_draw_rect(ctx, rect, ctx.style.colors[colorid], atlasid);
+    if (colorid == MuColor.scrollBase || colorid == MuColor.scrollThumb || colorid == MuColor.titleBg) return;
+    /* draw border */
+    if (ctx.style.border && rect.hasSize) {
+        auto borderRect = rect;
+        foreach (i; 1 .. ctx.style.border + 1) {
+            borderRect.addAll(1);
+            mu_draw_box(ctx, borderRect, ctx.style.colors[MuColor.border]);
+        }
+    }
 }
 
-@trusted
-void mu_end(MuContext *ctx) {
-    /* check stacks */
-    mu_expect(ctx.containerStack.idx == 0, "Container stack is not empty.");
-    mu_expect(ctx.clipStack.idx      == 0, "Clip stack is not empty.");
-    mu_expect(ctx.idStack.idx        == 0, "ID stack is not empty.");
-    mu_expect(ctx.layoutStack.idx    == 0, "Layout stack is not empty.");
-    ctx.isExpectingEnd = false;
-    ctx.buttonCounter = 0;
+// Temporary text measurement function for prototyping.
+int tempMuTextWidthFunc(MuFont font, IStr str) {
+    return 200;
+}
 
-    /* handle scroll input */
-    if (ctx.scrollTarget) {
-        if (ctx.keyDown & MuKeyFlag.shift) ctx.scrollTarget.scroll.x += ctx.scrollDelta.x;
-        else ctx.scrollTarget.scroll.y += ctx.scrollDelta.y;
-    }
-
-    /* unset focus if focus id was not touched this frame */
-    if (!ctx.updatedFocus) { ctx.focus = 0; }
-    ctx.updatedFocus = false;
-
-    /* bring hover root to front if mouse was pressed */
-    if (ctx.mousePressed && ctx.nextHoverRoot && ctx.nextHoverRoot.zIndex < ctx.lastZIndex && ctx.nextHoverRoot.zIndex >= 0) {
-        if (ctx.nextHoverRoot.open) { mu_bring_to_front(ctx, ctx.nextHoverRoot); }
-    }
-
-    /* reset input state */
-    ctx.keyPressed = 0;
-    ctx.inputText[0] = '\0';
-    ctx.inputTextSlice = ctx.inputText[0 .. 0];
-    ctx.mousePressed = 0;
-    ctx.scrollDelta = IVec2(0, 0);
-    ctx.lastMousePos = ctx.mousePos;
-
-    /* Old:
-       // sort root containers by z index
-       int n = ctx.rootList.idx;
-       qsort(ctx.rootList.items.ptr, n, (MuContainer*).sizeof, &mu_compare_zindex);
-    */
-
-    /* sort root containers by z index */
-    auto n = ctx.rootList.idx;
-    auto items = ctx.rootList.items[0 .. n];
-    foreach (i; 1 .. n) {
-        auto tmp = items[i];
-        auto j = i;
-        while (j > 0 && items[j - 1].zIndex > tmp.zIndex) {
-            items[j] = items[j - 1];
-            j -= 1;
-        }
-        items[j] = tmp;
-    }
-
-    /* set root container jump commands */
-    foreach (i; 0 .. n) {
-        MuContainer* cnt = ctx.rootList.items[i];
-        /* if this is the first container then make the first command jump to it.
-        ** otherwise set the previous container's tail to jump to this one */
-        if (i == 0) {
-            MuCommandData* cmd = cast(MuCommandData*) ctx.commandList.items;
-            cmd.jump.dst = cast(char*) cnt.head + MuJumpCommand.sizeof;
-        } else {
-            MuContainer* prev = ctx.rootList.items[i - 1];
-            prev.tail.jump.dst = cast(char*) cnt.head + MuJumpCommand.sizeof;
-        }
-        /* make the last container's tail jump to the end of command list */
-        if (i == n - 1) {
-            cnt.tail.jump.dst = ctx.commandList.items.ptr + ctx.commandList.idx;
-        }
-    }
+// Temporary text measurement function for prototyping.
+int tempMuTextHeightFunc(MuFont font) {
+    return 20;
 }
 
 void mu_set_focus(MuContext* ctx, MuId id) {
@@ -678,12 +648,12 @@ void mu_set_focus(MuContext* ctx, MuId id) {
 
 @trusted
 MuId mu_get_id(MuContext *ctx, const(void)* data, Sz size) {
-    enum HASH_INITIAL = 2166136261; // A 32bit fnv-1a hash.
-    int idx = ctx.idStack.idx;
-    MuId res = (idx > 0) ? ctx.idStack.items[idx - 1] : HASH_INITIAL;
-    muHash(&res, data, size);
-    ctx.lastId = res;
-    return res;
+    // NOTE: It's using `hashFnv32a`.
+    MuId result = (ctx.idStack.idx > 0) ? ctx.idStack.items[ctx.idStack.idx - 1] : 2166136261U;
+    auto p = cast(const(ubyte)*) data;
+    while (size--) result = (result ^ *p++) * 16777619U;
+    ctx.lastId = result;
+    return result;
 }
 
 @trusted
@@ -708,7 +678,7 @@ void mu_pop_id(MuContext* ctx) {
 @trusted
 void mu_push_clip_rect(MuContext* ctx, IRect rect) {
     IRect last = mu_get_clip_rect(ctx);
-    ctx.clipStack.push(mu_intersect_rects(rect, last));
+    ctx.clipStack.push(rect.intersection(last));
 }
 
 void mu_pop_clip_rect(MuContext* ctx) {
@@ -716,7 +686,7 @@ void mu_pop_clip_rect(MuContext* ctx) {
 }
 
 IRect mu_get_clip_rect(MuContext* ctx) {
-    mu_expect(ctx.clipStack.idx > 0);
+    assert(ctx.clipStack.idx > 0);
     return ctx.clipStack.items[ctx.clipStack.idx - 1];
 }
 
@@ -728,13 +698,13 @@ MuClip mu_check_clip(MuContext* ctx, IRect r) {
 }
 
 MuContainer* mu_get_current_container(MuContext* ctx) {
-    mu_expect(ctx.containerStack.idx > 0);
+    assert(ctx.containerStack.idx > 0);
     return ctx.containerStack.items[ctx.containerStack.idx - 1];
 }
 
 MuContainer* mu_get_container(MuContext* ctx, IStr name) {
     MuId id = mu_get_id_str(ctx, name);
-    return get_container(ctx, id, 0);
+    return _getContainer(ctx, id, 0);
 }
 
 void mu_bring_to_front(MuContext* ctx, MuContainer* cnt) {
@@ -755,7 +725,7 @@ int mu_pool_init(MuContext* ctx, MuPoolItem* items, Sz len, MuId id) {
             n = cast(int) i;
         }
     }
-    mu_expect(n > -1);
+    assert(n > -1);
     items[n].id = id;
     mu_pool_update(ctx, items, n);
     return n;
@@ -811,7 +781,7 @@ void mu_input_keyup(MuContext* ctx, MuKeyFlags key) {
 void mu_input_text(MuContext* ctx, IStr text) {
     Sz len = ctx.inputTextSlice.length;
     Sz size = text.length;
-    mu_expect(len + size < ctx.inputText.sizeof);
+    assert(len + size < ctx.inputText.sizeof);
     jokaMemcpy(ctx.inputText.ptr + len, text.ptr, size);
     // Added this to make it work with slices.
     ctx.inputText[len + size] = '\0';
@@ -826,7 +796,7 @@ void mu_input_text(MuContext* ctx, IStr text) {
 @trusted
 MuCommandData* mu_push_command(MuContext* ctx, MuCommand type, Sz size) {
     MuCommandData* cmd = cast(MuCommandData*) (ctx.commandList.items.ptr + ctx.commandList.idx);
-    mu_expect(ctx.commandList.idx + size < muCommandListSize);
+    assert(ctx.commandList.idx + size < muCommandListSize);
     cmd.base.type = type;
     cmd.base.size = cast(int) size;
     ctx.commandList.idx += size;
@@ -857,7 +827,7 @@ void mu_set_clip(MuContext* ctx, IRect rect) {
 void mu_draw_rect(MuContext* ctx, IRect rect, Rgba color, MuAtlas atlasid = MuAtlas.none) {
     MuCommandData* cmd;
     MuClip clipped;
-    auto intersect_rect = mu_intersect_rects(rect, mu_get_clip_rect(ctx));
+    auto intersect_rect = rect.intersection(mu_get_clip_rect(ctx));
     auto is_atlas_rect = atlasid != MuAtlas.none && ctx.style.atlasRects[atlasid].hasSize;
     auto target_rect = is_atlas_rect ? rect : intersect_rect;
 
@@ -896,7 +866,7 @@ void mu_draw_text(MuContext* ctx, MuFont font, IStr str, IVec2 pos, Rgba color) 
     if (clipped == MuClip.part) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
     /* add command */
     cmd = mu_push_command(ctx, MuCommand.text, MuTextCommand.sizeof + str.length);
-    mu_expect(str.length < muMaxStrSize, "String is too big. See `muMaxStrSize`.");
+    assert(str.length < muMaxStrSize, "String is too big. See `muMaxStrSize`.");
     jokaMemcpy(cmd.text.str.ptr, str.ptr, str.length);
     cmd.text.str.ptr[str.length] = '\0';
     cmd.text.len = cast(int) str.length;
@@ -927,15 +897,15 @@ void mu_draw_icon(MuContext* ctx, MuIcon id, IRect rect, Rgba color) {
 **============================================================================*/
 
 void mu_layout_begin_column(MuContext* ctx) {
-    push_layout(ctx, mu_layout_next(ctx), IVec2(0, 0));
+    _pushLayout(ctx, mu_layout_next(ctx), IVec2(0, 0));
 }
 
 void mu_layout_end_column(MuContext* ctx) {
     MuLayout* a, b;
-    b = get_layout(ctx);
+    b = _getLayout(ctx);
     ctx.layoutStack.pop();
     /* inherit position/nextRow/max from child layout if they are greater */
-    a = get_layout(ctx);
+    a = _getLayout(ctx);
     a.pos.x = max(a.pos.x, b.pos.x + b.body.x - a.body.x);
     a.nextRow = max(a.nextRow, b.nextRow + b.body.y - a.body.y);
     a.max.x = max(a.max.x, b.max.x);
@@ -944,9 +914,9 @@ void mu_layout_end_column(MuContext* ctx) {
 
 @trusted
 void mu_layout_row_legacy(MuContext* ctx, int items, const(int)* widths, int height) {
-    MuLayout* layout = get_layout(ctx);
+    MuLayout* layout = _getLayout(ctx);
     if (widths) {
-        mu_expect(items <= muMaxWidths);
+        assert(items <= muMaxWidths);
         jokaMemcpy(layout.widths.ptr, widths, items * widths[0].sizeof);
     }
     layout.items = items;
@@ -961,21 +931,21 @@ void mu_layout_row(MuContext* ctx, int height, const(int)[] widths...) {
 }
 
 void mu_layout_width(MuContext* ctx, int width) {
-    get_layout(ctx).size.x = width;
+    _getLayout(ctx).size.x = width;
 }
 
 void mu_layout_height(MuContext* ctx, int height) {
-    get_layout(ctx).size.y = height;
+    _getLayout(ctx).size.y = height;
 }
 
 void mu_layout_set_next(MuContext* ctx, IRect r, bool relative) {
-    MuLayout* layout = get_layout(ctx);
+    MuLayout* layout = _getLayout(ctx);
     layout.next = r;
     layout.nextType = relative ? relative : absolute;
 }
 
 IRect mu_layout_next(MuContext* ctx) {
-    MuLayout* layout = get_layout(ctx);
+    MuLayout* layout = _getLayout(ctx);
     MuStyle* style = ctx.style;
     IRect res;
 
@@ -1049,7 +1019,7 @@ void mu_draw_control_text(MuContext* ctx, IStr str, IRect rect, MuColor colorid,
 }
 
 bool mu_mouse_over(MuContext* ctx, IRect rect) {
-    return mu_overlaps_vec2(rect, ctx.mousePos) && mu_overlaps_vec2(mu_get_clip_rect(ctx), ctx.mousePos) && in_hover_root(ctx);
+    return rect.hasPoint(ctx.mousePos) && mu_get_clip_rect(ctx).hasPoint(ctx.mousePos) && _inHoverRoot(ctx);
 }
 
 void mu_update_control(MuContext* ctx, MuId id, IRect rect, MuOptFlags opt, bool isDragOrResizeControl = false, MuMouseFlags action = MuMouseFlag.left) {
@@ -1282,7 +1252,7 @@ MuResFlags mu_slider_ex(MuContext* ctx, float* value, float low, float high, flo
     /*
     // Used for the `sprintf` function.
     char[muMaxFmt + 1] fmt_buf = void;
-    mu_expect(fmt_buf.length > fmt.length);
+    assert(fmt_buf.length > fmt.length);
     jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
     fmt_buf[fmt.length] = '\0';
     */
@@ -1296,7 +1266,7 @@ MuResFlags mu_slider_ex(MuContext* ctx, float* value, float low, float high, flo
     IRect base = mu_layout_next(ctx);
 
     /* handle text input mode */
-    if (number_textbox(ctx, &v, base, id)) { return res; }
+    if (_numberTextbox(ctx, &v, base, id)) { return res; }
     /* handle normal mode */
     mu_update_control(ctx, id, base, opt);
     /* handle input */
@@ -1348,7 +1318,7 @@ MuResFlags mu_number_ex(MuContext* ctx, float* value, float step, IStr fmt, MuOp
     /*
     // Used for the `sprintf` function.
     char[muMaxFmt + 1] fmt_buf = void;
-    mu_expect(fmt_buf.length > fmt.length);
+    assert(fmt_buf.length > fmt.length);
     jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
     fmt_buf[fmt.length] = '\0';
     */
@@ -1360,7 +1330,7 @@ MuResFlags mu_number_ex(MuContext* ctx, float* value, float step, IStr fmt, MuOp
     float last = *value;
 
     /* handle text input mode */
-    if (number_textbox(ctx, value, base, id)) { return res; }
+    if (_numberTextbox(ctx, value, base, id)) { return res; }
     /* handle normal mode */
     mu_update_control(ctx, id, base, opt);
     /* handle input */
@@ -1399,7 +1369,7 @@ MuResFlags mu_number_int(MuContext* ctx, int* value, int step) {
 }
 
 MuResFlags mu_header_ex(MuContext* ctx, IStr label, MuOptFlags opt) {
-    return header(ctx, label, 0, opt);
+    return _header(ctx, label, 0, opt);
 }
 
 MuResFlags mu_header(MuContext* ctx, IStr label) {
@@ -1407,9 +1377,9 @@ MuResFlags mu_header(MuContext* ctx, IStr label) {
 }
 
 MuResFlags mu_begin_treenode_ex(MuContext* ctx, IStr label, MuOptFlags opt) {
-    MuResFlags res = header(ctx, label, 1, opt);
+    MuResFlags res = _header(ctx, label, 1, opt);
     if (res & MuResFlag.active) {
-        get_layout(ctx).indent += ctx.style.indent;
+        _getLayout(ctx).indent += ctx.style.indent;
         ctx.idStack.push(ctx.lastId);
     }
     return res;
@@ -1420,7 +1390,7 @@ MuResFlags mu_begin_treenode(MuContext* ctx, IStr label) {
 }
 
 void mu_end_treenode(MuContext* ctx) {
-    get_layout(ctx).indent -= ctx.style.indent;
+    _getLayout(ctx).indent -= ctx.style.indent;
     mu_pop_id(ctx);
 }
 
@@ -1536,12 +1506,12 @@ MuResFlags mu_begin_window_ex(MuContext* ctx, IStr title, IRect rect, MuOptFlags
 
     IRect body;
     MuId id = mu_get_id_str(ctx, title);
-    MuContainer* cnt = get_container(ctx, id, opt);
+    MuContainer* cnt = _getContainer(ctx, id, opt);
     if (!cnt || !cnt.open) { return MuResFlag.none; }
     ctx.idStack.push(id);
 
     if (cnt.rect.w == 0) { cnt.rect = rect; }
-    begin_root_container(ctx, cnt);
+    _beginRootContainer(ctx, cnt);
     rect = body = cnt.rect;
 
     /* draw frame */
@@ -1585,7 +1555,7 @@ MuResFlags mu_begin_window_ex(MuContext* ctx, IStr title, IRect rect, MuOptFlags
         }
     }
 
-    push_container_body(ctx, cnt, body, opt);
+    _pushContainerBody(ctx, cnt, body, opt);
 
     /* do `resize` handle */
     if (~opt & MuOptFlag.noResize) {
@@ -1608,7 +1578,7 @@ MuResFlags mu_begin_window_ex(MuContext* ctx, IStr title, IRect rect, MuOptFlags
     }
     /* resize to content size */
     if (opt & MuOptFlag.autoSize) {
-        IRect r = get_layout(ctx).body;
+        IRect r = _getLayout(ctx).body;
         cnt.rect.w = cnt.contentSize.x + (cnt.rect.w - r.w);
         cnt.rect.h = cnt.contentSize.y + (cnt.rect.h - r.h);
     }
@@ -1624,7 +1594,7 @@ MuResFlags mu_begin_window(MuContext* ctx, IStr title, IRect rect) {
 
 void mu_end_window(MuContext* ctx) {
     mu_pop_clip_rect(ctx);
-    end_root_container(ctx);
+    _endRootContainer(ctx);
 }
 
 void mu_open_popup(MuContext* ctx, IStr name) {
@@ -1650,11 +1620,11 @@ void mu_end_popup(MuContext* ctx) {
 void mu_begin_panel_ex(MuContext* ctx, IStr name, MuOptFlags opt) {
     MuContainer* cnt;
     mu_push_id_str(ctx, name);
-    cnt = get_container(ctx, ctx.lastId, opt);
+    cnt = _getContainer(ctx, ctx.lastId, opt);
     cnt.rect = mu_layout_next(ctx);
     if (~opt & MuOptFlag.noFrame) { ctx.drawFrame(ctx, cnt.rect, MuColor.panelBg); }
     ctx.containerStack.push(cnt);
-    push_container_body(ctx, cnt, cnt.rect, opt);
+    _pushContainerBody(ctx, cnt, cnt.rect, opt);
     mu_push_clip_rect(ctx, cnt.body);
 }
 
@@ -1664,7 +1634,7 @@ void mu_begin_panel(MuContext* ctx, IStr name) {
 
 void mu_end_panel(MuContext* ctx) {
     mu_pop_clip_rect(ctx);
-    pop_container(ctx);
+    _popContainer(ctx);
 }
 
 void mu_open_dmenu(MuContext* ctx) {

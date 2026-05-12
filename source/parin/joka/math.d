@@ -1350,9 +1350,9 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
 
     bool hasPoint(GVec2!P point) {
         return (
-            point.x > position.x &&
+            point.x >= position.x &&
             point.x < position.x + size.x &&
-            point.y > position.y &&
+            point.y >= position.y &&
             point.y < position.y + size.y
         );
     }
@@ -1367,13 +1367,13 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
     }
 
     Self intersection(Self area) {
-        auto maxY = max(position.x, area.position.x);
-        auto maxX = max(position.y, area.position.y);
+        auto maxX = max(position.x, area.position.x);
+        auto maxY = max(position.y, area.position.y);
         return Self(
             maxX,
             maxY,
-            cast(S) (min(position.x + size.x, area.position.x + area.size.x) - maxX),
-            cast(S) (min(position.y + size.y, area.position.y + area.size.y) - maxY),
+            cast(S) max(0, min(position.x + size.x, area.position.x + area.size.x) - maxX),
+            cast(S) max(0, min(position.y + size.y, area.position.y + area.size.y) - maxY),
         );
     }
 
