@@ -17,20 +17,19 @@ import parin.engine;
 
 UiContext uiContext;
 
-alias UiTextWidthFunc  = mu_TextWidthFunc;  /// Used for getting the width of the text.
-alias UiTextHeightFunc = mu_TextHeightFunc; /// Used for getting the height of the text.
-alias UiDrawFrameFunc  = mu_DrawFrameFunc;  /// Used for drawing a frame.
+alias UiTextWidthFunc  = MuTextWidthFunc;  /// Used for getting the width of the text.
+alias UiTextHeightFunc = MuTextHeightFunc; /// Used for getting the height of the text.
+alias UiDrawFrameFunc  = MuDrawFrameFunc;  /// Used for drawing a frame.
 
-alias UiReal      = mu_Real;      /// The floating-point type of microui.
-alias UiId        = mu_Id;        /// The control ID type of microui.
-alias UiFont      = mu_Font;      /// The font type of microui.
-alias UiTexture   = mu_Texture;   /// The texture type of microui.
-alias UiSliceMode = mu_SliceMode; /// The slice repeat mode type of microui.
+alias UiId        = MuId;        /// The control ID type of microui.
+alias UiFont      = MuFont;      /// The font type of microui.
+alias UiTexture   = MuTexture;   /// The texture type of microui.
+alias UiSliceMode = MuSliceMode; /// The slice repeat mode type of microui.
 
-alias UiResFlags   = mu_ResFlags;   /// The type of `UiResFlag`.
-alias UiOptFlags   = mu_OptFlags;   /// The type of `UiOptFlag`.
-alias UiMouseFlags = mu_MouseFlags; /// The type of `UiMouseFlag`.
-alias UiKeyFlags   = mu_KeyFlags;   /// The type of `UiKeyFlag`.
+alias UiResFlags   = MuResFlags;   /// The type of `UiResFlag`.
+alias UiOptFlags   = MuOptFlags;   /// The type of `UiOptFlag`.
+alias UiMouseFlags = MuMouseFlags; /// The type of `UiMouseFlag`.
+alias UiKeyFlags   = MuKeyFlags;   /// The type of `UiKeyFlag`.
 
 alias UiColor      = Rgba;       /// A RGBA color using ubytes.
 alias UiRect       = IRect;      /// A 2D rectangle using ints.
@@ -40,66 +39,25 @@ alias UiMargin     = Margin;     /// A set of 4 integer margins for left, top, r
 alias UiSlicePart  = SlicePart;  /// A part of a 9-slice with source and target rectangles for drawing.
 alias UiSliceParts = SliceParts; /// The parts of a 9-slice.
 
-alias UiPoolItem    = mu_PoolItem;    /// A pool item.
-alias UiBaseCommand = mu_BaseCommand; /// Base structure for all render commands, containing type and size metadata.
-alias UiJumpCommand = mu_JumpCommand; /// Command to jump to another location in the command buffer.
-alias UiClipCommand = mu_ClipCommand; /// Command to set a clipping rectangle.
-alias UiRectCommand = mu_RectCommand; /// Command to draw a rectangle with a given color.
-alias UiTextCommand = mu_TextCommand; /// Command to render text at a given position with a font and color. The text is a null-terminated string. Use `str.ptr` to access it.
-alias UiIconCommand = mu_IconCommand; /// Command to draw an icon inside a rectangle with a given color.
-alias UiCommand     = mu_Command;     /// A union of all possible render commands.
+alias UiPoolItem    = MuPoolItem;    /// A pool item.
+alias UiBaseCommand = MuBaseCommand; /// Base structure for all render commands, containing type and size metadata.
+alias UiJumpCommand = MuJumpCommand; /// Command to jump to another location in the command buffer.
+alias UiClipCommand = MuClipCommand; /// Command to set a clipping rectangle.
+alias UiRectCommand = MuRectCommand; /// Command to draw a rectangle with a given color.
+alias UiTextCommand = MuTextCommand; /// Command to render text at a given position with a font and color. The text is a null-terminated string. Use `str.ptr` to access it.
+alias UiIconCommand = MuIconCommand; /// Command to draw an icon inside a rectangle with a given color.
+alias UiCommandData = MuCommandData;     /// A union of all possible render commands.
 
 alias UiLayout    = mu_Layout;    /// Layout state used to position UI controls within a container.
 alias UiContainer = mu_Container; /// A UI container holding commands.
 alias UiStyle     = mu_Style;     /// UI style settings including font, sizes, spacing, and colors.
 alias UiContext   = mu_Context;   /// The main UI context.
 
-enum UiClipEnum : mu_ClipEnum {
-    none = MU_CLIP_NONE, /// No clipping.
-    part = MU_CLIP_PART, /// Partial clipping (for scrollable areas).
-    all  = MU_CLIP_ALL,  /// Full clipping to container bounds.
-}
-
-enum UiCommandEnum : mu_CommandEnum {
-    none = MU_COMMAND_NONE, /// No command.
-    jump = MU_COMMAND_JUMP, /// Jump to another command in the buffer.
-    clip = MU_COMMAND_CLIP, /// Set a clipping region.
-    rect = MU_COMMAND_RECT, /// Draw a rectangle.
-    text = MU_COMMAND_TEXT, /// Draw text.
-    icon = MU_COMMAND_ICON, /// Draw an icon.
-}
-
-enum UiColorEnum : mu_ColorEnum {
-    text        = MU_COLOR_TEXT,        /// Default text color.
-    border      = MU_COLOR_BORDER,      /// Border color for controls.
-    windowBg    = MU_COLOR_WINDOWBG,    /// Background color of windows.
-    titleBg     = MU_COLOR_TITLEBG,     /// Background color of window titles.
-    titleText   = MU_COLOR_TITLETEXT,   /// Text color for window titles.
-    panelBg     = MU_COLOR_PANELBG,     /// Background color of panels.
-    button      = MU_COLOR_BUTTON,      /// Default button color.
-    buttonHover = MU_COLOR_BUTTONHOVER, /// Button color on hover.
-    buttonFocus = MU_COLOR_BUTTONFOCUS, /// Button color when focused.
-    base        = MU_COLOR_BASE,        /// Base background for text input or sliders.
-    baseHover   = MU_COLOR_BASEHOVER,   /// Hover color for base controls.
-    baseFocus   = MU_COLOR_BASEFOCUS,   /// Focus color for base controls.
-    scrollBase  = MU_COLOR_SCROLLBASE,  /// Background of scrollbars.
-    scrollThumb = MU_COLOR_SCROLLTHUMB, /// Scrollbar thumb color.
-}
-
-enum UiIconEnum : mu_IconEnum {
-    none      = MU_ICON_NONE,      /// No icon.
-    close     = MU_ICON_CLOSE,     /// Close icon.
-    check     = MU_ICON_CHECK,     /// Checkmark icon.
-    collapsed = MU_ICON_COLLAPSED, /// Collapsed tree icon.
-    expanded  = MU_ICON_EXPANDED,  /// Expanded tree icon.
-}
-
-enum UiAtlasEnum : mu_AtlasEnum {
-    none        = MU_ATLAS_NONE,        /// No atlas rectangle.
-    button      = MU_ATLAS_BUTTON,      /// Default button atlas rectangle.
-    buttonHover = MU_ATLAS_BUTTONHOVER, /// Button atlas rectangle on hover.
-    buttonFocus = MU_ATLAS_BUTTONFOCUS, /// Button atlas rectangle when focused.
-}
+alias UiClipEnum  = MuClip;
+alias UiCommand   = MuCommand;
+alias UiColorEnum = MuColor;
+alias UiIconEnum  = MuIcon;
+alias UiAtlasEnum = MuAtlas;
 
 enum UiResFlag : UiResFlags {
     none   = MU_RES_NONE,   /// No result.
@@ -134,7 +92,7 @@ enum UiMouseFlag : UiMouseFlags {
     middle = MU_MOUSE_MIDDLE, /// Middle mouse button.
 }
 
-enum UiKeyFlag : mu_KeyFlags {
+enum UiKeyFlag : MuKeyFlags {
     none      = MU_KEY_NONE,      /// No key.
     shift     = MU_KEY_SHIFT,     /// Shift key down.
     ctrl      = MU_KEY_CTRL,      /// Control key down.
@@ -162,48 +120,45 @@ struct UiPrivate {}
 /// Used by the `members` function to show data in a specific way.
 struct UiMember {
     const(char)[] name; /// The name of the member.
-    UiReal low;         /// Used by sliders.
-    UiReal high;        /// Used by sliders.
-    UiReal step;        /// Used by sliders.
+    float low;         /// Used by sliders.
+    float high;        /// Used by sliders.
+    float step;        /// Used by sliders.
 
     @safe nothrow @nogc pure:
 
-    this(UiReal low, UiReal high, UiReal step = UiReal.nan) {
+    this(float low, float high, float step = float.nan) {
         this.low = low;
         this.high = high;
         this.step = step;
     }
 
-    this(UiReal step) {
+    this(float step) {
         this.step = step;
     }
 
-    this(const(char)[] name, UiReal low, UiReal high, UiReal step = UiReal.nan) {
+    this(const(char)[] name, float low, float high, float step = float.nan) {
         this.name = name;
         this.low = low;
         this.high = high;
         this.step = step;
     }
 
-    this(const(char)[] name, UiReal step = UiReal.nan) {
+    this(const(char)[] name, float step = float.nan) {
         this.name = name;
         this.step = step;
     }
 }
 
-@trusted:
+@safe nothrow @nogc:
 
-nothrow @nogc
 ref UiStyle* uiStyle() {
     return uiContext.style;
 }
 
-nothrow @nogc
 void readyUiCore(UiFont font = null, int fontScale = 1) {
     mu_init(&uiContext, font, fontScale);
 }
 
-nothrow @nogc
 void readyUiCore(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null, int fontScale = 1) {
     mu_init_with_funcs(&uiContext, width, height, font, fontScale);
 }
@@ -220,7 +175,7 @@ void setUifocus(UiId id) {
     mu_set_focus(&uiContext, id);
 }
 
-UiId getUiId(const(void)* data, size_t size) {
+UiId getUiId(const(void)* data, Sz size) {
     return mu_get_id(&uiContext, data, size);
 }
 
@@ -228,7 +183,7 @@ UiId getUiId(const(char)[] str) {
     return mu_get_id_str(&uiContext, str);
 }
 
-void pushUiId(const(void)* data, size_t size) {
+void pushUiId(const(void)* data, Sz size) {
     mu_push_id(&uiContext, data, size);
 }
 
@@ -272,15 +227,15 @@ void bringUiContainerToFront(UiContainer* cnt) {
 ** pool
 **============================================================================*/
 
-int readyUiPool(UiPoolItem* items, size_t len, UiId id) {
+int readyUiPool(UiPoolItem* items, Sz len, UiId id) {
     return mu_pool_init(&uiContext, items, len, id);
 }
 
-int getFromUiPool(UiPoolItem* items, size_t len, UiId id) {
+int getFromUiPool(UiPoolItem* items, Sz len, UiId id) {
     return mu_pool_get(&uiContext, items, len, id);
 }
 
-void updateUiPool(UiPoolItem* items, size_t idx) {
+void updateUiPool(UiPoolItem* items, Sz idx) {
     mu_pool_update(&uiContext, items, idx);
 }
 
@@ -288,45 +243,43 @@ void updateUiPool(UiPoolItem* items, size_t idx) {
 ** input handlers
 **============================================================================*/
 
-nothrow @nogc {
-    void uiInputMouseMove(int x, int y) {
-        mu_input_mousemove(&uiContext, x, y);
-    }
+void uiInputMouseMove(int x, int y) {
+    mu_input_mousemove(&uiContext, x, y);
+}
 
-    void uiInputMouseDown(int x, int y, UiMouseFlags input) {
-        mu_input_mousedown(&uiContext, x, y, input);
-    }
+void uiInputMouseDown(int x, int y, UiMouseFlags input) {
+    mu_input_mousedown(&uiContext, x, y, input);
+}
 
-    void uiInputMouseUp(int x, int y, UiMouseFlags input) {
-        mu_input_mouseup(&uiContext, x, y, input);
-    }
+void uiInputMouseUp(int x, int y, UiMouseFlags input) {
+    mu_input_mouseup(&uiContext, x, y, input);
+}
 
-    void uiInputScroll(int x, int y) {
-        mu_input_scroll(&uiContext, x, y);
-    }
+void uiInputScroll(int x, int y) {
+    mu_input_scroll(&uiContext, x, y);
+}
 
-    void uiInputKeyDown(UiKeyFlags input) {
-        mu_input_keydown(&uiContext, input);
-    }
+void uiInputKeyDown(UiKeyFlags input) {
+    mu_input_keydown(&uiContext, input);
+}
 
-    void uiInputKeyUp(UiKeyFlags input) {
-        mu_input_keyup(&uiContext, input);
-    }
+void uiInputKeyUp(UiKeyFlags input) {
+    mu_input_keyup(&uiContext, input);
+}
 
-    void uiInputText(const(char)[] text) {
-        mu_input_text(&uiContext, text);
-    }
+void uiInputText(const(char)[] text) {
+    mu_input_text(&uiContext, text);
 }
 
 /*============================================================================
 ** commandlist
 **============================================================================*/
 
-UiCommand* pushUiCommand(UiCommandEnum type, size_t size) {
+UiCommandData* pushUiCommand(UiCommand type, Sz size) {
     return mu_push_command(&uiContext, type, size);
 }
 
-bool nextUiCommand(UiCommand** cmd) {
+bool nextUiCommand(UiCommandData** cmd) {
     return mu_next_command(&uiContext, cmd);
 }
 
@@ -342,7 +295,7 @@ void drawUibox(UiRect rect, UiColor color) {
     mu_draw_box(&uiContext, rect, color);
 }
 
-void drawUiText(mu_Font font, const(char)[] str, UiVec point, UiColor color) {
+void drawUiText(UiFont font, const(char)[] str, UiVec point, UiColor color) {
     mu_draw_text(&uiContext, font, str, point, color);
 }
 
@@ -354,37 +307,30 @@ void drawUiIcon(UiIconEnum id, UiRect rect, UiColor color) {
 ** layout
 **============================================================================*/
 
-deprecated("Use `beginColumn` instead.") alias beginUiColumn = beginColumn;
 void beginColumn() {
     mu_layout_begin_column(&uiContext);
 }
 
-deprecated("Use `endColumn` instead.") alias endUiColumn = endColumn;
 void endColumn() {
     mu_layout_end_column(&uiContext);
 }
 
-deprecated("Use `row` instead.") alias uiRow = row;
 void row(int height, const(int)[] widths...) {
     mu_layout_row(&uiContext, height, widths);
 }
 
-deprecated("Use `setLayoutWidth` instead.") alias setUiLayoutWidth = setLayoutWidth;
 void setLayoutWidth(int width) {
     mu_layout_width(&uiContext, width);
 }
 
-deprecated("Use `setLayoutHeight` instead.") alias setUiLayoutHeight = setLayoutHeight;
 void setLayoutHeight(int height) {
     mu_layout_height(&uiContext, height);
 }
 
-deprecated("Use `setNextLayout` instead.") alias setNextUiLayout = setNextLayout;
 void setNextLayout(UiRect rect, bool relative) {
     mu_layout_set_next(&uiContext, rect, relative);
 }
 
-deprecated("Use `nextLayout` instead.") alias nextUiLayout = nextLayout;
 UiRect nextLayout() {
     return mu_layout_next(&uiContext);
 }
@@ -425,46 +371,55 @@ UiResFlags button(const(char)[] label) {
     return mu_button(&uiContext, label);
 }
 
+@trusted
 UiResFlags checkbox(ref bool state, const(char)[] label = "") {
     return mu_checkbox(&uiContext, label, &state);
 }
 
-UiResFlags textbox(char[] buffer, UiOptFlags opt, size_t* newlen = null) {
+UiResFlags textbox(char[] buffer, UiOptFlags opt, Sz* newlen = null) {
     return mu_textbox_ex(&uiContext, buffer, opt, newlen);
 }
 
-UiResFlags textbox(char[] buffer, size_t* newlen = null) {
+UiResFlags textbox(char[] buffer, Sz* newlen = null) {
     return mu_textbox(&uiContext, buffer, newlen);
 }
 
-UiResFlags slider(ref UiReal value, UiReal low, UiReal high, UiReal step, const(char)[] fmt, UiOptFlags opt) {
+@trusted
+UiResFlags slider(ref float value, float low, float high, float step, const(char)[] fmt, UiOptFlags opt) {
     return mu_slider_ex(&uiContext, &value, low, high, step, fmt, opt);
 }
 
+@trusted
 UiResFlags slider(ref int value, int low, int high, int step, const(char)[] fmt, UiOptFlags opt) {
     return mu_slider_ex_int(&uiContext, &value, low, high, step, fmt, opt);
 }
 
-UiResFlags slider(ref UiReal value, UiReal low, UiReal high) {
+@trusted
+UiResFlags slider(ref float value, float low, float high) {
     return mu_slider(&uiContext, &value, low, high);
 }
 
+@trusted
 UiResFlags slider(ref int value, int low, int high) {
     return mu_slider_int(&uiContext, &value, low, high);
 }
 
-UiResFlags number(ref UiReal value, UiReal step, const(char)[] fmt, UiOptFlags opt) {
+@trusted
+UiResFlags number(ref float value, float step, const(char)[] fmt, UiOptFlags opt) {
     return mu_number_ex(&uiContext, &value, step, fmt, opt);
 }
 
+@trusted
 UiResFlags number(ref int value, int step, const(char)[] fmt, UiOptFlags opt) {
     return mu_number_ex_int(&uiContext, &value, step, fmt, opt);
 }
 
-UiResFlags number(ref UiReal value, UiReal step = 0.01f) {
+@trusted
+UiResFlags number(ref float value, float step = 0.01f) {
     return mu_number(&uiContext, &value, step);
 }
 
+@trusted
 UiResFlags number(ref int value, int step = 1) {
     return mu_number_int(&uiContext, &value, step);
 }
@@ -491,7 +446,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                     (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
                     -1,
                 );
-                static if (is(typeof(mixin("data.", member.stringof, ".x")) == UiReal)) {
+                static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
                     label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
                     number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
                     number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
@@ -511,7 +466,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                     (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
                     -1,
                 );
-                static if (is(typeof(mixin("data.", member.stringof, ".x")) == UiReal)) {
+                static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
                     label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
                     number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
                     number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
@@ -528,7 +483,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                     (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 2 - uiStyle.spacing - uiStyle.border,
                     -1,
                 );
-                static if (is(typeof(mixin("data.", member.stringof, ".x")) == UiReal)) {
+                static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
                     label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
                     number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
                     number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
@@ -541,7 +496,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
             } else static if (is(typeof(member) == bool)) {
                 label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
                 checkbox(mixin("data.", member.stringof));
-            } else static if (is(typeof(member) == UiReal)) {
+            } else static if (is(typeof(member) == float)) {
                 label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
                 static if (!(__traits(getAttributes, member)[0].low == __traits(getAttributes, member)[0].low)) {
                     number(mixin("data.", member.stringof), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
@@ -551,7 +506,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                         __traits(getAttributes, member)[0].low,
                         __traits(getAttributes, member)[0].high,
                         !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step,
-                        MU_NUMBER_FMT,
+                        muNumberFmt,
                         MU_OPT_ALIGNCENTER,
                     );
                 }
@@ -574,7 +529,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
         } else {
             if (canShowPrivateMembers || (!is(__traits(getAttributes, member)[0] == UiPrivate) && !is(typeof(__traits(getAttributes, member)[0]) == UiPrivate))) {
                 static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z") && __traits(hasMember, typeof(member), "w")) {
-                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == UiReal) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
                         row(0, labelWidth,
                             (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
                             (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
@@ -589,7 +544,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                         row(0, labelWidth, -1);
                     }
                 } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z")) {
-                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == UiReal) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
                         row(0, labelWidth,
                             (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
                             (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
@@ -602,7 +557,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                         row(0, labelWidth, -1);
                     }
                 } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y")) {
-                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == UiReal) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
                         row(0, labelWidth,
                             (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 2 - uiStyle.spacing - uiStyle.border,
                             -1,
@@ -615,7 +570,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                 } else static if (is(typeof(member) == bool)) {
                     label(member.stringof);
                     checkbox(mixin("data.", member.stringof));
-                } else static if (is(typeof(member) == UiReal) || is(typeof(member) == int)) {
+                } else static if (is(typeof(member) == float) || is(typeof(member) == int)) {
                     label(member.stringof);
                     number(mixin("data.", member.stringof));
                 }
@@ -684,6 +639,7 @@ void openDMenu() {
     mu_open_dmenu(&uiContext);
 }
 
+@trusted
 UiResFlags beginDMenu(ref const(char)[] selection, const(const(char)[])[] items, UiVec canvas, const(char)[] label = "", UiFVec scale = UiFVec(0.5f, 0.7f)) {
     return mu_begin_dmenu(&uiContext, &selection, items, canvas, label, scale);
 }
@@ -692,7 +648,7 @@ void endDMenu() {
     mu_end_dmenu(&uiContext);
 }
 
-nothrow @nogc
+@trusted
 int microuiTempUiTextWidthFunc(UiFont font, const(char)[] str) {
     auto data = cast(FontId*) font;
     return cast(int) measureTextSize(
@@ -703,14 +659,14 @@ int microuiTempUiTextWidthFunc(UiFont font, const(char)[] str) {
     ).x;
 }
 
-nothrow @nogc
+@trusted
 int microuiTempUiTextHeightFunc(UiFont font) {
     auto data = cast(FontId*) font;
     return data.size * uiStyle.fontScale;
 }
 
 /// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
-nothrow @nogc
+@trusted
 void readyUi(UiFont font = null, int fontScale = 1) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
     readyUiCore(&microuiTempUiTextWidthFunc, &microuiTempUiTextHeightFunc, data, fontScale);
@@ -744,13 +700,11 @@ void readyUi(UiFont font = null, int fontScale = 1) {
 }
 
 /// Initializes the microui context and sets temporary text size functions.
-nothrow @nogc
 void readyUi(int fontScale) {
     readyUi(null, fontScale);
 }
 
 /// Initializes the microui context and sets temporary text size functions.
-nothrow @nogc
 void readyUi(FontId font, int fontScale = 1) {
     static readyUiFont = FontId();
     readyUiFont = font;
@@ -758,7 +712,6 @@ void readyUi(FontId font, int fontScale = 1) {
 }
 
 /// Initializes the microui context and sets custom text size functions. Value `font` should be a `FontId*`.
-nothrow @nogc
 void readyUi(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null, int fontScale = 1) {
     readyUi(font, fontScale);
     uiContext.textWidth = width;
@@ -766,7 +719,6 @@ void readyUi(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null,
 }
 
 /// Handles input events and updates the microui context accordingly.
-nothrow @nogc
 void handleUiInput() {
     with (UiMouseFlag) {
         uiInputScroll(cast(int) deltaWheel, cast(int) deltaWheel);
@@ -819,7 +771,7 @@ void handleUiInput() {
     }
 
     char[128] charBuffer = void;
-    size_t charBufferLength = 0;
+    Sz charBufferLength = 0;
     foreach (i, ref c; charBuffer) {
         // TODO: This does only work with ASCII lol. Change that when I add UTF8 stuff to Joka.
         c = cast(char) dequeuePressedRune();
@@ -829,15 +781,16 @@ void handleUiInput() {
 }
 
 /// Draws the microui context to the screen.
+@trusted
 void drawUiState() {
     auto styleFont = cast(FontId*) uiStyle.font;
     auto styleTexture = cast(TextureId*) uiStyle.texture;
     auto parinOptions = DrawOptions(); // NOTE: Can be weird, but works if you are not a noob.
     beginClip(Rect(windowSize));
-    UiCommand* cmd;
+    UiCommandData* cmd;
     while (nextUiCommand(&cmd)) {
         switch (cmd.type) {
-            case UiCommandEnum.text:
+            case UiCommand.text:
                 auto textFont = cast(FontId*) cmd.text.font;
                 parinOptions.color = *(cast(Rgba*) (&cmd.text.color));
                 parinOptions.scale = Vec2(uiStyle.fontScale);
@@ -849,7 +802,7 @@ void drawUiState() {
                 );
                 parinOptions.scale = Vec2(1);
                 break;
-            case UiCommandEnum.rect:
+            case UiCommand.rect:
                 parinOptions.color = *(cast(Rgba*) (&cmd.rect.color));
                 auto atlasRect = uiStyle.atlasRects[cmd.rect.id];
                 if (styleTexture && atlasRect.hasSize) {
@@ -891,7 +844,7 @@ void drawUiState() {
                     );
                 }
                 break;
-            case UiCommandEnum.icon:
+            case UiCommand.icon:
                 parinOptions.color = *(cast(Rgba*) (&cmd.icon.color));
                 auto iconAtlasRect = uiStyle.iconAtlasRects[cmd.icon.id];
                 auto iconDiff = UiVec(cmd.icon.rect.w - iconAtlasRect.w, cmd.icon.rect.h - iconAtlasRect.h);
@@ -924,7 +877,7 @@ void drawUiState() {
                     parinOptions.scale = Vec2(1);
                 }
                 break;
-            case UiCommandEnum.clip:
+            case UiCommand.clip:
                 endClip();
                 beginClip(Rect(cmd.clip.rect.x, cmd.clip.rect.y, cmd.clip.rect.w, cmd.clip.rect.h));
                 break;
