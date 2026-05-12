@@ -26,11 +26,6 @@ alias UiFont      = MuFont;      /// The font type of microui.
 alias UiTexture   = MuTexture;   /// The texture type of microui.
 alias UiSliceMode = MuSliceMode; /// The slice repeat mode type of microui.
 
-alias UiResFlags   = MuResFlags;   /// The type of `UiResFlag`.
-alias UiOptFlags   = MuOptFlags;   /// The type of `UiOptFlag`.
-alias UiMouseFlags = MuMouseFlags; /// The type of `UiMouseFlag`.
-alias UiKeyFlags   = MuKeyFlags;   /// The type of `UiKeyFlag`.
-
 alias UiColor      = Rgba;       /// A RGBA color using ubytes.
 alias UiRect       = IRect;      /// A 2D rectangle using ints.
 alias UiVec        = IVec2;      /// A 2D vector using ints.
@@ -48,10 +43,10 @@ alias UiTextCommand = MuTextCommand; /// Command to render text at a given posit
 alias UiIconCommand = MuIconCommand; /// Command to draw an icon inside a rectangle with a given color.
 alias UiCommandData = MuCommandData;     /// A union of all possible render commands.
 
-alias UiLayout    = mu_Layout;    /// Layout state used to position UI controls within a container.
-alias UiContainer = mu_Container; /// A UI container holding commands.
-alias UiStyle     = mu_Style;     /// UI style settings including font, sizes, spacing, and colors.
-alias UiContext   = mu_Context;   /// The main UI context.
+alias UiLayout    = MuLayout;    /// Layout state used to position UI controls within a container.
+alias UiContainer = MuContainer; /// A UI container holding commands.
+alias UiStyle     = MuStyle;     /// UI style settings including font, sizes, spacing, and colors.
+alias UiContext   = MuContext;   /// The main UI context.
 
 alias UiClipEnum  = MuClip;
 alias UiCommand   = MuCommand;
@@ -59,60 +54,14 @@ alias UiColorEnum = MuColor;
 alias UiIconEnum  = MuIcon;
 alias UiAtlasEnum = MuAtlas;
 
-enum UiResFlag : UiResFlags {
-    none   = MU_RES_NONE,   /// No result.
-    active = MU_RES_ACTIVE, /// Control is active (e.g., active window).
-    submit = MU_RES_SUBMIT, /// Control value submitted (e.g., clicked button).
-    change = MU_RES_CHANGE, /// Control value changed (e.g., modified text input).
-}
-
-enum UiOptFlag : UiOptFlags {
-    none         = MU_OPT_NONE,         /// No option.
-    alignCenter  = MU_OPT_ALIGNCENTER,  /// Center-align control content.
-    alignRight   = MU_OPT_ALIGNRIGHT,   /// Right-align control content.
-    noInteract   = MU_OPT_NOINTERACT,   /// Disable interaction.
-    noFrame      = MU_OPT_NOFRAME,      /// Draw control without a frame.
-    noResize     = MU_OPT_NORESIZE,     /// Disable resizing for windows.
-    noScroll     = MU_OPT_NOSCROLL,     /// Disable scrolling for containers.
-    noClose      = MU_OPT_NOCLOSE,      /// Remove close button from window.
-    noTitle      = MU_OPT_NOTITLE,      /// Remove title bar from window.
-    holdFocus    = MU_OPT_HOLDFOCUS,    /// Keep control focused after click.
-    autoSize     = MU_OPT_AUTOSIZE,     /// Window automatically sizes to content. Implies `MU_OPT_NORESIZE` and `MU_OPT_NOSCROLL`.
-    popup        = MU_OPT_POPUP,        /// Marks window as popup (e.g., closed on mouse click).
-    closed       = MU_OPT_CLOSED,       /// Window starts closed.
-    expanded     = MU_OPT_EXPANDED,     /// Window starts expanded.
-    noName       = MU_OPT_NONAME,       /// Hides window name.
-    defaultFocus = MU_OPT_DEFAULTFOCUS, /// Keep focus when no other control is focused.
-}
-
-enum UiMouseFlag : UiMouseFlags {
-    none   = MU_MOUSE_NONE,   /// No mouse button.
-    left   = MU_MOUSE_LEFT,   /// Left mouse button.
-    right  = MU_MOUSE_RIGHT,  /// Right mouse button.
-    middle = MU_MOUSE_MIDDLE, /// Middle mouse button.
-}
-
-enum UiKeyFlag : MuKeyFlags {
-    none      = MU_KEY_NONE,      /// No key.
-    shift     = MU_KEY_SHIFT,     /// Shift key down.
-    ctrl      = MU_KEY_CTRL,      /// Control key down.
-    alt       = MU_KEY_ALT,       /// Alt key down.
-    backspace = MU_KEY_BACKSPACE, /// Backspace key down.
-    enter     = MU_KEY_RETURN,    /// Return key down.
-    tab       = MU_KEY_TAB,       /// Tab key down.
-    left      = MU_KEY_LEFT,      /// Left key down.
-    right     = MU_KEY_RIGHT,     /// Right key down.
-    up        = MU_KEY_UP,        /// Up key down.
-    down      = MU_KEY_DOWN,      /// Down key down.
-    home      = MU_KEY_HOME,      /// Home key down.
-    end       = MU_KEY_END,       /// End key down.
-    pageUp    = MU_KEY_PAGEUP,    /// Page up key up.
-    pageDown  = MU_KEY_PAGEDOWN,  /// Page down key down.
-    f1        = MU_KEY_F1,        /// F1 key down.
-    f2        = MU_KEY_F2,        /// F2 key down.
-    f3        = MU_KEY_F3,        /// F3 key down.
-    f4        = MU_KEY_F4,        /// F4 key down.
-}
+alias UiResFlags   = MuResFlags;   /// The type of `UiResFlag`.
+alias UiResFlag    = MuResFlag;
+alias UiOptFlags   = MuOptFlags;   /// The type of `UiOptFlag`.
+alias UiOptFlag    = MuOptFlag;
+alias UiMouseFlags = MuMouseFlags; /// The type of `UiMouseFlag`.
+alias UiMouseFlag  = MuMouseFlag;
+alias UiKeyFlags   = MuKeyFlags;   /// The type of `UiKeyFlag`.
+alias UiKeyFlag    = MuKeyFlag;
 
 /// Used by the `members` function to hide data.
 struct UiPrivate {}
@@ -156,11 +105,11 @@ ref UiStyle* uiStyle() {
 }
 
 void readyUiCore(UiFont font = null, int fontScale = 1) {
-    mu_init(&uiContext, font, fontScale);
+    uiContext.ready(font, fontScale);
 }
 
 void readyUiCore(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null, int fontScale = 1) {
-    mu_init_with_funcs(&uiContext, width, height, font, fontScale);
+    uiContext.readyWithFuncs(width, height, font, fontScale);
 }
 
 void beginUiCore() {
@@ -507,7 +456,7 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                         __traits(getAttributes, member)[0].high,
                         !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step,
                         muNumberFmt,
-                        MU_OPT_ALIGNCENTER,
+                        MuOptFlag.alignCenter,
                     );
                 }
             } else static if (is(typeof(member) == int)) {
@@ -520,8 +469,8 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
                         cast(int) __traits(getAttributes, member)[0].low,
                         cast(int) __traits(getAttributes, member)[0].high,
                         !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step,
-                        MU_SLIDER_INT_FMT,
-                        MU_OPT_ALIGNCENTER,
+                        muNumberFmt,
+                        MuOptFlag.alignCenter,
                     );
                 }
             }
