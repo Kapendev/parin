@@ -305,19 +305,15 @@ void updateControl(UiId id, UiRect rect, UiOptFlags opt) {
 }
 
 void text(const(char)[] text) {
-    mu_text(&uiContext, text);
+    uiContext.text(text);
 }
 
 void label(const(char)[] text) {
-    mu_label(&uiContext, text);
+    uiContext.label(text);
 }
 
-UiResFlags button(const(char)[] label, UiIconEnum icon, UiOptFlags opt) {
-    return mu_button_ex(&uiContext, label, icon, opt);
-}
-
-UiResFlags button(const(char)[] label) {
-    return mu_button(&uiContext, label);
+UiResFlags button(const(char)[] label, UiIconEnum icon = UiIconEnum.none, UiOptFlags opt = UiOptFlag.alignCenter) {
+    return uiContext.button(label, icon, opt);
 }
 
 @trusted

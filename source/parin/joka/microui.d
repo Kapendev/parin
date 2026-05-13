@@ -40,12 +40,14 @@ alias MuFont      = void*; /// The font type of microui.
 alias MuTexture   = void*; /// The texture type of microui.
 alias MuSliceMode = ubyte; /// The slice repeat mode type of microui.
 
+/// The clipping kind.
 enum MuClip : ubyte {
     none, /// No clipping.
     part, /// Partial clipping (for scrollable areas).
     all,  /// Full clipping to container bounds.
 }
 
+/// The command kind.
 enum MuCommand : ubyte {
     none, /// No command.
     jump, /// Jump to another command in the buffer.
@@ -55,6 +57,7 @@ enum MuCommand : ubyte {
     icon, /// Draw an icon.
 }
 
+/// The color kind.
 enum MuColor : ubyte {
     text,        /// Default text color.
     border,      /// Border color for controls.
@@ -72,6 +75,7 @@ enum MuColor : ubyte {
     scrollThumb, /// Scrollbar thumb color.
 }
 
+/// The icon kind.
 enum MuIcon : ubyte {
     none,      /// No icon.
     close,     /// Close icon.
@@ -81,6 +85,7 @@ enum MuIcon : ubyte {
 }
 
 // TODO(Kapendev): I think it needs more things. Add them when people (mostly me) need them because right now I have no idea what to add.
+/// The atlas region kind.
 enum MuAtlas : ubyte {
     none,        /// No atlas rectangle.
     button,      /// Default button atlas rectangle.
@@ -88,7 +93,9 @@ enum MuAtlas : ubyte {
     buttonFocus, /// Button atlas rectangle when focused.
 }
 
-alias MuResFlags = ubyte;  /// The type of `MU_RES_*` enums.
+/// The type of `MU_RES_*`.
+alias MuResFlags = ubyte;
+/// The values of `MU_RES_*`.
 enum MuResFlag : MuResFlags {
     none   = 0,        /// No result.
     active = (1 << 0), /// Control is active (e.g., active window).
@@ -96,7 +103,9 @@ enum MuResFlag : MuResFlags {
     change = (1 << 2), /// Control value changed (e.g., modified text input).
 }
 
-alias MuOptFlags = ushort; /// The type of `MU_OPT_*` enums.
+/// The type of `MU_OPT_*`.
+alias MuOptFlags = ushort;
+/// The values of `MU_OPT_*`.
 enum MuOptFlag : MuOptFlags {
     none         = 0,         /// No option.
     alignCenter  = (1 << 0),  /// Center-align control content.
@@ -116,7 +125,9 @@ enum MuOptFlag : MuOptFlags {
     defaultFocus = (1 << 14), /// Keep focus when no other control is focused.
 }
 
-alias MuMouseFlags = ubyte;  /// The type of `MU_MOUSE_*` enums.
+/// The type of `MU_MOUSE_*`.
+alias MuMouseFlags = ubyte;
+/// The values of `MU_MOUSE_*`.
 enum MuMouseFlag : MuMouseFlags {
     none   = 0,        /// No mouse button.
     left   = (1 << 0), /// Left mouse button.
@@ -124,7 +135,9 @@ enum MuMouseFlag : MuMouseFlags {
     middle = (1 << 2), /// Middle mouse button.
 }
 
-alias MuKeyFlags = uint;   /// The type of `MU_KEY_*` enums.
+/// The type of `MU_KEY_*`.
+alias MuKeyFlags = uint;
+/// The values of `MU_KEY_*`.
 enum MuKeyFlag : MuKeyFlags {
     none      = 0,         /// No key.
     shift     = (1 << 0),  /// Shift key down.
@@ -234,19 +247,19 @@ struct MuContainer {
 
 /// UI style settings including font, sizes, spacing, and colors.
 struct MuStyle {
-    MuFont font;                                    /// The font used for UI controls.
-    MuTexture texture;                              /// the atlas texture used for UI controls.
-    IVec2 size;                                      /// The size of UI controls.
-    int padding;                                     /// The padding around UI controls.
-    int spacing;                                     /// The spacing between UI controls.
-    int indent;                                      /// The indent of UI controls.
-    int border;                                      /// The border of UI controls.
-    int titleHeight;                                 /// The height of the window title bar.
-    int scrollbarSize;                               /// The size of the scrollbar.
-    int scrollbarSpeed;                              /// The speed of the scrollbar.
-    int scrollbarKeySpeed;                           /// The speed of the scrollbar key.
-    int thumbSize;                                   /// The size of the thumb.
-    int fontScale;                                   /// The scale of the font.
+    MuFont font;                                        /// The font used for UI controls.
+    MuTexture texture;                                  /// the atlas texture used for UI controls.
+    IVec2 size;                                         /// The size of UI controls.
+    int padding;                                        /// The padding around UI controls.
+    int spacing;                                        /// The spacing between UI controls.
+    int indent;                                         /// The indent of UI controls.
+    int border;                                         /// The border of UI controls.
+    int titleHeight;                                    /// The height of the window title bar.
+    int scrollbarSize;                                  /// The size of the scrollbar.
+    int scrollbarSpeed;                                 /// The speed of the scrollbar.
+    int scrollbarKeySpeed;                              /// The speed of the scrollbar key.
+    int thumbSize;                                      /// The size of the thumb.
+    int fontScale;                                      /// The scale of the font.
     StaticArray!(Rgba, MuColor.max + 1) colors;         /// The array of colors used in the UI.
     StaticArray!(IRect, MuAtlas.max + 1) atlasRects;    /// Optional array of control atlas rectangles used in the UI.
     StaticArray!(IRect, MuIcon.max + 1) iconAtlasRects; /// Optional array of icon atlas rectangles used in the UI.
@@ -402,12 +415,10 @@ struct MuContext {
         scrollDelta = IVec2(0, 0);
         lastMousePos = mousePos;
 
-        /* Old:
-           // sort root containers by z index
-           int n = rootList.idx;
-           qsort(rootList.items.ptr, n, (MuContainer*).sizeof, &mu_compare_zindex);
+        /* Old Sorting Code
+            int n = rootList.idx;
+            qsort(rootList.items.ptr, n, (MuContainer*).sizeof, &mu_compare_zindex);
         */
-
         /* sort root containers by z index */
         auto n = rootList.idx;
         auto items = rootList.items[0 .. n];
@@ -438,6 +449,87 @@ struct MuContext {
                 cnt.tail.jump.dst = commandList.items.ptr + commandList.idx;
             }
         }
+    }
+
+    /*============================================================================
+    ** controls
+    **============================================================================*/
+
+    /// It handles both D strings and C strings, so you can also pass null-terminated buffers directly.
+    // NOTE(Kapendev): Might need checking. I replaced lines without thinking too much. Original code had bugs too btw.
+    @trusted
+    void text(IStr str) {
+        MuFont font = style.font;
+        Rgba color = style.colors[MuColor.text];
+        mu_layout_begin_column(&this);
+        mu_layout_row(&this, textHeight(font), -1);
+
+        if (str.length != 0) {
+            IStrz p = str.ptr;
+            IStrz start = p;
+            IStrz end = p;
+            do {
+                IRect r = mu_layout_next(&this);
+                int w = 0;
+                start = p;
+                end = p;
+                do {
+                    IStrz word = p;
+                    while (p < str.ptr + str.length && *p && *p != ' ' && *p != '\n') { p += 1; }
+                    w += textWidth(font, word[0 .. p - word]);
+                    if (w > r.w && end != start) { break; }
+                    end = p++;
+                } while(end < str.ptr + str.length && *end && *end != '\n');
+                mu_draw_text(&this, font, start[0 .. end - start], IVec2(r.x, r.y), color);
+                p = end + 1;
+            } while(end < str.ptr + str.length && *end);
+        }
+        mu_layout_end_column(&this);
+    }
+
+    @trusted
+    void textLegacy(IStrz str) {
+        text(str[0 .. (str ? strzLength(str) : 0)]);
+    }
+
+    void label(IStr str) {
+        mu_draw_control_text(&this, str, mu_layout_next(&this), MuColor.text, 0);
+    }
+
+    @trusted
+    void labelLegacy(IStrz str) {
+        label(str[0 .. (str ? strzLength(str) : 0)]);
+    }
+
+    MuResFlags button(IStr str, MuIcon icon = MuIcon.none, MuOptFlags opt = MuOptFlag.alignCenter) {
+        mu_push_id(&this, &buttonCounter, buttonCounter.sizeof);
+        auto res = buttonLegacy(str, icon, opt);
+        mu_pop_id(&this);
+        buttonCounter += 1;
+        return res;
+    }
+
+    @trusted
+    MuResFlags buttonLegacy(IStr str, MuIcon icon, MuOptFlags opt) {
+        MuResFlags res = MuResFlag.none;
+        MuId id = (str.ptr && str.length)
+            ? mu_get_id_str(&this, str)
+            : mu_get_id(&this, &icon, icon.sizeof);
+        IRect r = mu_layout_next(&this);
+        mu_update_control(&this, id, r, opt);
+        /* handle click */
+        if (focus == id) {
+            if (opt & MuOptFlag.defaultFocus) {
+                if (keyPressed & MuKeyFlag.enter || (hover == id && mousePressed & MuMouseFlag.left)) { res |= MuResFlag.submit; }
+            } else {
+                if (mousePressed & MuMouseFlag.left) { res |= MuResFlag.submit; }
+            }
+        }
+        /* draw */
+        mu_draw_control_frame(&this, id, r, MuColor.button, opt, MuAtlas.button);
+        if (str.ptr) { mu_draw_control_text(&this, str, r, MuColor.text, opt); }
+        if (icon) { mu_draw_icon(&this, icon, r, style.colors[MuColor.text]); }
+        return res;
     }
 }
 
@@ -1046,87 +1138,6 @@ void mu_update_control(MuContext* ctx, MuId id, IRect rect, MuOptFlags opt, bool
     }
 }
 
-@trusted
-void mu_text_legacy(MuContext* ctx, IStrz text) {
-    mu_text(ctx, text[0 .. (text ? strzLength(text) : 0)]);
-}
-
-/// It handles both D strings and C strings, so you can also pass null-terminated buffers directly.
-// NOTE(Kapendev): Might need checking. I replaced lines without thinking too much. Original code had bugs too btw.
-@trusted
-void mu_text(MuContext* ctx, IStr text) {
-    MuFont font = ctx.style.font;
-    Rgba color = ctx.style.colors[MuColor.text];
-    mu_layout_begin_column(ctx);
-    mu_layout_row(ctx, ctx.textHeight(font), -1);
-
-    if (text.length != 0) {
-        IStrz p = text.ptr;
-        IStrz start = p;
-        IStrz end = p;
-        do {
-            IRect r = mu_layout_next(ctx);
-            int w = 0;
-            start = p;
-            end = p;
-            do {
-                IStrz word = p;
-                while (p < text.ptr + text.length && *p && *p != ' ' && *p != '\n') { p += 1; }
-                w += ctx.textWidth(font, word[0 .. p - word]);
-                if (w > r.w && end != start) { break; }
-                end = p++;
-            } while(end < text.ptr + text.length && *end && *end != '\n');
-            mu_draw_text(ctx, font, start[0 .. end - start], IVec2(r.x, r.y), color);
-            p = end + 1;
-        } while(end < text.ptr + text.length && *end);
-    }
-    mu_layout_end_column(ctx);
-}
-
-@trusted
-void mu_label_legacy(MuContext* ctx, IStrz text) {
-    mu_label(ctx, text[0 .. (text ? strzLength(text) : 0)]);
-}
-
-void mu_label(MuContext* ctx, IStr text) {
-    mu_draw_control_text(ctx, text, mu_layout_next(ctx), MuColor.text, 0);
-}
-
-@trusted
-MuResFlags mu_button_ex_legacy(MuContext* ctx, IStr label, MuIcon icon, MuOptFlags opt) {
-    MuResFlags res = MuResFlag.none;
-    MuId id = (label.ptr && label.length)
-        ? mu_get_id_str(ctx, label)
-        : mu_get_id(ctx, &icon, icon.sizeof);
-    IRect r = mu_layout_next(ctx);
-    mu_update_control(ctx, id, r, opt);
-    /* handle click */
-    if (ctx.focus == id) {
-        if (opt & MuOptFlag.defaultFocus) {
-            if (ctx.keyPressed & MuKeyFlag.enter || (ctx.hover == id && ctx.mousePressed & MuMouseFlag.left)) { res |= MuResFlag.submit; }
-        } else {
-            if (ctx.mousePressed & MuMouseFlag.left) { res |= MuResFlag.submit; }
-        }
-    }
-    /* draw */
-    mu_draw_control_frame(ctx, id, r, MuColor.button, opt, MuAtlas.button);
-    if (label.ptr) { mu_draw_control_text(ctx, label, r, MuColor.text, opt); }
-    if (icon) { mu_draw_icon(ctx, icon, r, ctx.style.colors[MuColor.text]); }
-    return res;
-}
-
-MuResFlags mu_button_ex(MuContext* ctx, IStr label, MuIcon icon, MuOptFlags opt) {
-    mu_push_id(ctx, &ctx.buttonCounter, ctx.buttonCounter.sizeof);
-    auto res = mu_button_ex_legacy(ctx, label, icon, opt);
-    mu_pop_id(ctx);
-    ctx.buttonCounter += 1;
-    return res;
-}
-
-MuResFlags mu_button(MuContext* ctx, IStr label) {
-    return mu_button_ex(ctx, label, MuIcon.none, MuOptFlag.alignCenter);
-}
-
 // NOTE(Kapendev): The only function that puts the return pointer at the end. It's fine.
 @trusted
 MuResFlags mu_checkbox(MuContext* ctx, IStr label, bool* state) {
@@ -1654,7 +1665,7 @@ MuResFlags mu_begin_dmenu(MuContext* ctx, IStr* selection, const(IStr)[] items, 
         auto window_cnt = mu_get_current_container(ctx);
         if (label.length) {
             mu_layout_row(ctx, 0, ctx.textWidth(ctx.style.font, label) + ctx.textWidth(ctx.style.font, "  "), -1);
-            mu_label(ctx, label);
+            ctx.label(label);
         } else {
             mu_layout_row(ctx, 0, -1);
         }
@@ -1674,7 +1685,7 @@ MuResFlags mu_begin_dmenu(MuContext* ctx, IStr* selection, const(IStr)[] items, 
             // Draw the item.
             if (!starts_with_input) continue;
             buttonCount += 1;
-            if (mu_button_ex(ctx, item, MuIcon.none, 0)) pick = cast(int) i;
+            if (ctx.button(item, MuIcon.none, 0)) pick = cast(int) i;
             // Do autocomplete.
             if (buttonCount > 1) continue;
             first = cast(int) i;
