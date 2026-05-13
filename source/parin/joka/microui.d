@@ -487,18 +487,18 @@ struct MuContext {
         mu_layout_end_column(&this);
     }
 
-    @trusted
     void textLegacy(IStrz str) {
-        text(str[0 .. (str ? strzLength(str) : 0)]);
+        // Old: text(str[0 .. (str ? strzLength(str) : 0)]);
+        text(str.toStr());
     }
 
     void label(IStr str) {
         mu_draw_control_text(&this, str, mu_layout_next(&this), MuColor.text, 0);
     }
 
-    @trusted
     void labelLegacy(IStrz str) {
-        label(str[0 .. (str ? strzLength(str) : 0)]);
+        // Old: label(str[0 .. (str ? strzLength(str) : 0)]);
+        label(str.toStr());
     }
 
     MuResFlags button(IStr str, MuIcon icon = MuIcon.none, MuOptFlags opt = MuOptFlag.alignCenter) {
@@ -530,6 +530,126 @@ struct MuContext {
         if (str.ptr) { mu_draw_control_text(&this, str, r, MuColor.text, opt); }
         if (icon) { mu_draw_icon(&this, icon, r, style.colors[MuColor.text]); }
         return res;
+    }
+
+    @trusted
+    MuResFlags checkbox(ref bool state, IStr str) {
+        return checkboxLegacy(&state, str);
+    }
+
+    @trusted
+    MuResFlags checkboxLegacy(bool* state, IStr str) {
+        MuResFlags res = MuResFlag.none;
+        MuId id = mu_get_id(&this, &state, state.sizeof);
+        IRect r = mu_layout_next(&this);
+        IRect box = IRect(r.x, r.y, r.h, r.h);
+        mu_update_control(&this, id, box, 0); // NOTE(Kapendev): Why was this r and not box???
+        /* handle click */
+        if (mousePressed & MuMouseFlag.left && focus == id) {
+            res |= MuResFlag.change;
+            *state = !*state;
+        }
+        /* draw */
+        mu_draw_control_frame(&this, id, box, MuColor.base, 0);
+        if (*state) {
+            mu_draw_icon(&this, MuIcon.check, box, style.colors[MuColor.text]);
+        }
+        r = IRect(r.x + box.w, r.y, r.w - box.w, r.h);
+        mu_draw_control_text(&this, str, r, MuColor.text, 0);
+        return res;
+    }
+
+    @trusted
+    MuResFlags textboxRaw(char[] buf, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
+        return textboxRawLegacy(buf.ptr, buf.length, id, r, opt, newlen);
+    }
+
+    @trusted
+    MuResFlags textboxRawLegacy(char* buf, Sz bufsz, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
+        MuResFlags res;
+        mu_update_control(&this, id, r, opt | MuOptFlag.holdFocus);
+
+        Sz buflen = strzLength(buf);
+        if (focus == id) {
+            /* handle text input */
+            int n = min((cast(int) bufsz) - (cast(int) buflen) - 1, cast(int) inputTextSlice.length);
+            if (n > 0) {
+                jokaMemcpy(buf + buflen, inputText.ptr, n);
+                buflen += n;
+                buf[buflen] = '\0';
+                res |= MuResFlag.change;
+            }
+            /* handle backspace */
+            if (keyPressed & MuKeyFlag.backspace && buflen > 0) {
+                if (keyDown & MuKeyFlag.ctrl) {
+                    buflen = 0;
+                    buf[buflen] = '\0';
+                } else if (keyDown & MuKeyFlag.alt && buflen > 0) {
+                    /* skip empty space */
+                    while (buf[buflen - 1] == ' ') { buflen -= 1; }
+                    while (buflen > 0) {
+                        /* skip utf-8 continuation bytes */
+                        while ((buf[--buflen] & 0xc0) == 0x80 && buflen > 0) {}
+                        if (buflen == 0 || isAutocompleteSep(buf[buflen - 1])) break;
+                    }
+                    buf[buflen] = '\0';
+                } else if (buflen > 0) {
+                    /* skip utf-8 continuation bytes */
+                    while ((buf[--buflen] & 0xc0) == 0x80 && buflen > 0) {}
+                    buf[buflen] = '\0';
+                }
+                res |= MuResFlag.change;
+            }
+            /* handle return */
+            if (keyPressed & MuKeyFlag.enter) {
+                mu_set_focus(&this, 0);
+                res |= MuResFlag.submit;
+            }
+        }
+
+        /* draw */
+        mu_draw_control_frame(&this, id, r, MuColor.base, opt);
+        if (focus == id) {
+            Rgba color = style.colors[MuColor.text];
+            MuFont font = style.font;
+            int textw = textWidth(font, buf[0 .. buflen]);
+            int texth = textHeight(font);
+            int ofx = r.w - style.padding - textw - 1;
+            int textx = r.x + min(ofx, style.padding);
+            int texty = r.y + (r.h - texth) / 2;
+            mu_push_clip_rect(&this, r);
+
+            if (opt & MuOptFlag.alignCenter) {
+                textx = r.x + (r.w - textw) / 2;
+            } else if (opt & MuOptFlag.alignRight) {
+                textx = r.x + r.w - textw - style.padding;
+            }
+
+            mu_draw_text(&this, font, buf[0 .. buflen], IVec2(textx, texty), color);
+            mu_draw_rect(&this, IRect(textx + textw, texty, 1, texth), color);
+            mu_pop_clip_rect(&this);
+        } else {
+            mu_draw_control_text(&this, buf[0 .. buflen], r, MuColor.text, opt);
+        }
+        if (newlen) *newlen = buflen;
+        return res;
+    }
+
+    @trusted
+    MuResFlags textbox(char[] buf, MuOptFlags opt, Sz* newlen = null) {
+        return textboxLegacy(buf.ptr, buf.length, opt, newlen);
+    }
+
+    @trusted
+    MuResFlags textbox(char[] buf, Sz* newlen = null) {
+        return textboxLegacy(buf.ptr, buf.length, 0, newlen);
+    }
+
+    @trusted
+    MuResFlags textboxLegacy(char* buf, Sz bufsz, MuOptFlags opt, Sz* newlen = null) {
+        MuId id = mu_get_id(&this, &buf, buf.sizeof);
+        IRect r = mu_layout_next(&this);
+        return textboxRawLegacy(buf, bufsz, id, r, opt, newlen);
     }
 }
 
@@ -607,7 +727,7 @@ private @safe nothrow @nogc {
             ctx.numberEditBuffer.fmtIntoBuffer(muNumberFmt, *value);
         }
         if (ctx.numberEdit == id) {
-            MuResFlags res = mu_textbox_raw(ctx, ctx.numberEditBuffer, id, r, 0);
+            MuResFlags res = ctx.textboxRaw(ctx.numberEditBuffer, id, r, 0);
             if (res & MuResFlag.submit || ctx.focus != id) {
                 // Old: *value = strtod(ctx.numberEditBuffer.ptr, null);
                 *value = ctx.numberEditBuffer.ptr.toStr().toFloating().getOr();
@@ -1138,126 +1258,6 @@ void mu_update_control(MuContext* ctx, MuId id, IRect rect, MuOptFlags opt, bool
     }
 }
 
-// NOTE(Kapendev): The only function that puts the return pointer at the end. It's fine.
-@trusted
-MuResFlags mu_checkbox(MuContext* ctx, IStr label, bool* state) {
-    MuResFlags res = MuResFlag.none;
-    MuId id = mu_get_id(ctx, &state, state.sizeof);
-    IRect r = mu_layout_next(ctx);
-    IRect box = IRect(r.x, r.y, r.h, r.h);
-    mu_update_control(ctx, id, box, 0); // NOTE(Kapendev): Why was this r and not box???
-    /* handle click */
-    if (ctx.mousePressed & MuMouseFlag.left && ctx.focus == id) {
-        res |= MuResFlag.change;
-        *state = !*state;
-    }
-    /* draw */
-    mu_draw_control_frame(ctx, id, box, MuColor.base, 0);
-    if (*state) {
-        mu_draw_icon(ctx, MuIcon.check, box, ctx.style.colors[MuColor.text]);
-    }
-    r = IRect(r.x + box.w, r.y, r.w - box.w, r.h);
-    mu_draw_control_text(ctx, label, r, MuColor.text, 0);
-    return res;
-}
-
-@trusted
-MuResFlags mu_textbox_raw_legacy(MuContext* ctx, char* buf, Sz bufsz, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
-    MuResFlags res;
-    mu_update_control(ctx, id, r, opt | MuOptFlag.holdFocus);
-
-    Sz buflen = strzLength(buf);
-    if (ctx.focus == id) {
-        /* handle text input */
-        int n = min((cast(int) bufsz) - (cast(int) buflen) - 1, cast(int) ctx.inputTextSlice.length);
-        if (n > 0) {
-            jokaMemcpy(buf + buflen, ctx.inputText.ptr, n);
-            buflen += n;
-            buf[buflen] = '\0';
-            res |= MuResFlag.change;
-        }
-        /* handle backspace */
-        if (ctx.keyPressed & MuKeyFlag.backspace && buflen > 0) {
-            if (ctx.keyDown & MuKeyFlag.ctrl) {
-                buflen = 0;
-                buf[buflen] = '\0';
-            } else if (ctx.keyDown & MuKeyFlag.alt && buflen > 0) {
-                /* skip empty space */
-                while (buf[buflen - 1] == ' ') { buflen -= 1; }
-                while (buflen > 0) {
-                    /* skip utf-8 continuation bytes */
-                    while ((buf[--buflen] & 0xc0) == 0x80 && buflen > 0) {}
-                    if (buflen == 0 || isAutocompleteSep(buf[buflen - 1])) break;
-                }
-                buf[buflen] = '\0';
-            } else if (buflen > 0) {
-                /* skip utf-8 continuation bytes */
-                while ((buf[--buflen] & 0xc0) == 0x80 && buflen > 0) {}
-                buf[buflen] = '\0';
-            }
-            res |= MuResFlag.change;
-        }
-        /* handle return */
-        if (ctx.keyPressed & MuKeyFlag.enter) {
-            mu_set_focus(ctx, 0);
-            res |= MuResFlag.submit;
-        }
-    }
-
-    /* draw */
-    mu_draw_control_frame(ctx, id, r, MuColor.base, opt);
-    if (ctx.focus == id) {
-        Rgba color = ctx.style.colors[MuColor.text];
-        MuFont font = ctx.style.font;
-        int textw = ctx.textWidth(font, buf[0 .. buflen]);
-        int texth = ctx.textHeight(font);
-        int ofx = r.w - ctx.style.padding - textw - 1;
-        int textx = r.x + min(ofx, ctx.style.padding);
-        int texty = r.y + (r.h - texth) / 2;
-        mu_push_clip_rect(ctx, r);
-
-        if (opt & MuOptFlag.alignCenter) {
-            textx = r.x + (r.w - textw) / 2;
-        } else if (opt & MuOptFlag.alignRight) {
-            textx = r.x + r.w - textw - ctx.style.padding;
-        }
-
-        mu_draw_text(ctx, font, buf[0 .. buflen], IVec2(textx, texty), color);
-        mu_draw_rect(ctx, IRect(textx + textw, texty, 1, texth), color);
-        mu_pop_clip_rect(ctx);
-    } else {
-        mu_draw_control_text(ctx, buf[0 .. buflen], r, MuColor.text, opt);
-    }
-    if (newlen) *newlen = buflen;
-    return res;
-}
-
-@trusted
-MuResFlags mu_textbox_raw(MuContext* ctx, char[] buf, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
-    return mu_textbox_raw_legacy(ctx, buf.ptr, buf.length, id, r, opt, newlen);
-}
-
-@trusted
-MuResFlags mu_textbox_ex_legacy(MuContext* ctx, char* buf, Sz bufsz, MuOptFlags opt, Sz* newlen = null) {
-    MuId id = mu_get_id(ctx, &buf, buf.sizeof);
-    IRect r = mu_layout_next(ctx);
-    return mu_textbox_raw_legacy(ctx, buf, bufsz, id, r, opt, newlen);
-}
-
-@trusted
-MuResFlags mu_textbox_ex(MuContext* ctx, char[] buf, MuOptFlags opt, Sz* newlen = null) {
-    return mu_textbox_ex_legacy(ctx, buf.ptr, buf.length, opt, newlen);
-}
-
-MuResFlags mu_textbox_legacy(MuContext* ctx, char* buf, Sz bufsz, Sz* newlen = null) {
-    return mu_textbox_ex_legacy(ctx, buf, bufsz, 0, newlen);
-}
-
-@trusted
-MuResFlags mu_textbox(MuContext* ctx, char[] buf, Sz* newlen = null) {
-    return  mu_textbox_legacy(ctx, buf.ptr, buf.length, newlen);
-}
-
 @trusted
 MuResFlags mu_slider_ex(MuContext* ctx, float* value, float low, float high, float step, IStr fmt, MuOptFlags opt) {
     /*
@@ -1671,7 +1671,7 @@ MuResFlags mu_begin_dmenu(MuContext* ctx, IStr* selection, const(IStr)[] items, 
         }
 
         Sz input_length;
-        auto input_result = mu_textbox_ex(ctx, input_buffer, MuOptFlag.defaultFocus, &input_length);
+        auto input_result = ctx.textbox(input_buffer, MuOptFlag.defaultFocus, &input_length);
         auto input = input_buffer[0 .. input_length];
         auto pick = -1;
         auto first = -1;

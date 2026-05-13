@@ -10,7 +10,7 @@ void ready() {
     void onButton() => println("Pressed button!");
     void onTextInput() => println("Pressed text input!");
 
-    setBackgroundColor(gray3);
+    setWindowBackgroundColor(gray3);
     root = vspace(
         .layout!"center",
         label("Hello from Fluid!"),

@@ -318,15 +318,15 @@ UiResFlags button(const(char)[] label, UiIconEnum icon = UiIconEnum.none, UiOptF
 
 @trusted
 UiResFlags checkbox(ref bool state, const(char)[] label = "") {
-    return mu_checkbox(&uiContext, label, &state);
+    return uiContext.checkbox(state, label);
 }
 
 UiResFlags textbox(char[] buffer, UiOptFlags opt, Sz* newlen = null) {
-    return mu_textbox_ex(&uiContext, buffer, opt, newlen);
+    return uiContext.textbox(buffer, opt, newlen);
 }
 
 UiResFlags textbox(char[] buffer, Sz* newlen = null) {
-    return mu_textbox(&uiContext, buffer, newlen);
+    return uiContext.textbox(buffer, newlen);
 }
 
 @trusted

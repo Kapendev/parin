@@ -167,8 +167,10 @@ No. The following projects might be useful:
 
 ### Any other helpful libraries that I can use?
 
+- [arsd.ini](https://github.com/adamdruppe/arsd/blob/master/ini.d): INI configuration file support.
+- [newsdlang](https://codeberg.org/ZILtoid1991/newsdlang): SDLang/XDL configuration file support.
+- [dex-cf](https://codeberg.org/configuration-file/d): CF (Configuration File) support.
 - [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
-- [newsdlang](https://codeberg.org/ZILtoid1991/newsdlang): SDLang/XDL reader and writer.
 - [Inochi2D](https://github.com/Inochi2D/inochi2d): A library for realtime 2D puppet animation.
 - [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
 
