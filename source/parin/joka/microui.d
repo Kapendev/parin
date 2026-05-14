@@ -26,7 +26,8 @@ enum muContainerPoolSize  = 48;                    /// Number of reusable contai
 enum muTreeNodePoolSize   = 48;                    /// Number of reusable tree nodes.
 enum muInputTextSize      = 1024;                  /// Maximum length of input text buffers.
 enum muMaxWidths          = 16;                    /// Maximum number of columns per layout row.
-enum muNumberFmt          = "{}\0";                /// Format string used for numbers.
+enum muNumberFmt          = "{}";                  /// Format string used for numbers.
+enum muNumberFmtWithZero  = "{}\0";                /// Format string used for numbers.
 enum muMaxFmt             = 127;                   /// Max length of any formatted string.
 enum muMaxStrSize = (cast(int) muCommandSize) - (cast(int) MuTextCommand.sizeof) + 1; /// Maximum length of command strings.
 static assert(muMaxStrSize > 0, "Type `MuTextCommand` must fit within `muCommandSize` bytes (used for embedded strings).");
@@ -651,6 +652,346 @@ struct MuContext {
         IRect r = mu_layout_next(&this);
         return textboxRawLegacy(buf, bufsz, id, r, opt, newlen);
     }
+
+    @trusted
+    MuResFlags slider(ref float value, float low, float high, float step = 0.01f, IStr fmt = muNumberFmt, MuOptFlags opt = MuOptFlag.alignCenter) {
+        return sliderLegacy(&value, low, high, step, fmt, opt, false);
+    }
+
+    @trusted
+    MuResFlags sliderLegacy(float* value, float low, float high, float step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
+        /*
+        // Used for the `sprintf` function.
+        char[muMaxFmt + 1] fmt_buf = void;
+        assert(fmt_buf.length > fmt.length);
+        jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
+        fmt_buf[fmt.length] = '\0';
+        */
+
+        char[muMaxFmt + 1] buf = void;
+        int x, w;
+        IRect thumb;
+        MuResFlags res = 0;
+        float last = *value, v = last;
+        MuId id = mu_get_id(&this, &value, value.sizeof);
+        IRect base = mu_layout_next(&this);
+
+        /* handle text input mode */
+        if (_numberTextbox(&this, &v, base, id)) { return res; }
+        /* handle normal mode */
+        mu_update_control(&this, id, base, opt);
+        /* handle input */
+        if (focus == id && (mouseDown | mousePressed) & MuMouseFlag.left) {
+            v = low + (mousePos.x - base.x) * (high - low) / base.w;
+            if (step) { v = (cast(long) ((v + step / 2) / step)) * step; }
+        }
+        /* clamp and store value, update res */
+        *value = v = clamp(v, low, high);
+        if (last != v) { res |= MuResFlag.change; }
+
+        /* draw base */
+        mu_draw_control_frame(&this, id, base, MuColor.base, opt);
+        /* draw thumb */
+        w = style.thumbSize;
+        x = cast(int) ((v - low) * (base.w - w) / (high - low));
+        thumb = IRect(base.x + x, base.y, w, base.h);
+        mu_draw_control_frame(&this, id, thumb, MuColor.button, opt);
+        /* draw text  */
+        // This original was not checking the result of `sprintf`...
+        // Old: int buflen = sprintf(buf.ptr, fmt_buf.ptr, v);
+        // Old: if (buflen < 0) buflen = 0;
+        // Old: mu_draw_control_text(&this, buf[0 .. buflen], base, MuColor.text, opt);
+        // The zero check is there because of `muNumberFmt`.
+        mu_draw_control_text(&this, isFmtFloatAnInt ? buf.fmtIntoBuffer(fmt, cast(int) *value) : buf.fmtIntoBuffer(fmt, *value), base, MuColor.text, opt);
+        return res;
+    }
+
+    @trusted
+    MuResFlags slider(ref int value, int low, int high, int step = 1, IStr fmt = muNumberFmt, MuOptFlags opt = MuOptFlag.alignCenter) {
+        return sliderLegacy(&value, low, high, step, fmt, opt, true);
+    }
+
+    @trusted
+    MuResFlags sliderLegacy(int* value, int low, int high, int step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
+        mu_push_id(&this, &value, value.sizeof);
+        float temp = *value;
+        MuResFlags res = sliderLegacy(&temp, low, high, step, fmt, opt, isFmtFloatAnInt);
+        *value = cast(int) temp;
+        mu_pop_id(&this);
+        return res;
+    }
+
+    @trusted
+    MuResFlags number(ref float value, float step = 0.01f, IStr fmt = muNumberFmt, MuOptFlags opt = MuOptFlag.alignCenter) {
+        return numberLegacy(&value, step, fmt, opt, false);
+    }
+
+    @trusted
+    MuResFlags numberLegacy(float* value, float step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
+        /*
+        // Used for the `sprintf` function.
+        char[muMaxFmt + 1] fmt_buf = void;
+        assert(fmt_buf.length > fmt.length);
+        jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
+        fmt_buf[fmt.length] = '\0';
+        */
+
+        char[muMaxFmt + 1] buf = void;
+        MuResFlags res = 0;
+        MuId id = mu_get_id(&this, &value, value.sizeof);
+        IRect base = mu_layout_next(&this);
+        float last = *value;
+
+        /* handle text input mode */
+        if (_numberTextbox(&this, value, base, id)) { return res; }
+        /* handle normal mode */
+        mu_update_control(&this, id, base, opt);
+        /* handle input */
+        if (focus == id && mouseDown & MuMouseFlag.left) { *value += mouseDelta.x * step; }
+        /* set flag if value changed */
+        if (*value != last) { res |= MuResFlag.change; }
+
+        /* draw base */
+        mu_draw_control_frame(&this, id, base, MuColor.base, opt);
+        /* draw text  */
+        // This original was not checking the result of `sprintf`...
+        // Old: int buflen = sprintf(buf.ptr, fmt_buf.ptr, *value);
+        // Old: if (buflen < 0) buflen = 0;
+        // Old: mu_draw_control_text(ctx, buf[0 .. buflen], base, MuColor.text, opt);
+        // The zero check is there because of `muNumberFmt`.
+        mu_draw_control_text(&this, isFmtFloatAnInt ? buf.fmtIntoBuffer(fmt, cast(int) *value) : buf.fmtIntoBuffer(fmt, *value), base, MuColor.text, opt);
+        return res;
+    }
+
+    @trusted
+    MuResFlags number(ref int value, int step = 1, IStr fmt = muNumberFmt, MuOptFlags opt = MuOptFlag.alignCenter) {
+        return numberLegacy(&value, step, fmt, opt, true);
+    }
+
+    @trusted
+    MuResFlags numberLegacy(int* value, int step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
+        mu_push_id(&this, &value, value.sizeof);
+        float temp = *value;
+        MuResFlags res = numberLegacy(&temp, step, fmt, opt, isFmtFloatAnInt);
+        *value = cast(int) temp;
+        mu_pop_id(&this);
+        return res;
+    }
+
+    MuResFlags header(IStr label, MuOptFlags opt = MuOptFlag.none) {
+        return _header(&this, label, 0, opt);
+    }
+
+    MuResFlags beginTreeNode(IStr label, MuOptFlags opt = MuOptFlag.none) {
+        MuResFlags res = _header(&this, label, 1, opt);
+        if (res & MuResFlag.active) {
+            _getLayout(&this).indent += style.indent;
+            idStack.push(lastId);
+        }
+        return res;
+    }
+
+    void endTreeNode() {
+        _getLayout(&this).indent -= style.indent;
+        mu_pop_id(&this);
+    }
+
+    MuResFlags beginWindow(IStr title, IRect rect, MuOptFlags opt = MuOptFlag.none) {
+        if (opt & MuOptFlag.autoSize) { opt |= MuOptFlag.noResize | MuOptFlag.noScroll; }
+
+        IRect body;
+        MuId id = mu_get_id_str(&this, title);
+        MuContainer* cnt = _getContainer(&this, id, opt);
+        if (!cnt || !cnt.open) { return MuResFlag.none; }
+        idStack.push(id);
+
+        if (cnt.rect.w == 0) { cnt.rect = rect; }
+        _beginRootContainer(&this, cnt);
+        rect = body = cnt.rect;
+
+        /* draw frame */
+        if (~opt & MuOptFlag.noFrame) {
+            drawFrame(&this, rect, MuColor.windowBg);
+        }
+
+        /* do title bar */
+        if (~opt & MuOptFlag.noTitle) {
+            IRect tr = rect;
+            tr.h = style.titleHeight;
+            drawFrame(&this, tr, MuColor.titleBg);
+            /* do title text */
+            if (~opt & MuOptFlag.noTitle) {
+                if (~opt & MuOptFlag.noName) { mu_draw_control_text(&this, title, tr, MuColor.titleText, opt); }
+                MuId id2 = mu_get_id_str(&this, "!title"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
+                if (keyDown & dragWindowKey) {
+                    mu_update_control(&this, id2, body, opt, true);
+                    if (id2 == focus && mouseDown & MuMouseFlag.left) {
+                        cnt.rect.x += mouseDelta.x;
+                        cnt.rect.y += mouseDelta.y;
+                    }
+                } else {
+                    mu_update_control(&this, id2, tr, opt);
+                    if (id2 == focus && mouseDown & MuMouseFlag.left) {
+                        cnt.rect.x += mouseDelta.x;
+                        cnt.rect.y += mouseDelta.y;
+                    }
+                }
+                body.y += tr.h;
+                body.h -= tr.h;
+            }
+            /* do `close` button */
+            if (~opt & MuOptFlag.noClose) {
+                MuId id2 = mu_get_id_str(&this, "!close"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
+                IRect r = IRect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
+                tr.w -= r.w;
+                mu_draw_icon(&this, MuIcon.close, r, style.colors[MuColor.titleText]);
+                mu_update_control(&this, id2, r, opt);
+                if (mousePressed & MuMouseFlag.left && id2 == focus) { cnt.open = false; }
+            }
+        }
+
+        _pushContainerBody(&this, cnt, body, opt);
+
+        /* do `resize` handle */
+        if (~opt & MuOptFlag.noResize) {
+            int sz = style.scrollbarSize; // RXI, WHY WAS THIS USING THE TITLE HEIGHT?
+            MuId id2 = mu_get_id_str(&this, "!resize"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
+            IRect r = IRect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
+            if (keyDown & resizeWindowKey) {
+                mu_update_control(&this, id2, body, opt, true);
+                if (id2 == focus && mouseDown & MuMouseFlag.left) {
+                    cnt.rect.w = max(96, cnt.rect.w + mouseDelta.x);
+                    cnt.rect.h = max(64, cnt.rect.h + mouseDelta.y);
+                }
+            } else {
+                mu_update_control(&this, id2, r, opt);
+                if (id2 == focus && mouseDown & MuMouseFlag.left) {
+                    cnt.rect.w = max(96, cnt.rect.w + mouseDelta.x);
+                    cnt.rect.h = max(64, cnt.rect.h + mouseDelta.y);
+                }
+            }
+        }
+        /* resize to content size */
+        if (opt & MuOptFlag.autoSize) {
+            IRect r = _getLayout(&this).body;
+            cnt.rect.w = cnt.contentSize.x + (cnt.rect.w - r.w);
+            cnt.rect.h = cnt.contentSize.y + (cnt.rect.h - r.h);
+        }
+        /* close if this is a popup window and elsewhere was clicked */
+        if (opt & MuOptFlag.popup && mousePressed && hoverRoot != cnt) { cnt.open = false; }
+        mu_push_clip_rect(&this, cnt.body);
+        return MuResFlag.active;
+    }
+
+    void endWindow() {
+        mu_pop_clip_rect(&this);
+        _endRootContainer(&this);
+    }
+
+    void openPopup(IStr name) {
+        MuContainer* cnt = mu_get_container(&this, name);
+        /* set as hover root so popup isn't closed in begin_window_ex() */
+        hoverRoot = nextHoverRoot = cnt;
+        /* position at mouse cursor, open and bring-to-front */
+        cnt.rect = IRect(mousePos.x, mousePos.y, 1, 1);
+        cnt.open = true;
+        mu_bring_to_front(&this, cnt);
+    }
+
+    MuResFlags beginPopup(IStr name) {
+        MuOptFlags opt = MuOptFlag.popup | MuOptFlag.autoSize | MuOptFlag.noTitle | MuOptFlag.closed;
+        return beginWindow(name, IRect(0, 0, 0, 0), opt);
+    }
+
+    void endPopup() {
+        endWindow();
+    }
+
+    void beginPanel(IStr name, MuOptFlags opt = MuOptFlag.none) {
+        MuContainer* cnt;
+        mu_push_id_str(&this, name);
+        cnt = _getContainer(&this, lastId, opt);
+        cnt.rect = mu_layout_next(&this);
+        if (~opt & MuOptFlag.noFrame) { drawFrame(&this, cnt.rect, MuColor.panelBg); }
+        containerStack.push(cnt);
+        _pushContainerBody(&this, cnt, cnt.rect, opt);
+        mu_push_clip_rect(&this, cnt.body);
+    }
+
+    void endPanel() {
+        mu_pop_clip_rect(&this);
+        _popContainer(&this);
+    }
+
+    void openDmenu() {
+        auto cnt = mu_get_container(&this, "!dmenu");
+        cnt.open = true;
+    }
+
+    @trusted
+    MuResFlags beginDmenu(ref IStr selection, const(IStr)[] items, IVec2 canvas, IStr str = "", Vec2 scale = Vec2(0.5f, 0.7f)) {
+        static char[muInputTextSize] input_buffer = '\0';
+
+        auto result = MuResFlag.none;
+        auto size = IVec2(cast(int) (canvas.x * scale.x), cast(int) (canvas.y * scale.y));
+        auto rect = IRect(canvas.x / 2 - size.x / 2, canvas.y / 2 - size.y / 2,  size.x, size.y);
+        if (beginWindow("!dmenu", rect, MuOptFlag.noClose | MuOptFlag.noResize | MuOptFlag.noTitle)) {
+            result |= MuResFlag.active;
+            auto window_cnt = mu_get_current_container(&this);
+            if (str.length) {
+                mu_layout_row(&this, 0, textWidth(style.font, str) + textWidth(style.font, "  "), -1);
+                label(str);
+            } else {
+                mu_layout_row(&this, 0, -1);
+            }
+
+            Sz input_length;
+            auto input_result = textbox(input_buffer, MuOptFlag.defaultFocus, &input_length);
+            auto input = input_buffer[0 .. input_length];
+            auto pick = -1;
+            auto first = -1;
+            auto buttonCount = 0;
+            mu_layout_row(&this, -1, -1);
+
+            beginPanel("!dmenupanel", MuOptFlag.noScroll);
+            mu_layout_row(&this, 0, -1);
+            foreach (i, item; items) {
+                auto starts_with_input = input.length == 0 || (item.length < input.length ? false : item[0 .. input.length] == input);
+                // Draw the item.
+                if (!starts_with_input) continue;
+                buttonCount += 1;
+                if (button(item, MuIcon.none, 0)) pick = cast(int) i;
+                // Do autocomplete.
+                if (buttonCount > 1) continue;
+                first = cast(int) i;
+                auto autocomplete_length = item.length;
+                if (keyPressed & MuKeyFlag.tab) {
+                    foreach (j, c; item) {
+                        input_buffer[j] = c;
+                        if (j > input.length && isAutocompleteSep(c)) {
+                            autocomplete_length = j;
+                            break;
+                        }
+                    }
+                    input_buffer[autocomplete_length] = '\0';
+                }
+            }
+            endPanel();
+
+            if (items.length && input_result & MuResFlag.submit) pick = first;
+            if (pick >= 0) {
+                result |= MuResFlag.submit;
+                input_buffer[0] = '\0';
+                window_cnt.open = false;
+                selection = items[pick];
+            }
+        }
+        return result;
+    }
+
+    void endDmenu() {
+        endWindow();
+    }
 }
 
 private @safe nothrow @nogc {
@@ -724,7 +1065,7 @@ private @safe nothrow @nogc {
         if (ctx.mousePressed & MuMouseFlag.left && ctx.keyDown & MuKeyFlag.shift && ctx.hover == id) {
             ctx.numberEdit = id;
             // Old: sprintf(ctx.numberEditBuffer.ptr, MU_REAL_FMT, *value);
-            ctx.numberEditBuffer.fmtIntoBuffer(muNumberFmt, *value);
+            ctx.numberEditBuffer.fmtIntoBuffer(muNumberFmtWithZero, *value);
         }
         if (ctx.numberEdit == id) {
             MuResFlags res = ctx.textboxRaw(ctx.numberEditBuffer, id, r, 0);
@@ -1259,153 +1600,6 @@ void mu_update_control(MuContext* ctx, MuId id, IRect rect, MuOptFlags opt, bool
 }
 
 @trusted
-MuResFlags mu_slider_ex(MuContext* ctx, float* value, float low, float high, float step, IStr fmt, MuOptFlags opt) {
-    /*
-    // Used for the `sprintf` function.
-    char[muMaxFmt + 1] fmt_buf = void;
-    assert(fmt_buf.length > fmt.length);
-    jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
-    fmt_buf[fmt.length] = '\0';
-    */
-
-    char[muMaxFmt + 1] buf = void;
-    int x, w;
-    IRect thumb;
-    MuResFlags res = 0;
-    float last = *value, v = last;
-    MuId id = mu_get_id(ctx, &value, value.sizeof);
-    IRect base = mu_layout_next(ctx);
-
-    /* handle text input mode */
-    if (_numberTextbox(ctx, &v, base, id)) { return res; }
-    /* handle normal mode */
-    mu_update_control(ctx, id, base, opt);
-    /* handle input */
-    if (ctx.focus == id && (ctx.mouseDown | ctx.mousePressed) & MuMouseFlag.left) {
-        v = low + (ctx.mousePos.x - base.x) * (high - low) / base.w;
-        if (step) { v = (cast(long) ((v + step / 2) / step)) * step; }
-    }
-    /* clamp and store value, update res */
-    *value = v = clamp(v, low, high);
-    if (last != v) { res |= MuResFlag.change; }
-
-    /* draw base */
-    mu_draw_control_frame(ctx, id, base, MuColor.base, opt);
-    /* draw thumb */
-    w = ctx.style.thumbSize;
-    x = cast(int) ((v - low) * (base.w - w) / (high - low));
-    thumb = IRect(base.x + x, base.y, w, base.h);
-    mu_draw_control_frame(ctx, id, thumb, MuColor.button, opt);
-    /* draw text  */
-    // This original was not checking the result of `sprintf`...
-    // Old: int buflen = sprintf(buf.ptr, fmt_buf.ptr, v);
-    // Old: if (buflen < 0) buflen = 0;
-    // Old: mu_draw_control_text(ctx, buf[0 .. buflen], base, MuColor.text, opt);
-    // The zero check is there because of `muNumberFmt`.
-    mu_draw_control_text(ctx, buf.fmtIntoBuffer(fmt[$ - 1] == '\0' ? fmt[0 .. $ - 1] : fmt, *value), base, MuColor.text, opt);
-    return res;
-}
-
-@trusted
-MuResFlags mu_slider_ex_int(MuContext* ctx, int* value, int low, int high, int step, IStr fmt, MuOptFlags opt) {
-    mu_push_id(ctx, &value, value.sizeof);
-    float temp = *value;
-    MuResFlags res = mu_slider_ex(ctx, &temp, low, high, step, fmt, opt);
-    *value = cast(int) temp;
-    mu_pop_id(ctx);
-    return res;
-}
-
-MuResFlags mu_slider(MuContext* ctx, float* value, float low, float high) {
-    return mu_slider_ex(ctx, value, low, high, 0.01f, muNumberFmt, MuOptFlag.alignCenter);
-}
-
-MuResFlags mu_slider_int(MuContext* ctx, int* value, int low, int high) {
-    return mu_slider_ex_int(ctx, value, low, high, 1, muNumberFmt, MuOptFlag.alignCenter);
-}
-
-@trusted
-MuResFlags mu_number_ex(MuContext* ctx, float* value, float step, IStr fmt, MuOptFlags opt) {
-    /*
-    // Used for the `sprintf` function.
-    char[muMaxFmt + 1] fmt_buf = void;
-    assert(fmt_buf.length > fmt.length);
-    jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
-    fmt_buf[fmt.length] = '\0';
-    */
-
-    char[muMaxFmt + 1] buf = void;
-    MuResFlags res = 0;
-    MuId id = mu_get_id(ctx, &value, value.sizeof);
-    IRect base = mu_layout_next(ctx);
-    float last = *value;
-
-    /* handle text input mode */
-    if (_numberTextbox(ctx, value, base, id)) { return res; }
-    /* handle normal mode */
-    mu_update_control(ctx, id, base, opt);
-    /* handle input */
-    if (ctx.focus == id && ctx.mouseDown & MuMouseFlag.left) { *value += ctx.mouseDelta.x * step; }
-    /* set flag if value changed */
-    if (*value != last) { res |= MuResFlag.change; }
-
-    /* draw base */
-    mu_draw_control_frame(ctx, id, base, MuColor.base, opt);
-    /* draw text  */
-    // This original was not checking the result of `sprintf`...
-    // Old: int buflen = sprintf(buf.ptr, fmt_buf.ptr, *value);
-    // Old: if (buflen < 0) buflen = 0;
-    // Old: mu_draw_control_text(ctx, buf[0 .. buflen], base, MuColor.text, opt);
-    // The zero check is there because of `muNumberFmt`.
-    mu_draw_control_text(ctx, buf.fmtIntoBuffer(fmt[$ - 1] == '\0' ? fmt[0 .. $ - 1] : fmt, *value), base, MuColor.text, opt);
-    return res;
-}
-
-@trusted
-MuResFlags mu_number_ex_int(MuContext* ctx, int* value, int step, IStr fmt, MuOptFlags opt) {
-    mu_push_id(ctx, &value, value.sizeof);
-    float temp = *value;
-    MuResFlags res = mu_number_ex(ctx, &temp, step, fmt, opt);
-    *value = cast(int) temp;
-    mu_pop_id(ctx);
-    return res;
-}
-
-MuResFlags mu_number(MuContext* ctx, float* value, float step) {
-    return mu_number_ex(ctx, value, step, muNumberFmt, MuOptFlag.alignCenter);
-}
-
-MuResFlags mu_number_int(MuContext* ctx, int* value, int step) {
-    return mu_number_ex_int(ctx, value, step, muNumberFmt, MuOptFlag.alignCenter);
-}
-
-MuResFlags mu_header_ex(MuContext* ctx, IStr label, MuOptFlags opt) {
-    return _header(ctx, label, 0, opt);
-}
-
-MuResFlags mu_header(MuContext* ctx, IStr label) {
-    return mu_header_ex(ctx, label, 0);
-}
-
-MuResFlags mu_begin_treenode_ex(MuContext* ctx, IStr label, MuOptFlags opt) {
-    MuResFlags res = _header(ctx, label, 1, opt);
-    if (res & MuResFlag.active) {
-        _getLayout(ctx).indent += ctx.style.indent;
-        ctx.idStack.push(ctx.lastId);
-    }
-    return res;
-}
-
-MuResFlags mu_begin_treenode(MuContext* ctx, IStr label) {
-    return mu_begin_treenode_ex(ctx, label, 0);
-}
-
-void mu_end_treenode(MuContext* ctx) {
-    _getLayout(ctx).indent -= ctx.style.indent;
-    mu_pop_id(ctx);
-}
-
-@trusted
 void mu_scrollbar_y(MuContext* ctx, MuContainer* cnt, IRect* b, IVec2 cs) {
     /* only add scrollbar if content size is larger than body */
     int maxscroll = cs.y - b.h;
@@ -1509,213 +1703,6 @@ void mu_scrollbar_x(MuContext* ctx, MuContainer* cnt, IRect* b, IVec2 cs) {
     } else {
         cnt.scroll.x = 0;
     }
-}
-
-@trusted
-MuResFlags mu_begin_window_ex(MuContext* ctx, IStr title, IRect rect, MuOptFlags opt) {
-    if (opt & MuOptFlag.autoSize) { opt |= MuOptFlag.noResize | MuOptFlag.noScroll; }
-
-    IRect body;
-    MuId id = mu_get_id_str(ctx, title);
-    MuContainer* cnt = _getContainer(ctx, id, opt);
-    if (!cnt || !cnt.open) { return MuResFlag.none; }
-    ctx.idStack.push(id);
-
-    if (cnt.rect.w == 0) { cnt.rect = rect; }
-    _beginRootContainer(ctx, cnt);
-    rect = body = cnt.rect;
-
-    /* draw frame */
-    if (~opt & MuOptFlag.noFrame) {
-        ctx.drawFrame(ctx, rect, MuColor.windowBg);
-    }
-
-    /* do title bar */
-    if (~opt & MuOptFlag.noTitle) {
-        IRect tr = rect;
-        tr.h = ctx.style.titleHeight;
-        ctx.drawFrame(ctx, tr, MuColor.titleBg);
-        /* do title text */
-        if (~opt & MuOptFlag.noTitle) {
-            if (~opt & MuOptFlag.noName) { mu_draw_control_text(ctx, title, tr, MuColor.titleText, opt); }
-            MuId id2 = mu_get_id_str(ctx, "!title"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
-            if (ctx.keyDown & ctx.dragWindowKey) {
-                mu_update_control(ctx, id2, body, opt, true);
-                if (id2 == ctx.focus && ctx.mouseDown & MuMouseFlag.left) {
-                    cnt.rect.x += ctx.mouseDelta.x;
-                    cnt.rect.y += ctx.mouseDelta.y;
-                }
-            } else {
-                mu_update_control(ctx, id2, tr, opt);
-                if (id2 == ctx.focus && ctx.mouseDown & MuMouseFlag.left) {
-                    cnt.rect.x += ctx.mouseDelta.x;
-                    cnt.rect.y += ctx.mouseDelta.y;
-                }
-            }
-            body.y += tr.h;
-            body.h -= tr.h;
-        }
-        /* do `close` button */
-        if (~opt & MuOptFlag.noClose) {
-            MuId id2 = mu_get_id_str(ctx, "!close"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
-            IRect r = IRect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
-            tr.w -= r.w;
-            mu_draw_icon(ctx, MuIcon.close, r, ctx.style.colors[MuColor.titleText]);
-            mu_update_control(ctx, id2, r, opt);
-            if (ctx.mousePressed & MuMouseFlag.left && id2 == ctx.focus) { cnt.open = false; }
-        }
-    }
-
-    _pushContainerBody(ctx, cnt, body, opt);
-
-    /* do `resize` handle */
-    if (~opt & MuOptFlag.noResize) {
-        int sz = ctx.style.scrollbarSize; // RXI, WHY WAS THIS USING THE TITLE HEIGHT?
-        MuId id2 = mu_get_id_str(ctx, "!resize"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
-        IRect r = IRect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
-        if (ctx.keyDown & ctx.resizeWindowKey) {
-            mu_update_control(ctx, id2, body, opt, true);
-            if (id2 == ctx.focus && ctx.mouseDown & MuMouseFlag.left) {
-                cnt.rect.w = max(96, cnt.rect.w + ctx.mouseDelta.x);
-                cnt.rect.h = max(64, cnt.rect.h + ctx.mouseDelta.y);
-            }
-        } else {
-            mu_update_control(ctx, id2, r, opt);
-            if (id2 == ctx.focus && ctx.mouseDown & MuMouseFlag.left) {
-                cnt.rect.w = max(96, cnt.rect.w + ctx.mouseDelta.x);
-                cnt.rect.h = max(64, cnt.rect.h + ctx.mouseDelta.y);
-            }
-        }
-    }
-    /* resize to content size */
-    if (opt & MuOptFlag.autoSize) {
-        IRect r = _getLayout(ctx).body;
-        cnt.rect.w = cnt.contentSize.x + (cnt.rect.w - r.w);
-        cnt.rect.h = cnt.contentSize.y + (cnt.rect.h - r.h);
-    }
-    /* close if this is a popup window and elsewhere was clicked */
-    if (opt & MuOptFlag.popup && ctx.mousePressed && ctx.hoverRoot != cnt) { cnt.open = false; }
-    mu_push_clip_rect(ctx, cnt.body);
-    return MuResFlag.active;
-}
-
-MuResFlags mu_begin_window(MuContext* ctx, IStr title, IRect rect) {
-    return mu_begin_window_ex(ctx, title, rect, 0);
-}
-
-void mu_end_window(MuContext* ctx) {
-    mu_pop_clip_rect(ctx);
-    _endRootContainer(ctx);
-}
-
-void mu_open_popup(MuContext* ctx, IStr name) {
-    MuContainer* cnt = mu_get_container(ctx, name);
-    /* set as hover root so popup isn't closed in begin_window_ex() */
-    ctx.hoverRoot = ctx.nextHoverRoot = cnt;
-    /* position at mouse cursor, open and bring-to-front */
-    cnt.rect = IRect(ctx.mousePos.x, ctx.mousePos.y, 1, 1);
-    cnt.open = true;
-    mu_bring_to_front(ctx, cnt);
-}
-
-MuResFlags mu_begin_popup(MuContext* ctx, IStr name) {
-    MuOptFlags opt = MuOptFlag.popup | MuOptFlag.autoSize | MuOptFlag.noTitle | MuOptFlag.closed;
-    return mu_begin_window_ex(ctx, name, IRect(0, 0, 0, 0), opt);
-}
-
-void mu_end_popup(MuContext* ctx) {
-    mu_end_window(ctx);
-}
-
-@trusted
-void mu_begin_panel_ex(MuContext* ctx, IStr name, MuOptFlags opt) {
-    MuContainer* cnt;
-    mu_push_id_str(ctx, name);
-    cnt = _getContainer(ctx, ctx.lastId, opt);
-    cnt.rect = mu_layout_next(ctx);
-    if (~opt & MuOptFlag.noFrame) { ctx.drawFrame(ctx, cnt.rect, MuColor.panelBg); }
-    ctx.containerStack.push(cnt);
-    _pushContainerBody(ctx, cnt, cnt.rect, opt);
-    mu_push_clip_rect(ctx, cnt.body);
-}
-
-void mu_begin_panel(MuContext* ctx, IStr name) {
-    mu_begin_panel_ex(ctx, name, 0);
-}
-
-void mu_end_panel(MuContext* ctx) {
-    mu_pop_clip_rect(ctx);
-    _popContainer(ctx);
-}
-
-void mu_open_dmenu(MuContext* ctx) {
-    auto cnt = mu_get_container(ctx, "!dmenu");
-    cnt.open = true;
-}
-
-@trusted
-MuResFlags mu_begin_dmenu(MuContext* ctx, IStr* selection, const(IStr)[] items, IVec2 canvas, IStr label = "", Vec2 scale = Vec2(0.5f, 0.7f)) {
-    static char[muInputTextSize] input_buffer = '\0';
-
-    auto result = MuResFlag.none;
-    auto size = IVec2(cast(int) (canvas.x * scale.x), cast(int) (canvas.y * scale.y));
-    auto rect = IRect(canvas.x / 2 - size.x / 2, canvas.y / 2 - size.y / 2,  size.x, size.y);
-    if (mu_begin_window_ex(ctx, "!dmenu", rect, MuOptFlag.noClose | MuOptFlag.noResize | MuOptFlag.noTitle)) {
-        result |= MuResFlag.active;
-        auto window_cnt = mu_get_current_container(ctx);
-        if (label.length) {
-            mu_layout_row(ctx, 0, ctx.textWidth(ctx.style.font, label) + ctx.textWidth(ctx.style.font, "  "), -1);
-            ctx.label(label);
-        } else {
-            mu_layout_row(ctx, 0, -1);
-        }
-
-        Sz input_length;
-        auto input_result = ctx.textbox(input_buffer, MuOptFlag.defaultFocus, &input_length);
-        auto input = input_buffer[0 .. input_length];
-        auto pick = -1;
-        auto first = -1;
-        auto buttonCount = 0;
-        mu_layout_row(ctx, -1, -1);
-
-        mu_begin_panel_ex(ctx, "!dmenupanel", MuOptFlag.noScroll);
-        mu_layout_row(ctx, 0, -1);
-        foreach (i, item; items) {
-            auto starts_with_input = input.length == 0 || (item.length < input.length ? false : item[0 .. input.length] == input);
-            // Draw the item.
-            if (!starts_with_input) continue;
-            buttonCount += 1;
-            if (ctx.button(item, MuIcon.none, 0)) pick = cast(int) i;
-            // Do autocomplete.
-            if (buttonCount > 1) continue;
-            first = cast(int) i;
-            auto autocomplete_length = item.length;
-            if (ctx.keyPressed & MuKeyFlag.tab) {
-                foreach (j, c; item) {
-                    input_buffer[j] = c;
-                    if (j > input.length && isAutocompleteSep(c)) {
-                        autocomplete_length = j;
-                        break;
-                    }
-                }
-                input_buffer[autocomplete_length] = '\0';
-            }
-        }
-        mu_end_panel(ctx);
-
-        if (items.length && input_result & MuResFlag.submit) pick = first;
-        if (pick >= 0) {
-            result |= MuResFlag.submit;
-            input_buffer[0] = '\0';
-            window_cnt.open = false;
-            *selection = items[pick];
-        }
-    }
-    return result;
-}
-
-void mu_end_dmenu(MuContext* ctx) {
-    mu_end_window(ctx);
 }
 
 // ORIGINAL MICROUI LICENSE

@@ -29,16 +29,11 @@ void readyUi(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer
     ui.manualBordersMode = true;
     if (data) {
         auto size = data.size * ui.style.fontScale;
-        // No idea, these values just look good sometimes.
-        // TODO: Should find a better way to do that haha.
-        if (size <= 16) {
-            // Nothing LOLOLOLO.
-        } else if (size <= 38) {
-            ui.style.border = 2;
-            ui.style.padding += 4;
-        } else {
-            ui.style.border = 3;
-            ui.style.padding += 8;
+        auto t = (size - 16.0f) / (38.0f - 16.0f);
+        if (t > 0.0f) {
+            // Scale factor: 0.0 at size=16, 1.0 at size=38.
+            ui.style.border = cast(int) lerp(1, 3, t);
+            ui.style.padding += cast(int) lerp(0, 8, t);
         }
     }
 }

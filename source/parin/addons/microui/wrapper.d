@@ -17,6 +17,9 @@ import parin.engine;
 
 UiContext uiContext;
 
+enum uiNumberFmt         = muNumberFmt;
+enum uiNumberFmtWithZero = muNumberFmtWithZero;
+
 alias UiTextWidthFunc  = MuTextWidthFunc;  /// Used for getting the width of the text.
 alias UiTextHeightFunc = MuTextHeightFunc; /// Used for getting the height of the text.
 alias UiDrawFrameFunc  = MuDrawFrameFunc;  /// Used for drawing a frame.
@@ -68,10 +71,10 @@ struct UiPrivate {}
 
 /// Used by the `members` function to show data in a specific way.
 struct UiMember {
-    const(char)[] name; /// The name of the member.
-    float low;         /// Used by sliders.
-    float high;        /// Used by sliders.
-    float step;        /// Used by sliders.
+    IStr name;  /// The name of the member.
+    float low;  /// Used by sliders.
+    float high; /// Used by sliders.
+    float step; /// Used by sliders.
 
     @safe nothrow @nogc pure:
 
@@ -85,14 +88,14 @@ struct UiMember {
         this.step = step;
     }
 
-    this(const(char)[] name, float low, float high, float step = float.nan) {
+    this(IStr name, float low, float high, float step = float.nan) {
         this.name = name;
         this.low = low;
         this.high = high;
         this.step = step;
     }
 
-    this(const(char)[] name, float step = float.nan) {
+    this(IStr name, float step = float.nan) {
         this.name = name;
         this.step = step;
     }
@@ -128,7 +131,7 @@ UiId getUiId(const(void)* data, Sz size) {
     return mu_get_id(&uiContext, data, size);
 }
 
-UiId getUiId(const(char)[] str) {
+UiId getUiId(IStr str) {
     return mu_get_id_str(&uiContext, str);
 }
 
@@ -136,7 +139,7 @@ void pushUiId(const(void)* data, Sz size) {
     mu_push_id(&uiContext, data, size);
 }
 
-void pushUiId(const(char)[] str) {
+void pushUiId(IStr str) {
     mu_push_id_str(&uiContext, str);
 }
 
@@ -164,7 +167,7 @@ UiContainer* getCurrentUiContainer() {
     return mu_get_current_container(&uiContext);
 }
 
-UiContainer* getUiContainer(const(char)[] name) {
+UiContainer* getUiContainer(IStr name) {
     return mu_get_container(&uiContext, name);
 }
 
@@ -216,7 +219,7 @@ void uiInputKeyUp(UiKeyFlags input) {
     mu_input_keyup(&uiContext, input);
 }
 
-void uiInputText(const(char)[] text) {
+void uiInputText(IStr text) {
     mu_input_text(&uiContext, text);
 }
 
@@ -244,7 +247,7 @@ void drawUibox(UiRect rect, UiColor color) {
     mu_draw_box(&uiContext, rect, color);
 }
 
-void drawUiText(UiFont font, const(char)[] str, UiVec point, UiColor color) {
+void drawUiText(UiFont font, IStr str, UiVec point, UiColor color) {
     mu_draw_text(&uiContext, font, str, point, color);
 }
 
@@ -292,7 +295,7 @@ void drawControlFrame(UiId id, UiRect rect, UiColorEnum colorId, UiOptFlags opt,
     mu_draw_control_frame(&uiContext, id, rect, colorId, opt, atlasId);
 }
 
-void drawControlText(const(char)[] text, UiRect rect, UiColorEnum colorId, UiOptFlags opt) {
+void drawControlText(IStr text, UiRect rect, UiColorEnum colorId, UiOptFlags opt) {
     mu_draw_control_text(&uiContext, text, rect, colorId, opt);
 }
 
@@ -304,20 +307,20 @@ void updateControl(UiId id, UiRect rect, UiOptFlags opt) {
     mu_update_control(&uiContext, id, rect, opt);
 }
 
-void text(const(char)[] text) {
+void text(IStr text) {
     uiContext.text(text);
 }
 
-void label(const(char)[] text) {
+void label(IStr text) {
     uiContext.label(text);
 }
 
-UiResFlags button(const(char)[] label, UiIconEnum icon = UiIconEnum.none, UiOptFlags opt = UiOptFlag.alignCenter) {
+UiResFlags button(IStr label, UiIconEnum icon = UiIconEnum.none, UiOptFlags opt = UiOptFlag.alignCenter) {
     return uiContext.button(label, icon, opt);
 }
 
 @trusted
-UiResFlags checkbox(ref bool state, const(char)[] label = "") {
+UiResFlags checkbox(ref bool state, IStr label = "") {
     return uiContext.checkbox(state, label);
 }
 
@@ -329,55 +332,27 @@ UiResFlags textbox(char[] buffer, Sz* newlen = null) {
     return uiContext.textbox(buffer, newlen);
 }
 
-@trusted
-UiResFlags slider(ref float value, float low, float high, float step, const(char)[] fmt, UiOptFlags opt) {
-    return mu_slider_ex(&uiContext, &value, low, high, step, fmt, opt);
+UiResFlags slider(ref float value, float low, float high, float step = 0.01f, IStr fmt = uiNumberFmt, UiOptFlags opt = UiOptFlag.alignCenter) {
+    return uiContext.slider(value, low, high, step, fmt, opt);
 }
 
-@trusted
-UiResFlags slider(ref int value, int low, int high, int step, const(char)[] fmt, UiOptFlags opt) {
-    return mu_slider_ex_int(&uiContext, &value, low, high, step, fmt, opt);
+UiResFlags slider(ref int value, int low, int high, int step = 1, IStr fmt = uiNumberFmt, UiOptFlags opt = UiOptFlag.alignCenter) {
+    return uiContext.slider(value, low, high, step, fmt, opt);
 }
 
-@trusted
-UiResFlags slider(ref float value, float low, float high) {
-    return mu_slider(&uiContext, &value, low, high);
+UiResFlags number(ref float value, float step = 0.01f, IStr fmt = uiNumberFmt, UiOptFlags opt = UiOptFlag.alignCenter) {
+    return uiContext.number(value, step, fmt, opt);
 }
 
-@trusted
-UiResFlags slider(ref int value, int low, int high) {
-    return mu_slider_int(&uiContext, &value, low, high);
+UiResFlags number(ref int value, int step = 1, IStr fmt = uiNumberFmt, UiOptFlags opt = UiOptFlag.alignCenter) {
+    return uiContext.number(value, step, fmt, opt);
 }
 
-@trusted
-UiResFlags number(ref float value, float step, const(char)[] fmt, UiOptFlags opt) {
-    return mu_number_ex(&uiContext, &value, step, fmt, opt);
+UiResFlags header(IStr label, UiOptFlags opt = UiOptFlag.none) {
+    return uiContext.header(label, opt);
 }
 
-@trusted
-UiResFlags number(ref int value, int step, const(char)[] fmt, UiOptFlags opt) {
-    return mu_number_ex_int(&uiContext, &value, step, fmt, opt);
-}
-
-@trusted
-UiResFlags number(ref float value, float step = 0.01f) {
-    return mu_number(&uiContext, &value, step);
-}
-
-@trusted
-UiResFlags number(ref int value, int step = 1) {
-    return mu_number_int(&uiContext, &value, step);
-}
-
-UiResFlags header(const(char)[] label, UiOptFlags opt) {
-    return mu_header_ex(&uiContext, label, opt);
-}
-
-UiResFlags header(const(char)[] label) {
-    return mu_header(&uiContext, label);
-}
-
-// TODO: Needs cleaning. It looks likes this because I just wanted to get something to work.
+// TODO: Needs cleaning. It looks likes this because I just wanted to get something to work and original microui could not use Joka.
 void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) {
     auto window = getCurrentUiContainer();
     row(0, labelWidth, -1);
@@ -525,76 +500,63 @@ void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) 
     row(0, 0);
 }
 
-UiResFlags headerAndMembers(T)(ref T data, int labelWidth, const(char)[] label = "", bool canShowPrivateMembers = false) {
+UiResFlags headerAndMembers(T)(ref T data, int labelWidth, IStr label = "", bool canShowPrivateMembers = false) {
     auto result = header(label.length ? label : typeof(data).stringof);
     if (result) members(data, labelWidth, canShowPrivateMembers);
     row(0, 0);
     return result;
 }
 
-UiResFlags beginTreeNode(const(char)[] label, UiOptFlags opt) {
-    return mu_begin_treenode_ex(&uiContext, label, opt);
-}
-
-UiResFlags beginTreeNode(const(char)[] label) {
-    return mu_begin_treenode(&uiContext, label);
+UiResFlags beginTreeNode(IStr label, UiOptFlags opt = UiOptFlag.none) {
+    return uiContext.beginTreeNode(label, opt);
 }
 
 void endTreeNode() {
-    mu_end_treenode(&uiContext);
+    uiContext.endTreeNode();
 }
 
-UiResFlags beginWindow(const(char)[] title, UiRect rect, UiOptFlags opt) {
-    return mu_begin_window_ex(&uiContext, title, rect, opt);
-}
-
-UiResFlags beginWindow(const(char)[] title, UiRect rect) {
-    return mu_begin_window(&uiContext, title, rect);
+UiResFlags beginWindow(IStr title, UiRect rect, UiOptFlags opt = UiOptFlag.none) {
+    return uiContext.beginWindow(title, rect, opt);
 }
 
 void endWindow() {
-    mu_end_window(&uiContext);
+    uiContext.endWindow();
 }
 
-void openPopup(const(char)[] name) {
-    mu_open_popup(&uiContext, name);
+void openPopup(IStr name) {
+    uiContext.openPopup(name);
 }
 
-UiResFlags beginPopup(const(char)[] name) {
-    return mu_begin_popup(&uiContext, name);
+UiResFlags beginPopup(IStr name) {
+    return uiContext.beginPopup(name);
 }
 
 void endPopup() {
-    mu_end_popup(&uiContext);
+    uiContext.endPopup();
 }
 
-void beginPanel(const(char)[] name, UiOptFlags opt) {
-    mu_begin_panel_ex(&uiContext, name, opt);
-}
-
-void beginPanel(const(char)[] name) {
-    mu_begin_panel(&uiContext, name);
+void beginPanel(IStr name, UiOptFlags opt = UiOptFlag.none) {
+    uiContext.beginPanel(name, opt);
 }
 
 void endPanel() {
-    mu_end_panel(&uiContext);
+    uiContext.endPanel();
 }
 
 void openDMenu() {
-    mu_open_dmenu(&uiContext);
+    uiContext.openDmenu();
 }
 
-@trusted
-UiResFlags beginDMenu(ref const(char)[] selection, const(const(char)[])[] items, UiVec canvas, const(char)[] label = "", UiFVec scale = UiFVec(0.5f, 0.7f)) {
-    return mu_begin_dmenu(&uiContext, &selection, items, canvas, label, scale);
+UiResFlags beginDMenu(ref IStr selection, const(IStr)[] items, UiVec canvas, IStr label = "", UiFVec scale = UiFVec(0.5f, 0.7f)) {
+    return uiContext.beginDmenu(selection, items, canvas, label, scale);
 }
 
 void endDMenu() {
-    mu_end_dmenu(&uiContext);
+    uiContext.endDmenu();
 }
 
 @trusted
-int microuiTempUiTextWidthFunc(UiFont font, const(char)[] str) {
+int tempMuUiTextWidthFunc(UiFont font, IStr str) {
     auto data = cast(FontId*) font;
     return cast(int) measureTextSize(
         *data,
@@ -605,7 +567,7 @@ int microuiTempUiTextWidthFunc(UiFont font, const(char)[] str) {
 }
 
 @trusted
-int microuiTempUiTextHeightFunc(UiFont font) {
+int tempMuUiTextHeightFunc(UiFont font) {
     auto data = cast(FontId*) font;
     return data.size * uiStyle.fontScale;
 }
@@ -614,32 +576,20 @@ int microuiTempUiTextHeightFunc(UiFont font) {
 @trusted
 void readyUi(UiFont font = null, int fontScale = 1) {
     auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
-    readyUiCore(&microuiTempUiTextWidthFunc, &microuiTempUiTextHeightFunc, data, fontScale);
+    readyUiCore(&tempMuUiTextWidthFunc, &tempMuUiTextHeightFunc, data, fontScale);
     if (data) {
         auto size = data.size * uiStyle.fontScale;
-        // No idea, these values just look good sometimes.
-        // TODO: Should find a better way to do that haha.
-        uiStyle.size = UiVec(size * 6, size);
-        uiStyle.titleHeight = cast(int) (size * 1.5f);
-        if (size <= 8) {
-            uiStyle.size = UiVec(size * 6, size - 4);
-            uiStyle.titleHeight = cast(int) (size * 2.0f);
-        } else if (size <= 16) {
-            // Nothing LOLOLOLO.
-        } else if (size <= 38) {
-            uiStyle.border = 2;
-            uiStyle.spacing += 4;
-            uiStyle.padding += 4;
-            uiStyle.scrollbarSize += 4;
-            uiStyle.scrollbarSpeed += 4;
-            uiStyle.thumbSize += 4;
-        } else {
-            uiStyle.border = 3;
-            uiStyle.spacing += 8;
-            uiStyle.padding += 8;
-            uiStyle.scrollbarSize += 8;
-            uiStyle.scrollbarSpeed += 8;
-            uiStyle.thumbSize += 8;
+        auto t = (size - 8.0f) / (38.0f - 8.0f);
+        if (t > 0.0f) {
+            // Scale factor: 0.0 at size=8, 1.0 at size=38.
+            uiStyle.size = UiVec(cast(int) (size * 6), cast(int) (size + lerp(-4, 0, t)));
+            uiStyle.titleHeight = cast(int) (size * lerp(2.0f, 1.5f, t));
+            uiStyle.border = cast(int) lerp(1, 3, t);
+            uiStyle.spacing += cast(int) lerp(0, 8, t);
+            uiStyle.padding += cast(int) lerp(0, 8, t);
+            uiStyle.scrollbarSize += cast(int) lerp(0, 8, t);
+            uiStyle.scrollbarSpeed += cast(int) lerp(0, 8, t);
+            uiStyle.thumbSize += cast(int) lerp(0, 8, t);
         }
     }
 }
@@ -802,7 +752,7 @@ void drawUiState() {
                     );
                 } else {
                     parinOptions.scale = Vec2(uiStyle.fontScale, uiStyle.fontScale);
-                    const(char)[] icon = "?";
+                    IStr icon = "?";
                     switch (cmd.icon.id) {
                         case UiIconEnum.close: icon = "x"; break;
                         case UiIconEnum.check: icon = "*"; break;
