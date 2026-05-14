@@ -18,7 +18,7 @@ More specifically:
 
 - **Focused on games**: Opinionated defaults make drawing and other common game tasks easier out of the box.
 - **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
-- **Batteries included**: Arcady physics, debug UI, frame allocator, fixed aspect ratio...
+- **Batteries included**: Arcady physics, debug UI, fixed aspect ratio...
 - **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management when needed.
 
 > [!NOTE]
@@ -121,15 +121,15 @@ If you notice anything missing or want to contribute, feel free to open an [issu
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except ECS.
 
-## Devlogs
+## Devlogs & Articles
 
 - Latest: [October 2025](https://dev.to/kapendev/parin-game-engine-devlog-october-2025-5dfi)
 - More: [dev.to/kapendev](https://dev.to/kapendev)
-- Archive: [parin/devlogs](devlogs/)
+- Archive: [parin/archive](archive/)
 
 ## Recommended Tools
 
-While it is possible to use any tool with Parin, these open-source ones are simple to use and work well with it:
+While it is possible to use any tool with Parin, these open-source ones are simple to use and work well:
 
 - Editor: [Pulsar](https://pulsar-edit.dev/) or [Lite XL](https://lite-xl.com/)
 - Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama) or [GIMP](https://www.gimp.org/)
@@ -170,9 +170,11 @@ No. The following projects might be useful:
 - [arsd.ini](https://github.com/adamdruppe/arsd/blob/master/ini.d): INI configuration file support.
 - [newsdlang](https://codeberg.org/ZILtoid1991/newsdlang): SDLang/XDL configuration file support.
 - [dex-cf](https://codeberg.org/configuration-file/d): CF (Configuration File) support.
+- [dtiled](https://github.com/rcorre/dtiled): D language parser for Tiled map files.
 - [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
 - [Inochi2D](https://github.com/Inochi2D/inochi2d): A library for realtime 2D puppet animation.
 - [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
+- [gameserver](https://github.com/schveiguy/gameserver): Simple game server for toying with online games.
 
 ### How do I use `Vec2`?
 
