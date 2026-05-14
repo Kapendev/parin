@@ -41,6 +41,17 @@ debug {
             Sz count = 1;
         }
 
+        struct _MallocGroupKey {
+            IStr file;
+            Sz line;
+            IStr group;
+        }
+
+        struct _MallocGroupKeyValue {
+            _MallocGroupKey key;
+            _MallocGroupInfo value;
+        }
+
         struct _MemoryTrackingState {
             _MallocInfo[void*] table;
             _MallocInfo[] invalidFreeTable;
@@ -48,7 +59,7 @@ debug {
             Sz totalBytes;
             bool canIgnoreInvalidFree;
             Str infoBuffer;
-            _MallocGroupInfo[_MallocInfo] groupBuffer;
+            _MallocGroupKeyValue[] groupBuffer;
         }
 
         _MemoryTrackingState _memoryTrackingState;
@@ -581,15 +592,22 @@ IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
     static if (isTrackingMemory) {
         // TODO: This needs to be simpler because it was so hard to remember how it works.
         static void _updateGroupBuffer(T)(ref T table) {
-            _memoryTrackingState.groupBuffer.clear();
+            _memoryTrackingState.groupBuffer.length = 0;
             foreach (key, value; table) {
                 if (value.canIgnore) continue;
-                auto groupKey = _MallocInfo(value.file, value.line, 0, false, value.group);
-                if (auto groupValue = groupKey in _memoryTrackingState.groupBuffer) {
-                    groupValue.size += value.size;
-                    groupValue.count += 1;
-                } else {
-                    _memoryTrackingState.groupBuffer[groupKey] = _MallocGroupInfo(value.size, 1);
+                auto groupKey = _MallocGroupKey(value.file, value.line, value.group);
+                auto found = false;
+                foreach (ref entry; _memoryTrackingState.groupBuffer) {
+                    auto keysAreSame = entry.key.file  == groupKey.file && entry.key.line  == groupKey.line && entry.key.group == groupKey.group;
+                    if (keysAreSame) {
+                        entry.value.size += value.size;
+                        entry.value.count += 1;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    _memoryTrackingState.groupBuffer ~= _MallocGroupKeyValue(groupKey, _MallocGroupInfo(value.size, 1));
                 }
             }
         }
@@ -606,17 +624,17 @@ IStr memoryTrackingInfo(IStr pathFilter = "", bool canShowEmpty = false) {
                 _memoryTrackingState.infoBuffer ~= fmt("Memory Leaks: {} (total {} bytes{})\n{}", finalLength, _memoryTrackingState.totalBytes, ignoreText, filterText);
             }
             _updateGroupBuffer(_memoryTrackingState.table);
-            foreach (key, value; _memoryTrackingState.groupBuffer) {
-                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
-                _memoryTrackingState.infoBuffer ~= fmt("  {} leak, {} bytes, {}:{}{}\n", value.count, value.size, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
+            foreach (ref entry; _memoryTrackingState.groupBuffer) {
+                if (pathFilter.length && entry.key.file.findEnd(pathFilter) == -1) continue;
+                _memoryTrackingState.infoBuffer ~= fmt("  {} leak, {} bytes, {}:{}{}\n", entry.value.count, entry.value.size, entry.key.file, entry.key.line, entry.key.group.length ? " [group: \"{}\"]".fmt(entry.key.group) : "");
             }
             if (canShowEmpty || _memoryTrackingState.invalidFreeTable.length != 0) {
                 _memoryTrackingState.infoBuffer ~= fmt("Invalid Frees: {}\n{}", _memoryTrackingState.invalidFreeTable.length, filterText);
             }
             _updateGroupBuffer(_memoryTrackingState.invalidFreeTable);
-            foreach (key, value; _memoryTrackingState.groupBuffer) {
-                if (pathFilter.length && key.file.findEnd(pathFilter) == -1) continue;
-                _memoryTrackingState.infoBuffer ~= fmt("  {} free, {}:{}{}\n", value.count, key.file, key.line, key.group.length ? " [group: \"{}\"]".fmt(key.group) : "");
+            foreach (ref entry; _memoryTrackingState.groupBuffer) {
+                if (pathFilter.length && entry.key.file.findEnd(pathFilter) == -1) continue;
+                _memoryTrackingState.infoBuffer ~= fmt("  {} free, {}:{}{}\n", entry.value.count, entry.key.file, entry.key.line, entry.key.group.length ? " [group: \"{}\"]".fmt(entry.key.group) : "");
             }
         } catch (Exception e) {
             return "No memory tracking data available.\n";

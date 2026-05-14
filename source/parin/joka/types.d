@@ -756,39 +756,6 @@ bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
 }
 
-/// Basic set of slice ops.
-mixin template sliceOps(T, TT, IStr itemsMemberName = "items") if (__traits(hasMember, T, itemsMemberName)) {
-    pragma(inline, true) @trusted nothrow @nogc {
-        TT[] opSlice(Sz dim)(Sz i, Sz j) {
-            return mixin(itemsMemberName, "[i .. j]");
-        }
-
-        TT[] opIndex() {
-            return mixin(itemsMemberName, "[]");
-        }
-
-        TT[] opIndex(TT[] slice) {
-            return slice;
-        }
-
-        ref TT opIndex(Sz i) {
-            return mixin(itemsMemberName, "[i]");
-        }
-
-        void opIndexAssign(const(TT) rhs, Sz i) {
-            mixin(itemsMemberName, "[i] = cast(TT) rhs;");
-        }
-
-        void opIndexOpAssign(const(char)[] op)(const(TT) rhs, Sz i) {
-            mixin(itemsMemberName, "[i]", op, "= cast(TT) rhs;");
-        }
-
-        Sz opDollar(Sz dim)() {
-            return mixin(itemsMemberName, ".length");
-        }
-    }
-}
-
 // Function test.
 unittest {
     alias Number = Union!(float, double);

@@ -5,9 +5,6 @@
 // Project: https://github.com/Kapendev/microui-d
 // ---
 
-// TODO: Add more doc comments.
-// TODO: work on attributes maybe.
-
 /// High-level wrapper around the low-level `core` module.
 /// Provides helper functions that use a global context and follow D naming conventions.
 module parin.addons.microui.wrapper;

@@ -157,8 +157,7 @@ struct EngineState {
     Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
     bool dprintIsVisible = true;
 
-    FixedList!(DepthSortCommand, 32768) depthSortCommandBuffer;
-    FixedList!(DepthSortPair, 32768) depthSortPairBuffer;
+    DepthSortData depthSortData;
     DepthSortMode depthSortMode;
     bool depthSortActive;
 
@@ -589,6 +588,24 @@ _Attached!T Attached(T)(ref T object) {
     return _Attached!T(object);
 }
 
+struct DepthSortData {
+    BufferList!DepthSortCommand commandBuffer;
+    BufferList!DepthSortPair pairBuffer;
+
+    @safe nothrow:
+
+    this(Sz length) {
+        this = jokaMakeJoint!DepthSortData(length, length);
+    }
+
+    @trusted
+    void free() {
+        jokaFree(this.tupleof[0].ptr);
+        commandBuffer.clear();
+        pairBuffer.clear();
+    }
+}
+
 /// Depth sorting modes.
 enum DepthSortMode : ubyte {
     topDown,        /// Sorts with: Layer + Y + Call Order
@@ -672,6 +689,7 @@ extern(C) @trusted nothrow @nogc {
 /// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
     _engineState = jokaMake!EngineState();
+    _engineState.depthSortData = DepthSortData(32768); // NOTE: MAGIC NUMBER LOL.
 
     if (args.length) {
         _engineState.assetsPath.append(pathConcat(args[0].pathDirName, "assets"));
@@ -830,6 +848,7 @@ void closeWindow() {
     auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: I assume `filter` is a static string or managed by the user.
     auto isLogging = isLoggingMemoryTrackingInfo;
     _engineState.arena.free();
+    _engineState.depthSortData.free();
     _engineState.jokaFree();
     _engineState = null;
     bk.closeWindow();
@@ -2132,8 +2151,8 @@ void endClip() {
 /// Begins a depth sort. Works only with textures.
 void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown) {
     if (_engineState.depthSortActive == true) assert(0, "Call `endDepthSort` after `beginDepthSort`.");
-    _engineState.depthSortCommandBuffer.clear();
-    _engineState.depthSortPairBuffer.clear();
+    _engineState.depthSortData.commandBuffer.clear();
+    _engineState.depthSortData.pairBuffer.clear();
     _engineState.depthSortMode = mode;
     _engineState.depthSortActive = true;
 }
@@ -2142,23 +2161,23 @@ void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown) {
 void endDepthSort() {
     if (_engineState.depthSortActive == false) assert(0, "Call `beginDepthSort` before `endDepthSort`.");
     _engineState.depthSortActive = false;
-    if (_engineState.depthSortPairBuffer.length == 0) return;
+    if (_engineState.depthSortData.pairBuffer.length == 0) return;
     with (DepthSortMode) final switch (_engineState.depthSortMode) {
         case topDown:
-            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDown);
+            stdc.qsort(_engineState.depthSortData.pairBuffer.ptr, _engineState.depthSortData.pairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDown);
             break;
         case topDownFast:
-            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDownFast);
+            stdc.qsort(_engineState.depthSortData.pairBuffer.ptr, _engineState.depthSortData.pairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDownFast);
             break;
         case topDownFastest:
-            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDownFastest);
+            stdc.qsort(_engineState.depthSortData.pairBuffer.ptr, _engineState.depthSortData.pairBuffer.length, DepthSortPair.sizeof, &_parinSortTopDownFastest);
             break;
         case layered:
-            stdc.qsort(_engineState.depthSortPairBuffer.ptr, _engineState.depthSortPairBuffer.length, DepthSortPair.sizeof, &_parinSortLayered);
+            stdc.qsort(_engineState.depthSortData.pairBuffer.ptr, _engineState.depthSortData.pairBuffer.length, DepthSortPair.sizeof, &_parinSortLayered);
             break;
     }
-    foreach (ref temp; _engineState.depthSortPairBuffer) {
-        auto data = &_engineState.depthSortCommandBuffer.ptr[temp.i];
+    foreach (ref temp; _engineState.depthSortData.pairBuffer) {
+        auto data = &_engineState.depthSortData.commandBuffer.ptr[temp.i];
         drawTextureArea(
             data.texture,
             data.area,
@@ -2269,12 +2288,12 @@ void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOpt
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (_engineState.depthSortActive) {
-        if (_engineState.depthSortCommandBuffer.push(DepthSortCommand(texture, area, position, options))) {
+        if (_engineState.depthSortData.commandBuffer.push(DepthSortCommand(texture, area, position, options))) {
             endDepthSort();
             beginDepthSort(_engineState.depthSortMode);
-            _engineState.depthSortCommandBuffer.push(DepthSortCommand(texture, area, position, options));
+            _engineState.depthSortData.commandBuffer.push(DepthSortCommand(texture, area, position, options));
         }
-        _engineState.depthSortPairBuffer.push(DepthSortPair(position.y, cast(ushort) (_engineState.depthSortCommandBuffer.length - 1), options.layer));
+        _engineState.depthSortData.pairBuffer.push(DepthSortPair(position.y, cast(ushort) (_engineState.depthSortData.commandBuffer.length - 1), options.layer));
     } else {
         version (ParinSkipDrawChecks) {
             pragma(msg, "Parin: Skipping draw checks.");

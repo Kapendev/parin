@@ -186,5 +186,10 @@ int ferror(FILE* stream);
 
 // --- stdlib.h
 
+void* malloc(size_t size);
+void* calloc(size_t objectCount, size_t objectSize);
+void* realloc(void* ptr, size_t newSize);
+void free(void* ptr);
+
 alias STDLIB_QSORT_FUNC = int function(const(void)* a, const(void)* b);
 void qsort(void* ptr, size_t count, size_t size, STDLIB_QSORT_FUNC comp);

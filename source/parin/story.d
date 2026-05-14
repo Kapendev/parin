@@ -311,7 +311,7 @@ struct Story {
     Fault parse(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
         script.clear();
         script.appendSource(file, line, text);
-        return prepare();
+        return prepare(file, line);
     }
 
     // TODO: Needs a refaktor. I added some functions inside it for now to avoid the `__chkstk` error.
