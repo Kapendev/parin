@@ -730,16 +730,15 @@ IStr indexErrorMessage(Sz i) {
 }
 
 /// Can be used to make a distinct type. Useful for IDs.
-/// Usage: `struct Number { mixin distinct!int; }`
-mixin template distinct(T) {
+/// Usage: `struct Number { mixin typed!int; }`
+mixin template typed(T) {
+    alias Base = T;
     T _data;
     alias _data this;
-
-    @safe nothrow @nogc
-    this(T value) {
-        this._data = value;
-    }
 }
+
+/// Same as `typed` mixin.
+alias distinct = typed;
 
 /// Returns the index of an item inside the given alias arguments or -1 on error.
 int findInAliasArgs(T, A...)() {
@@ -931,7 +930,7 @@ unittest {
 
 // Distinct test.
 unittest {
-    struct Foo { mixin distinct!int; }
+    struct Foo { mixin typed!int; }
 
     assert(is(Foo == int) == false);
     assert(is(Foo : int) == true);

@@ -5,10 +5,8 @@ import parin;
 
 Entities entities;
 
-// The `Union` type allows a single variable to hold one of several different types.
-alias Entity = Union!(EntityBase, Actor, Player);
-// A generational list to store and manage the entities.
-alias Entities = GenList!Entity;
+alias Entity = Union!(EntityBase, Actor, Player); // The `Union` type allows a single variable to hold one of several different types.
+alias Entities = GenList!Entity; // A generational list to store and manage the entities.
 
 // Ensure at compile time that all types in the union have `EntityBase` as their first field.
 // This guarantees that using `.base` is always safe, regardless of the active type.
@@ -69,12 +67,10 @@ static foreach (T; Entity.Types) {
 
 void ready() {
     lockResolution(320, 180);
-
     // Instantiate entities and add them to the list.
     entities.push(Actor(40, 60).xx);
     entities.push(Actor(80, 120).xx);
     entities.push(Player(320 / 2, 180 / 2 - 16).xx);
-
     // Access the base shared by all types in the union.
     // This allows bulk modification of shared data, like position, without checking the specific type.
     foreach (ref e; entities.items) e.base.body.x += 35;
@@ -82,7 +78,6 @@ void ready() {
 
 bool update(float dt) {
     // e.call!"methodName"() calls the correct method for the underlying type.
-
     // Update all entities in the list.
     foreach (ref e; entities.items) e.call!"update"(dt);
     // Draw all entities in the list.

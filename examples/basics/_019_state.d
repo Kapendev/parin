@@ -61,7 +61,7 @@ struct StateBase {
 // The state for the title menu.
 struct TitleState {
     // Like `alias base this` from `_018_entity.d`, but using a helper mixin provided by Parin.
-    mixin distinct!StateBase;
+    mixin typed!StateBase;
 
     void ready() {
         setWindowBackgroundColor(black);
@@ -92,7 +92,7 @@ struct TitleState {
 
 // The state for the gameplay logic.
 struct PlayState {
-    mixin distinct!StateBase;
+    mixin typed!StateBase;
 
     List!Vec2 textPoints;
 

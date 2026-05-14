@@ -903,9 +903,7 @@ struct MuContext {
         return beginWindow(name, IRect(0, 0, 0, 0), opt);
     }
 
-    void endPopup() {
-        endWindow();
-    }
+    alias endPopup = endWindow;
 
     void beginPanel(IStr name, MuOptFlags opt = MuOptFlag.none) {
         MuContainer* cnt;
@@ -989,9 +987,7 @@ struct MuContext {
         return result;
     }
 
-    void endDmenu() {
-        endWindow();
-    }
+    alias endDmenu = endWindow;
 }
 
 private @safe nothrow @nogc {

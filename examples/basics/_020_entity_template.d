@@ -32,7 +32,7 @@ struct EntityBase {
 }
 
 struct Player {
-    mixin distinct!EntityBase;
+    mixin typed!EntityBase;
 
     void update(float dt) {
         body.position += wasd;
