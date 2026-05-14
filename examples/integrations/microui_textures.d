@@ -33,7 +33,7 @@ bool update(float dt) {
     beginUiFrame();
     scope (exit) endUiFrame();
 
-    if (beginWindow("Window", UiRect(60, 20, 200, 100), UiOptFlag.noClose)) {
+    if (beginWindow("Buttons", UiRect(90, 50, 140, 80))) {
         button("Hello");
         button("Hi");
         endWindow();

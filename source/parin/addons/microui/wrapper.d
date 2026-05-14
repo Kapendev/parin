@@ -289,19 +289,19 @@ UiRect nextLayout() {
 **============================================================================*/
 
 void drawControlFrame(UiId id, UiRect rect, UiColorEnum colorId, UiOptFlags opt, UiAtlasEnum atlasId = UiAtlasEnum.none) {
-    mu_draw_control_frame(&uiContext, id, rect, colorId, opt, atlasId);
+    uiContext.drawControlFrame(id, rect, colorId, opt, atlasId);
 }
 
 void drawControlText(IStr text, UiRect rect, UiColorEnum colorId, UiOptFlags opt) {
-    mu_draw_control_text(&uiContext, text, rect, colorId, opt);
+    uiContext.drawControlText(text, rect, colorId, opt);
 }
 
 bool isUiMouseOver(UiRect rect) {
-    return mu_mouse_over(&uiContext, rect);
+    return uiContext.mouseOver(rect);
 }
 
 void updateControl(UiId id, UiRect rect, UiOptFlags opt) {
-    mu_update_control(&uiContext, id, rect, opt);
+    uiContext.updateControl(id, rect, opt);
 }
 
 void text(IStr text) {
@@ -577,10 +577,10 @@ void readyUi(UiFont font = null, int fontScale = 1) {
     if (data) {
         auto size = data.size * uiStyle.fontScale;
         auto t = (size - 8.0f) / (38.0f - 8.0f);
+        uiStyle.titleHeight = size + size / 2 + 4;
         if (t > 0.0f) {
             // Scale factor: 0.0 at size=8, 1.0 at size=38.
             uiStyle.size = UiVec(cast(int) (size * 6), cast(int) (size + lerp(-4, 0, t)));
-            uiStyle.titleHeight = cast(int) (size * lerp(2.0f, 1.5f, t));
             uiStyle.border = cast(int) lerp(1, 3, t);
             uiStyle.spacing += cast(int) lerp(0, 8, t);
             uiStyle.padding += cast(int) lerp(0, 8, t);

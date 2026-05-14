@@ -37,7 +37,7 @@ void inspect() {
     beginUiFrame();
     scope (exit) endUiFrame();
 
-    if (beginWindow("Edit", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
+    if (beginWindow("Edit", UiRect(500, 80, 350, 370))) {
         headerAndMembers(game, 125);
         endWindow();
     }

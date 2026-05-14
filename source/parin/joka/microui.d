@@ -456,6 +456,171 @@ struct MuContext {
     ** controls
     **============================================================================*/
 
+    @trusted
+    void drawControlFrame(MuId id, IRect rect, MuColor colorid, MuOptFlags opt, MuAtlas atlasid = MuAtlas.none) {
+        if (opt & MuOptFlag.noFrame) return;
+        colorid += (focus == id) ? 2 : (hover == id) ? 1 : 0;
+        atlasid += (focus == id) ? 2 : (hover == id) ? 1 : 0;
+        drawFrame(&this, rect, colorid, atlasid);
+    }
+
+    @trusted
+    void drawControlText(IStr str, IRect rect, MuColor colorid, MuOptFlags opt) {
+        auto pos = IVec2();
+        auto font = style.font;
+        auto tw = textWidth(font, str);
+        mu_push_clip_rect(&this, rect);
+        pos.y = rect.y + (rect.h - textHeight(font)) / 2;
+        if (opt & MuOptFlag.alignCenter) {
+            pos.x = rect.x + (rect.w - tw) / 2;
+        } else if (opt & MuOptFlag.alignRight) {
+            pos.x = rect.x + rect.w - tw - style.padding;
+        } else {
+            pos.x = rect.x + style.padding;
+        }
+        mu_draw_text(&this, font, str, pos, style.colors[colorid]);
+        mu_pop_clip_rect(&this);
+    }
+
+    @trusted
+    void drawControlTextLegacy(IStrz str, IRect rect, MuColor colorid, MuOptFlags opt) {
+        drawControlText(str.toStr(), rect, colorid, opt);
+    }
+
+    bool mouseOver(IRect rect) {
+        return rect.hasPoint(mousePos) && mu_get_clip_rect(&this).hasPoint(mousePos) && _inHoverRoot(&this);
+    }
+
+    void updateControl(MuId id, IRect rect, MuOptFlags opt, bool isDragOrResizeControl = false, MuMouseFlags action = MuMouseFlag.left) {
+        if (!isDragOrResizeControl) {
+            if (keyDown & dragWindowKey || keyDown & resizeWindowKey) return;
+        }
+
+        bool mouseover = mouseOver(rect);
+        if (focus == 0 && opt & MuOptFlag.defaultFocus) mu_set_focus(&this, id);
+
+        if (focus == id) updatedFocus = true;
+        if (opt & MuOptFlag.noInteract) return;
+        if (mouseover && !(mouseDown & action)) hover = id;
+        if (focus == id && ~opt & MuOptFlag.defaultFocus) {
+            if (mousePressed & action && !mouseover) { mu_set_focus(&this, 0); }
+            if (!(mouseDown & action) && ~opt & MuOptFlag.holdFocus) { mu_set_focus(&this, 0); }
+        }
+        if (hover == id) {
+            if (mousePressed & action) {
+                mu_set_focus(&this, id);
+            } else if (!mouseover) {
+                hover = 0;
+            }
+        }
+    }
+
+    @trusted
+    void scrollbarY(MuContainer* cnt, IRect* b, IVec2 cs) {
+        /* only add scrollbar if content size is larger than body */
+        int maxscroll = cs.y - b.h;
+        if (maxscroll > 0 && b.h > 0) {
+            IRect base, thumb, mouse_area;
+            MuId id = mu_get_id_str(&this, "!scrollbary");
+            /* get sizing/positioning */
+            base = *b;
+            base.x = b.x + b.w;
+            base.w = style.scrollbarSize;
+            thumb = base;
+            thumb.h = max(style.thumbSize, base.h * b.h / cs.y);
+            thumb.y += cnt.scroll.y * (base.h - thumb.h) / maxscroll;
+            mouse_area = *b;
+            mouse_area.w += style.scrollbarSize;
+            mouse_area.h += style.scrollbarSize;
+            /* handle input */
+            updateControl(id, base, 0);
+            if (focus == id && mouseDown & MuMouseFlag.left) {
+                if (mousePressed & MuMouseFlag.left) {
+                    cnt.scroll.y = ((mousePos.y - base.y - thumb.h / 2) * maxscroll) / (base.h - thumb.h);
+                } else {
+                    cnt.scroll.y += mouseDelta.y * cs.y / base.h;
+                }
+            }
+            // TODO: Containers inside containers don't work that well. Fix later.
+            if ((focus == id || cnt.zIndex >= lastZIndex) && ~keyDown & MuKeyFlag.shift) {
+                if (keyPressed & MuKeyFlag.home) {
+                    cnt.scroll.y = 0;
+                } else if (keyPressed & MuKeyFlag.end) {
+                    cnt.scroll.y = maxscroll;
+                }
+                if (keyDown & MuKeyFlag.pageUp) {
+                    cnt.scroll.y -= style.scrollbarKeySpeed;
+                } else if (keyDown & MuKeyFlag.pageDown) {
+                    cnt.scroll.y += style.scrollbarKeySpeed;
+                }
+            }
+            /* clamp scroll to limits */
+            cnt.scroll.y = clamp(cnt.scroll.y, 0, maxscroll);
+            thumb.y = clamp(thumb.y, base.y, base.y + base.h - thumb.h);
+            /* draw base and thumb */
+            drawFrame(&this, base, MuColor.scrollBase);
+            drawFrame(&this, thumb, MuColor.scrollThumb);
+            /* set this as the scroll target (will get scrolled on mousewheel) */
+            /* if the mouse is over it */
+            if (mouseOver(mouse_area)) scrollTarget = cnt;
+        } else {
+            cnt.scroll.y = 0;
+        }
+    }
+
+    @trusted
+    void scrollbarX(MuContainer* cnt, IRect* b, IVec2 cs) {
+        /* only add scrollbar if content size is larger than body */
+        int maxscroll = cs.x - b.w;
+        if (maxscroll > 0 && b.w > 0) {
+            IRect base, thumb, mouse_area;
+            MuId id = mu_get_id_str(&this, "!scrollbarx");
+            /* get sizing/positioning */
+            base = *b;
+            base.y = b.y + b.h;
+            base.h = style.scrollbarSize;
+            thumb = base;
+            thumb.w = max(style.thumbSize, base.w * b.w / cs.x);
+            thumb.x += cnt.scroll.x * (base.w - thumb.w) / maxscroll;
+            mouse_area = *b;
+            mouse_area.w += style.scrollbarSize;
+            mouse_area.h += style.scrollbarSize;
+            /* handle input */
+            updateControl(id, base, 0);
+            if (focus == id && mouseDown & MuMouseFlag.left) {
+                if (mousePressed & MuMouseFlag.left) {
+                    cnt.scroll.x = ((mousePos.x - base.x - thumb.w / 2) * maxscroll) / (base.w - thumb.w);
+                } else {
+                    cnt.scroll.x += mouseDelta.x * cs.x / base.w;
+                }
+            }
+            // TODO: Containers inside containers don't work that well. Fix later.
+            if ((focus == id || cnt.zIndex >= lastZIndex) && keyDown & MuKeyFlag.shift) {
+                if (keyPressed & MuKeyFlag.home) {
+                    cnt.scroll.x = 0;
+                } else if (keyPressed & MuKeyFlag.end) {
+                    cnt.scroll.x = maxscroll;
+                }
+                if (keyDown & MuKeyFlag.pageUp) {
+                    cnt.scroll.x -= style.scrollbarKeySpeed;
+                } else if (keyDown & MuKeyFlag.pageDown) {
+                    cnt.scroll.x += style.scrollbarKeySpeed;
+                }
+            }
+            /* clamp scroll to limits */
+            cnt.scroll.x = clamp(cnt.scroll.x, 0, maxscroll);
+            thumb.x = clamp(thumb.x, base.x, base.x + base.w - thumb.w);
+            /* draw base and thumb */
+            drawFrame(&this, base, MuColor.scrollBase);
+            drawFrame(&this, thumb, MuColor.scrollThumb);
+            /* set this as the scroll_target (will get scrolled on mousewheel) */
+            /* if the mouse is over it */
+            if (mouseOver(mouse_area)) scrollTarget = cnt;
+        } else {
+            cnt.scroll.x = 0;
+        }
+    }
+
     /// It handles both D strings and C strings, so you can also pass null-terminated buffers directly.
     // NOTE(Kapendev): Might need checking. I replaced lines without thinking too much. Original code had bugs too btw.
     @trusted
@@ -494,7 +659,7 @@ struct MuContext {
     }
 
     void label(IStr str) {
-        mu_draw_control_text(&this, str, mu_layout_next(&this), MuColor.text, 0);
+        drawControlText(str, mu_layout_next(&this), MuColor.text, 0);
     }
 
     void labelLegacy(IStrz str) {
@@ -517,7 +682,7 @@ struct MuContext {
             ? mu_get_id_str(&this, str)
             : mu_get_id(&this, &icon, icon.sizeof);
         IRect r = mu_layout_next(&this);
-        mu_update_control(&this, id, r, opt);
+        updateControl(id, r, opt);
         /* handle click */
         if (focus == id) {
             if (opt & MuOptFlag.defaultFocus) {
@@ -527,9 +692,9 @@ struct MuContext {
             }
         }
         /* draw */
-        mu_draw_control_frame(&this, id, r, MuColor.button, opt, MuAtlas.button);
-        if (str.ptr) { mu_draw_control_text(&this, str, r, MuColor.text, opt); }
-        if (icon) { mu_draw_icon(&this, icon, r, style.colors[MuColor.text]); }
+        drawControlFrame(id, r, MuColor.button, opt, MuAtlas.button);
+        if (str.ptr) drawControlText(str, r, MuColor.text, opt);
+        if (icon) mu_draw_icon(&this, icon, r, style.colors[MuColor.text]);
         return res;
     }
 
@@ -544,19 +709,19 @@ struct MuContext {
         MuId id = mu_get_id(&this, &state, state.sizeof);
         IRect r = mu_layout_next(&this);
         IRect box = IRect(r.x, r.y, r.h, r.h);
-        mu_update_control(&this, id, box, 0); // NOTE(Kapendev): Why was this r and not box???
+        updateControl(id, box, 0); // NOTE(Kapendev): Why was this r and not box???
         /* handle click */
         if (mousePressed & MuMouseFlag.left && focus == id) {
             res |= MuResFlag.change;
             *state = !*state;
         }
         /* draw */
-        mu_draw_control_frame(&this, id, box, MuColor.base, 0);
+        drawControlFrame(id, box, MuColor.base, 0);
         if (*state) {
             mu_draw_icon(&this, MuIcon.check, box, style.colors[MuColor.text]);
         }
         r = IRect(r.x + box.w, r.y, r.w - box.w, r.h);
-        mu_draw_control_text(&this, str, r, MuColor.text, 0);
+        drawControlText(str, r, MuColor.text, 0);
         return res;
     }
 
@@ -568,7 +733,7 @@ struct MuContext {
     @trusted
     MuResFlags textboxRawLegacy(char* buf, Sz bufsz, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
         MuResFlags res;
-        mu_update_control(&this, id, r, opt | MuOptFlag.holdFocus);
+        updateControl(id, r, opt | MuOptFlag.holdFocus);
 
         Sz buflen = strzLength(buf);
         if (focus == id) {
@@ -609,7 +774,7 @@ struct MuContext {
         }
 
         /* draw */
-        mu_draw_control_frame(&this, id, r, MuColor.base, opt);
+        drawControlFrame(id, r, MuColor.base, opt);
         if (focus == id) {
             Rgba color = style.colors[MuColor.text];
             MuFont font = style.font;
@@ -630,7 +795,7 @@ struct MuContext {
             mu_draw_rect(&this, IRect(textx + textw, texty, 1, texth), color);
             mu_pop_clip_rect(&this);
         } else {
-            mu_draw_control_text(&this, buf[0 .. buflen], r, MuColor.text, opt);
+            drawControlText(buf[0 .. buflen], r, MuColor.text, opt);
         }
         if (newlen) *newlen = buflen;
         return res;
@@ -679,7 +844,7 @@ struct MuContext {
         /* handle text input mode */
         if (_numberTextbox(&this, &v, base, id)) { return res; }
         /* handle normal mode */
-        mu_update_control(&this, id, base, opt);
+        updateControl(id, base, opt);
         /* handle input */
         if (focus == id && (mouseDown | mousePressed) & MuMouseFlag.left) {
             v = low + (mousePos.x - base.x) * (high - low) / base.w;
@@ -690,19 +855,19 @@ struct MuContext {
         if (last != v) { res |= MuResFlag.change; }
 
         /* draw base */
-        mu_draw_control_frame(&this, id, base, MuColor.base, opt);
+        drawControlFrame(id, base, MuColor.base, opt);
         /* draw thumb */
         w = style.thumbSize;
         x = cast(int) ((v - low) * (base.w - w) / (high - low));
         thumb = IRect(base.x + x, base.y, w, base.h);
-        mu_draw_control_frame(&this, id, thumb, MuColor.button, opt);
+        drawControlFrame(id, thumb, MuColor.button, opt);
         /* draw text  */
         // This original was not checking the result of `sprintf`...
         // Old: int buflen = sprintf(buf.ptr, fmt_buf.ptr, v);
         // Old: if (buflen < 0) buflen = 0;
         // Old: mu_draw_control_text(&this, buf[0 .. buflen], base, MuColor.text, opt);
         // The zero check is there because of `muNumberFmt`.
-        mu_draw_control_text(&this, isFmtFloatAnInt ? buf.fmtIntoBuffer(fmt, cast(int) *value) : buf.fmtIntoBuffer(fmt, *value), base, MuColor.text, opt);
+        drawControlText(isFmtFloatAnInt ? buf.fmtIntoBuffer(fmt, cast(int) *value) : buf.fmtIntoBuffer(fmt, *value), base, MuColor.text, opt);
         return res;
     }
 
@@ -745,21 +910,21 @@ struct MuContext {
         /* handle text input mode */
         if (_numberTextbox(&this, value, base, id)) { return res; }
         /* handle normal mode */
-        mu_update_control(&this, id, base, opt);
+        updateControl(id, base, opt);
         /* handle input */
         if (focus == id && mouseDown & MuMouseFlag.left) { *value += mouseDelta.x * step; }
         /* set flag if value changed */
         if (*value != last) { res |= MuResFlag.change; }
 
         /* draw base */
-        mu_draw_control_frame(&this, id, base, MuColor.base, opt);
+        drawControlFrame(id, base, MuColor.base, opt);
         /* draw text  */
         // This original was not checking the result of `sprintf`...
         // Old: int buflen = sprintf(buf.ptr, fmt_buf.ptr, *value);
         // Old: if (buflen < 0) buflen = 0;
         // Old: mu_draw_control_text(ctx, buf[0 .. buflen], base, MuColor.text, opt);
         // The zero check is there because of `muNumberFmt`.
-        mu_draw_control_text(&this, isFmtFloatAnInt ? buf.fmtIntoBuffer(fmt, cast(int) *value) : buf.fmtIntoBuffer(fmt, *value), base, MuColor.text, opt);
+        drawControlText(isFmtFloatAnInt ? buf.fmtIntoBuffer(fmt, cast(int) *value) : buf.fmtIntoBuffer(fmt, *value), base, MuColor.text, opt);
         return res;
     }
 
@@ -821,16 +986,16 @@ struct MuContext {
             drawFrame(&this, tr, MuColor.titleBg);
             /* do title text */
             if (~opt & MuOptFlag.noTitle) {
-                if (~opt & MuOptFlag.noName) { mu_draw_control_text(&this, title, tr, MuColor.titleText, opt); }
+                if (~opt & MuOptFlag.noName) drawControlText(title, tr, MuColor.titleText, opt);
                 MuId id2 = mu_get_id_str(&this, "!title"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
                 if (keyDown & dragWindowKey) {
-                    mu_update_control(&this, id2, body, opt, true);
+                    updateControl(id2, body, opt, true);
                     if (id2 == focus && mouseDown & MuMouseFlag.left) {
                         cnt.rect.x += mouseDelta.x;
                         cnt.rect.y += mouseDelta.y;
                     }
                 } else {
-                    mu_update_control(&this, id2, tr, opt);
+                    updateControl(id2, tr, opt);
                     if (id2 == focus && mouseDown & MuMouseFlag.left) {
                         cnt.rect.x += mouseDelta.x;
                         cnt.rect.y += mouseDelta.y;
@@ -845,7 +1010,7 @@ struct MuContext {
                 IRect r = IRect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
                 tr.w -= r.w;
                 mu_draw_icon(&this, MuIcon.close, r, style.colors[MuColor.titleText]);
-                mu_update_control(&this, id2, r, opt);
+                updateControl(id2, r, opt);
                 if (mousePressed & MuMouseFlag.left && id2 == focus) { cnt.open = false; }
             }
         }
@@ -858,13 +1023,13 @@ struct MuContext {
             MuId id2 = mu_get_id_str(&this, "!resize"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
             IRect r = IRect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
             if (keyDown & resizeWindowKey) {
-                mu_update_control(&this, id2, body, opt, true);
+                updateControl(id2, body, opt, true);
                 if (id2 == focus && mouseDown & MuMouseFlag.left) {
                     cnt.rect.w = max(96, cnt.rect.w + mouseDelta.x);
                     cnt.rect.h = max(64, cnt.rect.h + mouseDelta.y);
                 }
             } else {
-                mu_update_control(&this, id2, r, opt);
+                updateControl(id2, r, opt);
                 if (id2 == focus && mouseDown & MuMouseFlag.left) {
                     cnt.rect.w = max(96, cnt.rect.w + mouseDelta.x);
                     cnt.rect.h = max(64, cnt.rect.h + mouseDelta.y);
@@ -1087,7 +1252,7 @@ private @safe nothrow @nogc {
         active = (idx >= 0);
         expanded = (opt & MuOptFlag.expanded) ? !active : active;
         r = mu_layout_next(ctx);
-        mu_update_control(ctx, id, r, 0);
+        ctx.updateControl(id, r, 0);
 
         /* handle click */
         active ^= (ctx.mousePressed & MuMouseFlag.left && ctx.focus == id);
@@ -1103,12 +1268,12 @@ private @safe nothrow @nogc {
         if (istreenode) {
             if (ctx.hover == id) { ctx.drawFrame(ctx, r, MuColor.buttonHover); }
         } else {
-            mu_draw_control_frame(ctx, id, r, MuColor.button, 0);
+            ctx.drawControlFrame(id, r, MuColor.button, 0);
         }
         mu_draw_icon(ctx, expanded ? MuIcon.expanded : MuIcon.collapsed, IRect(r.x, r.y, r.h, r.h), ctx.style.colors[MuColor.text]);
         r.x += r.h - ctx.style.padding;
         r.w -= r.h - ctx.style.padding;
-        mu_draw_control_text(ctx, label, r, MuColor.text, 0);
+        ctx.drawControlText(label, r, MuColor.text, 0);
         return expanded ? MuResFlag.active : 0;
     }
 
@@ -1121,8 +1286,8 @@ private @safe nothrow @nogc {
         /* resize body to make room for scrollbars */
         if (cs.y > cnt.body.h) { body.w -= sz; }
         if (cs.x > cnt.body.w) { body.h -= sz; }
-        mu_scrollbar_y(ctx, cnt, body, cs);
-        mu_scrollbar_x(ctx, cnt, body, cs);
+        ctx.scrollbarY(cnt, body, cs);
+        ctx.scrollbarX(cnt, body, cs);
         mu_pop_clip_rect(ctx);
     }
 
@@ -1530,175 +1695,6 @@ IRect mu_layout_next(MuContext* ctx) {
     layout.max.y = max(layout.max.y, res.y + res.h);
     ctx.lastRect = res;
     return ctx.lastRect;
-}
-
-/*============================================================================
-** controls
-**============================================================================*/
-
-@trusted
-void mu_draw_control_frame(MuContext* ctx, MuId id, IRect rect, MuColor colorid, MuOptFlags opt, MuAtlas atlasid = MuAtlas.none) {
-    if (opt & MuOptFlag.noFrame) { return; }
-    colorid += (ctx.focus == id) ? 2 : (ctx.hover == id) ? 1 : 0;
-    atlasid += (ctx.focus == id) ? 2 : (ctx.hover == id) ? 1 : 0;
-    ctx.drawFrame(ctx, rect, colorid, atlasid);
-}
-
-@trusted
-void mu_draw_control_text_legacy(MuContext* ctx, IStrz str, IRect rect, MuColor colorid, MuOptFlags opt) {
-    mu_draw_control_text(ctx, str[0 .. (str ? strzLength(str) : 0)], rect, colorid, opt);
-}
-
-@trusted
-void mu_draw_control_text(MuContext* ctx, IStr str, IRect rect, MuColor colorid, MuOptFlags opt) {
-    IVec2 pos;
-    MuFont font = ctx.style.font;
-    int tw = ctx.textWidth(font, str);
-    mu_push_clip_rect(ctx, rect);
-    pos.y = rect.y + (rect.h - ctx.textHeight(font)) / 2;
-    if (opt & MuOptFlag.alignCenter) {
-        pos.x = rect.x + (rect.w - tw) / 2;
-    } else if (opt & MuOptFlag.alignRight) {
-        pos.x = rect.x + rect.w - tw - ctx.style.padding;
-    } else {
-        pos.x = rect.x + ctx.style.padding;
-    }
-    mu_draw_text(ctx, font, str, pos, ctx.style.colors[colorid]);
-    mu_pop_clip_rect(ctx);
-}
-
-bool mu_mouse_over(MuContext* ctx, IRect rect) {
-    return rect.hasPoint(ctx.mousePos) && mu_get_clip_rect(ctx).hasPoint(ctx.mousePos) && _inHoverRoot(ctx);
-}
-
-void mu_update_control(MuContext* ctx, MuId id, IRect rect, MuOptFlags opt, bool isDragOrResizeControl = false, MuMouseFlags action = MuMouseFlag.left) {
-    if (!isDragOrResizeControl) {
-        if (ctx.keyDown & ctx.dragWindowKey || ctx.keyDown & ctx.resizeWindowKey) { return; }
-    }
-
-    bool mouseover = mu_mouse_over(ctx, rect);
-    if (ctx.focus == 0 && opt & MuOptFlag.defaultFocus) { mu_set_focus(ctx, id); }
-
-    if (ctx.focus == id) { ctx.updatedFocus = true; }
-    if (opt & MuOptFlag.noInteract) { return; }
-    if (mouseover && !(ctx.mouseDown & action)) { ctx.hover = id; }
-    if (ctx.focus == id && ~opt & MuOptFlag.defaultFocus) {
-        if (ctx.mousePressed & action && !mouseover) { mu_set_focus(ctx, 0); }
-        if (!(ctx.mouseDown & action) && ~opt & MuOptFlag.holdFocus) { mu_set_focus(ctx, 0); }
-    }
-    if (ctx.hover == id) {
-        if (ctx.mousePressed & action) {
-            mu_set_focus(ctx, id);
-        } else if (!mouseover) {
-            ctx.hover = 0;
-        }
-    }
-}
-
-@trusted
-void mu_scrollbar_y(MuContext* ctx, MuContainer* cnt, IRect* b, IVec2 cs) {
-    /* only add scrollbar if content size is larger than body */
-    int maxscroll = cs.y - b.h;
-    if (maxscroll > 0 && b.h > 0) {
-        IRect base, thumb, mouse_area;
-        MuId id = mu_get_id_str(ctx, "!scrollbary");
-        /* get sizing/positioning */
-        base = *b;
-        base.x = b.x + b.w;
-        base.w = ctx.style.scrollbarSize;
-        thumb = base;
-        thumb.h = max(ctx.style.thumbSize, base.h * b.h / cs.y);
-        thumb.y += cnt.scroll.y * (base.h - thumb.h) / maxscroll;
-        mouse_area = *b;
-        mouse_area.w += ctx.style.scrollbarSize;
-        mouse_area.h += ctx.style.scrollbarSize;
-        /* handle input */
-        mu_update_control(ctx, id, base, 0);
-        if (ctx.focus == id && ctx.mouseDown & MuMouseFlag.left) {
-            if (ctx.mousePressed & MuMouseFlag.left) {
-                cnt.scroll.y = ((ctx.mousePos.y - base.y - thumb.h / 2) * maxscroll) / (base.h - thumb.h);
-            } else {
-                cnt.scroll.y += ctx.mouseDelta.y * cs.y / base.h;
-            }
-        }
-        // TODO: Containers inside containers don't work that well. Fix later.
-        if ((ctx.focus == id || cnt.zIndex >= ctx.lastZIndex) && ~ctx.keyDown & MuKeyFlag.shift) {
-            if (ctx.keyPressed & MuKeyFlag.home) {
-                cnt.scroll.y = 0;
-            } else if (ctx.keyPressed & MuKeyFlag.end) {
-                cnt.scroll.y = maxscroll;
-            }
-            if (ctx.keyDown & MuKeyFlag.pageUp) {
-                cnt.scroll.y -= ctx.style.scrollbarKeySpeed;
-            } else if (ctx.keyDown & MuKeyFlag.pageDown) {
-                cnt.scroll.y += ctx.style.scrollbarKeySpeed;
-            }
-        }
-        /* clamp scroll to limits */
-        cnt.scroll.y = clamp(cnt.scroll.y, 0, maxscroll);
-        thumb.y = clamp(thumb.y, base.y, base.y + base.h - thumb.h);
-        /* draw base and thumb */
-        ctx.drawFrame(ctx, base, MuColor.scrollBase);
-        ctx.drawFrame(ctx, thumb, MuColor.scrollThumb);
-        /* set this as the scroll target (will get scrolled on mousewheel) */
-        /* if the mouse is over it */
-        if (mu_mouse_over(ctx, mouse_area)) { ctx.scrollTarget = cnt; }
-    } else {
-        cnt.scroll.y = 0;
-    }
-}
-
-@trusted
-void mu_scrollbar_x(MuContext* ctx, MuContainer* cnt, IRect* b, IVec2 cs) {
-    /* only add scrollbar if content size is larger than body */
-    int maxscroll = cs.x - b.w;
-    if (maxscroll > 0 && b.w > 0) {
-        IRect base, thumb, mouse_area;
-        MuId id = mu_get_id_str(ctx, "!scrollbarx");
-        /* get sizing/positioning */
-        base = *b;
-        base.y = b.y + b.h;
-        base.h = ctx.style.scrollbarSize;
-        thumb = base;
-        thumb.w = max(ctx.style.thumbSize, base.w * b.w / cs.x);
-        thumb.x += cnt.scroll.x * (base.w - thumb.w) / maxscroll;
-        mouse_area = *b;
-        mouse_area.w += ctx.style.scrollbarSize;
-        mouse_area.h += ctx.style.scrollbarSize;
-        /* handle input */
-        mu_update_control(ctx, id, base, 0);
-        if (ctx.focus == id && ctx.mouseDown & MuMouseFlag.left) {
-            if (ctx.mousePressed & MuMouseFlag.left) {
-                cnt.scroll.x = ((ctx.mousePos.x - base.x - thumb.w / 2) * maxscroll) / (base.w - thumb.w);
-            } else {
-                cnt.scroll.x += ctx.mouseDelta.x * cs.x / base.w;
-            }
-        }
-        // TODO: Containers inside containers don't work that well. Fix later.
-        if ((ctx.focus == id || cnt.zIndex >= ctx.lastZIndex) && ctx.keyDown & MuKeyFlag.shift) {
-            if (ctx.keyPressed & MuKeyFlag.home) {
-                cnt.scroll.x = 0;
-            } else if (ctx.keyPressed & MuKeyFlag.end) {
-                cnt.scroll.x = maxscroll;
-            }
-            if (ctx.keyDown & MuKeyFlag.pageUp) {
-                cnt.scroll.x -= ctx.style.scrollbarKeySpeed;
-            } else if (ctx.keyDown & MuKeyFlag.pageDown) {
-                cnt.scroll.x += ctx.style.scrollbarKeySpeed;
-            }
-        }
-        /* clamp scroll to limits */
-        cnt.scroll.x = clamp(cnt.scroll.x, 0, maxscroll);
-        thumb.x = clamp(thumb.x, base.x, base.x + base.w - thumb.w);
-        /* draw base and thumb */
-        ctx.drawFrame(ctx, base, MuColor.scrollBase);
-        ctx.drawFrame(ctx, thumb, MuColor.scrollThumb);
-        /* set this as the scroll_target (will get scrolled on mousewheel) */
-        /* if the mouse is over it */
-        if (mu_mouse_over(ctx, mouse_area)) { ctx.scrollTarget = cnt; }
-    } else {
-        cnt.scroll.x = 0;
-    }
 }
 
 // ORIGINAL MICROUI LICENSE
