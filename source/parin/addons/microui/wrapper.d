@@ -45,6 +45,7 @@ alias UiCommandData = MuCommandData;     /// A union of all possible render comm
 
 alias UiLayout    = MuLayout;    /// Layout state used to position UI controls within a container.
 alias UiContainer = MuContainer; /// A UI container holding commands.
+alias UiSlice     = MuSlice;
 alias UiStyle     = MuStyle;     /// UI style settings including font, sizes, spacing, and colors.
 alias UiContext   = MuContext;   /// The main UI context.
 
@@ -100,6 +101,7 @@ struct UiMember {
 
 @safe nothrow @nogc:
 
+pragma(inline, true)
 ref UiStyle* uiStyle() {
     return uiContext.style;
 }
@@ -257,31 +259,31 @@ void drawUiIcon(UiIconEnum id, UiRect rect, UiColor color) {
 **============================================================================*/
 
 void beginColumn() {
-    mu_layout_begin_column(&uiContext);
+    uiContext.beginColumn();
 }
 
 void endColumn() {
-    mu_layout_end_column(&uiContext);
+    uiContext.endColumn();
 }
 
 void row(int height, const(int)[] widths...) {
-    mu_layout_row(&uiContext, height, widths);
+    uiContext.row(height, widths);
 }
 
 void setLayoutWidth(int width) {
-    mu_layout_width(&uiContext, width);
+    uiContext.setLayoutWidth(width);
 }
 
 void setLayoutHeight(int height) {
-    mu_layout_height(&uiContext, height);
+    uiContext.setLayoutHeight(height);
 }
 
 void setNextLayout(UiRect rect, bool relative) {
-    mu_layout_set_next(&uiContext, rect, relative);
+    uiContext.setNextLayout(rect, relative);
 }
 
 UiRect nextLayout() {
-    return mu_layout_next(&uiContext);
+    return uiContext.nextLayout();
 }
 
 /*============================================================================
@@ -603,13 +605,6 @@ void readyUi(FontId font, int fontScale = 1) {
     readyUi(&readyUiFont, fontScale);
 }
 
-/// Initializes the microui context and sets custom text size functions. Value `font` should be a `FontId*`.
-void readyUi(UiTextWidthFunc width, UiTextHeightFunc height, UiFont font = null, int fontScale = 1) {
-    readyUi(font, fontScale);
-    uiContext.textWidth = width;
-    uiContext.textHeight = height;
-}
-
 /// Handles input events and updates the microui context accordingly.
 void handleUiInput() {
     with (UiMouseFlag) {
@@ -696,12 +691,10 @@ void drawUiState() {
                 break;
             case UiCommand.rect:
                 parinOptions.color = *(cast(Rgba*) (&cmd.rect.color));
-                auto atlasRect = uiStyle.atlasRects[cmd.rect.id];
-                if (styleTexture && atlasRect.hasSize) {
-                    auto sliceMargin = uiStyle.sliceMargins[cmd.rect.id];
-                    auto sliceMode = uiStyle.sliceModes[cmd.rect.id];
-                    foreach (i, ref part; computeSliceParts(atlasRect, cmd.rect.rect, sliceMargin)) {
-                        if (sliceMode && part.canTile) {
+                auto rectSlice = uiStyle.slices[cmd.rect.id];
+                if (styleTexture && rectSlice.area.hasSize) {
+                    foreach (i, ref part; computeSliceParts(rectSlice.area, cmd.rect.rect, rectSlice.margin)) {
+                        if (rectSlice.mode && part.canTile) {
                             parinOptions.scale = Vec2(1, 1);
                             foreach (y; 0 .. part.tileCount.y) {
                                 foreach (x; 0 .. part.tileCount.x) {
@@ -738,12 +731,12 @@ void drawUiState() {
                 break;
             case UiCommand.icon:
                 parinOptions.color = *(cast(Rgba*) (&cmd.icon.color));
-                auto iconAtlasRect = uiStyle.iconAtlasRects[cmd.icon.id];
-                auto iconDiff = UiVec(cmd.icon.rect.w - iconAtlasRect.w, cmd.icon.rect.h - iconAtlasRect.h);
-                if (styleTexture && iconAtlasRect.hasSize) {
+                auto iconAtlasArea = uiStyle.iconAtlasAreas[cmd.icon.id];
+                auto iconDiff = UiVec(cmd.icon.rect.w - iconAtlasArea.w, cmd.icon.rect.h - iconAtlasArea.h);
+                if (styleTexture && iconAtlasArea.hasSize) {
                     drawTextureArea(
                         *styleTexture,
-                        Rect(iconAtlasRect.x, iconAtlasRect.y, iconAtlasRect.w, iconAtlasRect.h),
+                        Rect(iconAtlasArea.x, iconAtlasArea.y, iconAtlasArea.w, iconAtlasArea.h),
                         Vec2(cmd.icon.rect.x + iconDiff.x / 2, cmd.icon.rect.y + iconDiff.y / 2),
                         parinOptions,
                     );

@@ -15,17 +15,9 @@ void ready() {
     atlas = loadTexture("parin_atlas.png");
     uiStyle.texture = &atlas;
 
-    uiStyle.atlasRects[UiAtlasEnum.button]      = IRect(80, 16, 48, 48);
-    uiStyle.atlasRects[UiAtlasEnum.buttonHover] = IRect(80, 16, 48, 48);
-    uiStyle.atlasRects[UiAtlasEnum.buttonFocus] = IRect(80, 16, 48, 48);
-
-    uiStyle.sliceMargins[UiAtlasEnum.button]      = UiMargin(16);
-    uiStyle.sliceMargins[UiAtlasEnum.buttonHover] = UiMargin(16);
-    uiStyle.sliceMargins[UiAtlasEnum.buttonFocus] = UiMargin(16);
-
-    uiStyle.sliceModes[UiAtlasEnum.button]      = 1;
-    uiStyle.sliceModes[UiAtlasEnum.buttonHover] = 1;
-    uiStyle.sliceModes[UiAtlasEnum.buttonFocus] = 1;
+    uiStyle.slices[UiAtlasEnum.button] = UiSlice(IRect(80, 16, 48, 48), Margin(16));
+    uiStyle.slices[UiAtlasEnum.buttonHover] = uiStyle.slices[UiAtlasEnum.button];
+    uiStyle.slices[UiAtlasEnum.buttonFocus] = uiStyle.slices[UiAtlasEnum.button];
 }
 
 // The game code.
@@ -33,9 +25,12 @@ bool update(float dt) {
     beginUiFrame();
     scope (exit) endUiFrame();
 
-    if (beginWindow("Buttons", UiRect(90, 50, 140, 80))) {
+    if (beginWindow("Buttons", UiRect(100, 40, 120, 90))) {
         button("Hello");
         button("Hi");
+        button("Hey");
+        button("Howdy");
+        button("Sup");
         endWindow();
     }
     return false;

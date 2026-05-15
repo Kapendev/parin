@@ -6,7 +6,6 @@
 // ---
 
 // TODO: Add more doc comments.
-// TODO: work on attributes maybe.
 
 /// Rxi's tiny immediate-mode UI library, but with Joka specific changes.
 module parin.joka.microui;
@@ -246,6 +245,13 @@ struct MuContainer {
     bool open;
 }
 
+/// UI slice data.
+struct MuSlice {
+    IRect area;
+    Margin margin;
+    MuSliceMode mode = 1;
+}
+
 /// UI style settings including font, sizes, spacing, and colors.
 struct MuStyle {
     MuFont font;                                        /// The font used for UI controls.
@@ -262,10 +268,8 @@ struct MuStyle {
     int thumbSize;                                      /// The size of the thumb.
     int fontScale;                                      /// The scale of the font.
     StaticArray!(Rgba, MuColor.max + 1) colors;         /// The array of colors used in the UI.
-    StaticArray!(IRect, MuAtlas.max + 1) atlasRects;    /// Optional array of control atlas rectangles used in the UI.
-    StaticArray!(IRect, MuIcon.max + 1) iconAtlasRects; /// Optional array of icon atlas rectangles used in the UI.
-    StaticArray!(Margin, MuAtlas.max + 1) sliceMargins; /// Optional margins for drawing 9-slices.
-    MuSliceMode[MuAtlas.max + 1] sliceModes;            /// Optional repeat modes for drawing 9-slices.
+    StaticArray!(MuSlice, MuAtlas.max + 1) slices;      /// Optional array of control atlas rectangles used in the UI.
+    StaticArray!(IRect, MuIcon.max + 1) iconAtlasAreas; /// Optional array of icon atlas rectangles used in the UI.
 }
 
 /// The main UI context.
@@ -336,24 +340,24 @@ struct MuContext {
         resizeWindowKey = MuKeyFlag.f2;
         _style = MuStyle(
             /* font | atlas | size | padding | spacing | indent | border */
-            null, null, IVec2(68, 10), 5, 4, 24, 1,
+            null, null, IVec2(68, 10), 6, 5, 24, 1,
             /* titleHeight | scrollbarSize | scrollbarSpeed | scrollbarKeySpeed | thumbSize | fontScale */
-            24, 12, 30, cast(int) (30 * 0.4f), 8, fontScale,
+            24, 8, 30, cast(int) (30.0f * 0.4f), 6, fontScale,
             StaticArray!(Rgba, 14)(
-                Rgba(230, 230, 230, 255), /* MuColor.text */
-                Rgba(25,  25,  25,  255), /* MuColor.border */
-                Rgba(50,  50,  50,  255), /* MuColor.windowBg */
-                Rgba(25,  25,  25,  255), /* MuColor.titleBg */
-                Rgba(240, 240, 240, 255), /* MuColor.titleText */
+                Rgba(220, 220, 220, 255), /* MuColor.text */
+                Rgba(15,  15,  20,  255), /* MuColor.border */
+                Rgba(30,  30,  38,  255), /* MuColor.windowBg */
+                Rgba(20,  20,  26,  255), /* MuColor.titleBg */
+                Rgba(220, 220, 220, 255), /* MuColor.titleText */
                 Rgba(0,   0,   0,   0  ), /* MuColor.panelBg */
-                Rgba(75,  75,  75,  255), /* MuColor.button */
-                Rgba(95,  95,  95,  255), /* MuColor.buttonHover */
-                Rgba(115, 115, 115, 255), /* MuColor.buttonFOCUS */
-                Rgba(30,  30,  30,  255), /* MuColor.base */
-                Rgba(35,  35,  35,  255), /* MuColor.baseHOVER */
-                Rgba(40,  40,  40,  255), /* MuColor.baseFOCUS */
-                Rgba(43,  43,  43,  255), /* MuColor.scrollBase */
-                Rgba(30,  30,  30,  255), /* MuColor.scrollThumb */
+                Rgba(55,  55,  70,  255), /* MuColor.button */
+                Rgba(75,  75,  95,  255), /* MuColor.buttonHover */
+                Rgba(70,  100, 160, 255), /* MuColor.buttonFOCUS */
+                Rgba(22,  22,  30,  255), /* MuColor.base */
+                Rgba(28,  28,  38,  255), /* MuColor.baseHOVER */
+                Rgba(35,  35,  48,  255), /* MuColor.baseFOCUS */
+                Rgba(20,  20,  28,  255), /* MuColor.scrollBase */
+                Rgba(70,  70,  90,  255), /* MuColor.scrollThumb */
             ),
         );
         style = &_style;
@@ -385,11 +389,11 @@ struct MuContext {
 
     @trusted
     void end() {
-        /* check stacks */
         assert(containerStack.idx == 0, "Container stack is not empty.");
         assert(clipStack.idx      == 0, "Clip stack is not empty.");
         assert(idStack.idx        == 0, "ID stack is not empty.");
         assert(layoutStack.idx    == 0, "Layout stack is not empty.");
+
         isExpectingEnd = false;
         buttonCounter = 0;
 
@@ -456,7 +460,6 @@ struct MuContext {
     ** controls
     **============================================================================*/
 
-    @trusted
     void drawControlFrame(MuId id, IRect rect, MuColor colorid, MuOptFlags opt, MuAtlas atlasid = MuAtlas.none) {
         if (opt & MuOptFlag.noFrame) return;
         colorid += (focus == id) ? 2 : (hover == id) ? 1 : 0;
@@ -464,7 +467,6 @@ struct MuContext {
         drawFrame(&this, rect, colorid, atlasid);
     }
 
-    @trusted
     void drawControlText(IStr str, IRect rect, MuColor colorid, MuOptFlags opt) {
         auto pos = IVec2();
         auto font = style.font;
@@ -482,7 +484,6 @@ struct MuContext {
         mu_pop_clip_rect(&this);
     }
 
-    @trusted
     void drawControlTextLegacy(IStrz str, IRect rect, MuColor colorid, MuOptFlags opt) {
         drawControlText(str.toStr(), rect, colorid, opt);
     }
@@ -515,7 +516,6 @@ struct MuContext {
         }
     }
 
-    @trusted
     void scrollbarY(MuContainer* cnt, IRect* b, IVec2 cs) {
         /* only add scrollbar if content size is larger than body */
         int maxscroll = cs.y - b.h;
@@ -568,7 +568,6 @@ struct MuContext {
         }
     }
 
-    @trusted
     void scrollbarX(MuContainer* cnt, IRect* b, IVec2 cs) {
         /* only add scrollbar if content size is larger than body */
         int maxscroll = cs.x - b.w;
@@ -621,21 +620,21 @@ struct MuContext {
         }
     }
 
-    /// It handles both D strings and C strings, so you can also pass null-terminated buffers directly.
     // NOTE(Kapendev): Might need checking. I replaced lines without thinking too much. Original code had bugs too btw.
+    /// It handles both D strings and C strings, so you can also pass null-terminated buffers directly.
     @trusted
     void text(IStr str) {
         MuFont font = style.font;
         Rgba color = style.colors[MuColor.text];
-        mu_layout_begin_column(&this);
-        mu_layout_row(&this, textHeight(font), -1);
+        beginColumn();
+        row(textHeight(font), -1);
 
         if (str.length != 0) {
             IStrz p = str.ptr;
             IStrz start = p;
             IStrz end = p;
             do {
-                IRect r = mu_layout_next(&this);
+                IRect r = nextLayout();
                 int w = 0;
                 start = p;
                 end = p;
@@ -650,20 +649,18 @@ struct MuContext {
                 p = end + 1;
             } while(end < str.ptr + str.length && *end);
         }
-        mu_layout_end_column(&this);
+        endColumn();
     }
 
     void textLegacy(IStrz str) {
-        // Old: text(str[0 .. (str ? strzLength(str) : 0)]);
         text(str.toStr());
     }
 
     void label(IStr str) {
-        drawControlText(str, mu_layout_next(&this), MuColor.text, 0);
+        drawControlText(str, nextLayout(), MuColor.text, 0);
     }
 
     void labelLegacy(IStrz str) {
-        // Old: label(str[0 .. (str ? strzLength(str) : 0)]);
         label(str.toStr());
     }
 
@@ -681,7 +678,7 @@ struct MuContext {
         MuId id = (str.ptr && str.length)
             ? mu_get_id_str(&this, str)
             : mu_get_id(&this, &icon, icon.sizeof);
-        IRect r = mu_layout_next(&this);
+        IRect r = nextLayout();
         updateControl(id, r, opt);
         /* handle click */
         if (focus == id) {
@@ -707,7 +704,7 @@ struct MuContext {
     MuResFlags checkboxLegacy(bool* state, IStr str) {
         MuResFlags res = MuResFlag.none;
         MuId id = mu_get_id(&this, &state, state.sizeof);
-        IRect r = mu_layout_next(&this);
+        IRect r = nextLayout();
         IRect box = IRect(r.x, r.y, r.h, r.h);
         updateControl(id, box, 0); // NOTE(Kapendev): Why was this r and not box???
         /* handle click */
@@ -814,7 +811,7 @@ struct MuContext {
     @trusted
     MuResFlags textboxLegacy(char* buf, Sz bufsz, MuOptFlags opt, Sz* newlen = null) {
         MuId id = mu_get_id(&this, &buf, buf.sizeof);
-        IRect r = mu_layout_next(&this);
+        IRect r = nextLayout();
         return textboxRawLegacy(buf, bufsz, id, r, opt, newlen);
     }
 
@@ -839,7 +836,7 @@ struct MuContext {
         MuResFlags res = 0;
         float last = *value, v = last;
         MuId id = mu_get_id(&this, &value, value.sizeof);
-        IRect base = mu_layout_next(&this);
+        IRect base = nextLayout();
 
         /* handle text input mode */
         if (_numberTextbox(&this, &v, base, id)) { return res; }
@@ -904,7 +901,7 @@ struct MuContext {
         char[muMaxFmt + 1] buf = void;
         MuResFlags res = 0;
         MuId id = mu_get_id(&this, &value, value.sizeof);
-        IRect base = mu_layout_next(&this);
+        IRect base = nextLayout();
         float last = *value;
 
         /* handle text input mode */
@@ -1074,7 +1071,7 @@ struct MuContext {
         MuContainer* cnt;
         mu_push_id_str(&this, name);
         cnt = _getContainer(&this, lastId, opt);
-        cnt.rect = mu_layout_next(&this);
+        cnt.rect = nextLayout();
         if (~opt & MuOptFlag.noFrame) { drawFrame(&this, cnt.rect, MuColor.panelBg); }
         containerStack.push(cnt);
         _pushContainerBody(&this, cnt, cnt.rect, opt);
@@ -1102,10 +1099,10 @@ struct MuContext {
             result |= MuResFlag.active;
             auto window_cnt = mu_get_current_container(&this);
             if (str.length) {
-                mu_layout_row(&this, 0, textWidth(style.font, str) + textWidth(style.font, "  "), -1);
+                row(0, textWidth(style.font, str) + textWidth(style.font, "  "), -1);
                 label(str);
             } else {
-                mu_layout_row(&this, 0, -1);
+                row(0, -1);
             }
 
             Sz input_length;
@@ -1114,10 +1111,10 @@ struct MuContext {
             auto pick = -1;
             auto first = -1;
             auto buttonCount = 0;
-            mu_layout_row(&this, -1, -1);
+            row(-1, -1);
 
             beginPanel("!dmenupanel", MuOptFlag.noScroll);
-            mu_layout_row(&this, 0, -1);
+            row(0, -1);
             foreach (i, item; items) {
                 auto starts_with_input = input.length == 0 || (item.length < input.length ? false : item[0 .. input.length] == input);
                 // Draw the item.
@@ -1153,6 +1150,96 @@ struct MuContext {
     }
 
     alias endDmenu = endWindow;
+
+    /*============================================================================
+    ** layout
+    **============================================================================*/
+
+    void beginColumn() {
+        _pushLayout(&this, nextLayout(), IVec2(0, 0));
+    }
+
+    void endColumn() {
+        MuLayout* a, b;
+        b = _getLayout(&this);
+        layoutStack.pop();
+        /* inherit position/nextRow/max from child layout if they are greater */
+        a = _getLayout(&this);
+        a.pos.x = max(a.pos.x, b.pos.x + b.body.x - a.body.x);
+        a.nextRow = max(a.nextRow, b.nextRow + b.body.y - a.body.y);
+        a.max.x = max(a.max.x, b.max.x);
+        a.max.y = max(a.max.y, b.max.y);
+    }
+
+    @trusted
+    void row(int height, const(int)[] widths...) {
+        rowLegacy(cast(int) widths.length, widths.ptr, height);
+    }
+
+    @trusted
+    void rowLegacy(int items, const(int)* widths, int height) {
+        auto layout = _getLayout(&this);
+        if (widths) {
+            assert(items <= muMaxWidths);
+            jokaMemcpy(layout.widths.ptr, widths, items * widths[0].sizeof);
+        }
+        layout.items = items;
+        layout.pos = IVec2(layout.indent, layout.nextRow);
+        layout.size.y = height;
+        layout.itemIndex = 0;
+    }
+
+    void setLayoutWidth(int width) {
+        _getLayout(&this).size.x = width;
+    }
+
+    void setLayoutHeight(int height) {
+        _getLayout(&this).size.y = height;
+    }
+
+    void setNextLayout(IRect r, bool relative) {
+        auto layout = _getLayout(&this);
+        layout.next = r;
+        layout.nextType = relative ? relative : absolute;
+    }
+
+    IRect nextLayout() {
+        auto layout = _getLayout(&this);
+        auto res = IRect();
+
+        if (layout.nextType) {
+            /* handle rect set by `mu_layout_set_next` */
+            int type = layout.nextType;
+            layout.nextType = 0;
+            res = layout.next;
+            if (type == absolute) return (lastRect = res);
+        } else {
+            /* handle next row */
+            if (layout.itemIndex == layout.items) rowLegacy(layout.items, null, layout.size.y);
+            /* position */
+            res.x = layout.pos.x;
+            res.y = layout.pos.y;
+            /* size */
+            res.w = layout.items > 0 ? layout.widths[layout.itemIndex] : layout.size.x;
+            res.h = layout.size.y;
+            if (res.w == 0) res.w = style.size.x + style.padding * 2;
+            if (res.h == 0) res.h = style.size.y + style.padding * 2;
+            if (res.w <  0) res.w += layout.body.w - res.x + 1;
+            if (res.h <  0) res.h += layout.body.h - res.y + 1;
+            layout.itemIndex++;
+        }
+        /* update position */
+        layout.pos.x += res.w + style.spacing;
+        layout.nextRow = max(layout.nextRow, res.y + res.h + style.spacing);
+        /* apply body offset */
+        res.x += layout.body.x;
+        res.y += layout.body.y;
+        /* update max position */
+        layout.max.x = max(layout.max.x, res.x + res.w);
+        layout.max.y = max(layout.max.y, res.y + res.h);
+        lastRect = res;
+        return lastRect;
+    }
 }
 
 private @safe nothrow @nogc {
@@ -1163,7 +1250,7 @@ private @safe nothrow @nogc {
         layout.body = IRect(body.x - scroll.x, body.y - scroll.y, body.w, body.h);
         layout.max = IVec2(-0x1000000, -0x1000000);
         ctx.layoutStack.push(layout);
-        mu_layout_row(ctx, 0, 0);
+        ctx.row(0, 0);
     }
 
     MuLayout* _getLayout(MuContext* ctx) {
@@ -1247,11 +1334,11 @@ private @safe nothrow @nogc {
         int active, expanded;
         MuId id = mu_get_id_str(ctx, label);
         int idx = mu_pool_get(ctx, ctx.treeNodePool.ptr, muTreeNodePoolSize, id);
-        mu_layout_row(ctx, 0, -1);
+        ctx.row(0, -1);
 
         active = (idx >= 0);
         expanded = (opt & MuOptFlag.expanded) ? !active : active;
-        r = mu_layout_next(ctx);
+        r = ctx.nextLayout();
         ctx.updateControl(id, r, 0);
 
         /* handle click */
@@ -1542,7 +1629,7 @@ void mu_draw_rect(MuContext* ctx, IRect rect, Rgba color, MuAtlas atlasid = MuAt
     MuCommandData* cmd;
     MuClip clipped;
     auto intersect_rect = rect.intersection(mu_get_clip_rect(ctx));
-    auto is_atlas_rect = atlasid != MuAtlas.none && ctx.style.atlasRects[atlasid].hasSize;
+    auto is_atlas_rect = atlasid != MuAtlas.none && ctx.style.slices[atlasid].area.hasSize;
     auto target_rect = is_atlas_rect ? rect : intersect_rect;
 
     if (target_rect.hasSize) {
@@ -1604,97 +1691,6 @@ void mu_draw_icon(MuContext* ctx, MuIcon id, IRect rect, Rgba color) {
     cmd.icon.color = color;
     /* reset clipping if it was set */
     if (clipped) { mu_set_clip(ctx, unclippedRect); }
-}
-
-/*============================================================================
-** layout
-**============================================================================*/
-
-void mu_layout_begin_column(MuContext* ctx) {
-    _pushLayout(ctx, mu_layout_next(ctx), IVec2(0, 0));
-}
-
-void mu_layout_end_column(MuContext* ctx) {
-    MuLayout* a, b;
-    b = _getLayout(ctx);
-    ctx.layoutStack.pop();
-    /* inherit position/nextRow/max from child layout if they are greater */
-    a = _getLayout(ctx);
-    a.pos.x = max(a.pos.x, b.pos.x + b.body.x - a.body.x);
-    a.nextRow = max(a.nextRow, b.nextRow + b.body.y - a.body.y);
-    a.max.x = max(a.max.x, b.max.x);
-    a.max.y = max(a.max.y, b.max.y);
-}
-
-@trusted
-void mu_layout_row_legacy(MuContext* ctx, int items, const(int)* widths, int height) {
-    MuLayout* layout = _getLayout(ctx);
-    if (widths) {
-        assert(items <= muMaxWidths);
-        jokaMemcpy(layout.widths.ptr, widths, items * widths[0].sizeof);
-    }
-    layout.items = items;
-    layout.pos = IVec2(layout.indent, layout.nextRow);
-    layout.size.y = height;
-    layout.itemIndex = 0;
-}
-
-@trusted
-void mu_layout_row(MuContext* ctx, int height, const(int)[] widths...) {
-    mu_layout_row_legacy(ctx, cast(int) widths.length, widths.ptr, height);
-}
-
-void mu_layout_width(MuContext* ctx, int width) {
-    _getLayout(ctx).size.x = width;
-}
-
-void mu_layout_height(MuContext* ctx, int height) {
-    _getLayout(ctx).size.y = height;
-}
-
-void mu_layout_set_next(MuContext* ctx, IRect r, bool relative) {
-    MuLayout* layout = _getLayout(ctx);
-    layout.next = r;
-    layout.nextType = relative ? relative : absolute;
-}
-
-IRect mu_layout_next(MuContext* ctx) {
-    MuLayout* layout = _getLayout(ctx);
-    MuStyle* style = ctx.style;
-    IRect res;
-
-    if (layout.nextType) {
-        /* handle rect set by `mu_layout_set_next` */
-        int type = layout.nextType;
-        layout.nextType = 0;
-        res = layout.next;
-        if (type == absolute) { return (ctx.lastRect = res); }
-    } else {
-        /* handle next row */
-        if (layout.itemIndex == layout.items) { mu_layout_row_legacy(ctx, layout.items, null, layout.size.y); }
-        /* position */
-        res.x = layout.pos.x;
-        res.y = layout.pos.y;
-        /* size */
-        res.w = layout.items > 0 ? layout.widths[layout.itemIndex] : layout.size.x;
-        res.h = layout.size.y;
-        if (res.w == 0) { res.w = style.size.x + style.padding * 2; }
-        if (res.h == 0) { res.h = style.size.y + style.padding * 2; }
-        if (res.w <  0) { res.w += layout.body.w - res.x + 1; }
-        if (res.h <  0) { res.h += layout.body.h - res.y + 1; }
-        layout.itemIndex++;
-    }
-    /* update position */
-    layout.pos.x += res.w + style.spacing;
-    layout.nextRow = max(layout.nextRow, res.y + res.h + style.spacing);
-    /* apply body offset */
-    res.x += layout.body.x;
-    res.y += layout.body.y;
-    /* update max position */
-    layout.max.x = max(layout.max.x, res.x + res.w);
-    layout.max.y = max(layout.max.y, res.y + res.h);
-    ctx.lastRect = res;
-    return ctx.lastRect;
 }
 
 // ORIGINAL MICROUI LICENSE
