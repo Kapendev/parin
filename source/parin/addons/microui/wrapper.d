@@ -26,12 +26,17 @@ alias UiFont      = MuFont;      /// The font type of microui.
 alias UiTexture   = MuTexture;   /// The texture type of microui.
 alias UiSliceMode = MuSliceMode; /// The slice repeat mode type of microui.
 
-alias UiColor      = Rgba;       /// A RGBA color using ubytes.
-alias UiRect       = IRect;      /// A 2D rectangle using ints.
-alias UiVec        = IVec2;      /// A 2D vector using ints.
-alias UiFVec       = Vec2;       /// A 2D vector using floats.
-alias UiMargin     = Margin;     /// A set of 4 integer margins for left, top, right, and bottom.
-alias UiSlicePart  = SlicePart;  /// A part of a 9-slice with source and target rectangles for drawing.
+deprecated("Use `IRect`. It's the same.")
+alias UiRect = IRect; /// A 2D rectangle using ints.
+deprecated("Use `IVec2`. It's the same.")
+alias UiVec = IVec2; /// A 2D vector using ints.
+deprecated("Use `Vec2`. It's the same.")
+alias UiFVec = Vec2; /// A 2D vector using floats.
+deprecated("Use `Margin`. It's the same.")
+alias UiMargin = Margin; /// A set of 4 integer margins for left, top, right, and bottom.
+deprecated("Use `SlicePart`. It's the same.")
+alias UiSlicePart = SlicePart;  /// A part of a 9-slice with source and target rectangles for drawing.
+deprecated("Use `SliceParts`. It's the same.")
 alias UiSliceParts = SliceParts; /// The parts of a 9-slice.
 
 alias UiPoolItem    = MuPoolItem;    /// A pool item.
@@ -41,19 +46,27 @@ alias UiClipCommand = MuClipCommand; /// Command to set a clipping rectangle.
 alias UiRectCommand = MuRectCommand; /// Command to draw a rectangle with a given color.
 alias UiTextCommand = MuTextCommand; /// Command to render text at a given position with a font and color. The text is a null-terminated string. Use `str.ptr` to access it.
 alias UiIconCommand = MuIconCommand; /// Command to draw an icon inside a rectangle with a given color.
-alias UiCommandData = MuCommandData;     /// A union of all possible render commands.
+alias UiCommandData = MuCommandData; /// A union of all possible render commands.
 
 alias UiLayout    = MuLayout;    /// Layout state used to position UI controls within a container.
 alias UiContainer = MuContainer; /// A UI container holding commands.
 alias UiSlice     = MuSlice;
 alias UiStyle     = MuStyle;     /// UI style settings including font, sizes, spacing, and colors.
 alias UiContext   = MuContext;   /// The main UI context.
-
-alias UiClipEnum  = MuClip;
 alias UiCommand   = MuCommand;
+
+deprecated("Remove `Enum` from the type name.")
+alias UiClipEnum  = MuClip;
+alias UiClip      = MuClip;
+deprecated("Remove `Enum` from the type name.")
 alias UiColorEnum = MuColor;
+alias UiColor     = MuColor;
+deprecated("Remove `Enum` from the type name.")
 alias UiIconEnum  = MuIcon;
+alias UiIcon      = MuIcon;
+deprecated("Remove `Enum` from the type name.")
 alias UiAtlasEnum = MuAtlas;
+alias UiAtlas     = MuAtlas;
 
 alias UiResFlags   = MuResFlags;   /// The type of `UiResFlag`.
 alias UiResFlag    = MuResFlag;
@@ -146,7 +159,7 @@ void popUiId() {
     mu_pop_id(&uiContext);
 }
 
-void pushUiClipRect(UiRect rect) {
+void pushUiClipRect(IRect rect) {
     mu_push_clip_rect(&uiContext, rect);
 }
 
@@ -154,12 +167,12 @@ void popUiClipRect() {
     mu_pop_clip_rect(&uiContext);
 }
 
-UiRect getUiClipRect() {
+IRect getUiClipRect() {
     return mu_get_clip_rect(&uiContext);
 }
 
-UiClipEnum checkUiClipRect(UiRect rect) {
-    return cast(UiClipEnum) mu_check_clip(&uiContext, rect);
+UiClip checkUiClipRect(IRect rect) {
+    return mu_check_clip(&uiContext, rect);
 }
 
 UiContainer* getCurrentUiContainer() {
@@ -234,23 +247,23 @@ bool nextUiCommand(UiCommandData** cmd) {
     return mu_next_command(&uiContext, cmd);
 }
 
-void setUiClipRect(UiRect rect) {
+void setUiClipRect(IRect rect) {
     mu_set_clip(&uiContext, rect);
 }
 
-void drawUiRect(UiRect rect, UiColor color, UiAtlasEnum id = UiAtlasEnum.none) {
+void drawUiRect(IRect rect, Rgba color, UiAtlas id = UiAtlas.none) {
     mu_draw_rect(&uiContext, rect, color, id);
 }
 
-void drawUibox(UiRect rect, UiColor color) {
+void drawUibox(IRect rect, Rgba color) {
     mu_draw_box(&uiContext, rect, color);
 }
 
-void drawUiText(UiFont font, IStr str, UiVec point, UiColor color) {
+void drawUiText(UiFont font, IStr str, IVec2 point, Rgba color) {
     mu_draw_text(&uiContext, font, str, point, color);
 }
 
-void drawUiIcon(UiIconEnum id, UiRect rect, UiColor color) {
+void drawUiIcon(UiIcon id, IRect rect, Rgba color) {
     mu_draw_icon(&uiContext, id, rect, color);
 }
 
@@ -278,11 +291,11 @@ void setLayoutHeight(int height) {
     uiContext.setLayoutHeight(height);
 }
 
-void setNextLayout(UiRect rect, bool relative) {
+void setNextLayout(IRect rect, bool relative) {
     uiContext.setNextLayout(rect, relative);
 }
 
-UiRect nextLayout() {
+IRect nextLayout() {
     return uiContext.nextLayout();
 }
 
@@ -290,19 +303,19 @@ UiRect nextLayout() {
 ** controls
 **============================================================================*/
 
-void drawControlFrame(UiId id, UiRect rect, UiColorEnum colorId, UiOptFlags opt, UiAtlasEnum atlasId = UiAtlasEnum.none) {
+void drawControlFrame(UiId id, IRect rect, UiColor colorId, UiOptFlags opt, UiAtlas atlasId = UiAtlas.none) {
     uiContext.drawControlFrame(id, rect, colorId, opt, atlasId);
 }
 
-void drawControlText(IStr text, UiRect rect, UiColorEnum colorId, UiOptFlags opt) {
+void drawControlText(IStr text, IRect rect, UiColor colorId, UiOptFlags opt) {
     uiContext.drawControlText(text, rect, colorId, opt);
 }
 
-bool isUiMouseOver(UiRect rect) {
+bool isUiMouseOver(IRect rect) {
     return uiContext.mouseOver(rect);
 }
 
-void updateControl(UiId id, UiRect rect, UiOptFlags opt) {
+void updateControl(UiId id, IRect rect, UiOptFlags opt) {
     uiContext.updateControl(id, rect, opt);
 }
 
@@ -314,7 +327,7 @@ void label(IStr text) {
     uiContext.label(text);
 }
 
-UiResFlags button(IStr label, UiIconEnum icon = UiIconEnum.none, UiOptFlags opt = UiOptFlag.alignCenter) {
+UiResFlags button(IStr label, UiIcon icon = UiIcon.none, UiOptFlags opt = UiOptFlag.alignCenter) {
     return uiContext.button(label, icon, opt);
 }
 
@@ -514,7 +527,7 @@ void endTreeNode() {
     uiContext.endTreeNode();
 }
 
-UiResFlags beginWindow(IStr title, UiRect rect, UiOptFlags opt = UiOptFlag.none) {
+UiResFlags beginWindow(IStr title, IRect rect, UiOptFlags opt = UiOptFlag.none) {
     return uiContext.beginWindow(title, rect, opt);
 }
 
@@ -546,7 +559,7 @@ void openDMenu() {
     uiContext.openDmenu();
 }
 
-UiResFlags beginDMenu(ref IStr selection, const(IStr)[] items, UiVec canvas, IStr label = "", UiFVec scale = UiFVec(0.5f, 0.7f)) {
+UiResFlags beginDMenu(ref IStr selection, const(IStr)[] items, IVec2 canvas, IStr label = "", Vec2 scale = Vec2(0.5f, 0.7f)) {
     return uiContext.beginDmenu(selection, items, canvas, label, scale);
 }
 
@@ -582,7 +595,7 @@ void readyUi(UiFont font = null, int fontScale = 1) {
         uiStyle.titleHeight = size + size / 2 + 4;
         if (t > 0.0f) {
             // Scale factor: 0.0 at size=8, 1.0 at size=38.
-            uiStyle.size = UiVec(cast(int) (size * 6), cast(int) (size + lerp(-4, 0, t)));
+            uiStyle.size = IVec2(cast(int) (size * 6), cast(int) (size + lerp(-4, 0, t)));
             uiStyle.border = cast(int) lerp(1, 3, t);
             uiStyle.spacing += cast(int) lerp(0, 8, t);
             uiStyle.padding += cast(int) lerp(0, 8, t);
@@ -732,7 +745,7 @@ void drawUiState() {
             case UiCommand.icon:
                 parinOptions.color = *(cast(Rgba*) (&cmd.icon.color));
                 auto iconAtlasArea = uiStyle.iconAtlasAreas[cmd.icon.id];
-                auto iconDiff = UiVec(cmd.icon.rect.w - iconAtlasArea.w, cmd.icon.rect.h - iconAtlasArea.h);
+                auto iconDiff = IVec2(cmd.icon.rect.w - iconAtlasArea.w, cmd.icon.rect.h - iconAtlasArea.h);
                 if (styleTexture && iconAtlasArea.hasSize) {
                     drawTextureArea(
                         *styleTexture,
@@ -744,15 +757,15 @@ void drawUiState() {
                     parinOptions.scale = Vec2(uiStyle.fontScale, uiStyle.fontScale);
                     IStr icon = "?";
                     switch (cmd.icon.id) {
-                        case UiIconEnum.close: icon = "x"; break;
-                        case UiIconEnum.check: icon = "*"; break;
-                        case UiIconEnum.collapsed: icon = "+"; break;
-                        case UiIconEnum.expanded: icon = "-"; break;
+                        case UiIcon.close:     icon = "x"; break;
+                        case UiIcon.check:     icon = "*"; break;
+                        case UiIcon.collapsed: icon = "+"; break;
+                        case UiIcon.expanded:  icon = "-"; break;
                         default: break;
                     }
                     auto iconWidth = uiContext.textWidth(styleFont, icon);
                     auto iconHeight = uiContext.textHeight(styleFont);
-                    iconDiff = UiVec(cmd.icon.rect.w - iconWidth, cmd.icon.rect.h - iconHeight);
+                    iconDiff = IVec2(cmd.icon.rect.w - iconWidth, cmd.icon.rect.h - iconHeight);
                     drawText(
                         *styleFont,
                         icon,
@@ -780,6 +793,7 @@ void beginUiFrame() {
 }
 
 /// The old name of the `beginUiFrame` function.
+deprecated("Use `beginUiFrame`. It's a better name.")
 alias beginUi = beginUiFrame;
 
 /// Ends UI processing and performs drawing.
@@ -789,4 +803,5 @@ void endUiFrame() {
 }
 
 /// The old name of the `endUiFrame` function.
+deprecated("Use `endUiFrame`. It's a better name.")
 alias endUi = endUiFrame;

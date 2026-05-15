@@ -1,7 +1,8 @@
 # Parin
 
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
-Parin is designed to make game development fast and fun. It's easy to set up, hackable, and comes with the essentials built in.
+Parin is designed to make game development fast and fun.
+It's easy to set up, hackable, and comes with the essentials built in.
 
 *Some games made with Parin:*
 
@@ -11,7 +12,7 @@ Parin is designed to make game development fast and fun. It's easy to set up, ha
 
 ## Why Parin
 
-Parin sits somewhere between a small engine like raylib or LÖVE and a big engine like Godot or Unity.
+Parin sits somewhere between a small engine like [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/) and a big engine like [Godot](https://godotengine.org/) or [Unity](https://unity.com/).
 It offers more direction than small ones, but far less overhead and "magic" than big ones.
 It's especially well-suited for retro games, with helper functions and two pixel fonts included.
 More specifically:
@@ -154,7 +155,7 @@ Check the [examples](examples/ui) folder for more information about how the curr
 
 The following libraries are also compatible with Parin:
 
-- [microui-d](examples/integrations/microui.d): A tiny immediate-mode UI library. Included by default in `parin.addons`.
+- [microui-d](examples/integrations/microui.d): A tiny immediate-mode UI library. A custom fork is included by default in `parin.addons`.
 - [Fluid](examples/integrations/fluid.d): A declarative cross-platform user interface library.
 
 ### Does Parin have a scripting language?
@@ -315,10 +316,12 @@ Yes. Be sure to check the associated [README](assets/README.md) for any licensin
 
 No. Raylib is the current backend.
 A custom backend may be added in the future, but it's not a priority.
+Contributions are welcome.
 
 ### What are Parin's priorities?
 
 The goal is a smooth experience, similar to Godot or Unity.
+Its main design inspirations are [Processing](https://processing.org/) and [RPG Maker](https://rpgmakerofficial.com/en/).
 
 ### Is there a list of games made with Parin?
 
