@@ -272,6 +272,41 @@ struct MuStyle {
     StaticArray!(IRect, MuIcon.max + 1) iconAtlasAreas; /// Optional array of icon atlas rectangles used in the UI.
 }
 
+/// Used by the `members` function to hide data.
+struct MuPrivate {}
+
+/// Used by the `members` function to show data in a specific way.
+struct MuMember {
+    IStr name;  /// The name of the member.
+    float low;  /// Used by sliders.
+    float high; /// Used by sliders.
+    float step; /// Used by sliders.
+
+    @safe nothrow @nogc pure:
+
+    this(float low, float high, float step = float.nan) {
+        this.low = low;
+        this.high = high;
+        this.step = step;
+    }
+
+    this(float step) {
+        this.step = step;
+    }
+
+    this(IStr name, float low, float high, float step = float.nan) {
+        this.name = name;
+        this.low = low;
+        this.high = high;
+        this.step = step;
+    }
+
+    this(IStr name, float step = float.nan) {
+        this.name = name;
+        this.step = step;
+    }
+}
+
 /// The main UI context.
 struct MuContext {
     // -- Callbacks
@@ -321,7 +356,7 @@ struct MuContext {
     MuMouseFlags mousePressed;
     MuKeyFlags keyDown;
     MuKeyFlags keyPressed;
-    char[muInputTextSize] inputText;
+    char[muInputTextSize] inputTextData;
     char[] inputTextSlice;
 
     @safe nothrow @nogc:
@@ -362,7 +397,7 @@ struct MuContext {
         );
         style = &_style;
         style.font = font;
-        inputTextSlice = inputText[0 .. 0];
+        inputTextSlice = inputTextData[0 .. 0];
     }
 
     void readyWithFuncs(MuTextWidthFunc width, MuTextHeightFunc height, MuFont font, int fontScale = 1) {
@@ -409,13 +444,13 @@ struct MuContext {
 
         /* bring hover root to front if mouse was pressed */
         if (mousePressed && nextHoverRoot && nextHoverRoot.zIndex < lastZIndex && nextHoverRoot.zIndex >= 0) {
-            if (nextHoverRoot.open) { mu_bring_to_front(&this, nextHoverRoot); }
+            if (nextHoverRoot.open) bringToFront(nextHoverRoot);
         }
 
         /* reset input state */
         keyPressed = 0;
-        inputText[0] = '\0';
-        inputTextSlice = inputText[0 .. 0];
+        inputTextData[0] = '\0';
+        inputTextSlice = inputTextData[0 .. 0];
         mousePressed = 0;
         scrollDelta = IVec2(0, 0);
         lastMousePos = mousePos;
@@ -471,7 +506,7 @@ struct MuContext {
         auto pos = IVec2();
         auto font = style.font;
         auto tw = textWidth(font, str);
-        mu_push_clip_rect(&this, rect);
+        pushClipRect(rect);
         pos.y = rect.y + (rect.h - textHeight(font)) / 2;
         if (opt & MuOptFlag.alignCenter) {
             pos.x = rect.x + (rect.w - tw) / 2;
@@ -481,7 +516,7 @@ struct MuContext {
             pos.x = rect.x + style.padding;
         }
         mu_draw_text(&this, font, str, pos, style.colors[colorid]);
-        mu_pop_clip_rect(&this);
+        popClipRect();
     }
 
     void drawControlTextLegacy(IStrz str, IRect rect, MuColor colorid, MuOptFlags opt) {
@@ -489,7 +524,7 @@ struct MuContext {
     }
 
     bool mouseOver(IRect rect) {
-        return rect.hasPoint(mousePos) && mu_get_clip_rect(&this).hasPoint(mousePos) && _inHoverRoot(&this);
+        return rect.hasPoint(mousePos) && getClipRect().hasPoint(mousePos) && _inHoverRoot(&this);
     }
 
     void updateControl(MuId id, IRect rect, MuOptFlags opt, bool isDragOrResizeControl = false, MuMouseFlags action = MuMouseFlag.left) {
@@ -498,18 +533,18 @@ struct MuContext {
         }
 
         bool mouseover = mouseOver(rect);
-        if (focus == 0 && opt & MuOptFlag.defaultFocus) mu_set_focus(&this, id);
+        if (focus == 0 && opt & MuOptFlag.defaultFocus) setFocus(id);
 
         if (focus == id) updatedFocus = true;
         if (opt & MuOptFlag.noInteract) return;
         if (mouseover && !(mouseDown & action)) hover = id;
         if (focus == id && ~opt & MuOptFlag.defaultFocus) {
-            if (mousePressed & action && !mouseover) { mu_set_focus(&this, 0); }
-            if (!(mouseDown & action) && ~opt & MuOptFlag.holdFocus) { mu_set_focus(&this, 0); }
+            if (mousePressed & action && !mouseover) setFocus(0);
+            if (!(mouseDown & action) && ~opt & MuOptFlag.holdFocus) setFocus(0);
         }
         if (hover == id) {
             if (mousePressed & action) {
-                mu_set_focus(&this, id);
+                setFocus(id);
             } else if (!mouseover) {
                 hover = 0;
             }
@@ -521,7 +556,7 @@ struct MuContext {
         int maxscroll = cs.y - b.h;
         if (maxscroll > 0 && b.h > 0) {
             IRect base, thumb, mouse_area;
-            MuId id = mu_get_id_str(&this, "!scrollbary");
+            MuId id = getIdFromStr("!scrollbary");
             /* get sizing/positioning */
             base = *b;
             base.x = b.x + b.w;
@@ -573,7 +608,7 @@ struct MuContext {
         int maxscroll = cs.x - b.w;
         if (maxscroll > 0 && b.w > 0) {
             IRect base, thumb, mouse_area;
-            MuId id = mu_get_id_str(&this, "!scrollbarx");
+            MuId id = getIdFromStr("!scrollbarx");
             /* get sizing/positioning */
             base = *b;
             base.y = b.y + b.h;
@@ -665,9 +700,9 @@ struct MuContext {
     }
 
     MuResFlags button(IStr str, MuIcon icon = MuIcon.none, MuOptFlags opt = MuOptFlag.alignCenter) {
-        mu_push_id(&this, &buttonCounter, buttonCounter.sizeof);
+        pushId(&buttonCounter, buttonCounter.sizeof);
         auto res = buttonLegacy(str, icon, opt);
-        mu_pop_id(&this);
+        popId();
         buttonCounter += 1;
         return res;
     }
@@ -676,8 +711,8 @@ struct MuContext {
     MuResFlags buttonLegacy(IStr str, MuIcon icon, MuOptFlags opt) {
         MuResFlags res = MuResFlag.none;
         MuId id = (str.ptr && str.length)
-            ? mu_get_id_str(&this, str)
-            : mu_get_id(&this, &icon, icon.sizeof);
+            ? getIdFromStr(str)
+            : getId(&icon, icon.sizeof);
         IRect r = nextLayout();
         updateControl(id, r, opt);
         /* handle click */
@@ -696,14 +731,14 @@ struct MuContext {
     }
 
     @trusted
-    MuResFlags checkbox(ref bool state, IStr str) {
+    MuResFlags checkbox(ref bool state, IStr str = "") {
         return checkboxLegacy(&state, str);
     }
 
     @trusted
     MuResFlags checkboxLegacy(bool* state, IStr str) {
         MuResFlags res = MuResFlag.none;
-        MuId id = mu_get_id(&this, &state, state.sizeof);
+        MuId id = getId(&state, state.sizeof);
         IRect r = nextLayout();
         IRect box = IRect(r.x, r.y, r.h, r.h);
         updateControl(id, box, 0); // NOTE(Kapendev): Why was this r and not box???
@@ -737,7 +772,7 @@ struct MuContext {
             /* handle text input */
             int n = min((cast(int) bufsz) - (cast(int) buflen) - 1, cast(int) inputTextSlice.length);
             if (n > 0) {
-                jokaMemcpy(buf + buflen, inputText.ptr, n);
+                jokaMemcpy(buf + buflen, inputTextData.ptr, n);
                 buflen += n;
                 buf[buflen] = '\0';
                 res |= MuResFlag.change;
@@ -765,7 +800,7 @@ struct MuContext {
             }
             /* handle return */
             if (keyPressed & MuKeyFlag.enter) {
-                mu_set_focus(&this, 0);
+                setFocus(0);
                 res |= MuResFlag.submit;
             }
         }
@@ -780,7 +815,7 @@ struct MuContext {
             int ofx = r.w - style.padding - textw - 1;
             int textx = r.x + min(ofx, style.padding);
             int texty = r.y + (r.h - texth) / 2;
-            mu_push_clip_rect(&this, r);
+            pushClipRect(r);
 
             if (opt & MuOptFlag.alignCenter) {
                 textx = r.x + (r.w - textw) / 2;
@@ -790,7 +825,7 @@ struct MuContext {
 
             mu_draw_text(&this, font, buf[0 .. buflen], IVec2(textx, texty), color);
             mu_draw_rect(&this, IRect(textx + textw, texty, 1, texth), color);
-            mu_pop_clip_rect(&this);
+            popClipRect();
         } else {
             drawControlText(buf[0 .. buflen], r, MuColor.text, opt);
         }
@@ -810,7 +845,7 @@ struct MuContext {
 
     @trusted
     MuResFlags textboxLegacy(char* buf, Sz bufsz, MuOptFlags opt, Sz* newlen = null) {
-        MuId id = mu_get_id(&this, &buf, buf.sizeof);
+        MuId id = getId(&buf, buf.sizeof);
         IRect r = nextLayout();
         return textboxRawLegacy(buf, bufsz, id, r, opt, newlen);
     }
@@ -835,7 +870,7 @@ struct MuContext {
         IRect thumb;
         MuResFlags res = 0;
         float last = *value, v = last;
-        MuId id = mu_get_id(&this, &value, value.sizeof);
+        MuId id = getId(&value, value.sizeof);
         IRect base = nextLayout();
 
         /* handle text input mode */
@@ -875,11 +910,11 @@ struct MuContext {
 
     @trusted
     MuResFlags sliderLegacy(int* value, int low, int high, int step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
-        mu_push_id(&this, &value, value.sizeof);
+        pushId(&value, value.sizeof);
         float temp = *value;
         MuResFlags res = sliderLegacy(&temp, low, high, step, fmt, opt, isFmtFloatAnInt);
         *value = cast(int) temp;
-        mu_pop_id(&this);
+        popId();
         return res;
     }
 
@@ -900,7 +935,7 @@ struct MuContext {
 
         char[muMaxFmt + 1] buf = void;
         MuResFlags res = 0;
-        MuId id = mu_get_id(&this, &value, value.sizeof);
+        MuId id = getId(&value, value.sizeof);
         IRect base = nextLayout();
         float last = *value;
 
@@ -932,11 +967,11 @@ struct MuContext {
 
     @trusted
     MuResFlags numberLegacy(int* value, int step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
-        mu_push_id(&this, &value, value.sizeof);
+        pushId(&value, value.sizeof);
         float temp = *value;
         MuResFlags res = numberLegacy(&temp, step, fmt, opt, isFmtFloatAnInt);
         *value = cast(int) temp;
-        mu_pop_id(&this);
+        popId();
         return res;
     }
 
@@ -955,14 +990,14 @@ struct MuContext {
 
     void endTreeNode() {
         _getLayout(&this).indent -= style.indent;
-        mu_pop_id(&this);
+        popId();
     }
 
     MuResFlags beginWindow(IStr title, IRect rect, MuOptFlags opt = MuOptFlag.none) {
         if (opt & MuOptFlag.autoSize) { opt |= MuOptFlag.noResize | MuOptFlag.noScroll; }
 
         IRect body;
-        MuId id = mu_get_id_str(&this, title);
+        MuId id = getIdFromStr(title);
         MuContainer* cnt = _getContainer(&this, id, opt);
         if (!cnt || !cnt.open) { return MuResFlag.none; }
         idStack.push(id);
@@ -984,7 +1019,7 @@ struct MuContext {
             /* do title text */
             if (~opt & MuOptFlag.noTitle) {
                 if (~opt & MuOptFlag.noName) drawControlText(title, tr, MuColor.titleText, opt);
-                MuId id2 = mu_get_id_str(&this, "!title"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
+                MuId id2 = getIdFromStr("!title"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
                 if (keyDown & dragWindowKey) {
                     updateControl(id2, body, opt, true);
                     if (id2 == focus && mouseDown & MuMouseFlag.left) {
@@ -1003,7 +1038,7 @@ struct MuContext {
             }
             /* do `close` button */
             if (~opt & MuOptFlag.noClose) {
-                MuId id2 = mu_get_id_str(&this, "!close"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
+                MuId id2 = getIdFromStr("!close"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
                 IRect r = IRect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
                 tr.w -= r.w;
                 mu_draw_icon(&this, MuIcon.close, r, style.colors[MuColor.titleText]);
@@ -1017,7 +1052,7 @@ struct MuContext {
         /* do `resize` handle */
         if (~opt & MuOptFlag.noResize) {
             int sz = style.scrollbarSize; // RXI, WHY WAS THIS USING THE TITLE HEIGHT?
-            MuId id2 = mu_get_id_str(&this, "!resize"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
+            MuId id2 = getIdFromStr("!resize"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
             IRect r = IRect(rect.x + rect.w - sz, rect.y + rect.h - sz, sz, sz);
             if (keyDown & resizeWindowKey) {
                 updateControl(id2, body, opt, true);
@@ -1041,23 +1076,23 @@ struct MuContext {
         }
         /* close if this is a popup window and elsewhere was clicked */
         if (opt & MuOptFlag.popup && mousePressed && hoverRoot != cnt) { cnt.open = false; }
-        mu_push_clip_rect(&this, cnt.body);
+        pushClipRect(cnt.body);
         return MuResFlag.active;
     }
 
     void endWindow() {
-        mu_pop_clip_rect(&this);
+        popClipRect();
         _endRootContainer(&this);
     }
 
     void openPopup(IStr name) {
-        MuContainer* cnt = mu_get_container(&this, name);
+        MuContainer* cnt = getContainer(name);
         /* set as hover root so popup isn't closed in begin_window_ex() */
         hoverRoot = nextHoverRoot = cnt;
         /* position at mouse cursor, open and bring-to-front */
         cnt.rect = IRect(mousePos.x, mousePos.y, 1, 1);
         cnt.open = true;
-        mu_bring_to_front(&this, cnt);
+        bringToFront(cnt);
     }
 
     MuResFlags beginPopup(IStr name) {
@@ -1069,22 +1104,22 @@ struct MuContext {
 
     void beginPanel(IStr name, MuOptFlags opt = MuOptFlag.none) {
         MuContainer* cnt;
-        mu_push_id_str(&this, name);
+        pushIdFromStr(name);
         cnt = _getContainer(&this, lastId, opt);
         cnt.rect = nextLayout();
         if (~opt & MuOptFlag.noFrame) { drawFrame(&this, cnt.rect, MuColor.panelBg); }
         containerStack.push(cnt);
         _pushContainerBody(&this, cnt, cnt.rect, opt);
-        mu_push_clip_rect(&this, cnt.body);
+        pushClipRect(cnt.body);
     }
 
     void endPanel() {
-        mu_pop_clip_rect(&this);
+        popClipRect();
         _popContainer(&this);
     }
 
     void openDmenu() {
-        auto cnt = mu_get_container(&this, "!dmenu");
+        auto cnt = getContainer("!dmenu");
         cnt.open = true;
     }
 
@@ -1097,7 +1132,7 @@ struct MuContext {
         auto rect = IRect(canvas.x / 2 - size.x / 2, canvas.y / 2 - size.y / 2,  size.x, size.y);
         if (beginWindow("!dmenu", rect, MuOptFlag.noClose | MuOptFlag.noResize | MuOptFlag.noTitle)) {
             result |= MuResFlag.active;
-            auto window_cnt = mu_get_current_container(&this);
+            auto window_cnt = getCurrentContainer();
             if (str.length) {
                 row(0, textWidth(style.font, str) + textWidth(style.font, "  "), -1);
                 label(str);
@@ -1150,6 +1185,161 @@ struct MuContext {
     }
 
     alias endDmenu = endWindow;
+
+    // TODO: Needs cleaning. It looks likes this because I just wanted to get something to work and original microui could not use Joka.
+    void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) {
+        auto window = getCurrentContainer();
+        row(0, labelWidth, -1);
+        static foreach (member; data.tupleof) {
+            // With data.
+            static if (is(typeof(__traits(getAttributes, member)[0]) == MuMember)) {
+                static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z") && __traits(hasMember, typeof(member), "w")) {
+                    row(0, labelWidth,
+                        (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,
+                        (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,
+                        (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,
+                        -1,
+                    );
+                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
+                        label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                        number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".w"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                    } else static if (is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                        label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                        number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".w"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                    }
+                    row(0, labelWidth, -1);
+                } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z")) {
+                    row(0, labelWidth,
+                        (window.rect.w - labelWidth - style.spacing - style.border) / 3 - style.spacing - style.border,
+                        (window.rect.w - labelWidth - style.spacing - style.border) / 3 - style.spacing - style.border,
+                        -1,
+                    );
+                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
+                        label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                        number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                    } else static if (is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                        label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                        number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                    }
+                    row(0, labelWidth, -1);
+                } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y")) {
+                    row(0, labelWidth,
+                        (window.rect.w - labelWidth - style.spacing - style.border) / 2 - style.spacing - style.border,
+                        -1,
+                    );
+                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
+                        label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                        number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                    } else static if (is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                        label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                        number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                        number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                    }
+                    row(0, labelWidth, -1);
+                } else static if (is(typeof(member) == bool)) {
+                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                    checkbox(mixin("data.", member.stringof));
+                } else static if (is(typeof(member) == float)) {
+                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                    static if (!(__traits(getAttributes, member)[0].low == __traits(getAttributes, member)[0].low)) {
+                        number(mixin("data.", member.stringof), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
+                    } else {
+                        slider(
+                            mixin("data.", member.stringof),
+                            __traits(getAttributes, member)[0].low,
+                            __traits(getAttributes, member)[0].high,
+                            !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step,
+                            muNumberFmt,
+                            MuOptFlag.alignCenter,
+                        );
+                    }
+                } else static if (is(typeof(member) == int)) {
+                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
+                    static if (!(__traits(getAttributes, member)[0].low == __traits(getAttributes, member)[0].low)) {
+                        number(mixin("data.", member.stringof), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
+                    } else {
+                        slider(
+                            mixin("data.", member.stringof),
+                            cast(int) __traits(getAttributes, member)[0].low,
+                            cast(int) __traits(getAttributes, member)[0].high,
+                            !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step,
+                            muNumberFmt,
+                            MuOptFlag.alignCenter,
+                        );
+                    }
+                }
+            // Without data.
+            } else {
+                if (canShowPrivateMembers || (!is(__traits(getAttributes, member)[0] == MuPrivate) && !is(typeof(__traits(getAttributes, member)[0]) == UiPrivate))) {
+                    static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z") && __traits(hasMember, typeof(member), "w")) {
+                        static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                            row(0, labelWidth,
+                                (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,
+                                (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,
+                                (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,
+                                -1,
+                            );
+                            label(member.stringof);
+                            number(mixin("data.", member.stringof, ".x"));
+                            number(mixin("data.", member.stringof, ".y"));
+                            number(mixin("data.", member.stringof, ".z"));
+                            number(mixin("data.", member.stringof, ".w"));
+                            row(0, labelWidth, -1);
+                        }
+                    } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z")) {
+                        static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                            row(0, labelWidth,
+                                (window.rect.w - labelWidth - style.spacing - style.border) / 3 - style.spacing - style.border,
+                                (window.rect.w - labelWidth - style.spacing - style.border) / 3 - style.spacing - style.border,
+                                -1,
+                            );
+                            label(member.stringof);
+                            number(mixin("data.", member.stringof, ".x"));
+                            number(mixin("data.", member.stringof, ".y"));
+                            number(mixin("data.", member.stringof, ".z"));
+                            row(0, labelWidth, -1);
+                        }
+                    } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y")) {
+                        static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
+                            row(0, labelWidth,
+                                (window.rect.w - labelWidth - style.spacing - style.border) / 2 - style.spacing - style.border,
+                                -1,
+                            );
+                            label(member.stringof);
+                            number(mixin("data.", member.stringof, ".x"));
+                            number(mixin("data.", member.stringof, ".y"));
+                            row(0, labelWidth, -1);
+                        }
+                    } else static if (is(typeof(member) == bool)) {
+                        label(member.stringof);
+                        checkbox(mixin("data.", member.stringof));
+                    } else static if (is(typeof(member) == float) || is(typeof(member) == int)) {
+                        label(member.stringof);
+                        number(mixin("data.", member.stringof));
+                    }
+                }
+            }
+        }
+        row(0, 0);
+    }
+
+    MuResFlags headerAndMembers(T)(ref T data, int labelWidth, IStr label = "", bool canShowPrivateMembers = false) {
+        auto result = header(label.length ? label : typeof(data).stringof);
+        if (result) members(data, labelWidth, canShowPrivateMembers);
+        row(0, 0);
+        return result;
+    }
 
     /*============================================================================
     ** layout
@@ -1240,6 +1430,126 @@ struct MuContext {
         lastRect = res;
         return lastRect;
     }
+
+    /*============================================================================
+    ** input handlers
+    **============================================================================*/
+
+    void inputMouseMove(int x, int y) {
+        mousePos = IVec2(x, y);
+    }
+
+    void inputMouseDown(int x, int y, MuMouseFlags btn) {
+        inputMouseMove(x, y);
+        mouseDown |= btn;
+        mousePressed |= btn;
+    }
+
+    void inputMouseUp(int x, int y, MuMouseFlags btn) {
+        inputMouseMove(x, y);
+        mouseDown &= ~btn;
+    }
+
+    void inputScroll(int x, int y) {
+        scrollDelta.x += x * style.scrollbarSpeed;
+        scrollDelta.y += y * style.scrollbarSpeed;
+    }
+
+    void inputKeyDown(MuKeyFlags key) {
+        keyPressed |= key;
+        keyDown |= key;
+    }
+
+    void inputKeyUp(MuKeyFlags key) {
+        keyDown &= ~key;
+    }
+
+    @trusted
+    void inputText(IStr str) {
+        Sz len = inputTextSlice.length;
+        Sz size = str.length;
+        assert(len + size < inputTextData.sizeof);
+        jokaMemcpy(inputTextData.ptr + len, str.ptr, size);
+        // Added this to make it work with slices.
+        inputTextData[len + size] = '\0';
+        inputTextSlice = inputTextData[0 .. len + size];
+    }
+
+    /*============================================================================
+    ** other
+    **============================================================================*/
+
+    void setFocus(MuId id) {
+        focus = id;
+        updatedFocus = true;
+    }
+
+    @trusted
+    MuId getId(const(void)* data, Sz size) {
+        // NOTE: It's using `hashFnv32a`.
+        MuId result = (idStack.idx > 0) ? idStack.items[idStack.idx - 1] : 2166136261U;
+        auto p = cast(const(ubyte)*) data;
+        while (size--) result = (result ^ *p++) * 16777619U;
+        lastId = result;
+        return result;
+    }
+
+    @trusted
+    MuId getIdFromStr(IStr str) {
+        return getId(str.ptr, str.length);
+    }
+
+    @trusted
+    void pushId(const(void)* data, Sz size) {
+        idStack.push(getId(data, size));
+    }
+
+    @trusted
+    void pushIdFromStr(IStr str) {
+        idStack.push(getId(str.ptr, str.length));
+    }
+
+    void popId() {
+        idStack.pop();
+    }
+
+    @trusted
+    void pushClipRect(IRect rect) {
+        auto last = getClipRect();
+        clipStack.push(rect.intersection(last));
+    }
+
+    void popClipRect() {
+        clipStack.pop();
+    }
+
+    IRect getClipRect() {
+        return clipStack.items[clipStack.idx - 1];
+    }
+
+    MuClip checkClip(IRect r) {
+        auto cr = getClipRect();
+        if (r.x > cr.x + cr.w || r.x + r.w < cr.x || r.y > cr.y + cr.h || r.y + r.h < cr.y) {
+            return MuClip.all;
+        } else if (r.x >= cr.x && r.x + r.w <= cr.x + cr.w && r.y >= cr.y && r.y + r.h <= cr.y + cr.h) {
+            return MuClip.none;
+        } else {
+            return MuClip.part;
+        }
+    }
+
+    MuContainer* getCurrentContainer() {
+        return containerStack.items[containerStack.idx - 1];
+    }
+
+    MuContainer* getContainer(IStr name) {
+        auto id = getIdFromStr(name);
+        return _getContainer(&this, id, 0);
+    }
+
+    void bringToFront(MuContainer* cnt) {
+        cnt.zIndex = ++lastZIndex;
+    }
 }
 
 private @safe nothrow @nogc {
@@ -1259,14 +1569,14 @@ private @safe nothrow @nogc {
     }
 
     void _popContainer(MuContext* ctx) {
-        MuContainer* cnt = mu_get_current_container(ctx);
+        MuContainer* cnt = ctx.getCurrentContainer();
         MuLayout* layout = _getLayout(ctx);
         cnt.contentSize.x = layout.max.x - layout.body.x;
         cnt.contentSize.y = layout.max.y - layout.body.y;
         /* pop container, layout and id */
         ctx.containerStack.pop();
         ctx.layoutStack.pop();
-        mu_pop_id(ctx);
+        ctx.popId();
     }
 
     @trusted
@@ -1286,7 +1596,7 @@ private @safe nothrow @nogc {
         cnt = &ctx.containers[idx];
         jokaMemset(cnt, 0, (*cnt).sizeof);
         cnt.open = true;
-        mu_bring_to_front(ctx, cnt);
+        ctx.bringToFront(cnt);
         return cnt;
     }
 
@@ -1332,7 +1642,7 @@ private @safe nothrow @nogc {
     MuResFlags _header(MuContext* ctx, IStr label, int istreenode, MuOptFlags opt) {
         IRect r;
         int active, expanded;
-        MuId id = mu_get_id_str(ctx, label);
+        MuId id = ctx.getIdFromStr(label);
         int idx = mu_pool_get(ctx, ctx.treeNodePool.ptr, muTreeNodePoolSize, id);
         ctx.row(0, -1);
 
@@ -1369,13 +1679,13 @@ private @safe nothrow @nogc {
         IVec2 cs = cnt.contentSize;
         cs.x += ctx.style.padding * 2;
         cs.y += ctx.style.padding * 2;
-        mu_push_clip_rect(ctx, *body);
+        ctx.pushClipRect(*body);
         /* resize body to make room for scrollbars */
         if (cs.y > cnt.body.h) { body.w -= sz; }
         if (cs.x > cnt.body.w) { body.h -= sz; }
         ctx.scrollbarY(cnt, body, cs);
         ctx.scrollbarX(cnt, body, cs);
-        mu_pop_clip_rect(ctx);
+        ctx.popClipRect();
     }
 
     @trusted
@@ -1407,11 +1717,11 @@ private @safe nothrow @nogc {
     void _endRootContainer(MuContext* ctx) {
         /* push tail 'goto' jump command and set head 'skip' command. the final steps
         ** on initing these are done in mu_end() */
-        MuContainer* cnt = mu_get_current_container(ctx);
+        MuContainer* cnt = ctx.getCurrentContainer();
         cnt.tail = _pushJump(ctx, null);
         cnt.head.jump.dst = ctx.commandList.items.ptr + ctx.commandList.idx;
         /* pop base clip rect and container */
-        mu_pop_clip_rect(ctx);
+        ctx.popClipRect();
         _popContainer(ctx);
     }
 }
@@ -1440,76 +1750,6 @@ int tempMuTextWidthFunc(MuFont font, IStr str) {
 // Temporary text measurement function for prototyping.
 int tempMuTextHeightFunc(MuFont font) {
     return 20;
-}
-
-void mu_set_focus(MuContext* ctx, MuId id) {
-    ctx.focus = id;
-    ctx.updatedFocus = true;
-}
-
-@trusted
-MuId mu_get_id(MuContext *ctx, const(void)* data, Sz size) {
-    // NOTE: It's using `hashFnv32a`.
-    MuId result = (ctx.idStack.idx > 0) ? ctx.idStack.items[ctx.idStack.idx - 1] : 2166136261U;
-    auto p = cast(const(ubyte)*) data;
-    while (size--) result = (result ^ *p++) * 16777619U;
-    ctx.lastId = result;
-    return result;
-}
-
-@trusted
-MuId mu_get_id_str(MuContext *ctx, IStr str) {
-    return mu_get_id(ctx, str.ptr, str.length);
-}
-
-@trusted
-void mu_push_id(MuContext* ctx, const(void)* data, Sz size) {
-    ctx.idStack.push(mu_get_id(ctx, data, size));
-}
-
-@trusted
-void mu_push_id_str(MuContext* ctx, IStr str) {
-    ctx.idStack.push(mu_get_id(ctx, str.ptr, str.length));
-}
-
-void mu_pop_id(MuContext* ctx) {
-    ctx.idStack.pop();
-}
-
-@trusted
-void mu_push_clip_rect(MuContext* ctx, IRect rect) {
-    IRect last = mu_get_clip_rect(ctx);
-    ctx.clipStack.push(rect.intersection(last));
-}
-
-void mu_pop_clip_rect(MuContext* ctx) {
-    ctx.clipStack.pop();
-}
-
-IRect mu_get_clip_rect(MuContext* ctx) {
-    assert(ctx.clipStack.idx > 0);
-    return ctx.clipStack.items[ctx.clipStack.idx - 1];
-}
-
-MuClip mu_check_clip(MuContext* ctx, IRect r) {
-    IRect cr = mu_get_clip_rect(ctx);
-    if (r.x > cr.x + cr.w || r.x + r.w < cr.x || r.y > cr.y + cr.h || r.y + r.h < cr.y) { return MuClip.all; }
-    if (r.x >= cr.x && r.x + r.w <= cr.x + cr.w && r.y >= cr.y && r.y + r.h <= cr.y + cr.h) { return MuClip.none; }
-    return MuClip.part;
-}
-
-MuContainer* mu_get_current_container(MuContext* ctx) {
-    assert(ctx.containerStack.idx > 0);
-    return ctx.containerStack.items[ctx.containerStack.idx - 1];
-}
-
-MuContainer* mu_get_container(MuContext* ctx, IStr name) {
-    MuId id = mu_get_id_str(ctx, name);
-    return _getContainer(ctx, id, 0);
-}
-
-void mu_bring_to_front(MuContext* ctx, MuContainer* cnt) {
-    cnt.zIndex = ++ctx.lastZIndex;
 }
 
 /*============================================================================
@@ -1543,50 +1783,6 @@ int mu_pool_get(MuContext* ctx, MuPoolItem* items, Sz len, MuId id) {
 @trusted
 void mu_pool_update(MuContext* ctx, MuPoolItem* items, Sz idx) {
     items[idx].lastUpdate = ctx.frame;
-}
-
-/*============================================================================
-** input handlers
-**============================================================================*/
-
-void mu_input_mousemove(MuContext* ctx, int x, int y) {
-    ctx.mousePos = IVec2(x, y);
-}
-
-void mu_input_mousedown(MuContext* ctx, int x, int y, MuMouseFlags btn) {
-    mu_input_mousemove(ctx, x, y);
-    ctx.mouseDown |= btn;
-    ctx.mousePressed |= btn;
-}
-
-void mu_input_mouseup(MuContext* ctx, int x, int y, MuMouseFlags btn) {
-    mu_input_mousemove(ctx, x, y);
-    ctx.mouseDown &= ~btn;
-}
-
-void mu_input_scroll(MuContext* ctx, int x, int y) {
-    ctx.scrollDelta.x += x * ctx.style.scrollbarSpeed;
-    ctx.scrollDelta.y += y * ctx.style.scrollbarSpeed;
-}
-
-void mu_input_keydown(MuContext* ctx, MuKeyFlags key) {
-    ctx.keyPressed |= key;
-    ctx.keyDown |= key;
-}
-
-void mu_input_keyup(MuContext* ctx, MuKeyFlags key) {
-    ctx.keyDown &= ~key;
-}
-
-@trusted
-void mu_input_text(MuContext* ctx, IStr text) {
-    Sz len = ctx.inputTextSlice.length;
-    Sz size = text.length;
-    assert(len + size < ctx.inputText.sizeof);
-    jokaMemcpy(ctx.inputText.ptr + len, text.ptr, size);
-    // Added this to make it work with slices.
-    ctx.inputText[len + size] = '\0';
-    ctx.inputTextSlice = ctx.inputText[0 .. len + size];
 }
 
 /*============================================================================
@@ -1628,15 +1824,15 @@ void mu_set_clip(MuContext* ctx, IRect rect) {
 void mu_draw_rect(MuContext* ctx, IRect rect, Rgba color, MuAtlas atlasid = MuAtlas.none) {
     MuCommandData* cmd;
     MuClip clipped;
-    auto intersect_rect = rect.intersection(mu_get_clip_rect(ctx));
+    auto intersect_rect = rect.intersection(ctx.getClipRect());
     auto is_atlas_rect = atlasid != MuAtlas.none && ctx.style.slices[atlasid].area.hasSize;
     auto target_rect = is_atlas_rect ? rect : intersect_rect;
 
     if (target_rect.hasSize) {
         if (is_atlas_rect) {
-            clipped = mu_check_clip(ctx, target_rect);
-            if (clipped == MuClip.all ) { return; }
-            if (clipped == MuClip.part) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+            clipped = ctx.checkClip(target_rect);
+            if (clipped == MuClip.all ) return;
+            if (clipped == MuClip.part) mu_set_clip(ctx, ctx.getClipRect());
         }
 
         // See `draw_frame` for more info.
@@ -1662,9 +1858,9 @@ void mu_draw_box(MuContext* ctx, IRect rect, Rgba color) {
 void mu_draw_text(MuContext* ctx, MuFont font, IStr str, IVec2 pos, Rgba color) {
     MuCommandData* cmd;
     IRect rect = IRect(pos.x, pos.y, ctx.textWidth(font, str), ctx.textHeight(font));
-    MuClip clipped = mu_check_clip(ctx, rect);
-    if (clipped == MuClip.all ) { return; }
-    if (clipped == MuClip.part) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+    MuClip clipped = ctx.checkClip(rect);
+    if (clipped == MuClip.all ) return;
+    if (clipped == MuClip.part) mu_set_clip(ctx, ctx.getClipRect());
     /* add command */
     cmd = mu_push_command(ctx, MuCommand.text, MuTextCommand.sizeof + str.length);
     assert(str.length < muMaxStrSize, "String is too big. See `muMaxStrSize`.");
@@ -1681,9 +1877,9 @@ void mu_draw_text(MuContext* ctx, MuFont font, IStr str, IVec2 pos, Rgba color) 
 void mu_draw_icon(MuContext* ctx, MuIcon id, IRect rect, Rgba color) {
     MuCommandData* cmd;
     /* do clip command if the rect isn't fully contained within the cliprect */
-    MuClip clipped = mu_check_clip(ctx, rect);
-    if (clipped == MuClip.all ) { return; }
-    if (clipped == MuClip.part) { mu_set_clip(ctx, mu_get_clip_rect(ctx)); }
+    MuClip clipped = ctx.checkClip(rect);
+    if (clipped == MuClip.all ) return;
+    if (clipped == MuClip.part) mu_set_clip(ctx, ctx.getClipRect());
     /* do icon command */
     cmd = mu_push_command(ctx, MuCommand.icon, MuIconCommand.sizeof);
     cmd.icon.id = id;

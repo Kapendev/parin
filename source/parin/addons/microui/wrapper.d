@@ -78,39 +78,9 @@ alias UiKeyFlags   = MuKeyFlags;   /// The type of `UiKeyFlag`.
 alias UiKeyFlag    = MuKeyFlag;
 
 /// Used by the `members` function to hide data.
-struct UiPrivate {}
-
+alias UiPrivate = MuPrivate;
 /// Used by the `members` function to show data in a specific way.
-struct UiMember {
-    IStr name;  /// The name of the member.
-    float low;  /// Used by sliders.
-    float high; /// Used by sliders.
-    float step; /// Used by sliders.
-
-    @safe nothrow @nogc pure:
-
-    this(float low, float high, float step = float.nan) {
-        this.low = low;
-        this.high = high;
-        this.step = step;
-    }
-
-    this(float step) {
-        this.step = step;
-    }
-
-    this(IStr name, float low, float high, float step = float.nan) {
-        this.name = name;
-        this.low = low;
-        this.high = high;
-        this.step = step;
-    }
-
-    this(IStr name, float step = float.nan) {
-        this.name = name;
-        this.step = step;
-    }
-}
+alias UiMember = MuMember;
 
 @safe nothrow @nogc:
 
@@ -136,55 +106,55 @@ void endUiCore() {
 }
 
 void setUifocus(UiId id) {
-    mu_set_focus(&uiContext, id);
+    uiContext.setFocus(id);
 }
 
 UiId getUiId(const(void)* data, Sz size) {
-    return mu_get_id(&uiContext, data, size);
+    return uiContext.getId(data, size);
 }
 
 UiId getUiId(IStr str) {
-    return mu_get_id_str(&uiContext, str);
+    return uiContext.getIdFromStr(str);
 }
 
 void pushUiId(const(void)* data, Sz size) {
-    mu_push_id(&uiContext, data, size);
+    uiContext.pushId(data, size);
 }
 
 void pushUiId(IStr str) {
-    mu_push_id_str(&uiContext, str);
+    uiContext.pushIdFromStr(str);
 }
 
 void popUiId() {
-    mu_pop_id(&uiContext);
+    uiContext.popId();
 }
 
 void pushUiClipRect(IRect rect) {
-    mu_push_clip_rect(&uiContext, rect);
+    uiContext.pushClipRect(rect);
 }
 
 void popUiClipRect() {
-    mu_pop_clip_rect(&uiContext);
+    uiContext.popClipRect();
 }
 
 IRect getUiClipRect() {
-    return mu_get_clip_rect(&uiContext);
+    return uiContext.getClipRect();
 }
 
 UiClip checkUiClipRect(IRect rect) {
-    return mu_check_clip(&uiContext, rect);
+    return uiContext.checkClip(rect);
 }
 
 UiContainer* getCurrentUiContainer() {
-    return mu_get_current_container(&uiContext);
+    return uiContext.getCurrentContainer();
 }
 
 UiContainer* getUiContainer(IStr name) {
-    return mu_get_container(&uiContext, name);
+    return uiContext.getContainer(name);
 }
 
 void bringUiContainerToFront(UiContainer* cnt) {
-    mu_bring_to_front(&uiContext, cnt);
+    uiContext.bringToFront(cnt);
 }
 
 /*============================================================================
@@ -208,31 +178,31 @@ void updateUiPool(UiPoolItem* items, Sz idx) {
 **============================================================================*/
 
 void uiInputMouseMove(int x, int y) {
-    mu_input_mousemove(&uiContext, x, y);
+    uiContext.inputMouseMove(x, y);
 }
 
 void uiInputMouseDown(int x, int y, UiMouseFlags input) {
-    mu_input_mousedown(&uiContext, x, y, input);
+    uiContext.inputMouseDown(x, y, input);
 }
 
 void uiInputMouseUp(int x, int y, UiMouseFlags input) {
-    mu_input_mouseup(&uiContext, x, y, input);
+    uiContext.inputMouseUp(x, y, input);
 }
 
 void uiInputScroll(int x, int y) {
-    mu_input_scroll(&uiContext, x, y);
+    uiContext.inputScroll(x, y);
 }
 
 void uiInputKeyDown(UiKeyFlags input) {
-    mu_input_keydown(&uiContext, input);
+    uiContext.inputKeyDown(input);
 }
 
 void uiInputKeyUp(UiKeyFlags input) {
-    mu_input_keyup(&uiContext, input);
+    uiContext.inputKeyUp(input);
 }
 
 void uiInputText(IStr text) {
-    mu_input_text(&uiContext, text);
+    uiContext.inputText(text);
 }
 
 /*============================================================================
@@ -331,7 +301,6 @@ UiResFlags button(IStr label, UiIcon icon = UiIcon.none, UiOptFlags opt = UiOptF
     return uiContext.button(label, icon, opt);
 }
 
-@trusted
 UiResFlags checkbox(ref bool state, IStr label = "") {
     return uiContext.checkbox(state, label);
 }
@@ -364,159 +333,12 @@ UiResFlags header(IStr label, UiOptFlags opt = UiOptFlag.none) {
     return uiContext.header(label, opt);
 }
 
-// TODO: Needs cleaning. It looks likes this because I just wanted to get something to work and original microui could not use Joka.
 void members(T)(ref T data, int labelWidth, bool canShowPrivateMembers = false) {
-    auto window = getCurrentUiContainer();
-    row(0, labelWidth, -1);
-    static foreach (member; data.tupleof) {
-        // With data.
-        static if (is(typeof(__traits(getAttributes, member)[0]) == UiMember)) {
-            static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z") && __traits(hasMember, typeof(member), "w")) {
-                row(0, labelWidth,
-                    (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
-                    (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
-                    (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
-                    -1,
-                );
-                static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
-                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                    number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".w"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                } else static if (is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
-                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                    number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".w"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                }
-                row(0, labelWidth, -1);
-            } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z")) {
-                row(0, labelWidth,
-                    (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
-                    (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
-                    -1,
-                );
-                static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
-                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                    number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                } else static if (is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
-                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                    number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".z"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                }
-                row(0, labelWidth, -1);
-            } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y")) {
-                row(0, labelWidth,
-                    (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 2 - uiStyle.spacing - uiStyle.border,
-                    -1,
-                );
-                static if (is(typeof(mixin("data.", member.stringof, ".x")) == float)) {
-                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                    number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                } else static if (is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
-                    label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                    number(mixin("data.", member.stringof, ".x"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                    number(mixin("data.", member.stringof, ".y"), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                }
-                row(0, labelWidth, -1);
-            } else static if (is(typeof(member) == bool)) {
-                label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                checkbox(mixin("data.", member.stringof));
-            } else static if (is(typeof(member) == float)) {
-                label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                static if (!(__traits(getAttributes, member)[0].low == __traits(getAttributes, member)[0].low)) {
-                    number(mixin("data.", member.stringof), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step);
-                } else {
-                    slider(
-                        mixin("data.", member.stringof),
-                        __traits(getAttributes, member)[0].low,
-                        __traits(getAttributes, member)[0].high,
-                        !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 0.01f : __traits(getAttributes, member)[0].step,
-                        muNumberFmt,
-                        MuOptFlag.alignCenter,
-                    );
-                }
-            } else static if (is(typeof(member) == int)) {
-                label(__traits(getAttributes, member)[0].name.length ? __traits(getAttributes, member)[0].name : member.stringof);
-                static if (!(__traits(getAttributes, member)[0].low == __traits(getAttributes, member)[0].low)) {
-                    number(mixin("data.", member.stringof), !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step);
-                } else {
-                    slider(
-                        mixin("data.", member.stringof),
-                        cast(int) __traits(getAttributes, member)[0].low,
-                        cast(int) __traits(getAttributes, member)[0].high,
-                        !(__traits(getAttributes, member)[0].step == __traits(getAttributes, member)[0].step) ? 1 : cast(int) __traits(getAttributes, member)[0].step,
-                        muNumberFmt,
-                        MuOptFlag.alignCenter,
-                    );
-                }
-            }
-        // Without data.
-        } else {
-            if (canShowPrivateMembers || (!is(__traits(getAttributes, member)[0] == UiPrivate) && !is(typeof(__traits(getAttributes, member)[0]) == UiPrivate))) {
-                static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z") && __traits(hasMember, typeof(member), "w")) {
-                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
-                        row(0, labelWidth,
-                            (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
-                            (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
-                            (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 4 - uiStyle.spacing - uiStyle.border,
-                            -1,
-                        );
-                        label(member.stringof);
-                        number(mixin("data.", member.stringof, ".x"));
-                        number(mixin("data.", member.stringof, ".y"));
-                        number(mixin("data.", member.stringof, ".z"));
-                        number(mixin("data.", member.stringof, ".w"));
-                        row(0, labelWidth, -1);
-                    }
-                } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z")) {
-                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
-                        row(0, labelWidth,
-                            (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
-                            (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 3 - uiStyle.spacing - uiStyle.border,
-                            -1,
-                        );
-                        label(member.stringof);
-                        number(mixin("data.", member.stringof, ".x"));
-                        number(mixin("data.", member.stringof, ".y"));
-                        number(mixin("data.", member.stringof, ".z"));
-                        row(0, labelWidth, -1);
-                    }
-                } else static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y")) {
-                    static if (is(typeof(mixin("data.", member.stringof, ".x")) == float) || is(typeof(mixin("data.", member.stringof, ".x")) == int)) {
-                        row(0, labelWidth,
-                            (window.rect.w - labelWidth - uiStyle.spacing - uiStyle.border) / 2 - uiStyle.spacing - uiStyle.border,
-                            -1,
-                        );
-                        label(member.stringof);
-                        number(mixin("data.", member.stringof, ".x"));
-                        number(mixin("data.", member.stringof, ".y"));
-                        row(0, labelWidth, -1);
-                    }
-                } else static if (is(typeof(member) == bool)) {
-                    label(member.stringof);
-                    checkbox(mixin("data.", member.stringof));
-                } else static if (is(typeof(member) == float) || is(typeof(member) == int)) {
-                    label(member.stringof);
-                    number(mixin("data.", member.stringof));
-                }
-            }
-        }
-    }
-    row(0, 0);
+    uiContext.members(data, labelWidth, canShowPrivateMembers);
 }
 
 UiResFlags headerAndMembers(T)(ref T data, int labelWidth, IStr label = "", bool canShowPrivateMembers = false) {
-    auto result = header(label.length ? label : typeof(data).stringof);
-    if (result) members(data, labelWidth, canShowPrivateMembers);
-    row(0, 0);
-    return result;
+    return uiContext.headerAndMembers(data, labelWidth, label, canShowPrivateMembers);
 }
 
 UiResFlags beginTreeNode(IStr label, UiOptFlags opt = UiOptFlag.none) {
