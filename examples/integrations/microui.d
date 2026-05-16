@@ -15,7 +15,7 @@ struct Game {
     int height = 50;
 
     @UiMember(0, 255) float color = 0;
-    @UiMember(1) Vec2 world = Vec2(70, 50);
+    @UiMember(1)      Vec2 world = Vec2(70, 50);
     @UiMember("flag") bool reallyCoolFlag;
 
     @UiPrivate:

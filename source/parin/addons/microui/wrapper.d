@@ -518,7 +518,7 @@ void drawUiState() {
                 parinOptions.scale = Vec2(uiStyle.fontScale);
                 drawText(
                     *textFont,
-                    cmd.text.str.ptr[0 .. cmd.text.len],
+                    cmd.text.toStr(),
                     Vec2(cmd.text.pos.x, cmd.text.pos.y),
                     parinOptions,
                 );

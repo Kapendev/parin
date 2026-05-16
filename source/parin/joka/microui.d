@@ -233,6 +233,14 @@ struct MuTextCommand {
     Rgba color;         /// Text color.
     int len;            /// Length of the text in bytes, excluding the null terminator.
     char[1] str;        /// Inline null-terminated string (variable-length in practice).
+
+    @trusted nothrow @nogc:
+
+    IStr toStr() {
+        return str.ptr[0 .. len];
+    }
+
+    alias toString = toStr;
 }
 
 /// Command to draw an icon inside a rectangle with a given color.
