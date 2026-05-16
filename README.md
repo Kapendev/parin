@@ -12,8 +12,8 @@ It's easy to set up, hackable, and comes with the essentials built in.
 
 ## Why Parin
 
-Parin sits somewhere between a small engine like [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/) and a big engine like [Godot](https://godotengine.org/) or [Unity](https://unity.com/).
-It offers more direction than small ones, but far less overhead and "magic" than big ones.
+Parin sits somewhere between a small library like [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/) and a big engine like [Godot](https://godotengine.org/) or [Unity](https://unity.com/).
+It offers more direction than small libraries, but far less overhead and "magic" than big engines.
 It's especially well-suited for retro games, with helper functions and two pixel fonts included.
 More specifically:
 

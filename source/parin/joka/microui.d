@@ -26,14 +26,17 @@ enum muTreeNodePoolSize   = 48;                    /// Number of reusable tree n
 enum muInputTextSize      = 1024;                  /// Maximum length of input text buffers.
 enum muMaxWidths          = 16;                    /// Maximum number of columns per layout row.
 enum muNumberFmt          = "{}";                  /// Format string used for numbers.
-enum muNumberFmtWithZero  = "{}\0";                /// Format string used for numbers.
+enum muNumberFmtWithZero  = "{}\0";                /// Format string used for numbers, with a zero at the end.
 enum muMaxFmt             = 127;                   /// Max length of any formatted string.
-enum muMaxStrSize = (cast(int) muCommandSize) - (cast(int) MuTextCommand.sizeof) + 1; /// Maximum length of command strings.
+
+enum muMaxStrSize = (cast(int) muCommandSize) - (cast(int) MuTextCommand.sizeof); /// Maximum length of command strings.
 static assert(muMaxStrSize > 0, "Type `MuTextCommand` must fit within `muCommandSize` bytes (used for embedded strings).");
 
-private enum relative = 1; // The relative layout type.
-private enum absolute = 2; // The absolute layout type.
-private enum unclippedRect = IRect(0, 0, 0x1000000, 0x1000000); // Huge.
+private {
+    enum relative = 1; // The relative layout type.
+    enum absolute = 2; // The absolute layout type.
+    enum unclippedRect = IRect(0, 0, 0x1000000, 0x1000000); // Huge.
+}
 
 alias MuId        = uint;  /// The control ID type of microui.
 alias MuFont      = void*; /// The font type of microui.
@@ -85,7 +88,7 @@ enum MuIcon : ubyte {
 }
 
 // TODO(Kapendev): I think it needs more things. Add them when people (mostly me) need them because right now I have no idea what to add.
-/// The atlas region kind.
+/// The atlas area kind.
 enum MuAtlas : ubyte {
     none,        /// No atlas rectangle.
     button,      /// Default button atlas rectangle.
@@ -93,9 +96,9 @@ enum MuAtlas : ubyte {
     buttonFocus, /// Button atlas rectangle when focused.
 }
 
-/// The type of `MU_RES_*`.
+/// Bitmask type for result flags.
 alias MuResFlags = ubyte;
-/// The values of `MU_RES_*`.
+/// Result flags indicating the outcome of a control interaction.
 enum MuResFlag : MuResFlags {
     none   = 0,        /// No result.
     active = (1 << 0), /// Control is active (e.g., active window).
@@ -103,9 +106,9 @@ enum MuResFlag : MuResFlags {
     change = (1 << 2), /// Control value changed (e.g., modified text input).
 }
 
-/// The type of `MU_OPT_*`.
+/// Bitmask type for option flags.
 alias MuOptFlags = ushort;
-/// The values of `MU_OPT_*`.
+/// Option flags controlling control and window behaviour.
 enum MuOptFlag : MuOptFlags {
     none         = 0,         /// No option.
     alignCenter  = (1 << 0),  /// Center-align control content.
@@ -125,9 +128,9 @@ enum MuOptFlag : MuOptFlags {
     defaultFocus = (1 << 14), /// Keep focus when no other control is focused.
 }
 
-/// The type of `MU_MOUSE_*`.
+/// Bitmask type for mouse button flags.
 alias MuMouseFlags = ubyte;
-/// The values of `MU_MOUSE_*`.
+/// Flags representing which mouse buttons are pressed.
 enum MuMouseFlag : MuMouseFlags {
     none   = 0,        /// No mouse button.
     left   = (1 << 0), /// Left mouse button.
@@ -135,9 +138,9 @@ enum MuMouseFlag : MuMouseFlags {
     middle = (1 << 2), /// Middle mouse button.
 }
 
-/// The type of `MU_KEY_*`.
+/// Bitmask type for keyboard key flags.
 alias MuKeyFlags = uint;
-/// The values of `MU_KEY_*`.
+/// Flags representing which keys are currently held down.
 enum MuKeyFlag : MuKeyFlags {
     none      = 0,         /// No key.
     shift     = (1 << 0),  /// Shift key down.
@@ -169,7 +172,7 @@ enum MuKeyFlag : MuKeyFlags {
     alias MuDrawFrameFunc  = void function(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none);
 }
 
-/// A static stack allocated on the stack.
+/// A static stack.
 struct MuStack(T, Sz N) {
     int idx;
     StaticArray!(T, N) data = void;
@@ -185,37 +188,72 @@ struct MuStack(T, Sz N) {
 
     /// Pops a value off the stack.
     void pop() {
-        assert(idx > 0);
-        idx -= 1;
+        if (idx > 0) idx -= 1;
     }
 }
 
 /// A pool item.
-struct MuPoolItem    { MuId id; int lastUpdate; }
+struct MuPoolItem {
+    MuId id;         /// Unique identifier for this pool slot.
+    int lastUpdate;  /// Frame index of the last time this slot was accessed.
+}
+
 /// Base structure for all render commands, containing type and size metadata.
-struct MuBaseCommand { MuCommand type; int size; }
+struct MuBaseCommand {
+    MuCommand type; /// The command type tag.
+    int size;       /// Total size of the full command struct in bytes.
+}
+
 /// Command to jump to another location in the command buffer.
-struct MuJumpCommand { MuBaseCommand base; void* dst; }
+struct MuJumpCommand {
+    MuBaseCommand base; /// Inherited base command fields.
+    void* dst;          /// Pointer to the destination in the command buffer.
+}
+
 /// Command to set a clipping rectangle.
-struct MuClipCommand { MuBaseCommand base; IRect rect; }
+struct MuClipCommand {
+    MuBaseCommand base; /// Inherited base command fields.
+    IRect rect;         /// The clipping rectangle to apply.
+}
+
 /// Command to draw a rectangle with a given color.
-struct MuRectCommand { MuBaseCommand base; IRect rect; MuAtlas id; Rgba color; }
-/// Command to render text at a given position with a font and color. The text is a null-terminated string. Use `str.ptr` to access it.
-struct MuTextCommand { MuBaseCommand base; MuFont font; IVec2 pos; Rgba color; int len; char[1] str; }
+struct MuRectCommand {
+    MuBaseCommand base; /// Inherited base command fields.
+    IRect rect;         /// The rectangle to draw.
+    MuAtlas id;         /// Atlas region to use for drawing.
+    Rgba color;         /// Fill color of the rectangle.
+}
+
+/// Command to render text at a given position with a font and color.
+/// The text is a null-terminated string stored inline. Use `str.ptr` to access it.
+struct MuTextCommand {
+    MuBaseCommand base; /// Inherited base command fields.
+    MuFont font;        /// Font to render the text with.
+    IVec2 pos;          /// Top-left position of the text.
+    Rgba color;         /// Text color.
+    int len;            /// Length of the text in bytes, excluding the null terminator.
+    char[1] str;        /// Inline null-terminated string (variable-length in practice).
+}
+
 /// Command to draw an icon inside a rectangle with a given color.
-struct MuIconCommand { MuBaseCommand base; IRect rect; MuIcon id; Rgba color; }
+struct MuIconCommand {
+    MuBaseCommand base; /// Inherited base command fields.
+    IRect rect;         /// The bounding rectangle for the icon.
+    MuIcon id;          /// Icon identifier.
+    Rgba color;         /// Tint color for the icon.
+}
 
 /// A union of all possible render commands.
 /// The `type` and `base` fields are always valid, as all commands begin with a `MuCommand` and `MuBaseCommand`.
 /// Use `type` to determine the active command variant.
 union MuCommandData {
-    MuCommand type;
-    MuBaseCommand base;
-    MuJumpCommand jump;
-    MuClipCommand clip;
-    MuRectCommand rect;
-    MuTextCommand text;
-    MuIconCommand icon;
+    MuCommand type;     /// Type tag, always valid regardless of active variant.
+    MuBaseCommand base; /// Base fields, always valid regardless of active variant.
+    MuJumpCommand jump; /// Active when `type` is `MuCommand.jump`.
+    MuClipCommand clip; /// Active when `type` is `MuCommand.clip`.
+    MuRectCommand rect; /// Active when `type` is `MuCommand.rect`.
+    MuTextCommand text; /// Active when `type` is `MuCommand.text`.
+    MuIconCommand icon; /// Active when `type` is `MuCommand.icon`.
 }
 
 /// Layout state used to position UI controls within a container.
@@ -245,31 +283,31 @@ struct MuContainer {
     bool open;
 }
 
-/// UI slice data.
+/// A 9-slice definition for an atlas area, controlling how it is sampled and tiled.
 struct MuSlice {
-    IRect area;
-    Margin margin;
-    MuSliceMode mode = 1;
+    IRect area;           /// The atlas area to sample from.
+    Margin margin;        /// The margins defining the 9-slice border widths.
+    MuSliceMode mode = 1; /// How the center and edge segments are tiled or stretched.
 }
 
 /// UI style settings including font, sizes, spacing, and colors.
 struct MuStyle {
     MuFont font;                                        /// The font used for UI controls.
-    MuTexture texture;                                  /// the atlas texture used for UI controls.
-    IVec2 size;                                         /// The size of UI controls.
-    int padding;                                        /// The padding around UI controls.
-    int spacing;                                        /// The spacing between UI controls.
-    int indent;                                         /// The indent of UI controls.
-    int border;                                         /// The border of UI controls.
-    int titleHeight;                                    /// The height of the window title bar.
-    int scrollbarSize;                                  /// The size of the scrollbar.
+    MuTexture texture;                                  /// The atlas texture used for UI controls.
+    IVec2 size;                                         /// The default size of UI controls.
+    int padding;                                        /// Inner padding within UI controls.
+    int spacing;                                        /// Gap between adjacent UI controls.
+    int indent;                                         /// Horizontal indent applied to nested controls.
+    int border;                                         /// Border thickness for UI controls.
+    int titleHeight;                                    /// Height of the window title bar.
+    int scrollbarSize;                                  /// Thickness of the scrollbar track.
     int scrollbarSpeed;                                 /// The speed of the scrollbar.
     int scrollbarKeySpeed;                              /// The speed of the scrollbar key.
     int thumbSize;                                      /// The size of the thumb.
-    int fontScale;                                      /// The scale of the font.
-    StaticArray!(Rgba, MuColor.max + 1) colors;         /// The array of colors used in the UI.
-    StaticArray!(MuSlice, MuAtlas.max + 1) slices;      /// Optional array of control atlas rectangles used in the UI.
-    StaticArray!(IRect, MuIcon.max + 1) iconAtlasAreas; /// Optional array of icon atlas rectangles used in the UI.
+    int fontScale;                                      /// Scale factor applied to font rendering.
+    StaticArray!(Rgba, MuColor.max + 1) colors;         /// UI control colors, indexed by `MuColor`.
+    StaticArray!(MuSlice, MuAtlas.max + 1) slices;      /// 9-slice definitions for control atlas areas, indexed by `MuAtlas`.
+    StaticArray!(IRect, MuIcon.max + 1) iconAtlasAreas; /// Atlas areas for icon rendering, indexed by `MuIcon`.
 }
 
 /// Used by the `members` function to hide data.
@@ -277,23 +315,26 @@ struct MuPrivate {}
 
 /// Used by the `members` function to show data in a specific way.
 struct MuMember {
-    IStr name;  /// The name of the member.
-    float low;  /// Used by sliders.
-    float high; /// Used by sliders.
-    float step; /// Used by sliders.
+    IStr name;  /// Display name override for the member. If empty, the field name is used.
+    float low;  /// Lower bound for slider controls.
+    float high; /// Upper bound for slider controls.
+    float step; /// Step size for slider controls. If `float.nan`, a default step is used.
 
     @safe nothrow @nogc pure:
 
+    /// Constructs a member with a slider range and optional step size.
     this(float low, float high, float step = float.nan) {
         this.low = low;
         this.high = high;
         this.step = step;
     }
 
+    /// Constructs a member with only a step size.
     this(float step) {
         this.step = step;
     }
 
+    /// Constructs a member with a display name, slider range, and optional step size.
     this(IStr name, float low, float high, float step = float.nan) {
         this.name = name;
         this.low = low;
@@ -301,13 +342,14 @@ struct MuMember {
         this.step = step;
     }
 
+    /// Constructs a member with a display name and optional step size.
     this(IStr name, float step = float.nan) {
         this.name = name;
         this.step = step;
     }
 }
 
-/// The main UI context.
+/// The UI context.
 struct MuContext {
     // -- Callbacks
     MuTextWidthFunc textWidth;   /// The function used for getting the width of the text.
@@ -329,7 +371,7 @@ struct MuContext {
     MuContainer* scrollTarget;
     char[muMaxFmt] numberEditBuffer;
     MuId numberEdit;
-    bool isExpectingEnd;        // Used for missing `mu_end` call.
+    bool isExpectingEnd;        // Used for missing `end` call.
     uint buttonCounter;         // Used to avoid id problems.
     MuKeyFlags dragWindowKey;   // Used for window stuff.
     MuKeyFlags resizeWindowKey; // Used for window stuff.
@@ -515,7 +557,7 @@ struct MuContext {
         } else {
             pos.x = rect.x + style.padding;
         }
-        mu_draw_text(&this, font, str, pos, style.colors[colorid]);
+        drawText(font, str, pos, style.colors[colorid]);
         popClipRect();
     }
 
@@ -680,7 +722,7 @@ struct MuContext {
                     if (w > r.w && end != start) { break; }
                     end = p++;
                 } while(end < str.ptr + str.length && *end && *end != '\n');
-                mu_draw_text(&this, font, start[0 .. end - start], IVec2(r.x, r.y), color);
+                drawText(font, start[0 .. end - start], IVec2(r.x, r.y), color);
                 p = end + 1;
             } while(end < str.ptr + str.length && *end);
         }
@@ -726,7 +768,7 @@ struct MuContext {
         /* draw */
         drawControlFrame(id, r, MuColor.button, opt, MuAtlas.button);
         if (str.ptr) drawControlText(str, r, MuColor.text, opt);
-        if (icon) mu_draw_icon(&this, icon, r, style.colors[MuColor.text]);
+        if (icon) drawIcon(icon, r, style.colors[MuColor.text]);
         return res;
     }
 
@@ -750,7 +792,7 @@ struct MuContext {
         /* draw */
         drawControlFrame(id, box, MuColor.base, 0);
         if (*state) {
-            mu_draw_icon(&this, MuIcon.check, box, style.colors[MuColor.text]);
+            drawIcon(MuIcon.check, box, style.colors[MuColor.text]);
         }
         r = IRect(r.x + box.w, r.y, r.w - box.w, r.h);
         drawControlText(str, r, MuColor.text, 0);
@@ -823,8 +865,8 @@ struct MuContext {
                 textx = r.x + r.w - textw - style.padding;
             }
 
-            mu_draw_text(&this, font, buf[0 .. buflen], IVec2(textx, texty), color);
-            mu_draw_rect(&this, IRect(textx + textw, texty, 1, texth), color);
+            drawText(font, buf[0 .. buflen], IVec2(textx, texty), color);
+            drawRect(IRect(textx + textw, texty, 1, texth), color);
             popClipRect();
         } else {
             drawControlText(buf[0 .. buflen], r, MuColor.text, opt);
@@ -857,14 +899,6 @@ struct MuContext {
 
     @trusted
     MuResFlags sliderLegacy(float* value, float low, float high, float step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
-        /*
-        // Used for the `sprintf` function.
-        char[muMaxFmt + 1] fmt_buf = void;
-        assert(fmt_buf.length > fmt.length);
-        jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
-        fmt_buf[fmt.length] = '\0';
-        */
-
         char[muMaxFmt + 1] buf = void;
         int x, w;
         IRect thumb;
@@ -925,14 +959,6 @@ struct MuContext {
 
     @trusted
     MuResFlags numberLegacy(float* value, float step, IStr fmt, MuOptFlags opt, bool isFmtFloatAnInt) {
-        /*
-        // Used for the `sprintf` function.
-        char[muMaxFmt + 1] fmt_buf = void;
-        assert(fmt_buf.length > fmt.length);
-        jokaMemcpy(fmt_buf.ptr, fmt.ptr, fmt.length);
-        fmt_buf[fmt.length] = '\0';
-        */
-
         char[muMaxFmt + 1] buf = void;
         MuResFlags res = 0;
         MuId id = getId(&value, value.sizeof);
@@ -1041,7 +1067,7 @@ struct MuContext {
                 MuId id2 = getIdFromStr("!close"); // NOTE(Kapendev): Had to change `id` to `id2` because of shadowing.
                 IRect r = IRect(tr.x + tr.w - tr.h, tr.y, tr.h, tr.h);
                 tr.w -= r.w;
-                mu_draw_icon(&this, MuIcon.close, r, style.colors[MuColor.titleText]);
+                drawIcon(MuIcon.close, r, style.colors[MuColor.titleText]);
                 updateControl(id2, r, opt);
                 if (mousePressed & MuMouseFlag.left && id2 == focus) { cnt.open = false; }
             }
@@ -1370,7 +1396,7 @@ struct MuContext {
     void rowLegacy(int items, const(int)* widths, int height) {
         auto layout = _getLayout(&this);
         if (widths) {
-            assert(items <= muMaxWidths);
+            if (items > muMaxWidths) assert(0, "Too many items. See `muMaxWidths`.");
             jokaMemcpy(layout.widths.ptr, widths, items * widths[0].sizeof);
         }
         layout.items = items;
@@ -1468,11 +1494,148 @@ struct MuContext {
     void inputText(IStr str) {
         Sz len = inputTextSlice.length;
         Sz size = str.length;
-        assert(len + size < inputTextData.sizeof);
+        if (len + size >= inputTextData.sizeof) assert(0, "String is too big. See `inputTextData` length.");
         jokaMemcpy(inputTextData.ptr + len, str.ptr, size);
         // Added this to make it work with slices.
         inputTextData[len + size] = '\0';
         inputTextSlice = inputTextData[0 .. len + size];
+    }
+
+    /*============================================================================
+    ** pool
+    **============================================================================*/
+
+    @trusted
+    int poolInit(MuPoolItem* items, Sz len, MuId id) {
+        int n = -1;
+        int f = frame;
+        foreach (i; 0 .. len) {
+            if (items[i].lastUpdate < f) {
+                f = items[i].lastUpdate;
+                n = cast(int) i;
+            }
+        }
+        if (n <= -1) assert(0, "Could not find pool item.");
+        items[n].id = id;
+        poolUpdate(items, n);
+        return n;
+    }
+
+    static @trusted
+    int poolGet(MuPoolItem* items, Sz len, MuId id) {
+        foreach (i; 0 .. len) {
+            if (items[i].id == id) return cast(int) i;
+        }
+        return -1;
+    }
+
+    @trusted
+    void poolUpdate(MuPoolItem* items, Sz idx) {
+        items[idx].lastUpdate = frame;
+    }
+
+    /*============================================================================
+    ** commandlist
+    **============================================================================*/
+
+    // NOTE(Kapendev): Should maybe zero the memory?
+    @trusted
+    MuCommandData* pushCommand(MuCommand type, Sz size) {
+        MuCommandData* cmd = cast(MuCommandData*) (commandList.items.ptr + commandList.idx);
+        if (commandList.idx + size >= muCommandListSize) assert(0, "Can't push command. See `muCommandListSize`.");
+        cmd.base.type = type;
+        cmd.base.size = cast(int) size;
+        commandList.idx += size;
+        return cmd;
+    }
+
+    @trusted
+    bool nextCommand(MuCommandData** cmd) {
+        if (*cmd) {
+            *cmd = cast(MuCommandData*) ((cast(char*) *cmd) + (*cmd).base.size);
+        } else {
+            *cmd = cast(MuCommandData*) commandList.items;
+        }
+        while (cast(char*) *cmd != commandList.items.ptr + commandList.idx) {
+            if ((*cmd).type != MuCommand.jump) return true;
+            *cmd = cast(MuCommandData*) (*cmd).jump.dst;
+        }
+        return false;
+    }
+
+    void setClip(IRect rect) {
+        MuCommandData* cmd;
+        cmd = pushCommand(MuCommand.clip, MuClipCommand.sizeof);
+        cmd.clip.rect = rect;
+    }
+
+    @trusted
+    void drawRect(IRect rect, Rgba color, MuAtlas atlasid = MuAtlas.none) {
+        MuCommandData* cmd;
+        MuClip clipped;
+        auto intersect_rect = rect.intersection(getClipRect());
+        auto is_atlas_rect = atlasid != MuAtlas.none && style.slices[atlasid].area.hasSize;
+        auto target_rect = is_atlas_rect ? rect : intersect_rect;
+
+        if (target_rect.hasSize) {
+            if (is_atlas_rect) {
+                clipped = checkClip(target_rect);
+                if (clipped == MuClip.all ) return;
+                if (clipped == MuClip.part) setClip(getClipRect());
+            }
+
+            // See `draw_frame` for more info.
+            cmd = pushCommand(MuCommand.rect, MuRectCommand.sizeof);
+            cmd.rect.rect = target_rect;
+            cmd.rect.color = color;
+            cmd.rect.id = atlasid;
+
+            if (is_atlas_rect) {
+                if (clipped) setClip(unclippedRect);
+            }
+        }
+    }
+
+    void drawBox(IRect rect, Rgba color) {
+        drawRect(IRect(rect.x + 1, rect.y, rect.w - 2, 1), color);
+        drawRect(IRect(rect.x + 1, rect.y + rect.h - 1, rect.w - 2, 1), color);
+        drawRect(IRect(rect.x, rect.y, 1, rect.h), color);
+        drawRect(IRect(rect.x + rect.w - 1, rect.y, 1, rect.h), color);
+    }
+
+    @trusted
+    void drawText(MuFont font, IStr str, IVec2 pos, Rgba color) {
+        MuCommandData* cmd;
+        IRect rect = IRect(pos.x, pos.y, textWidth(font, str), textHeight(font));
+        MuClip clipped = checkClip(rect);
+        if (clipped == MuClip.all ) return;
+        if (clipped == MuClip.part) setClip(getClipRect());
+        /* add command */
+        cmd = pushCommand(MuCommand.text, MuTextCommand.sizeof + str.length);
+        if (str.length >= muMaxStrSize) assert(0, "String is too big. See `muMaxStrSize`.");
+        jokaMemcpy(cmd.text.str.ptr, str.ptr, str.length);
+        cmd.text.str.ptr[str.length] = '\0';
+        cmd.text.len = cast(int) str.length;
+        cmd.text.pos = pos;
+        cmd.text.color = color;
+        cmd.text.font = font;
+        /* reset clipping if it was set */
+        if (clipped) setClip(unclippedRect);
+    }
+
+    void drawIcon(MuIcon id, IRect rect, Rgba color) {
+        MuCommandData* cmd;
+        /* do clip command if the rect isn't fully contained within the cliprect */
+        MuClip clipped = checkClip(rect);
+        if (clipped == MuClip.all ) return;
+        if (clipped == MuClip.part) setClip(getClipRect());
+        /* do icon command */
+        cmd = pushCommand(MuCommand.icon, MuIconCommand.sizeof);
+        cmd.icon.id = id;
+        cmd.icon.rect = rect;
+        cmd.icon.color = color;
+        /* reset clipping if it was set */
+        if (clipped) setClip(unclippedRect);
     }
 
     /*============================================================================
@@ -1499,7 +1662,6 @@ struct MuContext {
         return getId(str.ptr, str.length);
     }
 
-    @trusted
     void pushId(const(void)* data, Sz size) {
         idStack.push(getId(data, size));
     }
@@ -1513,7 +1675,6 @@ struct MuContext {
         idStack.pop();
     }
 
-    @trusted
     void pushClipRect(IRect rect) {
         auto last = getClipRect();
         clipStack.push(rect.intersection(last));
@@ -1564,7 +1725,7 @@ private @safe nothrow @nogc {
     }
 
     MuLayout* _getLayout(MuContext* ctx) {
-        assert(ctx.layoutStack.idx != 0, "No layout available, or attempted to add control outside of a window.");
+        if (ctx.layoutStack.idx == 0) assert(0, "No layout available, or attempted to add control outside of a window.");
         return &ctx.layoutStack.items[ctx.layoutStack.idx - 1];
     }
 
@@ -1583,16 +1744,16 @@ private @safe nothrow @nogc {
     MuContainer* _getContainer(MuContext* ctx, MuId id, MuOptFlags opt) {
         MuContainer* cnt;
         /* try to get existing container from pool */
-        int idx = mu_pool_get(ctx, ctx.containerPool.ptr, muContainerPoolSize, id);
+        int idx = ctx.poolGet(ctx.containerPool.ptr, muContainerPoolSize, id);
         if (idx >= 0) {
             if (ctx.containers[idx].open || ~opt & MuOptFlag.closed) {
-                mu_pool_update(ctx, ctx.containerPool.ptr, idx);
+                ctx.poolUpdate(ctx.containerPool.ptr, idx);
             }
             return &ctx.containers[idx];
         }
         if (opt & MuOptFlag.closed) { return null; }
         /* container not found in pool: init new container */
-        idx = mu_pool_init(ctx, ctx.containerPool.ptr, muContainerPoolSize, id);
+        idx = ctx.poolInit(ctx.containerPool.ptr, muContainerPoolSize, id);
         cnt = &ctx.containers[idx];
         jokaMemset(cnt, 0, (*cnt).sizeof);
         cnt.open = true;
@@ -1603,7 +1764,7 @@ private @safe nothrow @nogc {
     @trusted
     MuCommandData* _pushJump(MuContext* ctx, MuCommandData* dst) {
         MuCommandData* cmd;
-        cmd = mu_push_command(ctx, MuCommand.jump, MuJumpCommand.sizeof);
+        cmd = ctx.pushCommand(MuCommand.jump, MuJumpCommand.sizeof);
         cmd.jump.dst = dst;
         return cmd;
     }
@@ -1643,7 +1804,7 @@ private @safe nothrow @nogc {
         IRect r;
         int active, expanded;
         MuId id = ctx.getIdFromStr(label);
-        int idx = mu_pool_get(ctx, ctx.treeNodePool.ptr, muTreeNodePoolSize, id);
+        int idx = ctx.poolGet(ctx.treeNodePool.ptr, muTreeNodePoolSize, id);
         ctx.row(0, -1);
 
         active = (idx >= 0);
@@ -1655,10 +1816,13 @@ private @safe nothrow @nogc {
         active ^= (ctx.mousePressed & MuMouseFlag.left && ctx.focus == id);
         /* update pool ref */
         if (idx >= 0) {
-            if (active) { mu_pool_update(ctx, ctx.treeNodePool.ptr, idx); }
-            else { jokaMemset(&ctx.treeNodePool[idx], 0, MuPoolItem.sizeof); }
+            if (active) {
+                ctx.poolUpdate(ctx.treeNodePool.ptr, idx);
+            } else {
+                jokaMemset(&ctx.treeNodePool[idx], 0, MuPoolItem.sizeof);
+            }
         } else if (active) {
-            mu_pool_init(ctx, ctx.treeNodePool.ptr, muTreeNodePoolSize, id);
+            ctx.poolInit(ctx.treeNodePool.ptr, muTreeNodePoolSize, id);
         }
 
         /* draw */
@@ -1667,7 +1831,7 @@ private @safe nothrow @nogc {
         } else {
             ctx.drawControlFrame(id, r, MuColor.button, 0);
         }
-        mu_draw_icon(ctx, expanded ? MuIcon.expanded : MuIcon.collapsed, IRect(r.x, r.y, r.h, r.h), ctx.style.colors[MuColor.text]);
+        ctx.drawIcon(expanded ? MuIcon.expanded : MuIcon.collapsed, IRect(r.x, r.y, r.h, r.h), ctx.style.colors[MuColor.text]);
         r.x += r.h - ctx.style.padding;
         r.w -= r.h - ctx.style.padding;
         ctx.drawControlText(label, r, MuColor.text, 0);
@@ -1726,167 +1890,30 @@ private @safe nothrow @nogc {
     }
 }
 
-@safe nothrow @nogc:
-
-// Default microui draw frame function.
-void defaultMuDrawFrame(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none) {
-    mu_draw_rect(ctx, rect, ctx.style.colors[colorid], atlasid);
-    if (colorid == MuColor.scrollBase || colorid == MuColor.scrollThumb || colorid == MuColor.titleBg) return;
-    /* draw border */
-    if (ctx.style.border && rect.hasSize) {
-        auto borderRect = rect;
-        foreach (i; 1 .. ctx.style.border + 1) {
-            borderRect.addAll(1);
-            mu_draw_box(ctx, borderRect, ctx.style.colors[MuColor.border]);
+@safe nothrow @nogc {
+    // Default microui draw frame function.
+    void defaultMuDrawFrame(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none) {
+        ctx.drawRect(rect, ctx.style.colors[colorid], atlasid);
+        if (colorid == MuColor.scrollBase || colorid == MuColor.scrollThumb || colorid == MuColor.titleBg) return;
+        /* draw border */
+        if (ctx.style.border && rect.hasSize) {
+            auto borderRect = rect;
+            foreach (i; 1 .. ctx.style.border + 1) {
+                borderRect.addAll(1);
+                ctx.drawBox(borderRect, ctx.style.colors[MuColor.border]);
+            }
         }
     }
-}
 
-// Temporary text measurement function for prototyping.
-int tempMuTextWidthFunc(MuFont font, IStr str) {
-    return 200;
-}
-
-// Temporary text measurement function for prototyping.
-int tempMuTextHeightFunc(MuFont font) {
-    return 20;
-}
-
-/*============================================================================
-** pool
-**============================================================================*/
-
-@trusted
-int mu_pool_init(MuContext* ctx, MuPoolItem* items, Sz len, MuId id) {
-    int n = -1;
-    int f = ctx.frame;
-    foreach (i; 0 .. len) {
-        if (items[i].lastUpdate < f) {
-            f = items[i].lastUpdate;
-            n = cast(int) i;
-        }
+    // Temporary text measurement function for prototyping.
+    int tempMuTextWidthFunc(MuFont font, IStr str) {
+        return 200;
     }
-    assert(n > -1);
-    items[n].id = id;
-    mu_pool_update(ctx, items, n);
-    return n;
-}
 
-@trusted
-int mu_pool_get(MuContext* ctx, MuPoolItem* items, Sz len, MuId id) {
-    foreach (i; 0 .. len) {
-        if (items[i].id == id) { return cast(int) i; }
+    // Temporary text measurement function for prototyping.
+    int tempMuTextHeightFunc(MuFont font) {
+        return 20;
     }
-    return -1;
-}
-
-@trusted
-void mu_pool_update(MuContext* ctx, MuPoolItem* items, Sz idx) {
-    items[idx].lastUpdate = ctx.frame;
-}
-
-/*============================================================================
-** commandlist
-**============================================================================*/
-
-// NOTE(Kapendev): Should maybe zero the memory?
-@trusted
-MuCommandData* mu_push_command(MuContext* ctx, MuCommand type, Sz size) {
-    MuCommandData* cmd = cast(MuCommandData*) (ctx.commandList.items.ptr + ctx.commandList.idx);
-    assert(ctx.commandList.idx + size < muCommandListSize);
-    cmd.base.type = type;
-    cmd.base.size = cast(int) size;
-    ctx.commandList.idx += size;
-    return cmd;
-}
-
-@trusted
-bool mu_next_command(MuContext* ctx, MuCommandData** cmd) {
-    if (*cmd) {
-        *cmd = cast(MuCommandData*) ((cast(char*) *cmd) + (*cmd).base.size);
-    } else {
-        *cmd = cast(MuCommandData*) ctx.commandList.items;
-    }
-    while (cast(char*) *cmd != ctx.commandList.items.ptr + ctx.commandList.idx) {
-        if ((*cmd).type != MuCommand.jump) { return true; }
-        *cmd = cast(MuCommandData*) (*cmd).jump.dst;
-    }
-    return false;
-}
-
-void mu_set_clip(MuContext* ctx, IRect rect) {
-    MuCommandData* cmd;
-    cmd = mu_push_command(ctx, MuCommand.clip, MuClipCommand.sizeof);
-    cmd.clip.rect = rect;
-}
-
-@trusted
-void mu_draw_rect(MuContext* ctx, IRect rect, Rgba color, MuAtlas atlasid = MuAtlas.none) {
-    MuCommandData* cmd;
-    MuClip clipped;
-    auto intersect_rect = rect.intersection(ctx.getClipRect());
-    auto is_atlas_rect = atlasid != MuAtlas.none && ctx.style.slices[atlasid].area.hasSize;
-    auto target_rect = is_atlas_rect ? rect : intersect_rect;
-
-    if (target_rect.hasSize) {
-        if (is_atlas_rect) {
-            clipped = ctx.checkClip(target_rect);
-            if (clipped == MuClip.all ) return;
-            if (clipped == MuClip.part) mu_set_clip(ctx, ctx.getClipRect());
-        }
-
-        // See `draw_frame` for more info.
-        cmd = mu_push_command(ctx, MuCommand.rect, MuRectCommand.sizeof);
-        cmd.rect.rect = target_rect;
-        cmd.rect.color = color;
-        cmd.rect.id = atlasid;
-
-        if (is_atlas_rect) {
-            if (clipped) { mu_set_clip(ctx, unclippedRect); }
-        }
-    }
-}
-
-void mu_draw_box(MuContext* ctx, IRect rect, Rgba color) {
-    mu_draw_rect(ctx, IRect(rect.x + 1, rect.y, rect.w - 2, 1), color);
-    mu_draw_rect(ctx, IRect(rect.x + 1, rect.y + rect.h - 1, rect.w - 2, 1), color);
-    mu_draw_rect(ctx, IRect(rect.x, rect.y, 1, rect.h), color);
-    mu_draw_rect(ctx, IRect(rect.x + rect.w - 1, rect.y, 1, rect.h), color);
-}
-
-@trusted
-void mu_draw_text(MuContext* ctx, MuFont font, IStr str, IVec2 pos, Rgba color) {
-    MuCommandData* cmd;
-    IRect rect = IRect(pos.x, pos.y, ctx.textWidth(font, str), ctx.textHeight(font));
-    MuClip clipped = ctx.checkClip(rect);
-    if (clipped == MuClip.all ) return;
-    if (clipped == MuClip.part) mu_set_clip(ctx, ctx.getClipRect());
-    /* add command */
-    cmd = mu_push_command(ctx, MuCommand.text, MuTextCommand.sizeof + str.length);
-    assert(str.length < muMaxStrSize, "String is too big. See `muMaxStrSize`.");
-    jokaMemcpy(cmd.text.str.ptr, str.ptr, str.length);
-    cmd.text.str.ptr[str.length] = '\0';
-    cmd.text.len = cast(int) str.length;
-    cmd.text.pos = pos;
-    cmd.text.color = color;
-    cmd.text.font = font;
-    /* reset clipping if it was set */
-    if (clipped) { mu_set_clip(ctx, unclippedRect); }
-}
-
-void mu_draw_icon(MuContext* ctx, MuIcon id, IRect rect, Rgba color) {
-    MuCommandData* cmd;
-    /* do clip command if the rect isn't fully contained within the cliprect */
-    MuClip clipped = ctx.checkClip(rect);
-    if (clipped == MuClip.all ) return;
-    if (clipped == MuClip.part) mu_set_clip(ctx, ctx.getClipRect());
-    /* do icon command */
-    cmd = mu_push_command(ctx, MuCommand.icon, MuIconCommand.sizeof);
-    cmd.icon.id = id;
-    cmd.icon.rect = rect;
-    cmd.icon.color = color;
-    /* reset clipping if it was set */
-    if (clipped) { mu_set_clip(ctx, unclippedRect); }
 }
 
 // ORIGINAL MICROUI LICENSE

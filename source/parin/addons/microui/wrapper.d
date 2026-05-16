@@ -14,8 +14,8 @@ import parin.engine;
 
 UiContext uiContext;
 
-enum uiNumberFmt         = muNumberFmt;
-enum uiNumberFmtWithZero = muNumberFmtWithZero;
+enum uiNumberFmt         = muNumberFmt;         /// Format string used for numbers.
+enum uiNumberFmtWithZero = muNumberFmtWithZero; /// Format string used for numbers, with a zero at the end.
 
 alias UiTextWidthFunc  = MuTextWidthFunc;  /// Used for getting the width of the text.
 alias UiTextHeightFunc = MuTextHeightFunc; /// Used for getting the height of the text.
@@ -35,7 +35,7 @@ alias UiFVec = Vec2; /// A 2D vector using floats.
 deprecated("Use `Margin`. It's the same.")
 alias UiMargin = Margin; /// A set of 4 integer margins for left, top, right, and bottom.
 deprecated("Use `SlicePart`. It's the same.")
-alias UiSlicePart = SlicePart;  /// A part of a 9-slice with source and target rectangles for drawing.
+alias UiSlicePart = SlicePart; /// A part of a 9-slice with source and target rectangles for drawing.
 deprecated("Use `SliceParts`. It's the same.")
 alias UiSliceParts = SliceParts; /// The parts of a 9-slice.
 
@@ -50,32 +50,32 @@ alias UiCommandData = MuCommandData; /// A union of all possible render commands
 
 alias UiLayout    = MuLayout;    /// Layout state used to position UI controls within a container.
 alias UiContainer = MuContainer; /// A UI container holding commands.
-alias UiSlice     = MuSlice;
+alias UiSlice     = MuSlice;     /// A 9-slice definition for an atlas area, controlling how it is sampled and tiled.
 alias UiStyle     = MuStyle;     /// UI style settings including font, sizes, spacing, and colors.
-alias UiContext   = MuContext;   /// The main UI context.
-alias UiCommand   = MuCommand;
+alias UiContext   = MuContext;   /// The UI context.
+alias UiCommand   = MuCommand;   /// The command kind.
 
 deprecated("Remove `Enum` from the type name.")
-alias UiClipEnum  = MuClip;
-alias UiClip      = MuClip;
+alias UiClipEnum  = MuClip; /// The clipping kind.
+alias UiClip      = MuClip; /// The clipping kind.
 deprecated("Remove `Enum` from the type name.")
-alias UiColorEnum = MuColor;
-alias UiColor     = MuColor;
+alias UiColorEnum = MuColor; /// The color kind.
+alias UiColor     = MuColor; /// The color kind.
 deprecated("Remove `Enum` from the type name.")
-alias UiIconEnum  = MuIcon;
-alias UiIcon      = MuIcon;
+alias UiIconEnum  = MuIcon; /// The icon kind.
+alias UiIcon      = MuIcon; /// The icon kind.
 deprecated("Remove `Enum` from the type name.")
-alias UiAtlasEnum = MuAtlas;
-alias UiAtlas     = MuAtlas;
+alias UiAtlasEnum = MuAtlas; /// The atlas area kind.
+alias UiAtlas     = MuAtlas; /// The atlas area kind.
 
-alias UiResFlags   = MuResFlags;   /// The type of `UiResFlag`.
-alias UiResFlag    = MuResFlag;
-alias UiOptFlags   = MuOptFlags;   /// The type of `UiOptFlag`.
-alias UiOptFlag    = MuOptFlag;
-alias UiMouseFlags = MuMouseFlags; /// The type of `UiMouseFlag`.
-alias UiMouseFlag  = MuMouseFlag;
-alias UiKeyFlags   = MuKeyFlags;   /// The type of `UiKeyFlag`.
-alias UiKeyFlag    = MuKeyFlag;
+alias UiResFlags   = MuResFlags;   /// Bitmask type for result flags.
+alias UiResFlag    = MuResFlag;    /// Result flags indicating the outcome of a control interaction.
+alias UiOptFlags   = MuOptFlags;   /// Bitmask type for option flags.
+alias UiOptFlag    = MuOptFlag;    /// Option flags controlling control and window behaviour.
+alias UiMouseFlags = MuMouseFlags; /// Bitmask type for mouse button flags.
+alias UiMouseFlag  = MuMouseFlag;  /// Flags representing which mouse buttons are pressed.
+alias UiKeyFlags   = MuKeyFlags;   /// Bitmask type for keyboard key flags.
+alias UiKeyFlag    = MuKeyFlag;    /// Flags representing which keys are currently held down.
 
 /// Used by the `members` function to hide data.
 alias UiPrivate = MuPrivate;
@@ -162,15 +162,15 @@ void bringUiContainerToFront(UiContainer* cnt) {
 **============================================================================*/
 
 int readyUiPool(UiPoolItem* items, Sz len, UiId id) {
-    return mu_pool_init(&uiContext, items, len, id);
+    return uiContext.poolInit(items, len, id);
 }
 
 int getFromUiPool(UiPoolItem* items, Sz len, UiId id) {
-    return mu_pool_get(&uiContext, items, len, id);
+    return uiContext.poolGet(items, len, id);
 }
 
 void updateUiPool(UiPoolItem* items, Sz idx) {
-    mu_pool_update(&uiContext, items, idx);
+    uiContext.poolUpdate(items, idx);
 }
 
 /*============================================================================
@@ -210,31 +210,31 @@ void uiInputText(IStr text) {
 **============================================================================*/
 
 UiCommandData* pushUiCommand(UiCommand type, Sz size) {
-    return mu_push_command(&uiContext, type, size);
+    return uiContext.pushCommand(type, size);
 }
 
 bool nextUiCommand(UiCommandData** cmd) {
-    return mu_next_command(&uiContext, cmd);
+    return uiContext.nextCommand(cmd);
 }
 
 void setUiClipRect(IRect rect) {
-    mu_set_clip(&uiContext, rect);
+    uiContext.setClip(rect);
 }
 
 void drawUiRect(IRect rect, Rgba color, UiAtlas id = UiAtlas.none) {
-    mu_draw_rect(&uiContext, rect, color, id);
+    uiContext.drawRect(rect, color, id);
 }
 
 void drawUibox(IRect rect, Rgba color) {
-    mu_draw_box(&uiContext, rect, color);
+    uiContext.drawBox(rect, color);
 }
 
 void drawUiText(UiFont font, IStr str, IVec2 point, Rgba color) {
-    mu_draw_text(&uiContext, font, str, point, color);
+    uiContext.drawText(font, str, point, color);
 }
 
 void drawUiIcon(UiIcon id, IRect rect, Rgba color) {
-    mu_draw_icon(&uiContext, id, rect, color);
+    uiContext.drawIcon(id, rect, color);
 }
 
 /*============================================================================
