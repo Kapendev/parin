@@ -169,7 +169,7 @@ enum MuKeyFlag : MuKeyFlags {
     /// Used for getting the height of the text.
     alias MuTextHeightFunc = int function(MuFont font);
     /// Used for drawing a frame.
-    alias MuDrawFrameFunc  = void function(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none);
+    alias MuDrawFrameFunc  = void function(MuContext* ctx, IRect rect, MuColor colorId, MuAtlas atlasId = MuAtlas.none);
 }
 
 /// A static stack.
@@ -537,14 +537,14 @@ struct MuContext {
     ** controls
     **============================================================================*/
 
-    void drawControlFrame(MuId id, IRect rect, MuColor colorid, MuOptFlags opt, MuAtlas atlasid = MuAtlas.none) {
+    void drawControlFrame(MuId id, IRect rect, MuColor colorId, MuOptFlags opt, MuAtlas atlasId = MuAtlas.none) {
         if (opt & MuOptFlag.noFrame) return;
-        colorid += (focus == id) ? 2 : (hover == id) ? 1 : 0;
-        atlasid += (focus == id) ? 2 : (hover == id) ? 1 : 0;
-        drawFrame(&this, rect, colorid, atlasid);
+        colorId += (focus == id) ? 2 : (hover == id) ? 1 : 0;
+        atlasId += (focus == id) ? 2 : (hover == id) ? 1 : 0;
+        drawFrame(&this, rect, colorId, atlasId);
     }
 
-    void drawControlText(IStr str, IRect rect, MuColor colorid, MuOptFlags opt) {
+    void drawControlText(IStr str, IRect rect, MuColor colorId, MuOptFlags opt) {
         auto pos = IVec2();
         auto font = style.font;
         auto tw = textWidth(font, str);
@@ -557,12 +557,12 @@ struct MuContext {
         } else {
             pos.x = rect.x + style.padding;
         }
-        drawText(font, str, pos, style.colors[colorid]);
+        drawText(font, str, pos, style.colors[colorId]);
         popClipRect();
     }
 
-    void drawControlTextLegacy(IStrz str, IRect rect, MuColor colorid, MuOptFlags opt) {
-        drawControlText(str.toStr(), rect, colorid, opt);
+    void drawControlTextLegacy(IStrz str, IRect rect, MuColor colorId, MuOptFlags opt) {
+        drawControlText(str.toStr(), rect, colorId, opt);
     }
 
     bool mouseOver(IRect rect) {
@@ -800,16 +800,20 @@ struct MuContext {
     }
 
     @trusted
-    MuResFlags textboxRaw(char[] buf, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
-        return textboxRawLegacy(buf.ptr, buf.length, id, r, opt, newlen);
+    MuResFlags textBoxRaw(char[] buf, MuId id, IRect r, ref Sz newlen, MuOptFlags opt) {
+        return textBoxRawLegacy(buf.ptr, buf.length, id, r, &newlen, opt);
     }
 
     @trusted
-    MuResFlags textboxRawLegacy(char* buf, Sz bufsz, MuId id, IRect r, MuOptFlags opt, Sz* newlen = null) {
+    MuResFlags textBoxRawLegacy(char* buf, Sz bufsz, MuId id, IRect r, Sz* newlen, MuOptFlags opt) {
         MuResFlags res;
         updateControl(id, r, opt | MuOptFlag.holdFocus);
 
-        Sz buflen = strzLength(buf);
+        Sz buflen = 0;
+        if (buf && bufsz) {        // NOTE: Because the original code was doing stuff yolo mode.
+            buf[bufsz - 1] = '\0'; // NOTE: Because it's common in D to not zero char buffers.
+            buflen = strzLength(buf);
+        }
         if (focus == id) {
             /* handle text input */
             int n = min((cast(int) bufsz) - (cast(int) buflen) - 1, cast(int) inputTextSlice.length);
@@ -876,20 +880,23 @@ struct MuContext {
     }
 
     @trusted
-    MuResFlags textbox(char[] buf, MuOptFlags opt, Sz* newlen = null) {
-        return textboxLegacy(buf.ptr, buf.length, opt, newlen);
+    MuResFlags textBox(char[] buf, ref Sz newlen, MuOptFlags opt = MuOptFlag.none) {
+        return textBoxLegacy(buf.ptr, buf.length, &newlen, opt);
     }
 
     @trusted
-    MuResFlags textbox(char[] buf, Sz* newlen = null) {
-        return textboxLegacy(buf.ptr, buf.length, 0, newlen);
+    MuResFlags textBox(char[] buf, ref char[] newslice, MuOptFlags opt = MuOptFlag.none) {
+        Sz tempLength = void;
+        auto result = textBoxLegacy(buf.ptr, buf.length, &tempLength, opt);
+        newslice = buf[0 .. tempLength];
+        return result;
     }
 
     @trusted
-    MuResFlags textboxLegacy(char* buf, Sz bufsz, MuOptFlags opt, Sz* newlen = null) {
+    MuResFlags textBoxLegacy(char* buf, Sz bufsz, Sz* newlen, MuOptFlags opt) {
         MuId id = getId(&buf, buf.sizeof);
         IRect r = nextLayout();
-        return textboxRawLegacy(buf, bufsz, id, r, opt, newlen);
+        return textBoxRawLegacy(buf, bufsz, id, r, newlen, opt);
     }
 
     @trusted
@@ -1167,7 +1174,7 @@ struct MuContext {
             }
 
             Sz input_length;
-            auto input_result = textbox(input_buffer, MuOptFlag.defaultFocus, &input_length);
+            auto input_result = textBox(input_buffer, input_length, MuOptFlag.defaultFocus);
             auto input = input_buffer[0 .. input_length];
             auto pick = -1;
             auto first = -1;
@@ -1570,11 +1577,11 @@ struct MuContext {
     }
 
     @trusted
-    void drawRect(IRect rect, Rgba color, MuAtlas atlasid = MuAtlas.none) {
+    void drawRect(IRect rect, Rgba color, MuAtlas atlasId = MuAtlas.none) {
         MuCommandData* cmd;
         MuClip clipped;
         auto intersect_rect = rect.intersection(getClipRect());
-        auto is_atlas_rect = atlasid != MuAtlas.none && style.slices[atlasid].area.hasSize;
+        auto is_atlas_rect = atlasId != MuAtlas.none && style.slices[atlasId].area.hasSize;
         auto target_rect = is_atlas_rect ? rect : intersect_rect;
 
         if (target_rect.hasSize) {
@@ -1588,7 +1595,7 @@ struct MuContext {
             cmd = pushCommand(MuCommand.rect, MuRectCommand.sizeof);
             cmd.rect.rect = target_rect;
             cmd.rect.color = color;
-            cmd.rect.id = atlasid;
+            cmd.rect.id = atlasId;
 
             if (is_atlas_rect) {
                 if (clipped) setClip(unclippedRect);
@@ -1787,7 +1794,8 @@ private @safe nothrow @nogc {
             ctx.numberEditBuffer.fmtIntoBuffer(muNumberFmtWithZero, *value);
         }
         if (ctx.numberEdit == id) {
-            MuResFlags res = ctx.textboxRaw(ctx.numberEditBuffer, id, r, 0);
+            Sz textBoxLength = void;
+            auto res = ctx.textBoxRaw(ctx.numberEditBuffer, id, r, textBoxLength, MuOptFlag.none);
             if (res & MuResFlag.submit || ctx.focus != id) {
                 // Old: *value = strtod(ctx.numberEditBuffer.ptr, null);
                 *value = ctx.numberEditBuffer.ptr.toStr().toFloating().getOr();
@@ -1892,9 +1900,9 @@ private @safe nothrow @nogc {
 
 @safe nothrow @nogc {
     // Default microui draw frame function.
-    void defaultMuDrawFrame(MuContext* ctx, IRect rect, MuColor colorid, MuAtlas atlasid = MuAtlas.none) {
-        ctx.drawRect(rect, ctx.style.colors[colorid], atlasid);
-        if (colorid == MuColor.scrollBase || colorid == MuColor.scrollThumb || colorid == MuColor.titleBg) return;
+    void defaultMuDrawFrame(MuContext* ctx, IRect rect, MuColor colorId, MuAtlas atlasId = MuAtlas.none) {
+        ctx.drawRect(rect, ctx.style.colors[colorId], atlasId);
+        if (colorId == MuColor.scrollBase || colorId == MuColor.scrollThumb || colorId == MuColor.titleBg) return;
         /* draw border */
         if (ctx.style.border && rect.hasSize) {
             auto borderRect = rect;

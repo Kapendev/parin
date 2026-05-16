@@ -305,12 +305,12 @@ UiResFlags checkbox(ref bool state, IStr label = "") {
     return uiContext.checkbox(state, label);
 }
 
-UiResFlags textbox(char[] buffer, UiOptFlags opt, Sz* newlen = null) {
-    return uiContext.textbox(buffer, opt, newlen);
+UiResFlags textBox(char[] buffer, ref Sz newlen, UiOptFlags opt = UiOptFlag.none) {
+    return uiContext.textBox(buffer, newlen, opt);
 }
 
-UiResFlags textbox(char[] buffer, Sz* newlen = null) {
-    return uiContext.textbox(buffer, newlen);
+MuResFlags textBox(char[] buffer, ref char[] newslice, MuOptFlags opt = MuOptFlag.none) {
+    return uiContext.textBox(buffer, newslice, opt);
 }
 
 UiResFlags slider(ref float value, float low, float high, float step = 0.01f, IStr fmt = uiNumberFmt, UiOptFlags opt = UiOptFlag.alignCenter) {

@@ -8,12 +8,15 @@ import parin.addons.microui;
 Game game;
 
 struct Game {
+    char[64] textBuffer = '\0';
+    char[] text;
+
     int width = 50;
     int height = 50;
 
     @UiMember(0, 255) float color = 0;
-    @UiMember(1)      Vec2  world = Vec2(70, 50);
-    @UiMember("flag") bool  reallyCoolFlag;
+    @UiMember(1) Vec2 world = Vec2(70, 50);
+    @UiMember("flag") bool reallyCoolFlag;
 
     @UiPrivate:
     bool secret1;
@@ -39,6 +42,12 @@ void inspect() {
 
     if (beginWindow("Edit", IRect(500, 80, 350, 370))) {
         headerAndMembers(game, 125);
+        if (header("Text Box")) {
+            label("Write Something");
+            if (textBox(game.textBuffer, game.text)) {
+                println(game.text);
+            }
+        }
         endWindow();
     }
 }
