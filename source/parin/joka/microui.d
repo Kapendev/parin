@@ -407,7 +407,7 @@ struct MuContext {
     MuKeyFlags keyDown;
     MuKeyFlags keyPressed;
     char[muInputTextSize] inputTextData;
-    char[] inputTextSlice;
+    Str inputTextSlice;
 
     @safe nothrow @nogc:
 
@@ -423,21 +423,29 @@ struct MuContext {
         textHeight = &tempMuTextHeightFunc;
         dragWindowKey = MuKeyFlag.f1;
         resizeWindowKey = MuKeyFlag.f2;
-        _style = MuStyle(
+        style = &_style;
+        style.font = font;
+        style.fontScale = fontScale;
+        applyDefaultStyle();
+        inputTextSlice = inputTextData[0 .. 0];
+    }
+
+    void applyDefaultStyle() {
+        *style = MuStyle(
             /* font | atlas | size | padding | spacing | indent | border */
-            null, null, IVec2(68, 10), 6, 5, 24, 1,
+            style.font, style.texture, IVec2(68, 10), 6, 5, 24, 1,
             /* titleHeight | scrollbarSize | scrollbarSpeed | scrollbarKeySpeed | thumbSize | fontScale */
-            24, 8, 30, cast(int) (30.0f * 0.4f), 6, fontScale,
+            24, 8, 30, cast(int) (30.0f * 0.4f), 6, style.fontScale,
             StaticArray!(Rgba, 14)(
                 Rgba(220, 220, 220, 255), /* MuColor.text */
                 Rgba(15,  15,  20,  255), /* MuColor.border */
                 Rgba(30,  30,  38,  255), /* MuColor.windowBg */
                 Rgba(20,  20,  26,  255), /* MuColor.titleBg */
                 Rgba(220, 220, 220, 255), /* MuColor.titleText */
-                Rgba(0,   0,   0,   0  ), /* MuColor.panelBg */
+                Rgba(30,  30,  38,  255), /* MuColor.panelBg */
                 Rgba(55,  55,  70,  255), /* MuColor.button */
                 Rgba(75,  75,  95,  255), /* MuColor.buttonHover */
-                Rgba(70,  100, 160, 255), /* MuColor.buttonFOCUS */
+                Rgba(75,  95,  120, 255), /* MuColor.buttonFOCUS */
                 Rgba(22,  22,  30,  255), /* MuColor.base */
                 Rgba(28,  28,  38,  255), /* MuColor.baseHOVER */
                 Rgba(35,  35,  48,  255), /* MuColor.baseFOCUS */
@@ -445,9 +453,56 @@ struct MuContext {
                 Rgba(70,  70,  90,  255), /* MuColor.scrollThumb */
             ),
         );
-        style = &_style;
-        style.font = font;
-        inputTextSlice = inputTextData[0 .. 0];
+    }
+
+    void applySolarizedDarkStyle() {
+        *style = MuStyle(
+            /* font | atlas | size | padding | spacing | indent | border */
+            style.font, style.texture, IVec2(68, 10), 6, 5, 24, 1,
+            /* titleHeight | scrollbarSize | scrollbarSpeed | scrollbarKeySpeed | thumbSize | fontScale */
+            24, 8, 30, cast(int) (30.0f * 0.4f), 6, style.fontScale,
+            StaticArray!(Rgba, 14)(
+                Rgba(160, 174, 174, 255), /* MuColor.text        -- base1 */
+                Rgba(7,   54,  66,  255), /* MuColor.border      -- base02 */
+                Rgba(0,   43,  54,  255), /* MuColor.windowBg    -- base03 */
+                Rgba(7,   54,  66,  255), /* MuColor.titleBg     -- base02 */
+                Rgba(160, 174, 174, 255), /* MuColor.titleText   -- base1 */
+                Rgba(0,   43,  54,  255), /* MuColor.panelBg     -- transparent */
+                Rgba(15,  70,  85,  255), /* MuColor.button      -- lifted teal */
+                Rgba(28,  100, 120, 255), /* MuColor.buttonHover -- noticeably lighter */
+                Rgba(42,  98,  120, 255), /* MuColor.buttonFOCUS -- muted teal */
+                Rgba(3,   33,  42,  255), /* MuColor.base        -- sunken textbox */
+                Rgba(7,   54,  66,  255), /* MuColor.baseHOVER   -- base02 */
+                Rgba(18,  80,  98,  255), /* MuColor.baseFOCUS   -- focused input */
+                Rgba(3,   33,  42,  255), /* MuColor.scrollBase  -- matches base */
+                Rgba(55,  85,  95,  255), /* MuColor.scrollThumb -- visible thumb */
+            ),
+        );
+    }
+
+    void applyGruvboxDarkStyle() {
+        *style = MuStyle(
+            /* font | atlas | size | padding | spacing | indent | border */
+            style.font, style.texture, IVec2(68, 10), 6, 5, 24, 1,
+            /* titleHeight | scrollbarSize | scrollbarSpeed | scrollbarKeySpeed | thumbSize | fontScale */
+            24, 8, 30, cast(int) (30.0f * 0.4f), 6, style.fontScale,
+            StaticArray!(Rgba, 14)(
+                Rgba(235, 219, 178, 255), /* MuColor.text        -- fg1 */
+                Rgba(40,  40,  40,  255), /* MuColor.border      -- bg0_h */
+                Rgba(32,  35,  36,  255), /* MuColor.windowBg    -- softened */
+                Rgba(40,  40,  40,  255), /* MuColor.titleBg     -- bg0_h */
+                Rgba(235, 219, 178, 255), /* MuColor.titleText   -- fg1 */
+                Rgba(32,  35,  36,  255), /* MuColor.panelBg     -- matches windowBg */
+                Rgba(60,  56,  54,  255), /* MuColor.button      -- bg2 */
+                Rgba(80,  73,  69,  255), /* MuColor.buttonHover -- bg3 */
+                Rgba(160, 70,  10,  255), /* MuColor.buttonFOCUS -- muted burnt orange */
+                Rgba(21,  22,  21,  255), /* MuColor.base        -- sunken textbox */
+                Rgba(50,  48,  47,  255), /* MuColor.baseHOVER   -- bg2 step */
+                Rgba(70,  36,  8,   255), /* MuColor.baseFOCUS   -- dark burnt orange tint */
+                Rgba(21,  22,  21,  255), /* MuColor.scrollBase  -- matches base */
+                Rgba(102, 92,  84,  255), /* MuColor.scrollThumb -- bg4 */
+            ),
+        );
     }
 
     void readyWithFuncs(MuTextWidthFunc width, MuTextHeightFunc height, MuFont font, int fontScale = 1) {
@@ -529,10 +584,10 @@ struct MuContext {
             ** otherwise set the previous container's tail to jump to this one */
             if (i == 0) {
                 MuCommandData* cmd = cast(MuCommandData*) commandList.items;
-                cmd.jump.dst = cast(char*) cnt.head + MuJumpCommand.sizeof;
+                cmd.jump.dst = cast(Strz) cnt.head + MuJumpCommand.sizeof;
             } else {
                 MuContainer* prev = rootList.items[i - 1];
-                prev.tail.jump.dst = cast(char*) cnt.head + MuJumpCommand.sizeof;
+                prev.tail.jump.dst = cast(Strz) cnt.head + MuJumpCommand.sizeof;
             }
             /* make the last container's tail jump to the end of command list */
             if (i == n - 1) {
@@ -808,12 +863,12 @@ struct MuContext {
     }
 
     @trusted
-    MuResFlags textBoxRaw(char[] buf, MuId id, IRect r, ref Sz newlen, MuOptFlags opt) {
+    MuResFlags textBoxRaw(Str buf, MuId id, IRect r, ref Sz newlen, MuOptFlags opt) {
         return textBoxRawLegacy(buf.ptr, buf.length, id, r, &newlen, opt);
     }
 
     @trusted
-    MuResFlags textBoxRawLegacy(char* buf, Sz bufsz, MuId id, IRect r, Sz* newlen, MuOptFlags opt) {
+    MuResFlags textBoxRawLegacy(Strz buf, Sz bufsz, MuId id, IRect r, Sz* newlen, MuOptFlags opt) {
         MuResFlags res;
         updateControl(id, r, opt | MuOptFlag.holdFocus);
 
@@ -888,12 +943,12 @@ struct MuContext {
     }
 
     @trusted
-    MuResFlags textBox(char[] buf, ref Sz newlen, MuOptFlags opt = MuOptFlag.none) {
+    MuResFlags textBox(Str buf, ref Sz newlen, MuOptFlags opt = MuOptFlag.none) {
         return textBoxLegacy(buf.ptr, buf.length, &newlen, opt);
     }
 
     @trusted
-    MuResFlags textBox(char[] buf, ref char[] newslice, MuOptFlags opt = MuOptFlag.none) {
+    MuResFlags textBox(Str buf, ref IStr newslice, MuOptFlags opt = MuOptFlag.none) {
         Sz tempLength = void;
         auto result = textBoxLegacy(buf.ptr, buf.length, &tempLength, opt);
         newslice = buf[0 .. tempLength];
@@ -901,10 +956,15 @@ struct MuContext {
     }
 
     @trusted
-    MuResFlags textBoxLegacy(char* buf, Sz bufsz, Sz* newlen, MuOptFlags opt) {
+    MuResFlags textBoxLegacy(Strz buf, Sz bufsz, Sz* newlen, MuOptFlags opt) {
         MuId id = getId(&buf, buf.sizeof);
         IRect r = nextLayout();
         return textBoxRawLegacy(buf, bufsz, id, r, newlen, opt);
+    }
+
+    MuResFlags textBox(Sz N = 128, IStr file = __FILE__, Sz line = __LINE__)(ref IStr newslice, MuOptFlags opt = MuOptFlag.none) {
+        static char[N] buffer = '\0';
+        return textBox(buffer, newslice, opt);
     }
 
     @trusted
@@ -1119,6 +1179,10 @@ struct MuContext {
         if (opt & MuOptFlag.popup && mousePressed && hoverRoot != cnt) { cnt.open = false; }
         pushClipRect(cnt.body);
         return MuResFlag.active;
+    }
+
+    MuResFlags beginWindow(IStr title, int x, int y, int w, int h, MuOptFlags opt = MuOptFlag.none) {
+        return beginWindow(title, IRect(x, y, w, h), opt);
     }
 
     void endWindow() {
@@ -1567,11 +1631,11 @@ struct MuContext {
     @trusted
     bool nextCommand(MuCommandData** cmd) {
         if (*cmd) {
-            *cmd = cast(MuCommandData*) ((cast(char*) *cmd) + (*cmd).base.size);
+            *cmd = cast(MuCommandData*) ((cast(Strz) *cmd) + (*cmd).base.size);
         } else {
             *cmd = cast(MuCommandData*) commandList.items;
         }
-        while (cast(char*) *cmd != commandList.items.ptr + commandList.idx) {
+        while (cast(Strz) *cmd != commandList.items.ptr + commandList.idx) {
             if ((*cmd).type != MuCommand.jump) return true;
             *cmd = cast(MuCommandData*) (*cmd).jump.dst;
         }

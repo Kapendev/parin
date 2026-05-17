@@ -616,18 +616,15 @@ For example:
 // It assumes you are using: `parin.addons.microui`
 void inspect() {
     beginUiFrame();
-    scope (exit) endUiFrame();
-
-    if (beginWindow("Window", UiRect(500, 80, 350, 370), UiOptFlag.noClose)) {
-        headerAndMembers(game, 125);
+    if (beginWindow("Window", 500, 80, 350, 370)) {
+        button("Hello");
         endWindow();
     }
+    endUiFrame();
 }
 
 mixin runGame!(ready, update, finish, 960, 540, "Parin", inspect);
 ```
-
-The above code is part of a full example in the [examples](examples/integrations/microui.d).
 
 ## Scheduling
 

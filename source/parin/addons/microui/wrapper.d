@@ -305,12 +305,16 @@ UiResFlags checkbox(ref bool state, IStr label = "") {
     return uiContext.checkbox(state, label);
 }
 
-UiResFlags textBox(char[] buffer, ref Sz newlen, UiOptFlags opt = UiOptFlag.none) {
+UiResFlags textBox(Str buffer, ref Sz newlen, UiOptFlags opt = UiOptFlag.none) {
     return uiContext.textBox(buffer, newlen, opt);
 }
 
-MuResFlags textBox(char[] buffer, ref char[] newslice, MuOptFlags opt = MuOptFlag.none) {
+MuResFlags textBox(Str buffer, ref IStr newslice, UiOptFlags opt = UiOptFlag.none) {
     return uiContext.textBox(buffer, newslice, opt);
+}
+
+MuResFlags textBox(Sz N = 128, IStr file = __FILE__, Sz line = __LINE__)(ref IStr newslice, UiOptFlags opt = UiOptFlag.none) {
+    return uiContext.textBox!(N, file, line)(newslice, opt);
 }
 
 UiResFlags slider(ref float value, float low, float high, float step = 0.01f, IStr fmt = uiNumberFmt, UiOptFlags opt = UiOptFlag.alignCenter) {
@@ -351,6 +355,10 @@ void endTreeNode() {
 
 UiResFlags beginWindow(IStr title, IRect rect, UiOptFlags opt = UiOptFlag.none) {
     return uiContext.beginWindow(title, rect, opt);
+}
+
+UiResFlags beginWindow(IStr title, int x, int y, int w, int h, UiOptFlags opt = UiOptFlag.none) {
+    return uiContext.beginWindow(title, x, y, w, h, opt);
 }
 
 void endWindow() {

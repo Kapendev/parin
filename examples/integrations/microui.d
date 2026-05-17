@@ -8,9 +8,7 @@ import parin.addons.microui;
 Game game;
 
 struct Game {
-    char[64] textBuffer = '\0';
-    char[] text;
-
+    IStr text;
     int width = 50;
     int height = 50;
 
@@ -24,32 +22,24 @@ struct Game {
 }
 
 void ready() {
-    toggleIsDebugMode();
     readyUi(engineFont, 2);
 }
 
-// The game code.
 bool update(float dt) {
     setWindowBackgroundColor(Color(cast(ubyte) game.color, 90, 90));
     drawRect(Rect(game.world, game.width, game.height), game.reallyCoolFlag ? green : white);
-    return false;
-}
 
-// The editor code.
-void inspect() {
     beginUiFrame();
-    scope (exit) endUiFrame();
-
-    if (beginWindow("Edit", IRect(500, 80, 350, 370))) {
+    if (beginWindow("Edit", 500, 80, 350, 370)) {
         headerAndMembers(game, 125);
         if (header("Text Box")) {
             label("Write Something");
-            if (textBox(game.textBuffer, game.text)) {
-                println(game.text);
-            }
+            if (textBox(game.text)) println(game.text);
         }
         endWindow();
     }
+    endUiFrame();
+    return false;
 }
 
-mixin runGame!(ready, update, null, 960, 540, "Title", inspect);
+mixin runGame!(ready, update, null);
