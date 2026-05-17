@@ -97,6 +97,13 @@ struct IndexedValue(V) {
     alias value this;
 }
 
+/// A key paired with its associated value.
+struct KeyValuePair(K, V) {
+    K key;   /// The key.
+    V value; /// The value.
+    alias value this;
+}
+
 /// A generational index.
 struct GenIndex {
     Sz value;       /// The index value.
@@ -678,6 +685,14 @@ T toUnion(T)(IStr typeName) if (is(T : Union!A, A...)) {
     return result;
 }
 
+/// Casts each element of a fixed-size array to a new element type.
+@trusted
+R[N] castToArray(R, T, Sz N)(ref T[N] from) {
+    R[N] result = void;
+    foreach (i, ref item; from) result[i] = cast(R) item;
+    return result;
+}
+
 pragma(inline, true) @safe nothrow @nogc {
     /// Returns an option from a maybe.
     Option!T toForeignMaybe(T)(Maybe!T value) {
@@ -767,6 +782,10 @@ unittest {
 
     assert(isInAliasArgs!(int, AliasArgs!(float)) == false);
     assert(isInAliasArgs!(int, AliasArgs!(float, int)) == true);
+
+    int[3] a = [2, 4, 6];
+    auto b = castToArray!long(a);
+    assert(b[0] == 2 && b[1] == 4 && b[2] == 6);
 }
 
 // BitSet test.

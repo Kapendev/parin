@@ -47,10 +47,7 @@ debug {
             IStr group;
         }
 
-        struct _MallocGroupKeyValue {
-            _MallocGroupKey key;
-            _MallocGroupInfo value;
-        }
+        alias _MallocGroupKeyValue = KeyValuePair!(_MallocGroupKey, _MallocGroupInfo);
 
         struct _MemoryTrackingState {
             _MallocInfo[void*] table;
