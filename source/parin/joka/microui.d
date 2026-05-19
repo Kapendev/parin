@@ -600,6 +600,7 @@ struct MuContext {
     ** controls
     **============================================================================*/
 
+    @trusted
     void drawControlFrame(MuId id, IRect rect, MuColor colorId, MuOptFlags opt, MuAtlas atlasId = MuAtlas.none) {
         if (opt & MuOptFlag.noFrame) return;
         colorId += (focus == id) ? 2 : (hover == id) ? 1 : 0;
@@ -628,6 +629,7 @@ struct MuContext {
         drawControlText(str.toStr(), rect, colorId, opt);
     }
 
+    @trusted
     bool mouseOver(IRect rect) {
         return rect.hasPoint(mousePos) && getClipRect().hasPoint(mousePos) && _inHoverRoot(&this);
     }
@@ -656,6 +658,7 @@ struct MuContext {
         }
     }
 
+    @trusted
     void scrollbarY(MuContainer* cnt, IRect* b, IVec2 cs) {
         /* only add scrollbar if content size is larger than body */
         int maxscroll = cs.y - b.h;
@@ -708,6 +711,7 @@ struct MuContext {
         }
     }
 
+    @trusted
     void scrollbarX(MuContainer* cnt, IRect* b, IVec2 cs) {
         /* only add scrollbar if content size is larger than body */
         int maxscroll = cs.x - b.w;
@@ -804,6 +808,7 @@ struct MuContext {
         label(str.toStr());
     }
 
+    @trusted
     MuResFlags button(IStr str, MuIcon icon = MuIcon.none, MuOptFlags opt = MuOptFlag.alignCenter) {
         pushId(&buttonCounter, buttonCounter.sizeof);
         auto res = buttonLegacy(str, icon, opt);
@@ -1076,10 +1081,12 @@ struct MuContext {
         return res;
     }
 
+    @trusted
     MuResFlags header(IStr label, MuOptFlags opt = MuOptFlag.none) {
         return _header(&this, label, 0, opt);
     }
 
+    @trusted
     MuResFlags beginTreeNode(IStr label, MuOptFlags opt = MuOptFlag.none) {
         MuResFlags res = _header(&this, label, 1, opt);
         if (res & MuResFlag.active) {
@@ -1089,11 +1096,13 @@ struct MuContext {
         return res;
     }
 
+    @trusted
     void endTreeNode() {
         _getLayout(&this).indent -= style.indent;
         popId();
     }
 
+    @trusted
     MuResFlags beginWindow(IStr title, IRect rect, MuOptFlags opt = MuOptFlag.none) {
         if (opt & MuOptFlag.autoSize) { opt |= MuOptFlag.noResize | MuOptFlag.noScroll; }
 
@@ -1185,6 +1194,7 @@ struct MuContext {
         return beginWindow(title, IRect(x, y, w, h), opt);
     }
 
+    @trusted
     void endWindow() {
         popClipRect();
         _endRootContainer(&this);
@@ -1207,6 +1217,7 @@ struct MuContext {
 
     alias endPopup = endWindow;
 
+    @trusted
     void beginPanel(IStr name, MuOptFlags opt = MuOptFlag.none) {
         MuContainer* cnt;
         pushIdFromStr(name);
@@ -1218,6 +1229,7 @@ struct MuContext {
         pushClipRect(cnt.body);
     }
 
+    @trusted
     void endPanel() {
         popClipRect();
         _popContainer(&this);
@@ -1450,10 +1462,12 @@ struct MuContext {
     ** layout
     **============================================================================*/
 
+    @trusted
     void beginColumn() {
         _pushLayout(&this, nextLayout(), IVec2(0, 0));
     }
 
+    @trusted
     void endColumn() {
         MuLayout* a, b;
         b = _getLayout(&this);
@@ -1484,20 +1498,24 @@ struct MuContext {
         layout.itemIndex = 0;
     }
 
+    @trusted
     void setLayoutWidth(int width) {
         _getLayout(&this).size.x = width;
     }
 
+    @trusted
     void setLayoutHeight(int height) {
         _getLayout(&this).size.y = height;
     }
 
+    @trusted
     void setNextLayout(IRect r, bool relative) {
         auto layout = _getLayout(&this);
         layout.next = r;
         layout.nextType = relative ? relative : absolute;
     }
 
+    @trusted
     IRect nextLayout() {
         auto layout = _getLayout(&this);
         auto res = IRect();
@@ -1782,6 +1800,7 @@ struct MuContext {
         return containerStack.items[containerStack.idx - 1];
     }
 
+    @trusted
     MuContainer* getContainer(IStr name) {
         auto id = getIdFromStr(name);
         return _getContainer(&this, id, 0);

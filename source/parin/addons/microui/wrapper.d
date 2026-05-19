@@ -449,6 +449,7 @@ void readyUi(FontId font, int fontScale = 1) {
 }
 
 /// Handles input events and updates the microui context accordingly.
+@trusted
 void handleUiInput() {
     with (UiMouseFlag) {
         uiInputScroll(cast(int) deltaWheel, cast(int) deltaWheel);

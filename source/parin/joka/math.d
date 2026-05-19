@@ -1867,66 +1867,82 @@ pragma(inline, true) @trusted {
         return stdc_remainder(x, y);
     }
 
+    /// Returns Euler's number `e` raised to the power of `x`.
     float exp(float x) {
         return stdc_expf(x);
     }
 
+    /// Returns Euler's number `e` raised to the power of `x`.
     double exp64(double x) {
         return stdc_exp(x);
     }
 
+    /// Returns `2` raised to the power of `x`.
     float exp2(float x) {
         return stdc_exp2f(x);
     }
 
+    /// Returns `2` raised to the power of `x`.
     double exp264(double x) {
         return stdc_exp2(x);
     }
 
+    /// Returns the natural logarithm of `x`.
     float log(float x) {
         return stdc_logf(x);
     }
 
+    /// Returns the natural logarithm of `x`.
     double log64(double x) {
         return stdc_log(x);
     }
 
+    /// Returns the base-10 logarithm of `x`.
     float log10(float x) {
         return stdc_log10f(x);
     }
 
+    /// Returns the base-10 logarithm of `x`.
     double log1064(double x) {
         return stdc_log10(x);
     }
 
+    /// Returns the base-2 logarithm of `x`.
     float log2(float x) {
         return stdc_log2f(x);
     }
 
+    /// Returns the base-2 logarithm of `x`.
     double log264(double x) {
         return stdc_log2(x);
     }
 
+    /// Returns `base` raised to the power of `exponent`.
     float pow(float base, float exponent) {
         return stdc_powf(base, exponent);
     }
 
+    /// Returns `base` raised to the power of `exponent`.
     double pow64(double base, double exponent) {
         return stdc_pow(base, exponent);
     }
 
+    /// Returns the angle between the positive x-axis and the point (`x`, `y`).
     float atan2(float y, float x) {
         return stdc_atan2f(y, x);
     }
 
+    /// Returns the angle between the positive x-axis and the point (`x`, `y`).
     double atan264(double y, double x) {
         return stdc_atan2(y, x);
     }
 
+    /// Returns `x` unchanged.
     float roundNothing(float x) {
         return x;
     }
 
+    /// Returns `x` unchanged.
     double roundNothing64(double x) {
         return x;
     }
