@@ -8,19 +8,8 @@
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
-version (JokaNoTypes) {
-    private alias Sz = size_t;
-    private alias IStr = const(char)[];
-    private alias Str = char[];
-    private @safe nothrow @nogc IStr fmtSignedGroup(IStr[] fmtStrs, long[] args...)     => "";
-    private @safe nothrow @nogc IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) => "";
-} else {
-    import parin.joka.types;
-}
+import parin.joka.types;
 
-version (LDC) {
-    import ldc = ldc.intrinsics;
-}
 version (WASI) {
     version = JokaMathStubs;
 }
@@ -140,13 +129,15 @@ private @trusted nothrow @nogc pragma(inline, true) {
             return cosX;
         }
 
-        float stdc_ceilf(float x)  => ceilX(x);
-        double stdc_ceil(double x) => ceilX64(x);
-        float stdc_floorf(float x)  => floorX(x);
-        double stdc_floor(double x) => floorX64(x);
-        float stdc_roundf(float x)  => roundX(x);
-        double stdc_round(double x) => roundX64(x);
+        float stdc_ceilf(float x)  => basicCeil(x);
+        double stdc_ceil(double x) => basicCeil64(x);
+        float stdc_floorf(float x)  => basicFloor(x);
+        double stdc_floor(double x) => basicFloor64(x);
+        float stdc_roundf(float x)  => basicRound(x);
+        double stdc_round(double x) => basicRound64(x);
     } else version (LDC) {
+        import ldc = ldc.intrinsics;
+
         float stdc_expf(float x)  => ldc.llvm_exp(x);
         double stdc_exp(double x) => ldc.llvm_exp(x);
         float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
@@ -1828,51 +1819,6 @@ struct SmoothToggle {
 }
 
 pragma(inline, true) @trusted {
-    /// Returns the absolute value of `x`.
-    T abs(T)(T x) {
-        return cast(T) (x < 0 ? -x : x);
-    }
-
-    /// Returns the smaller of `a` and `b`.
-    T min(T)(T a, T b) {
-        return a < b ? a : b;
-    }
-
-    /// Returns the smallest of `a`, `b`, and `c`.
-    T min3(T)(T a, T b, T c) {
-        return min(a, b).min(c);
-    }
-
-    /// Returns the smallest of `a`, `b`, `c`, and `d`.
-    T min4(T)(T a, T b, T c, T d) {
-        return min(a, b).min(c).min(d);
-    }
-
-    /// Returns the larger of `a` and `b`.
-    T max(T)(T a, T b) {
-        return a < b ? b : a;
-    }
-
-    /// Returns the largest of `a`, `b`, and `c`.
-    T max3(T)(T a, T b, T c) {
-        return max(a, b).max(c);
-    }
-
-    /// Returns the largest of `a`, `b`, `c`, and `d`.
-    T max4(T)(T a, T b, T c, T d) {
-        return max(a, b).max(c).max(d);
-    }
-
-    /// Returns -1 if `x` is negative, 1 if positive, or 0 if zero.
-    T sign(T)(T x) {
-        return x < 0 ? -1 : x > 0 ? 1 : 0;
-    }
-
-    /// Returns `x` clamped to the range [`a`, `b`].
-    T clamp(T)(T x, T a, T b) {
-        return max(x, a).min(b);
-    }
-
     /// Returns `x` wrapped to the range [`a`, `b`], wrapping around when out of bounds.
     T wrap(T)(T x, T a, T b) {
         T result = void;
@@ -1901,18 +1847,22 @@ pragma(inline, true) @trusted {
         }
     }
 
+    /// Returns the floating-point remainder of `x / y`.
     float fmod(float x, float y) {
         return stdc_fmodf(x, y);
     }
 
+    /// Returns the floating-point remainder of `x / y`.
     double fmod64(double x, double y) {
         return stdc_fmod(x, y);
     }
 
+    /// Returns the IEEE 754 floating-point remainder of `x / y`.
     float remainder(float x, float y) {
         return stdc_remainderf(x, y);
     }
 
+    /// Returns the IEEE 754 floating-point remainder of `x / y`.
     double remainder64(double x, double y) {
         return stdc_remainder(x, y);
     }
@@ -1981,126 +1931,112 @@ pragma(inline, true) @trusted {
         return x;
     }
 
-    float floorX(float x) {
-        return (x <= 0.0f && (cast(float) cast(int) x) != x)
-            ? (cast(float) cast(int) x) - 1.0f
-            : (cast(float) cast(int) x);
-    }
-
-    double floorX64(double x) {
-        return (x <= 0.0 && (cast(double) cast(long) x) != x)
-            ? (cast(double) cast(long) x) - 1.0
-            : (cast(double) cast(long) x);
-    }
-
+    /// Returns the floor of `x`.
     float floor(float x) {
         return stdc_floorf(x);
     }
 
+    /// Returns the floor of `x`.
     double floor64(double  x) {
         return stdc_floor(x);
     }
 
-    float roundX(float x) {
-        return (x <= 0.0f)
-            ? cast(float) cast(int) (x - 0.5f)
-            : cast(float) cast(int) (x + 0.5f);
-    }
-
-    double roundX64(double x) {
-        return (x <= 0.0)
-            ? cast(double) cast(long) (x - 0.5)
-            : cast(double) cast(long) (x + 0.5);
-    }
-
+    /// Returns the nearest integer to `x`.
     float round(float x) {
         return stdc_roundf(x);
     }
 
+    /// Returns the nearest integer to `x`.
     double round64(double x) {
         return stdc_round(x);
     }
 
-    float ceilX(float x) {
-        return (x <= 0.0f || (cast(float) cast(int) x) == x)
-            ? (cast(float) cast(int) x)
-            : (cast(float) cast(int) x) + 1.0f;
-    }
-
-    double ceilX64(double x) {
-        return (x <= 0.0 || (cast(double) cast(long) x) == x)
-            ? (cast(double) cast(long) x)
-            : (cast(double) cast(long) x) + 1.0;
-    }
-
+    /// Returns the ceiling of `x`.
     float ceil(float x) {
         return stdc_ceilf(x);
     }
 
+    /// Returns the ceiling of `x`.
     double ceil64(double x) {
         return stdc_ceil(x);
     }
 
+    /// Applies the specified `type` of rounding to `x`.
     float applyRounding(float x, Rounding type) {
         return rounding(type)(x);
     }
 
+    /// Applies the specified `type` of rounding to `x`.
     double applyRounding64(double x, Rounding type) {
         return rounding64(type)(x);
     }
 
+    /// Returns the square root of `x`.
     float sqrt(float x) {
         return stdc_sqrtf(x);
     }
 
+    /// Returns the square root of `x`.
     double sqrt64(double x) {
         return stdc_sqrt(x);
     }
 
+    /// Returns the sine of `x`.
     float sin(float x) {
         return stdc_sinf(x);
     }
 
+    /// Returns the sine of `x`.
     double sin64(double x) {
         return stdc_sin(x);
     }
 
+    /// Returns the cosine of `x`.
     float cos(float x) {
         return stdc_cosf(x);
     }
 
+    /// Returns the cosine of `x`.
     double cos64(double x) {
         return stdc_cos(x);
     }
 
+    /// Returns the tangent of `x`.
     float tan(float x) {
         return stdc_tanf(x);
     }
 
+    /// Returns the tangent of `x`.
     double tan64(double x) {
         return stdc_tan(x);
     }
 
+    /// Returns the arcsine of `x`.
     float asin(float x) {
         return stdc_asinf(x);
     }
 
+    /// Returns the arcsine of `x`.
     double asin64(double x) {
         return stdc_asin(x);
     }
 
+    /// Returns the arccosine of `x`.
     float acos(float x) {
         return stdc_acosf(x);
     }
 
+    /// Returns the arccosine of `x`.
     double acos64(double x) {
         return stdc_acos(x);
     }
 
+    /// Returns the arctangent of `x`.
     float atan(float x) {
         return stdc_atanf(x);
     }
 
+    /// Returns the arctangent of `x`.
     double atan64(double x) {
         return stdc_atan(x);
     }

@@ -52,6 +52,8 @@ enum Fault : ubyte {
     overflow,      /// An overflow error.
     range,         /// A range violation error.
     assertion,     /// An assertion error.
+    timeout,       /// A timeout error.
+    interrupted,   /// An interrupted error.
     unconfigured,  /// A missing configuration error.
     unauthorized,  /// A permission or access rights error.
     unrecognized,  /// An unknown or unsupported type error.
@@ -693,6 +695,15 @@ R[N] castToArray(R, T, Sz N)(ref T[N] from) {
     return result;
 }
 
+/// Returns an error message that can be used for array-like objects.
+@trusted nothrow @nogc
+IStr indexErrorMessage(Sz i) {
+    IStr[1] fmtStrs = [
+        "Index {} does not exist.",
+    ];
+    return fmtSignedGroup(fmtStrs, i);
+}
+
 pragma(inline, true) @safe nothrow @nogc {
     /// Returns an option from a maybe.
     Option!T toForeignMaybe(T)(Maybe!T value) {
@@ -733,15 +744,93 @@ pragma(inline, true) @safe nothrow @nogc {
     bool isNan(double x) {
         return !(x == x);
     }
-}
 
-/// Returns an error message that can be used for array-like objects.
-@trusted nothrow @nogc
-IStr indexErrorMessage(Sz i) {
-    IStr[1] fmtStrs = [
-        "Index {} does not exist.",
-    ];
-    return fmtSignedGroup(fmtStrs, i);
+    /// Returns the absolute value of `x`.
+    T abs(T)(T x) {
+        return cast(T) (x < 0 ? -x : x);
+    }
+
+    /// Returns the smaller of `a` and `b`.
+    T min(T)(T a, T b) {
+        return a < b ? a : b;
+    }
+
+    /// Returns the smallest of `a`, `b`, and `c`.
+    T min3(T)(T a, T b, T c) {
+        return min(a, b).min(c);
+    }
+
+    /// Returns the smallest of `a`, `b`, `c`, and `d`.
+    T min4(T)(T a, T b, T c, T d) {
+        return min(a, b).min(c).min(d);
+    }
+
+    /// Returns the larger of `a` and `b`.
+    T max(T)(T a, T b) {
+        return a < b ? b : a;
+    }
+
+    /// Returns the largest of `a`, `b`, and `c`.
+    T max3(T)(T a, T b, T c) {
+        return max(a, b).max(c);
+    }
+
+    /// Returns the largest of `a`, `b`, `c`, and `d`.
+    T max4(T)(T a, T b, T c, T d) {
+        return max(a, b).max(c).max(d);
+    }
+
+    /// Returns -1 if `x` is negative, 1 if positive, or 0 if zero.
+    T sign(T)(T x) {
+        return x < 0 ? -1 : x > 0 ? 1 : 0;
+    }
+
+    /// Returns `x` clamped to the range [`a`, `b`].
+    T clamp(T)(T x, T a, T b) {
+        return max(x, a).min(b);
+    }
+
+    /// Returns the floor of `x` using a basic cast-based implementation.
+    float basicFloor(float x) {
+        return (x <= 0.0f && (cast(float) cast(int) x) != x)
+            ? (cast(float) cast(int) x) - 1.0f
+            : (cast(float) cast(int) x);
+    }
+
+    /// Returns the floor of `x` using a basic cast-based implementation.
+    double basicFloor64(double x) {
+        return (x <= 0.0 && (cast(double) cast(long) x) != x)
+            ? (cast(double) cast(long) x) - 1.0
+            : (cast(double) cast(long) x);
+    }
+
+    /// Returns the nearest integer to `x` using a basic cast-based implementation.
+    float basicRound(float x) {
+        return (x <= 0.0f)
+            ? cast(float) cast(int) (x - 0.5f)
+            : cast(float) cast(int) (x + 0.5f);
+    }
+
+    /// Returns the nearest integer to `x` using a basic cast-based implementation.
+    double basicRound64(double x) {
+        return (x <= 0.0)
+            ? cast(double) cast(long) (x - 0.5)
+            : cast(double) cast(long) (x + 0.5);
+    }
+
+    /// Returns the ceiling of `x` using a basic cast-based implementation.
+    float basicCeil(float x) {
+        return (x <= 0.0f || (cast(float) cast(int) x) == x)
+            ? (cast(float) cast(int) x)
+            : (cast(float) cast(int) x) + 1.0f;
+    }
+
+    /// Returns the ceiling of `x` using a basic cast-based implementation.
+    double basicCeil64(double x) {
+        return (x <= 0.0 || (cast(double) cast(long) x) == x)
+            ? (cast(double) cast(long) x)
+            : (cast(double) cast(long) x) + 1.0;
+    }
 }
 
 /// Can be used to make a distinct type. Useful for IDs.
@@ -752,7 +841,7 @@ mixin template typed(T) {
     alias _data this;
 }
 
-/// Same as `typed` mixin.
+/// Same as `typed` mixin. This is for the Odin fans.
 alias distinct = typed;
 
 /// Returns the index of an item inside the given alias arguments or -1 on error.
