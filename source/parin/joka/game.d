@@ -613,17 +613,19 @@ struct Sprite {
     }
 }
 
+/// The kind of a story line.
 enum StoryLineKind : ubyte {
-    empty = ' ',
-    comment = '#',
-    label = '*',
-    text = '|',
-    pause = '.',
-    menu = '^',
-    expression = '$',
-    procedure = '!',
+    empty = ' ',      /// Not a line.
+    comment = '#',    /// A comment.
+    label = '*',      /// A label. Can be used to jump to a line.
+    text = '|',       /// A line that just has text.
+    pause = '.',      /// A line that ends the story.
+    menu = '^',       /// A line that can provide user input.
+    expression = '$', /// A line that can execute story expressions.
+    procedure = '!',  /// A line that can execute D functions.
 }
 
+/// An operation in the story expression language.
 enum StoryOp : ubyte {
     ADD = '+',
     SUB = '-',
@@ -676,10 +678,14 @@ enum StoryOp : ubyte {
     JUMP,
 }
 
+/// A fixed-size word in the story expression language.
 alias StoryWord = char[24];
+/// A number in the story expression language.
 alias StoryNumber = int;
+/// The underlying data of a story value.
 alias StoryValueData = Union!(StoryWord, StoryNumber);
 
+/// A value in the story expression language, either a word or a number.
 struct StoryValue {
     StoryValueData data;
 
@@ -704,16 +710,19 @@ struct StoryValue {
     }
 }
 
+/// A named variable in the story expression language.
 struct StoryVariable {
     StoryWord name;
     StoryValue value;
 }
 
+/// A start and end index pair used to identify ranges in the story.
 struct StoryStartEndPair {
     uint a;
     uint b;
 }
 
+/// A story script with its associated state for parsing and execution.
 struct Story {
     LStr script;
     List!StoryStartEndPair pairs;
