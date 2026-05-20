@@ -5,6 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
+/// Common parin types.
 module parin.types;
 
 import parin.joka.math;
