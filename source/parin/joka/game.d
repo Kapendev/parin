@@ -70,48 +70,6 @@ immutable HexPalette!16 pico8 = [
 ];
 
 /// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://github.com/morhetz/gruvbox
-immutable HexPalette!16 gruvboxDark = [
-    0x282828,
-    0x3C3836,
-    0x504945,
-    0x665C54,
-    0xBDAE93,
-    0xD5C4A1,
-    0xEBDBB2,
-    0xFBF1C7,
-    0xFB4934,
-    0xFE8019,
-    0xFABD2F,
-    0xB8BB26,
-    0x8EC07C,
-    0x83A598,
-    0xD3869B,
-    0xD65D0E,
-];
-
-/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://github.com/morhetz/gruvbox
-immutable HexPalette!16 gruvboxLight = [
-    0xFBF1C7,
-    0xEBDBB2,
-    0xD5C4A1,
-    0xBDAE93,
-    0x665C54,
-    0x504945,
-    0x3C3836,
-    0x282828,
-    0x9D0006,
-    0xAF3A03,
-    0xB57614,
-    0x79740E,
-    0x427B58,
-    0x076678,
-    0x8F3F71,
-    0xD65D0E,
-];
-
-/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
 /// Link: https://github.com/pulsar-edit/pulsar
 immutable HexPalette!16 oneDark = [
     0x282C34,
@@ -133,24 +91,24 @@ immutable HexPalette!16 oneDark = [
 ];
 
 /// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://github.com/pulsar-edit/pulsar
-immutable HexPalette!16 oneLight = [
-    0xFAFAFA,
-    0xF0F0F1,
-    0xE5E5E6,
-    0xA0A1A7,
-    0x696C77,
-    0x383A42,
-    0x202227,
-    0x090A0B,
-    0xCA1243,
-    0xD75F00,
-    0xC18401,
-    0x50A14F,
-    0x0184BC,
-    0x4078F2,
-    0xA626A4,
-    0x986801,
+/// Link: https://github.com/morhetz/gruvbox
+immutable HexPalette!16 gruvboxDark = [
+    0x282828,
+    0x3C3836,
+    0x504945,
+    0x665C54,
+    0xBDAE93,
+    0xD5C4A1,
+    0xEBDBB2,
+    0xFBF1C7,
+    0xFB4934,
+    0xFE8019,
+    0xFABD2F,
+    0xB8BB26,
+    0x8EC07C,
+    0x83A598,
+    0xD3869B,
+    0xD65D0E,
 ];
 
 /// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
@@ -174,75 +132,54 @@ immutable HexPalette!16 solarizedDark = [
     0xD33682,
 ];
 
-/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://ethanschoonover.com/solarized/
-immutable HexPalette!16 solarizedLight = [
-    0xFDF6E3,
-    0xEEE8D5,
-    0x93A1A1,
-    0x839496,
-    0x657B83,
-    0x586E75,
-    0x073642,
-    0x002B36,
-    0xDC322F,
-    0xCB4B16,
-    0xB58900,
-    0x859900,
-    0x2AA198,
-    0x268BD2,
-    0x6C71C4,
-    0xD33682,
-];
-
 /// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
 enum Wisp2 : Rgba {
-    black = toRgb(wisp2[0]), /// 0x322F29
-    white = toRgb(wisp2[1]), /// 0xDAD6D0
+    black = toRgb(wisp2[0]), /// #322F29
+    white = toRgb(wisp2[1]), /// #DAD6D0
 }
 
 /// A 4-color palette inspired by the Game Boy.
 /// Link: https://lospec.com/palette-list/2-bit-matrix
 enum Gb4 : Rgba {
-    black     = toRgb(gb4[0]), /// 0x343434
-    darkGray  = toRgb(gb4[1]), /// 0x5B8C7C
-    lightGray = toRgb(gb4[2]), /// 0xADD9BC
-    white     = toRgb(gb4[3]), /// 0xF2FFF2
+    black     = toRgb(gb4[0]), /// #343434
+    darkGray  = toRgb(gb4[1]), /// #5B8C7C
+    lightGray = toRgb(gb4[2]), /// #ADD9BC
+    white     = toRgb(gb4[3]), /// #F2FFF2
 }
 
 /// An 8-color palette inspired by the NES.
 /// Link: https://lospec.com/palette-list/mf-8
 enum Nes8 : Rgba {
-    black  = toRgb(nes8[0]), /// 0x292320
-    brown  = toRgb(nes8[1]), /// 0xA7763E
-    purple = toRgb(nes8[2]), /// 0x7F339A
-    red    = toRgb(nes8[3]), /// 0xE04113
-    green  = toRgb(nes8[4]), /// 0x32A75C
-    blue   = toRgb(nes8[5]), /// 0x1AC1FE
-    yellow = toRgb(nes8[6]), /// 0xFDD156
-    white  = toRgb(nes8[7]), /// 0xFCF8EA
+    black  = toRgb(nes8[0]), /// #292320
+    brown  = toRgb(nes8[1]), /// #A7763E
+    purple = toRgb(nes8[2]), /// #7F339A
+    red    = toRgb(nes8[3]), /// #E04113
+    green  = toRgb(nes8[4]), /// #32A75C
+    blue   = toRgb(nes8[5]), /// #1AC1FE
+    yellow = toRgb(nes8[6]), /// #FDD156
+    white  = toRgb(nes8[7]), /// #FCF8EA
 }
 
 /// A 16-color palette used by the PICO-8.
 /// Link: https://lospec.com/palette-list/pico-8
 enum Pico8 : Rgba {
-    black      = toRgb(pico8[0]),  /// 0x000000
-    navy       = toRgb(pico8[1]),  /// 0x1D2B53
-    maroon     = toRgb(pico8[2]),  /// 0x7E2553
-    darkGreen  = toRgb(pico8[3]),  /// 0x008751
-    brown      = toRgb(pico8[4]),  /// 0xAB5236
-    darkGray   = toRgb(pico8[5]),  /// 0x5F574F
-    lightGray  = toRgb(pico8[6]),  /// 0xC2C3C7
-    white      = toRgb(pico8[7]),  /// 0xFFF1E8
-    red        = toRgb(pico8[8]),  /// 0xFF004D
-    orange     = toRgb(pico8[9]),  /// 0xFFA300
-    yellow     = toRgb(pico8[10]), /// 0xFFEC27
-    lightGreen = toRgb(pico8[11]), /// 0x00E436
-    blue       = toRgb(pico8[12]), /// 0x29ADFF
-    purple     = toRgb(pico8[13]), /// 0x83769C
-    pink       = toRgb(pico8[14]), /// 0xFF77A8
-    peach      = toRgb(pico8[15]), /// 0xFFCCAA
+    black      = toRgb(pico8[0]),  /// #000000
+    navy       = toRgb(pico8[1]),  /// #1D2B53
+    maroon     = toRgb(pico8[2]),  /// #7E2553
+    darkGreen  = toRgb(pico8[3]),  /// #008751
+    brown      = toRgb(pico8[4]),  /// #AB5236
+    darkGray   = toRgb(pico8[5]),  /// #5F574F
+    lightGray  = toRgb(pico8[6]),  /// #C2C3C7
+    white      = toRgb(pico8[7]),  /// #FFF1E8
+    red        = toRgb(pico8[8]),  /// #FF004D
+    orange     = toRgb(pico8[9]),  /// #FFA300
+    yellow     = toRgb(pico8[10]), /// #FFEC27
+    lightGreen = toRgb(pico8[11]), /// #00E436
+    blue       = toRgb(pico8[12]), /// #29ADFF
+    purple     = toRgb(pico8[13]), /// #83769C
+    pink       = toRgb(pico8[14]), /// #FF77A8
+    peach      = toRgb(pico8[15]), /// #FFCCAA
 }
 
 /// Flipping orientations.

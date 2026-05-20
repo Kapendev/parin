@@ -14,182 +14,6 @@ version (WASI) {
     version = JokaMathStubs;
 }
 
-// Functions from the math.h header.
-private @trusted nothrow @nogc pragma(inline, true) {
-    version (JokaMathStubs) {
-        float stdc_asinf(float x)  => 0;
-        double stdc_asin(double x) => 0;
-        float stdc_acosf(float x)  => 0;
-        double stdc_acos(double x) => 0;
-        float stdc_atanf(float x)  => 0;
-        double stdc_atan(double x) => 0;
-        float stdc_atan2f(float y, float x)   => 0;
-        double stdc_atan2(double y, double x) => 0;
-        float stdc_tanf(float x)  => 0;
-        double stdc_tan(double x) => 0;
-
-        float stdc_remainderf(float x, float y) {
-            if (y == 0) return x;
-            auto q = x / y;
-            auto n = cast(int) (q >= 0 ? q + 0.5f : q - 0.5f);
-            return x - n * y;
-        }
-
-        double stdc_remainder(double x, double y) {
-            if (y == 0) return x;
-            auto q = x / y;
-            auto n = cast(long) (q >= 0 ? q + 0.5 : q - 0.5);
-            return x - n * y;
-        }
-
-        float stdc_fmodf(float x, float y)   => x - (cast(int) (x / y)) * y;
-        double stdc_fmod(double x, double y) => x - (cast(long) (x / y)) * y;
-    } else {
-        extern(C) pragma(mangle, "asinf") float stdc_asinf(float x);
-        extern(C) pragma(mangle, "asin") double stdc_asin(double x);
-        extern(C) pragma(mangle, "acosf") float stdc_acosf(float x);
-        extern(C) pragma(mangle, "acos") double stdc_acos(double x);
-        extern(C) pragma(mangle, "atanf") float stdc_atanf(float x);
-        extern(C) pragma(mangle, "atan") double stdc_atan(double x);
-        extern(C) pragma(mangle, "atan2f") float stdc_atan2f(float y, float x);
-        extern(C) pragma(mangle, "atan2") double stdc_atan2(double y, double x);
-        extern(C) pragma(mangle, "tanf") float stdc_tanf(float x);
-        extern(C) pragma(mangle, "tan")  double stdc_tan(double x);
-        extern(C) pragma(mangle, "remainderf") float stdc_remainderf(float x, float y);
-        extern(C) pragma(mangle, "remainder")  double stdc_remainder(double x, double y);
-        extern(C) pragma(mangle, "fmodf") float stdc_fmodf(float x, float y);
-        extern(C) pragma(mangle, "fmod")  double stdc_fmod(double x, double y);
-    }
-
-    version(JokaMathStubs) {
-        float stdc_expf(float x)  => 0;
-        double stdc_exp(double x) => 0;
-        float stdc_exp2f(float x)  => 0;
-        double stdc_exp2(double x) => 0;
-        float stdc_logf(float x)  => 0;
-        double stdc_log(double x) => 0;
-        float stdc_log10f(float x)  => 0;
-        double stdc_log10(double x) => 0;
-        float stdc_log2f(float x)  => 0;
-        double stdc_log2(double x) => 0;
-        float stdc_powf(float base, float exp)   => 0;
-        double stdc_pow(double base, double exp) => 0;
-        float stdc_sqrtf(float x)  => 0;
-        double stdc_sqrt(double x) => 0;
-
-        float stdc_sinf(float x) {
-            while (x > pi)  x -= 2.0f * pi;
-            while (x < -pi) x += 2.0f * pi;
-            auto term = x;
-            auto sinX = x;
-            auto x2 = x * x;
-            foreach (i; 1 .. 11) {
-                term *= -x2 / ((2.0f * i) * (2.0f * i + 1.0f));
-                sinX += term;
-            }
-            return sinX;
-        }
-
-        double stdc_sin(double x) {
-            while (x > pi)  x -= 2.0 * pi;
-            while (x < -pi) x += 2.0 * pi;
-            auto term = x;
-            auto sinX = x;
-            auto x2 = x * x;
-            foreach (i; 1 .. 11) {
-                term *= -x2 / ((2.0 * i) * (2.0 * i + 1.0));
-                sinX += term;
-            }
-            return sinX;
-        }
-
-        float stdc_cosf(float x) {
-            while (x > pi)  x -= 2.0f * pi;
-            while (x < -pi) x += 2.0f * pi;
-            auto term = 1.0f;
-            auto cosX = 1.0f;
-            auto x2 = x * x;
-            foreach (i; 1 .. 11) {
-                term *= -x2 / ((2.0f * i - 1.0f) * (2.0f * i));
-                cosX += term;
-            }
-            return cosX;
-        }
-
-        double stdc_cos(double x) {
-            while (x > pi)  x -= 2.0 * pi;
-            while (x < -pi) x += 2.0 * pi;
-            auto term = 1.0;
-            auto cosX = 1.0;
-            auto x2 = x * x;
-            foreach (i; 1 .. 11) {
-                term *= -x2 / ((2.0 * i - 1.0) * (2.0 * i));
-                cosX += term;
-            }
-            return cosX;
-        }
-
-        float stdc_ceilf(float x)  => basicCeil(x);
-        double stdc_ceil(double x) => basicCeil64(x);
-        float stdc_floorf(float x)  => basicFloor(x);
-        double stdc_floor(double x) => basicFloor64(x);
-        float stdc_roundf(float x)  => basicRound(x);
-        double stdc_round(double x) => basicRound64(x);
-    } else version (LDC) {
-        import ldc = ldc.intrinsics;
-
-        float stdc_expf(float x)  => ldc.llvm_exp(x);
-        double stdc_exp(double x) => ldc.llvm_exp(x);
-        float stdc_exp2f(float x)  => ldc.llvm_exp2(x);
-        double stdc_exp2(double x) => ldc.llvm_exp2(x);
-        float stdc_logf(float x)  => ldc.llvm_log(x);
-        double stdc_log(double x) => ldc.llvm_log(x);
-        float stdc_log10f(float x)  => ldc.llvm_log10(x);
-        double stdc_log10(double x) => ldc.llvm_log10(x);
-        float stdc_log2f(float x)  => ldc.llvm_log2(x);
-        double stdc_log2(double x) => ldc.llvm_log2(x);
-        float stdc_powf(float base, float exp)   => ldc.llvm_pow(base, exp);
-        double stdc_pow(double base, double exp) => ldc.llvm_pow(base, exp);
-        float stdc_sqrtf(float x)  => ldc.llvm_sqrt(x);
-        double stdc_sqrt(double x) => ldc.llvm_sqrt(x);
-        float stdc_sinf(float x)  => ldc.llvm_sin(x);
-        double stdc_sin(double x) => ldc.llvm_sin(x);
-        float stdc_cosf(float x)  => ldc.llvm_cos(x);
-        double stdc_cos(double x) => ldc.llvm_cos(x);
-        float stdc_ceilf(float x)  => ldc.llvm_ceil(x);
-        double stdc_ceil(double x) => ldc.llvm_ceil(x);
-        float stdc_floorf(float x)  => ldc.llvm_floor(x);
-        double stdc_floor(double x) => ldc.llvm_floor(x);
-        float stdc_roundf(float x)  => ldc.llvm_round(x);
-        double stdc_round(double x) => ldc.llvm_round(x);
-    } else {
-        extern(C) pragma(mangle, "expf") float stdc_expf(float x);
-        extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
-        extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
-        extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
-        extern(C) pragma(mangle, "logf") float stdc_logf(float x);
-        extern(C) pragma(mangle, "log")  double stdc_log(double x);
-        extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
-        extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
-        extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
-        extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
-        extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
-        extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
-        extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
-        extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
-        extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
-        extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
-        extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
-        extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
-        extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
-        extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
-        extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
-        extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
-        extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
-        extern(C) pragma(mangle, "round")  double stdc_round(double x);
-    }
-}
-
 @safe nothrow @nogc:
 
 enum epsilon = 0.0001;                                /// The value of epsilon.
@@ -208,89 +32,42 @@ enum dpi180  = 180.0 / pi;                            /// The value of 180 / PI.
 enum sqrt2   = 1.41421356237309504880168872420969808; /// The value of sqrt(2).
 enum dsqrt2  = 0.70710678118654752440084436210484903; /// The value of 1 / sqrt(2).
 
-enum blank   = Rgba();              /// Not a color.
-enum black   = Rgba(0);             /// Black black.
-enum white   = Rgba(255);           /// White white.
-enum red     = Rgba(255, 0, 0);     /// Red red.
-enum green   = Rgba(0, 255, 0);     /// Green green.
-enum blue    = Rgba(0, 0, 255);     /// Blue blue.
-enum yellow  = Rgba(255, 255, 0);   /// Yellow yellow.
-enum magenta = Rgba(255, 0, 255);   /// Magenta magenta.
-enum pink    = Rgba(255, 192, 204); /// Pink pink.
-enum cyan    = Rgba(0, 255, 255);   /// Cyan cyan.
-enum orange  = Rgba(255, 165, 0);   /// Orange orange.
-enum beige   = Rgba(240, 235, 210); /// Beige beige.
-enum brown   = Rgba(165, 72, 42);   /// Brown brown.
-enum maroon  = Rgba(128, 0, 0);     /// Maroon maroon.
-enum gray1   = Rgba(32, 32, 32);    /// Gray 1.
-enum gray2   = Rgba(96, 96, 96);    /// Gray 22.
-enum gray3   = Rgba(159, 159, 159); /// Gray 333.
-enum gray4   = Rgba(223, 223, 223); /// Gray 4444.
-enum gray    = gray2;               /// Gray gray.
+enum blank   = Rgba();              /// #00000000
+enum black   = Rgba(0);             /// #000000FF
+enum white   = Rgba(255);           /// #FFFFFFFF
+enum red     = Rgba(255, 0, 0);     /// #FF0000FF
+enum green   = Rgba(0, 255, 0);     /// #00FF00FF
+enum blue    = Rgba(0, 0, 255);     /// #0000FFFF
+enum yellow  = Rgba(255, 255, 0);   /// #FFFF00FF
+enum magenta = Rgba(255, 0, 255);   /// #FF00FFFF
+enum cyan    = Rgba(0, 255, 255);   /// #00FFFFFF
+enum pink    = Rgba(255, 192, 204); /// #FFC0CCFF
+enum orange  = Rgba(255, 165, 0);   /// #FFA500FF
+enum beige   = Rgba(240, 235, 210); /// #F0EBD2FF
+enum brown   = Rgba(165, 72, 42);   /// #A5482AFF
+enum maroon  = Rgba(128, 0, 0);     /// #800000FF
+enum gray1   = Rgba(32, 32, 32);    /// #202020FF
+enum gray2   = Rgba(96, 96, 96);    /// #606060FF
+enum gray3   = Rgba(159, 159, 159); /// #9F9F9FFF
+enum gray4   = Rgba(223, 223, 223); /// #DFDFDFFF
+enum gray    = gray2;               /// #606060FF
 
-/// The common color type.
-alias Color = Rgba;
+alias Color = Rgba;        /// The common color type.
+alias Vec2  = GVec2!float; /// A 2D vector using floats.
+alias Vec3  = GVec3!float; /// A 3D vector using floats.
+alias Vec4  = GVec4!float; /// A 4D vector using floats.
+alias IVec2 = GVec2!int;   /// A 2D vector using ints.
+alias IVec3 = GVec3!int;   /// A 3D vector using ints.
+alias IVec4 = GVec4!int;   /// A 4D vector using ints.
 
-// Some types are removed for compile-time reasons.
-/*
-alias BVec2 = GVec2!byte;   /// A 2D vector using bytes.
-alias UVec2 = GVec2!uint;   /// A 2D vector using uints.
-alias DVec2 = GVec2!double; /// A 2D vector using doubles.
-*/
-alias IVec2 = GVec2!int;    /// A 2D vector using ints.
-alias Vec2  = GVec2!float;  /// A 2D vector using floats.
-
-/*
-alias BVec3 = GVec3!byte;   /// A 3D vector using bytes.
-alias UVec3 = GVec3!uint;   /// A 3D vector using uints.
-alias DVec3 = GVec3!double; /// A 3D vector using doubles.
-*/
-alias IVec3 = GVec3!int;    /// A 3D vector using ints.
-alias Vec3  = GVec3!float;  /// A 3D vector using floats.
-
-/*
-alias BVec4 = GVec4!byte;   /// A 4D vector using bytes.
-alias UVec4 = GVec4!uint;   /// A 4D vector using uints.
-alias DVec4 = GVec4!double; /// A 4D vector using doubles.
-*/
-alias IVec4 = GVec4!int;    /// A 4D vector using ints.
-alias Vec4  = GVec4!float;  /// A 4D vector using floats.
-
-/*
-alias BRect = GRect!byte;         /// A 2D rectangle using bytes.
-alias URect = GRect!uint;         /// A 2D rectangle using uints.
-alias DRect = GRect!double;       /// A 2D rectangle using doubles.
-*/
-alias IRect = GRect!int;          /// A 2D rectangle using ints.
 alias Rect  = GRect!float;        /// A 2D rectangle using floats.
+alias Circ  = GCirc!float;        /// A 2D circle using floats.
+alias Line  = GLine!float;        /// A 2D line using floats.
+alias IRect = GRect!int;          /// A 2D rectangle using ints.
 alias SRect = GRect!(int, short); /// A 2D rectangle using ints for the position and shorts for the size.
 
-/*
-alias BCirc = GCirc!byte;   /// A 2D circle using bytes.
-alias ICirc = GCirc!int;    /// A 2D circle using ints.
-alias UCirc = GCirc!uint;   /// A 2D circle using uints.
-alias DCirc = GCirc!double; /// A 2D circle using doubles.
-*/
-alias Circ  = GCirc!float;  /// A 2D circle using floats.
-
-/*
-alias BLine = GLine!byte;   /// A 2D line using bytes.
-alias ILine = GLine!int;    /// A 2D line using ints.
-alias ULine = GLine!uint;   /// A 2D line using uints.
-alias DLine = GLine!double; /// A 2D line using doubles.
-*/
-alias Line  = GLine!float;  /// A 2D line using floats.
-
-/*
-alias DTween  = GTween!double; /// A tween using doubles.
-alias DTween2 = GTween!DVec2;  /// A tween using 2D vectors with doubles.
-alias DTween3 = GTween!DVec3;  /// A tween using 3D vectors with doubles.
-alias DTween4 = GTween!DVec4;  /// A tween using 4D vectors with doubles.
-alias Tween3  = GTween!Vec3;   /// A tween using 3D vectors.
-alias Tween4  = GTween!Vec4;   /// A tween using 4D vectors.
-*/
-alias Tween   = GTween!float;  /// A tween using floats.
-alias Tween2  = GTween!Vec2;   /// A tween using 2D vectors.
+alias Tween  = GTween!float; /// A tween using floats.
+alias Tween2 = GTween!Vec2;  /// A tween using 2D vectors.
 
 /// A function used for rounding.
 alias RoundingFunc = float function(float x);
@@ -2760,4 +2537,149 @@ unittest {
     v4 = 1 + v4;
     v4 += V4(1);   v4 += 1;
     assert(v4 == V4(7, 8, 9, 10) && !v4.isZero);
+}
+
+// Functions from the math.h header.
+private @trusted pragma(inline, true) {
+    version (JokaMathStubs) {
+        float stdc_asinf(float x)  => 0;
+        double stdc_asin(double x) => 0;
+        float stdc_acosf(float x)  => 0;
+        double stdc_acos(double x) => 0;
+        float stdc_atanf(float x)  => 0;
+        double stdc_atan(double x) => 0;
+        float stdc_atan2f(float y, float x) => 0;
+        double stdc_atan2(double y, double x) => 0;
+        float stdc_tanf(float x)  => 0;
+        double stdc_tan(double x) => 0;
+        float stdc_expf(float x)  => 0;
+        double stdc_exp(double x) => 0;
+        float stdc_exp2f(float x)  => 0;
+        double stdc_exp2(double x) => 0;
+        float stdc_logf(float x)  => 0;
+        double stdc_log(double x) => 0;
+        float stdc_log10f(float x)  => 0;
+        double stdc_log10(double x) => 0;
+        float stdc_log2f(float x)  => 0;
+        double stdc_log2(double x) => 0;
+        float stdc_powf(float base, float exp) => 0;
+        double stdc_pow(double base, double exp) => 0;
+        float stdc_sqrtf(float x)  => 0;
+        double stdc_sqrt(double x) => 0;
+
+        float stdc_remainderf(float x, float y) {
+            if (y == 0) return x;
+            auto q = x / y;
+            auto n = cast(int) (q >= 0 ? q + 0.5f : q - 0.5f);
+            return x - n * y;
+        }
+
+        double stdc_remainder(double x, double y) {
+            if (y == 0) return x;
+            auto q = x / y;
+            auto n = cast(long) (q >= 0 ? q + 0.5 : q - 0.5);
+            return x - n * y;
+        }
+
+        float stdc_fmodf(float x, float y)   => x - (cast(int) (x / y)) * y;
+        double stdc_fmod(double x, double y) => x - (cast(long) (x / y)) * y;
+
+        float stdc_sinf(float x) {
+            while (x > pi)  x -= 2.0f * pi;
+            while (x < -pi) x += 2.0f * pi;
+            auto term = x;
+            auto sinX = x;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0f * i) * (2.0f * i + 1.0f));
+                sinX += term;
+            }
+            return sinX;
+        }
+
+        double stdc_sin(double x) {
+            while (x > pi)  x -= 2.0 * pi;
+            while (x < -pi) x += 2.0 * pi;
+            auto term = x;
+            auto sinX = x;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0 * i) * (2.0 * i + 1.0));
+                sinX += term;
+            }
+            return sinX;
+        }
+
+        float stdc_cosf(float x) {
+            while (x > pi)  x -= 2.0f * pi;
+            while (x < -pi) x += 2.0f * pi;
+            auto term = 1.0f;
+            auto cosX = 1.0f;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0f * i - 1.0f) * (2.0f * i));
+                cosX += term;
+            }
+            return cosX;
+        }
+
+        double stdc_cos(double x) {
+            while (x > pi)  x -= 2.0 * pi;
+            while (x < -pi) x += 2.0 * pi;
+            auto term = 1.0;
+            auto cosX = 1.0;
+            auto x2 = x * x;
+            foreach (i; 1 .. 11) {
+                term *= -x2 / ((2.0 * i - 1.0) * (2.0 * i));
+                cosX += term;
+            }
+            return cosX;
+        }
+
+        float stdc_ceilf(float x)  => basicCeil(x);
+        double stdc_ceil(double x) => basicCeil64(x);
+        float stdc_floorf(float x) => basicFloor(x);
+        double stdc_floor(double x) => basicFloor64(x);
+        float stdc_roundf(float x)  => basicRound(x);
+        double stdc_round(double x) => basicRound64(x);
+    } else {
+        extern(C) pragma(mangle, "asinf") float stdc_asinf(float x);
+        extern(C) pragma(mangle, "asin") double stdc_asin(double x);
+        extern(C) pragma(mangle, "acosf") float stdc_acosf(float x);
+        extern(C) pragma(mangle, "acos") double stdc_acos(double x);
+        extern(C) pragma(mangle, "atanf") float stdc_atanf(float x);
+        extern(C) pragma(mangle, "atan") double stdc_atan(double x);
+        extern(C) pragma(mangle, "atan2f") float stdc_atan2f(float y, float x);
+        extern(C) pragma(mangle, "atan2") double stdc_atan2(double y, double x);
+        extern(C) pragma(mangle, "tanf") float stdc_tanf(float x);
+        extern(C) pragma(mangle, "tan")  double stdc_tan(double x);
+        extern(C) pragma(mangle, "remainderf") float stdc_remainderf(float x, float y);
+        extern(C) pragma(mangle, "remainder")  double stdc_remainder(double x, double y);
+        extern(C) pragma(mangle, "fmodf") float stdc_fmodf(float x, float y);
+        extern(C) pragma(mangle, "fmod")  double stdc_fmod(double x, double y);
+        extern(C) pragma(mangle, "expf") float stdc_expf(float x);
+        extern(C) pragma(mangle, "exp")  double stdc_exp(double x);
+        extern(C) pragma(mangle, "exp2f") float stdc_exp2f(float x);
+        extern(C) pragma(mangle, "exp2")  double stdc_exp2(double x);
+        extern(C) pragma(mangle, "logf") float stdc_logf(float x);
+        extern(C) pragma(mangle, "log")  double stdc_log(double x);
+        extern(C) pragma(mangle, "log10f") float stdc_log10f(float x);
+        extern(C) pragma(mangle, "log10")  double stdc_log10(double x);
+        extern(C) pragma(mangle, "log2f") float stdc_log2f(float x);
+        extern(C) pragma(mangle, "log2")  double stdc_log2(double x);
+        extern(C) pragma(mangle, "powf") float stdc_powf(float base, float exp);
+        extern(C) pragma(mangle, "pow")  double stdc_pow(double base, double exp);
+        extern(C) pragma(mangle, "sqrtf") float stdc_sqrtf(float x);
+        extern(C) pragma(mangle, "sqrt")  double stdc_sqrt(double x);
+        extern(C) pragma(mangle, "sinf") float stdc_sinf(float x);
+        extern(C) pragma(mangle, "sin")  double stdc_sin(double x);
+        extern(C) pragma(mangle, "cosf") float stdc_cosf(float x);
+        extern(C) pragma(mangle, "cos")  double stdc_cos(double x);
+        extern(C) pragma(mangle, "ceilf") float stdc_ceilf(float x);
+        extern(C) pragma(mangle, "ceil")  double stdc_ceil(double x);
+        extern(C) pragma(mangle, "floorf") float stdc_floorf(float x);
+        extern(C) pragma(mangle, "floor")  double stdc_floor(double x);
+        extern(C) pragma(mangle, "roundf") float stdc_roundf(float x);
+        extern(C) pragma(mangle, "round")  double stdc_round(double x);
+    }
 }

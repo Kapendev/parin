@@ -156,12 +156,7 @@ struct Matrix {
 alias Color = joka.Rgba;
 
 /// Rectangle, 4 components
-struct Rectangle {
-    float x = 0.0f;      /// Rectangle top-left corner position x
-    float y = 0.0f;      /// Rectangle top-left corner position y
-    float width = 0.0f;  /// Rectangle width
-    float height = 0.0f; /// Rectangle height
-}
+alias Rectangle = joka.Rect;
 
 /// Image, pixel data stored in CPU memory (RAM)
 struct Image {

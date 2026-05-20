@@ -272,10 +272,8 @@ Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
     newResource.texture = oldResource.data;
     newResource.recs = cast(rl.Rectangle*) rl.MemAlloc(cast(uint) (maxCount * rl.Rectangle.sizeof));
     foreach (i; 0 .. maxCount) {
-        newResource.recs[i].x = (i % colCount) * tileWidth;
-        newResource.recs[i].y = (i / colCount) * tileHeight;
-        newResource.recs[i].width = tileWidth;
-        newResource.recs[i].height = tileHeight;
+        newResource.recs[i].position = Vec2((i % colCount) * tileWidth, (i / colCount) * tileHeight);
+        newResource.recs[i].size = Vec2(tileWidth, tileHeight);
     }
     newResource.glyphs = cast(rl.GlyphInfo*) rl.MemAlloc(cast(uint) (maxCount * rl.GlyphInfo.sizeof));
     // NOTE: From SP to how many thing can fit in the texture and `SP + maxCount` is the last character.
@@ -499,7 +497,7 @@ GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
     result.value = info.value;
     result.offset = IVec2(info.offsetX, info.offsetY);
     result.advanceX = info.advanceX;
-    result.rect = IRect(cast(int) rect.x, cast(int) rect.y, cast(int) rect.width, cast(int) rect.height);
+    result.rect = IRect(cast(int) rect.x, cast(int) rect.y, cast(int) rect.w, cast(int) rect.h);
     return result;
 }
 
@@ -1018,13 +1016,11 @@ float randf() {
 }
 
 Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
-    auto vec = rl.GetWorldToScreen2D(toRl(point), toRl(camera, canvasSize, Rounding.none));
-    return Vec2(vec.x, vec.y);
+    return rl.GetWorldToScreen2D(point, toRl(camera, canvasSize, Rounding.none));
 }
 
 Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
-    auto vec = rl.GetScreenToWorld2D(toRl(point), toRl(camera, canvasSize, Rounding.none));
-    return Vec2(vec.x, vec.y);
+    return rl.GetScreenToWorld2D(point, toRl(camera, canvasSize, Rounding.none));
 }
 
 ulong elapsedTicks() {
@@ -1089,7 +1085,7 @@ void pumpEvents() {
 }
 
 bool isDown(char key) {
-    return rl.IsKeyDown(key.toRl());
+    return rl.IsKeyDown(key.toRlKey());
 }
 
 bool isDown(Keyboard key) {
@@ -1105,7 +1101,7 @@ bool isDown(Gamepad key, int id = 0) {
 }
 
 bool isPressed(char key) {
-    return rl.IsKeyPressed(key.toRl());
+    return rl.IsKeyPressed(key.toRlKey());
 }
 
 bool isPressed(Keyboard key) {
@@ -1121,7 +1117,7 @@ bool isPressed(Gamepad key, int id = 0) {
 }
 
 bool isReleased(char key) {
-    return rl.IsKeyReleased(key.toRl());
+    return rl.IsKeyReleased(key.toRlKey());
 }
 
 bool isReleased(Keyboard key) {
@@ -1331,7 +1327,7 @@ void endClip() {
 }
 
 void clearBackground(Rgba color) {
-    rl.ClearBackground(toRl(color));
+    rl.ClearBackground(color);
 }
 
 void pushMatrix() {
@@ -1356,9 +1352,9 @@ void popMatrix() {
 
 void drawRect(Rect area, Rgba color, float thickness) {
     if (thickness < 0) {
-        rl.DrawRectanglePro(toRl(area), rl.Vector2(0.0f, 0.0f), 0.0f, color);
+        rl.DrawRectanglePro(area, Vec2(), 0.0f, color);
     } else {
-        rl.DrawRectangleLinesEx(toRl(area), thickness, color);
+        rl.DrawRectangleLinesEx(area, thickness, color);
     }
 }
 
@@ -1371,7 +1367,7 @@ void drawCirc(Circ area, Rgba color, float thickness) {
 }
 
 void drawLine(Line area, Rgba color, float thickness) {
-    rl.DrawLineEx(toRl(area.a), toRl(area.b), thickness, toRl(color));
+    rl.DrawLineEx(area.a, area.b, thickness, color);
 }
 
 void drawSurface(ref Surface surface, Rect area, Rect target, Vec2 origin, float rotation, Rgba color) {
@@ -1420,8 +1416,8 @@ void drawSurface(ref Surface surface, Rect area, Rect target, Vec2 origin, float
     sourceArea.y += _backendState.surfaceCursor.y;
     rl.DrawTexturePro(
         surfaceTextureBuffer.data,
-        toRl(sourceArea),
-        toRl(target),
+        sourceArea,
+        target,
         origin,
         rotation,
         color,
@@ -1438,8 +1434,8 @@ void drawTexture(ResourceId id, Rect area, Rect target, Vec2 origin, float rotat
     auto resource = &_backendState.textures[id];
     rl.DrawTexturePro(
         resource.data,
-        toRl(area),
-        toRl(target),
+        area,
+        target,
         origin,
         rotation,
         color,
@@ -1450,8 +1446,8 @@ void drawViewport(ResourceId id, Rect area, Rect target, Vec2 origin, float rota
     auto resource = &_backendState.viewports[id];
     rl.DrawTexturePro(
         resource.data.texture,
-        toRl(area),
-        toRl(target),
+        area,
+        target,
         origin,
         rotation,
         color,
@@ -1460,34 +1456,14 @@ void drawViewport(ResourceId id, Rect area, Rect target, Vec2 origin, float rota
 
 void drawRune(ResourceId id, int rune, Vec2 position, Rgba color) {
     auto resource = &_backendState.fonts[id];
-    rl.DrawTextCodepoint(resource.data, rune, toRl(position), resource.data.baseSize, toRl(color));
+    rl.DrawTextCodepoint(resource.data, rune, position, resource.data.baseSize, color);
 }
 
 pragma(inline, true) {
-    rl.Color toRl(Rgba from) {
-        return rl.Color(from.r, from.g, from.b, from.a);
-    }
-
-    rl.Vector2 toRl(Vec2 from) {
-        return rl.Vector2(from.x, from.y);
-    }
-
-    rl.Vector3 toRl(Vec3 from) {
-        return rl.Vector3(from.x, from.y, from.z);
-    }
-
-    rl.Vector4 toRl(Vec4 from) {
-        return rl.Vector4(from.x, from.y, from.z, from.w);
-    }
-
-    rl.Rectangle toRl(Rect from) {
-        return rl.Rectangle(from.position.x, from.position.y, from.size.x, from.size.y);
-    }
-
     rl.Camera2D toRl(Camera from, Vec2 canvasSize, Rounding type) {
         return rl.Camera2D(
-            Rect(canvasSize).origin(from.isCentered ? Hook.center : Hook.topLeft).applyRounding(type).toRl(),
-            from.sum.applyRounding(type).toRl(),
+            Rect(canvasSize).origin(from.isCentered ? Hook.center : Hook.topLeft).applyRounding(type),
+            from.sum.applyRounding(type),
             from.rotation,
             from.scale,
         );
@@ -1517,7 +1493,7 @@ pragma(inline, true) {
         }
     }
 
-    RlKey toRl(char from) {
+    RlKey toRlKey(char from) {
         return toUpper(from);
     }
 
