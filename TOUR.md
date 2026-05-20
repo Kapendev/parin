@@ -361,7 +361,7 @@ struct TextOptions {
     ```d
     bool update(float dt) {
         auto options = DrawOptions(Hook.center);
-        options.scale = Vec2(4 + sin(elapsedTime * 4));
+        options.scale = Vec2(4 + sin(tickTime * 4));
         drawText("Text", resolution * Vec2(0.5), options);
         return false;
     }
@@ -372,7 +372,7 @@ struct TextOptions {
     ```d
     bool update(float dt) {
         auto options = DrawOptions(Hook.center);
-        auto extra = TextOptions(fmod(elapsedTime, 2.0));
+        auto extra = TextOptions(fmod(tickTime, 2.0));
         drawText("Hello.\nThis is some text.", resolution * Vec2(0.5), options, extra);
         return false;
     }

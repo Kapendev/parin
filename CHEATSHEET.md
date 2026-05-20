@@ -101,6 +101,8 @@ bool vsync();
 void setVsync(bool value);
 /// Returns the total elapsed time since the application started.
 double elapsedTime();
+/// Returns the elapsed time at the start of the current tick.
+double tickTime();
 /// Returns the total number of ticks since the application started.
 ulong elapsedTicks();
 /// Returns the time elapsed since the last frame.

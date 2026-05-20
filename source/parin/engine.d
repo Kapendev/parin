@@ -127,6 +127,7 @@ struct EngineState {
     Vec2 wasdBuffer;
     Vec2 wasdPressedBuffer;
     Vec2 wasdReleasedBuffer;
+    double tickTimeBuffer = 0.0;
 
     bool clipIsActive;
     Rgba windowBorderColor = black;
@@ -765,19 +766,19 @@ struct Timer {
     /// Returns true if the timer has just started.
     bool hasStarted() {
         time(); // We need to update the state before checking.
-        return startTime.fequals(elapsedTime);
+        return startTime.fequals(tickTime);
     }
 
     /// Returns true if the timer has just stopped.
     bool hasStopped() {
         time(); // We need to update the state before checking.
-        return stopTimeElapsedTimeBuffer.fequals(elapsedTime);
+        return stopTimeElapsedTimeBuffer.fequals(tickTime);
     }
 
     /// Starts the timer with new duration and repeat behavior.
     void start(float newDuration, bool newCanRepeat) {
         if (newDuration >= 0.0f) duration = newDuration;
-        startTime = elapsedTime;
+        startTime = tickTime;
         stopTimeElapsedTimeBuffer = 0.0f;
         pauseTime = 0.0f;
         canRepeat = newCanRepeat;
@@ -791,7 +792,7 @@ struct Timer {
     /// Stops the timer and records the time at which it stopped.
     void stop() {
         startTime = 0.0f;
-        stopTimeElapsedTimeBuffer = elapsedTime;
+        stopTimeElapsedTimeBuffer = tickTime;
         pauseTime = 0.0f;
     }
 
@@ -810,7 +811,7 @@ struct Timer {
     /// Resumes the timer from the paused state.
     void resume() {
         if (!isActive || pauseTime == 0.0f) return;
-        startTime = elapsedTime - pauseTime;
+        startTime = tickTime - pauseTime;
         pauseTime = 0.0f;
     }
 
@@ -824,10 +825,10 @@ struct Timer {
     float time() {
         if (startTime == 0.0f) return 0.0f;
         if (pauseTime != 0.0f) return pauseTime;
-        auto result = max(elapsedTime - startTime, 0.0f);
+        auto result = max(tickTime - startTime, 0.0f);
         if (result >= duration) {
             stop();
-            if (canRepeat) startTime = elapsedTime;
+            if (canRepeat) startTime = tickTime;
         }
         result = min(result, duration);
         return result;
@@ -846,7 +847,7 @@ struct Timer {
     /// Sets the current time of the timer.
     /// If the given value is non-zero, the timer becomes active.
     void setTime(float newTime) {
-        startTime = max(elapsedTime - newTime, 0.0f);
+        startTime = max(tickTime - newTime, 0.0f);
         if (isPaused) {
             pauseTime = 0.0f;
             pauseTime = time;
@@ -914,6 +915,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             foreach (id; _engineState.tasks.ids) {
                 if (_engineState.tasks[id].update(deltaTime)) cancelTask(id);
             }
+            _engineState.tickTimeBuffer = elapsedTime;
             result = _engineState.updateFunc(deltaTime);
             if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
             if (isDebugMode || isExitingDebugMode || _engineState.debugModePreviousState) {
@@ -1777,6 +1779,11 @@ void setVsync(bool value) {
 /// Returns the total elapsed time since the application started.
 double elapsedTime() {
     return bk.elapsedTime;
+}
+
+/// Returns the elapsed time at the start of the current tick.
+double tickTime() {
+    return _engineState.tickTimeBuffer;
 }
 
 /// Returns the total number of ticks since the application started.
