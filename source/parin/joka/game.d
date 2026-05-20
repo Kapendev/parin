@@ -66,12 +66,14 @@ enum Pico8 : Rgba {
     peach      = toRgb(pico8[15]), /// 0xFFCCAA
 }
 
+/// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
 immutable HexPalette!2 wisp2 = [
     0x322F29,
     0xDAD6D0,
 ];
 
+/// A 4-color palette inspired by the Game Boy.
 /// Link: https://lospec.com/palette-list/2-bit-matrix
 immutable HexPalette!4 gb4 = [
     0x343434,
@@ -80,6 +82,7 @@ immutable HexPalette!4 gb4 = [
     0xF2FFF2,
 ];
 
+/// An 8-color palette inspired by the NES.
 /// Link: https://lospec.com/palette-list/mf-8
 immutable HexPalette!8 nes8 = [
     0x292320,
@@ -92,6 +95,7 @@ immutable HexPalette!8 nes8 = [
     0xFCF8EA,
 ];
 
+/// A 16-color palette used by the PICO-8.
 /// Link: https://lospec.com/palette-list/pico-8
 immutable HexPalette!16 pico8 = [
     0x000000,
