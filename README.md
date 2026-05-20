@@ -115,6 +115,14 @@ Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) f
 For more details, see the [tour page](TOUR.md).
 The [`parin.types`](source/parin/types.d) and [`parin.engine`](source/parin/engine.d) modules are easy to read and show what's available.
 
+[DDOX](https://github.com/dlang/ddox) can also be used to create an overview with:
+
+```sh
+git clone --depth=1 https://github.com/Kapendev/parin parin_package
+cd parin_package
+dub run -b ddox
+```
+
 ## Ideas
 
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
