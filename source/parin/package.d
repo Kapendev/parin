@@ -12,7 +12,6 @@ public import parin.joka.io;
 public import parin.engine;
 public import parin.map;
 public import parin.platformer;
-public import parin.story;
 public import parin.timer;
 public import parin.types;
 public import parin.ui;

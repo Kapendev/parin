@@ -20,8 +20,6 @@ version (WASI) {
     import stdc = parin.joka.stdc;
 }
 
-@trusted:
-
 enum StdStream : ubyte {
     input,
     output,
@@ -30,6 +28,7 @@ enum StdStream : ubyte {
 
 /// Prints formatted text to stdout.
 /// For details on formatting, see the `fmtIntoBuffer` function.
+@trusted
 void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
@@ -67,6 +66,7 @@ void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader heade
 
 /// Prints formatted text with a new line at the end to stdout.
 /// For details on formatting, see the `fmtIntoBuffer` function.
+@trusted
 void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     static assert(stream != StdStream.input, "Can't print to standard input.");
 
@@ -123,35 +123,35 @@ void println(StdStream stream = StdStream.output, A...)(A args) {
 
 /// Prints formatted text to stderr.
 /// For details on formatting, see the `fmtIntoBuffer` function.
-void eprintf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
+void eprintf(A...)(IStr fmtStr, A args) {
     printf!(StdStream.error)(fmtStr, args);
 }
 
 /// Prints formatted text to stderr.
 /// For details on formatting, see the `fmtIntoBuffer` function.
-void eprintf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+void eprintf(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     printf!(StdStream.error)(header, args, footer);
 }
 
 /// Prints formatted text with a new line at the end to stderr.
 /// For details on formatting, see the `fmtIntoBuffer` function.
-void eprintfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
+void eprintfln(A...)(IStr fmtStr, A args) {
     printfln!(StdStream.error)(fmtStr, args);
 }
 
 /// Prints formatted text with a new line at the end to stderr.
 /// For details on formatting, see the `fmtIntoBuffer` function.
-void eprintfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
+void eprintfln(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     printfln!(StdStream.error)(header, args, footer);
 }
 
 /// Prints text to stderr.
-void eprint(StdStream stream = StdStream.output, A...)(A args) {
+void eprint(A...)(A args) {
     print!(StdStream.error)(args);
 }
 
 /// Prints text with a new line at the end to stderr.
-void eprintln(StdStream stream = StdStream.output, A...)(A args) {
+void eprintln(A...)(A args) {
     println!(StdStream.error)(args);
 }
 
@@ -162,7 +162,11 @@ void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
     printf("\n");
 }
 
-@safe nothrow:
+/// A basic print function that can be used with types that have an `EchonFunc` field.
+@safe nothrow @nogc
+void echon(IStr[] text...) {
+    foreach (part; text) print(part);
+}
 
 /// Reads an file in one go and store the data inside a buffer.
 @trusted
@@ -214,6 +218,7 @@ Fault readBytesIntoBuffer(L = LStr)(IStr path, ref L listBuffer) {
 }
 
 /// Reads an file in one go and store the data inside a new list. The list must be freed.
+@safe nothrow
 Maybe!LStr readFile(IStr path, bool binaryMode) {
     LStr value;
     auto fault = readFileIntoBuffer(path, value, binaryMode);
@@ -222,17 +227,19 @@ Maybe!LStr readFile(IStr path, bool binaryMode) {
 }
 
 /// Reads an file in one go and store the data inside a new list. The list must be freed.
+@safe nothrow
 Maybe!LStr readText(IStr path) {
     return readFile(path, false);
 }
 
 /// Reads an file in one go and store the data inside a new list. The list must be freed.
+@safe nothrow
 Maybe!LStr readBytes(IStr path) {
     return readFile(path, true);
 }
 
 /// Writes a file.
-@trusted @nogc
+@trusted nothrow @nogc
 Fault writeFile(IStr path, IStr text, bool binaryMode) {
     version (WASI) {
         return Fault.some;
@@ -251,13 +258,13 @@ Fault writeFile(IStr path, IStr text, bool binaryMode) {
 }
 
 /// Writes a file.
-@nogc
+@safe nothrow @nogc
 Fault writeText(IStr path, IStr text) {
     return writeFile(path, text, false);
 }
 
 /// Writes a file.
-@nogc
+@safe nothrow @nogc
 Fault writeBytes(IStr path, IStr bytes) {
     return writeFile(path, bytes, true);
 }

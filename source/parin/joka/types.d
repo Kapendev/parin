@@ -43,6 +43,11 @@ enum terabyte = 1024 * gigabyte; /// The size of one terabyte in bytes.
 enum petabyte = 1024 * terabyte; /// The size of one petabyte in bytes.
 enum exabyte  = 1024 * petabyte; /// The size of one exabyte in bytes.
 
+@safe nothrow @nogc {
+    /// Callback that can be used for basic printing.
+    alias EchonFunc = void function(IStr[] text...);
+}
+
 /// A type representing error values.
 enum Fault : ubyte {
     none,          /// Not an error.

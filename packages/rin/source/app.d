@@ -1,7 +1,7 @@
 /// A Parin script interpreter.
 
 import parin.joka;
-import parin.story;
+import parin.joka.game;
 
 RinState rinState;
 
@@ -19,6 +19,10 @@ struct RinState {
     IStr scriptPath;
     Story story;
     bool executeMode;
+
+    IStr toStr(IStr f = __FILE__, Sz l = __LINE__) {
+        return fmt("{}, {}", f, l);
+    }
 }
 
 IStr prepareErrorMsg(Fault fault) {
@@ -64,6 +68,7 @@ int rinMain(string[] args) {
         println(helpMsg);
         return 0;
     }
+    rinState.story.echonFunc = &echon;
     auto executeIndex = 0LU;
     foreach (i, arg; args) {
         switch (arg) {

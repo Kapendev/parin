@@ -8,63 +8,16 @@
 /// The `game` module provides game related types and functions.
 module parin.joka.game;
 
-import parin.joka.types;
+import parin.joka.memory;
 import parin.joka.math;
+import parin.joka.types;
 
 @safe nothrow @nogc:
 
+enum defaultStoryFixedListCapacity = 16;
+
 alias Palette(Sz N)    = StaticArray!(Rgba, N); /// A generic color palette of RGBA colors.
 alias HexPalette(Sz N) = uint[N];               /// A generic color palette of hexadecimal numbers.
-
-/// A 2-color palette inspired by the Playdate.
-/// Link: https://kapendev.itch.io/will-of-the-hair-wisp
-enum Wisp2 : Rgba {
-    black = toRgb(wisp2[0]), /// 0x322F29
-    white = toRgb(wisp2[1]), /// 0xDAD6D0
-}
-
-/// A 4-color palette inspired by the Game Boy.
-/// Link: https://lospec.com/palette-list/2-bit-matrix
-enum Gb4 : Rgba {
-    black     = toRgb(gb4[0]), /// 0x343434
-    darkGray  = toRgb(gb4[1]), /// 0x5B8C7C
-    lightGray = toRgb(gb4[2]), /// 0xADD9BC
-    white     = toRgb(gb4[3]), /// 0xF2FFF2
-}
-
-/// An 8-color palette inspired by the NES.
-/// Link: https://lospec.com/palette-list/mf-8
-enum Nes8 : Rgba {
-    black  = toRgb(nes8[0]), /// 0x292320
-    brown  = toRgb(nes8[1]), /// 0xA7763E
-    purple = toRgb(nes8[2]), /// 0x7F339A
-    red    = toRgb(nes8[3]), /// 0xE04113
-    green  = toRgb(nes8[4]), /// 0x32A75C
-    blue   = toRgb(nes8[5]), /// 0x1AC1FE
-    yellow = toRgb(nes8[6]), /// 0xFDD156
-    white  = toRgb(nes8[7]), /// 0xFCF8EA
-}
-
-/// A 16-color palette used by the PICO-8.
-/// Link: https://lospec.com/palette-list/pico-8
-enum Pico8 : Rgba {
-    black      = toRgb(pico8[0]),  /// 0x000000
-    navy       = toRgb(pico8[1]),  /// 0x1D2B53
-    maroon     = toRgb(pico8[2]),  /// 0x7E2553
-    darkGreen  = toRgb(pico8[3]),  /// 0x008751
-    brown      = toRgb(pico8[4]),  /// 0xAB5236
-    darkGray   = toRgb(pico8[5]),  /// 0x5F574F
-    lightGray  = toRgb(pico8[6]),  /// 0xC2C3C7
-    white      = toRgb(pico8[7]),  /// 0xFFF1E8
-    red        = toRgb(pico8[8]),  /// 0xFF004D
-    orange     = toRgb(pico8[9]),  /// 0xFFA300
-    yellow     = toRgb(pico8[10]), /// 0xFFEC27
-    lightGreen = toRgb(pico8[11]), /// 0x00E436
-    blue       = toRgb(pico8[12]), /// 0x29ADFF
-    purple     = toRgb(pico8[13]), /// 0x83769C
-    pink       = toRgb(pico8[14]), /// 0xFF77A8
-    peach      = toRgb(pico8[15]), /// 0xFFCCAA
-}
 
 /// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
@@ -241,6 +194,56 @@ immutable HexPalette!16 solarizedLight = [
     0x6C71C4,
     0xD33682,
 ];
+
+/// A 2-color palette inspired by the Playdate.
+/// Link: https://kapendev.itch.io/will-of-the-hair-wisp
+enum Wisp2 : Rgba {
+    black = toRgb(wisp2[0]), /// 0x322F29
+    white = toRgb(wisp2[1]), /// 0xDAD6D0
+}
+
+/// A 4-color palette inspired by the Game Boy.
+/// Link: https://lospec.com/palette-list/2-bit-matrix
+enum Gb4 : Rgba {
+    black     = toRgb(gb4[0]), /// 0x343434
+    darkGray  = toRgb(gb4[1]), /// 0x5B8C7C
+    lightGray = toRgb(gb4[2]), /// 0xADD9BC
+    white     = toRgb(gb4[3]), /// 0xF2FFF2
+}
+
+/// An 8-color palette inspired by the NES.
+/// Link: https://lospec.com/palette-list/mf-8
+enum Nes8 : Rgba {
+    black  = toRgb(nes8[0]), /// 0x292320
+    brown  = toRgb(nes8[1]), /// 0xA7763E
+    purple = toRgb(nes8[2]), /// 0x7F339A
+    red    = toRgb(nes8[3]), /// 0xE04113
+    green  = toRgb(nes8[4]), /// 0x32A75C
+    blue   = toRgb(nes8[5]), /// 0x1AC1FE
+    yellow = toRgb(nes8[6]), /// 0xFDD156
+    white  = toRgb(nes8[7]), /// 0xFCF8EA
+}
+
+/// A 16-color palette used by the PICO-8.
+/// Link: https://lospec.com/palette-list/pico-8
+enum Pico8 : Rgba {
+    black      = toRgb(pico8[0]),  /// 0x000000
+    navy       = toRgb(pico8[1]),  /// 0x1D2B53
+    maroon     = toRgb(pico8[2]),  /// 0x7E2553
+    darkGreen  = toRgb(pico8[3]),  /// 0x008751
+    brown      = toRgb(pico8[4]),  /// 0xAB5236
+    darkGray   = toRgb(pico8[5]),  /// 0x5F574F
+    lightGray  = toRgb(pico8[6]),  /// 0xC2C3C7
+    white      = toRgb(pico8[7]),  /// 0xFFF1E8
+    red        = toRgb(pico8[8]),  /// 0xFF004D
+    orange     = toRgb(pico8[9]),  /// 0xFFA300
+    yellow     = toRgb(pico8[10]), /// 0xFFEC27
+    lightGreen = toRgb(pico8[11]), /// 0x00E436
+    blue       = toRgb(pico8[12]), /// 0x29ADFF
+    purple     = toRgb(pico8[13]), /// 0x83769C
+    pink       = toRgb(pico8[14]), /// 0xFF77A8
+    peach      = toRgb(pico8[15]), /// 0xFFCCAA
+}
 
 /// Flipping orientations.
 enum Flip : ubyte {
@@ -610,6 +613,797 @@ struct Sprite {
     }
 }
 
+enum StoryLineKind : ubyte {
+    empty = ' ',
+    comment = '#',
+    label = '*',
+    text = '|',
+    pause = '.',
+    menu = '^',
+    expression = '$',
+    procedure = '!',
+}
+
+enum StoryOp : ubyte {
+    ADD = '+',
+    SUB = '-',
+    MUL = '*',
+    DIV = '/',
+    MOD = '%',
+    AND = '&',
+    OR = '|',
+    LESS = '<',
+    GREATER = '>',
+    EQUAL = '=',
+    NOT = '!',
+    POP = '~',
+    CLEAR,
+    SWAP,
+    COPY,
+    COPYN,
+    RANGE,
+    IF,
+    ELSE,
+    THEN,
+    CAT,
+    SAME,
+    WORD,
+    NUMBER,
+    LINE,
+    DEBUG,
+    LINEAR,
+    ASSERT,
+    END,
+    ECHO,
+    ECHON,
+    LEAK,
+    LEAKN,
+    HERE,
+    GET,
+    GETN,
+    SET,
+    INIT,
+    DROP,
+    DROPN,
+    INC,
+    DEC,
+    INCN,
+    DECN,
+    TOG,
+    MENU,
+    LOOP,
+    SKIP,
+    JUMP,
+}
+
+alias StoryWord = char[24];
+alias StoryNumber = int;
+alias StoryValueData = Union!(StoryWord, StoryNumber);
+
+struct StoryValue {
+    StoryValueData data;
+
+    alias data this;
+
+    @safe nothrow @nogc:
+
+    static foreach (Type; StoryValueData.Types) {
+        this(Type value) {
+            data = value;
+        }
+    }
+
+    @trusted
+    IStr toStr() {
+        if (data.isType!StoryNumber) {
+            return fmt("{}", data.as!StoryNumber());
+        } else {
+            auto temp = data.as!(StoryWord)()[];
+            return fmt("{}", temp[0 .. temp.findStart(char.init)]);
+        }
+    }
+}
+
+struct StoryVariable {
+    StoryWord name;
+    StoryValue value;
+}
+
+struct StoryStartEndPair {
+    uint a;
+    uint b;
+}
+
+struct Story {
+    LStr script;
+    List!StoryStartEndPair pairs;
+    List!StoryVariable labels;
+    List!StoryVariable variables;
+    StoryNumber lineIndex;
+    StoryNumber nextLabelIndex;
+    StoryNumber previousMenuResult;
+    StoryNumber faultPrepareIndex;
+    StoryOp faultOp;
+    Sz faultTokenPosition;
+    bool debugMode;
+    bool linearMode;
+    EchonFunc echonFunc;
+
+    @safe nothrow:
+
+    @trusted
+    Fault prepare(IStr file = __FILE__, Sz line = __LINE__) {
+        previousMenuResult = 0;
+        resetLineIndex();
+        pairs.clear();
+        labels.clear();
+        if (script.isEmpty) return Fault.none;
+        auto startIndex = StoryNumber.init;
+        auto prepareIndex = StoryNumber.init;
+        foreach (i, c; script) {
+            if (c == '\n') {
+                auto pair = StoryStartEndPair(cast(uint) startIndex, cast(uint) i);
+                auto scriptLine = script[pair.a .. pair.b + 1];
+                pair.a += scriptLine.length - scriptLine.trimStart().length;
+                if (pair.a > pair.b) {
+                    pair.a = pair.b;
+                    scriptLine = script[pair.a .. pair.b];
+                } else {
+                    pair.b -= scriptLine.length - scriptLine.trimEnd().length;
+                    scriptLine = script[pair.a .. pair.b + 1];
+                }
+                auto kind = toStoryLineKind(scriptLine.length ? script[pair.a] : StoryLineKind.empty);
+                if (kind.isNone) {
+                    pairs.clear();
+                    labels.clear();
+                    faultPrepareIndex = prepareIndex;
+                    return kind.fault;
+                }
+                if (kind.xx == StoryLineKind.label) {
+                    auto name = scriptLine[1 .. $].trimStart();
+                    auto word = StoryWord.init;
+                    auto wordRef = word[];
+                    if (auto fault = wordRef.copyChars(name)) {
+                        pairs.clear();
+                        labels.clear();
+                        faultPrepareIndex = prepareIndex;
+                        return fault;
+                    }
+                    labels.push(StoryVariable(word, StoryValue(cast(StoryNumber) pairs.length)), file, line);
+                }
+                pairs.push(pair, file, line);
+                prepareIndex += 1;
+                startIndex = cast(StoryNumber) (i + 1);
+            }
+        }
+        resetLineIndex();
+        return Fault.none;
+    }
+
+    Fault parse(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
+        script.clear();
+        script.appendSource(file, line, text);
+        return prepare(file, line);
+    }
+
+    // TODO: Needs a refaktor. I added some functions inside it for now to avoid the `__chkstk` error.
+    @trusted
+    Fault execute(IStr expression, IStr file = __FILE__, Sz line = __LINE__) {
+        static FixedList!(StoryValue, defaultStoryFixedListCapacity) stack;
+        alias Stack = FixedList!(StoryValue, defaultStoryFixedListCapacity);
+
+        stack.clear();
+        auto ifCounter = 0;
+        auto tokenCount = 0;
+        while (true) with (StoryOp) {
+            if (expression.length == 0) break;
+            auto token = expression.skipValue(' ');
+            tokenCount += 1;
+            expression = expression.trimStart();
+            if (token.length == 0) continue;
+            if (ifCounter > 0) {
+                if (token == IF.toStr()) ifCounter += 1;
+                if (token == ELSE.toStr() || token == THEN.toStr()) ifCounter -= 1;
+                continue;
+            }
+            if (token.isMaybeStoryOp) {
+                auto tempOp = token.toStoryOp();
+                if (tempOp.isNone) {
+                    faultTokenPosition = tokenCount;
+                    return tempOp.fault;
+                }
+                auto op = tempOp.xx;
+                final switch (op) {
+                    case ADD:
+                    case SUB:
+                    case MUL:
+                    case DIV:
+                    case MOD:
+                    case AND:
+                    case OR:
+                    case LESS:
+                    case GREATER:
+                    case EQUAL:
+                        static Fault doEQUAL(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryNumber || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryNumber;
+                                auto b = db.as!StoryNumber;
+                                auto c = StoryNumber.init;
+                                switch (op) {
+                                    case ADD: c = a + b; break;
+                                    case SUB: c = a - b; break;
+                                    case MUL: c = a * b; break;
+                                    case DIV: c = (b != 0) ? (a / b) : 0; break;
+                                    case MOD: c = (b != 0) ? (a % b) : 0; break;
+                                    case AND: c = a && b; break;
+                                    case OR: c = a || b; break;
+                                    case LESS: c = a < b; break;
+                                    case GREATER: c = a > b; break;
+                                    case EQUAL: c = a == b; break;
+                                    default: assert(0, "WTF!");
+                                }
+                                stack.append(StoryValue(c));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doEQUAL(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case NOT:
+                        static Fault doNOT(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 1) return throwOpFault(op, tokenCount);
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                stack.append(StoryValue(!da.as!StoryNumber));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doNOT(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case POP:
+                        stack.pop();
+                        break;
+                    case CLEAR:
+                        stack.clear();
+                        break;
+                    case SWAP:
+                        if (stack.length < 2) return throwOpFault(op, tokenCount);
+                        auto db = stack[$ - 1]; stack.pop();
+                        auto da = stack[$ - 1]; stack.pop();
+                        stack.append(db);
+                        stack.append(da);
+                        break;
+                    case COPY:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        stack.append(stack[$ - 1]);
+                        break;
+                    case COPYN:
+                        if (stack.length < 2) return throwOpFault(op, tokenCount);
+                        stack.append(stack[$ - 2]);
+                        stack.append(stack[$ - 2]);
+                        break;
+                    case RANGE:
+                        static Fault doRANGE(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 3) return throwOpFault(op, tokenCount);
+                                auto dc = stack[$ - 1]; stack.pop();
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryNumber || !db.isType!StoryNumber || !dc.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryNumber();
+                                auto b = db.as!StoryNumber();
+                                auto c = dc.as!StoryNumber();
+                                stack.append(StoryValue(a >= b && a <= c));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doRANGE(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case IF:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                        if (!da.as!StoryNumber) ifCounter += 1;
+                        break;
+                    case ELSE:
+                        ifCounter += 1;
+                        break;
+                    case THEN:
+                        break;
+                    case CAT:
+                        static Fault doCAT(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                StoryWord word;
+                                auto data = concat(da.toStr(), db.toStr());
+                                auto tempWordRef = word[];
+                                if (auto fault = tempWordRef.copyChars(data)) {
+                                    faultTokenPosition = tokenCount;
+                                    return fault;
+                                }
+                                stack.append(StoryValue(word));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doCAT(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case SAME:
+                        static Fault doSAME(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                auto a = da.as!StoryWord;
+                                auto b = db.as!StoryWord;
+                                stack.append(StoryValue(a == b));
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doSAME(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case WORD:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        stack.append(StoryValue(da.isType!StoryWord));
+                        break;
+                    case NUMBER:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        stack.append(StoryValue(da.isType!StoryNumber));
+                        break;
+                    case LINE:
+                        stack.append(StoryValue(lineIndex + 1));
+                        break;
+                    case DEBUG:
+                        stack.append(StoryValue(debugMode));
+                        break;
+                    case LINEAR:
+                        stack.append(StoryValue(linearMode));
+                        break;
+                    case ASSERT:
+                        if (stack.length) {
+                            auto da = stack[$ - 1]; stack.pop();
+                            if (da.isType!StoryWord || (da.isType!StoryNumber && !da.as!StoryNumber())) return Fault.assertion;
+                        } else {
+                            return Fault.assertion;
+                        }
+                        break;
+                    case END:
+                        return Fault.none;
+                    case ECHO:
+                    case ECHON:
+                        auto space = "\n";
+                        if (op == ECHON) space = " ";
+                        if (stack.length) {
+                            echon(stack[$ - 1].toStr(), space);
+                            stack.pop();
+                        }
+                        else echon(space);
+                        break;
+                    case LEAK:
+                    case LEAKN:
+                        echon("Stack: [");
+                        foreach (i, item; stack) {
+                            auto space = " ";
+                            auto separator = ",";
+                            if (i == stack.length - 1) {
+                                space = "";
+                                separator = "";
+                            }
+                            echon(item.toStr(), separator, space);
+                        }
+                        echon("]\n");
+                        if (op == LEAKN) {
+                            echon("Variables: [");
+                            foreach (i, item; variables) {
+                                auto space = " ";
+                                auto separator = ",";
+                                if (i == variables.length - 1) {
+                                    space = "";
+                                    separator = "";
+                                }
+                                echon(StoryValue(item.name).toStr(), ": ", item.value.toStr(), separator, space);
+                            }
+                            echon("]\n");
+                        }
+                        break;
+                    case HERE:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                        auto a = da.as!StoryWord();
+                        stack.append(StoryValue(findVariable(a) != -1));
+                        break;
+                    case GET:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                        auto a = da.as!StoryWord();
+                        auto aIndex = findVariable(a);
+                        if (aIndex != -1) {
+                            stack.append(variables[aIndex].value);
+                        } else {
+                            return throwOpFault(op, tokenCount);
+                        }
+                        break;
+                    case GETN:
+                        static Fault doGETN(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord || !db.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto b = db.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                auto bIndex = findVariable(b);
+                                if (aIndex != -1 && bIndex != -1) {
+                                    stack.append(variables[aIndex].value);
+                                    stack.append(variables[bIndex].value);
+                                } else {
+                                    return throwOpFault(op, tokenCount);
+                                }
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doGETN(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case SET:
+                        static Fault doSET(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    variables[aIndex].value = db;
+                                } else {
+                                    variables.push(StoryVariable(a, db));
+                                }
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doSET(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case INIT:
+                        static Fault doINIT(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 1) return throwOpFault(op, tokenCount);
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    variables[aIndex].value = StoryValue(0);
+                                } else {
+                                    variables.push(StoryVariable(a, StoryValue(0)));
+                                }
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doINIT(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case DROP:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                        auto a = da.as!StoryWord();
+                        auto aIndex = findVariable(a);
+                        if (aIndex != -1) {
+                            variables.remove(aIndex);
+                        }
+                        break;
+                    case DROPN:
+                        variables.clear();
+                        break;
+                    case INC:
+                    case DEC:
+                        static Fault doDEC(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 1) return throwOpFault(op, tokenCount);
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    if (variables[aIndex].value.isType!StoryNumber) {
+                                        variables[aIndex].value.as!StoryNumber() += (op == INC ? 1 : -1);
+                                        stack.append(variables[aIndex].value);
+                                    } else {
+                                        return throwOpFault(op, tokenCount);
+                                    }
+                                } else {
+                                    return throwOpFault(op, tokenCount);
+                                }
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doDEC(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case INCN:
+                    case DECN:
+                        static Fault doDECN(ref Stack stack, StoryOp op, int tokenCount, ref Story story) {
+                            with (story) {
+                                if (stack.length < 2) return throwOpFault(op, tokenCount);
+                                auto db = stack[$ - 1]; stack.pop();
+                                auto da = stack[$ - 1]; stack.pop();
+                                if (!da.isType!StoryWord || !db.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                                auto a = da.as!StoryWord();
+                                auto b = db.as!StoryNumber();
+                                auto aIndex = findVariable(a);
+                                if (aIndex != -1) {
+                                    if (variables[aIndex].value.isType!StoryNumber) {
+                                        variables[aIndex].value.as!StoryNumber() += b * (op == INCN ? 1 : -1);
+                                        stack.append(variables[aIndex].value);
+                                    } else {
+                                        return throwOpFault(op, tokenCount);
+                                    }
+                                } else {
+                                    return throwOpFault(op, tokenCount);
+                                }
+                                return Fault.none;
+                            }
+                        }
+                        auto fault = doDECN(stack, op, tokenCount, this);
+                        if (fault) return fault;
+                        break;
+                    case TOG:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                        auto a = da.as!StoryWord();
+                        auto aIndex = findVariable(a);
+                        if (aIndex != -1) {
+                            if (variables[aIndex].value.isType!StoryNumber) {
+                                variables[aIndex].value.as!StoryNumber() = !variables[aIndex].value.as!StoryNumber();
+                                stack.append(variables[aIndex].value);
+                            } else {
+                                return throwOpFault(op, tokenCount);
+                            }
+                        } else {
+                            return throwOpFault(op, tokenCount);
+                        }
+                        break;
+                    case MENU:
+                        stack.append(StoryValue(previousMenuResult));
+                        break;
+                    case LOOP:
+                        if (linearMode) break;
+                        auto target = nextLabelIndex - 1;
+                        if (target < 0 || target >= labels.length || labels.length == 0) {
+                            resetLineIndex();
+                        } else {
+                            jumpLineIndex(target);
+                        }
+                        break;
+                    case SKIP:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryNumber) return throwOpFault(op, tokenCount);
+                        auto a = da.as!StoryNumber();
+                        if (a == 0) break;
+                        if (linearMode) break;
+                        auto target = nextLabelIndex + (a > 0 ? a - 1 : a);
+                        if (target < 0 || target >= labels.length || labels.length == 0) {
+                            resetLineIndex();
+                        } else {
+                            jumpLineIndex(target);
+                        }
+                        break;
+                    case JUMP:
+                        if (stack.length < 1) return throwOpFault(op, tokenCount);
+                        auto da = stack[$ - 1]; stack.pop();
+                        if (!da.isType!StoryWord) return throwOpFault(op, tokenCount);
+                        auto a = da.as!StoryWord();
+                        auto aIndex = findLabel(a);
+                        if (aIndex != -1) {
+                            if (linearMode) break;
+                            jumpLineIndex(aIndex);
+                        } else {
+                            return throwOpFault(op, tokenCount);
+                        }
+                        break;
+                }
+            } else if (token.isMaybeStoryNumber) {
+                auto number = token.toSigned();
+                if (number.isNone) {
+                    faultTokenPosition = tokenCount;
+                    return number.fault;
+                }
+                stack.append(StoryValue(cast(StoryNumber) number.xx));
+            } else if (token.isMaybeStoryWord) {
+                auto word = StoryWord.init;
+                auto wordRef = word[];
+                if (auto fault = wordRef.copyChars(token)) {
+                    faultTokenPosition = tokenCount;
+                    return fault;
+                }
+                stack.append(StoryValue(word));
+            } else {
+                faultTokenPosition = tokenCount;
+                return Fault.invalid;
+            }
+        }
+        return Fault.none;
+    }
+
+    Fault update(IStr file = __FILE__, Sz line = __LINE__) {
+        if (lineCount == 0) return Fault.none;
+        setLineIndex(lineIndex + 1);
+        while (lineIndex < lineCount && !hasPause && !hasProcedure && !hasMenu && !hasText) {
+            auto scriptLine = opIndex(lineIndex);
+            if (scriptLine.length) {
+                if (scriptLine[0] == StoryLineKind.expression) {
+                    auto fault = execute(scriptLine[1 .. $].trimStart(), file, line);
+                    if (fault) return fault;
+                } else if (scriptLine[0] == StoryLineKind.label) {
+                    setNextLabelIndex(nextLabelIndex + 1);
+                }
+            }
+            setLineIndex(lineIndex + 1);
+        }
+        if (hasPause && lineIndex == lineCount) resetLineIndex();
+        return Fault.none;
+    }
+
+    Fault select(Sz i, IStr file = __FILE__, Sz line = __LINE__) {
+        previousMenuResult = cast(StoryNumber) (i + 1);
+        return update(file, line);
+    }
+
+    void reserve(Sz capacity, IStr file = __FILE__, Sz line = __LINE__) {
+        script.reserve(capacity, file, line);
+        pairs.reserve(capacity, file, line);
+        labels.reserve(capacity, file, line);
+        variables.reserve(capacity, file, line);
+    }
+
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        script.free(file, line);
+        pairs.free(file, line);
+        labels.free(file, line);
+        variables.free(file, line);
+        this = Story();
+    }
+
+    @safe nothrow @nogc:
+
+    void echon(IStr[] text...) {
+        if (echonFunc) echonFunc(text);
+    }
+
+    IStr opIndex(Sz i) {
+        if (i >= lineCount) assert(0, "Index `[{}]` does not exist.".fmt(i));
+        return script[pairs[i].a .. pairs[i].b + 1];
+    }
+
+    StoryNumber lineCount() {
+        return cast(StoryNumber) pairs.length;
+    }
+
+    bool hasKind(StoryLineKind kind) {
+        if (lineIndex >= lineCount) return false;
+        auto line = opIndex(lineIndex);
+        return line.length && line[0] == kind;
+    }
+
+    bool hasEnd() {
+        return lineIndex == lineCount;
+    }
+
+    bool hasPause() {
+        if (hasEnd) return true;
+        return hasKind(StoryLineKind.pause);
+    }
+
+    bool hasProcedure() {
+        return hasKind(StoryLineKind.procedure);
+    }
+
+    bool hasMenu() {
+        return hasKind(StoryLineKind.menu);
+    }
+
+    bool hasText() {
+        return hasKind(StoryLineKind.text);
+    }
+
+    IStr[] procedure() {
+        static FixedList!(IStr, defaultStoryFixedListCapacity) buffer;
+
+        buffer.clear();
+        if (!hasProcedure) return [];
+        auto view = opIndex(lineIndex)[1 .. $].trimStart();
+        while (view.length) {
+            buffer.append(view.skipValue(' ').trimEnd());
+            view = view.trimStart();
+        }
+        return buffer[];
+    }
+
+    IStr[] menu() {
+        static FixedList!(IStr, defaultStoryFixedListCapacity) buffer;
+
+        buffer.clear();
+        if (!hasMenu) return [];
+        auto view = opIndex(lineIndex)[1 .. $].trimStart();
+        while (view.length) {
+            buffer.append(view.skipValue(StoryLineKind.menu).trimEnd());
+            view = view.trimStart();
+        }
+        return buffer[];
+    }
+
+    IStr text() {
+        if (!hasText) return "";
+        return opIndex(lineIndex)[1 .. $].trimStart();
+    }
+
+    Fault throwOpFault(StoryOp op, Sz position) {
+        faultOp = op;
+        faultTokenPosition = position;
+        return Fault.invalid;
+    }
+
+    StoryNumber findVariable(StoryWord name) {
+        foreach (i, variable; variables) {
+            if (name == variable.name) return cast(StoryNumber) i;
+        }
+        return -1;
+    }
+
+    StoryNumber findLabel(StoryWord name) {
+        foreach (i, label; labels) {
+            if (name == label.name) return cast(StoryNumber) i;
+        }
+        return -1;
+    }
+
+    void setNextLabelIndex(StoryNumber value) {
+        nextLabelIndex = cast(StoryNumber) (value % (labels.length + 1));
+    }
+
+    void setLineIndex(StoryNumber value) {
+        lineIndex = (value) % (lineCount + 1);
+    }
+
+    void resetLineIndex() {
+        lineIndex = lineCount;
+        nextLabelIndex = 0;
+    }
+
+    void jumpLineIndex(StoryNumber labelIndex) {
+        lineIndex = labels[labelIndex].value.as!StoryNumber();
+        setNextLabelIndex(labelIndex + 1);
+    }
+
+    void ignoreLeak() {
+        // TODO: Maybe think about using an arena for the story stuct.
+        script.ignoreLeak();
+        pairs.ignoreLeak();
+        labels.ignoreLeak();
+        variables.ignoreLeak();
+    }
+}
+
 /// A part of a 9-slice.
 struct SlicePart {
     IRect source;    /// The source area on the atlas texture.
@@ -729,4 +1523,65 @@ Palette!N csvRowToPalette(Sz N)(IStr csv, Sz row = 0, Sz startCol = 0) {
         result[i] = value;
     }
     return result;
+}
+
+bool isMaybeStoryOp(IStr value) {
+    if (value.length == 0) return false;
+    auto c = value[0];
+    if (c.isSymbol) {
+        if (c == '_') return false;
+        return value.length == 1;
+    } else {
+        return c.isUpper;
+    }
+}
+
+bool isMaybeStoryNumber(IStr value) {
+    if (value.length == 0) return false;
+    auto c = value[0];
+    if (c.isSymbol) {
+        if (c == '_') return false;
+        return value.length >= 2 && value[1].isDigit;
+    } else {
+        return c.isDigit;
+    }
+}
+
+bool isMaybeStoryWord(IStr value) {
+    if (value.length == 0) return false;
+    auto c = value[0];
+    return c == '_' || (!c.isUpper && !c.isSymbol);
+}
+
+Maybe!StoryLineKind toStoryLineKind(char from) {
+    with (StoryLineKind) switch (from) {
+        case ' ': return Maybe!StoryLineKind(empty);
+        case '#': return Maybe!StoryLineKind(comment);
+        case '*': return Maybe!StoryLineKind(label);
+        case '|': return Maybe!StoryLineKind(text);
+        case '.': return Maybe!StoryLineKind(pause);
+        case '^': return Maybe!StoryLineKind(menu);
+        case '$': return Maybe!StoryLineKind(expression);
+        case '!': return Maybe!StoryLineKind(procedure);
+        default : return Maybe!StoryLineKind(Fault.invalid);
+    }
+}
+
+Maybe!StoryOp toStoryOp(IStr from) {
+    with (StoryOp) switch (from) {
+        case "+": return Maybe!StoryOp(ADD);
+        case "-": return Maybe!StoryOp(SUB);
+        case "*": return Maybe!StoryOp(MUL);
+        case "/": return Maybe!StoryOp(DIV);
+        case "%": return Maybe!StoryOp(MOD);
+        case "&": return Maybe!StoryOp(AND);
+        case "|": return Maybe!StoryOp(OR);
+        case "<": return Maybe!StoryOp(LESS);
+        case ">": return Maybe!StoryOp(GREATER);
+        case "=": return Maybe!StoryOp(EQUAL);
+        case "!": return Maybe!StoryOp(NOT);
+        case "~": return Maybe!StoryOp(POP);
+        default : break;
+    }
+    return toEnum!StoryOp(from);
 }

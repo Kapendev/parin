@@ -108,7 +108,6 @@ Parin consists of the following modules:
 - `parin.engine`: Core engine functionality
 - `parin.map`: Tile map and sprite utilities
 - `parin.platformer`: Physics engine
-- `parin.story`: Dialogue system
 - `parin.timer`: Time utilities
 - `parin.ui`: Immediate mode UI (WIP)
 
