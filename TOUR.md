@@ -106,10 +106,8 @@ An example of this can be found in the [examples](examples/basics/_003_dvd.d).
 Parin consists of the following modules:
 
 - `parin.engine`: Core engine functionality
-- `parin.map`: Tile map utilities
-- `parin.palettes`: Predefined colors
+- `parin.map`: Tile map and sprite utilities
 - `parin.platformer`: Physics engine
-- `parin.sprite`: Sprite utilities
 - `parin.story`: Dialogue system
 - `parin.timer`: Time utilities
 - `parin.ui`: Immediate mode UI (WIP)
@@ -385,8 +383,7 @@ struct TextOptions {
 ### Sprites & Tile Maps
 
 Sprites and tile maps can be implemented in various ways.
-To avoid enforcing a specific approach, Parin provides optional modules for these features, allowing users to include or omit them as needed.
-Parin provides sprite utilities inside the `parin.sprite` module and map utilities inside the `parin.map` module.
+Parin provides them inside the `parin.map` module.
 
 ## Sound
 

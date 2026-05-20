@@ -8,7 +8,7 @@
 // TODO: Update all the doc comments here.
 // NOTE: Tiles can't be scaled. Maybe a bad idea, but who cares. I do the same for 9-slices too and it works fine.
 
-/// The `map` module provides a simple and fast tile map.
+/// The `map` module provides sprite and tile map drawing.
 module parin.map;
 
 import parin.engine;
@@ -21,110 +21,6 @@ enum maxTileMapLayerCapacity = maxTileMapLayerRowColCount * maxTileMapLayerRowCo
 alias TileMapLayerData = FixedList!(short, maxTileMapLayerCapacity);
 alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData);
 alias TileMapLayers = List!TileMapLayer;
-
-struct Tile {
-    short width;
-    short height;
-    short id;
-    Flip flip;
-    byte idOffset;
-    Vec2 position;
-
-    @safe nothrow @nogc:
-
-    this(short width, short height, short id, Vec2 position = Vec2()) {
-        this.width = width;
-        this.height = height;
-        this.id = id;
-        this.position = position;
-    }
-
-    this(short width, short height, short id, float x, float y) {
-        this(width, height, id, Vec2(x, y));
-    }
-
-    pragma(inline, true) {
-        @trusted
-        ref float x() {
-            return position.x;
-        }
-
-        @trusted
-        ref float y() {
-            return position.y;
-        }
-
-        Sz row(Sz colCount) {
-            return (id + idOffset) / colCount;
-        }
-
-        Sz col(Sz colCount) {
-            return (id + idOffset) % colCount;
-        }
-
-        Vec2 size() {
-            return Vec2(width, height);
-        }
-
-        Rect area() {
-            return Rect(position, width, height);
-        }
-
-        Rect textureArea(Sz colCount) {
-            return Rect(col(colCount) * width, row(colCount) * height, width, height);
-        }
-
-        bool isEmpty() {
-            return !hasId;
-        }
-
-        bool hasId() {
-            return id + idOffset >= 0;
-        }
-
-        bool hasSize() {
-            return width != 0 && height != 0;
-        }
-
-        bool hasIdAndSize() {
-            return (id + idOffset >= 0) && (width != 0 && height != 0);
-        }
-
-        bool hasIntersection(Rect otherArea) {
-            return area.hasIntersection(otherArea);
-        }
-
-        bool hasIntersection(Tile otherTile) {
-            return hasIntersection(otherTile.area);
-        }
-
-        Rect intersection(Rect otherArea) {
-            return area.intersection(otherArea);
-        }
-
-        Rect intersection(Tile otherTile) {
-            return intersection(otherTile.area);
-        }
-
-        Rect merger(Rect otherArea) {
-            return area.merger(otherArea);
-        }
-
-        Rect merger(Tile otherTile) {
-            return merger(otherTile.area);
-        }
-    }
-
-    /// Moves the tile to follow the target position at the specified speed.
-    void followPosition(Vec2 target, float delta) {
-        position = position.moveTo(target, Vec2(delta));
-    }
-
-    /// Moves the tile to follow the target position with gradual slowdown.
-    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown) {
-        position = position.moveToWithSlowdown(target, Vec2(delta), slowdown);
-    }
-}
 
 // TODO: Think about object layer.
 //   Idea: Have an object map struct that just parses the csv again. Doing that is not slow anyway and keeps the TileMap focused.
@@ -555,5 +451,41 @@ struct TileMap {
 
     void drawTileMap(ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
         drawTileMap(defaultTexture, map, camera.area(resolution), options);
+    }
+
+    void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
+        auto tempOptions = options;
+        tempOptions.hook = sprite.hook;
+        tempOptions.flip = sprite.flip;
+
+        version (ParinSkipDrawChecks) {
+        } else {
+            if (texture.isNull) {
+                if (isNullTextureVisible) {
+                    auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
+                    drawRect(rect, defaultEngineDebugColor1);
+                    drawRect(rect, defaultEngineDebugColor2, 1);
+                }
+                return;
+            }
+        }
+
+        if (!sprite.hasSize) return;
+        auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
+        auto gridWidth = (texture.width - sprite.atlasLeft) / sprite.width;
+
+        version (ParinSkipDrawChecks) {
+        } else {
+            if (gridWidth == 0) return;
+        }
+
+        auto row = sprite.frame / gridWidth;
+        auto col = sprite.frame % gridWidth;
+        auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
+        drawTextureArea(texture, area, sprite.position, tempOptions);
+    }
+
+    void drawSprite(Sprite sprite, DrawOptions options = DrawOptions()) {
+        drawSprite(defaultTexture, sprite, options);
     }
 }

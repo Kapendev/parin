@@ -13,14 +13,13 @@ It's easy to set up, hackable, and comes with the essentials built in.
 ## Why Parin
 
 Parin sits somewhere between a small library like [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/) and a big engine like [Godot](https://godotengine.org/) or [Unity](https://unity.com/).
-It offers more direction than small libraries, but far less overhead and "magic" than big engines.
-It's especially well-suited for retro games, with helper functions and two pixel fonts included.
+It offers more direction than small libraries, but far less overhead than big engines.
+It's especially well-suited for retro games, with helper functions and two pixel fonts included, and focuses on:
 
-- **Focused on games**: Opinionated defaults make drawing and other common game tasks easier out of the box.
 - **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
 - **Batteries included**: Arcady physics, debug UI, fixed aspect ratio...
 - **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management when needed.
-- **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable nogc utility library. It can be used directly if Parin's internals are needed without the engine.
+- **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used directly without the engine.
 
 > [!NOTE]
 > The project is still early in development.

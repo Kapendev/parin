@@ -10,6 +10,7 @@ module parin.types;
 import parin.joka.math;
 import parin.joka.types;
 import parin.joka.memory;
+public import parin.joka.game;
 
 alias UpdateFunc = bool function(float dt);
 alias CallFunc   = void function();
@@ -22,14 +23,6 @@ version (WebAssembly) {
     enum defaultEngineResourceScaleDenominator = 2;
 } else {
     enum defaultEngineResourceScaleDenominator = 1;
-}
-
-/// Flipping orientations.
-enum Flip : ubyte {
-    none, /// No flipping.
-    x,    /// Flipped along the X-axis.
-    y,    /// Flipped along the Y-axis.
-    xy,   /// Flipped along both X and Y axes.
 }
 
 /// Alignment orientations.
