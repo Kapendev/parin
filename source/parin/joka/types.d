@@ -180,7 +180,7 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         auto n = bits;
         auto c = zero;
         while (n) { n &= cast(T) (n - one); c += 1; } // Brian Kernighan's trick.
-        return c;
+        return cast(Sz) c;
     }
 
     /// Same as length. Returns the number of set bits.
