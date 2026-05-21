@@ -2893,7 +2893,7 @@ void drawTile(Tile tile, DrawOptions options = DrawOptions()) {
 }
 
 /// Draws a tile map with a texture. The view area controls what is visible.
-void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
         if (texture.isNull) {
@@ -2939,17 +2939,17 @@ void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), Dra
 }
 
 /// Draws a tile map with the default texture. The view area controls what is visible.
-void drawTileMap(ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+void drawTileMap(Sz N)(ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
     drawTileMap(defaultTexture, map, viewArea, options);
 }
 
 /// Draws a tile map with a texture. The camera controls what is visible.
-void drawTileMap(TextureId texture, ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions()) {
     drawTileMap(texture, map, camera.area(resolution), options);
 }
 
 /// Draws a tile map with the default texture. The camera controls what is visible.
-void drawTileMap(ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMap(Sz N)(ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions()) {
     drawTileMap(defaultTexture, map, camera.area(resolution), options);
 }
 

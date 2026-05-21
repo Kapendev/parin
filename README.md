@@ -1,7 +1,6 @@
 # Parin
 
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
-Parin is designed to make game development fast and fun.
 It's easy to set up, hackable, and comes with the essentials built in.
 
 *Some games made with Parin:*
@@ -139,10 +138,10 @@ Most ideas are welcome, except ECS.
 
 While it is possible to use any tool with Parin, these open-source ones are simple to use and work well:
 
-- Editor: [Pulsar](https://pulsar-edit.dev/) or [Lite XL](https://lite-xl.com/)
-- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama) or [GIMP](https://www.gimp.org/)
+- Editor: [Micro](https://micro-editor.github.io/), [Pulsar](https://pulsar-edit.dev/), [Lite XL](https://lite-xl.com/)
+- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
 - Levels: [Tiled](https://www.mapeditor.org/)
-- Sounds: [Bfxr](https://www.bfxr.net/) or [Jfxr](https://jfxr.frozenfractal.com/)
+- Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
 - Music: [MilkyTracker](https://milkytracker.org/)
 
 ## Frequently Asked Questions

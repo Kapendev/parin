@@ -314,30 +314,24 @@ struct Tile {
     }
 }
 
-/// Maximum layer row or column size.
-enum maxTileMapLayerRowColCount = 144;
-/// Maximum layer size.
-enum maxTileMapLayerCapacity = maxTileMapLayerRowColCount * maxTileMapLayerRowColCount;
-
-/// The tile map layer data.
-alias TileMapLayerData = FixedList!(short, maxTileMapLayerCapacity);
-/// The tile map layer.
-alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData);
-/// The tile map layers.
-alias TileMapLayers = List!TileMapLayer;
-
 // TODO: Think about object layer.
 // Idea: Have an object map struct that just parses the csv again. Doing that is not slow anyway and keeps the TileMap focused.
-/// A tile map.
-struct TileMap {
+/// A generic tile map. `N` is the maximum layer row or column size.
+struct GTileMap(Sz N) {
+    enum maxLayerRowColCount = N;                                      /// Maximum layer row or column size.
+    enum maxLayerCapacity = maxLayerRowColCount * maxLayerRowColCount; /// Maximum layer size.
+    enum extraTileCount = 1;                                           /// Extra tile padding added when computing visible tile ranges.
+
+    alias TileMapLayerData = FixedList!(short, maxLayerCapacity);        /// The tile map layer data.
+    alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData); /// The tile map layer.
+    alias TileMapLayers = List!TileMapLayer;                             /// The tile map layers.
+
     TileMapLayers layers; /// The list of tile layers in this map.
     Sz rowCount;          /// The number of active rows in the map.
     Sz colCount;          /// The number of active columns in the map.
     short tileWidth;      /// The width of each tile in pixels.
     short tileHeight;     /// The height of each tile in pixels.
     Vec2 position;        /// The world position of the top-left corner of the map.
-
-    enum extraTileCount = 1; /// Extra tile padding added when computing visible tile ranges.
 
     @safe nothrow:
 
@@ -350,7 +344,7 @@ struct TileMap {
 
     /// Constructs a tile map with the maximum layer size and the given tile size.
     this(short tileWidth, short tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
-        this(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, tileWidth, tileHeight, file, line);
+        this(maxLayerRowColCount, maxLayerRowColCount, tileWidth, tileHeight, file, line);
     }
 
     pragma(inline, true) @nogc {
@@ -488,7 +482,7 @@ struct TileMap {
             layers.appendBlank(file, line);
             layers[$ - 1].clear();
         }
-        if (canResizeHard) resizeHard(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, file, line);
+        if (canResizeHard) resizeHard(maxLayerRowColCount, maxLayerRowColCount, file, line);
         resize(0, 0);
         resizeTileSize(newTileWidth, newTileHeight);
         auto view = csv;
@@ -553,14 +547,14 @@ struct TileMap {
     }
 
     /// Allocates or resizes all layers to the given hard row and column counts.
-    /// Clamps to `maxTileMapLayerRowColCount`. Creates a default layer if the map is empty.
+    /// Clamps to `maxLayerRowColCount`. Creates a default layer if the map is empty.
     void resizeHard(Sz newHardRowCount, Sz newHardColCount, IStr file = __FILE__, Sz line = __LINE__) {
         if (isEmpty) {
             layers.appendBlank(file, line);
             layers[$ - 1].clear();
         }
-        rowCount = min(maxTileMapLayerRowColCount, newHardRowCount);
-        colCount = min(maxTileMapLayerRowColCount, newHardColCount);
+        rowCount = min(maxLayerRowColCount, newHardRowCount);
+        colCount = min(maxLayerRowColCount, newHardColCount);
         foreach (ref layer; layers) layer.resizeBlank(rowCount, colCount, file, line);
     }
 
@@ -713,6 +707,9 @@ struct TileMap {
         return tiles(viewArea.topLeftPoint, viewArea.bottomRightPoint, layerId);
     }
 }
+
+/// A tile map.
+alias TileMap = GTileMap!128;
 
 /// A single sprite animation, defined by its position in an atlas and playback settings.
 struct SpriteAnimation {
