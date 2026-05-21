@@ -850,6 +850,7 @@ mixin template typed(T) {
 alias distinct = typed;
 
 /// Returns the index of an item inside the given alias arguments or -1 on error.
+@__ctfe
 int findInAliasArgs(T, A...)() {
     int result = -1;
     static foreach (i, TT; A) {
@@ -861,6 +862,7 @@ int findInAliasArgs(T, A...)() {
 }
 
 /// Returns true if an item is inside the given alias arguments.
+@__ctfe
 bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
 }

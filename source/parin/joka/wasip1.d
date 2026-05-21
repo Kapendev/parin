@@ -11,13 +11,15 @@ module parin.joka.wasip1;
 import parin.joka.types;
 
 // LLVM copy-pasta.
-version (LDC) {
-    import ldc = ldc.attributes;
-    private alias llvmAttr = ldc.llvmAttr;
-} else {
-    private struct llvmAttr { immutable(char)[] a, b; }
+private {
+    version (LDC) {
+        import ldc = ldc.attributes;
+        alias llvmAttr = ldc.llvmAttr;
+    } else {
+        struct llvmAttr { immutable(char)[] a, b; }
+    }
+    @__ctfe llvmAttr importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
 }
-private llvmAttr importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
 
 /// The WASI Preview 1 import module.
 enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");

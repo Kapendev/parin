@@ -2541,10 +2541,12 @@ void freeWithItems(T)(ref T container, IStr file = __FILE__, Sz line = __LINE__)
     container.free(file, line);
 }
 
+@__ctfe
 bool isContainerType(T)() {
     return __traits(hasMember, T, "isBasicContainer");
 }
 
+@__ctfe
 bool isBasicContainerType(T)() {
     static if (__traits(hasMember, T, "isBasicContainer")) {
         return T.isBasicContainer;
@@ -2553,6 +2555,7 @@ bool isBasicContainerType(T)() {
     }
 }
 
+@__ctfe
 bool isBufferContainerType(T)() {
     static if (__traits(hasMember, T, "isBufferContainer")) {
         return T.isBufferContainer;
@@ -2561,6 +2564,7 @@ bool isBufferContainerType(T)() {
     }
 }
 
+@__ctfe
 bool isFixedContainerType(T)() {
     static if (__traits(hasMember, T, "hasFixedCapacity")) {
         return T.hasFixedCapacity;
@@ -2572,6 +2576,7 @@ bool isFixedContainerType(T)() {
 // NOTE:
 //   D=List,BufferList,FixedList
 //   D.Item=SparseListItem
+@__ctfe
 bool isSparseContainerPartsValid(T, D)() {
     static if (__traits(hasMember, D, "isBasicContainer")) {
         static if (D.isBasicContainer && __traits(hasMember, D.Item, "value") && __traits(hasMember, D.Item, "flag")) {
@@ -2587,6 +2592,7 @@ bool isSparseContainerPartsValid(T, D)() {
 // NOTE:
 //   D=SparseList
 //   G=List,BufferList,FixedList
+@__ctfe
 bool isGenContainerPartsValid(T, D, G)() {
     static if (__traits(hasMember, D, "isBasicContainer")) {
         static if (isSparseContainerPartsValid!(T, D.Data)) {
@@ -2603,18 +2609,22 @@ bool isGenContainerPartsValid(T, D, G)() {
     }
 }
 
+@__ctfe
 bool isLStrType(T)() {
     return is(T == List!char);
 }
 
+@__ctfe
 bool isBStrType(T)() {
     return is(T == BufferList!char);
 }
 
+@__ctfe
 bool isFStrType(T)() {
     return is(T == FixedList!(char, N), Sz N);
 }
 
+@__ctfe
 bool isStrContainerType(T)() {
     return is(T == List!char) || is(T == BufferList!char) || is(T == FixedList!(char, N), Sz N);
 }
