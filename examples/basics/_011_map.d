@@ -20,7 +20,7 @@ bool update(float dt) {
     tile.position += wasd * 120 * dt;
     camera.position = tile.position + tile.size * 0.5;
     // Check for collisions with the map and resolve them.
-    foreach (t; map.tiles(camera)) {
+    foreach (t; map.tiles(camera.area(resolution))) {
         if (t.isEmpty) continue;
         while (t.hasIntersection(tile)) {
             tile.position -= wasd * dt;

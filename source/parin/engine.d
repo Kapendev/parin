@@ -2863,3 +2863,136 @@ float masterVolume() {
 void setMasterVolume(float value) {
     bk.setMasterVolume(value);
 }
+
+// --- World Drawing
+
+/// Draws a tile with a texture.
+void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions()) {
+    auto tempOptions = options;
+    tempOptions.flip = tile.flip;
+
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (texture.isNull) {
+            if (isNullTextureVisible) {
+                auto rect = tile.area;
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
+            }
+            return;
+        }
+    }
+
+    if (!tile.hasSize) return;
+    drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, tempOptions);
+}
+
+/// Draws a tile with the default texture.
+void drawTile(Tile tile, DrawOptions options = DrawOptions()) {
+    drawTile(defaultTexture, tile, options);
+}
+
+/// Draws a tile map with a texture. The view area controls what is visible.
+void drawTileMap(TextureId texture, ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (texture.isNull) {
+            if (isNullTextureVisible) {
+                auto rect = Rect(map.position, map.size);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
+            }
+            return;
+        }
+    }
+
+    if (!map.hasSize) return;
+    auto hasAreaSize = viewArea.hasSize;
+    auto topLeftPoint = viewArea.topLeftPoint;
+    auto bottomRightPoint = viewArea.bottomRightPoint;
+    auto textureColCount = texture.width / map.tileWidth;
+    auto textureArea = Rect(map.tileWidth, map.tileHeight);
+    auto colRow1 = !hasAreaSize ? IVec2() : IVec2(
+        cast(int) clamp((topLeftPoint.x - map.position.x) / map.tileWidth, 0, map.colCount - 1),
+        cast(int) clamp((topLeftPoint.y - map.position.y) / map.tileHeight, 0, map.rowCount - 1),
+    );
+    auto colRow2 = !hasAreaSize ? IVec2(cast(int) map.colCount - 1, cast(int) map.rowCount - 1) : IVec2(
+        cast(int) clamp((bottomRightPoint.x - map.position.x) / map.tileWidth + map.extraTileCount, 0, map.colCount - 1),
+        cast(int) clamp((bottomRightPoint.y - map.position.y) / map.tileHeight + map.extraTileCount, 0, map.rowCount - 1),
+    );
+    foreach (ref layer; map.layers) {
+        foreach (row; colRow1.y .. colRow2.y + 1) {
+            foreach (col; colRow1.x .. colRow2.x + 1) {
+                auto id = layer[row, col];
+                if (id < 0) continue;
+                textureArea.position.x = (id % textureColCount) * map.tileWidth;
+                textureArea.position.y = (id / textureColCount) * map.tileHeight;
+                drawTextureArea(
+                    texture,
+                    textureArea,
+                    map.position + Vec2(col * map.tileWidth, row * map.tileHeight),
+                    options,
+                );
+            }
+        }
+    }
+}
+
+/// Draws a tile map with the default texture. The view area controls what is visible.
+void drawTileMap(ref TileMap map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
+    drawTileMap(defaultTexture, map, viewArea, options);
+}
+
+/// Draws a tile map with a texture. The camera controls what is visible.
+void drawTileMap(TextureId texture, ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+    drawTileMap(texture, map, camera.area(resolution), options);
+}
+
+/// Draws a tile map with the default texture. The camera controls what is visible.
+void drawTileMap(ref TileMap map, Camera camera, DrawOptions options = DrawOptions()) {
+    drawTileMap(defaultTexture, map, camera.area(resolution), options);
+}
+
+/// Draws a sprite with a texture. The Hook and Flip of the options is ignored.
+void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOptions()) {
+    auto tempOptions = options;
+    tempOptions.hook = sprite.hook;
+    tempOptions.flip = sprite.flip;
+
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (texture.isNull) {
+            if (isNullTextureVisible) {
+                auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
+            }
+            return;
+        }
+    }
+
+    if (!sprite.hasSize) return;
+    auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
+    auto gridWidth = (texture.width - sprite.atlasLeft) / sprite.width;
+
+    version (ParinSkipDrawChecks) {
+    } else {
+        if (gridWidth == 0) return;
+    }
+
+    auto row = sprite.frame / gridWidth;
+    auto col = sprite.frame % gridWidth;
+    auto area = Rect(sprite.atlasLeft + col * sprite.width, top + row * sprite.height, sprite.width, sprite.height);
+    drawTextureArea(texture, area, sprite.position, tempOptions);
+}
+
+/// Draws a sprite with the default texture. The Hook and Flip of the options is ignored.
+void drawSprite(Sprite sprite, DrawOptions options = DrawOptions()) {
+    drawSprite(defaultTexture, sprite, options);
+}
+
+/// Draws debug rectangles based on the given box world.
+void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColor = maroon) {
+    foreach (ref wall; world.walls) drawRect(wall.area.toRect(), wallColor.alpha(defaultEngineDebugColor1.a));
+    foreach (ref actor; world.actors) drawRect(actor.area.toRect(), actorColor.alpha(defaultEngineDebugColor1.a));
+}

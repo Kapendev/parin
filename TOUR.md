@@ -105,10 +105,9 @@ An example of this can be found in the [examples](examples/basics/_003_dvd.d).
 
 Parin consists of the following modules:
 
-- `parin.engine`: Core engine functionality
-- `parin.map`: Tile map and sprite utilities
+- `parin.engine`: Engine functionality
 - `parin.types`: Common Parin types
-- `parin.ui`: Immediate mode UI (WIP)
+- `parin.ui`: UI library (WIP)
 
 The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game.
 They are sometimes referred to as the core modules.
@@ -377,11 +376,6 @@ struct TextOptions {
         return false;
     }
     ```
-
-### Sprites & Tile Maps
-
-Sprites and tile maps can be implemented in various ways.
-Parin provides them inside the `parin.map` module.
 
 ## Sound
 

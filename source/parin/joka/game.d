@@ -314,6 +314,406 @@ struct Tile {
     }
 }
 
+/// Maximum layer row or column size.
+enum maxTileMapLayerRowColCount = 144;
+/// Maximum layer size.
+enum maxTileMapLayerCapacity = maxTileMapLayerRowColCount * maxTileMapLayerRowColCount;
+
+/// The tile map layer data.
+alias TileMapLayerData = FixedList!(short, maxTileMapLayerCapacity);
+/// The tile map layer.
+alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData);
+/// The tile map layers.
+alias TileMapLayers = List!TileMapLayer;
+
+// TODO: Think about object layer.
+// Idea: Have an object map struct that just parses the csv again. Doing that is not slow anyway and keeps the TileMap focused.
+/// A tile map.
+struct TileMap {
+    TileMapLayers layers; /// The list of tile layers in this map.
+    Sz rowCount;          /// The number of active rows in the map.
+    Sz colCount;          /// The number of active columns in the map.
+    short tileWidth;      /// The width of each tile in pixels.
+    short tileHeight;     /// The height of each tile in pixels.
+    Vec2 position;        /// The world position of the top-left corner of the map.
+
+    enum extraTileCount = 1; /// Extra tile padding added when computing visible tile ranges.
+
+    @safe nothrow:
+
+    /// Constructs a tile map with the given row and column count and tile size.
+    this(Sz rowCount, Sz colCount, short tileWidth, short tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
+        this.tileWidth = tileWidth;
+        this.tileHeight = tileHeight;
+        resizeHard(rowCount, colCount, file, line);
+    }
+
+    /// Constructs a tile map with the maximum layer size and the given tile size.
+    this(short tileWidth, short tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
+        this(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, tileWidth, tileHeight, file, line);
+    }
+
+    pragma(inline, true) @nogc {
+        /// Returns a reference to the tile id at the given row, column, and layer.
+        @trusted
+        ref short opIndex(Sz row, Sz col, Sz layerId = 0) {
+            if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+            return layers[layerId][row, col];
+        }
+
+        /// Returns a reference to the tile id at the given grid position and layer.
+        ref short opIndex(IVec2 position, Sz layerId = 0) {
+            return opIndex(position.y, position.x, layerId);
+        }
+
+        /// Sets the tile id at the given row, column, and layer.
+        @trusted
+        void opIndexAssign(short rhs, Sz row, Sz col, Sz layerId = 0) {
+            if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+            layers[layerId][row, col] = rhs;
+        }
+
+        /// Sets the tile id at the given grid position and layer.
+        void opIndexAssign(short rhs, IVec2 position, Sz layerId = 0) {
+            return opIndexAssign(rhs, position.y, position.x, layerId);
+        }
+
+        /// Applies a compound assignment operator to the tile id at the given row, column, and layer.
+        @trusted
+        void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col, Sz layerId = 0) {
+            if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
+            mixin("layers[layerId][findGridIndex(row, col, colCount)]", op, "= rhs;");
+        }
+
+        /// Applies a compound assignment operator to the tile id at the given grid position and layer.
+        void opIndexOpAssign(IStr op)(T rhs, IVec2 position, Sz layerId = 0) {
+            return opIndexOpAssign!(op)(rhs, position.y, position.x, layerId);
+        }
+
+        /// Returns a reference to the x component of the map position.
+        @trusted
+        ref float x() {
+            return position.x;
+        }
+
+        /// Returns a reference to the y component of the map position.
+        @trusted
+        ref float y() {
+            return position.y;
+        }
+
+        /// Returns the total pixel width of the active map area.
+        int width() {
+            return cast(int) (colCount * tileWidth);
+        }
+
+        /// Returns the total pixel height of the active map area.
+        int height() {
+            return cast(int) (rowCount * tileHeight);
+        }
+
+        /// Returns the total pixel size of the active map area as a 2D vector.
+        Vec2 size() {
+            return Vec2(width, height);
+        }
+
+        /// Returns the size of a single tile as a 2D vector.
+        Vec2 tileSize() {
+            return Vec2(tileWidth, tileHeight);
+        }
+
+        /// Returns the allocated row count of the first layer (the hard limit).
+        Sz hardRowCount() {
+            return layers[0].rowCount;
+        }
+
+        /// Returns the allocated column count of the first layer (the hard limit).
+        Sz hardColCount() {
+            return layers[0].colCount;
+        }
+
+        /// Returns true if the map has no layers.
+        bool isEmpty() {
+            return layers.isEmpty;
+        }
+
+        /// Returns true if the given row and column are within the active map bounds.
+        bool has(Sz row, Sz col) {
+            return row < rowCount && col < colCount;
+        }
+
+        /// Returns true if the given grid position is within the active map bounds.
+        bool has(IVec2 position) {
+            return has(position.y, position.x);
+        }
+
+        /// Returns true if the map has a non-zero tile size.
+        bool hasTileSize() {
+            return tileWidth != 0 && tileHeight != 0;
+        }
+
+        /// Returns true if the map has a non-zero tile size and a non-zero active area.
+        bool hasSize() {
+            return hasTileSize && rowCount != 0 && colCount != 0;
+        }
+
+        /// Returns the world position of the top-left corner of the tile at the given grid coordinates.
+        Vec2 worldPointAt(int gridX, int gridY) {
+            return Vec2(position.x + gridX * tileWidth, position.y + gridY * tileHeight);
+        }
+
+        /// Returns the world position of the top-left corner of the tile at the given grid point.
+        Vec2 worldPointAt(IVec2 gridPoint) {
+            return worldPointAt(gridPoint.x, gridPoint.y);
+        }
+
+        /// Returns the grid coordinates of the tile that contains the given world position.
+        IVec2 gridPointAt(float worldX, float worldY) {
+            return IVec2(cast(int) floor((worldX - position.x) / tileWidth), cast(int) floor((worldY - position.y) / tileHeight));
+        }
+
+        /// Returns the grid coordinates of the tile that contains the given world point.
+        IVec2 gridPointAt(Vec2 worldPoint) {
+            return gridPointAt(worldPoint.x, worldPoint.y);
+        }
+    }
+
+    /// Parses a CSV string into the specified layer, using the given tile size.
+    /// Returns a fault if the CSV is empty, contains invalid values, or exceeds the hard layer bounds.
+    /// If `isMinZero` is true, tile ids are decremented by one to convert from 1-based to 0-based indexing.
+    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
+        if (csv.length == 0) return Fault.invalid;
+        bool canResizeHard = layerId >= layers.length;
+        while (layerId >= layers.length) {
+            layers.appendBlank(file, line);
+            layers[$ - 1].clear();
+        }
+        if (canResizeHard) resizeHard(maxTileMapLayerRowColCount, maxTileMapLayerRowColCount, file, line);
+        resize(0, 0);
+        resizeTileSize(newTileWidth, newTileHeight);
+        auto view = csv;
+        while (view.length) {
+            rowCount += 1;
+            colCount = 0;
+            if (rowCount > hardRowCount) return Fault.invalid;
+            auto csvLine = view.skipLine();
+            while (csvLine.length) {
+                colCount += 1;
+                auto tile = csvLine.skipValue(',').toSigned();
+                if (tile.isNone || colCount > hardColCount) return Fault.invalid;
+                layers[layerId][rowCount - 1, colCount - 1] = cast(short) (tile.xx - isMinZero);
+            }
+        }
+        return Fault.none;
+    }
+
+    /// Parses a CSV string into the specified layer using the current tile size.
+    /// Returns a fault if parsing fails.
+    Fault parseCsv(IStr csv, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
+        return parseCsv(csv, tileWidth, tileHeight, layerId, isMinZero, file, line);
+    }
+
+    /// Parses a TMX (Tiled XML) map file, extracting tile size and all CSV data layers.
+    /// Does not support infinite maps. Returns a fault if parsing fails.
+    @trusted
+    Fault parseTmx(IStr tmx, IStr file = __FILE__, Sz line = __LINE__) {
+        auto layerId = 0;
+        auto view = tmx;
+        while (view.length) {
+            auto tmxLine = view.skipLine().trim();
+            auto isMapLine = tmxLine.startsWith("<map");
+            auto isDataStartLine = isMapLine ? false : tmxLine.startsWith("<data");
+            if (isMapLine) {
+                while (tmxLine.length && (tileWidth == 0 || tileHeight == 0)) {
+                    auto word = tmxLine.skipValue(" ").trim();
+                    auto isWidthWord = word.startsWith("tilewidth");
+                    auto isHeightWord = word.startsWith("tileheight");
+                    if (!isWidthWord && !isHeightWord) continue;
+                    auto value = word.split("=")[1][1 .. $ - 1].toSigned(); // NOTE: Removes `"` with `[1 .. $ - 1]`.
+                    if (value.isNone) return Fault.invalid;
+                    if (isWidthWord) tileWidth = cast(short) value.xx;
+                    if (isHeightWord) tileHeight = cast(short) value.xx;
+                }
+            } else if (isDataStartLine) {
+                Sz csvStart, csvEnd;
+                tmxLine = view.skipLine();
+                csvStart = tmxLine.ptr - tmx.ptr;
+                while (view.length) {
+                    tmxLine = view.skipLine().trimStart();
+                    if (tmxLine.startsWith("</")) {
+                        csvEnd = tmxLine.ptr - tmx.ptr;
+                        break;
+                    }
+                }
+                if (parseCsv(tmx[csvStart .. csvEnd], layerId, true, file, line)) return Fault.invalid;
+                layerId += 1;
+            }
+        }
+        return Fault.none;
+    }
+
+    /// Allocates or resizes all layers to the given hard row and column counts.
+    /// Clamps to `maxTileMapLayerRowColCount`. Creates a default layer if the map is empty.
+    void resizeHard(Sz newHardRowCount, Sz newHardColCount, IStr file = __FILE__, Sz line = __LINE__) {
+        if (isEmpty) {
+            layers.appendBlank(file, line);
+            layers[$ - 1].clear();
+        }
+        rowCount = min(maxTileMapLayerRowColCount, newHardRowCount);
+        colCount = min(maxTileMapLayerRowColCount, newHardColCount);
+        foreach (ref layer; layers) layer.resizeBlank(rowCount, colCount, file, line);
+    }
+
+    /// Frees all layers and associated memory.
+    void free(IStr file = __FILE__, Sz line = __LINE__) {
+        layers.free(file, line);
+    }
+
+    @safe nothrow @nogc:
+
+    /// Sets the active row and column count without reallocating. Asserts if either value exceeds the hard limit.
+    void resize(Sz newRowCount, Sz newColCount) {
+        if (newRowCount > hardRowCount || newColCount > hardColCount) assert(0, "Count must be smaller than hard count.");
+        rowCount = newRowCount;
+        colCount = newColCount;
+    }
+
+    /// Sets the tile size in pixels.
+    void resizeTileSize(short newTileWidth, short newTileHeight) {
+        tileWidth = newTileWidth;
+        tileHeight = newTileHeight;
+    }
+
+    /// Fills all layers with the empty tile id (-1).
+    void clear() {
+        foreach (ref layer; layers) layer.fill(-1);
+    }
+
+    /// Fills the specified layer with the empty tile id (-1).
+    void clear(Sz layerId) {
+        layers[layerId].fill(-1);
+    }
+
+    /// Marks all layers as ignored for leak detection purposes.
+    void ignoreLeak() {
+        layers.ignoreLeak();
+    }
+
+    /// Moves the map to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float delta) {
+        position = position.moveTo(target, Vec2(delta));
+    }
+
+    /// Moves the map to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown) {
+        position = position.moveToWithSlowdown(target, Vec2(delta), slowdown);
+    }
+
+    /// Returns a lazy range of grid points visible within the given view corners.
+    /// Includes one extra tile of padding on the far edges via `extraTileCount`.
+    auto gridPoints(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint) {
+        alias T = ushort;
+        static struct Range {
+            T colCount;
+            GVec2!T first;
+            GVec2!T last;
+            GVec2!T position;
+
+            bool empty() {
+                return position.x > last.x || position.y > last.y;
+            }
+
+            IVec2 front() {
+                return IVec2(position.x, position.y);
+            }
+
+            void popFront() {
+                position.x += 1;
+                if (position.x >= colCount) {
+                    position.x = first.x;
+                    position.y += 1;
+                }
+            }
+        }
+
+        if (!hasSize) return Range();
+        auto firstGridPoint = GVec2!T(
+            cast(T) clamp((topLeftViewPoint.x - position.x) / tileWidth, 0, colCount - 1),
+            cast(T) clamp((topLeftViewPoint.y - position.y) / tileHeight, 0, rowCount - 1),
+        );
+        auto lastGridPoint = GVec2!T(
+            cast(T) clamp((bottomRightViewPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
+            cast(T) clamp((bottomRightViewPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
+        );
+        return Range(
+            cast(T) colCount,
+            firstGridPoint,
+            lastGridPoint,
+            firstGridPoint,
+        );
+    }
+
+    /// Returns a lazy range of grid points visible within the given view rectangle.
+    auto gridPoints(Rect viewArea) {
+        return gridPoints(viewArea.topLeftPoint, viewArea.bottomRightPoint);
+    }
+
+    /// Returns a lazy range of `Tile` values visible within the given view corners on the specified layer.
+    /// Each tile carries its size, id, and world-space position. Includes one extra tile of padding on the far edges.
+    auto tiles(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint, Sz layerId = 0) {
+        alias T = ushort;
+        static struct Range {
+            T colCount;
+            GVec2!T first;
+            GVec2!T last;
+            GVec2!T position;
+            short width;
+            short height;
+            TileMapLayer* layer;
+
+            bool empty() {
+                return position.x > last.x || position.y > last.y;
+            }
+
+            Tile front() {
+                return Tile(width, height, (*layer)[position.y, position.x], Vec2(position.x * width, position.y * height));
+            }
+
+            void popFront() {
+                position.x += 1;
+                if (position.x >= colCount) {
+                    position.x = first.x;
+                    position.y += 1;
+                }
+            }
+        }
+
+        if (!hasSize) return Range();
+        auto firstGridPoint = GVec2!T(
+            cast(T) clamp((topLeftViewPoint.x - position.x) / tileWidth, 0, colCount - 1),
+            cast(T) clamp((topLeftViewPoint.y - position.y) / tileHeight, 0, rowCount - 1),
+        );
+        auto lastGridPoint = GVec2!T(
+            cast(T) clamp((bottomRightViewPoint.x - position.x) / tileWidth + extraTileCount, 0, colCount - 1),
+            cast(T) clamp((bottomRightViewPoint.y - position.y) / tileHeight + extraTileCount, 0, rowCount - 1),
+        );
+        return Range(
+            cast(T) colCount,
+            firstGridPoint,
+            lastGridPoint,
+            firstGridPoint,
+            tileWidth,
+            tileHeight,
+            &layers[layerId],
+        );
+    }
+
+    /// Returns a lazy range of `Tile` values visible within the given view rectangle on the specified layer.
+    auto tiles(Rect viewArea, Sz layerId = 0) {
+        return tiles(viewArea.topLeftPoint, viewArea.bottomRightPoint, layerId);
+    }
+}
+
 /// A single sprite animation, defined by its position in an atlas and playback settings.
 struct SpriteAnimation {
     ubyte frameRow;        /// The atlas row this animation plays from.

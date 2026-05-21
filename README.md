@@ -31,7 +31,7 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Flexible dialogue system
 - Atlas-based animation library
 - Efficient tile map structures
-- Intuitive immediate-mode UI (WIP)
+- Intuitive UI library (WIP)
 - Includes extras like [microui](examples/integrations/microui.d) and memory allocators ([tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25))
 - Mixed memory model (manual, GC, or both)
 - No external dependencies

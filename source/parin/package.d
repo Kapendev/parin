@@ -10,6 +10,5 @@ module parin;
 public import parin.joka.io;
 
 public import parin.engine;
-public import parin.map;
 public import parin.types;
 public import parin.ui;
