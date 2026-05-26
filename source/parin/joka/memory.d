@@ -2397,7 +2397,7 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
                 if (i == argIndex) {
                     tempSlice = arg.toStr();
                     static if (S.hasFixedCapacity) {
-                        if (list.capacity < list.length + tempSlice.length) return "";
+                        if (list.capacity < list.length + tempSlice.length) return list[0 .. 0];
                     }
                     list.append(tempSlice);
                     fmtStrIndex += 2;
@@ -2468,18 +2468,18 @@ IStr sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, I
 /// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     auto text = sprintf(buffer, fmtStr, args);
-    if (text.length == 0) return "";
+    if (text.length == 0) return buffer[0 .. 0];
     static if (isStrContainerType!S) {
         static if (isLStrType!S) {
             buffer.append('\n');
             return buffer[];
         } else {
-            if (text.length == buffer.capacity) return "";
+            if (text.length == buffer.capacity) return buffer[0 .. 0];
             buffer.append('\n');
             return buffer[];
         }
     } else {
-        if (text.length == buffer.length) return "";
+        if (text.length == buffer.length) return buffer[0 .. 0];
         buffer[text.length] = '\n';
         return buffer[0 .. text.length + 1];
     }

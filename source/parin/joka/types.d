@@ -1279,7 +1279,7 @@ IStr fmtIntoBufferWithStrs(Str buffer, IStr fmtStr, IStr[] args...) {
         auto c2 = fmtStrIndex + 1 >= fmtStr.length ? '+' : fmtStr[fmtStrIndex + 1];
         if (c1 == defaultAsciiFmtArgStr[0] && c2 == defaultAsciiFmtArgStr[1]) {
             if (argIndex == args.length) assert(0, "A placeholder doesn't have an argument.");
-            if (copyChars(result, args[argIndex], resultLength)) return "";
+            if (copyChars(result, args[argIndex], resultLength)) return buffer[0 .. 0]; // NOTE: This makes sure we get the same pointer as the buffer.
             resultLength += args[argIndex].length;
             fmtStrIndex += 2;
             argIndex += 1;
@@ -1311,7 +1311,7 @@ IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];
-        if (tempSlice.copyStr(arg.toStr())) return ""; // "An argument did not fit in the internal temporary buffer."
+        if (tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0]; // "An argument did not fit in the internal temporary buffer."
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
@@ -1347,7 +1347,7 @@ IStr fmt(A...)(IStr fmtStr, A args) {
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];
-        if (tempSlice.copyStr(arg.toStr())) return ""; // "An argument did not fit in the internal temporary buffer."
+        if (tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0]; // "An argument did not fit in the internal temporary buffer."
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);

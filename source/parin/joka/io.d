@@ -24,23 +24,42 @@ enum StdStream : ubyte {
     error,
 }
 
+/// Basic print function that returns the bytes written.
+@trusted nothrow @nogc
+void basicPrint(IStr text, StdStream stream = StdStream.output, Sz* writtenCount = null) {
+    if (stream == StdStream.input) return;
+    version (WASI) {
+        auto targetStream = stream == StdStream.output ? wasip1.stdout : wasip1.stderr;
+        auto wasiBytes = wasi.Size();
+        auto wasiText = wasi.toCiovec(text);
+        wasi.fdWrite(targetStream, &wasiText, 1, &wasiBytes);
+        if (writtenCount) *writtenCount = wasiBytes;
+    } else {
+        auto targetStream = stream == StdStream.output ? stdc.stdout : stdc.stderr;
+        auto stdcBytes = stdc.fwrite(text.ptr, 1, text.length, targetStream);
+        if (writtenCount) *writtenCount = stdcBytes;
+    }
+}
+
+/// Basic print function that returns the bytes written.
+@trusted nothrow @nogc
+void basicPrint(IStr text, StdStream stream = StdStream.output, ref Sz writtenCount) {
+    basicPrint(text, stream, &writtenCount);
+}
+
+/// Basic print function that can be used with types that have an `EchonFunc` field.
+@safe nothrow @nogc
+void echon(IStr[] text...) {
+    foreach (part; text) {
+        basicPrint(part);
+        basicPrint("\n");
+    }
+}
+
 /// Prints formatted text to stdout.
 /// For details on formatting, see the `fmtIntoBuffer` function.
-@trusted
 void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
-    static assert(stream != StdStream.input, "Can't print to standard input.");
-
-    auto text = fmt(fmtStr, args);
-    auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
-    if (text.length == 0 || text.length == textData.length) return;
-    textData[text.length] = '\0';
-    version (WASI) {
-        auto bytes = wasi.Size();
-        auto wasiText = wasi.toCiovec(textData[0 .. text.length]);
-        wasi.fdWrite(stream == StdStream.output ? wasi.stdout : wasi.stderr, &wasiText, 1, &bytes);
-    } else {
-        stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
-    }
+    basicPrint(fmtStr.fmt(args), stream);
 }
 
 /// Prints formatted text to stdout.
@@ -66,20 +85,11 @@ void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader heade
 /// For details on formatting, see the `fmtIntoBuffer` function.
 @trusted
 void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
-    static assert(stream != StdStream.input, "Can't print to standard input.");
-
-    auto text = fmt(fmtStr, args);
+    auto text = fmtStr.fmt(args);
     auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
-    if (text.length == 0 || text.length == textData.length || text.length + 1 == textData.length) return;
+    if (text.length == textData.length) return;
     textData[text.length] = '\n';
-    textData[text.length + 1] = '\0';
-    version (WASI) {
-        auto bytes = wasi.Size();
-        auto wasiText = wasi.toCiovec(textData[0 .. text.length + 1]);
-        wasi.fdWrite(stream == StdStream.output ? wasi.stdout : wasi.stderr, &wasiText, 1, &bytes);
-    } else {
-        stdc.fputs(textData.ptr, stream == StdStream.output ? stdc.stdout : stdc.stderr);
-    }
+    basicPrint(textData[0 .. text.length + 1], stream);
 }
 
 /// Prints formatted text with a new line at the end to stdout.
@@ -104,12 +114,14 @@ void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader hea
 /// Prints text to stdout.
 void print(StdStream stream = StdStream.output, A...)(A args) {
     static if (is(A[0] == Sep)) {
-        foreach (i, arg; args[1 .. $]) {
+        static foreach (i, arg; args[1 .. $]) {
             if (i) printf!stream("{}", args[0].value);
             printf!stream("{}", arg);
         }
     } else {
-        foreach (arg; args) printf!stream("{}", arg);
+        static foreach (arg; args) {
+            printf!stream("{}", arg);
+        }
     }
 }
 
@@ -156,14 +168,8 @@ void eprintln(A...)(A args) {
 /// Prints values and their source location to stdout.
 void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
     printf("TRACE({}:{}):", file, line);
-    foreach (arg; args) printf(" {}", arg);
+    static foreach (arg; args) printf(" {}", arg);
     printf("\n");
-}
-
-/// A basic print function that can be used with types that have an `EchonFunc` field.
-@safe nothrow @nogc
-void echon(IStr[] text...) {
-    foreach (part; text) print(part);
 }
 
 /// Reads an file in one go and store the data inside a buffer.
