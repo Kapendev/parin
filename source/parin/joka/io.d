@@ -50,10 +50,7 @@ void basicPrint(IStr text, StdStream stream = StdStream.output, ref Sz writtenCo
 /// Basic print function that can be used with types that have an `EchonFunc` field.
 @safe nothrow @nogc
 void echon(IStr[] text...) {
-    foreach (part; text) {
-        basicPrint(part);
-        basicPrint("\n");
-    }
+    foreach (part; text) basicPrint(part);
 }
 
 /// Prints formatted text to stdout.
