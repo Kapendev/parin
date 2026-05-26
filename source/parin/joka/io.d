@@ -29,7 +29,7 @@ enum StdStream : ubyte {
 void basicPrint(IStr text, StdStream stream = StdStream.output, Sz* writtenCount = null) {
     if (stream == StdStream.input) return;
     version (WASI) {
-        auto targetStream = stream == StdStream.output ? wasip1.stdout : wasip1.stderr;
+        auto targetStream = stream == StdStream.output ? wasi.stdout : wasi.stderr;
         auto wasiBytes = wasi.Size();
         auto wasiText = wasi.toCiovec(text);
         wasi.fdWrite(targetStream, &wasiText, 1, &wasiBytes);
