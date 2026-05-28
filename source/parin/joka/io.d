@@ -99,10 +99,7 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
     auto text = fmtStr.fmt(args);
     auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
     if (text.length == textData.length) return;
-    version (WASM4) {
-    } else {
-        textData[text.length] = '\n';
-    }
+    textData[text.length] = '\n';
     basicPrint(textData[0 .. text.length + 1], stream);
 }
 
@@ -146,10 +143,7 @@ void print(StdStream stream = StdStream.output, A...)(A args) {
 /// Prints text with a new line at the end to stdout.
 void println(StdStream stream = StdStream.output, A...)(A args) {
     print!stream(args);
-    version (WASM4) {
-    } else {
-        print!stream("\n");
-    }
+    print!stream("\n");
 }
 
 /// Prints formatted text to stderr.
