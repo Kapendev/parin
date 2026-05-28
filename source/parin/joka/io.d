@@ -13,7 +13,11 @@ import parin.joka.types;
 
 // TODO: Should be changed with something better?
 version (WASI) {
+    version = ReadWriteFileIsEmpty;
     import wasi = parin.joka.wasip1;
+} else version (WASM4) {
+    version = ReadWriteFileIsEmpty;
+    import wasm4 = parin.joka.wasm4;
 } else {
     import stdc = parin.joka.stdc;
 }
@@ -27,13 +31,19 @@ enum StdStream : ubyte {
 /// Basic print function that returns the bytes written.
 @trusted nothrow @nogc
 void basicPrint(IStr text, StdStream stream = StdStream.output, Sz* writtenCount = null) {
-    if (stream == StdStream.input) return;
+    if (text.length == 0 || stream == StdStream.input) return;
     version (WASI) {
         auto targetStream = stream == StdStream.output ? wasi.stdout : wasi.stderr;
         auto wasiBytes = wasi.Size();
         auto wasiText = wasi.toCiovec(text);
         wasi.fdWrite(targetStream, &wasiText, 1, &wasiBytes);
         if (writtenCount) *writtenCount = wasiBytes;
+    } else version (WASM4) {
+        char[defaultAsciiFmtBufferSize] buffer = void;
+        if (buffer.length < text.length + 1) return;
+        buffer.copyChars(text);
+        buffer[text.length] = '\0';
+        wasm4.trace(buffer.ptr);
     } else {
         auto targetStream = stream == StdStream.output ? stdc.stdout : stdc.stderr;
         auto stdcBytes = stdc.fwrite(text.ptr, 1, text.length, targetStream);
@@ -180,7 +190,7 @@ void trace(IStr file = __FILE__, Sz line = __LINE__, A...)(A args) {
 /// Reads an file in one go and store the data inside a buffer.
 @trusted
 Fault readFileIntoBuffer(L = LStr)(IStr path, ref L listBuffer, bool binaryMode) {
-    version (WASI) {
+    version (ReadWriteFileIsEmpty) {
         return Fault.some;
     } else {
         auto file = stdc.fopen(toStrz(path).getOr(), binaryMode ? "rb" : "r");
@@ -250,7 +260,7 @@ Maybe!LStr readBytes(IStr path) {
 /// Writes a file.
 @trusted nothrow @nogc
 Fault writeFile(IStr path, IStr text, bool binaryMode) {
-    version (WASI) {
+    version (ReadWriteFileIsEmpty) {
         return Fault.some;
     } else {
         auto file = stdc.fopen(toStrz(path).getOr(), binaryMode ? "wb" : "w");

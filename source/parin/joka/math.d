@@ -12,6 +12,8 @@ import parin.joka.types;
 
 version (WASI) {
     version = JokaMathStubs;
+} else version (WASM4) {
+    version = JokaMathStubs;
 }
 
 @safe nothrow @nogc:
