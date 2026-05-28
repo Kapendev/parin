@@ -43,7 +43,7 @@ bool update(float dt) {
     i = 6;
     fmt(i"Time $(i): $(elapsedTime)");
     fmtIntoBuffer(buffer[], i"Time $(i): $(elapsedTime)");
-    fmtIntoList(buffer, i"Time $(i): $(elapsedTime)");
+    fmtIntoList(buffer, false,  i"Time $(i): $(elapsedTime)");
 
     // Also a basic allocator test because why not?
     // Just wanted to see if the context versions are working.

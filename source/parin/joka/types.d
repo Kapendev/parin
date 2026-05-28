@@ -1686,46 +1686,63 @@ int findItemThatEndsWith(IStr[] items, IStr end) {
 }
 
 /// Removes whitespace characters from the beginning of the string.
-IStr trimStart(IStr str) {
+/// Value `pattern` can be used to trim a specific pattern from the start (e.g. "temp.") instead of whitespace.
+IStr trimStart(IStr str, IStr pattern = "") {
     IStr result = str;
-    while (result.length > 0) {
-        if (isSpace(result[0])) result = result[1 .. $];
-        else break;
+    if (pattern.length) {
+        while (result.length > 0) {
+            if (!result.startsWith(pattern)) break;
+            result = result[pattern.length .. $];
+            break;
+        }
+    } else {
+        while (result.length > 0) {
+            if (!isSpace(result[0])) break;
+            result = result[1 .. $];
+        }
     }
     return result;
 }
 
 /// Removes whitespace characters from the end of the string.
-IStr trimEnd(IStr str) {
+/// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt") instead of whitespace.
+IStr trimEnd(IStr str, IStr pattern = "") {
     IStr result = str;
-    while (result.length > 0) {
-        if (isSpace(result[$ - 1])) result = result[0 .. $ - 1];
-        else break;
+    if (pattern.length) {
+        while (result.length > 0) {
+            if (!result.endsWith(pattern)) break;
+            result = result[0 .. $ - pattern.length];
+            break;
+        }
+    } else {
+        while (result.length > 0) {
+            if (!isSpace(result[$ - 1])) break;
+            result = result[0 .. $ - 1];
+        }
     }
     return result;
 }
 
 /// Removes whitespace characters from both the beginning and end of the string.
-IStr trim(IStr str) {
-    return str.trimStart().trimEnd();
+/// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt").
+/// Whitespace is always removed.
+IStr trim(IStr str, IStr pattern = "") {
+    return str.trimStart().trimEnd().trimEnd(pattern);
 }
 
 /// Removes the specified prefix from the beginning of the string if it exists.
-IStr removePrefix(IStr str, IStr prefix) {
-    if (str.startsWith(prefix)) return str[prefix.length .. $];
-    else return str;
-}
+alias removePrefix = trimStart;
 
 /// Removes the specified suffix from the end of the string if it exists.
-IStr removeSuffix(IStr str, IStr suffix) {
-    if (str.endsWith(suffix)) return str[0 .. $ - suffix.length];
-    else return str;
-}
+alias removeSuffix = trimEnd;
 
 /// Advances the string by the specified number of characters.
 IStr advanceStr(IStr str, Sz amount) {
-    if (str.length < amount) return str[$ .. $];
-    else return str[amount .. $];
+    if (str.length < amount) {
+        return str[$ .. $];
+    } else {
+        return str[amount .. $];
+    }
 }
 
 /// Copies characters from the source string to the destination string starting at the specified index.

@@ -85,9 +85,6 @@ struct ScopedAllocationGroup {
     }
 }
 
-deprecated("Use `ScopedAllocationGroup`.")
-alias AllocationGroup = ScopedAllocationGroup;
-
 // NOTE: The methods of `MemoryContext` are helpers that avoid `void*` mistakes.
 /// A dynamic allocator API.
 struct MemoryContext {
@@ -2383,9 +2380,9 @@ pragma(inline, true) @trusted @nogc {
 }
 
 /// Formats a string using a list and returns the resulting formatted string.
-/// The list is cleared before writing.
+/// The list is cleared before writing if `canAppend` is false.
 /// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
-IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr, A args) {
+IStr fmtIntoListWithStrs(S = LStr)(ref S list, bool canAppend, IStr fmtStr, IStr[] args...) {
     if (!canAppend) list.clear();
     IStr tempSlice;
     auto fmtStrIndex = 0;
@@ -2395,32 +2392,39 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
         auto c2 = fmtStrIndex + 1 >= fmtStr.length ? '+' : fmtStr[fmtStrIndex + 1];
         if (c1 == defaultAsciiFmtArgStr[0] && c2 == defaultAsciiFmtArgStr[1]) {
             if (argIndex == args.length) assert(0, "A placeholder doesn't have an argument.");
-            static foreach (i, arg; args) {
-                if (i == argIndex) {
-                    tempSlice = arg.toStr();
-                    static if (S.hasFixedCapacity) {
-                        if (list.capacity < list.length + tempSlice.length) return list[0 .. 0];
-                    }
-                    list.append(tempSlice);
-                    fmtStrIndex += 2;
-                    argIndex += 1;
-                    goto loopExit;
-                }
-            }
-            loopExit:
+            static if (S.hasFixedCapacity) { if (list.capacity < list.length + args[argIndex].length) return list[0 .. 0]; }
+            list.append(args[argIndex]);
+            fmtStrIndex += 2;
+            argIndex += 1;
         } else {
             list.append(c1);
             fmtStrIndex += 1;
         }
     }
     if (argIndex != args.length) assert(0, "An argument doesn't have a placeholder.");
-    return list[];
+    return list.items;
 }
 
 /// Formats a string using a list and returns the resulting formatted string.
-/// The list is cleared before writing.
+/// The list is cleared before writing if `canAppend` is false.
 /// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
-IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, InterpolationHeader header, A args, InterpolationFooter footer) {
+IStr fmtIntoList(S = LStr, A...)(ref S list, bool canAppend, IStr fmtStr, A args) {
+    // `fmtIntoBuffer` body copy-pasted here with some changes.
+    static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
+    foreach (i, ref dataBuffer; _fmtIntoBufferDataBuffer) {
+        auto tempSlice = dataBuffer[];
+        static foreach (j, arg; args) {
+            if (i == j && tempSlice.copyStr(arg.toStr())) return "";
+        }
+        _fmtIntoBufferSliceBuffer[i] = tempSlice;
+    }
+    return fmtIntoListWithStrs!S(list, canAppend, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
+}
+
+/// Formats a string using a list and returns the resulting formatted string.
+/// The list is cleared before writing if `canAppend` is false.
+/// For details on formatting behavior, see the `fmtIntoBufferWithStrs` function in the `ascii` module.
+IStr fmtIntoList(S = LStr, A...)(ref S list, bool canAppend, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
         Str result;
@@ -2438,14 +2442,14 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, Interpolati
         }
         return result;
     }();
-    mixin("return fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ");");
+    mixin("return fmtIntoList!S(list, canAppend, fmtStr,", fmtArgs, ");");
 }
 
 /// Prints formatted text to the given buffer.
 /// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
     static if (isStrContainerType!S) {
-        return fmtIntoList!true(buffer, fmtStr, args);
+        return fmtIntoList(buffer, true, fmtStr, args);
     } else {
         return fmtIntoBuffer(buffer, fmtStr, args);
     }
@@ -2709,8 +2713,8 @@ unittest {
     assert(text.length == 0);
     assert(text.capacity == defaultListCapacity * 2);
 
-    assert(text.fmtIntoList("Hello {}!", "world") == "Hello world!");
-    assert(text.fmtIntoList("({}, {})", -69, -420) == "(-69, -420)");
+    assert(text.fmtIntoList(false, "Hello {}!", "world") == "Hello world!");
+    assert(text.fmtIntoList(false, "({}, {})", -69, -420) == "(-69, -420)");
 
     text.free();
 }
