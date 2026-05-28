@@ -39,7 +39,7 @@ void basicPrint(IStr text, StdStream stream = StdStream.output, Sz* writtenCount
         wasi.fdWrite(targetStream, &wasiText, 1, &wasiBytes);
         if (writtenCount) *writtenCount = wasiBytes;
     } else version (WASM4) {
-        char[defaultAsciiFmtBufferSize] buffer = void;
+        char[128] buffer = void;
         if (buffer.length < text.length + 1) return;
         buffer.copyChars(text);
         buffer[text.length] = '\0';
