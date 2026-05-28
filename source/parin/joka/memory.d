@@ -2393,7 +2393,7 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
         auto c2 = fmtStrIndex + 1 >= fmtStr.length ? '+' : fmtStr[fmtStrIndex + 1];
         if (c1 == defaultAsciiFmtArgStr[0] && c2 == defaultAsciiFmtArgStr[1]) {
             if (argIndex == args.length) assert(0, "A placeholder doesn't have an argument.");
-            foreach (i, arg; args) {
+            static foreach (i, arg; args) {
                 if (i == argIndex) {
                     tempSlice = arg.toStr();
                     static if (S.hasFixedCapacity) {
@@ -2421,16 +2421,20 @@ IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, IStr fmtStr
 IStr fmtIntoList(bool canAppend = false, S = LStr, A...)(ref S list, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     mixin("return fmtIntoList!(canAppend, S)(list, fmtStr,", fmtArgs, ");");
 }
@@ -2450,16 +2454,20 @@ IStr sprintf(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
 IStr sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     mixin("return sprintf(buffer, fmtStr,", fmtArgs, ");");
 }
@@ -2490,16 +2498,20 @@ IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
 IStr sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     mixin("return sprintfln(buffer, fmtStr,", fmtArgs, ");");
 }

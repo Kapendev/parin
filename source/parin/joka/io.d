@@ -64,16 +64,20 @@ void printf(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
 void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     mixin("printf(fmtStr,", fmtArgs, ");");
 }
@@ -94,16 +98,20 @@ void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
 void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     mixin("printfln(fmtStr,", fmtArgs, ");");
 }

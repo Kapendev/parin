@@ -1238,7 +1238,6 @@ IStr toStr(T)(T value) {
         !(is(T : const(A)[N], A, Sz N)), // !isArrayType
         "Static arrays can't be passed to `toStr`. This may also happen indirectly when using printing functions. Convert to a slice first."
     );
-
     static if (is(T == enum)) { // isEnumType
         return enumToStr(value);
     } else static if (is(T == char) || is(T == const(char)) || is(T == immutable(char))) { // isCharType
@@ -1307,11 +1306,23 @@ byte _fmtBufferIndex = 0;
 /// Writes into the buffer and returns the formatted string.
 @trusted
 IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
-    static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
+    /*
+    // The old loop that got replaced.
+    // It has 3 lines in the static foreach. The current one has only 1 line.
     Str tempSlice;
     foreach (i, arg; args) {
         tempSlice = _fmtIntoBufferDataBuffer[i][];
         if (tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0]; // "An argument did not fit in the internal temporary buffer."
+        _fmtIntoBufferSliceBuffer[i] = tempSlice;
+    }
+    */
+
+    static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
+    foreach (i, ref dataBuffer; _fmtIntoBufferDataBuffer) {
+        auto tempSlice = dataBuffer[];
+        static foreach (j, arg; args) {
+            if (i == j && tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0];
+        }
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
@@ -1320,16 +1331,20 @@ IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
 IStr fmtIntoBuffer(A...)(Str buffer, InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     return mixin("fmtIntoBuffer(buffer, fmtStr,", fmtArgs, ")");
 }
@@ -1344,10 +1359,11 @@ IStr fmt(A...)(IStr fmtStr, A args) {
 
     // `fmtIntoBuffer` body copy-pasted here to avoid one template.
     static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
-    Str tempSlice;
-    foreach (i, arg; args) {
-        tempSlice = _fmtIntoBufferDataBuffer[i][];
-        if (tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0]; // "An argument did not fit in the internal temporary buffer."
+    foreach (i, ref dataBuffer; _fmtIntoBufferDataBuffer) {
+        auto tempSlice = dataBuffer[];
+        static foreach (j, arg; args) {
+            if (i == j && tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0];
+        }
         _fmtIntoBufferSliceBuffer[i] = tempSlice;
     }
     return fmtIntoBufferWithStrs(buffer, fmtStr, _fmtIntoBufferSliceBuffer[0 .. args.length]);
@@ -1356,16 +1372,20 @@ IStr fmt(A...)(IStr fmtStr, A args) {
 IStr fmt(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
     // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
     enum fmtStr = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T) { result ~= args[i].toString(); }
             else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        } return result;
+        }
+        return result;
     }();
     enum fmtArgs = () {
-        Str result; static foreach (i, T; A) {
+        Str result;
+        static foreach (i, T; A) {
             static if (isInterLitType!T || isInterExpType!T) {}
             else { result ~= "args[" ~ i.stringof ~ "],"; }
-        } return result;
+        }
+        return result;
     }();
     return mixin("fmt(fmtStr,", fmtArgs, ")");
 }
