@@ -2671,92 +2671,47 @@ struct SlicePart {
 /// The parts of a 9-slice.
 alias SliceParts = StaticArray!(SlicePart, 9);
 
-/// Computes the parts of a 9-slice.
 SliceParts computeSliceParts(IRect source, IRect target, Margin margin) {
     SliceParts result;
     if (!source.hasSize || !target.hasSize) return result;
+
+    static immutable int[5] tileSides = [1, 3, 4, 5, 7];
     auto canClipW = target.w - source.w < -margin.left - margin.right;
     auto canClipH = target.h - source.h < -margin.top - margin.bottom;
+    // 3 columns: x, w for source and target.
+    immutable int[3] srcX = [source.x, source.x + margin.left, source.x + source.w - margin.right];
+    immutable int[3] srcW = [margin.left, source.w - margin.left - margin.right, margin.right];
+    immutable int[3] tgtX = [target.x, target.x + margin.left, target.x + target.w - margin.right];
+    immutable int[3] tgtW = [margin.left, target.w - margin.left - margin.right, margin.right];
+    // 3 rows: y, h for source and target.
+    immutable int[3] srcY = [source.y, source.y + margin.top, source.y + source.h - margin.bottom];
+    immutable int[3] srcH = [margin.top, source.h - margin.top - margin.bottom, margin.bottom];
+    immutable int[3] tgtY = [target.y, target.y + margin.top, target.y + target.h - margin.bottom];
+    immutable int[3] tgtH = [margin.top, target.h - margin.top - margin.bottom, margin.bottom];
 
-    // -- 1
-    result[0].source.x  = source.x;                                              result[0].source.y = source.y;
-    result[0].source.w  = margin.left;                                           result[0].source.h = margin.top;
-    result[0].target.x  = target.x;                                              result[0].target.y = target.y;
-    result[0].target.w  = margin.left;                                           result[0].target.h = margin.top;
-    result[0].isCorner = true;
-
-    result[1].source.x  = source.x + result[0].source.w;                         result[1].source.y = result[0].source.y;
-    result[1].source.w  = source.w - margin.left - margin.right;                 result[1].source.h = result[0].source.h;
-    result[1].target.x  = target.x + margin.left;                                result[1].target.y = result[0].target.y;
-    result[1].target.w  = target.w - margin.left - margin.right;                 result[1].target.h = result[0].target.h;
-    result[1].canTile = true;
-
-    result[2].source.x  = source.x + result[0].source.w + result[1].source.w;    result[2].source.y = result[0].source.y;
-    result[2].source.w  = margin.right;                                          result[2].source.h = result[0].source.h;
-    result[2].target.x  = target.x + target.w - margin.right;                    result[2].target.y = result[0].target.y;
-    result[2].target.w  = margin.right;                                          result[2].target.h = result[0].target.h;
-    result[2].isCorner = true;
-
-    // -- 2
-    result[3].source.x  = result[0].source.x;                                    result[3].source.y = source.y + margin.top;
-    result[3].source.w  = result[0].source.w;                                    result[3].source.h = source.h - margin.top - margin.bottom;
-    result[3].target.x  = result[0].target.x;                                    result[3].target.y = target.y + margin.top;
-    result[3].target.w  = result[0].target.w;                                    result[3].target.h = target.h - margin.top - margin.bottom;
-    result[3].canTile = true;
-
-    result[4].source.x  = result[1].source.x;                                    result[4].source.y = result[3].source.y;
-    result[4].source.w  = result[1].source.w;                                    result[4].source.h = result[3].source.h;
-    result[4].target.x  = result[1].target.x;                                    result[4].target.y = result[3].target.y;
-    result[4].target.w  = result[1].target.w;                                    result[4].target.h = result[3].target.h;
-    result[4].canTile = true;
-
-    result[5].source.x  = result[2].source.x;                                    result[5].source.y = result[3].source.y;
-    result[5].source.w  = result[2].source.w;                                    result[5].source.h = result[3].source.h;
-    result[5].target.x  = result[2].target.x;                                    result[5].target.y = result[3].target.y;
-    result[5].target.w  = result[2].target.w;                                    result[5].target.h = result[3].target.h;
-    result[5].canTile = true;
-
-    // -- 3
-    result[6].source.x  = result[0].source.x;                                    result[6].source.y = source.y + margin.top + result[3].source.h;
-    result[6].source.w  = result[0].source.w;                                    result[6].source.h = margin.bottom;
-    result[6].target.x  = result[0].target.x;                                    result[6].target.y = target.y + margin.top + result[3].target.h;
-    result[6].target.w  = result[0].target.w;                                    result[6].target.h = margin.bottom;
-    result[6].isCorner = true;
-
-    result[7].source.x  = result[1].source.x;                                    result[7].source.y = result[6].source.y;
-    result[7].source.w  = result[1].source.w;                                    result[7].source.h = result[6].source.h;
-    result[7].target.x  = result[1].target.x;                                    result[7].target.y = result[6].target.y;
-    result[7].target.w  = result[1].target.w;                                    result[7].target.h = result[6].target.h;
-    result[7].canTile = true;
-
-    result[8].source.x  = result[2].source.x;                                    result[8].source.y = result[6].source.y;
-    result[8].source.w  = result[2].source.w;                                    result[8].source.h = result[6].source.h;
-    result[8].target.x  = result[2].target.x;                                    result[8].target.y = result[6].target.y;
-    result[8].target.w  = result[2].target.w;                                    result[8].target.h = result[6].target.h;
-    result[8].isCorner = true;
-
-    if (canClipW) {
-        foreach (ref item; result) {
-            item.target.x = target.x;
-            item.target.w = target.w;
+    foreach (row; 0 .. 3) {
+        foreach (col; 0 .. 3) {
+            auto i = row * 3 + col;
+            result[i].source = IRect(srcX[col], srcY[row], srcW[col], srcH[row]);
+            result[i].target = IRect(tgtX[col], tgtY[row], tgtW[col], tgtH[row]);
+            result[i].isCorner = (row == 0 || row == 2) && (col == 0 || col == 2);
+            result[i].canTile  = !result[i].isCorner;
         }
     }
-    if (canClipH) {
-        foreach (ref item; result) {
-            item.target.y = target.y;
-            item.target.h = target.h;
-        }
+
+    if (canClipW) foreach (ref item; result) {
+        item.target.x = target.x;
+        item.target.w = target.w;
     }
-    result[1].tileCount.x = result[1].source.w ? result[1].target.w / result[1].source.w + 1 : 0;
-    result[1].tileCount.y = result[1].source.h ? result[1].target.h / result[1].source.h + 1 : 0;
-    result[3].tileCount.x = result[3].source.w ? result[3].target.w / result[3].source.w + 1 : 0;
-    result[3].tileCount.y = result[3].source.h ? result[3].target.h / result[3].source.h + 1 : 0;
-    result[4].tileCount.x = result[4].source.w ? result[4].target.w / result[4].source.w + 1 : 0;
-    result[4].tileCount.y = result[4].source.h ? result[4].target.h / result[4].source.h + 1 : 0;
-    result[5].tileCount.x = result[5].source.w ? result[5].target.w / result[5].source.w + 1 : 0;
-    result[5].tileCount.y = result[5].source.h ? result[5].target.h / result[5].source.h + 1 : 0;
-    result[7].tileCount.x = result[7].source.w ? result[7].target.w / result[7].source.w + 1 : 0;
-    result[7].tileCount.y = result[7].source.h ? result[7].target.h / result[7].source.h + 1 : 0;
+    if (canClipH) foreach (ref item; result) {
+        item.target.y = target.y;
+        item.target.h = target.h;
+    }
+    foreach (i; tileSides) {
+        auto r = &result[i];
+        r.tileCount.x = r.source.w ? r.target.w / r.source.w + 1 : 0;
+        r.tileCount.y = r.source.h ? r.target.h / r.source.h + 1 : 0;
+    }
     return result;
 }
 
@@ -2824,19 +2779,55 @@ Maybe!StoryLineKind toStoryLineKind(char from) {
 
 Maybe!StoryOp toStoryOp(IStr from) {
     with (StoryOp) switch (from) {
-        case "+": return Maybe!StoryOp(ADD);
-        case "-": return Maybe!StoryOp(SUB);
-        case "*": return Maybe!StoryOp(MUL);
-        case "/": return Maybe!StoryOp(DIV);
-        case "%": return Maybe!StoryOp(MOD);
-        case "&": return Maybe!StoryOp(AND);
-        case "|": return Maybe!StoryOp(OR);
-        case "<": return Maybe!StoryOp(LESS);
-        case ">": return Maybe!StoryOp(GREATER);
-        case "=": return Maybe!StoryOp(EQUAL);
-        case "!": return Maybe!StoryOp(NOT);
-        case "~": return Maybe!StoryOp(POP);
-        default : break;
+        case "ADD", "+": return Maybe!StoryOp(ADD);
+        case "SUB", "-": return Maybe!StoryOp(SUB);
+        case "MUL", "*": return Maybe!StoryOp(MUL);
+        case "DIV", "/": return Maybe!StoryOp(DIV);
+        case "MOD", "%": return Maybe!StoryOp(MOD);
+        case "AND", "&": return Maybe!StoryOp(AND);
+        case "OR", "|": return Maybe!StoryOp(OR);
+        case "LESS", "<": return Maybe!StoryOp(LESS);
+        case "GREATER", ">": return Maybe!StoryOp(GREATER);
+        case "EQUAL", "=": return Maybe!StoryOp(EQUAL);
+        case "NOT", "!": return Maybe!StoryOp(NOT);
+        case "POP", "~": return Maybe!StoryOp(POP);
+        case "CLEAR": return Maybe!StoryOp(CLEAR);
+        case "SWAP": return Maybe!StoryOp(SWAP);
+        case "COPY": return Maybe!StoryOp(COPY);
+        case "COPYN": return Maybe!StoryOp(COPYN);
+        case "RANGE": return Maybe!StoryOp(RANGE);
+        case "IF": return Maybe!StoryOp(IF);
+        case "ELSE": return Maybe!StoryOp(ELSE);
+        case "THEN": return Maybe!StoryOp(THEN);
+        case "CAT": return Maybe!StoryOp(CAT);
+        case "SAME": return Maybe!StoryOp(SAME);
+        case "WORD": return Maybe!StoryOp(WORD);
+        case "NUMBER": return Maybe!StoryOp(NUMBER);
+        case "LINE": return Maybe!StoryOp(LINE);
+        case "DEBUG": return Maybe!StoryOp(DEBUG);
+        case "LINEAR": return Maybe!StoryOp(LINEAR);
+        case "ASSERT": return Maybe!StoryOp(ASSERT);
+        case "END": return Maybe!StoryOp(END);
+        case "ECHO": return Maybe!StoryOp(ECHO);
+        case "ECHON": return Maybe!StoryOp(ECHON);
+        case "LEAK": return Maybe!StoryOp(LEAK);
+        case "LEAKN": return Maybe!StoryOp(LEAKN);
+        case "HERE": return Maybe!StoryOp(HERE);
+        case "GET": return Maybe!StoryOp(GET);
+        case "GETN": return Maybe!StoryOp(GETN);
+        case "SET": return Maybe!StoryOp(SET);
+        case "INIT": return Maybe!StoryOp(INIT);
+        case "DROP": return Maybe!StoryOp(DROP);
+        case "DROPN": return Maybe!StoryOp(DROPN);
+        case "INC": return Maybe!StoryOp(INC);
+        case "DEC": return Maybe!StoryOp(DEC);
+        case "INCN": return Maybe!StoryOp(INCN);
+        case "DECN": return Maybe!StoryOp(DECN);
+        case "TOG": return Maybe!StoryOp(TOG);
+        case "MENU": return Maybe!StoryOp(MENU);
+        case "LOOP": return Maybe!StoryOp(LOOP);
+        case "SKIP": return Maybe!StoryOp(SKIP);
+        case "JUMP": return Maybe!StoryOp(JUMP);
+        default: return Maybe!StoryOp(Fault.invalid);
     }
-    return toEnum!StoryOp(from);
 }
