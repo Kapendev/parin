@@ -69,69 +69,6 @@ immutable HexPalette!16 pico8 = [
     0xFFCCAA,
 ];
 
-/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://github.com/pulsar-edit/pulsar
-immutable HexPalette!16 oneDark = [
-    0x282C34,
-    0x353B45,
-    0x3E4451,
-    0x545862,
-    0x565C64,
-    0xABB2BF,
-    0xB6BDCA,
-    0xC8CCD4,
-    0xE06C75,
-    0xD19A66,
-    0xE5C07B,
-    0x98C379,
-    0x56B6C2,
-    0x61AFEF,
-    0xC678DD,
-    0xBE5046,
-];
-
-/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://github.com/morhetz/gruvbox
-immutable HexPalette!16 gruvboxDark = [
-    0x282828,
-    0x3C3836,
-    0x504945,
-    0x665C54,
-    0xBDAE93,
-    0xD5C4A1,
-    0xEBDBB2,
-    0xFBF1C7,
-    0xFB4934,
-    0xFE8019,
-    0xFABD2F,
-    0xB8BB26,
-    0x8EC07C,
-    0x83A598,
-    0xD3869B,
-    0xD65D0E,
-];
-
-/// Based on monkyyy's repo: https://github.com/crazymonkyyy/leet-haker-colors
-/// Link: https://ethanschoonover.com/solarized/
-immutable HexPalette!16 solarizedDark = [
-    0x002B36,
-    0x073642,
-    0x586E75,
-    0x657B83,
-    0x839496,
-    0x93A1A1,
-    0xEEE8D5,
-    0xFDF6E3,
-    0xDC322F,
-    0xCB4B16,
-    0xB58900,
-    0x859900,
-    0x2AA198,
-    0x268BD2,
-    0x6C71C4,
-    0xD33682,
-];
-
 /// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
 enum Wisp2 : Rgba {

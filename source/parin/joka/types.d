@@ -2215,38 +2215,32 @@ Maybe!double toFloating(char c) {
     }
 }
 
-// NOTE: I think this can be optimized for compile times, but no idea how.
 /// Converts the string to an enum value.
 @trusted
 Maybe!T toEnum(T, bool noCase = false, bool canIgnoreSpaceAndSymbol = false)(IStr str) if (is(T == enum)) {
     auto result = Maybe!T();
     static if (noCase || canIgnoreSpaceAndSymbol) {
-        char[256] enumBuffer = void;
-        auto slice = enumBuffer[];
-        auto sliceLength = 0;
+        auto slice = str;
+        static if (canIgnoreSpaceAndSymbol) {
+            char[128] enumBuffer = void;
+            auto enumBufferSlice = enumBuffer[];
+            auto enumBufferSliceLength = 0;
+            foreach (i, c; str) {
+                if (c.isSpace || c.isSymbol) continue;
+                if (enumBufferSliceLength >= enumBuffer.length) {
+                    result = Fault.overflow;
+                    return result;
+                }
+                enumBufferSlice[enumBufferSliceLength] = c;
+                enumBufferSliceLength += 1;
+            }
+            enumBufferSlice = enumBufferSlice[0 .. enumBufferSliceLength];
+            slice = enumBufferSlice;
+        }
         static foreach (m; __traits(allMembers, T)) {
-            static if (canIgnoreSpaceAndSymbol) {
-                slice = enumBuffer[];
-                sliceLength = 0;
-                foreach (i, c; str) {
-                    if (c.isSpace || c.isSymbol) continue;
-                    if (sliceLength >= enumBuffer.length) {
-                        result = Fault.overflow;
-                        return result;
-                    }
-                    slice[sliceLength] = c;
-                    sliceLength += 1;
-                }
-                slice = slice[0 .. sliceLength];
-                if (noCase ? m.equalsNoCase(slice) : m == slice) {
-                    result = mixin("T.", m);
-                    return result;
-                }
-            } else {
-                if (noCase ? m.equalsNoCase(str) : m == str) {
-                    result = mixin("T.", m);
-                    return result;
-                }
+            if (noCase ? m.equalsNoCase(slice) : m == slice) {
+                result = mixin("T.", m);
+                return result;
             }
         }
         result = Fault.invalid;

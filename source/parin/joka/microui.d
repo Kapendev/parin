@@ -455,56 +455,6 @@ struct MuContext {
         );
     }
 
-    void applySolarizedDarkStyle() {
-        *style = MuStyle(
-            /* font | atlas | size | padding | spacing | indent | border */
-            style.font, style.texture, IVec2(68, 10), 6, 5, 24, 1,
-            /* titleHeight | scrollbarSize | scrollbarSpeed | scrollbarKeySpeed | thumbSize | fontScale */
-            24, 8, 30, cast(int) (30.0f * 0.4f), 6, style.fontScale,
-            StaticArray!(Rgba, 14)(
-                Rgba(160, 174, 174, 255), /* MuColor.text        -- base1 */
-                Rgba(7,   54,  66,  255), /* MuColor.border      -- base02 */
-                Rgba(0,   43,  54,  255), /* MuColor.windowBg    -- base03 */
-                Rgba(7,   54,  66,  255), /* MuColor.titleBg     -- base02 */
-                Rgba(160, 174, 174, 255), /* MuColor.titleText   -- base1 */
-                Rgba(0,   43,  54,  255), /* MuColor.panelBg     -- transparent */
-                Rgba(15,  70,  85,  255), /* MuColor.button      -- lifted teal */
-                Rgba(28,  100, 120, 255), /* MuColor.buttonHover -- noticeably lighter */
-                Rgba(42,  98,  120, 255), /* MuColor.buttonFOCUS -- muted teal */
-                Rgba(3,   33,  42,  255), /* MuColor.base        -- sunken textbox */
-                Rgba(7,   54,  66,  255), /* MuColor.baseHOVER   -- base02 */
-                Rgba(18,  80,  98,  255), /* MuColor.baseFOCUS   -- focused input */
-                Rgba(3,   33,  42,  255), /* MuColor.scrollBase  -- matches base */
-                Rgba(55,  85,  95,  255), /* MuColor.scrollThumb -- visible thumb */
-            ),
-        );
-    }
-
-    void applyGruvboxDarkStyle() {
-        *style = MuStyle(
-            /* font | atlas | size | padding | spacing | indent | border */
-            style.font, style.texture, IVec2(68, 10), 6, 5, 24, 1,
-            /* titleHeight | scrollbarSize | scrollbarSpeed | scrollbarKeySpeed | thumbSize | fontScale */
-            24, 8, 30, cast(int) (30.0f * 0.4f), 6, style.fontScale,
-            StaticArray!(Rgba, 14)(
-                Rgba(235, 219, 178, 255), /* MuColor.text        -- fg1 */
-                Rgba(40,  40,  40,  255), /* MuColor.border      -- bg0_h */
-                Rgba(32,  35,  36,  255), /* MuColor.windowBg    -- softened */
-                Rgba(40,  40,  40,  255), /* MuColor.titleBg     -- bg0_h */
-                Rgba(235, 219, 178, 255), /* MuColor.titleText   -- fg1 */
-                Rgba(32,  35,  36,  255), /* MuColor.panelBg     -- matches windowBg */
-                Rgba(60,  56,  54,  255), /* MuColor.button      -- bg2 */
-                Rgba(80,  73,  69,  255), /* MuColor.buttonHover -- bg3 */
-                Rgba(160, 70,  10,  255), /* MuColor.buttonFOCUS -- muted burnt orange */
-                Rgba(21,  22,  21,  255), /* MuColor.base        -- sunken textbox */
-                Rgba(50,  48,  47,  255), /* MuColor.baseHOVER   -- bg2 step */
-                Rgba(70,  36,  8,   255), /* MuColor.baseFOCUS   -- dark burnt orange tint */
-                Rgba(21,  22,  21,  255), /* MuColor.scrollBase  -- matches base */
-                Rgba(102, 92,  84,  255), /* MuColor.scrollThumb -- bg4 */
-            ),
-        );
-    }
-
     void readyWithFuncs(MuTextWidthFunc width, MuTextHeightFunc height, MuFont font, int fontScale = 1) {
         ready(font, fontScale);
         textWidth = width;
