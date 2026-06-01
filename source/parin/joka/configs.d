@@ -30,7 +30,7 @@ IStr buildInfo(IStr path = "build_info.txt")(IStr key) {
 IStr buildInfoFromContent(IStr content, IStr key) {
     if (key.length == 0) return "";
     for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
-        if (line.length > key.length && line.startsWith(key) && (line[key.length] == ':' || line[key.length] == ' ')) {
+        if (line.length > key.length && line.startsWith(key) && (line[key.length] == defaultBuildInfoSep || line[key.length] == ' ')) {
             return line.buildInfoFromLine(key.length);
         }
         if (content.length == 0) break;
