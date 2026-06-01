@@ -16,25 +16,22 @@ struct NumericRange(I) {
     I stop;
     I step;
 
-    @safe nothrow @nogc:
-
     this(I start, I stop, I step = 1) {
         this.index = start;
         this.stop = stop;
         this.step = step;
     }
 
-    pragma(inline, true)
+    pragma(inline, true):
+
     bool empty() {
         return step > 0 ? index >= stop : index <= stop;
     }
 
-    pragma(inline, true)
     I front() {
         return index;
     }
 
-    pragma(inline, true)
     void popFront() {
         index += step;
     }
@@ -45,7 +42,7 @@ struct ArrayRange(T) {
     const(T)[] data;
     Sz index;
 
-    pragma(inline, true) @safe nothrow @nogc:
+    pragma(inline, true):
 
     bool empty() {
         return index >= data.length;
@@ -75,8 +72,6 @@ struct EnumeratedRange(R) {
     R range;
     Sz index;
 
-    @safe nothrow @nogc:
-
     bool empty() {
         return range.empty;
     }
@@ -96,8 +91,6 @@ struct MapRange(R, F) {
     R range;
     F func;
 
-    @safe nothrow @nogc:
-
     bool empty() {
         return range.empty;
     }
@@ -115,8 +108,6 @@ struct MapRange(R, F) {
 struct FilterRange(R, F) {
     R range;
     F func;
-
-    @safe nothrow @nogc:
 
     this(R range, F func) {
         this.range = range;
@@ -147,8 +138,6 @@ struct TakeRange(R) {
     R range;
     Sz count;
 
-    @safe nothrow @nogc:
-
     bool empty() {
         return range.empty || count == 0;
     }
@@ -167,8 +156,6 @@ struct TakeRange(R) {
 struct ChainRange(R1, R2) if (is(typeof(R1.front()) == typeof(R2.front()))) {
     R1 a;
     R2 b;
-
-    @safe nothrow @nogc:
 
     bool empty() {
         return a.empty && b.empty;
@@ -192,8 +179,6 @@ struct StrideRange(R) {
     R range;
     Sz step;
 
-    @safe nothrow @nogc:
-
     bool empty() {
         return range.empty;
     }
@@ -212,8 +197,6 @@ struct AccumulateRange(R, F, T) {
     R range;
     F func;
     T result;
-
-    @safe nothrow @nogc:
 
     this(R range, F func, T initial) {
         this.range = range;
@@ -240,8 +223,6 @@ struct AccumulateRange(R, F, T) {
 struct ChunksRange(R) {
     R range;
     Sz size;
-
-    @safe nothrow @nogc:
 
     bool empty() {
         return range.empty;
@@ -360,6 +341,9 @@ ArrayRange!T range(T)(const(T)[] data) {
     return ArrayRange!T(data);
 }
 
+/// Same as `range`, but for cases in which `range` is already used as a name.
+alias toRange = range;
+
 /// Returns a range that pairs each element with its iteration index.
 EnumeratedRange!R enumerate(R)(R range, Sz start = 0) {
     return EnumeratedRange!R(range, start);
@@ -475,30 +459,6 @@ Sz countIf(R, F)(R range, F func) {
     auto result = Sz.init;
     foreach (item; range) result += func(item);
     return result;
-}
-
-/// Returns the value associated with a key from a build info file.
-/// The file uses the format `key: value`.
-/// Returns an empty string if the key is not found.
-/// Example: `buildInfo!"version"` returns `"1.0.0"` for the line `version: 1.0.0`.
-template buildInfo(IStr key, IStr path = "build_info.txt") {
-    enum buildInfo = buildInfoFromStr!(key, cast(IStr) import(path));
-}
-
-/// Returns the value associated with a key from a build info string.
-/// The file uses the format `key: value`.
-/// Returns an empty string if the key is not found.
-/// Example: `buildInfo!"version"` returns `"1.0.0"` for the line `version: 1.0.0`.
-template buildInfoFromStr(IStr key, IStr content) {
-    enum buildInfoRange = content
-		.splitter('\n')
-        .map((IStr part) => part.trim())
-		.filter((IStr part) => part.length > key.length && part.startsWith(key) && (part[key.length] == ':' || part[key.length] == ' '));
-    static if (buildInfoRange.empty) {
-        enum buildInfoFromStr = "";
-    } else {
-        enum buildInfoFromStr = buildInfoRange.front[key.length .. $].trimStart().trimStart(":").trim();
-    }
 }
 
 @safe nothrow @nogc

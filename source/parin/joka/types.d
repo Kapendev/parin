@@ -2018,7 +2018,7 @@ IStr skipValue(ref inout(char)[] str, char sep) {
 
 /// Skips over the next line in the string, returning the substring before the line break and updating the input string to start after the line break.
 IStr skipLine(ref inout(char)[] str) {
-    auto result = skipValue(str, '\n');
+    auto result = skipValue(str, "\n");
     if (result.length != 0 && result[$ - 1] == '\r') result = result[0 .. $ - 1];
     return result;
 }
