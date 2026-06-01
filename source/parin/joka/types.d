@@ -1240,9 +1240,9 @@ IStr toStr(T)(T value) {
     );
     static if (is(T == enum)) { // isEnumType
         return enumToStr(value);
-    } else static if (is(T == char) || is(T == const(char)) || is(T == immutable(char))) { // isCharType
+    } else static if (is(immutable(T) == immutable(char))) { // isCharType
         return charToStr(value);
-    } else static if (is(T == bool) || is(T == const(bool)) || is(T == immutable(bool))) { // isBoolType
+    } else static if (is(immutable(T) == immutable(bool))) { // isBoolType
         return boolToStr(value);
     } else static if (__traits(isUnsigned, T)) { // isUnsignedType
         return unsignedToStr(value);
