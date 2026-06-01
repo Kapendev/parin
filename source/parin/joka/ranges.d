@@ -478,26 +478,26 @@ Sz countIf(R, F)(R range, F func) {
 }
 
 /// Returns the value associated with a key from a build info file.
-/// The file can use `key: value`, or `key value` as formats.
+/// The file uses the format `key: value`.
 /// Returns an empty string if the key is not found.
-/// Example: `buildInfo!"version"` returns `"1.0.0"` for a line like `version: 1.0.0`.
+/// Example: `buildInfo!"version"` returns `"1.0.0"` for the line `version: 1.0.0`.
 template buildInfo(IStr key, IStr path = "build_info.txt") {
-    enum content = cast(IStr) import(path);
-    enum sepStr = ":";
+    enum buildInfo = buildInfoFromStr!(key, cast(IStr) import(path));
+}
 
-    enum buildInfoTemp = content
+/// Returns the value associated with a key from a build info string.
+/// The file uses the format `key: value`.
+/// Returns an empty string if the key is not found.
+/// Example: `buildInfo!"version"` returns `"1.0.0"` for the line `version: 1.0.0`.
+template buildInfoFromStr(IStr key, IStr content) {
+    enum buildInfoRange = content
 		.splitter('\n')
         .map((IStr part) => part.trim())
-		.filter((IStr part) => part.startsWith(key) && (part[key.length] == sepStr[0] || part[key.length] == ' '));
-
-    static if (buildInfoTemp.empty) {
-        enum buildInfo = "";
+		.filter((IStr part) => part.length > key.length && part.startsWith(key) && (part[key.length] == ':' || part[key.length] == ' '));
+    static if (buildInfoRange.empty) {
+        enum buildInfoFromStr = "";
     } else {
-        enum buildInfo = buildInfoTemp
-        .front[key.length .. $]
-        .trimStart()
-        .trimStart(sepStr)
-        .trim();
+        enum buildInfoFromStr = buildInfoRange.front[key.length .. $].trimStart().trimStart(":").trim();
     }
 }
 

@@ -1594,11 +1594,6 @@ bool equalsNoCase(IStr str, IStr other) {
     return true;
 }
 
-/// Returns true if the string is equal to the specified character, ignoring case.
-bool equalsNoCase(IStr str, char other) {
-    return equalsNoCase(str, charToStr(other));
-}
-
 /// Returns true if the string starts with the specified substring.
 bool startsWith(IStr str, IStr start) {
     if (str.length < start.length) return false;
@@ -1673,16 +1668,31 @@ int findItem(IStr[] items, IStr item) {
     return -1;
 }
 
+/// Finds the first occurrence of the specified item in the slice, or returns -1 if not found.
+int findItem(IStr[] items, char item) {
+    return findItem(items, charToStr(item));
+}
+
 /// Finds the first occurrence of the specified start in the slice, or returns -1 if not found.
 int findItemThatStartsWith(IStr[] items, IStr start) {
     foreach (i, it; items) if (it.startsWith(start)) return cast(int) i;
     return -1;
 }
 
+/// Finds the first occurrence of the specified start in the slice, or returns -1 if not found.
+int findItemThatStartsWith(IStr[] items, char start) {
+    return findItemThatStartsWith(items, charToStr(start));
+}
+
 /// Finds the first occurrence of the specified end in the slice, or returns -1 if not found.
 int findItemThatEndsWith(IStr[] items, IStr end) {
     foreach (i, it; items) if (it.endsWith(end)) return cast(int) i;
     return -1;
+}
+
+/// Finds the first occurrence of the specified end in the slice, or returns -1 if not found.
+int findItemThatEndsWith(IStr[] items, char end) {
+    return findItemThatEndsWith(items, charToStr(end));
 }
 
 /// Removes whitespace characters from the beginning of the string.
@@ -1704,6 +1714,12 @@ IStr trimStart(IStr str, IStr pattern = "") {
     return result;
 }
 
+/// Removes whitespace characters from the beginning of the string.
+/// Value `pattern` can be used to trim a specific pattern from the start (e.g. "temp.") instead of whitespace.
+IStr trimStart(IStr str, char pattern) {
+    return trimStart(str, pattern == '\0' ? "" : charToStr(pattern));
+}
+
 /// Removes whitespace characters from the end of the string.
 /// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt") instead of whitespace.
 IStr trimEnd(IStr str, IStr pattern = "") {
@@ -1723,11 +1739,24 @@ IStr trimEnd(IStr str, IStr pattern = "") {
     return result;
 }
 
+/// Removes whitespace characters from the end of the string.
+/// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt") instead of whitespace.
+IStr trimEnd(IStr str, char pattern) {
+    return trimEnd(str, pattern == '\0' ? "" : charToStr(pattern));
+}
+
 /// Removes whitespace characters from both the beginning and end of the string.
 /// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt").
 /// Whitespace is always removed.
 IStr trim(IStr str, IStr pattern = "") {
     return str.trimStart().trimEnd().trimEnd(pattern);
+}
+
+/// Removes whitespace characters from both the beginning and end of the string.
+/// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt").
+/// Whitespace is always removed.
+IStr trim(IStr str, char pattern) {
+    return trim(str, pattern == '\0' ? "" : charToStr(pattern));
 }
 
 /// Removes the specified prefix from the beginning of the string if it exists.
