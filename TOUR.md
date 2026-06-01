@@ -96,23 +96,23 @@ To run the game, use the following command:
 dub run
 ```
 
-And that's it for the basics.
+And that's the basics.
 As a fun exercise, try changing the message to "DVD" and make it bounce inside the window.
 The engine font has characters that have a size of 6x12.
-An example of this can be found in the [examples](examples/basics/_003_dvd.d).
+A solution can be found in the [examples](examples/basics/_003_dvd.d).
 
 ## Modules
 
 Parin consists of the following modules:
 
 - `parin.engine`: Engine functionality
-- `parin.types`: Common Parin types
+- `parin.types`: Common engine types
 - `parin.ui`: UI library (WIP)
 
-The `parin.types` and `parin.engine` modules are the only mandatory module for creating a game.
-They are sometimes referred to as the core modules.
+The `parin.engine` and `parin.types` modules are the only mandatory ones for creating a game.
+They are referred to as the core modules.
 All other modules are optional and can be included as needed.
-The `import parin` statement in the example above is a convenience import that includes all modules.
+The `import parin` statement in the first example is a convenience import that includes all modules in the above list.
 
 > [!NOTE]
 > The core modules are the most stable ones. Other modules may change as the engine grows.

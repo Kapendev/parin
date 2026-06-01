@@ -256,6 +256,40 @@ struct ChunksRange(R) {
     }
 }
 
+/// A range that splits a string by a delimiter character, yielding slices.
+struct SplitterRange {
+    IStr data;
+    char delimiter;
+    IStr current;
+
+    @safe nothrow @nogc:
+
+    this(IStr data, char delimiter) {
+        this.data = data;
+        this.delimiter = delimiter;
+        advance();
+    }
+
+    void advance() {
+        Sz i = 0;
+        while (i < data.length && data[i] != delimiter) i += 1;
+        current = data[0 .. i];
+        data = (i < data.length) ? data[i + 1 .. $] : data[$ .. $];
+    }
+
+    bool empty() {
+        return current.length == 0 && data.length == 0;
+    }
+
+    IStr front() {
+        return current;
+    }
+
+    void popFront() {
+        advance();
+    }
+}
+
 /// Command-line argument types.
 enum ArgType : ubyte {
     singleItem,  /// A standalone argument (e.g. file.txt)
@@ -308,6 +342,12 @@ struct ArgTokenRange {
 @safe nothrow @nogc
 ArgTokenRange argTokens(const(IStr)[] args...) {
     return ArgTokenRange(args);
+}
+
+/// Returns a range that splits a string into slices separated by a delimiter character.
+@safe nothrow @nogc
+SplitterRange splitter(IStr data, char delimiter) {
+    return SplitterRange(data, delimiter);
 }
 
 /// Returns a numeric range.
@@ -437,6 +477,30 @@ Sz countIf(R, F)(R range, F func) {
     return result;
 }
 
+/// Returns the value associated with a key from a build info file.
+/// The file can use `key: value`, or `key value` as formats.
+/// Returns an empty string if the key is not found.
+/// Example: `buildInfo!"version"` returns `"1.0.0"` for a line like `version: 1.0.0`.
+template buildInfo(IStr key, IStr path = "build_info.txt") {
+    enum content = cast(IStr) import(path);
+    enum sepStr = ":";
+
+    enum buildInfoTemp = content
+		.splitter('\n')
+        .map((IStr part) => part.trim())
+		.filter((IStr part) => part.startsWith(key) && (part[key.length] == sepStr[0] || part[key.length] == ' '));
+
+    static if (buildInfoTemp.empty) {
+        enum buildInfo = "";
+    } else {
+        enum buildInfo = buildInfoTemp
+        .front[key.length .. $]
+        .trimStart()
+        .trimStart(sepStr)
+        .trim();
+    }
+}
+
 @safe nothrow @nogc
 unittest {
     // NumericRange
@@ -539,6 +603,19 @@ unittest {
     assert(c.front.sum == 9);
     c.popFront();
     assert(c.empty == true);
+
+    // SplitterRange
+    auto s = "hello world foo".splitter(' ');
+    assert(s.front == "hello");
+    s.popFront();
+    assert(s.front == "world");
+    s.popFront();
+    assert(s.front == "foo");
+    s.popFront();
+    assert(s.empty);
+    assert("a,b,c".splitter(',').drop(1).front == "b");
+    assert("no-delimiter".splitter(',').front == "no-delimiter");
+    assert("a,,b".splitter(',').drop(1).front == "");
 }
 
 // Arg test.
