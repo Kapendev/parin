@@ -17,7 +17,7 @@ bool update(float dt) {
     // This can also be done with the `attach` and `detach` functions.
     with (Attached(camera)) {
         drawText("Move with arrow keys.", Vec2(8));
-        drawRect(camera.area(resolution).subAll(3), Color(50, 50, 40, 130));
+        drawRect(camera.area(resolution).subAll(3), Rgba(50, 50, 40, 130));
     }
     // Draw the UI.
     drawText("I am UI!", Vec2(8));
