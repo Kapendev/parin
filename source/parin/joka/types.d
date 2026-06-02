@@ -2213,7 +2213,7 @@ Maybe!long toSigned(char c) {
 /// Converts the string to a double.
 Maybe!double toFloating(IStr str) {
     if (str == "nan" || str == "NaN" || str == "NAN") return Maybe!double(double.nan);
-    auto dotIndex = findStart(str, '.');
+    auto dotIndex = findStart(str, ".");
     if (dotIndex == -1) {
         auto temp = toSigned(str);
         return Maybe!double(temp.xx, temp.fault);

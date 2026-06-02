@@ -13,14 +13,23 @@ import parin.joka.math;
 
 enum defaultBuildInfoSep = ':';
 enum defaultBuildInfoSepStr = ":";
+enum defaultBuildInfoPath = "build_info.txt";
 
 /// Returns the value associated with a key from a build info file.
 /// The file uses the format: "key: value"
 /// Returns an empty string if the key is not found.
 /// Example: `buildInfo("version")` returns `"1.0.0"` for the line `version: 1.0.0`.
-@safe nothrow @nogc
-IStr buildInfo(IStr path = "build_info.txt")(IStr key) {
+IStr buildInfo(IStr path = defaultBuildInfoPath)(IStr key) {
     return buildInfoFromContent!(cast(IStr) import(path), key);
+}
+
+/// Returns the structure associated with a build info file.
+/// The file uses the format: "key: value"
+/// Example: `buildInfoStruct!MyInfo()`
+T buildInfoStruct(T, IStr path = defaultBuildInfoPath)() {
+    auto result = T();
+    parseBuildInfoFromContent(cast(IStr) import(path), result);
+    return result;
 }
 
 /// Returns the value associated with a key from a build info line.
