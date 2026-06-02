@@ -54,6 +54,9 @@ enum gray3   = Rgba(159, 159, 159); /// #9F9F9FFF
 enum gray4   = Rgba(223, 223, 223); /// #DFDFDFFF
 enum gray    = gray2;               /// #606060FF
 
+deprecated("Use `Rgba`.")
+alias Color = Rgba;
+
 alias Vec2  = GVec2!float; /// A 2D vector using floats.
 alias Vec3  = GVec3!float; /// A 3D vector using floats.
 alias Vec4  = GVec4!float; /// A 4D vector using floats.
