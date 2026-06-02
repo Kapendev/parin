@@ -1746,17 +1746,8 @@ IStr trimEnd(IStr str, char pattern) {
 }
 
 /// Removes whitespace characters from both the beginning and end of the string.
-/// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt").
-/// Whitespace is always removed.
-IStr trim(IStr str, IStr pattern = "") {
-    return str.trimStart().trimEnd().trimEnd(pattern);
-}
-
-/// Removes whitespace characters from both the beginning and end of the string.
-/// Value `pattern` can be used to trim a specific pattern from the end (e.g. ".txt").
-/// Whitespace is always removed.
-IStr trim(IStr str, char pattern) {
-    return trim(str, pattern == '\0' ? "" : charToStr(pattern));
+IStr trim(IStr str) {
+    return str.trimStart().trimEnd();
 }
 
 /// Removes the specified prefix from the beginning of the string if it exists.
@@ -1991,29 +1982,33 @@ IStr[] pathSplit(IStr str, PathSepStyle style = PathSepStyle.native) {
 }
 
 /// Skips over the next occurrence of the specified separator in the string, returning the substring before the separator and updating the input string to start after the separator.
-IStr skipValue(ref inout(char)[] str, IStr sep) {
-    if (str.length < sep.length || sep.length == 0) {
+IStr skipValue(ref inout(char)[] str, IStr sep, bool canSkipExtra = false) {
+    if (sep.length == 0 || str.length < sep.length) {
+        auto result = str;
         str = str[$ .. $];
-        return "";
+        return result;
     }
+
     foreach (i; 0 .. str.length - sep.length) {
         if (str[i .. i + sep.length] == sep) {
-            auto line = str[0 .. i];
+            auto result = str[0 .. i];
             str = str[i + sep.length .. $];
-            return line;
+            while (canSkipExtra && str.length >= sep.length && str[0 .. sep.length] == sep) {
+                str = str[sep.length .. $];
+            }
+            return result;
         }
     }
-    auto line = str[0 .. $];
-    if (str[$ - sep.length .. $] == sep) {
-        line = str[0 .. $ - 1];
-    }
+
+    auto result = str;
+    if (str[$ - sep.length .. $] == sep) result = str[0 .. $ - 1];
     str = str[$ .. $];
-    return line;
+    return result;
 }
 
 /// Skips over the next occurrence of the specified separator in the string, returning the substring before the separator and updating the input string to start after the separator.
-IStr skipValue(ref inout(char)[] str, char sep) {
-    return skipValue(str, charToStr(sep));
+IStr skipValue(ref inout(char)[] str, char sep, bool canSkipExtra = false) {
+    return skipValue(str, charToStr(sep), canSkipExtra);
 }
 
 /// Skips over the next line in the string, returning the substring before the line break and updating the input string to start after the line break.
@@ -2021,6 +2016,11 @@ IStr skipLine(ref inout(char)[] str) {
     auto result = skipValue(str, "\n");
     if (result.length != 0 && result[$ - 1] == '\r') result = result[0 .. $ - 1];
     return result;
+}
+
+/// Skips over the next space in the string, returning the substring before the space and updating the input string to start after the space.
+IStr skipSpace(ref inout(char)[] str) {
+    return skipValue(str, " ", true);
 }
 
 /// Converts the boolean value to its string representation.
@@ -2410,15 +2410,95 @@ unittest {
     assert(pathFmt("one/two") == pathConcat("one", "two"));
     assert(pathFmt("one\\two") == pathConcat("one", "two"));
 
+    // -- BEGIN skipValue
+    // Basic usage
     str = buffer[];
-    str.copyStr("one, two ,three,");
-    assert(skipValue(str, ',') == "one");
-    assert(skipValue(str, ',') == " two ");
-    assert(skipValue(str, ',') == "three");
-    assert(skipValue(str, ',') == "");
+    str.copyStr("one,two,three");
+    assert(skipValue(str, ",") == "one");
+    assert(skipValue(str, ",") == "two");
+    assert(skipValue(str, ",") == "three");
     assert(str.length == 0);
-    assert(skipValue(str, "\r\n") == "");
-    assert(skipLine(str) == "");
+
+    // Trailing separator
+    str = buffer[];
+    str.copyStr("one,two,");
+    assert(skipValue(str, ",") == "one");
+    assert(skipValue(str, ",") == "two");
+    assert(skipValue(str, ",") == "");
+    assert(str.length == 0);
+
+    // Leading separator
+    str = buffer[];
+    str.copyStr(",one,two");
+    assert(skipValue(str, ",") == "");
+    assert(skipValue(str, ",") == "one");
+    assert(skipValue(str, ",") == "two");
+    assert(str.length == 0);
+
+    // Single element, no separator
+    str = buffer[];
+    str.copyStr("hello");
+    assert(skipValue(str, ",") == "hello");
+    assert(str.length == 0);
+
+    // Empty string
+    str = buffer[];
+    str.copyStr("");
+    assert(skipValue(str, ",") == "");
+    assert(str.length == 0);
+
+    // Empty separator
+    str = buffer[];
+    str.copyStr("hello");
+    assert(skipValue(str, "") == "hello");
+    assert(str.length == 0);
+
+    // Multi-char separator
+    str = buffer[];
+    str.copyStr("one\r\ntwo\r\nthree");
+    assert(skipValue(str, "\r\n") == "one");
+    assert(skipValue(str, "\r\n") == "two");
+    assert(skipValue(str, "\r\n") == "three");
+    assert(str.length == 0);
+
+    // Separator longer than remaining string
+    str = buffer[];
+    str.copyStr("hi");
+    assert(skipValue(str, "hello") == "hi");
+    assert(str.length == 0);
+
+    // Only separators
+    str = buffer[];
+    str.copyStr(",,,");
+    assert(skipValue(str, ",") == "");
+    assert(skipValue(str, ",") == "");
+    assert(skipValue(str, ",") == "");
+    assert(str.length == 0);
+
+    // skipExtra collapses consecutive separators
+    str = buffer[];
+    str.copyStr("a  b   c");
+    assert(skipValue(str, " ", true) == "a");
+    assert(skipValue(str, " ", true) == "b");
+    assert(skipValue(str, " ", true) == "c");
+    assert(str.length == 0);
+
+    // skipExtra=false preserves consecutive separators
+    str = buffer[];
+    str.copyStr("a  b");
+    assert(skipValue(str, " ", false) == "a");
+    assert(skipValue(str, " ", false) == "");
+    assert(skipValue(str, " ", false) == "b");
+    assert(str.length == 0);
+
+    // Whitespace values preserved without skipExtra
+    str = buffer[];
+    str.copyStr("one, two , three");
+    assert(skipValue(str, ",") == "one");
+    assert(skipValue(str, ",") == " two ");
+    assert(skipValue(str, ",") == " three");
+    assert(str.length == 0);
+    // -- END skipValue
 
     assert(boolToStr(false) == "false");
     assert(boolToStr(false, true) == "F");

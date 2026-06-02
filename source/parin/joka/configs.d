@@ -9,6 +9,7 @@
 module parin.joka.configs;
 
 import parin.joka.types;
+import parin.joka.math;
 
 enum defaultBuildInfoSep = ':';
 enum defaultBuildInfoSepStr = ":";
@@ -29,7 +30,7 @@ IStr buildInfo(IStr path = "build_info.txt")(IStr key) {
 @safe nothrow @nogc
 IStr buildInfoFromLine(IStr line, Sz keyLength = 0) {
     line = line.trim();
-    if (line.length == 0) return "";
+    if (line.length == 0 || line.startsWith("#")) return "";
     auto keyEndIndex = keyLength ? (cast(int) keyLength) : line.findStart(defaultBuildInfoSepStr);
     if (keyEndIndex == -1) return "";
     return line[keyEndIndex .. $].trimStart().trimStart(defaultBuildInfoSepStr).trim();
@@ -70,6 +71,36 @@ void parseBuildInfoFromContent(T)(IStr content, ref T info) if (is(T == struct))
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toFloating(value).getOr();
                 } else static if (is(typeof(T.tupleof[i]) : IStr)) { // isStrType
                     info.tupleof[i] = value;
+                } else static if (is(typeof(T.tupleof[i]) == Vec2)) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == IVec2)) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == Vec3)) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].z = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == IVec3)) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].z = cast(int) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == Vec4)) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].z = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].w = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == IVec4)) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].z = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].w = cast(int) value.skipSpace().toSigned().getOr();
                 }
             }
         }
@@ -78,44 +109,63 @@ void parseBuildInfoFromContent(T)(IStr content, ref T info) if (is(T == struct))
 }
 
 unittest {
-    assert("".buildInfoFromLine == "");
-    assert("key".buildInfoFromLine == "");
-    assert("key:".buildInfoFromLine == "");
-    assert(":".buildInfoFromLine == "");
-    assert(":value".buildInfoFromLine == "value");
-    assert("key:value".buildInfoFromLine == "value");
-    assert("  key  :  value  ".buildInfoFromLine == "value");
+    assert(buildInfoFromLine("") == "");
+    assert(buildInfoFromLine("key") == "");
+    assert(buildInfoFromLine("key:") == "");
+    assert(buildInfoFromLine(":") == "");
+    assert(buildInfoFromLine(":value") == "value");
+    assert(buildInfoFromLine("key:value") == "value");
+    assert(buildInfoFromLine("  key  :  value  ") == "value");
 
     auto dummyContent = "
         # A comment.
+        name:    Cool Project
         version: 1.0.0
-        name: Cool Project
-        run: true
-        age: 69
-        age2: 69
-        time: 1
-        time2: 1
+
+        good: true
+        cool: t
+        epic: T
+
+        age:    69
+        height: 420
+        time:   1.0
+
+        size: (64 64)
+        v3:   111 222 333
+        v4:   1   2   3   4
     ";
-    assert(dummyContent.buildInfoFromContent("") == "");
-    assert(dummyContent.buildInfoFromContent("ver") == "");
-    assert(dummyContent.buildInfoFromContent("version") == "1.0.0");
-    assert(dummyContent.buildInfoFromContent("name") == "Cool Project");
+
+    assert(buildInfoFromContent(dummyContent, "") == "");
+    assert(buildInfoFromContent(dummyContent, "ver") == "");
+    assert(buildInfoFromContent(dummyContent, "version") == "1.0.0");
+    assert(buildInfoFromContent(dummyContent, "name") == "Cool Project");
 
     struct Info {
         IStr name;
-        bool run;
+
+        bool good;
+        bool cool;
+        bool epic;
+
         int age;
-        uint age2;
+        uint height;
         float time;
-        double time2;
+
+        IVec2 size;
+        IVec3 v3;
+        IVec4 v4;
     }
 
     auto info = Info();
-    dummyContent.parseBuildInfoFromContent(info);
+    parseBuildInfoFromContent(dummyContent, info);
     assert(info.name == "Cool Project");
-    assert(info.run == true);
+    assert(info.good == true);
+    assert(info.cool == true);
+    assert(info.epic == true);
     assert(info.age == 69);
-    assert(info.age2 == 69);
-    assert(info.time == 1);
-    assert(info.time2 == 1);
+    assert(info.height == 420);
+    assert(info.time == 1.0);
+    assert(info.size == IVec2(64, 64));
+    assert(info.v3 == IVec3(111, 222, 333));
+    assert(info.v4 == IVec4(1, 2, 3, 4));
 }
