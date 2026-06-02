@@ -73,6 +73,10 @@ enum Fault : ubyte {
 
 /// A marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
 struct NoData {}
+/// A marker for types that support hiding members for something.
+struct hiddenMember {}
+/// A marker for types that support requiring members for something.
+struct requiredMember {}
 
 /// A static array.
 /// It exists because of BetterC + `struct[N]`.
@@ -852,10 +856,10 @@ alias distinct = typed;
 /// Returns the index of an item inside the given alias arguments or -1 on error.
 @__ctfe
 int findInAliasArgs(T, A...)() {
-    int result = -1;
+    auto result = -1;
     static foreach (i, TT; A) {
         static if (is(T == TT)) {
-            result = i;
+            result = cast(int) i;
         }
     }
     return result;
@@ -865,6 +869,24 @@ int findInAliasArgs(T, A...)() {
 @__ctfe
 bool isInAliasArgs(T, A...)() {
     return findInAliasArgs!(T, A) != -1;
+}
+
+/// Returns the index of an item inside the given UDA arguments or -1 on error.
+template findInUdaArgs(T, alias member) {
+    enum findInUdaArgs = () {
+        auto result = -1;
+        static foreach (i, attribute; __traits(getAttributes, member)) {
+            static if (is(typeof(attribute) == T) || is(attribute == T)) {
+                result = cast(int) i;
+            }
+        }
+        return result;
+    }();
+}
+
+/// Returns true if an item is inside the given UDA arguments.
+template isInUdaArgs(T, alias member) {
+    enum isInUdaArgs = findInUdaArgs!(T, member) != -1;
 }
 
 // Function test.

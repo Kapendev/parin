@@ -66,54 +66,108 @@ IStr buildInfoFromContent(IStr content, IStr key) {
 /// Supports bool, integer, floating point, and string fields.
 /// Example: `parseBuildInfoFromContent("age: 69\ncount: 42", info)` sets `info.age` and `info.count`.
 void parseBuildInfoFromContent(T)(IStr content, ref T info) if (is(T == struct)) {
+    bool[T.tupleof.length] wasSet;
     for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
         static foreach (i, m; T.tupleof) {
             if (line.length > m.stringof.length && line.startsWith(m.stringof) && (line[m.stringof.length] == defaultBuildInfoSep || line[m.stringof.length] == ' ')) {
                 auto value = line.buildInfoFromLine(m.stringof.length);
                 static if (is(immutable(typeof(T.tupleof[i])) == immutable(bool))) { // isBoolType
                     info.tupleof[i] = toBool(value).getOr();
-                } else static if (__traits(isUnsigned, immutable(typeof(T.tupleof[i])))) { // isUnsignedType
+                    wasSet[i] = true;
+                } else static if (__traits(isUnsigned, typeof(T.tupleof[i]))) { // isUnsignedType
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toUnsigned(value).getOr();
-                } else static if (__traits(isIntegral, immutable(typeof(T.tupleof[i])))) { // isSignedType
+                    wasSet[i] = true;
+                } else static if (__traits(isIntegral, typeof(T.tupleof[i]))) { // isSignedType
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toSigned(value).getOr();
-                } else static if (__traits(isFloating, immutable(typeof(T.tupleof[i])))) { // isFloating
+                    wasSet[i] = true;
+                } else static if (__traits(isFloating, typeof(T.tupleof[i]))) { // isFloating
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toFloating(value).getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) : IStr)) { // isStrType
                     info.tupleof[i] = value;
+                    wasSet[i] = true;
+                } else static if (is(typeof(T.tupleof[i]) == float[2])) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i][0] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i][1] = cast(float) value.skipSpace().toFloating().getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) == Vec2)) {
                     value = value.trimStart("(").trimEnd(")").trim();
                     info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
                     info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
+                    wasSet[i] = true;
+                } else static if (is(typeof(T.tupleof[i]) == int[2])) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i][0] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i][1] = cast(int) value.skipSpace().toSigned().getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) == IVec2)) {
                     value = value.trimStart("(").trimEnd(")").trim();
                     info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
                     info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
+                    wasSet[i] = true;
+                } else static if (is(typeof(T.tupleof[i]) == float[3])) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i][0] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i][1] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i][2] = cast(float) value.skipSpace().toFloating().getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) == Vec3)) {
                     value = value.trimStart("(").trimEnd(")").trim();
                     info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
                     info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
                     info.tupleof[i].z = cast(float) value.skipSpace().toFloating().getOr();
+                    wasSet[i] = true;
+                } else static if (is(typeof(T.tupleof[i]) == int[3])) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i][0] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i][1] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i][2] = cast(int) value.skipSpace().toSigned().getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) == IVec3)) {
                     value = value.trimStart("(").trimEnd(")").trim();
                     info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
                     info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
                     info.tupleof[i].z = cast(int) value.skipSpace().toSigned().getOr();
+                    wasSet[i] = true;
+                } else static if (is(typeof(T.tupleof[i]) == float[4])) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i][0] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i][1] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i][2] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i][3] = cast(float) value.skipSpace().toFloating().getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) == Vec4)) {
                     value = value.trimStart("(").trimEnd(")").trim();
                     info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
                     info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
                     info.tupleof[i].z = cast(float) value.skipSpace().toFloating().getOr();
                     info.tupleof[i].w = cast(float) value.skipSpace().toFloating().getOr();
+                    wasSet[i] = true;
+                } else static if (is(typeof(T.tupleof[i]) == int[4])) {
+                    value = value.trimStart("(").trimEnd(")").trim();
+                    info.tupleof[i][0] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i][1] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i][2] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i][3] = cast(int) value.skipSpace().toSigned().getOr();
+                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) == IVec4)) {
                     value = value.trimStart("(").trimEnd(")").trim();
                     info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
                     info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
                     info.tupleof[i].z = cast(int) value.skipSpace().toSigned().getOr();
                     info.tupleof[i].w = cast(int) value.skipSpace().toSigned().getOr();
+                    wasSet[i] = true;
                 }
             }
         }
         if (content.length == 0) break;
+    }
+
+    static foreach (i, m; T.tupleof) {
+        static if (isInUdaArgs!(requiredMember, T.tupleof[i])) {
+            if (!wasSet[i]) assert(0, "Required member `" ~ m.stringof ~ "` not set.");
+        }
     }
 }
 
@@ -139,9 +193,10 @@ unittest {
         height: 420
         time:   1.0
 
-        size: (64 64)
-        v3:   111 222 333
-        v4:   1   2   3   4
+        size:  (64 64)
+        v3:    111 222 333
+        v4:    1   2   3   4
+        array: 12  34
     ";
 
     assert(buildInfoFromContent(dummyContent, "") == "");
@@ -150,6 +205,9 @@ unittest {
     assert(buildInfoFromContent(dummyContent, "name") == "Cool Project");
 
     struct Info {
+        // NOTE: Set all the fields for the test.
+        @requiredMember:
+
         IStr name;
 
         bool good;
@@ -163,6 +221,7 @@ unittest {
         IVec2 size;
         IVec3 v3;
         IVec4 v4;
+        int[2] array;
     }
 
     auto info = Info();
@@ -177,4 +236,6 @@ unittest {
     assert(info.size == IVec2(64, 64));
     assert(info.v3 == IVec3(111, 222, 333));
     assert(info.v4 == IVec4(1, 2, 3, 4));
+    assert(info.array[0] == 12);
+    assert(info.array[1] == 34);
 }

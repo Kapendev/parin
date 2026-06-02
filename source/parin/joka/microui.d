@@ -319,10 +319,12 @@ struct MuStyle {
 }
 
 /// Used by the `members` function to hide data.
-struct MuPrivate {}
+alias MuPrivate = hiddenMember;
+/// Used by the `members` function to show data in a specific way.
+alias MuMember = muMember;
 
 /// Used by the `members` function to show data in a specific way.
-struct MuMember {
+struct muMember {
     IStr name;  /// Display name override for the member. If empty, the field name is used.
     float low;  /// Lower bound for slider controls.
     float high; /// Upper bound for slider controls.
@@ -1259,7 +1261,7 @@ struct MuContext {
         row(0, labelWidth, -1);
         static foreach (member; data.tupleof) {
             // With data.
-            static if (is(typeof(__traits(getAttributes, member)[0]) == MuMember)) {
+            static if (is(typeof(__traits(getAttributes, member)[0]) == muMember)) {
                 static if (__traits(hasMember, typeof(member), "x") && __traits(hasMember, typeof(member), "y") && __traits(hasMember, typeof(member), "z") && __traits(hasMember, typeof(member), "w")) {
                     row(0, labelWidth,
                         (window.rect.w - labelWidth - style.spacing - style.border) / 4 - style.spacing - style.border,

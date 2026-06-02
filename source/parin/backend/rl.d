@@ -914,8 +914,8 @@ Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
             int imageFormat = image.format;
             int imageWidth = image.width;
             int imageHeight = image.height;
-            Color[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
-            Color[] imageData = (cast(Color*) rl.MemAlloc(cast(int) (imagePixels.length * Color.sizeof)))[0 .. imagePixels.length];
+            Rgba[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
+            Rgba[] imageData = (cast(Rgba*) rl.MemAlloc(cast(int) (imagePixels.length * Rgba.sizeof)))[0 .. imagePixels.length];
             foreach (i, pixel; imagePixels) {
                 imageData[i] = pixel;
                 imageData[i].a = 255;
@@ -953,8 +953,8 @@ Maybe!ResourceId takeScreenshotAndUseAsTexture(ResourceId canvasViewportId, bool
         int imageFormat = image.format;
         int imageWidth = image.width;
         int imageHeight = image.height;
-        Color[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
-        Color[] imageData = (cast(Color*) rl.MemAlloc(cast(int) (imagePixels.length * Color.sizeof)))[0 .. imagePixels.length];
+        Rgba[] imagePixels = rl.LoadImageColors(image)[0 .. imageWidth * imageHeight];
+        Rgba[] imageData = (cast(Rgba*) rl.MemAlloc(cast(int) (imagePixels.length * Rgba.sizeof)))[0 .. imagePixels.length];
         foreach (i, pixel; imagePixels) {
             imageData[i] = pixel;
             imageData[i].a = 255;
