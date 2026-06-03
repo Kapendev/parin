@@ -28,7 +28,7 @@ IStr buildInfo(IStr path = defaultBuildInfoPath)(IStr key) {
 /// Example: `buildInfoStruct!MyInfo()`
 T buildInfoStruct(T, IStr path = defaultBuildInfoPath)() {
     auto result = T();
-    parseBuildInfoFromContent(cast(IStr) import(path), result);
+    parseBuildInfo(cast(IStr) import(path), result);
     return result;
 }
 
@@ -79,7 +79,7 @@ IStr buildInfoFromContent(IStr content, IStr key) {
 /// Parses a build info string into a struct by matching field names to keys.
 /// The lines of the string use the format: "key: value"
 /// Supports bool, integer, floating point, and string fields.
-/// Example: `parseBuildInfoFromContent("age: 69\ncount: 42", info)` sets `info.age` and `info.count`.
+/// Example: `parseBuildInfo("age: 69\ncount: 42", info)` sets `info.age` and `info.count`.
 void parseBuildInfo(T)(IStr content, ref T info) if (is(T == struct)) {
     bool[T.tupleof.length] wasSet;
     for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
