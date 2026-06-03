@@ -32,6 +32,23 @@ T buildInfoStruct(T, IStr path = defaultBuildInfoPath)() {
     return result;
 }
 
+/// Returns true if a build info line starts with the given key.
+/// The line uses the format: "key: value"
+/// Example: `buildInfoLineHasKey("version: 1.0.0", "version")` returns `true`.
+@safe nothrow @nogc
+bool buildInfoLineHasKey(IStr line, IStr key) {
+    return line.length > key.length && line.startsWith(key) && (line[key.length] == defaultBuildInfoSep || line[key.length] == ' ');
+}
+
+/// Returns the section name from a build info header line like `[window]`, or an empty string if the line is not a header.
+/// Example: `buildInfoLineHeader("[window]")` returns `"window"`.
+@safe nothrow @nogc
+IStr buildInfoLineHeader(IStr line) {
+    line = line.trim();
+    if (line.startsWith("[") && line.endsWith("]")) return line[1 .. $ - 1].trim();
+    return "";
+}
+
 /// Returns the value associated with a key from a build info line.
 /// The line uses the format: "key: value"
 /// Returns an empty string if the line is invalid.
@@ -53,9 +70,7 @@ IStr buildInfoFromLine(IStr line, Sz keyLength = 0) {
 IStr buildInfoFromContent(IStr content, IStr key) {
     if (key.length == 0) return "";
     for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
-        if (line.length > key.length && line.startsWith(key) && (line[key.length] == defaultBuildInfoSep || line[key.length] == ' ')) {
-            return line.buildInfoFromLine(key.length);
-        }
+        if (line.buildInfoLineHasKey(key)) return line.buildInfoFromLine(key.length);
         if (content.length == 0) break;
     }
     return "";
@@ -65,99 +80,90 @@ IStr buildInfoFromContent(IStr content, IStr key) {
 /// The lines of the string use the format: "key: value"
 /// Supports bool, integer, floating point, and string fields.
 /// Example: `parseBuildInfoFromContent("age: 69\ncount: 42", info)` sets `info.age` and `info.count`.
-void parseBuildInfoFromContent(T)(IStr content, ref T info) if (is(T == struct)) {
+void parseBuildInfo(T)(IStr content, ref T info) if (is(T == struct)) {
     bool[T.tupleof.length] wasSet;
     for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
         static foreach (i, m; T.tupleof) {
-            if (line.length > m.stringof.length && line.startsWith(m.stringof) && (line[m.stringof.length] == defaultBuildInfoSep || line[m.stringof.length] == ' ')) {
+            if (line.buildInfoLineHasKey(m.stringof)) {
                 auto value = line.buildInfoFromLine(m.stringof.length);
                 static if (is(immutable(typeof(T.tupleof[i])) == immutable(bool))) { // isBoolType
+                    wasSet[i] = true;
                     info.tupleof[i] = toBool(value).getOr();
-                    wasSet[i] = true;
                 } else static if (__traits(isUnsigned, typeof(T.tupleof[i]))) { // isUnsignedType
+                    wasSet[i] = true;
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toUnsigned(value).getOr();
-                    wasSet[i] = true;
                 } else static if (__traits(isIntegral, typeof(T.tupleof[i]))) { // isSignedType
+                    wasSet[i] = true;
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toSigned(value).getOr();
-                    wasSet[i] = true;
                 } else static if (__traits(isFloating, typeof(T.tupleof[i]))) { // isFloating
+                    wasSet[i] = true;
                     info.tupleof[i] = cast(typeof(T.tupleof[i])) toFloating(value).getOr();
-                    wasSet[i] = true;
                 } else static if (is(typeof(T.tupleof[i]) : IStr)) { // isStrType
+                    wasSet[i] = true;
                     info.tupleof[i] = value;
+                } else static if (is(typeof(T.tupleof[i]) == float[2]) || is(typeof(T.tupleof[i]) == Vec2)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == float[2])) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i][0] = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i][1] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[0] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[1] = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == int[2]) || is(typeof(T.tupleof[i]) == IVec2)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == Vec2)) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[0] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1] = cast(int) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == float[3]) || is(typeof(T.tupleof[i]) == Vec3)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == int[2])) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i][0] = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i][1] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[0] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[1] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[2] = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == int[3]) || is(typeof(T.tupleof[i]) == IVec3)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == IVec2)) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[0] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[2] = cast(int) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == float[4]) || is(typeof(T.tupleof[i]) == Vec4)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == float[3])) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i][0] = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i][1] = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i][2] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[0] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[1] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[2] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[3] = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == int[4]) || is(typeof(T.tupleof[i]) == IVec4)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == Vec3)) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i].z = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[0] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[2] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[3] = cast(int) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == Rect) || is(typeof(T.tupleof[i]) == Line)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == int[3])) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i][0] = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i][1] = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i][2] = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[0].x = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[0].y = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[1].x = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[1].y = cast(float) value.skipSpace().toFloating().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == IRect)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == IVec3)) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i].z = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[0].x = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[0].y = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1].x = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1].y = cast(int) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == SRect)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == float[4])) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i][0] = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i][1] = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i][2] = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i][3] = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].tupleof[0].x = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[0].y = cast(int) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1].x = cast(short) value.skipSpace().toSigned().getOr();
+                    info.tupleof[i].tupleof[1].y = cast(short) value.skipSpace().toSigned().getOr();
+                } else static if (is(typeof(T.tupleof[i]) == Circ)) {
                     wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == Vec4)) {
                     value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i].x = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i].y = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i].z = cast(float) value.skipSpace().toFloating().getOr();
-                    info.tupleof[i].w = cast(float) value.skipSpace().toFloating().getOr();
-                    wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == int[4])) {
-                    value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i][0] = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i][1] = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i][2] = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i][3] = cast(int) value.skipSpace().toSigned().getOr();
-                    wasSet[i] = true;
-                } else static if (is(typeof(T.tupleof[i]) == IVec4)) {
-                    value = value.trimStart("(").trimEnd(")").trim();
-                    info.tupleof[i].x = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i].y = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i].z = cast(int) value.skipSpace().toSigned().getOr();
-                    info.tupleof[i].w = cast(int) value.skipSpace().toSigned().getOr();
-                    wasSet[i] = true;
+                    info.tupleof[i].position.x = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].position.y = cast(float) value.skipSpace().toFloating().getOr();
+                    info.tupleof[i].radius = cast(float) value.skipSpace().toFloating().getOr();
                 }
             }
         }
@@ -197,6 +203,9 @@ unittest {
         v3:    111 222 333
         v4:    1   2   3   4
         array: 12  34
+        area:  (32 64 128 128)
+        circ:  1 1 1
+        line:  1 1 1 1
     ";
 
     assert(buildInfoFromContent(dummyContent, "") == "");
@@ -222,10 +231,13 @@ unittest {
         IVec3 v3;
         IVec4 v4;
         int[2] array;
+        IRect area;
+        Circ circ;
+        Line line;
     }
 
     auto info = Info();
-    parseBuildInfoFromContent(dummyContent, info);
+    parseBuildInfo(dummyContent, info);
     assert(info.name == "Cool Project");
     assert(info.good == true);
     assert(info.cool == true);
@@ -238,4 +250,7 @@ unittest {
     assert(info.v4 == IVec4(1, 2, 3, 4));
     assert(info.array[0] == 12);
     assert(info.array[1] == 34);
+    assert(info.area == IRect(32, 64, 128, 128));
+    assert(info.circ == Circ(1, 1, 1));
+    assert(info.line == Line(1, 1, 1, 1));
 }
