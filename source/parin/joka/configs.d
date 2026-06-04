@@ -69,9 +69,8 @@ IStr buildInfoFromLine(IStr line, Sz keyLength = 0) {
 @safe nothrow @nogc
 IStr buildInfoFromContent(IStr content, IStr key) {
     if (key.length == 0) return "";
-    for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
+    foreach (line; content.byLine(true)) {
         if (line.buildInfoLineHasKey(key)) return line.buildInfoFromLine(key.length);
-        if (content.length == 0) break;
     }
     return "";
 }
@@ -189,15 +188,11 @@ bool parseBuildInfoValue(T)(IStr value, ref T field) {
 @trusted
 void parseBuildInfo(T)(IStr content, ref T info) if (is(T == struct)) {
     bool[T.tupleof.length] wasSet = void;
-    for (auto line = content.skipLine().trim();; line = content.skipLine().trim()) {
+    foreach (line; content.byLine(true)) {
         static foreach (i, m; T.tupleof) {
-            if (line.buildInfoLineHasKey(m.stringof)) {
-                wasSet[i] = !parseBuildInfoValue(line.buildInfoFromLine(m.stringof.length), info.tupleof[i]);
-            }
+            if (line.buildInfoLineHasKey(m.stringof)) wasSet[i] = !parseBuildInfoValue(line.buildInfoFromLine(m.stringof.length), info.tupleof[i]);
         }
-        if (content.length == 0) break;
     }
-
     static foreach (i, m; T.tupleof) {
         static if (isInUdaArgs!(requiredMember, T.tupleof[i])) {
             if (!wasSet[i]) assert(0, "Required member `" ~ m.stringof ~ "` not set.");

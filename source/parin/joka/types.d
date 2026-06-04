@@ -2045,6 +2045,38 @@ IStr skipSpace(ref inout(char)[] str) {
     return skipValue(str, " ", true);
 }
 
+/// Iterates over lines of text.
+ByLineRange byLine(IStr view, bool canTrim = false) {
+    return ByLineRange(view, canTrim);
+}
+
+/// Iteration object over lines of text.
+struct ByLineRange {
+    IStr view;
+    IStr slice;
+    bool canTrim;
+
+    @safe nothrow @nogc:
+
+    this(IStr view, bool canTrim = false) {
+        this.view = view;
+        this.canTrim = canTrim;
+        popFront();
+    }
+
+    bool empty() {
+        return view.length == 0 && slice.length == 0;
+    }
+
+    IStr front() {
+        return slice;
+    }
+
+    void popFront() {
+        slice = canTrim ? view.skipLine().trim() : view.skipLine();
+    }
+}
+
 /// Converts the boolean value to its string representation.
 IStr boolToStr(bool value, bool isShortName = false, bool isLower = false) {
     return value ? (isShortName ? (isLower ? "t" : "T") : "true") : (isShortName ? (isLower ? "f" : "F") : "false");
