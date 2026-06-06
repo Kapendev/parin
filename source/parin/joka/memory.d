@@ -181,17 +181,23 @@ version (JokaCustomMemory) {
     private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size);
 
     version (JokaMemoryStubs) {
-        version (JokaSmallFootprint) {
-            enum __jokaMemoryGlobalArenaDataCapacity = 8 * kilobyte;
-        } else {
-            enum __jokaMemoryGlobalArenaDataCapacity = 8 * megabyte;
-        }
+        version (WebAssembly) {
+            import parin.joka.warena;
+            WasmArena __jokaMemoryArena;
 
-        extern(C) ubyte[__jokaMemoryGlobalArenaDataCapacity] __jokaMemoryGlobalArenaData = void;
-        extern(C) Arena __jokaMemoryGlobalArena;
-        private nothrow @nogc void* __joka_stdc_realloc(void* ptr, size_t size, size_t oldSize) {
-            if (__jokaMemoryGlobalArena.capacity == 0) __jokaMemoryGlobalArena.ready(__jokaMemoryGlobalArenaData);
-            return __jokaMemoryGlobalArena.realloc(0, ptr, oldSize, size);
+            private nothrow @nogc void* __joka_stdc_realloc(void* ptr, size_t size, size_t oldSize) {
+                return __jokaMemoryArena.realloc(0, ptr, oldSize, size);
+            }
+        } else {
+            ubyte[kilobyte] __jokaMemoryArenaData = void;
+            Arena __jokaMemoryArena;
+
+            private nothrow @nogc void* __joka_stdc_realloc(void* ptr, size_t size, size_t oldSize) {
+                if (__jokaMemoryGlobalArena.capacity == 0) {
+                    __jokaMemoryGlobalArena.ready(__jokaMemoryGlobalArenaData);
+                }
+                return __jokaMemoryGlobalArena.realloc(0, ptr, oldSize, size);
+            }
         }
 
         private extern(C) pragma(mangle, "realloc") nothrow @nogc void* _stdc_realloc(void* ptr, size_t size) {
