@@ -1137,16 +1137,16 @@ version (JokaRuntimeSymbols) {
 version (JokaSmallFootprint) {
     enum defaultAsciiBufferCount          = 4;   /// Generic string count.
     enum defaultAsciiBufferSize           = 512; /// Generic string length.
-    enum defaultAsciiBufferCountForSlices = 32;  /// Generic slice count.
+    enum defaultAsciiBufferCountForSlices = 16;  /// Generic slice count.
 
-    enum defaultAsciiFmtArgBufferCount = 16;   /// Format argument count.
-    enum defaultAsciiFmtArgBufferSize  = 256;  /// Format argument length.
-    enum defaultAsciiFmtBufferCount    = 4;    /// Format string count.
-    enum defaultAsciiFmtBufferSize     = 1024; /// Format string length.
+    enum defaultAsciiFmtArgBufferCount = 16;  /// Format argument count.
+    enum defaultAsciiFmtArgBufferSize  = 256; /// Format argument length.
+    enum defaultAsciiFmtBufferCount    = 4;   /// Format string count.
+    enum defaultAsciiFmtBufferSize     = 512; /// Format string length.
 } else {
     enum defaultAsciiBufferCount          = 8;    /// Generic string count.
     enum defaultAsciiBufferSize           = 1024; /// Generic string length.
-    enum defaultAsciiBufferCountForSlices = 128;  /// Generic slice count.
+    enum defaultAsciiBufferCountForSlices = 64;   /// Generic slice count.
 
     enum defaultAsciiFmtArgBufferCount = 16;   /// Format argument count.
     enum defaultAsciiFmtArgBufferSize  = 1024; /// Format argument length.
