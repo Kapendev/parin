@@ -24,23 +24,23 @@ struct WasmArena {
     enum pageSize        = cast(Sz) (1U << 16U);
     enum defaulAlignment = cast(Sz) 16U;
 
-    @system nothrow @nogc:
+    @safe nothrow @nogc:
 
+    @trusted
     static void* heapBasePtr() {
         return &__heap_base;
     }
 
-    @trusted
     Sz totalPageCount() {
         if (initialTotalPageCount == 0) initialTotalPageCount = llvm_wasm_memory_size(0);
         return llvm_wasm_memory_size(0) - initialTotalPageCount;
     }
 
-    @trusted
     Sz totalPageSize() {
         return cast(Sz) (totalPageCount << 16U);
     }
 
+    @system
     void* malloc(Sz alignment, Sz size) {
         if (alignment == 0) alignment = defaulAlignment;
 
@@ -63,6 +63,7 @@ struct WasmArena {
         return lastPtr;
     }
 
+    @system
     void* realloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize) {
         if (alignment == 0) alignment = defaulAlignment;
 
@@ -84,7 +85,6 @@ struct WasmArena {
         return newPtr;
     }
 
-    @safe
     void clear() {
         offset = 0;
         previousOffset = 0;

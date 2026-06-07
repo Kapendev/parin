@@ -193,10 +193,8 @@ version (JokaCustomMemory) {
             Arena __jokaMemoryArena;
 
             private nothrow @nogc void* __joka_stdc_realloc(void* ptr, size_t size, size_t oldSize) {
-                if (__jokaMemoryGlobalArena.capacity == 0) {
-                    __jokaMemoryGlobalArena.ready(__jokaMemoryGlobalArenaData);
-                }
-                return __jokaMemoryGlobalArena.realloc(0, ptr, oldSize, size);
+                if (__jokaMemoryArena.capacity == 0) __jokaMemoryArena.ready(__jokaMemoryArenaData);
+                return __jokaMemoryArena.realloc(0, ptr, oldSize, size);
             }
         }
 
