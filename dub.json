@@ -46,8 +46,7 @@
                 "-framework", "CoreVideo",
                 "-framework", "IOKit",
                 "-framework", "Carbon",
-                "-framework", "OpenGL",
-                "-lSystem"
+                "-framework", "OpenGL"
             ]
         }
     ]

@@ -11,9 +11,28 @@ module parin.joka.configs;
 import parin.joka.types;
 import parin.joka.math;
 
-enum defaultBuildInfoSep = ':';
-enum defaultBuildInfoSepStr = ":";
-enum defaultBuildInfoPath = "build_info.txt";
+enum defaultBuildInfoSep    = ':';              /// The separator character used in build info files.
+enum defaultBuildInfoSepStr = ":";              /// The separator string used in build info files.
+enum defaultBuildInfoPath   = "build_info.txt"; /// The default path to the build info file.
+
+/// Mixin template that adds common dub project metadata fields.
+mixin template dubBuildFields() {
+    IStr name;
+    IStr description;
+    IStr author;
+    IStr license;
+    IStr copyright;
+    int major;
+    int minor;
+    int patch;
+}
+
+/// Mixin template that adds common compiler build fields.
+mixin template compilerBuildFields() {
+    IStr compiler;
+    IStr flags;
+    IStr source;
+}
 
 /// Returns the value associated with a key from a build info file.
 /// The file uses the format: "key: value"
@@ -201,6 +220,7 @@ void parseBuildInfo(T)(IStr content, ref T info) if (is(T == struct)) {
 }
 
 unittest {
+    auto dummyContent = "";
     assert(buildInfoFromLine("") == "");
     assert(buildInfoFromLine("key") == "");
     assert(buildInfoFromLine("key:") == "");
@@ -209,7 +229,7 @@ unittest {
     assert(buildInfoFromLine("key:value") == "value");
     assert(buildInfoFromLine("  key  :  value  ") == "value");
 
-    auto dummyContent = "
+    dummyContent = "
         # A comment.
         name:    Cool Project
         version: 1.0.0
@@ -239,7 +259,7 @@ unittest {
     assert(buildInfoFromContent(dummyContent, "version") == "1.0.0");
     assert(buildInfoFromContent(dummyContent, "name") == "Cool Project");
 
-    struct Info {
+    static struct Info {
         // NOTE: Set all the fields for the test.
         @requiredMember:
 
@@ -280,8 +300,30 @@ unittest {
     assert(info.array[0] == 12);
     assert(info.array[1] == 34);
     foreach (i, item; info.smallArray) assert(item == i + 1);
-
     assert(info.area == IRect(32, 64, 128, 128));
     assert(info.circ == Circ(1, 1, 1));
     assert(info.line == Line(1, 1, 1, 1));
+
+    dummyContent = "
+        name:     Cool Project
+        major:    1
+        minor:    2
+        patch:    420
+        compiler: dmd
+        source:   ./my/project/folder
+    ";
+
+    static struct InfoWithMixins {
+        mixin dubBuildFields;
+        mixin compilerBuildFields;
+    }
+
+    auto infoWithMixins = InfoWithMixins();
+    parseBuildInfo(dummyContent, infoWithMixins);
+    assert(infoWithMixins.name == "Cool Project");
+    assert(infoWithMixins.major == 1);
+    assert(infoWithMixins.minor == 2);
+    assert(infoWithMixins.patch == 420);
+    assert(infoWithMixins.compiler == "dmd");
+    assert(infoWithMixins.source == "./my/project/folder");
 }
