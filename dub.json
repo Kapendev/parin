@@ -38,7 +38,17 @@
             "name": "osx",
             "platforms": ["osx"],
             "targetType": "library",
-            "lflags": ["-L$PACKAGE_DIR/packages/setup/source/vendor/macos", "-L."]
+            "lflags": [
+                "-L$PACKAGE_DIR/packages/setup/source/vendor/macos", "-L.",
+                "-framework", "Cocoa",
+                "-framework", "CoreFoundation",
+                "-framework", "CoreGraphics",
+                "-framework", "CoreVideo",
+                "-framework", "IOKit",
+                "-framework", "Carbon",
+                "-framework", "OpenGL",
+                "-lSystem"
+            ]
         }
     ]
 }

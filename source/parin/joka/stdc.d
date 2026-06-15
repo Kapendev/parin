@@ -11,6 +11,17 @@ extern(C) nothrow @nogc:
 
 // --- config.d
 
+// Map OSX/iOS/TVOS/WatchOS to Darwin.
+version (OSX) {
+    version = Darwin;
+} else version (iOS) {
+    version = Darwin;
+} else version (TVOS) {
+    version = Darwin;
+} else version (WatchOS) {
+    version = Darwin;
+}
+
 version (WebAssembly) version = CLongIsInt;
 version (Windows)     version = CLongIsInt;
 
