@@ -95,14 +95,6 @@ enum EngineFlag : EngineFlags {
     isDebugMode                 = 0x000200,
 }
 
-/// Information about the engine viewport, including its drawing region and size constraints.
-struct EngineViewportInfo {
-    Rect area;      /// The area covered by the viewport.
-    Vec2 minSize;   /// The minimum size that the viewport can be.
-    Vec2 maxSize;   /// The maximum size that the viewport can be.
-    float minRatio; /// The minimum ratio between minSize and maxSize.
-}
-
 /// Internal representation of a viewport within the engine.
 struct EngineViewport {
     ViewportId data; /// The viewport data.
@@ -124,7 +116,7 @@ struct EngineState {
     bool debugModeEnteringFrameState;
     bool debugModeExitingFrameState;
 
-    EngineViewportInfo viewportInfoBuffer;
+    ViewportInfo viewportInfoBuffer;
     Vec2 mouseBuffer;
     Vec2 wasdBuffer;
     Vec2 wasdPressedBuffer;
@@ -759,11 +751,8 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
 
         // Begin drawing.
         bk.beginDrawing();
+        if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
         bk.clearBackground(_engineState.viewport.data.color);
-        if (isResolutionLocked) {
-            bk.beginViewport(_engineState.viewport.data.data);
-            bk.clearBackground(_engineState.viewport.data.color);
-        }
         // Update and draw the game.
         auto result = false;
         with (ScopedArena(_engineState.arena)) {
@@ -791,9 +780,8 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
         if (isResolutionLocked) {
             auto info = engineViewportInfo;
             bk.endViewport(_engineState.viewport.data.data);
-            bk.beginDrawing();
             bk.clearBackground(_engineState.windowBorderColor);
-            bk.drawViewport(_engineState.viewport.data.data, Rect(info.minSize.x, -info.minSize.y), info.area, Vec2(), 0.0f, white);
+            bk.drawViewport(_engineState.viewport.data.data, Rect(info.logicalSize.x, -info.logicalSize.y), info.area, Vec2(), 0.0f, white);
         }
         bk.endDrawing();
 
@@ -1241,38 +1229,15 @@ void setAssetsPath(IStr path) {
 @trusted nothrow @nogc:
 
 void _updateViewportInfoBuffer() {
-    auto info = &_engineState.viewportInfoBuffer;
-    if (isResolutionLocked) {
-        info.minSize = resolution;
-        info.maxSize = windowSize;
-        auto ratio = info.maxSize / info.minSize;
-        info.minRatio = min(ratio.x, ratio.y);
-        if (isPixelPerfect) {
-            auto roundMinRatio = info.minRatio.round();
-            auto floorMinRation = info.minRatio.floor();
-            info.minRatio = info.minRatio.fequals(roundMinRatio, 0.015f) ? roundMinRatio : floorMinRation;
-        }
-        auto targetSize = info.minSize * Vec2(info.minRatio);
-        auto targetPosition = info.maxSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
-        info.area = Rect(
-            targetPosition.floor(),
-            ratio.x == info.minRatio ? targetSize.x : floor(targetSize.x),
-            ratio.y == info.minRatio ? targetSize.y : floor(targetSize.y),
-        );
-    } else {
-        info.minSize = windowSize;
-        info.maxSize = info.minSize;
-        info.minRatio = 1.0f;
-        info.area = Rect(info.minSize);
-    }
+    _engineState.viewportInfoBuffer.update(windowSize, resolution, isResolutionLocked, isPixelPerfect);
 }
 
 void _updateEngineMouseBuffer(Vec2 value) {
     auto info = &_engineState.viewportInfoBuffer;
     if (isResolutionLocked) {
         _engineState.mouseBuffer = Vec2(
-            floor((value.x - (info.maxSize.x - info.area.size.x) * 0.5f) / info.minRatio),
-            floor((value.y - (info.maxSize.y - info.area.size.y) * 0.5f) / info.minRatio),
+            floor((value.x - (info.physicalSize.x - info.area.size.x) * 0.5f) / info.scale),
+            floor((value.y - (info.physicalSize.y - info.area.size.y) * 0.5f) / info.scale),
         );
     } else {
         _engineState.mouseBuffer = value;
@@ -1578,7 +1543,7 @@ void toggleResolution(int width, int height) {
 }
 
 /// Returns information about the engine viewport, including its size and position.
-EngineViewportInfo engineViewportInfo() {
+ViewportInfo engineViewportInfo() {
     return _engineState.viewportInfoBuffer;
 }
 

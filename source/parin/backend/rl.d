@@ -113,14 +113,14 @@ struct BackendState {
 
 /// Updates the window every frame with the given function.
 /// Returns when the given function returns true.
-void updateWindow(alias loop)() {
+void updateWindow(alias loopFunc)() {
     version (WebAssembly) {
-        static void loopWeb() {
-            if (loop) em.emscripten_cancel_main_loop();
+        extern(C) static void loopWebFunc() {
+            if (loopFunc) em.emscripten_cancel_main_loop();
         }
-        em.emscripten_set_main_loop(&loopWeb, 0, true);
+        em.emscripten_set_main_loop(&loopWebFunc, 0, true);
     } else {
-        while (true) if (isWindowCloseButtonPressed || loop) break;
+        while (true) if (isWindowCloseButtonPressed || loopFunc) break;
     }
 }
 

@@ -2672,6 +2672,43 @@ Palette!N csvRowToPalette(Sz N)(IStr csv, Sz row = 0, Sz startCol = 0) {
     return result;
 }
 
+/// Information about the viewport, including its drawing region and size constraints.
+struct ViewportInfo {
+    Rect area;         /// The area covered by the viewport.
+    Vec2 logicalSize;  /// The minimum size that the viewport can be.
+    Vec2 physicalSize; /// The maximum size that the viewport can be.
+    float scale;       /// The minimum ratio between minSize and maxSize.
+
+    @safe nothrow @nogc:
+
+    /// Update the info based on the given sizes.
+    void update(Vec2 newPhysicalSize, Vec2 newLogicalSize, bool isSizeLocked, bool isScalingPixelPerfect) {
+        if (isSizeLocked) {
+            physicalSize = newPhysicalSize;
+            logicalSize  = newLogicalSize;
+            auto ratio   = newPhysicalSize / newLogicalSize;
+            scale = min(ratio.x, ratio.y);
+            if (isScalingPixelPerfect) {
+                auto roundedScale = scale.round();
+                auto flooredScale = scale.floor();
+                scale = scale.fequals(roundedScale, 0.015f) ? roundedScale : flooredScale;
+            }
+            auto targetSize = newLogicalSize * Vec2(scale);
+            auto targetPosition = newPhysicalSize * Vec2(0.5f) - targetSize * Vec2(0.5f);
+            area = Rect(
+                targetPosition.floor(),
+                ratio.x == scale ? targetSize.x : floor(targetSize.x),
+                ratio.y == scale ? targetSize.y : floor(targetSize.y),
+            );
+        } else {
+            physicalSize = newPhysicalSize;
+            logicalSize  = newPhysicalSize;
+            scale = 1.0f;
+            area = Rect(newPhysicalSize);
+        }
+    }
+}
+
 bool isMaybeStoryOp(IStr value) {
     if (value.length == 0) return false;
     auto c = value[0];
