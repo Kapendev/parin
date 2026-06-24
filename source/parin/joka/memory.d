@@ -954,6 +954,10 @@ struct List(T) {
             return items[i];
         }
 
+        void opIndexAssign(const(T) rhs) {
+            items[] = cast(T) rhs;
+        }
+
         void opIndexAssign(const(T) rhs, Sz i) {
             items[i] = cast(T) rhs;
         }
@@ -1137,6 +1141,10 @@ struct BufferList(T) {
             return items[i];
         }
 
+        void opIndexAssign(const(T) rhs) {
+            items[] = cast(T) rhs;
+        }
+
         void opIndexAssign(const(T) rhs, Sz i) {
             items[i] = cast(T) rhs;
         }
@@ -1287,6 +1295,10 @@ struct FixedList(T, Sz N) {
 
         ref T opIndex(Sz i) {
             return items[i];
+        }
+
+        void opIndexAssign(const(T) rhs) {
+            items[] = cast(T) rhs;
         }
 
         void opIndexAssign(const(T) rhs, Sz i) {
@@ -1912,6 +1924,10 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         ref T opIndex(Sz row, Sz col) {
             assert(has(row, col), gridIndexErrorMessage(row, col));
             return tiles[findGridIndex(row, col, colCount)];
+        }
+
+        void opIndexAssign(T rhs) {
+            tiles[] = rhs;
         }
 
         void opIndexAssign(T rhs, Sz row, Sz col) {

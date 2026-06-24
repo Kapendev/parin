@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+
+set -e
+
+new_joka_dir=../joka/source/joka
+old_joka_dir=./source/parin/joka
+
+is_ok=F
+[ -d $new_joka_dir ] && [ -d $old_joka_dir ] && is_ok=T
+[ $is_ok = F ] && echo "Can't find Joka folders." && exit 1
+
+gio trash $old_joka_dir
+cp -r $new_joka_dir $old_joka_dir
+find $old_joka_dir -type f -name "*.d" | while read -r f; do
+  echo "Processing $f"
+  sed -E \
+    -e 's/^(module[[:space:]]+)joka([.;])/\1parin.joka\2/' \
+    -e 's/^([[:space:]]*(public|private|protected)?[[:space:]]*import[[:space:]]+)joka([.;])/\1parin.joka\3/' \
+    -e 's/^([[:space:]]*(public|private|protected)?[[:space:]]*import[[:space:]]+[[:alnum:]_]+[[:space:]]*=[[:space:]]*)joka([.;])/\1parin.joka\3/' \
+    "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+done
