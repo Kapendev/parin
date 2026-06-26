@@ -1481,9 +1481,17 @@ IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
 }
 
 /// Halts the program with a TODO message indicating unimplemented code.
-noreturn todo(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
-    assert(0, "TODO({}:{}): {}".fmt(file, line, text));
+/// Debug builds: runtime assert. Release builds: compile-time error.
+noreturn debugTodo(bool errorInRelease = true)(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
+    debug {
+        assert(0, "TODO({}:{}): {}".fmt(file, line, text));
+    } else {
+        static if (errorInRelease) static assert(0, "Can't have TODOs in release builds.");
+    }
 }
+
+deprecated("Use `debugTodo`. The old name was too generic.")
+alias todo = debugTodo;
 
 pragma(inline, true) {
     /// Hashes a string using the FNV-1a algorithm with a 32-bit output.
