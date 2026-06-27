@@ -175,63 +175,37 @@ void eprintln(A...)(A args) {
 }
 
 /// Prints values and their source location to stdout.
-/// Prints nothing in release builds.
 void debugPrint(A)(A a, IStr file = __FILE__, Sz line = __LINE__) {
-    debug {
-        printf("DEBUG({}:{}):", file, line);
-        printf(" {}", a);
-        printf("\n");
-    }
+    printf("DEBUG({}:{}):", file, line);
+    printf(" {}", a);
+    printf("\n");
 }
 
 /// Prints values and their source location to stdout.
-/// Prints nothing in release builds.
 void debugPrint(A, B)(A a, B b, IStr file = __FILE__, Sz line = __LINE__) {
-    debug {
-        printf("DEBUG({}:{}):", file, line);
-        printf(" {}", a);
-        printf(" {}", b);
-        printf("\n");
-    }
+    printf("DEBUG({}:{}):", file, line);
+    printf(" {}", a);
+    printf(" {}", b);
+    printf("\n");
 }
 
 /// Prints values and their source location to stdout.
-/// Prints nothing in release builds.
 void debugPrint(A, B, C)(A a, B b, C c, IStr file = __FILE__, Sz line = __LINE__) {
-    debug {
-        printf("DEBUG({}:{}):", file, line);
-        printf(" {}", a);
-        printf(" {}", b);
-        printf(" {}", c);
-        printf("\n");
-    }
+    printf("DEBUG({}:{}):", file, line);
+    printf(" {}", a);
+    printf(" {}", b);
+    printf(" {}", c);
+    printf("\n");
 }
 
 /// Prints values and their source location to stdout.
-/// Prints nothing in release builds.
 void debugPrint(A, B, C, D)(A a, B b, C c, D d, IStr file = __FILE__, Sz line = __LINE__) {
-    debug {
-        printf("DEBUG({}:{}):", file, line);
-        printf(" {}", a);
-        printf(" {}", b);
-        printf(" {}", c);
-        printf(" {}", d);
-        printf("\n");
-    }
-}
-
-/// Prints values and their source location to stdout.
-/// Prints nothing in release builds.
-void debugPrint(A, B, C, D, E)(A a, B b, C c, D d, E e, IStr file = __FILE__, Sz line = __LINE__) {
-    debug {
-        printf("DEBUG({}:{}):", file, line);
-        printf(" {}", a);
-        printf(" {}", b);
-        printf(" {}", c);
-        printf(" {}", d);
-        printf(" {}", e);
-        printf("\n");
-    }
+    printf("DEBUG({}:{}):", file, line);
+    printf(" {}", a);
+    printf(" {}", b);
+    printf(" {}", c);
+    printf(" {}", d);
+    printf("\n");
 }
 
 deprecated("Use `debugPrint`. The old name was too generic.")
