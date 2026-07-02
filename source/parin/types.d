@@ -318,6 +318,7 @@ struct TextOptions {
 struct Camera {
     Vec2 position;         /// The position of the camera.
     Vec2 offset;           /// The offset of the view area of the camera.
+    Maybe!Vec2 target;     /// The target position of the camera. Used by the `folloTarget*` functions.
     float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
     float scale = 1.0f;    /// The zoom level of the camera.
     bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
@@ -442,6 +443,16 @@ struct Camera {
     /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
     void followScaleWithSlowdown(float target, float delta, float slowdown) {
         scale = scale.moveToWithSlowdown(target, delta, slowdown);
+    }
+
+    /// Moves the camera to follow the target position at the specified speed.
+    void followTarget(float delta) {
+        if (target.isSome) position = position.moveTo(target.xx, Vec2(delta));
+    }
+
+    /// Moves the camera to follow the target position with gradual slowdown.
+    void followTargetWithSlowdown(float delta, float slowdown) {
+        if (target.isSome) position = position.moveToWithSlowdown(target.xx, Vec2(delta), slowdown);
     }
 }
 

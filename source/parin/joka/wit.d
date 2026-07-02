@@ -59,10 +59,10 @@ unittest {
 
     auto x2 = WitOption!int();
     assert(x2.isSome == false);
-    assert(x2.data == 0);
+    assert(x2.xx == 0);
     x2 = 4;
     assert(x2.isSome == true);
-    assert(x2.data == 4);
+    assert(x2.xx == 4);
     x2.clear();
     assert(x2.isSome == false);
     assert(Maybe!int().toWit().isNone == true);

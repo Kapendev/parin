@@ -81,14 +81,14 @@ struct requiredMember {}
 /// A static array.
 /// It exists because of BetterC + `struct[N]`.
 struct StaticArray(T, Sz N) {
-    align(T.alignof) ubyte[T.sizeof * N] data;
+    align(T.alignof) ubyte[T.sizeof * N] _data;
     alias items this;
 
     @trusted nothrow @nogc:
 
     this(const(T)[] items...) {
         if (items.length > N) assert(0, "Too many items.");
-        foreach (i; 0 .. N) (cast(T*) data.ptr)[i] = cast(T) items[i];
+        foreach (i; 0 .. N) (cast(T*) _data.ptr)[i] = cast(T) items[i];
     }
 
     enum length = N;   /// The length of the array.
@@ -97,7 +97,7 @@ struct StaticArray(T, Sz N) {
     /// Returns the items of the array.
     pragma(inline, true)
     inout(T)[] items() inout {
-        return (cast(T*) data.ptr)[0 .. N];
+        return (cast(T*) _data.ptr)[0 .. N];
     }
 }
 
@@ -283,8 +283,8 @@ alias BitSet = GBitSet!BitSetCommonDataType;
 /// Errors are referred to as faults in Joka.
 /// The default value is an empty value.
 struct Maybe(T) {
-    Fault fault = Fault.some;
-    T data;
+    Fault _fault = Fault.some;
+    T _data;
     alias isSome this;
 
     @safe nothrow @nogc:
@@ -311,65 +311,71 @@ struct Maybe(T) {
     /// Creates a value.
     @trusted
     void opAssign(in const(T) rhs) {
-        fault = Fault.none;
-        data = cast(T) rhs;
+        _fault = Fault.none;
+        _data = cast(T) rhs;
     }
 
     /// Creates a fault.
     void opAssign(Fault rhs) {
-        fault = rhs;
+        _fault = rhs;
     }
 
     /// Copies the state of another optional value.
     @trusted
     void opAssign(in Maybe!T rhs) {
-        fault = rhs.fault;
-        data = cast(T) rhs.data;
+        _fault = rhs._fault;
+        _data = cast(T) rhs._data;
+    }
+
+    /// Returns the fault.
+    pragma(inline, true)
+    Fault fault() {
+        return _fault;
     }
 
     /// Returns the value without checking if it exists.
     pragma(inline, true)
     T xx() {
-        return data;
+        return _data;
     }
 
     /// Returns the value and traps the fault check to avoid an assert.
     T get(ref Fault trap) {
-        trap = fault;
-        return data;
-    }
-
-    /// Returns the value, or asserts if a fault exists.
-    T get() {
-        if (fault) assert(0, "Fault was detected.");
-        return data;
-    }
-
-    /// Returns the value. Returns a default value when there is a fault.
-    T getOr(T other) {
-        return fault ? other : data;
+        trap = _fault;
+        return _data;
     }
 
     /// Returns the value. Returns a default value when there is a fault.
     T getOr() {
-        return fault ? T.init : data;
+        return _fault ? T.init : _data;
+    }
+
+    /// Returns the value. Returns a default value when there is a fault.
+    T getOr(T other) {
+        return _fault ? other : _data;
+    }
+
+    /// Returns the value, or asserts if a fault exists.
+    T getOrAssert(IStr text = "Fault was detected.") {
+        if (_fault) assert(0, text);
+        return _data;
     }
 
     /// Returns true when there is a fault.
     pragma(inline, true)
     bool isNone() const {
-        return fault != Fault.none;
+        return _fault != Fault.none;
     }
 
     /// Returns true when there is a value.
     pragma(inline, true)
     bool isSome() const {
-        return fault == Fault.none;
+        return _fault == Fault.none;
     }
 
     /// Clears the value, making it none.
     void clear() {
-        fault = Fault.some;
+        _fault = Fault.some;
     }
 }
 
@@ -388,7 +394,7 @@ struct Option(T) {
     enum isPtr = is(T : const(void)*); /// True if `T` is a pointer.
 
     static if (!isPtr) bool _isSome;
-    T data;
+    T _data;
     alias isSome this;
 
     @trusted nothrow @nogc:
@@ -403,7 +409,7 @@ struct Option(T) {
         static if (!isPtr) {
             _isSome = true;
         }
-        data = cast(T) rhs;
+        _data = cast(T) rhs;
     }
 
     /// Copies the state of another optional value.
@@ -411,35 +417,35 @@ struct Option(T) {
         static if (!isPtr) {
             _isSome = rhs.isSome;
         }
-        data = cast(T) rhs.data;
+        _data = cast(T) rhs._data;
     }
 
     /// Returns the value without checking if it exists.
     pragma(inline, true)
     T xx() {
-        return data;
+        return _data;
     }
 
     /// Returns the value and traps the `isSome` check to avoid an assert.
     T get(ref bool trap) {
         trap = isSome;
-        return data;
-    }
-
-    /// Returns the value, or asserts if it does not exists.
-    T get() {
-        if (!isSome) assert(0, "Value doesn't exist.");
-        return data;
-    }
-
-    /// Returns the value. Returns a default value when there is none.
-    T getOr(T other) {
-        return !isSome ? other : data;
+        return _data;
     }
 
     /// Returns the value. Returns a default value when there is none.
     T getOr() {
-        return !isSome ? T.init : data;
+        return !isSome ? T.init : _data;
+    }
+
+    /// Returns the value. Returns a default value when there is none.
+    T getOr(T other) {
+        return !isSome ? other : _data;
+    }
+
+    /// Returns the value, or asserts if it does not exists.
+    T getOrAssert(IStr text = "Fault was detected.") {
+        if (!isSome) assert(0, text);
+        return _data;
     }
 
     /// Returns true when there is no value.
@@ -452,7 +458,7 @@ struct Option(T) {
     pragma(inline, true)
     bool isSome() const {
         static if (isPtr) {
-            return data != null;
+            return _data != null;
         } else {
             return _isSome;
         }
@@ -461,7 +467,7 @@ struct Option(T) {
     /// Clears the value, making it none.
     void clear() {
         static if (isPtr) {
-            data = null;
+            _data = null;
         } else {
             _isSome = false;
         }
@@ -527,10 +533,9 @@ struct Result(T, E, Sz tagSize = 0) {
         return data.value;
     }
 
-    /// Returns the value, or asserts if it does not exists.
-    T get() {
-        if (!isSome) assert(0, "Error was detected.");
-        return data.value;
+    /// Returns the value. Returns a default value when there is none.
+    T getOr() {
+        return !isSome ? T.init : data.value;
     }
 
     /// Returns the value. Returns a default value when there is none.
@@ -538,9 +543,10 @@ struct Result(T, E, Sz tagSize = 0) {
         return !isSome ? other : data.value;
     }
 
-    /// Returns the value. Returns a default value when there is none.
-    T getOr() {
-        return !isSome ? T.init : data.value;
+    /// Returns the value, or asserts if it does not exists.
+    T getOrAssert(IStr text = "Fault was detected.") {
+        if (!isSome) assert(0, text);
+        return data.value;
     }
 
     pragma(inline, true)
@@ -717,7 +723,7 @@ pragma(inline, true) @safe nothrow @nogc {
     /// Returns an option from a maybe.
     Option!T toForeignMaybe(T)(Maybe!T value) {
         if (value.isSome) {
-            return Option!T(value.data);
+            return Option!T(value.xx);
         } else {
             return Option!T();
         }

@@ -1144,7 +1144,7 @@ ViewportId loadViewport(int width, int height, Rgba color, Blend blend = Blend.a
 /// Path separators are normalized to the platform's native format.
 LStr loadBytes(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readBytes(path.toAssetsPath());
-    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path))) return result.get();
+    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path))) return result.getOr();
     return LStr();
 }
 
@@ -1180,7 +1180,7 @@ Fault saveBytes(IStr path, IStr bytes, IStr file = __FILE__, Sz line = __LINE__)
 /// Path separators are normalized to the platform's native format.
 LStr loadText(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     auto result = readText(path.toAssetsPath());
-    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path))) return result.get();
+    if (didLoadOrSaveSucceed(result.fault, fmt(defaultEngineLoadErrorMessage, file, line, "text", path))) return result.getOr();
     return LStr();
 }
 
