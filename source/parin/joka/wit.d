@@ -72,7 +72,7 @@ unittest {
     assert(x3.isSome == false);
     x3 = 4;
     assert(x3.isSome == true);
-    assert(x3.data.value == 4);
+    assert(x3.xx == 4);
     x3.clear();
     assert(x3.isSome == false);
 

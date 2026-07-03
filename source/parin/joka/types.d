@@ -12,10 +12,6 @@ version (WebAssembly) {
     version = JokaTypesStubs;
 }
 
-// --- Core
-
-alias AliasArgs(A...) = A; /// The type of compile time alias arguments.
-
 alias Sz = size_t;    /// The result of sizeof.
 alias Pd = ptrdiff_t; /// The result of pointer math.
 
@@ -33,8 +29,14 @@ alias IStrz   = const(char)*;  /// A C string of constant chars.
 alias IStrz16 = const(wchar)*; /// A C string of constant wchars.
 alias IStrz32 = const(dchar)*; /// A C string of constant dchars.
 
-alias UnionType = ubyte; /// The common union type of a tagged union.
+alias UnionType = ubyte; /// The common union type for all tagged unions.
 alias Gen       = uint;  /// The type of a generation.
+
+/// The type of compile time alias arguments.
+alias AliasArgs(A...) = A;
+
+/// Callback that can be used for basic printing. Should works like the echo command in POS*X compliant shells.
+alias EchonFunc = void function(IStr[] text...) @safe nothrow @nogc;
 
 enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
 enum megabyte = 1024 * kilobyte; /// The size of one megabyte in bytes.
@@ -43,20 +45,15 @@ enum terabyte = 1024 * gigabyte; /// The size of one terabyte in bytes.
 enum petabyte = 1024 * terabyte; /// The size of one petabyte in bytes.
 enum exabyte  = 1024 * petabyte; /// The size of one exabyte in bytes.
 
-@safe nothrow @nogc {
-    /// Callback that can be used for basic printing.
-    alias EchonFunc = void function(IStr[] text...);
-}
-
 /// A type representing error values.
 enum Fault : ubyte {
     none,          /// Not an error.
     some,          /// A generic error.
     bug,           /// An implementation error.
+    assertion,     /// An assertion error.
     invalid,       /// An invalid data error.
     overflow,      /// An overflow error.
     range,         /// A range violation error.
-    assertion,     /// An assertion error.
     timeout,       /// A timeout error.
     interrupted,   /// An interrupted error.
     unconfigured,  /// A missing configuration error.
@@ -71,46 +68,23 @@ enum Fault : ubyte {
     cannotWrite,   /// A write permissions error.
 }
 
-/// A marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
+/// A type marker for types that support "no data" things. The Rust `Result` type is a good example of working with types like this.
 struct NoData {}
-/// A marker for types that support hiding members for something.
+/// An attribute for types that support hiding members. Can be used for UI elements, for example.
 struct hiddenMember {}
-/// A marker for types that support requiring members for something.
+/// An attribute for types that support requiring members. Can be used for configurations, for example.
 struct requiredMember {}
-
-/// A static array.
-/// It exists because of BetterC + `struct[N]`.
-struct StaticArray(T, Sz N) {
-    align(T.alignof) ubyte[T.sizeof * N] _data;
-    alias items this;
-
-    @trusted nothrow @nogc:
-
-    this(const(T)[] items...) {
-        if (items.length > N) assert(0, "Too many items.");
-        foreach (i; 0 .. N) (cast(T*) _data.ptr)[i] = cast(T) items[i];
-    }
-
-    enum length = N;   /// The length of the array.
-    enum capacity = N; /// The capacity of the array.
-
-    /// Returns the items of the array.
-    pragma(inline, true)
-    inout(T)[] items() inout {
-        return (cast(T*) _data.ptr)[0 .. N];
-    }
-}
 
 /// A value paired with its iteration index.
 struct IndexedValue(V) {
-    V value;  /// The value.
     Sz index; /// The index of the value.
+    V value;  /// The value.
     alias value this;
 }
 
-/// A key paired with its associated value.
+/// A value paired with its associated key.
 struct KeyValuePair(K, V) {
-    K key;   /// The key.
+    K key;   /// The key of the value.
     V value; /// The value.
     alias value this;
 }
@@ -119,7 +93,6 @@ struct KeyValuePair(K, V) {
 struct GenIndex {
     Sz value;       /// The index value.
     Gen generation; /// The generation counter.
-    alias isSome this;
 
     enum invalidData  = Gen.max; /// Data indicating an error.
     enum invalidIndex = GenIndex(invalidData, invalidData); /// An invalid generational index.
@@ -137,8 +110,30 @@ struct GenIndex {
     }
 }
 
-/// A slice using a foreign memory layout.
-/// It can be used to interface with languages that define slices differently.
+/// A static array. It exists because of a BetterC + `struct[N]` issue (missing symbol).
+struct StaticArray(T, Sz N) {
+    align(T.alignof) ubyte[T.sizeof * N] _data;
+    alias items this;
+
+    enum length   = N; /// The length of the array.
+    enum capacity = N; /// The capacity of the array.
+
+    @trusted nothrow @nogc:
+
+    /// Makes a static array. Passing a slice with a length larger than the array capacity will throw an error.
+    this(const(T)[] items...) {
+        if (items.length > N) assert(0, "Too many items passed to the static array.");
+        foreach (i; 0 .. N) (cast(T*) _data.ptr)[i] = cast(T) items[i];
+    }
+
+    /// Returns the items of the array.
+    pragma(inline, true)
+    inout(T)[] items() inout {
+        return (cast(T*) _data.ptr)[0 .. N];
+    }
+}
+
+/// A slice using a foreign memory layout. Useful for interfacing with languages that define slices differently.
 struct ForeignSlice(T) {
     T* ptr;    /// The pointer of the slice.
     Sz length; /// The length of the slice.
@@ -169,7 +164,7 @@ struct ForeignSlice(T) {
     }
 }
 
-/// A static bit set.
+/// A generic static bit set.
 struct GBitSet(T) if (__traits(isUnsigned, T)) {
     T bits; /// The underlying bit storage.
 
@@ -279,8 +274,7 @@ alias BitSetCommonDataType = ulong;
 /// The common bit set type.
 alias BitSet = GBitSet!BitSetCommonDataType;
 
-/// Represents an optional value with an error code.
-/// Errors are referred to as faults in Joka.
+/// Represents an optional value with an error code. Errors are referred to as faults in Joka.
 /// The default value is an empty value.
 struct Maybe(T) {
     Fault _fault = Fault.some;
@@ -379,13 +373,10 @@ struct Maybe(T) {
     }
 }
 
-/// Maybe not.
-alias MaybeNot = Maybe;
-/// Not sure.
-alias NotSure = Maybe;
+alias MaybeNot = Maybe; /// Maybe not.
+alias NotSure = Maybe;  /// Not sure.
 
-/// Represents an optional value.
-/// Prefer using `Maybe` in most cases.
+/// Represents an optional value. Prefer using `Maybe` in most cases.
 /// Note: the `isSome` member depends on `T`.
 /// If `T` is a value, then `isSome` is a field.
 /// If `T` is a pointer, then `isSome` is a property.
@@ -474,8 +465,7 @@ struct Option(T) {
     }
 }
 
-/// Represents a success or error value.
-/// Prefer using `Maybe` in most cases.
+/// Represents a success or error value. Prefer using `Maybe` in most cases.
 struct Result(T, E, Sz tagSize = 0) {
     union ResultUnion {
         T value;
@@ -492,70 +482,83 @@ struct Result(T, E, Sz tagSize = 0) {
         alias Tag = bool;
     }
 
-    Tag isSome;
-    ResultUnion data;
+    Tag _isSome;
+    ResultUnion _data;
     alias isSome this;
 
     @trusted nothrow @nogc:
 
+    /// Creates a value.
     this(in const(T) value) {
         opAssign(value);
     }
 
+    /// Creates an error.
     this(in const(E) value) {
         opAssign(value);
     }
 
+    /// Creates a value.
     void opAssign(in const(T) rhs) {
-        isSome = true;
-        data.value = cast(T) rhs;
+        _isSome = true;
+        _data.value = cast(T) rhs;
     }
 
+    /// Creates an error.
     void opAssign(in const(E) rhs) {
-        isSome = false;
-        data.error = cast(E) rhs;
+        _isSome = false;
+        _data.error = cast(E) rhs;
     }
 
+    /// Copies the state of another result value.
     void opAssign(in Result!(T, E) rhs) {
-        isSome = rhs.isSome;
-        data = cast(ResultUnion) rhs.data;
+        _isSome = rhs._isSome;
+        _data = cast(ResultUnion) rhs._data;
+    }
+
+    /// Returns true if it is some value.
+    pragma(inline, true)
+    bool isSome() {
+        return _isSome;
     }
 
     /// Returns the value without checking if it exists.
     pragma(inline, true)
     T xx() {
-        return data.value;
+        return _data.value;
     }
 
     /// Returns the value and traps the `isSome` check to avoid an assert.
     T get(ref E trap) {
-        if (!isSome) trap = data.error;
-        return data.value;
+        if (!_isSome) trap = _data.error;
+        return _data.value;
     }
 
     /// Returns the value. Returns a default value when there is none.
     T getOr() {
-        return !isSome ? T.init : data.value;
+        return !_isSome ? T.init : _data.value;
     }
 
     /// Returns the value. Returns a default value when there is none.
     T getOr(T other) {
-        return !isSome ? other : data.value;
+        return !_isSome ? other : _data.value;
     }
 
     /// Returns the value, or asserts if it does not exists.
     T getOrAssert(IStr text = "Fault was detected.") {
-        if (!isSome) assert(0, text);
-        return data.value;
+        if (!_isSome) assert(0, text);
+        return _data.value;
     }
 
+    /// Returns true when there is an error.
     pragma(inline, true)
     bool isNone() const {
-        return !isSome;
+        return !_isSome;
     }
 
+    /// Clears the value, making it none.
     void clear() {
-        isSome = false;
+        _isSome = false;
     }
 }
 
@@ -856,9 +859,6 @@ mixin template typed(T) {
     alias _data this;
 }
 
-/// Same as `typed` mixin. This is for the Odin fans.
-alias distinct = typed;
-
 /// Returns the index of an item inside the given alias arguments or -1 on error.
 @__ctfe
 int findInAliasArgs(T, A...)() {
@@ -893,6 +893,75 @@ template findInUdaArgs(T, alias member) {
 /// Returns true if an item is inside the given UDA arguments.
 template isInUdaArgs(T, alias member) {
     enum isInUdaArgs = findInUdaArgs!(T, member) != -1;
+}
+
+// NOTE: Some `JokaCustomMemory` functions are defined also in `memory.d`.
+version (JokaCustomMemory) {
+    extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
+    extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
+    extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
+} else version (JokaGcMemory) {
+    private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+    private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+    private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+
+    @system nothrow @nogc
+    void* jokaMemset(void* ptr, int value, Sz size) {
+        return stdc_memset(ptr, value, size);
+    }
+
+    @system nothrow @nogc
+    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+        return stdc_memcpy(ptr, source, size);
+    }
+
+    @system nothrow @nogc
+    int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
+        return stdc_memcmp(ptr1, ptr2, size);
+    }
+} else {
+    private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
+    private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
+    private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
+
+    version (JokaTypesStubs) {
+        private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
+            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
+            return dest;
+        }
+
+        private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
+            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+            return dest;
+        }
+
+        private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
+            auto p1 = cast(const(ubyte)*) s1;
+            auto p2 = cast(const(ubyte)*) s2;
+            foreach (i; 0 .. count) {
+                if (p1[i] != p2[i]) return p1[i] - p2[i];
+            }
+            return 0;
+        }
+    }
+
+    /// Sets the first `size` bytes of `ptr` to `value`.
+    @system nothrow @nogc
+    void* jokaMemset(void* ptr, int value, Sz size) {
+        return stdc_memset(ptr, value, size);
+    }
+
+    /// Copies `size` bytes from `source` to `ptr`.
+    @system nothrow @nogc
+    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
+        return stdc_memcpy(ptr, source, size);
+    }
+
+    /// Compares the first `size` bytes of `ptr1` and `ptr2`, returning 0 if equal.
+    @system nothrow @nogc
+    int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
+        return stdc_memcmp(ptr1, ptr2, size);
+    }
 }
 
 // Function test.
@@ -1053,87 +1122,6 @@ unittest {
 
     auto b = a;
     assert(b == a);
-}
-
-// NOTE: Some `JokaCustomMemory` functions are defined also in `memory.d`.
-version (JokaCustomMemory) {
-    extern(C) nothrow @nogc void* jokaMemset(void* ptr, int value, Sz size);
-    extern(C) nothrow @nogc void* jokaMemcpy(void* ptr, const(void)* source, Sz size);
-    extern(C) nothrow @nogc int   jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size);
-} else version (JokaGcMemory) {
-    private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-    private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-    private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
-
-    @system nothrow @nogc
-    void* jokaMemset(void* ptr, int value, Sz size) {
-        return stdc_memset(ptr, value, size);
-    }
-
-    @system nothrow @nogc
-    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stdc_memcpy(ptr, source, size);
-    }
-
-    @system nothrow @nogc
-    int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
-        return stdc_memcmp(ptr1, ptr2, size);
-    }
-} else {
-    private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count);
-    private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count);
-    private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int   stdc_memcmp(const(void)* s1, const(void)* s2, size_t count);
-
-    version (JokaTypesStubs) {
-        private extern(C) pragma(mangle, "memset") @system nothrow @nogc void* stdc_memset(void* dest, int ch, size_t count) {
-            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = cast(ubyte) ch;
-            return dest;
-        }
-
-        private extern(C) pragma(mangle, "memcpy") @system nothrow @nogc void* stdc_memcpy(void* dest, const(void)* src, size_t count) {
-            foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
-            return dest;
-        }
-
-        private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
-            auto p1 = cast(const(ubyte)*) s1;
-            auto p2 = cast(const(ubyte)*) s2;
-            foreach (i; 0 .. count) {
-                if (p1[i] != p2[i]) return p1[i] - p2[i];
-            }
-            return 0;
-        }
-    }
-
-    /// Sets the first `size` bytes of `ptr` to `value`.
-    @system nothrow @nogc
-    void* jokaMemset(void* ptr, int value, Sz size) {
-        return stdc_memset(ptr, value, size);
-    }
-
-    /// Copies `size` bytes from `source` to `ptr`.
-    @system nothrow @nogc
-    void* jokaMemcpy(void* ptr, const(void)* source, Sz size) {
-        return stdc_memcpy(ptr, source, size);
-    }
-
-    /// Compares the first `size` bytes of `ptr1` and `ptr2`, returning 0 if equal.
-    @system nothrow @nogc
-    int jokaMemcmp(const(void)* ptr1, const(void)* ptr2, Sz size) {
-        return stdc_memcmp(ptr1, ptr2, size);
-    }
-}
-
-// TODO: Replace that with something good. The name is too generic and the code is Windows specific.
-version (JokaRuntimeSymbols) {
-    extern(C) @trusted nothrow @nogc /* __chkstk */
-    void __chkstk() {}
-
-    extern(C) @trusted nothrow @nogc /* _d_array_slice_copy */
-    void _d_array_slice_copy(void* dst, Sz dstlen, void* src, Sz srclen, Sz elemsz) {
-        if (dstlen != srclen) assert(0, "Lengths don't match for slice copy.");
-        jokaMemcpy(dst, src, dstlen * elemsz);
-    }
 }
 
 // --- ASCII
