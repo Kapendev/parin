@@ -77,7 +77,7 @@ struct EnumeratedRange(R) {
     }
 
     FrontType front() {
-        return FrontType(range.front, index);
+        return FrontType(index, range.front);
     }
 
     void popFront() {
