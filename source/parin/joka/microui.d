@@ -175,7 +175,7 @@ enum MuKeyFlag : MuKeyFlags {
 /// A static stack.
 struct MuStack(T, Sz N) {
     int idx;
-    StaticArray!(T, N) data = void;
+    StaticArray!(T, N) data;
     alias data this;
 
     @safe nothrow @nogc:

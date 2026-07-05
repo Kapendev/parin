@@ -650,18 +650,18 @@ alias TileMap = GTileMap!128;
 
 /// A single sprite animation, defined by its position in an atlas and playback settings.
 struct SpriteAnimation {
-    ubyte frameRow;        /// The atlas row this animation plays from.
-    ubyte frameCount;      /// The number of frames in the animation.
-    ubyte frameSpeed;      /// The playback speed of the animation.
-    bool canRepeat = true; /// Whether the animation loops.
+    ubyte frameRow;   /// The atlas row this animation plays from.
+    ubyte frameCount; /// The number of frames in the animation.
+    ubyte frameSpeed; /// The playback speed of the animation.
+    bool canRepeat;   /// Whether the animation loops.
 }
 
 /// A sprite animation group that picks between 2 animations based on a direction angle.
 struct SpriteAnimationGroup2 {
-    ubyte[2] frameRows;    /// The atlas row for each directional animation.
-    ubyte frameCount;      /// The number of frames in each animation.
-    ubyte frameSpeed;      /// The playback speed of the animation.
-    bool canRepeat = true; /// Whether the animation loops.
+    ubyte[2] frameRows; /// The atlas row for each directional animation.
+    ubyte frameCount;   /// The number of frames in each animation.
+    ubyte frameSpeed;   /// The playback speed of the animation.
+    bool canRepeat;     /// Whether the animation loops.
 
     enum angleStep = 180.0f; /// The angle step in degrees used to snap the input angle.
 
@@ -676,10 +676,10 @@ struct SpriteAnimationGroup2 {
 
 /// A sprite animation group that picks between 4 animations based on a direction angle.
 struct SpriteAnimationGroup4 {
-    ubyte[4] frameRows;    /// The atlas row for each directional animation.
-    ubyte frameCount;      /// The number of frames in each animation.
-    ubyte frameSpeed;      /// The playback speed of the animation.
-    bool canRepeat = true; /// Whether the animation loops.
+    ubyte[4] frameRows; /// The atlas row for each directional animation.
+    ubyte frameCount;   /// The number of frames in each animation.
+    ubyte frameSpeed;   /// The playback speed of the animation.
+    bool canRepeat;     /// Whether the animation loops.
 
     enum angleStep = 90.0f; /// The angle step in degrees used to snap the input angle.
 
@@ -699,10 +699,10 @@ struct SpriteAnimationGroup4 {
 
 /// A sprite animation group that picks between 8 animations based on a direction angle.
 struct SpriteAnimationGroup8 {
-    ubyte[8] frameRows;    /// The atlas row for each directional animation.
-    ubyte frameCount;      /// The number of frames in each animation.
-    ubyte frameSpeed;      /// The playback speed of the animation.
-    bool canRepeat = true; /// Whether the animation loops.
+    ubyte[8] frameRows; /// The atlas row for each directional animation.
+    ubyte frameCount;   /// The number of frames in each animation.
+    ubyte frameSpeed;   /// The playback speed of the animation.
+    bool canRepeat;     /// Whether the animation loops.
 
     enum angleStep = 45.0f; /// The angle step in degrees used to snap the input angle.
 
@@ -717,10 +717,10 @@ struct SpriteAnimationGroup8 {
 
 /// A sprite animation group that picks between 16 animations based on a direction angle.
 struct SpriteAnimationGroup16 {
-    ubyte[16] frameRows;   /// The atlas row for each directional animation.
-    ubyte frameCount;      /// The number of frames in each animation.
-    ubyte frameSpeed;      /// The playback speed of the animation.
-    bool canRepeat = true; /// Whether the animation loops.
+    ubyte[16] frameRows; /// The atlas row for each directional animation.
+    ubyte frameCount;    /// The number of frames in each animation.
+    ubyte frameSpeed;    /// The playback speed of the animation.
+    bool canRepeat;      /// Whether the animation loops.
 
     enum angleStep = 22.5f; /// The angle step in degrees used to snap the input angle.
 
@@ -888,7 +888,7 @@ struct Sprite {
 /// The `tickTimeFunc` alias must be a function that returns a `float` or `double` value.
 /// That value should be the elapsed time at the start of the current tick.
 struct GTimer(alias tickTimeFunc) {
-    float duration = 1.0f;                  /// The duration of the timer, in seconds.
+    float duration = 0.0f;                  /// The duration of the timer, in seconds.
     float pauseTime = 0.0f;                 /// The elapsed time when the timer was paused.
     float startTime = 0.0f;                 /// The elapsed time when the timer was started.
     float stopTimeElapsedTimeBuffer = 0.0f; /// Buffer storing the elapsed time after stopping.
@@ -1905,7 +1905,7 @@ struct BoxData {
 struct BoxMover {
     Vec2 direction;
     Vec2 velocity;
-    float speed = 1.0f;
+    float speed = 0.0f;
     float acceleration = 0.0f;
     float gravity = 0.0f;
     float jump = 0.0f;
@@ -1929,6 +1929,7 @@ struct BoxMover {
         return gravity == 0.0f;
     }
 
+    // TODO: This is just bad. Change it some day.
     Vec2 move() {
         if (isTopDown) {
             if (isSmooth) {

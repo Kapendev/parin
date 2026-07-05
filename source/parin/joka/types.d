@@ -1194,7 +1194,7 @@ struct StrPair {
 /// A wrapper type for priting floats and doubles.
 struct Floating {
     double value = 0.0; /// The value.
-    uint precision = 2; /// The number of digits after the dot.
+    uint precision;     /// The number of digits after the dot.
 
     @safe nothrow @nogc:
 

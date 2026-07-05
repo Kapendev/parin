@@ -1170,7 +1170,7 @@ struct FixedList(T, Sz N) {
     alias Item = T;
     alias Data = StaticArray!(T, N);
 
-    StaticArray!(T, N) data = void;
+    StaticArray!(T, N) data;
     Sz length;
 
     @safe nothrow @nogc:

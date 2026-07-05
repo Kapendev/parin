@@ -163,7 +163,6 @@ struct EngineState {
 /// A texture identifier.
 struct TextureId {
     ResourceId data;
-    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -227,7 +226,6 @@ struct TextureId {
 /// A font identifier.
 struct FontId {
     ResourceId data;
-    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -307,7 +305,6 @@ struct FontId {
 /// A sound identifier.
 struct SoundId {
     ResourceId data;
-    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -421,7 +418,6 @@ struct SoundId {
 /// A viewport identifier.
 struct ViewportId {
     ResourceId data;
-    alias isValid this;
 
     @safe nothrow @nogc:
 
@@ -1012,17 +1008,11 @@ EngineTaskId repeatTask(UpdateFunc func, float interval, int count = -1, bool ca
     return _engineState.tasks.push(Task(interval, canCallNow ? interval : 0, func, cast(byte) count));
 }
 
-deprecated("Use `repeatTask`.")
-alias every = repeatTask;
-
 /// Cancels a scheduled task by its ID.
 void cancelTask(EngineTaskId id) {
     if (id.value == 0) return;
     _engineState.tasks.remove(id);
 }
-
-deprecated("Use `cancelTask`.")
-alias cancel = cancelTask;
 
 /// Loads a surface file (PNG) with default filter and wrap modes.
 /// Uses the assets path unless the input starts with `/` or `\`, or `isUsingAssetsPath` is false.
