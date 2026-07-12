@@ -279,7 +279,6 @@ alias BitSet = GBitSet!BitSetCommonDataType;
 struct Maybe(T) {
     Fault _fault = Fault.some;
     T _data;
-    alias isSome this;
 
     @safe nothrow @nogc:
 
@@ -386,7 +385,6 @@ struct Option(T) {
 
     static if (!isPtr) bool _isSome;
     T _data;
-    alias isSome this;
 
     @trusted nothrow @nogc:
 
@@ -484,7 +482,6 @@ struct Result(T, E, Sz tagSize = 0) {
 
     Tag _isSome;
     ResultUnion _data;
-    alias isSome this;
 
     @trusted nothrow @nogc:
 
@@ -878,6 +875,7 @@ bool isInAliasArgs(T, A...)() {
 }
 
 /// Returns the index of an item inside the given UDA arguments or -1 on error.
+@__ctfe
 template findInUdaArgs(T, alias member) {
     enum findInUdaArgs = () {
         auto result = -1;
@@ -891,6 +889,7 @@ template findInUdaArgs(T, alias member) {
 }
 
 /// Returns true if an item is inside the given UDA arguments.
+@__ctfe
 template isInUdaArgs(T, alias member) {
     enum isInUdaArgs = findInUdaArgs!(T, member) != -1;
 }
@@ -1476,7 +1475,7 @@ IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
 
 /// Halts the program with a TODO message indicating unimplemented code.
 /// Debug builds: runtime assert. Release builds: runtime assert or compile-time error.
-noreturn debugTodo(bool errorInRelease = false)(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
+noreturn debugTodo(bool errorInRelease = true)(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     debug {
         assert(0, "TODO({}:{}): {}".fmt(file, line, text));
     } else {
@@ -1487,9 +1486,6 @@ noreturn debugTodo(bool errorInRelease = false)(IStr text, IStr file = __FILE__,
         }
     }
 }
-
-deprecated("Use `debugTodo`. The old name was too generic.")
-alias todo = debugTodo;
 
 pragma(inline, true) {
     /// Hashes a string using the FNV-1a algorithm with a 32-bit output.

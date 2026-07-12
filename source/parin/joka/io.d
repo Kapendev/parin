@@ -208,9 +208,6 @@ void debugPrint(A, B, C, D)(A a, B b, C c, D d, IStr file = __FILE__, Sz line = 
     printf("\n");
 }
 
-deprecated("Use `debugPrint`. The old name was too generic.")
-alias trace = debugPrint;
-
 /// Basic print function that can be used with types that have an `EchonFunc` field.
 @safe nothrow @nogc
 void echon(IStr[] text...) {

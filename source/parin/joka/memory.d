@@ -738,21 +738,12 @@ unittest {
 
 @safe nothrow:
 
-enum defaultListCapacity = 8; /// The default list capacity. It is also the smallest list capacity.
+/// The default list capacity. It is also the smallest list capacity.
+enum defaultListCapacity = 8;
 
-alias LStr         = List!char;            /// A dynamic string of chars.
-alias BStr         = BufferList!char;      /// A dynamic string of chars backed by external memory.
-alias FStr(Sz N)   = FixedList!(char, N);  /// A dynamic string of chars allocated on the stack.
-
-// Some types are removed for compile-time reasons.
-/*
-alias LStr16       = List!wchar;           /// A dynamic string of wchars.
-alias LStr32       = List!dchar;           /// A dynamic string of dchars.
-alias BStr16       = BufferList!wchar;     /// A dynamic string of wchars backed by external memory.
-alias BStr32       = BufferList!dchar;     /// A dynamic string of dchars backed by external memory.
-alias FStr16(Sz N) = FixedList!(wchar, N); /// A dynamic string of wchars allocated on the stack.
-alias FStr32(Sz N) = FixedList!(dchar, N); /// A dynamic string of dchars allocated on the stack.
-*/
+alias LStr       = List!char;           /// A dynamic string of chars.
+alias BStr       = BufferList!char;     /// A dynamic string of chars backed by external memory.
+alias FStr(Sz N) = FixedList!(char, N); /// A dynamic string of chars allocated on the stack.
 
 /// A dynamic array.
 struct List(T) {
@@ -1618,6 +1609,12 @@ struct GenList(T, D = SparseList!T, G = List!Gen) if (isGenContainerPartsValid!(
     @nogc
     void clear() {
         foreach (id; ids) remove(id);
+    }
+
+    @nogc
+    void clearAndResetGenerations() {
+        data.clear();
+        generations.clear();
     }
 
     void free(IStr file = __FILE__, Sz line = __LINE__) {

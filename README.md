@@ -17,8 +17,8 @@ It's especially well-suited for retro games, with helper functions and two pixel
 
 - **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
 - **Batteries included**: Arcady physics, debug UI, fixed aspect ratio...
-- **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or disable it entirely when needed.
-- **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used directly without the engine, even on targets like [WASM-4](https://wasm4.org/).
+- **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or avoid it entirely when needed.
+- **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used directly without the engine. A [raylib example using Joka](https://kapendev.itch.io/k-merge-with-me) is available on Itch.
 
 > [!NOTE]
 > The project is still early in development.
