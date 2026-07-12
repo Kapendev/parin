@@ -11,9 +11,9 @@ It's easy to set up, hackable, and comes with the essentials built in.
 
 ## Why Parin
 
-Parin sits somewhere between a small library like [raylib](https://www.raylib.com/) or [LÖVE](https://love2d.org/) and a big engine like [Godot](https://godotengine.org/) or [Unity](https://unity.com/).
+Parin sits somewhere between a small library like [raylib](https://www.raylib.com/) and a big engine like [Godot](https://godotengine.org/).
 It offers more direction than small libraries, but far less overhead than big engines.
-It's especially well-suited for retro games, with helper functions and two pixel fonts included, and focuses on:
+It's especially well-suited for retro games, and focuses on:
 
 - **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
 - **Batteries included**: Arcady physics, debug UI, fixed aspect ratio...
@@ -34,7 +34,7 @@ It's especially well-suited for retro games, with helper functions and two pixel
 - Includes extras like [microui](examples/integrations/microui.d) and memory allocators ([tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25))
 - Mixed memory model (manual, GC, or both)
 - No external dependencies
-- Support for Windows, Linux, Web, and macOS (needs testing)
+- Support for Windows, Linux, Web, and macOS
 
 ## Basic Window Example
 
@@ -179,7 +179,7 @@ No. The following projects might be useful:
 - [dex-cf](https://codeberg.org/configuration-file/d): CF (Configuration File) support.
 - [dtiled](https://github.com/rcorre/dtiled): D language parser for Tiled map files.
 - [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
-- [Inochi2D](https://github.com/Inochi2D/inochi2d): A library for realtime 2D puppet animation.
+- [Inochi2D](https://github.com/Inochi2D/inochi2d): A library for realtime 2D puppet animation. Using it with Parin = using the current Parin backend directly.
 - [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
 - [gameserver](https://github.com/schveiguy/gameserver): Simple game server for toying with online games.
 

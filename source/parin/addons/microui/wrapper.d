@@ -26,19 +26,6 @@ alias UiFont      = MuFont;      /// The font type of microui.
 alias UiTexture   = MuTexture;   /// The texture type of microui.
 alias UiSliceMode = MuSliceMode; /// The slice repeat mode type of microui.
 
-deprecated("Use `IRect`. It's the same.")
-alias UiRect = IRect; /// A 2D rectangle using ints.
-deprecated("Use `IVec2`. It's the same.")
-alias UiVec = IVec2; /// A 2D vector using ints.
-deprecated("Use `Vec2`. It's the same.")
-alias UiFVec = Vec2; /// A 2D vector using floats.
-deprecated("Use `Margin`. It's the same.")
-alias UiMargin = Margin; /// A set of 4 integer margins for left, top, right, and bottom.
-deprecated("Use `SlicePart`. It's the same.")
-alias UiSlicePart = SlicePart; /// A part of a 9-slice with source and target rectangles for drawing.
-deprecated("Use `SliceParts`. It's the same.")
-alias UiSliceParts = SliceParts; /// The parts of a 9-slice.
-
 alias UiPoolItem    = MuPoolItem;    /// A pool item.
 alias UiBaseCommand = MuBaseCommand; /// Base structure for all render commands, containing type and size metadata.
 alias UiJumpCommand = MuJumpCommand; /// Command to jump to another location in the command buffer.
@@ -55,18 +42,10 @@ alias UiStyle     = MuStyle;     /// UI style settings including font, sizes, sp
 alias UiContext   = MuContext;   /// The UI context.
 alias UiCommand   = MuCommand;   /// The command kind.
 
-deprecated("Remove `Enum` from the type name.")
-alias UiClipEnum  = MuClip; /// The clipping kind.
-alias UiClip      = MuClip; /// The clipping kind.
-deprecated("Remove `Enum` from the type name.")
-alias UiColorEnum = MuColor; /// The color kind.
-alias UiColor     = MuColor; /// The color kind.
-deprecated("Remove `Enum` from the type name.")
-alias UiIconEnum  = MuIcon; /// The icon kind.
-alias UiIcon      = MuIcon; /// The icon kind.
-deprecated("Remove `Enum` from the type name.")
-alias UiAtlasEnum = MuAtlas; /// The atlas area kind.
-alias UiAtlas     = MuAtlas; /// The atlas area kind.
+alias UiClip  = MuClip;  /// The clipping kind.
+alias UiColor = MuColor; /// The color kind.
+alias UiIcon  = MuIcon;  /// The icon kind.
+alias UiAtlas = MuAtlas; /// The atlas area kind.
 
 alias UiResFlags   = MuResFlags;   /// Bitmask type for result flags.
 alias UiResFlag    = MuResFlag;    /// Result flags indicating the outcome of a control interaction.
@@ -623,16 +602,8 @@ void beginUiFrame() {
     beginUiCore();
 }
 
-/// The old name of the `beginUiFrame` function.
-deprecated("Use `beginUiFrame`. It's a better name.")
-alias beginUi = beginUiFrame;
-
 /// Ends UI processing and performs drawing.
 void endUiFrame() {
     endUiCore();
     drawUiState();
 }
-
-/// The old name of the `endUiFrame` function.
-deprecated("Use `endUiFrame`. It's a better name.")
-alias endUi = endUiFrame;
