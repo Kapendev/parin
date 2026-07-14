@@ -103,8 +103,10 @@ struct UiState {
 @trusted
 void prepareUi() {
     if (_uiState == null) {
-        _uiState = jokaMake!UiState().ignoreLeak();
-        _uiPreviousState = jokaMake!UiState().ignoreLeak();
+        _uiState = cast(UiState*) jokaMalloc(UiState.sizeof).ignoreLeak();
+        *_uiState = UiState();
+        _uiPreviousState = cast(UiState*) jokaMalloc(UiState.sizeof).ignoreLeak();
+        *_uiPreviousState = UiState();
     }
     setUiViewportState(Vec2(), resolution, Vec2(1.0f));
     _uiState.itemId = 0;

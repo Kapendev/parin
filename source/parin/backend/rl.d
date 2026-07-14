@@ -130,7 +130,8 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
     enum targetHtmlElementId = "canvas";
 
     // Create the null values.
-    _backendState = jokaMake!BackendState();
+    _backendState = cast(BackendState*) jokaMalloc(BackendState.sizeof);
+    *_backendState = BackendState();
     _backendState.textures.push(RlTexture());
     _backendState.fonts.push(RlFont());
     _backendState.sounds.push(RlSound());

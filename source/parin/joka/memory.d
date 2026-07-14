@@ -329,6 +329,9 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
 @trusted {
     /// Allocates memory for a value without initializing it.
     T* jokaMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
+        version (JokaMallocOnly) {
+            static assert(0, "Templated single-allocation functions (`jokaMake*`) are disabled under `JokaMallocOnly`. Use `jokaMalloc` or containers.");
+        }
         return cast(T*) jokaMalloc(T.sizeof, file, line);
     }
 

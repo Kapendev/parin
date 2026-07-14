@@ -679,7 +679,8 @@ extern(C) @trusted nothrow @nogc {
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
-    _engineState = jokaMake!EngineState();
+    _engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
+    *_engineState = EngineState();
     _engineState.depthSortData = DepthSortData(32768); // NOTE: MAGIC NUMBER LOL.
 
     if (args.length) {
