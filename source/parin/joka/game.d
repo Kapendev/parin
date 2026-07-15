@@ -884,6 +884,60 @@ struct Sprite {
     }
 }
 
+/// How to draw a sprite stack layer.
+enum SpriteStackDrawMode : ubyte {
+    goxelLayers,    /// This can be used to draw stacks from Goxel.
+    pixelRowLayers, /// This can be used to draw walls, or things that are 2D.
+}
+
+/// A sprite stack.
+struct SpriteStack {
+    ubyte width;                  /// The width of the stack layer (atlas area).
+    ubyte height;                 /// The height of the stack later (atlas area).
+    ushort atlasLeft;             /// The X position on the atlas.
+    ushort atlasTop;              /// The Y position on the atlas.
+    SpriteStackDrawMode drawMode; /// The way to draw the layers.
+    ubyte layerCount;             /// The layer count of the stack. For `SpriteStackDrawMode.pixelRowLayers`, this should be equal to the height.
+    Vec2 position;                /// The position of the stack.
+    float rotation = 0.0f;        /// The rotation of the stack.
+}
+
+/// A helper for changing the color of sprite stack layers.
+struct SpriteStackLighting {
+    Vec3 floorColor     = Vec3(0.0f); /// The base color of the floor, from 0.0 to 1.0, in RGB.
+    Vec3 ceilingColor   = Vec3(1.0f); /// The base color of the ceiling, from 0.0 to 1.0, in RGB.
+    float minFactor     = 0.50f;      /// The minimum factor for the floor color.
+    float progressRange = 0.80f;      /// The range of the `lightingProgress`. See `makeColor` functions.
+    bool isActive       = false;      /// Used by the `*IfIsActive` functions.
+
+    @safe nothrow @nogc:
+
+    /// Returns a new color. Value `lightingProgress` should be between 0.0 and 1.0 (inclusive).
+    Rgba makeColor(float lightingProgress) {
+        auto lightingFactor = min(minFactor + lightingProgress * progressRange, 1.0f);
+        return Rgba(
+            cast(ubyte) (255 * (floorColor.x + (ceilingColor.x - floorColor.x) * lightingFactor)),
+            cast(ubyte) (255 * (floorColor.y + (ceilingColor.y - floorColor.y) * lightingFactor)),
+            cast(ubyte) (255 * (floorColor.z + (ceilingColor.z - floorColor.z) * lightingFactor)),
+        );
+    }
+
+    /// Returns a new color. The lighting progress is `layer / layerCount` for this function.
+    Rgba makeColor(uint layer, uint layerCount) {
+        return makeColor((cast(float) layer) / (layerCount - 1));
+    }
+
+    /// Returns a new color. Value `lightingProgress` should be between 0.0 and 1.0 (inclusive).
+    Rgba makeColorIfIsActive(float lightingProgress) {
+        return isActive ? makeColor(lightingProgress) : white;
+    }
+
+    /// Returns a new color. The lighting progress is `layer / layerCount` for this function.
+    Rgba makeColorIfIsActive(uint layer, uint layerCount) {
+        return isActive ? makeColor(layer, layerCount) : white;
+    }
+}
+
 /// A generic timer with pause/resume and repeat support.
 /// The `tickTimeFunc` alias must be a function that returns a `float` or `double` value.
 /// That value should be the elapsed time at the start of the current tick.

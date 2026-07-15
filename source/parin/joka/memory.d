@@ -5,6 +5,8 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
+// TODO: I need to write a style guide, or at least write down how attributes should be used.
+
 /// The `memory` module provides functions for dealing with memory and various general-purpose containers.
 /// `List`, `BufferList`, and `FixedList` are the "basic" containers.
 /// Most other containers can accept one of those to adjust their allocation strategy.
@@ -803,7 +805,7 @@ struct List(T) {
             auto rawPtr = capture.realloc(0, items.ptr, capacity * T.sizeof, targetCapacity * T.sizeof, file, line);
             if (rawPtr == null) return true;
             static if (isTrackingMemory) {
-                if (canIgnoreLeak) rawPtr.ignoreLeak();
+                if (canIgnoreLeak) rawPtr.ignoreLeak(); // TODO: This might be an issue with custom allocators? Think about it later.
             }
             capacity = targetCapacity;
             items = (cast(T*) rawPtr)[0 .. newLength];
@@ -1930,14 +1932,14 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
             tiles[] = rhs;
         }
 
-        void opIndexAssign(T rhs, Sz row, Sz col) {
+        void opIndexAssign(const(T) rhs, Sz row, Sz col) {
             assert(has(row, col), gridIndexErrorMessage(row, col));
-            tiles[findGridIndex(row, col, colCount)] = rhs;
+            tiles[findGridIndex(row, col, colCount)] = cast(T) rhs;
         }
 
-        void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col) {
+        void opIndexOpAssign(IStr op)(const(T) rhs, Sz row, Sz col) {
             assert(has(row, col), gridIndexErrorMessage(row, col));
-            mixin("tiles[findGridIndex(row, col, colCount)]", op, "= rhs;");
+            mixin("tiles[findGridIndex(row, col, colCount)]", op, "= cast(T) rhs;");
         }
 
         Sz opDollar(Sz dim)() {

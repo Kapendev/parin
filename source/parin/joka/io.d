@@ -12,6 +12,7 @@ import parin.joka.memory;
 import parin.joka.types;
 
 // TODO: Should be changed with something better?
+//   There could be a backend file like in Parin that has an IO interface.
 version (WASI) {
     version = ReadWriteFileIsEmpty;
     import wasi = parin.joka.wasip1;
@@ -205,6 +206,17 @@ void debugPrint(A, B, C, D)(A a, B b, C c, D d, IStr file = __FILE__, Sz line = 
     printf(" {}", b);
     printf(" {}", c);
     printf(" {}", d);
+    printf("\n");
+}
+
+/// Prints values and their source location to stdout.
+void debugPrint(A, B, C, D, E)(A a, B b, C c, D d, E e, IStr file = __FILE__, Sz line = __LINE__) {
+    printf("DEBUG({}:{}):", file, line);
+    printf(" {}", a);
+    printf(" {}", b);
+    printf(" {}", c);
+    printf(" {}", d);
+    printf(" {}", e);
     printf("\n");
 }
 

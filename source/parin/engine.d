@@ -8,8 +8,8 @@
 /// The `engine` module functions as a lightweight 2D game engine.
 module parin.engine;
 
-import bk = parin.backend;
 import stdc = parin.joka.stdc;
+import bk   = parin.backend;
 
 import parin.joka.io;
 public import parin.joka.math;
@@ -17,7 +17,7 @@ public import parin.joka.memory;
 public import parin.joka.types;
 public import parin.types;
 
-__gshared EngineState* _engineState;
+EngineState* _engineState;
 
 // ---------- Config
 enum defaultEngineTitle           = "Parin";
@@ -57,7 +57,7 @@ enum defaultEngineDebugColor1 = white.alpha(120);
 enum defaultEngineDebugColor2 = black.alpha(170);
 // ----------
 
-@trusted:
+@safe:
 
 /// A timer with pause/resume and repeat support.
 alias Timer = GTimer!tickTime;
@@ -678,6 +678,7 @@ extern(C) @trusted nothrow @nogc {
 
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
+@trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
     _engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
     *_engineState = EngineState();
@@ -728,6 +729,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
 
 /// Opens the window with the given information using C strings.
 /// Avoid calling this function manually.
+@trusted
 void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin", bool vsync = defaultEngineVsync) {
     IStr[128] argsBuffer = void;
     auto args = argsBuffer[0 .. argc];
@@ -833,6 +835,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
 
 /// Closes the window.
 /// Avoid calling this function manually.
+@trusted
 void closeWindow() {
     auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: I assume `filter` is a static string or managed by the user.
     auto isLogging = isLoggingMemoryTrackingInfo;
@@ -2949,6 +2952,34 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
 /// Draws a sprite with the default texture. The Hook and Flip of the options is ignored.
 void drawSprite(Sprite sprite, DrawOptions options = DrawOptions()) {
     drawSprite(defaultTexture, sprite, options);
+}
+
+/// Draws a sprite stack later.
+void drawSpriteStackLayer(TextureId texture, SpriteStack stack, uint layer, Rgba layerColor = white, float layerScale = 1.0f) {
+    auto options = DrawOptions(layerColor, Hook.center);
+    options.rotation = stack.rotation;
+    options.scale = Vec2(layerScale);
+    auto offset = Vec2(0.0f, layer * -options.scale.y);
+    with (SpriteStackDrawMode) final switch (stack.drawMode) {
+        case goxelLayers:
+            auto goxelArea = Rect(stack.atlasLeft + layer * stack.width, stack.atlasTop, stack.width, stack.height);
+            drawTextureArea(texture, goxelArea, stack.position + offset, options);
+            break;
+        case pixelRowLayers:
+            auto pixelRowArea = Rect(stack.atlasLeft, stack.atlasTop + stack.height - layer - 1, stack.width, 1);
+            drawTextureArea(texture, pixelRowArea, stack.position + offset, options);
+            break;
+    }
+}
+
+/// Draws a sprite stack as is, without any depth.
+void drawSpriteStack(TextureId texture, SpriteStack stack, Rgba layerColor = white, float layerScale = 1.0f) {
+    foreach (layer; 0 .. stack.layerCount) drawSpriteStackLayer(texture, stack, layer, white, layerScale);
+}
+
+/// Draws a sprite stack as is with the default texture, without any depth.
+void drawSpriteStack(SpriteStack stack, Rgba layerColor = white, float layerScale = 1.0f) {
+    drawSpriteStack(_engineState.defaultTexture, stack, layerColor, layerScale);
 }
 
 /// Draws debug rectangles based on the given box world.
