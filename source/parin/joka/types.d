@@ -35,8 +35,10 @@ alias Gen       = uint;  /// The type of a generation.
 /// The type of compile time alias arguments.
 alias AliasArgs(A...) = A;
 
-/// Callback that can be used for basic printing. Should works like the echo command in POS*X compliant shells.
+/// Callback that can be used for basic printing. Should work like the `echo -n` command in POS*X compliant shells.
 alias EchonFunc = void function(IStr[] text...) @safe nothrow @nogc;
+/// Callback that can be used for basic printing. Should work like the `echo` command in POS*X compliant shells.
+alias EchoFunc = EchonFunc;
 
 enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
 enum megabyte = 1024 * kilobyte; /// The size of one megabyte in bytes.
@@ -1158,15 +1160,19 @@ enum symbolChars   = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"; /// The set of symbol
 enum hexDigitChars = "0123456789abcdefABCDEF";             /// The set of hexadecimal numeric characters.
 
 version (Windows) {
-    enum pathSep         = '\\'; /// The primary OS path separator as a character.
-    enum pathSepStr      = "\\"; /// The primary OS path separator as a string.
-    enum pathSepOther    = '/';  /// The complementary OS path separator as a character.
-    enum pathSepOtherStr = "/";  /// The complementary OS path separator as a string.
+    enum pathSep         = '\\';   /// The primary OS path separator as a character.
+    enum pathSepStr      = "\\";   /// The primary OS path separator as a string.
+    enum pathSepOther    = '/';    /// The complementary OS path separator as a character.
+    enum pathSepOtherStr = "/";    /// The complementary OS path separator as a string.
+    enum eolStr          = "\r\n"; /// The primary OS End-of-Line string.
+    enum eolOtherStr     = "\n";   /// The complementary OS End-of-Line string.
 } else {
-    enum pathSep         = '/';  /// The primary OS path separator as a character.
-    enum pathSepStr      = "/";  /// The primary OS path separator as a string.
-    enum pathSepOther    = '\\'; /// The complementary OS path separator as a character.
-    enum pathSepOtherStr = "\\"; /// The complementary OS path separator as a string.
+    enum pathSep         = '/';    /// The primary OS path separator as a character.
+    enum pathSepStr      = "/";    /// The primary OS path separator as a string.
+    enum pathSepOther    = '\\';   /// The complementary OS path separator as a character.
+    enum pathSepOtherStr = "\\";   /// The complementary OS path separator as a string.
+    enum eolStr          = "\n";   /// The primary OS End-of-Line string.
+    enum eolOtherStr     = "\r\n"; /// The complementary OS End-of-Line string.
 }
 
 enum sp = Sep(" ");  /// Space separator.
