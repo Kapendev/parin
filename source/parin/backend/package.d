@@ -8,7 +8,7 @@
 module parin.backend;
 
 version (ParinSdlBackend) {
-    static assert("Not done!");
+    static assert(0, "Not done!");
 } else {
     public import parin.backend.rl;
 }

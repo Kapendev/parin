@@ -41,7 +41,7 @@ bool update(float dt) {
     }
     camera.detach();
 
-    drawText("Press ESC to toggle lighting. Q or R to rotate.", Vec2(8));
+    drawText("Press ESC to toggle lighting. Q or E to rotate.\nSpace to paste.", Vec2(8));
     drawSpriteStack(
         atlas,
         SpriteStack(16, 13, 192, 19, SpriteStackDrawMode.pixelRowLayers, 13, Vec2(resolutionWidth - 26, resolutionHeight - 23), elapsedTime * 80.0f),
