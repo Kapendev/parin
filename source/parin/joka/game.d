@@ -886,8 +886,9 @@ struct Sprite {
 
 /// How to draw a sprite stack layer.
 enum SpriteStackDrawMode : ubyte {
-    goxelLayers,    /// This can be used to draw stacks from Goxel.
-    pixelRowLayers, /// This can be used to draw walls, or things that are 2D.
+    pixelRowLayers,   /// This can be used to draw walls, or things that are 2D.
+    goxelLayers,      /// This can be used to draw stacks from Goxel.
+    magicaVoxelLayers /// This can be used to draw stacks from Magica Voxel.
 }
 
 /// A sprite stack.

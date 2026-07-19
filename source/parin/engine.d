@@ -2959,15 +2959,20 @@ void drawSpriteStackLayer(TextureId texture, SpriteStack stack, uint layer, Rgba
     auto options = DrawOptions(layerColor, Hook.center);
     options.rotation = stack.rotation;
     options.scale = Vec2(layerScale);
-    auto offset = Vec2(0.0f, layer * -options.scale.y);
+    auto atlasBottom = stack.atlasTop + stack.layerCount * stack.height;
+    auto stackTargetPosition = stack.position + Vec2(0.0f, layer * -options.scale.y);
     with (SpriteStackDrawMode) final switch (stack.drawMode) {
-        case goxelLayers:
-            auto goxelArea = Rect(stack.atlasLeft + layer * stack.width, stack.atlasTop, stack.width, stack.height);
-            drawTextureArea(texture, goxelArea, stack.position + offset, options);
-            break;
         case pixelRowLayers:
             auto pixelRowArea = Rect(stack.atlasLeft, stack.atlasTop + stack.height - layer - 1, stack.width, 1);
-            drawTextureArea(texture, pixelRowArea, stack.position + offset, options);
+            drawTextureArea(texture, pixelRowArea, stackTargetPosition, options);
+            break;
+        case goxelLayers:
+            auto goxelArea = Rect(stack.atlasLeft + layer * stack.width, stack.atlasTop, stack.width, stack.height);
+            drawTextureArea(texture, goxelArea, stackTargetPosition, options);
+            break;
+        case magicaVoxelLayers:
+            auto magicaVoxelArea = Rect(stack.atlasLeft, atlasBottom - stack.height * (layer + 1), stack.width, stack.height);
+            drawTextureArea(texture, magicaVoxelArea, stackTargetPosition, options);
             break;
     }
 }

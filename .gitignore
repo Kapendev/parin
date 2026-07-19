@@ -19,3 +19,4 @@ dub.selections.json
 .temp
 !scripts/parin_helpers/*
 !scripts/parin_helpers
+!assets/*

@@ -2,6 +2,7 @@
 
 import parin;
 
+auto car = TextureId();
 auto atlas = TextureId();
 auto camera = Camera();
 auto stacks = List!SpriteStack();
@@ -12,13 +13,19 @@ auto layerScale = 2.0f;
 void ready() {
     lockResolution(320, 180);
     setIsPixelSnapped(true);
-    atlas = loadTexture("parin_atlas.png");
+    car = loadTexture("parin_car.png");     // Used for a 3D model.
+    atlas = loadTexture("parin_atlas.png"); // Used for a 2D item that will be drawn in a 3D way.
 }
 
 bool update(float dt) {
     if (Key.esc.isPressed) layerLighting.isActive = !layerLighting.isActive;
     if (Key.space.isPressed || stacks.length == 0) {
-        stacks.push(SpriteStack(16, 32, 0, 128, SpriteStackDrawMode.pixelRowLayers, 32));
+        // The `SpriteStackDrawMode` controls how a sprite stack is drawn.
+        // This depends on the program that was used to create the stack.
+        // For example, Magica Voxel stacks follow a diffrent layout than Goxel stacks.
+        // The first four numbers are: width, height, atlasTop, atlasLeft.
+        // The last number is the layer count of this 3D object.
+        stacks.push(SpriteStack(15, 34, 0, 0, SpriteStackDrawMode.magicaVoxelLayers, 13));
     }
 
     if (!wasdPressed.isZero) camera.target = camera.target.getOr() + wasdPressed * resolution;
@@ -33,14 +40,18 @@ bool update(float dt) {
     }
 
     camera.attach();
+    // Draw 3D models in a way that gives them depth.
     foreach (layer; 0 .. layerCount) {
         auto color = layerLighting.makeColorIfIsActive(layer, layerCount);
         foreach (ref stack; stacks) {
-            if (stack.layerCount > layer) drawSpriteStackLayer(atlas, stack, layer, color, layerScale);
+            if (stack.layerCount > layer) drawSpriteStackLayer(car, stack, layer, color, layerScale);
         }
     }
     camera.detach();
 
+    // Draw a 3D model as an item on the screen, without depth.
+    // The `pixelRowLayers` value can be used to draw 2D items as 3D objects.
+    // The layer count for objects like this is always the same as the height. 13 in this case.
     drawText("Press ESC to toggle lighting. Q or E to rotate.\nSpace to paste.", Vec2(8));
     drawSpriteStack(
         atlas,
