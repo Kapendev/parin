@@ -176,7 +176,8 @@ struct Rgba {
             this(r, r, r, 255);
         }
 
-        @trusted ubyte[] items() {
+        @trusted
+        ubyte[] items() {
             return (cast(ubyte*) &this)[0 .. length];
         }
 
@@ -700,7 +701,7 @@ struct GVec4(T) {
             this(xy.x, xy.y, zw.x, zw.y);
         }
 
-        this(This xyz, T w) {
+        this(GVec3!T xyz, T w) {
             this(xyz.x, xyz.y, xyz.z, w);
         }
 
