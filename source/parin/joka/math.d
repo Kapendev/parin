@@ -34,12 +34,15 @@ enum dpi180  = 180.0 / pi;                            /// The value of 180 / PI.
 enum sqrt2   = 1.41421356237309504880168872420969808; /// The value of sqrt(2).
 enum dsqrt2  = 0.70710678118654752440084436210484903; /// The value of 1 / sqrt(2).
 
-alias Vec2  = GVec2!float; /// A 2D vector using floats.
-alias Vec3  = GVec3!float; /// A 3D vector using floats.
-alias Vec4  = GVec4!float; /// A 4D vector using floats.
-alias IVec2 = GVec2!int;   /// A 2D vector using ints.
-alias IVec3 = GVec3!int;   /// A 3D vector using ints.
-alias IVec4 = GVec4!int;   /// A 4D vector using ints.
+alias Vec2  = GVec2!float;  /// A 2D vector using floats.
+alias Vec3  = GVec3!float;  /// A 3D vector using floats.
+alias Vec4  = GVec4!float;  /// A 4D vector using floats.
+alias IVec2 = GVec2!int;    /// A 2D vector using ints.
+alias IVec3 = GVec3!int;    /// A 3D vector using ints.
+alias IVec4 = GVec4!int;    /// A 4D vector using ints.
+alias DVec2 = GVec2!double; /// A 2D vector using doubles.
+alias DVec3 = GVec3!double; /// A 3D vector using doubles.
+alias DVec4 = GVec4!double; /// A 4D vector using doubles.
 
 alias Rect  = GRect!float;        /// A 2D rectangle using floats.
 alias Circ  = GCirc!float;        /// A 2D circle using floats.
@@ -292,29 +295,6 @@ struct GVec2(T) {
             return This(x.abs, y.abs);
         }
 
-        static if (__traits(isFloating, T)) {
-            This floor() {
-                return This(x.floor64, y.floor64);
-            }
-
-            This round() {
-                return This(x.round64, y.round64);
-            }
-
-            This ceil() {
-                return This(x.ceil64, y.ceil64);
-            }
-
-            This applyRounding(Rounding type) {
-                final switch (type) {
-                    case Rounding.none: return this;
-                    case Rounding.floor: return floor();
-                    case Rounding.round: return round();
-                    case Rounding.ceil: return ceil();
-                }
-            }
-        }
-
         GVec2!T yx() {
             return This(y, x);
         }
@@ -344,18 +324,18 @@ struct GVec2(T) {
         GVec2!Float normalize() {
             auto m = magnitude;
             if (m == 0) return GVec2!Float();
-            return this / GVec2!Float(m);
+            return GVec2!Float(x, y) / GVec2!Float(m);
         }
 
         GVec2!Float directionTo(This to) {
-            return (to - this).normalize();
+            return (GVec2!Float(to.x, to.y) - GVec2!Float(x, y)).normalize();
         }
 
         Float angle() {
             return atan264(y, x);
         }
 
-        This rotate(T radians) {
+        GVec2!Float rotate(T radians) {
             auto vsin = sin64(radians);
             auto vcos = cos64(radians);
             return GVec2!Float(x * vcos - y * vsin, x * vsin + y * vcos);
@@ -507,29 +487,6 @@ struct GVec3(T) {
             return This(x.abs, y.abs, z.abs);
         }
 
-        static if (__traits(isFloating, T)) {
-            This floor() {
-                return This(x.floor64, y.floor64, z.floor64);
-            }
-
-            This round() {
-                return This(x.round64, y.round64, z.round64);
-            }
-
-            This ceil() {
-                return This(x.ceil64, y.ceil64, z.ceil64);
-            }
-
-            This applyRounding(Rounding type) {
-                final switch (type) {
-                    case Rounding.none: return this;
-                    case Rounding.floor: return floor();
-                    case Rounding.round: return round();
-                    case Rounding.ceil: return ceil();
-                }
-            }
-        }
-
         GVec2!T yx() {
             return GVec2!T(y, x);
         }
@@ -567,7 +524,7 @@ struct GVec3(T) {
         GVec3!Float normalize() {
             auto m = magnitude;
             if (m == 0) return GVec3!Float();
-            return this / GVec3!Float(m);
+            return GVec3!Float(x, y, z) / GVec3!Float(m);
         }
 
         GVec3!Float directionTo(This to) {
@@ -726,29 +683,6 @@ struct GVec4(T) {
             return This(x.abs, y.abs, z.abs, w.abs);
         }
 
-        static if (__traits(isFloating, T)) {
-            This floor() {
-                return This(x.floor64, y.floor64, z.floor64, w.floor64);
-            }
-
-            This round() {
-                return This(x.round64, y.round64, z.round64, w.round64);
-            }
-
-            This ceil() {
-                return This(x.ceil64, y.ceil64, z.ceil64, w.ceil64);
-            }
-
-            This applyRounding(Rounding type) {
-                final switch (type) {
-                    case Rounding.none: return this;
-                    case Rounding.floor: return floor();
-                    case Rounding.round: return round();
-                    case Rounding.ceil: return ceil();
-                }
-            }
-        }
-
         GVec2!T yx() {
             return GVec2!T(y, x);
         }
@@ -786,7 +720,7 @@ struct GVec4(T) {
         GVec4!Float normalize() {
             auto m = magnitude;
             if (m == 0) return GVec4!Float();
-            return this / GVec4!Float(m);
+            return GVec4!Float(x, y, z, w) / GVec4!Float(m);
         }
 
         GVec4!Float directionTo(This to) {
@@ -982,29 +916,6 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
 
         This abs() {
             return This(position.abs, size.abs);
-        }
-
-        static if (__traits(isFloating, P)) {
-            This floor() {
-                return This(position.floor, size.floor);
-            }
-
-            This round() {
-                return This(position.round, size.round);
-            }
-
-            This ceil() {
-                return This(position.ceil, size.ceil);
-            }
-
-            This applyRounding(Rounding type) {
-                final switch (type) {
-                    case Rounding.none: return this;
-                    case Rounding.floor: return floor();
-                    case Rounding.round: return round();
-                    case Rounding.ceil: return ceil();
-                }
-            }
         }
     }
 
@@ -1293,29 +1204,6 @@ struct GCirc(T) {
         GCirc!T abs() {
             return GCirc!T(position.abs, radius.abs);
         }
-
-        static if (__traits(isFloating, T)) {
-            GCirc!T floor() {
-                return GCirc!T(position.floor, radius);
-            }
-
-            GCirc!T round() {
-                return GCirc!T(position.round, radius);
-            }
-
-            GCirc!T ceil() {
-                return GCirc!T(position.ceil, radius);
-            }
-
-            GCirc!T applyRounding(Rounding type) {
-                final switch (type) {
-                    case Rounding.none: return this;
-                    case Rounding.floor: return floor();
-                    case Rounding.round: return round();
-                    case Rounding.ceil: return ceil();
-                }
-            }
-        }
     }
 }
 
@@ -1378,29 +1266,6 @@ struct GLine(T) {
 
         GLine!T abs() {
             return GLine!T(a.abs, b.abs);
-        }
-
-        static if (__traits(isFloating, T)) {
-            GLine!T floor() {
-                return GLine!T(a.floor, b.floor);
-            }
-
-            GLine!T round() {
-                return GLine!T(a.round, b.round);
-            }
-
-            GLine!T ceil() {
-                return GLine!T(a.ceil, b.ceil);
-            }
-
-            GLine!T applyRounding(Rounding type) {
-                final switch (type) {
-                    case Rounding.none: return this;
-                    case Rounding.floor: return floor();
-                    case Rounding.round: return round();
-                    case Rounding.ceil: return ceil();
-                }
-            }
         }
     }
 }
@@ -1704,6 +1569,51 @@ pragma(inline, true) @trusted {
         return stdc_floor(x);
     }
 
+    /// Returns the floor of `x`.
+    Vec2 floor(Vec2 x) {
+        return Vec2(x.x.floor, x.y.floor);
+    }
+
+    /// Returns the floor of `x`.
+    Vec3 floor(Vec3 x) {
+        return Vec3(x.x.floor, x.y.floor, x.z.floor);
+    }
+
+    /// Returns the floor of `x`.
+    Vec4 floor(Vec4 x) {
+        return Vec4(x.x.floor, x.y.floor, x.z.floor, x.w.floor);
+    }
+
+    /// Returns the floor of `x`.
+    DVec2 floor(DVec2 x) {
+        return DVec2(x.x.floor64, x.y.floor64);
+    }
+
+    /// Returns the floor of `x`.
+    DVec3 floor(DVec3 x) {
+        return DVec3(x.x.floor64, x.y.floor64, x.z.floor64);
+    }
+
+    /// Returns the floor of `x`.
+    DVec4 floor(DVec4 x) {
+        return DVec4(x.x.floor64, x.y.floor64, x.z.floor64, x.w.floor64);
+    }
+
+    /// Returns the floor of `x`.
+    Rect floor(Rect x) {
+        return Rect(x.position.floor, x.size.floor);
+    }
+
+    /// Returns the floor of `x`.
+    Circ floor(Circ x) {
+        return Circ(x.position.floor, x.radius.floor);
+    }
+
+    /// Returns the floor of `x`.
+    Line floor(Line x) {
+        return Line(x.a.floor, x.b.floor);
+    }
+
     /// Returns the nearest integer to `x`.
     float round(float x) {
         return stdc_roundf(x);
@@ -1712,6 +1622,51 @@ pragma(inline, true) @trusted {
     /// Returns the nearest integer to `x`.
     double round64(double x) {
         return stdc_round(x);
+    }
+
+    /// Returns the nearest integer to `x`.
+    Vec2 round(Vec2 x) {
+        return Vec2(x.x.round, x.y.round);
+    }
+
+    /// Returns the nearest integer to `x`.
+    Vec3 round(Vec3 x) {
+        return Vec3(x.x.round, x.y.round, x.z.round);
+    }
+
+    /// Returns the nearest integer to `x`.
+    Vec4 round(Vec4 x) {
+        return Vec4(x.x.round, x.y.round, x.z.round, x.w.round);
+    }
+
+    /// Returns the nearest integer to `x`.
+    DVec2 round(DVec2 x) {
+        return DVec2(x.x.round64, x.y.round64);
+    }
+
+    /// Returns the nearest integer to `x`.
+    DVec3 round(DVec3 x) {
+        return DVec3(x.x.round64, x.y.round64, x.z.round64);
+    }
+
+    /// Returns the nearest integer to `x`.
+    DVec4 round(DVec4 x) {
+        return DVec4(x.x.round64, x.y.round64, x.z.round64, x.w.round64);
+    }
+
+    /// Returns the nearest integer to `x`.
+    Rect round(Rect x) {
+        return Rect(x.position.round, x.size.round);
+    }
+
+    /// Returns the nearest integer to `x`.
+    Circ round(Circ x) {
+        return Circ(x.position.round, x.radius.round);
+    }
+
+    /// Returns the nearest integer to `x`.
+    Line round(Line x) {
+        return Line(x.a.round, x.b.round);
     }
 
     /// Returns the ceiling of `x`.
@@ -1724,6 +1679,51 @@ pragma(inline, true) @trusted {
         return stdc_ceil(x);
     }
 
+    /// Returns the ceiling of `x`.
+    Vec2 ceil(Vec2 x) {
+        return Vec2(x.x.ceil, x.y.ceil);
+    }
+
+    /// Returns the ceiling of `x`.
+    Vec3 ceil(Vec3 x) {
+        return Vec3(x.x.ceil, x.y.ceil, x.z.ceil);
+    }
+
+    /// Returns the ceiling of `x`.
+    Vec4 ceil(Vec4 x) {
+        return Vec4(x.x.ceil, x.y.ceil, x.z.ceil, x.w.ceil);
+    }
+
+    /// Returns the ceiling of `x`.
+    DVec2 ceil(DVec2 x) {
+        return DVec2(x.x.ceil64, x.y.ceil64);
+    }
+
+    /// Returns the ceiling of `x`.
+    DVec3 ceil(DVec3 x) {
+        return DVec3(x.x.ceil64, x.y.ceil64, x.z.ceil64);
+    }
+
+    /// Returns the ceiling of `x`.
+    DVec4 ceil(DVec4 x) {
+        return DVec4(x.x.ceil64, x.y.ceil64, x.z.ceil64, x.w.ceil64);
+    }
+
+    /// Returns the ceiling of `x`.
+    Rect ceil(Rect x) {
+        return Rect(x.position.ceil, x.size.ceil);
+    }
+
+    /// Returns the ceiling of `x`.
+    Circ ceil(Circ x) {
+        return Circ(x.position.ceil, x.radius.ceil);
+    }
+
+    /// Returns the ceiling of `x`.
+    Line ceil(Line x) {
+        return Line(x.a.ceil, x.b.ceil);
+    }
+
     /// Applies the specified `type` of rounding to `x`.
     float applyRounding(float x, Rounding type) {
         return rounding(type)(x);
@@ -1732,6 +1732,96 @@ pragma(inline, true) @trusted {
     /// Applies the specified `type` of rounding to `x`.
     double applyRounding64(double x, Rounding type) {
         return rounding64(type)(x);
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    Vec2 applyRounding(Vec2 x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    Vec3 applyRounding(Vec3 x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    Vec4 applyRounding(Vec4 x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    DVec2 applyRounding(DVec2 x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    DVec3 applyRounding(DVec3 x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    DVec4 applyRounding(DVec4 x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    Rect applyRounding(Rect x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    Circ applyRounding(Circ x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
+    }
+
+    /// Applies the specified `type` of rounding to `x`.
+    Line applyRounding(Line x, Rounding type) {
+        final switch (type) {
+            case Rounding.none:  return x;
+            case Rounding.floor: return x.floor;
+            case Rounding.round: return x.round;
+            case Rounding.ceil:  return x.ceil;
+        }
     }
 
     /// Returns the square root of `x`.
