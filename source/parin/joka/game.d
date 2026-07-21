@@ -16,6 +16,26 @@ import parin.joka.types;
 
 enum defaultStoryFixedListCapacity = 16;
 
+enum blank   = Rgba();              /// #00000000
+enum black   = Rgba(0);             /// #000000FF
+enum white   = Rgba(255);           /// #FFFFFFFF
+enum red     = Rgba(255, 0, 0);     /// #FF0000FF
+enum green   = Rgba(0, 255, 0);     /// #00FF00FF
+enum blue    = Rgba(0, 0, 255);     /// #0000FFFF
+enum yellow  = Rgba(255, 255, 0);   /// #FFFF00FF
+enum magenta = Rgba(255, 0, 255);   /// #FF00FFFF
+enum cyan    = Rgba(0, 255, 255);   /// #00FFFFFF
+enum pink    = Rgba(255, 192, 204); /// #FFC0CCFF
+enum orange  = Rgba(255, 165, 0);   /// #FFA500FF
+enum beige   = Rgba(240, 235, 210); /// #F0EBD2FF
+enum brown   = Rgba(165, 72, 42);   /// #A5482AFF
+enum maroon  = Rgba(128, 0, 0);     /// #800000FF
+enum gray1   = Rgba(32, 32, 32);    /// #202020FF
+enum gray2   = Rgba(96, 96, 96);    /// #606060FF
+enum gray3   = Rgba(159, 159, 159); /// #9F9F9FFF
+enum gray4   = Rgba(223, 223, 223); /// #DFDFDFFF
+enum gray    = gray2;               /// #606060FF
+
 alias Palette(Sz N)    = StaticArray!(Rgba, N); /// A generic color palette of RGBA colors.
 alias HexPalette(Sz N) = uint[N];               /// A generic color palette of hexadecimal numbers.
 

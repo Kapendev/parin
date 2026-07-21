@@ -7,6 +7,7 @@ This guide should be used as a reference, not as a hard rule.
 
 - Types use PascalCase: `List`, `Arena`, `Rgba`, `GVec2`
 - Generic types are prefixed with "G" when the name without the prefix is reserved for a specific type (`Vec2` -> `GVec2!float`)
+- Aliases to `typeof(this)` are called `This`.
 - Attribute structs use camelCase: `hiddenMember`, `requiredMember`
 - Enum variants use camelCase: `none`, `some`, `topLeft`
 - Mixin templates use camelCase: `typed`, `runGame`
@@ -28,11 +29,13 @@ This guide should be used as a reference, not as a hard rule.
 Organize members in this order:
 
 1. Variables
-2. Aliases
-3. Enums
+2. Enums
+3. Aliases
 4. Types
 5. Constructors (implementation)
 6. Methods (implementation)
+
+With `alias this` being part of the variables.
 
 ## Module Structure
 
@@ -47,8 +50,8 @@ Each module should:
 With the body looking like:
 
 1. Variables
-2. Aliases
-3. Enums
+2. Enums
+3. Aliases
 4. Types
 5. Functions
 
