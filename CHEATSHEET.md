@@ -99,10 +99,10 @@ void setFpsMax(int value);
 bool vsync();
 /// Sets the vertical synchronization (VSync) state.
 void setVsync(bool value);
-/// Returns the total elapsed time since the application started.
+/// Returns the total elapsed time since the application started. Prefer using `elapsedTickTime`.
 double elapsedTime();
-/// Returns the elapsed time at the start of the current tick.
-double tickTime();
+/// Returns the total elapsed time since the application started, at the start of the current tick.
+double elapsedTickTime();
 /// Returns the total number of ticks since the application started.
 ulong elapsedTicks();
 /// Returns the time elapsed since the last frame.
@@ -133,14 +133,6 @@ void setDefaultFilter(Filter value);
 Wrap defaultWrap();
 /// Sets the default wrap mode used for textures, fonts and viewports.
 void setDefaultWrap(Wrap value);
-/// Returns the default texture used for null textures.
-TextureId defaultTexture();
-/// Sets the default texture used for null textures.
-void setDefaultTexture(TextureId value);
-/// Returns the default texture area size used for the ID version of `drawTextureArea`.
-Vec2 defaultTextureAreaSize();
-/// Sets the default texture area size used for the ID version of `drawTextureArea`.
-void setDefaultTextureAreaSize(Vec2 size);
 /// Returns the default font used for null fonts.
 FontId defaultFont();
 /// Sets the default font used for null fonts.
@@ -249,8 +241,8 @@ float deltaWheel();
 
 /// Returns true if the specified character is currently pressed.
 bool isDown(char key);
-/// Returns true if the specified keyboard key is currently pressed.
-bool isDown(Keyboard key);
+/// Returns true if one of the specified keyboard keys is currently pressed.
+bool isDown(const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button is currently pressed.
 bool isDown(Mouse key);
 /// Returns true if the specified gamepad button is currently pressed.
@@ -258,8 +250,8 @@ bool isDown(Gamepad key, int id = 0);
 
 /// Returns true if the specified character was pressed this frame.
 bool isPressed(char key);
-/// Returns true if the specified keyboard key was pressed this frame.
-bool isPressed(Keyboard key);
+/// Returns true if one of the specified keyboard keys was pressed this frame.
+bool isPressed(const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button was pressed this frame.
 bool isPressed(Mouse key);
 /// Returns true if the specified gamepad button was pressed this frame.
@@ -267,8 +259,8 @@ bool isPressed(Gamepad key, int id = 0);
 
 /// Returns true if the specified character was released this frame.
 bool isReleased(char key);
-/// Returns true if the specified keyboard key was released this frame.
-bool isReleased(Keyboard key);
+/// Returns true if one of the specified keyboard keys was released this frame.
+bool isReleased(const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button was released this frame.
 bool isReleased(Mouse key);
 /// Returns true if the specified gamepad button was released this frame.
@@ -325,14 +317,8 @@ void drawSurfaceArea(ref Surface surface, Rect area, Vec2 position, DrawOptions 
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-/// Draws a portion of the default texture at the given position with the specified draw options.
-void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions());
-/// Draws a portion of the default texture by ID at the given position with the specified draw options.
-void drawTextureArea(int id, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
-/// Draws a 9-slice from the default texture area at the given target area.
-void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());

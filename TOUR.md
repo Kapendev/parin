@@ -131,8 +131,8 @@ float deltaWheel();
 
 /// Returns true if the specified character is currently pressed.
 bool isDown(char key);
-/// Returns true if the specified keyboard key is currently pressed.
-bool isDown(Keyboard key);
+/// Returns true if one of the specified keyboard keys is currently pressed.
+bool isDown(const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button is currently pressed.
 bool isDown(Mouse key);
 /// Returns true if the specified gamepad button is currently pressed.
@@ -140,8 +140,8 @@ bool isDown(Gamepad key, int id = 0);
 
 /// Returns true if the specified character was pressed this frame.
 bool isPressed(char key);
-/// Returns true if the specified keyboard key was pressed this frame.
-bool isPressed(Keyboard key);
+/// Returns true if one of the specified keyboard keys was pressed this frame.
+bool isPressed(const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button was pressed this frame.
 bool isPressed(Mouse key);
 /// Returns true if the specified gamepad button was pressed this frame.
@@ -149,8 +149,8 @@ bool isPressed(Gamepad key, int id = 0);
 
 /// Returns true if the specified character was released this frame.
 bool isReleased(char key);
-/// Returns true if the specified keyboard key was released this frame.
-bool isReleased(Keyboard key);
+/// Returns true if one of the specified keyboard keys was released this frame.
+bool isReleased(const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button was released this frame.
 bool isReleased(Mouse key);
 /// Returns true if the specified gamepad button was released this frame.
@@ -258,14 +258,8 @@ void drawSurfaceArea(ref Surface surface, Rect area, Vec2 position, DrawOptions 
 void drawTexture(TextureId texture, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a portion of the specified texture at the given position with the specified draw options.
 void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions options = DrawOptions());
-/// Draws a portion of the default texture at the given position with the specified draw options.
-void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions());
-/// Draws a portion of the default texture by ID at the given position with the specified draw options.
-void drawTextureArea(int id, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
-/// Draws a 9-slice from the default texture area at the given target area.
-void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions());
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions());
@@ -310,8 +304,6 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 ```
 
-Functions such as `drawTextureArea(Rect area, ...)` that don't take a texture or font will use `defaultTexture` and `defaultFont` for drawing.
-To change the defaults, use the `setDefaultTexture` and `setDefaultFont` functions.
 To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
 
 ### Draw Options
@@ -360,7 +352,7 @@ struct TextOptions {
     ```d
     bool update(float dt) {
         auto options = DrawOptions(Hook.center);
-        options.scale = Vec2(4 + sin(tickTime * 4));
+        options.scale = Vec2(4 + sin(elapsedTickTime * 4));
         drawText("Text", resolution * Vec2(0.5), options);
         return false;
     }
@@ -371,7 +363,7 @@ struct TextOptions {
     ```d
     bool update(float dt) {
         auto options = DrawOptions(Hook.center);
-        auto extra = TextOptions(fmod(tickTime, 2.0));
+        auto extra = TextOptions(fmod(elapsedTickTime, 2.0));
         drawText("Hello.\nThis is some text.", resolution * Vec2(0.5), options, extra);
         return false;
     }

@@ -60,7 +60,7 @@ enum defaultEngineDebugColor2 = black.alpha(170);
 @safe:
 
 /// A timer with pause/resume and repeat support.
-alias Timer = GTimer!tickTime;
+alias Timer = GTimer!elapsedTickTime;
 /// The engine font identifier.
 enum engineFont = FontId(ResourceId(1));
 /// The second engine font identifier.
@@ -121,16 +121,13 @@ struct EngineState {
     Vec2 wasdBuffer;
     Vec2 wasdPressedBuffer;
     Vec2 wasdReleasedBuffer;
-    double tickTimeBuffer = 0.0;
+    double elapsedTickTimeBuffer = 0.0;
 
     bool clipIsActive;
     Rgba windowBorderColor = black;
     Filter defaultFilter;
     Wrap defaultWrap;
     FontId defaultFont = engineFont;
-    TextureId defaultTexture;
-    Vec2 defaultTextureAreaSize;
-    int defaultTextureAreaColCount;
     TextureId currentScreenshotTexture;
     Camera userCamera;
     ViewportId userViewport;
@@ -618,7 +615,9 @@ struct DepthSortPair {
     ubyte layer;
 }
 
-struct _DepthSort {
+/// A depth sort. Works only with textures.
+/// Designed to be used with the `with` keyword.
+struct DepthSort {
     DepthSortMode _depthSortMode;
 
     pragma(inline, true) @safe nothrow @nogc:
@@ -632,13 +631,6 @@ struct _DepthSort {
     ~this() {
         endDepthSort();
     }
-}
-
-/// A depth sort. Works only with textures.
-/// Designed to be used with the `with` keyword.
-@safe nothrow @nogc
-_DepthSort DepthSort(DepthSortMode mode = DepthSortMode.topDown) {
-    return _DepthSort(mode);
 }
 
 extern(C) @trusted nothrow @nogc {
@@ -760,7 +752,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             foreach (id; _engineState.tasks.ids) {
                 if (_engineState.tasks[id].update(deltaTime)) cancelTask(id);
             }
-            _engineState.tickTimeBuffer = elapsedTime;
+            _engineState.elapsedTickTimeBuffer = elapsedTime;
             result = _engineState.updateFunc(deltaTime);
             if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
             if (isDebugMode || isExitingDebugMode || _engineState.debugModePreviousState) {
@@ -1596,15 +1588,18 @@ void setVsync(bool value) {
     bk.setVsync(value);
 }
 
-/// Returns the total elapsed time since the application started.
+/// Returns the total elapsed time since the application started. Prefer using `elapsedTickTime`.
 double elapsedTime() {
     return bk.elapsedTime;
 }
 
-/// Returns the elapsed time at the start of the current tick.
-double tickTime() {
-    return _engineState.tickTimeBuffer;
+/// Returns the total elapsed time since the application started, at the start of the current tick.
+double elapsedTickTime() {
+    return _engineState.elapsedTickTimeBuffer;
 }
+
+deprecated("Use `elapsedTickTime`. It's a better name.")
+alias tickTime = elapsedTickTime;
 
 /// Returns the total number of ticks since the application started.
 ulong elapsedTicks() {
@@ -1654,31 +1649,6 @@ Wrap defaultWrap() {
 /// Sets the default wrap mode used for textures, fonts and viewports.
 void setDefaultWrap(Wrap value) {
     _engineState.defaultWrap = value;
-}
-
-/// Returns the default texture used for null textures.
-TextureId defaultTexture() {
-    return _engineState.defaultTexture;
-}
-
-/// Sets the default texture used for null textures.
-void setDefaultTexture(TextureId value) {
-    _engineState.defaultTexture = value;
-}
-
-/// Returns the default texture area size used for the ID version of `drawTextureArea`.
-Vec2 defaultTextureAreaSize() {
-    return _engineState.defaultTextureAreaSize;
-}
-
-/// Sets the default texture area size used for the ID version of `drawTextureArea`.
-void setDefaultTextureAreaSize(Vec2 size) {
-    _engineState.defaultTextureAreaSize = size;
-    if (_engineState.defaultTexture.isValid) {
-        _engineState.defaultTextureAreaColCount = _engineState.defaultTexture.width / cast(int) size.x;
-    } else {
-        assert(0, "Cannot set default texture area size because the default texture is invalid or not assigned.");
-    }
 }
 
 /// Returns the default font used for null fonts.
@@ -1982,9 +1952,10 @@ bool isDown(char key) {
     return key ? bk.isDown(key) : false;
 }
 
-/// Returns true if the specified keyboard key is currently pressed.
-bool isDown(Keyboard key) {
-    return key ? bk.isDown(key) : false;
+/// Returns true if one of the specified keyboard keys is currently pressed.
+bool isDown(const(Keyboard)[] keys...) {
+    foreach (key; keys) if (bk.isDown(key)) return true;
+    return false;
 }
 
 /// Returns true if the specified mouse button is currently pressed.
@@ -2002,9 +1973,10 @@ bool isPressed(char key) {
     return key ? bk.isPressed(key) : false;
 }
 
-/// Returns true if the specified keyboard key was pressed this frame.
-bool isPressed(Keyboard key) {
-    return key ? bk.isPressed(key) : false;
+/// Returns true if one of the specified keyboard keys was pressed this frame.
+bool isPressed(const(Keyboard)[] keys...) {
+    foreach (key; keys) if (bk.isPressed(key)) return true;
+    return false;
 }
 
 /// Returns true if the specified mouse button was pressed this frame.
@@ -2022,9 +1994,10 @@ bool isReleased(char key) {
     return key ? bk.isReleased(key) : false;
 }
 
-/// Returns true if the specified keyboard key was released this frame.
-bool isReleased(Keyboard key) {
-    return key ? bk.isReleased(key) : false;
+/// Returns true if one of the specified keyboard keys was released this frame.
+bool isReleased(const(Keyboard)[] keys...) {
+    foreach (key; keys) if (bk.isReleased(key)) return true;
+    return false;
 }
 
 /// Returns true if the specified mouse button was released this frame.
@@ -2310,21 +2283,6 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
     }
 }
 
-/// Draws a portion of the default texture at the given position with the specified draw options.
-/// Call `setDefaultTexture` before using this function.
-void drawTextureArea(Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    drawTextureArea(_engineState.defaultTexture, area, position, options);
-}
-
-/// Draws a portion of the default texture by ID at the given position with the specified draw options.
-/// Call `setDefaultTexture` and `setDefaultTextureAreaSize` before using this function.
-void drawTextureArea(int id, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (_engineState.defaultTextureAreaColCount == 0) assert(0, "Cannot draw texture area by ID because `setDefaultTextureAreaSize` was not called.");
-    auto col = id % _engineState.defaultTextureAreaColCount;
-    auto row = id / _engineState.defaultTextureAreaColCount;
-    drawTextureArea(_engineState.defaultTexture, Rect(col * _engineState.defaultTextureAreaSize.x, row * _engineState.defaultTextureAreaSize.y, _engineState.defaultTextureAreaSize), position, options);
-}
-
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
     version (ParinSkipDrawChecks) {
@@ -2366,12 +2324,6 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
             );
         }
     }
-}
-
-/// Draws a 9-slice from the default texture area at the given target area.
-/// Call `setDefaultTexture` before using this function.
-void drawTextureSlice(Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    drawTextureSlice(_engineState.defaultTexture, area, target, margin, canRepeat, options);
 }
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
@@ -2850,11 +2802,6 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
     drawTextureArea(texture, texture.width ? tile.textureArea(texture.width / tile.width) : Rect(tile.size), tile.position, tempOptions);
 }
 
-/// Draws a tile with the default texture.
-void drawTile(Tile tile, DrawOptions options = DrawOptions()) {
-    drawTile(defaultTexture, tile, options);
-}
-
 /// Draws a tile map with a texture. The view area controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
     version (ParinSkipDrawChecks) {
@@ -2901,19 +2848,9 @@ void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Re
     }
 }
 
-/// Draws a tile map with the default texture. The view area controls what is visible.
-void drawTileMap(Sz N)(ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-    drawTileMap(defaultTexture, map, viewArea, options);
-}
-
 /// Draws a tile map with a texture. The camera controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions()) {
     drawTileMap(texture, map, camera.area(resolution), options);
-}
-
-/// Draws a tile map with the default texture. The camera controls what is visible.
-void drawTileMap(Sz N)(ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions()) {
-    drawTileMap(defaultTexture, map, camera.area(resolution), options);
 }
 
 /// Draws a sprite with a texture. The Hook and Flip of the options is ignored.
@@ -2949,11 +2886,6 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
     drawTextureArea(texture, area, sprite.position, tempOptions);
 }
 
-/// Draws a sprite with the default texture. The Hook and Flip of the options is ignored.
-void drawSprite(Sprite sprite, DrawOptions options = DrawOptions()) {
-    drawSprite(defaultTexture, sprite, options);
-}
-
 /// Draws a sprite stack later.
 void drawSpriteStackLayer(TextureId texture, SpriteStack stack, uint layer, Rgba layerColor = white, float layerScale = 1.0f) {
     auto options = DrawOptions(layerColor, Hook.center);
@@ -2980,11 +2912,6 @@ void drawSpriteStackLayer(TextureId texture, SpriteStack stack, uint layer, Rgba
 /// Draws a sprite stack as is, without any depth.
 void drawSpriteStack(TextureId texture, SpriteStack stack, Rgba layerColor = white, float layerScale = 1.0f) {
     foreach (layer; 0 .. stack.layerCount) drawSpriteStackLayer(texture, stack, layer, white, layerScale);
-}
-
-/// Draws a sprite stack as is with the default texture, without any depth.
-void drawSpriteStack(SpriteStack stack, Rgba layerColor = white, float layerScale = 1.0f) {
-    drawSpriteStack(_engineState.defaultTexture, stack, layerColor, layerScale);
 }
 
 /// Draws debug rectangles based on the given box world.

@@ -13,7 +13,7 @@ bool update(float dt) {
 
 void finish() {}
 
-mixin runGame!(ready, update, finish, 960, 540, "Game Title");
+mixin runGame!(ready, update, finish, 1280, 720, "Entity Template Title");
 
 // --- Entities
 

@@ -960,9 +960,9 @@ struct SpriteStackLighting {
 }
 
 /// A generic timer with pause/resume and repeat support.
-/// The `tickTimeFunc` alias must be a function that returns a `float` or `double` value.
+/// The `elapsedTickTimeFunc` alias must be a function that returns a `float` or `double` value.
 /// That value should be the elapsed time at the start of the current tick.
-struct GTimer(alias tickTimeFunc) {
+struct GTimer(alias elapsedTickTimeFunc) {
     float duration = 0.0f;                  /// The duration of the timer, in seconds.
     float pauseTime = 0.0f;                 /// The elapsed time when the timer was paused.
     float startTime = 0.0f;                 /// The elapsed time when the timer was started.
@@ -992,19 +992,19 @@ struct GTimer(alias tickTimeFunc) {
     /// Returns true if the timer has just started.
     bool hasStarted() {
         time(); // We need to update the state before checking.
-        return startTime.fequals(tickTimeFunc());
+        return startTime.fequals(elapsedTickTimeFunc());
     }
 
     /// Returns true if the timer has just stopped.
     bool hasStopped() {
         time(); // We need to update the state before checking.
-        return stopTimeElapsedTimeBuffer.fequals(tickTimeFunc());
+        return stopTimeElapsedTimeBuffer.fequals(elapsedTickTimeFunc());
     }
 
     /// Starts the timer with new duration and repeat behavior.
     void start(float newDuration, bool newCanRepeat) {
         if (newDuration >= 0.0f) duration = newDuration;
-        startTime = tickTimeFunc();
+        startTime = elapsedTickTimeFunc();
         stopTimeElapsedTimeBuffer = 0.0f;
         pauseTime = 0.0f;
         canRepeat = newCanRepeat;
@@ -1018,7 +1018,7 @@ struct GTimer(alias tickTimeFunc) {
     /// Stops the timer and records the time at which it stopped.
     void stop() {
         startTime = 0.0f;
-        stopTimeElapsedTimeBuffer = tickTimeFunc();
+        stopTimeElapsedTimeBuffer = elapsedTickTimeFunc();
         pauseTime = 0.0f;
     }
 
@@ -1037,7 +1037,7 @@ struct GTimer(alias tickTimeFunc) {
     /// Resumes the timer from the paused state.
     void resume() {
         if (!isActive || pauseTime == 0.0f) return;
-        startTime = tickTimeFunc() - pauseTime;
+        startTime = elapsedTickTimeFunc() - pauseTime;
         pauseTime = 0.0f;
     }
 
@@ -1051,10 +1051,10 @@ struct GTimer(alias tickTimeFunc) {
     float time() {
         if (startTime == 0.0f) return 0.0f;
         if (pauseTime != 0.0f) return pauseTime;
-        auto result = max(tickTimeFunc() - startTime, 0.0f);
+        auto result = max(elapsedTickTimeFunc() - startTime, 0.0f);
         if (result >= duration) {
             stop();
-            if (canRepeat) startTime = tickTimeFunc();
+            if (canRepeat) startTime = elapsedTickTimeFunc();
         }
         result = min(result, duration);
         return result;
@@ -1073,7 +1073,7 @@ struct GTimer(alias tickTimeFunc) {
     /// Sets the current time of the timer.
     /// If the given value is non-zero, the timer becomes active.
     void setTime(float newTime) {
-        startTime = max(tickTimeFunc() - newTime, 0.0f);
+        startTime = max(elapsedTickTimeFunc() - newTime, 0.0f);
         if (isPaused) {
             pauseTime = 0.0f;
             pauseTime = time;

@@ -22,7 +22,7 @@ version (WASI) {
 
 // --- Core
 
-MemoryContext __memoryContext;
+MemoryContext __memoryContext; // NOTE: Prefer using `_` instead of `__`. This is here for very cool history reasons.
 enum defaultJokaMemoryAlignment = 16;
 
 // NOTE: Memory tracking related things are here.
