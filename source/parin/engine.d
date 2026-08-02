@@ -1953,7 +1953,8 @@ bool isDown(char key) {
 }
 
 /// Returns true if one of the specified keyboard keys is currently pressed.
-bool isDown(const(Keyboard)[] keys...) {
+bool isDown(const(Keyboard) key1, const(Keyboard)[] keys...) {
+    if (bk.isDown(key1)) return true;
     foreach (key; keys) if (bk.isDown(key)) return true;
     return false;
 }
@@ -1974,7 +1975,8 @@ bool isPressed(char key) {
 }
 
 /// Returns true if one of the specified keyboard keys was pressed this frame.
-bool isPressed(const(Keyboard)[] keys...) {
+bool isPressed(const(Keyboard) key1, const(Keyboard)[] keys...) {
+    if (bk.isPressed(key1)) return true;
     foreach (key; keys) if (bk.isPressed(key)) return true;
     return false;
 }
@@ -1995,7 +1997,8 @@ bool isReleased(char key) {
 }
 
 /// Returns true if one of the specified keyboard keys was released this frame.
-bool isReleased(const(Keyboard)[] keys...) {
+bool isReleased(const(Keyboard) key1, const(Keyboard)[] keys...) {
+    if (bk.isReleased(key1)) return true;
     foreach (key; keys) if (bk.isReleased(key)) return true;
     return false;
 }
