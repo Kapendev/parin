@@ -131,30 +131,42 @@ float deltaWheel();
 
 /// Returns true if the specified character is currently pressed.
 bool isDown(char key);
+/// Returns true if one of the specified characters is currently pressed.
+bool isDown(IStr keys);
 /// Returns true if one of the specified keyboard keys is currently pressed.
-bool isDown(const(Keyboard)[] keys...);
+bool isDown(const(Keyboard) key1, const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button is currently pressed.
 bool isDown(Mouse key);
 /// Returns true if the specified gamepad button is currently pressed.
 bool isDown(Gamepad key, int id = 0);
+/// Returns true if any of the keyboard keys or the gamepad button in the specified binding is currently pressed.
+bool isDown(InputBinding binding);
 
 /// Returns true if the specified character was pressed this frame.
 bool isPressed(char key);
+/// Returns true if one of the specified characters was pressed this frame.
+bool isPressed(IStr keys);
 /// Returns true if one of the specified keyboard keys was pressed this frame.
-bool isPressed(const(Keyboard)[] keys...);
+bool isPressed(const(Keyboard) key1, const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button was pressed this frame.
 bool isPressed(Mouse key);
 /// Returns true if the specified gamepad button was pressed this frame.
 bool isPressed(Gamepad key, int id = 0);
+/// Returns true if any of the keyboard keys or the gamepad button in the specified binding was pressed this frame.
+bool isPressed(InputBinding binding);
 
 /// Returns true if the specified character was released this frame.
 bool isReleased(char key);
+/// Returns true if one of the specified characters was released this frame.
+bool isReleased(IStr keys);
 /// Returns true if one of the specified keyboard keys was released this frame.
-bool isReleased(const(Keyboard)[] keys...);
+bool isReleased(const(Keyboard) key1, const(Keyboard)[] keys...);
 /// Returns true if the specified mouse button was released this frame.
 bool isReleased(Mouse key);
 /// Returns true if the specified gamepad button was released this frame.
 bool isReleased(Gamepad key, int id = 0);
+/// Returns true if any of the keyboard keys or the gamepad button in the specified binding was released this frame.
+bool isReleased(InputBinding binding);
 
 /// Returns the direction from the WASD and arrow keys that are currently down.
 Vec2 wasd();
