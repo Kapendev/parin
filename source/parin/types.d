@@ -192,6 +192,19 @@ enum Gamepad : ubyte {
     middle, /// The middle button.
 }
 
+/// Maps one logical action to gamepad and keyboard inputs.
+struct InputBinding {
+    Gamepad button;   /// The gamepad button.
+    Keyboard[4] keys; /// The keyboard keys.
+
+    @safe nothrow @nogc:
+
+    this(Gamepad button, Keyboard[] keys...) {
+        this.button = button;
+        foreach (i, key; keys) this.keys[i] = key;
+    }
+}
+
 /// A pixel buffer.
 struct Surface {
     Rgba[] pixels; /// Pixel array.

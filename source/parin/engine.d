@@ -1231,20 +1231,14 @@ void _updateEngineMouseBuffer(Vec2 value) {
 }
 
 void _updateEngineWasdBuffer() {
-    with (Keyboard) {
-        _engineState.wasdBuffer = Vec2(
-            (d.isDown || right.isDown || Gamepad.right.isDown) - (a.isDown || left.isDown || Gamepad.left.isDown),
-            (s.isDown || down.isDown  || Gamepad.down.isDown)  - (w.isDown || up.isDown   || Gamepad.up.isDown),
-        );
-        _engineState.wasdPressedBuffer = Vec2(
-            (d.isPressed || right.isPressed || Gamepad.right.isPressed) - (a.isPressed || left.isPressed || Gamepad.left.isPressed),
-            (s.isPressed || down.isPressed  || Gamepad.down.isPressed)  - (w.isPressed || up.isPressed   || Gamepad.up.isPressed),
-        );
-        _engineState.wasdReleasedBuffer = Vec2(
-            (d.isReleased || right.isReleased || Gamepad.right.isReleased) - (a.isReleased || left.isReleased || Gamepad.left.isReleased),
-            (s.isReleased || down.isReleased  || Gamepad.down.isReleased)  - (w.isReleased || up.isReleased   || Gamepad.up.isReleased),
-        );
-    }
+    enum moveRight = InputBinding(Gamepad.right, Key.right, Key.d);
+    enum moveLeft  = InputBinding(Gamepad.left,  Key.left,  Key.a);
+    enum moveDown  = InputBinding(Gamepad.down,  Key.down,  Key.s);
+    enum moveUp    = InputBinding(Gamepad.up,    Key.up,    Key.w);
+
+    _engineState.wasdBuffer         = Vec2(moveRight.isDown - moveLeft.isDown, moveDown.isDown - moveUp.isDown);
+    _engineState.wasdPressedBuffer  = Vec2(moveRight.isPressed - moveLeft.isPressed , moveDown.isPressed - moveUp.isPressed);
+    _engineState.wasdReleasedBuffer = Vec2(moveRight.isReleased - moveLeft.isReleased, moveDown.isReleased - moveUp.isReleased);
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
@@ -1952,10 +1946,16 @@ bool isDown(char key) {
     return key ? bk.isDown(key) : false;
 }
 
+/// Returns true if one of the specified characters is currently pressed.
+bool isDown(IStr keys) {
+    foreach (key; keys) if (key.isDown) return true;
+    return false;
+}
+
 /// Returns true if one of the specified keyboard keys is currently pressed.
 bool isDown(const(Keyboard) key1, const(Keyboard)[] keys...) {
-    if (bk.isDown(key1)) return true;
-    foreach (key; keys) if (bk.isDown(key)) return true;
+    if (key1 && bk.isDown(key1)) return true;
+    foreach (key; keys) if (key && bk.isDown(key)) return true;
     return false;
 }
 
@@ -1969,15 +1969,26 @@ bool isDown(Gamepad key, int id = 0) {
     return key ? bk.isDown(key, id) : false;
 }
 
+/// Returns true if any of the keyboard keys or the gamepad button in the specified binding is currently pressed.
+bool isDown(InputBinding binding) {
+    return isDown(Keyboard.none, binding.keys) || isDown(binding.button);
+}
+
 /// Returns true if the specified character was pressed this frame.
 bool isPressed(char key) {
     return key ? bk.isPressed(key) : false;
 }
 
+/// Returns true if one of the specified characters was pressed this frame.
+bool isPressed(IStr keys) {
+    foreach (key; keys) if (key.isPressed) return true;
+    return false;
+}
+
 /// Returns true if one of the specified keyboard keys was pressed this frame.
 bool isPressed(const(Keyboard) key1, const(Keyboard)[] keys...) {
-    if (bk.isPressed(key1)) return true;
-    foreach (key; keys) if (bk.isPressed(key)) return true;
+    if (key1 && bk.isPressed(key1)) return true;
+    foreach (key; keys) if (key && bk.isPressed(key)) return true;
     return false;
 }
 
@@ -1991,15 +2002,26 @@ bool isPressed(Gamepad key, int id = 0) {
     return key ? bk.isPressed(key, id) : false;
 }
 
+/// Returns true if any of the keyboard keys or the gamepad button in the specified binding was pressed this frame.
+bool isPressed(InputBinding binding) {
+    return isPressed(Keyboard.none, binding.keys) || isPressed(binding.button);
+}
+
 /// Returns true if the specified character was released this frame.
 bool isReleased(char key) {
     return key ? bk.isReleased(key) : false;
 }
 
+/// Returns true if one of the specified characters was released this frame.
+bool isReleased(IStr keys) {
+    foreach (key; keys) if (key.isReleased) return true;
+    return false;
+}
+
 /// Returns true if one of the specified keyboard keys was released this frame.
 bool isReleased(const(Keyboard) key1, const(Keyboard)[] keys...) {
-    if (bk.isReleased(key1)) return true;
-    foreach (key; keys) if (bk.isReleased(key)) return true;
+    if (key1 && bk.isReleased(key1)) return true;
+    foreach (key; keys) if (key && bk.isReleased(key)) return true;
     return false;
 }
 
@@ -2011,6 +2033,11 @@ bool isReleased(Mouse key) {
 /// Returns true if the specified gamepad button was released this frame.
 bool isReleased(Gamepad key, int id = 0) {
     return key ? bk.isReleased(key, id) : false;
+}
+
+/// Returns true if any of the keyboard keys or the gamepad button in the specified binding was released this frame.
+bool isReleased(InputBinding binding) {
+    return isReleased(Keyboard.none, binding.keys) || isReleased(binding.button);
 }
 
 /// Returns the direction from the WASD and arrow keys that are currently down. The result is not normalized.
