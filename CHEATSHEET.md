@@ -1,6 +1,6 @@
 # Parin Cheatsheet (WIP)
 
-This guide highlights the **most commonly used parts** of the `parin.types` and `parin.engine` modules — it's not meant to be full documentation.
+This guide highlights the **most commonly used parts** of the `parin.types` and `parin.engine` modules.
 If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 
 ## Debug Mode
@@ -596,21 +596,6 @@ struct ViewportId {
     void free();
 }
 
-/// A set of 4 integer margins.
-struct Margin {
-    /// The left side.
-    int left;
-    /// The top side.
-    int top;
-    /// The right side.
-    int right;
-    /// The bottom side.
-    int bottom;
-
-    this(int left, int top, int right, int bottom);
-    this(int left);
-}
-
 /// Options for configuring drawing parameters.
 struct DrawOptions {
     /// The origin point of the drawn object. This value can be used to force a specific origin.
@@ -625,12 +610,19 @@ struct DrawOptions {
     Hook hook = Hook.topLeft;
     /// A value representing flipping orientations.
     Flip flip = Flip.none;
+    /// A value that can be used by depth sorting functions.
+    ubyte layer = 0;
 
-    this(float rotation, Hook hook = Hook.topLeft);
-    this(Vec2 scale, Hook hook = Hook.topLeft);
-    this(Rgba color, Hook hook = Hook.topLeft);
-    this(Flip flip, Hook hook = Hook.topLeft);
-    this(Hook hook);
+    /// Sets the rotation to the given value.
+    this(float rotation, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the scale to the given value.
+    this(Vec2 scale, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the color to the given value.
+    this(Rgba color, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the flip to the given value.
+    this(Flip flip, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the hook to the given value.
+    this(Hook hook, ubyte layer = 0);
 }
 
 /// Options for configuring extra drawing parameters for text.
@@ -646,7 +638,9 @@ struct TextOptions {
     /// Indicates whether the content of the text flows in a right-to-left direction.
     bool isRightToLeft = false;
 
+    /// Sets the visibility ratio to the given value.
     this(float visibilityRatio);
+    /// Sets the alignment (and its width) to the given value(s).
     this(Alignment alignment, int alignmentWidth = 0);
 }
 
@@ -656,6 +650,8 @@ struct Camera {
     Vec2 position;
     /// The offset of the view area of the camera.
     Vec2 offset;
+    /// The target position of the camera. Used by the `folloTarget*` functions.
+    Maybe!Vec2 target;
     /// The rotation angle of the camera, in degrees.
     float rotation = 0.0f;
     /// The zoom level of the camera.
@@ -665,8 +661,62 @@ struct Camera {
     /// Indicates whether the camera is currently in use.
     bool isAttached;
 
+    /// Creates a camera with a position.
     this(Vec2 position, bool isCentered = false);
+    /// Creates a camera with a x and y value.
     this(float x, float y, bool isCentered = false);
+
+    /// The X position of the camera.
+    @trusted ref float x();
+    /// The Y position of the camera.
+    @trusted ref float y();
+    /// The sum of the position and the offset of the camera.
+    Vec2 sum();
+    /// Returns the current hook associated with the camera.
+    Hook hook();
+
+    /// Returns the origin of the camera.
+    Vec2 origin(Vec2 canvasSize);
+    /// Returns the area covered by the camera.
+    Rect area(Vec2 canvasSize);
+    /// Returns the top left point of the camera.
+    Vec2 topLeftPoint(Vec2 canvasSize);
+    /// Returns the top point of the camera.
+    Vec2 topPoint(Vec2 canvasSize);
+    /// Returns the top right point of the camera.
+    Vec2 topRightPoint(Vec2 canvasSize);
+    /// Returns the left point of the camera.
+    Vec2 leftPoint(Vec2 canvasSize);
+    /// Returns the center point of the camera.
+    Vec2 centerPoint(Vec2 canvasSize);
+    /// Returns the right point of the camera.
+    Vec2 rightPoint(Vec2 canvasSize);
+    /// Returns the bottom left point of the camera.
+    Vec2 bottomLeftPoint(Vec2 canvasSize);
+    /// Returns the bottom point of the camera.
+    Vec2 bottomPoint(Vec2 canvasSize);
+    /// Returns the bottom right point of the camera.
+    Vec2 bottomRightPoint(Vec2 canvasSize);
+
+    /// Floors the position and offset of the camera.
+    void floor();
+    /// Ceils the position and offset of the camera.
+    void ceil();
+    /// Rounds the position and offset of the camera.
+    void round();
+
+    /// Moves the camera to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float delta);
+    /// Moves the camera to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown);
+    /// Adjusts the camera’s zoom level to follow the target value at the specified speed.
+    void followScale(float target, float delta);
+    /// Adjusts the camera’s zoom level to follow the target value with gradual slowdown.
+    void followScaleWithSlowdown(float target, float delta, float slowdown);
+    /// Moves the camera to follow the target position at the specified speed.
+    void followTarget(float delta);
+    /// Moves the camera to follow the target position with gradual slowdown.
+    void followTargetWithSlowdown(float delta, float slowdown);
 }
 
 /// Maps one logical action to gamepad and keyboard inputs.
@@ -674,7 +724,85 @@ struct InputBinding {
     Gamepad button;   /// The gamepad button.
     Keyboard[4] keys; /// The keyboard keys.
 
+    /// Sets the gamepad button and keys to the given values.
     this(Gamepad button, Keyboard[] keys...);
+}
+
+/// A timer with pause/resume and repeat support.
+struct Timer {
+    /// The duration of the timer, in seconds.
+    float duration = 0.0f;
+    /// The elapsed time when the timer was paused.
+    float pauseTime = 0.0f;
+    /// The elapsed time when the timer was started.
+    float startTime = 0.0f;
+    /// Buffer storing the elapsed time after stopping.
+    float stopTimeElapsedTimeBuffer = 0.0f;
+    /// Whether the timer restarts automatically after completion.
+    bool canRepeat;
+
+    /// Initializes the timer with the specified duration and repeat behavior.
+    this(float duration, bool canRepeat = false);
+
+    /// Returns true if the timer is currently paused.
+    bool isPaused();
+    /// Returns true if the timer is currently active (running).
+    bool isActive();
+    /// Returns true if the timer has just started.
+    bool hasStarted();
+    /// Returns true if the timer has just stopped.
+    bool hasStopped();
+
+    /// Starts the timer with new duration and repeat behavior.
+    void start(float newDuration, bool newCanRepeat);
+    /// Starts the timer with an optional new duration.
+    void start(float newDuration = -1.0f);
+    /// Stops the timer and records the time at which it stopped.
+    void stop();
+    /// Toggles the active state of the timer.
+    void toggleIsActive();
+    /// Pauses the time.
+    void pause();
+    /// Resumes the timer from the paused state.
+    void resume();
+    /// Toggles the paused state of the timer.
+    void toggleIsPaused();
+
+    /// Returns the current time of the timer and handles stop/repeat logic.
+    float time();
+    /// Returns the remaining time of the timer and handles stop/repeat logic.
+    float timeLeft();
+    /// Returns the remaining time, or zero if inactive.
+    float timeLeftOrZero();
+    /// Sets the current time of the timer.
+    void setTime(float newTime);
+    /// Returns the current progress (between 0.0 to 1.0).
+    float progress();
+    /// Returns the remaining progress (between 0.0 to 1.0).
+    float progressLeft();
+    /// Returns the remaining progress (between 0.0 to 1.0), or zero if inactive.
+    float progressLeftOrZero();
+    /// Sets the progress to a specific value (between 0.0 to 1.0).
+    void setProgress(float value);
+    /// Sets the remaining progress to a specific value (between 0.0 to 1.0).
+    void setProgressLeft(float value);
+}
+
+/// A set of 4 integer margins.
+struct Margin {
+    /// The left side.
+    int left;
+    /// The top side.
+    int top;
+    /// The right side.
+    int right;
+    /// The bottom side.
+    int bottom;
+
+    /// Creates a maring with four different sides.
+    this(int left, int top, int right, int bottom);
+    /// Creates a maring with sides that have the same size.
+    this(int left);
 }
 ```
 
@@ -819,6 +947,9 @@ enum Keyboard : ubyte {
     f11,          /// The f11 key.
     f12,          /// The f12 key.
 }
+
+/// An alias for the `Keyboard` enum. Prefer using the original enum for function parameters.
+alias Key = Keyboard;
 
 /// A limited set of mouse keys.
 enum Mouse : ubyte {

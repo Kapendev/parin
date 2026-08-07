@@ -132,6 +132,7 @@ struct Margin {
 
     @safe nothrow @nogc:
 
+    /// Creates a maring with four different sides.
     this(int left, int top, int right, int bottom) {
         this.left = left;
         this.top = top;
@@ -139,6 +140,7 @@ struct Margin {
         this.bottom = bottom;
     }
 
+    /// Creates a maring with sides that have the same size.
     this(int left) {
         this(left, left, left, left);
     }

@@ -199,6 +199,7 @@ struct InputBinding {
 
     @safe nothrow @nogc:
 
+    /// Sets the gamepad button and keys to the given values.
     this(Gamepad button, Keyboard[] keys...) {
         this.button = button;
         foreach (i, key; keys) this.keys[i] = key;
@@ -277,30 +278,35 @@ struct DrawOptions {
 
     @safe nothrow @nogc:
 
+    /// Sets the rotation to the given value.
     this(float rotation, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.rotation = rotation;
         this.hook = hook;
         this.layer = layer;
     }
 
+    /// Sets the scale to the given value.
     this(Vec2 scale, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.scale = scale;
         this.hook = hook;
         this.layer = layer;
     }
 
+    /// Sets the color to the given value.
     this(Rgba color, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.color = color;
         this.hook = hook;
         this.layer = layer;
     }
 
+    /// Sets the flip to the given value.
     this(Flip flip, Hook hook = Hook.topLeft, ubyte layer = 0) {
         this.flip = flip;
         this.hook = hook;
         this.layer = layer;
     }
 
+    /// Sets the hook to the given value.
     this(Hook hook, ubyte layer = 0) {
         this.hook = hook;
         this.layer = layer;
@@ -317,10 +323,12 @@ struct TextOptions {
 
     @safe nothrow @nogc:
 
+    /// Sets the visibility ratio to the given value.
     this(float visibilityRatio) {
         this.visibilityRatio = visibilityRatio;
     }
 
+    /// Sets the alignment (and its width) to the given value(s).
     this(Alignment alignment, int alignmentWidth = 0) {
         this.alignment = alignment;
         this.alignmentWidth = alignmentWidth;
@@ -339,11 +347,13 @@ struct Camera {
 
     @safe nothrow @nogc:
 
+    /// Creates a camera with a position.
     this(Vec2 position, bool isCentered = false) {
         this.position = position;
         this.isCentered = isCentered;
     }
 
+    /// Creates a camera with a x and y value.
     this(float x, float y, bool isCentered = false) {
         this(Vec2(x, y), isCentered);
     }
@@ -423,16 +433,19 @@ struct Camera {
         return area(canvasSize).bottomRightPoint;
     }
 
+    /// Floors the position and offset of the camera.
     void floor() {
         position = position.floor();
         offset = offset.floor();
     }
 
+    /// Ceils the position and offset of the camera.
     void ceil() {
         position = position.ceil();
         offset = offset.ceil();
     }
 
+    /// Rounds the position and offset of the camera.
     void round() {
         position = position.round();
         offset = offset.round();
