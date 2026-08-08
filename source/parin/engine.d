@@ -19,7 +19,20 @@ public import parin.types;
 
 EngineState* _engineState;
 
-// ---------- Config
+/// A container type holding scheduled engine tasks.
+alias EngineTasks = GenList!(
+    Task,
+    SparseList!(Task, FixedList!(SparseListItem!Task, defaultEngineEngineTasksCapacity)),
+    FixedList!(Gen, defaultEngineEngineTasksCapacity)
+);
+/// An identifier for a scheduled engine task.
+alias EngineTaskId = GenIndex;
+/// Type representing the internal engine flags.
+alias EngineFlags = uint;
+/// A timer with pause/resume and repeat support.
+alias Timer = GTimer!elapsedTickTime;
+
+// +-- Engine Defaults
 enum defaultEngineTitle           = "Parin";
 enum defaultEngineWidth           = 1280;
 enum defaultEngineHeight          = 720;
@@ -55,30 +68,14 @@ enum defaultEngineDprintFont           = engineFont;
 
 enum defaultEngineDebugColor1 = white.alpha(120);
 enum defaultEngineDebugColor2 = black.alpha(170);
-// ----------
+// +--
 
-@safe:
-
-/// A timer with pause/resume and repeat support.
-alias Timer = GTimer!elapsedTickTime;
 /// The engine font identifier.
 enum engineFont = FontId(ResourceId(1));
 /// The second engine font identifier.
 enum engineFontSmall = FontId(ResourceId(2));
 /// The engine viewport identifier.
 enum engineViewport = ViewportId(ResourceId(1));
-
-/// A container type holding scheduled engine tasks.
-alias EngineTasks = GenList!(
-    Task,
-    SparseList!(Task, FixedList!(SparseListItem!Task, defaultEngineEngineTasksCapacity)),
-    FixedList!(Gen, defaultEngineEngineTasksCapacity)
-);
-
-/// An identifier for a scheduled engine task.
-alias EngineTaskId = GenIndex;
-/// Type representing the internal engine flags.
-alias EngineFlags = uint;
 
 ///  The internal engine flags.
 enum EngineFlag : EngineFlags {
@@ -94,6 +91,17 @@ enum EngineFlag : EngineFlags {
     isLoggingWithDprint         = 0x000100,
     isDebugMode                 = 0x000200,
 }
+
+/// Depth sorting modes.
+enum DepthSortMode : ubyte {
+    topDown,        /// Sorts with: Layer + Y + Call Order
+    topDownFast,    /// Sorts with: Layer + Y
+    topDownFastest, /// Sorts with: Y
+    layered,        /// Sorts with: Layer + Call Order
+}
+
+// @--
+@safe:
 
 /// Internal representation of a viewport within the engine.
 struct EngineViewport {
@@ -552,11 +560,12 @@ struct Clip {
     }
 }
 
-// NOTE: Was thinking that `Attached!Camera(camera)` would look bad, so I used a function.
+// NOTE: Writting `Attached!Camera(camera)` would look bad, so a function is used.
 struct _Attached(T) {
     T* _attachedObject;
 
-    pragma(inline, true) @trusted nothrow @nogc:
+    @trusted nothrow @nogc:
+
     @disable this();
 
     this(ref T object) {
@@ -592,14 +601,6 @@ struct DepthSortData {
         commandBuffer.clear();
         pairBuffer.clear();
     }
-}
-
-/// Depth sorting modes.
-enum DepthSortMode : ubyte {
-    topDown,        /// Sorts with: Layer + Y + Call Order
-    topDownFast,    /// Sorts with: Layer + Y
-    topDownFastest, /// Sorts with: Y
-    layered,        /// Sorts with: Layer + Call Order
 }
 
 struct DepthSortCommand {
@@ -841,70 +842,6 @@ void closeWindow() {
     }
 }
 
-/// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
-/// Optional callbacks for debug mode can also be provided.
-mixin template runGame(
-    alias readyFunc,
-    alias updateFunc,
-    alias finishFunc,
-    int width = defaultEngineWidth,
-    int height = defaultEngineHeight,
-    IStr title = defaultEngineTitle,
-    alias debugModeFunc = null,
-    alias debugModeBeginFunc = null,
-    alias debugModeEndFunc = null,
-    bool vsyncOffHack = false,
-) {
-    int _runGame() {
-        import mypr = parin.engine;
-        static if (__traits(isStaticFunction, debugModeFunc))      { enum debugMode1 = &debugModeFunc;      } else { enum debugMode1 = null; }
-        static if (__traits(isStaticFunction, debugModeBeginFunc)) { enum debugMode2 = &debugModeBeginFunc; } else { enum debugMode2 = null; }
-        static if (__traits(isStaticFunction, debugModeEndFunc))   { enum debugMode3 = &debugModeEndFunc;   } else { enum debugMode3 = null; }
-
-        static if (__traits(isStaticFunction, readyFunc))  readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) mypr.updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
-        static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        mypr.closeWindow();
-        return 0;
-    }
-
-    version (D_BetterC) {
-        extern(C)
-        int main(int argc, const(char)** argv) {
-            import mypr = parin.engine;
-            mypr.openWindowC(width, height, argc, argv, title, vsyncOffHack ? false : defaultEngineVsync);
-            return _runGame();
-        }
-    } else {
-        int main(immutable(char)[][] args) {
-            import mypr = parin.engine;
-            mypr.openWindow(width, height, args, title, vsyncOffHack ? false : defaultEngineVsync);
-            return _runGame();
-        }
-    }
-}
-
-mixin template runGameMinimal(
-    alias readyFunc,
-    alias updateFunc,
-    alias finishFunc,
-    IStr title = defaultEngineTitle,
-    bool vsyncOffHack = false,
-) {
-    mixin runGame!(
-        readyFunc,
-        updateFunc,
-        finishFunc,
-        defaultEngineWidth,
-        defaultEngineHeight,
-        title,
-        null,
-        null,
-        null,
-        vsyncOffHack
-    );
-}
-
 Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(font, fmt(header, args, footer), position, options, extra);
 }
@@ -934,7 +871,8 @@ void dprintfln(A...)(InterpolationHeader header, A args, InterpolationFooter foo
     mixin("dprintfln(fmtStr,", fmtArgs, ");");
 }
 
-@trusted nothrow:
+// @--
+@safe nothrow:
 
 /// Allocates raw memory from the frame arena.
 void* frameMalloc(Sz alignment, Sz size, IStr file = __FILE__, Sz line = __LINE__) {
@@ -1212,7 +1150,8 @@ void setAssetsPath(IStr path) {
     _engineState.assetsPath.append(path);
 }
 
-@trusted nothrow @nogc:
+// @--
+@safe nothrow @nogc:
 
 void _updateViewportInfoBuffer() {
     _engineState.viewportInfoBuffer.update(windowSize, resolution, isResolutionLocked, isPixelPerfect);
@@ -1242,6 +1181,7 @@ void _updateEngineWasdBuffer() {
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
+@trusted
 int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
@@ -1280,6 +1220,7 @@ int _TEMP_REPLACE_ME_GetCodepointNext(const(char)* text, int* codepointSize) {
 }
 
 // TODO: Replace that with something in Joka. I was too lazy to write it myself.
+@trusted
 int _TEMP_REPLACE_ME_GetCodepointPrevious(const(char)* text, int* codepointSize) {
     const(char)* ptr = text;
     int codepoint = 0x3f;       // Codepoint (defaults to '?')
@@ -1704,6 +1645,7 @@ void setIsPixelPerfect(bool value) {
 }
 
 /// Returns the size of the text.
+@trusted
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     version (ParinSkipDrawChecks) {
     } else {
@@ -2133,6 +2075,7 @@ void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown) {
 }
 
 /// Ends a depth sort. Works only with textures.
+@trusted
 void endDepthSort() {
     if (_engineState.depthSortActive == false) assert(0, "Call `beginDepthSort` before `endDepthSort`.");
     _engineState.depthSortActive = false;
@@ -2438,6 +2381,7 @@ Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 }
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
+@trusted
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 512;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
@@ -2948,4 +2892,69 @@ void drawSpriteStack(TextureId texture, SpriteStack stack, Rgba layerColor = whi
 void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColor = maroon) {
     foreach (ref wall; world.walls) drawRect(wall.area.toRect(), wallColor.alpha(defaultEngineDebugColor1.a));
     foreach (ref actor; world.actors) drawRect(actor.area.toRect(), actorColor.alpha(defaultEngineDebugColor1.a));
+}
+
+/// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
+/// Optional callbacks for debug mode can also be provided.
+mixin template runGame(
+    alias readyFunc,
+    alias updateFunc,
+    alias finishFunc,
+    int width = defaultEngineWidth,
+    int height = defaultEngineHeight,
+    IStr title = defaultEngineTitle,
+    alias debugModeFunc = null,
+    alias debugModeBeginFunc = null,
+    alias debugModeEndFunc = null,
+    bool vsyncOffHack = false,
+) {
+    int _runGame() {
+        import mypr = parin.engine;
+        static if (__traits(isStaticFunction, debugModeFunc))      { enum debugMode1 = &debugModeFunc;      } else { enum debugMode1 = null; }
+        static if (__traits(isStaticFunction, debugModeBeginFunc)) { enum debugMode2 = &debugModeBeginFunc; } else { enum debugMode2 = null; }
+        static if (__traits(isStaticFunction, debugModeEndFunc))   { enum debugMode3 = &debugModeEndFunc;   } else { enum debugMode3 = null; }
+
+        static if (__traits(isStaticFunction, readyFunc))  readyFunc();
+        static if (__traits(isStaticFunction, updateFunc)) mypr.updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
+        static if (__traits(isStaticFunction, finishFunc)) finishFunc();
+        mypr.closeWindow();
+        return 0;
+    }
+
+    version (D_BetterC) {
+        extern(C)
+        int main(int argc, const(char)** argv) {
+            import mypr = parin.engine;
+            mypr.openWindowC(width, height, argc, argv, title, vsyncOffHack ? false : defaultEngineVsync);
+            return _runGame();
+        }
+    } else {
+        int main(immutable(char)[][] args) {
+            import mypr = parin.engine;
+            mypr.openWindow(width, height, args, title, vsyncOffHack ? false : defaultEngineVsync);
+            return _runGame();
+        }
+    }
+}
+
+/// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
+mixin template runGameMinimal(
+    alias readyFunc,
+    alias updateFunc,
+    alias finishFunc,
+    IStr title = defaultEngineTitle,
+    bool vsyncOffHack = false,
+) {
+    mixin runGame!(
+        readyFunc,
+        updateFunc,
+        finishFunc,
+        defaultEngineWidth,
+        defaultEngineHeight,
+        title,
+        null,
+        null,
+        null,
+        vsyncOffHack
+    );
 }

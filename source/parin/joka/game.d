@@ -12,7 +12,12 @@ import parin.joka.memory;
 import parin.joka.math;
 import parin.joka.types;
 
-@safe nothrow @nogc:
+/// A tile map.
+alias TileMap = GTileMap!128;
+/// A generic color palette of RGBA colors.
+alias Palette(Sz N)    = StaticArray!(Rgba, N);
+/// A generic color palette of hexadecimal numbers.
+alias HexPalette(Sz N) = uint[N];
 
 enum defaultStoryFixedListCapacity = 16;
 
@@ -35,59 +40,6 @@ enum gray2   = Rgba(96, 96, 96);    /// #606060FF
 enum gray3   = Rgba(159, 159, 159); /// #9F9F9FFF
 enum gray4   = Rgba(223, 223, 223); /// #DFDFDFFF
 enum gray    = gray2;               /// #606060FF
-
-alias Palette(Sz N)    = StaticArray!(Rgba, N); /// A generic color palette of RGBA colors.
-alias HexPalette(Sz N) = uint[N];               /// A generic color palette of hexadecimal numbers.
-
-/// A 2-color palette inspired by the Playdate.
-/// Link: https://kapendev.itch.io/will-of-the-hair-wisp
-immutable HexPalette!2 wisp2 = [
-    0x322F29,
-    0xDAD6D0,
-];
-
-/// A 4-color palette inspired by the Game Boy.
-/// Link: https://lospec.com/palette-list/2-bit-matrix
-immutable HexPalette!4 gb4 = [
-    0x343434,
-    0x5B8C7C,
-    0xADD9BC,
-    0xF2FFF2,
-];
-
-/// An 8-color palette inspired by the NES.
-/// Link: https://lospec.com/palette-list/mf-8
-immutable HexPalette!8 nes8 = [
-    0x292320,
-    0xA7763E,
-    0x7F339A,
-    0xE04113,
-    0x32A75C,
-    0x1AC1FE,
-    0xFDD156,
-    0xFCF8EA,
-];
-
-/// A 16-color palette used by the PICO-8.
-/// Link: https://lospec.com/palette-list/pico-8
-immutable HexPalette!16 pico8 = [
-    0x000000,
-    0x1D2B53,
-    0x7E2553,
-    0x008751,
-    0xAB5236,
-    0x5F574F,
-    0xC2C3C7,
-    0xFFF1E8,
-    0xFF004D,
-    0xFFA300,
-    0xFFEC27,
-    0x00E436,
-    0x29ADFF,
-    0x83769C,
-    0xFF77A8,
-    0xFFCCAA,
-];
 
 /// A 2-color palette inspired by the Playdate.
 /// Link: https://kapendev.itch.io/will-of-the-hair-wisp
@@ -146,6 +98,58 @@ enum Flip : ubyte {
     y,    /// Flipped along the Y-axis.
     xy,   /// Flipped along both X and Y axes.
 }
+
+/// A 2-color palette inspired by the Playdate.
+/// Link: https://kapendev.itch.io/will-of-the-hair-wisp
+immutable HexPalette!2 wisp2 = [
+    0x322F29,
+    0xDAD6D0,
+];
+
+/// A 4-color palette inspired by the Game Boy.
+/// Link: https://lospec.com/palette-list/2-bit-matrix
+immutable HexPalette!4 gb4 = [
+    0x343434,
+    0x5B8C7C,
+    0xADD9BC,
+    0xF2FFF2,
+];
+
+/// An 8-color palette inspired by the NES.
+/// Link: https://lospec.com/palette-list/mf-8
+immutable HexPalette!8 nes8 = [
+    0x292320,
+    0xA7763E,
+    0x7F339A,
+    0xE04113,
+    0x32A75C,
+    0x1AC1FE,
+    0xFDD156,
+    0xFCF8EA,
+];
+
+/// A 16-color palette used by the PICO-8.
+/// Link: https://lospec.com/palette-list/pico-8
+immutable HexPalette!16 pico8 = [
+    0x000000,
+    0x1D2B53,
+    0x7E2553,
+    0x008751,
+    0xAB5236,
+    0x5F574F,
+    0xC2C3C7,
+    0xFFF1E8,
+    0xFF004D,
+    0xFFA300,
+    0xFFEC27,
+    0x00E436,
+    0x29ADFF,
+    0x83769C,
+    0xFF77A8,
+    0xFFCCAA,
+];
+
+@safe nothrow @nogc:
 
 /// A tile with a texture atlas id, size, and position.
 struct Tile {
@@ -275,20 +279,20 @@ struct Tile {
 // Idea: Have an object map struct that just parses the csv again. Doing that is not slow anyway and keeps the TileMap focused.
 /// A generic tile map. `N` is the maximum layer row or column size.
 struct GTileMap(Sz N) {
-    enum maxLayerRowColCount = N;                                      /// Maximum layer row or column size.
-    enum maxLayerCapacity = maxLayerRowColCount * maxLayerRowColCount; /// Maximum layer size.
-    enum extraTileCount = 1;                                           /// Extra tile padding added when computing visible tile ranges.
-
-    alias TileMapLayerData = FixedList!(short, maxLayerCapacity);        /// The tile map layer data.
-    alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData); /// The tile map layer.
-    alias TileMapLayers = List!TileMapLayer;                             /// The tile map layers.
-
     TileMapLayers layers; /// The list of tile layers in this map.
     Sz rowCount;          /// The number of active rows in the map.
     Sz colCount;          /// The number of active columns in the map.
     short tileWidth;      /// The width of each tile in pixels.
     short tileHeight;     /// The height of each tile in pixels.
     Vec2 position;        /// The world position of the top-left corner of the map.
+
+    alias TileMapLayerData = FixedList!(short, maxLayerCapacity);            /// The tile map layer data.
+    alias TileMapLayer     = Grid!(TileMapLayerData.Item, TileMapLayerData); /// The tile map layer.
+    alias TileMapLayers    = List!TileMapLayer;                              /// The tile map layers.
+
+    enum maxLayerRowColCount = N;                                         /// Maximum layer row or column size.
+    enum maxLayerCapacity    = maxLayerRowColCount * maxLayerRowColCount; /// Maximum layer size.
+    enum extraTileCount      = 1;                                         /// Extra tile padding added when computing visible tile ranges.
 
     @safe nothrow:
 
@@ -664,9 +668,6 @@ struct GTileMap(Sz N) {
         return tiles(viewArea.topLeftPoint, viewArea.bottomRightPoint, layerId);
     }
 }
-
-/// A tile map.
-alias TileMap = GTileMap!128;
 
 /// A single sprite animation, defined by its position in an atlas and playback settings.
 struct SpriteAnimation {

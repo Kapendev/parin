@@ -34,11 +34,14 @@ alias Gen       = uint;  /// The type of a generation.
 
 /// The type of compile time alias arguments.
 alias AliasArgs(A...) = A;
-
 /// Callback that can be used for basic printing. Should work like the `echo -n` command in POS*X compliant shells.
 alias EchonFunc = void function(IStr[] text...) @safe nothrow @nogc;
 /// Callback that can be used for basic printing. Should work like the `echo` command in POS*X compliant shells.
 alias EchoFunc = EchonFunc;
+/// The common bit set data type.
+alias BitSetCommonDataType = ulong;
+/// The common bit set type.
+alias BitSet = GBitSet!BitSetCommonDataType;
 
 enum kilobyte = 1024;            /// The size of one kilobyte in bytes.
 enum megabyte = 1024 * kilobyte; /// The size of one megabyte in bytes.
@@ -270,11 +273,6 @@ struct GBitSet(T) if (__traits(isUnsigned, T)) {
         bits = cast(T) (  rhs ? (bits | (one << i)) : (bits & ~(one << i))  );
     }
 }
-
-/// The common bit set data type.
-alias BitSetCommonDataType = ulong;
-/// The common bit set type.
-alias BitSet = GBitSet!BitSetCommonDataType;
 
 /// Represents an optional value with an error code. Errors are referred to as faults in Joka.
 /// The default value is an empty value.

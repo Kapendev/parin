@@ -373,6 +373,13 @@ void drawDprintBuffer();
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 /// Draws debug tile information at the given position with the provided draw options.
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+
+/// Draws a tile with a texture.
+void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions());
+/// Draws a tile map with a texture. The view area controls what is visible.
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions());
+/// Draws a tile map with a texture. The camera controls what is visible.
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions());
 ```
 
 ## Sound
@@ -667,9 +674,9 @@ struct Camera {
     this(float x, float y, bool isCentered = false);
 
     /// The X position of the camera.
-    @trusted ref float x();
+    ref float x();
     /// The Y position of the camera.
-    @trusted ref float y();
+    ref float y();
     /// The sum of the position and the offset of the camera.
     Vec2 sum();
     /// Returns the current hook associated with the camera.
@@ -786,6 +793,188 @@ struct Timer {
     void setProgress(float value);
     /// Sets the remaining progress to a specific value (between 0.0 to 1.0).
     void setProgressLeft(float value);
+}
+
+/// A tile with a texture atlas id, size, and position.
+struct Tile {
+    /// The width of the tile.
+    short width;
+    /// The height of the tile.
+    short height;
+    /// The atlas id of the tile.
+    short id;
+    /// A value representing flipping orientations.
+    Flip flip;
+    /// An offset added to the id when sampling the atlas.
+    byte idOffset;
+    /// The position of the tile.
+    Vec2 position;
+
+    /// Constructs a tile with the given size, id, and position.
+    this(short width, short height, short id, Vec2 position = Vec2());
+    /// Constructs a tile with the given size, id, and position components.
+    this(short width, short height, short id, float x, float y);
+
+    /// Returns a reference to the x component of the tile position.
+    ref float x();
+    /// Returns a reference to the y component of the tile position.
+    ref float y();
+    /// Returns the row of the tile in the atlas.
+    Sz row(Sz colCount);
+    /// Returns the column of the tile in the atlas.
+    Sz col(Sz colCount);
+    /// Returns the size of the tile as a 2D vector.
+    Vec2 size();
+    /// Returns the bounding rectangle of the tile.
+    Rect area();
+    /// Returns the rectangle of the tile in the texture atlas.
+    Rect textureArea(Sz colCount);
+    /// Returns true if the tile has no valid id.
+    bool isEmpty();
+    /// Returns true if the tile has a valid id.
+    bool hasId();
+    /// Returns true if the tile has a non-zero size.
+    bool hasSize();
+    /// Returns true if the tile has a valid id and a non-zero size.
+    bool hasIdAndSize();
+    /// Returns true if the tile area intersects with the given rectangle.
+    bool hasIntersection(Rect otherArea);
+    /// Returns true if the tile area intersects with another tile.
+    bool hasIntersection(Tile otherTile);
+    /// Returns the intersection rectangle of the tile area and the given rectangle.
+    Rect intersection(Rect otherArea);
+    /// Returns the intersection rectangle of the tile area and another tile.
+    Rect intersection(Tile otherTile);
+    /// Returns the bounding rectangle of the tile area and the given rectangle.
+    Rect merger(Rect otherArea);
+    /// Returns the bounding rectangle of the tile area and another tile.
+    Rect merger(Tile otherTile);
+
+    /// Moves the tile to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float delta);
+    /// Moves the tile to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown);
+}
+
+/// A tile map.
+struct TileMap {
+    /// The list of tile layers in this map.
+    TileMapLayers layers;
+    /// The number of active rows in the map.
+    Sz rowCount;
+    /// The number of active columns in the map.
+    Sz colCount;
+    /// The width of each tile in pixels.
+    short tileWidth;
+    /// The height of each tile in pixels.
+    short tileHeight;
+    /// The world position of the top-left corner of the map.
+    Vec2 position;
+
+    /// The tile map layer data.
+    alias TileMapLayerData = FixedList!(short, maxLayerCapacity);
+    /// The tile map layer.
+    alias TileMapLayer = Grid!(TileMapLayerData.Item, TileMapLayerData);
+    /// The tile map layers.
+    alias TileMapLayers = List!TileMapLayer;
+
+    /// Maximum layer row or column size.
+    enum maxLayerRowColCount = 128;
+    /// Maximum layer size.
+    enum maxLayerCapacity = maxLayerRowColCount * maxLayerRowColCount;
+    /// Extra tile padding added when computing visible tile ranges.
+    enum extraTileCount = 1;
+
+    /// Constructs a tile map with the given row and column count and tile size.
+    this(Sz rowCount, Sz colCount, short tileWidth, short tileHeight);
+    /// Constructs a tile map with the maximum layer size and the given tile size.
+    this(short tileWidth, short tileHeight);
+
+    /// Returns a reference to the tile id at the given row, column, and layer.
+    ref short opIndex(Sz row, Sz col, Sz layerId = 0);
+    /// Returns a reference to the tile id at the given grid position and layer.
+    ref short opIndex(IVec2 position, Sz layerId = 0);
+    /// Sets the tile id at the given row, column, and layer.
+    void opIndexAssign(short rhs, Sz row, Sz col, Sz layerId = 0);
+    /// Sets the tile id at the given grid position and layer.
+    void opIndexAssign(short rhs, IVec2 position, Sz layerId = 0);
+    /// Applies a compound assignment operator to the tile id at the given row, column, and layer.
+    void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col, Sz layerId = 0);
+    /// Applies a compound assignment operator to the tile id at the given grid position and layer.
+    void opIndexOpAssign(IStr op)(T rhs, IVec2 position, Sz layerId = 0);
+
+    /// Returns a reference to the x component of the map position.
+    ref float x();
+    /// Returns a reference to the y component of the map position.
+    ref float y();
+    /// Returns the total pixel width of the active map area.
+    int width();
+    /// Returns the total pixel height of the active map area.
+    int height();
+    /// Returns the total pixel size of the active map area as a 2D vector.
+    Vec2 size();
+    /// Returns the size of a single tile as a 2D vector.
+    Vec2 tileSize();
+    /// Returns the allocated row count of the first layer (the hard limit).
+    Sz hardRowCount();
+    /// Returns the allocated column count of the first layer (the hard limit).
+    Sz hardColCount();
+    /// Returns true if the map has no layers.
+    bool isEmpty();
+    /// Returns true if the given row and column are within the active map bounds.
+    bool has(Sz row, Sz col);
+    /// Returns true if the given grid position is within the active map bounds.
+    bool has(IVec2 position);
+    /// Returns true if the map has a non-zero tile size.
+    bool hasTileSize();
+    /// Returns true if the map has a non-zero tile size and a non-zero active area.
+    bool hasSize();
+
+    /// Returns the world position of the top-left corner of the tile at the given grid coordinates.
+    Vec2 worldPointAt(int gridX, int gridY);
+    /// Returns the world position of the top-left corner of the tile at the given grid point.
+    Vec2 worldPointAt(IVec2 gridPoint);
+    /// Returns the grid coordinates of the tile that contains the given world position.
+    IVec2 gridPointAt(float worldX, float worldY);
+    /// Returns the grid coordinates of the tile that contains the given world point.
+    IVec2 gridPointAt(Vec2 worldPoint) ;
+
+    /// Parses a CSV string into the specified layer, using the given tile size.
+    Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false);
+    /// Parses a CSV string into the specified layer using the current tile size.
+    Fault parseCsv(IStr csv, Sz layerId = 0, bool isMinZero = false);
+    /// Parses a TMX (Tiled XML) map file, extracting tile size and all CSV data layers.
+    Fault parseTmx(IStr tmx);
+    /// Allocates or resizes all layers to the given hard row and column counts.
+    void resizeHard(Sz newHardRowCount, Sz newHardColCount);
+    /// Frees all layers and associated memory.
+    void free();
+
+    /// Sets the active row and column count without reallocating. Asserts if either value exceeds the hard limit.
+    void resize(Sz newRowCount, Sz newColCount);
+    /// Sets the tile size in pixels.
+    void resizeTileSize(short newTileWidth, short newTileHeight);
+    /// Fills all layers with the empty tile id (-1).
+    void clear();
+    /// Fills the specified layer with the empty tile id (-1).
+    void clear(Sz layerId);
+    /// Marks all layers as ignored for leak detection purposes.
+    void ignoreLeak();
+
+    /// Moves the map to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float delta);
+    /// Moves the map to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown);
+
+    /// Returns a lazy range of grid points visible within the given view corners.
+    /// Includes one extra tile of padding on the far edges via `extraTileCount`.
+    auto gridPoints(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint);
+    /// Returns a lazy range of grid points visible within the given view rectangle.
+    auto gridPoints(Rect viewArea);
+    /// Returns a lazy range of `Tile` values visible within the given view corners on the specified layer.
+    auto tiles(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint, Sz layerId = 0);
+    /// Returns a lazy range of `Tile` values visible within the given view rectangle on the specified layer.
+    auto tiles(Rect viewArea, Sz layerId = 0);
 }
 
 /// A set of 4 integer margins.

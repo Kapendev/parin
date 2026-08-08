@@ -17,7 +17,8 @@ alias UpdateFunc = bool function(float dt);
 alias CallFunc   = void function();
 alias ResourceId = GenIndex;
 
-@safe nothrow @nogc:
+/// An alias for the `Keyboard` enum. Prefer using the original enum for function parameters.
+alias Key = Keyboard;
 
 // People. Are a resource. Money on the table. PEOPLE! ARE! THE FOUNDATION! OF WHAT! WE! ARE! BUILDING HERE!
 version (WebAssembly) {
@@ -157,11 +158,6 @@ enum Keyboard : ubyte {
     f12,          /// The f12 key.
 }
 
-/// An alias for the `Keyboard` enum.
-/// It's useful for keeping code concise.
-/// Prefer using the original enum for function parameters.
-alias Key = Keyboard;
-
 /// A limited set of mouse keys.
 enum Mouse : ubyte {
     none,   /// Not a button.
@@ -191,6 +187,8 @@ enum Gamepad : ubyte {
     start,  /// The start button.
     middle, /// The middle button.
 }
+
+@safe nothrow @nogc:
 
 /// Maps one logical action to gamepad and keyboard inputs.
 struct InputBinding {
@@ -359,12 +357,14 @@ struct Camera {
     }
 
     /// The X position of the camera.
-    @trusted ref float x() {
+    @trusted
+    ref float x() {
         return position.x;
     }
 
     /// The Y position of the camera.
-    @trusted ref float y() {
+    @trusted
+    ref float y() {
         return position.y;
     }
 

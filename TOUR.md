@@ -314,6 +314,13 @@ void drawDprintBuffer();
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 /// Draws debug tile information at the given position with the provided draw options.
 void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+
+/// Draws a tile with a texture.
+void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions());
+/// Draws a tile map with a texture. The view area controls what is visible.
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions());
+/// Draws a tile map with a texture. The camera controls what is visible.
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions());
 ```
 
 To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
