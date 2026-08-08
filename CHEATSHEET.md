@@ -107,6 +107,66 @@ double elapsedTickTime();
 ulong elapsedTicks();
 /// Returns the time elapsed since the last frame.
 float deltaTime();
+
+/// A timer with pause/resume and repeat support.
+struct Timer {
+    /// The duration of the timer, in seconds.
+    float duration = 0.0f;
+    /// The elapsed time when the timer was paused.
+    float pauseTime = 0.0f;
+    /// The elapsed time when the timer was started.
+    float startTime = 0.0f;
+    /// Buffer storing the elapsed time after stopping.
+    float stopTimeElapsedTimeBuffer = 0.0f;
+    /// Whether the timer restarts automatically after completion.
+    bool canRepeat;
+
+    /// Initializes the timer with the specified duration and repeat behavior.
+    this(float duration, bool canRepeat = false);
+
+    /// Returns true if the timer is currently paused.
+    bool isPaused();
+    /// Returns true if the timer is currently active (running).
+    bool isActive();
+    /// Returns true if the timer has just started.
+    bool hasStarted();
+    /// Returns true if the timer has just stopped.
+    bool hasStopped();
+
+    /// Starts the timer with new duration and repeat behavior.
+    void start(float newDuration, bool newCanRepeat);
+    /// Starts the timer with an optional new duration.
+    void start(float newDuration = -1.0f);
+    /// Stops the timer and records the time at which it stopped.
+    void stop();
+    /// Toggles the active state of the timer.
+    void toggleIsActive();
+    /// Pauses the time.
+    void pause();
+    /// Resumes the timer from the paused state.
+    void resume();
+    /// Toggles the paused state of the timer.
+    void toggleIsPaused();
+
+    /// Returns the current time of the timer and handles stop/repeat logic.
+    float time();
+    /// Returns the remaining time of the timer and handles stop/repeat logic.
+    float timeLeft();
+    /// Returns the remaining time, or zero if inactive.
+    float timeLeftOrZero();
+    /// Sets the current time of the timer.
+    void setTime(float newTime);
+    /// Returns the current progress (between 0.0 to 1.0).
+    float progress();
+    /// Returns the remaining progress (between 0.0 to 1.0).
+    float progressLeft();
+    /// Returns the remaining progress (between 0.0 to 1.0), or zero if inactive.
+    float progressLeftOrZero();
+    /// Sets the progress to a specific value (between 0.0 to 1.0).
+    void setProgress(float value);
+    /// Sets the remaining progress to a specific value (between 0.0 to 1.0).
+    void setProgressLeft(float value);
+}
 ```
 
 ## Randomness
@@ -289,6 +349,15 @@ Vec2 wasdReleased();
 Keyboard dequeuePressedKey();
 /// Returns the next recently pressed character.
 dchar dequeuePressedRune();
+
+/// Maps one logical action to gamepad and keyboard inputs.
+struct InputBinding {
+    Gamepad button;   /// The gamepad button.
+    Keyboard[4] keys; /// The keyboard keys.
+
+    /// Sets the gamepad button and keys to the given values.
+    this(Gamepad button, Keyboard[] keys...);
+}
 ```
 
 ## Drawing
@@ -380,6 +449,54 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions());
 /// Draws a tile map with a texture. The camera controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions());
+
+/// Options for configuring drawing parameters.
+struct DrawOptions {
+    /// The origin point of the drawn object. This value can be used to force a specific origin.
+    Vec2 origin = Vec2(0.0f);
+    /// The scale of the drawn object.
+    Vec2 scale = Vec2(1.0f);
+    /// The rotation of the drawn object, in degrees.
+    float rotation = 0.0f;
+    /// The color of the drawn object, in RGBA.
+    Rgba color = white;
+    /// A value representing the origin point of the drawn object when origin is zero.
+    Hook hook = Hook.topLeft;
+    /// A value representing flipping orientations.
+    Flip flip = Flip.none;
+    /// A value that can be used by depth sorting functions.
+    ubyte layer = 0;
+
+    /// Sets the rotation to the given value.
+    this(float rotation, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the scale to the given value.
+    this(Vec2 scale, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the color to the given value.
+    this(Rgba color, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the flip to the given value.
+    this(Flip flip, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the hook to the given value.
+    this(Hook hook, ubyte layer = 0);
+}
+
+/// Options for configuring extra drawing parameters for text.
+struct TextOptions {
+    /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
+    float visibilityRatio = 1.0f;
+    /// The width of the aligned text. It is used as a hint and is not enforced.
+    int alignmentWidth = 0;
+    /// Controls the visibility count of the text. This value can be used to force a specific character count.
+    ushort visibilityCount = 0;
+    /// A value represeting alignment orientations.
+    Alignment alignment = Alignment.left;
+    /// Indicates whether the content of the text flows in a right-to-left direction.
+    bool isRightToLeft = false;
+
+    /// Sets the visibility ratio to the given value.
+    this(float visibilityRatio);
+    /// Sets the alignment (and its width) to the given value(s).
+    this(Alignment alignment, int alignmentWidth = 0);
+}
 ```
 
 ## Sound
@@ -603,54 +720,6 @@ struct ViewportId {
     void free();
 }
 
-/// Options for configuring drawing parameters.
-struct DrawOptions {
-    /// The origin point of the drawn object. This value can be used to force a specific origin.
-    Vec2 origin = Vec2(0.0f);
-    /// The scale of the drawn object.
-    Vec2 scale = Vec2(1.0f);
-    /// The rotation of the drawn object, in degrees.
-    float rotation = 0.0f;
-    /// The color of the drawn object, in RGBA.
-    Rgba color = white;
-    /// A value representing the origin point of the drawn object when origin is zero.
-    Hook hook = Hook.topLeft;
-    /// A value representing flipping orientations.
-    Flip flip = Flip.none;
-    /// A value that can be used by depth sorting functions.
-    ubyte layer = 0;
-
-    /// Sets the rotation to the given value.
-    this(float rotation, Hook hook = Hook.topLeft, ubyte layer = 0);
-    /// Sets the scale to the given value.
-    this(Vec2 scale, Hook hook = Hook.topLeft, ubyte layer = 0);
-    /// Sets the color to the given value.
-    this(Rgba color, Hook hook = Hook.topLeft, ubyte layer = 0);
-    /// Sets the flip to the given value.
-    this(Flip flip, Hook hook = Hook.topLeft, ubyte layer = 0);
-    /// Sets the hook to the given value.
-    this(Hook hook, ubyte layer = 0);
-}
-
-/// Options for configuring extra drawing parameters for text.
-struct TextOptions {
-    /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
-    float visibilityRatio = 1.0f;
-    /// The width of the aligned text. It is used as a hint and is not enforced.
-    int alignmentWidth = 0;
-    /// Controls the visibility count of the text. This value can be used to force a specific character count.
-    ushort visibilityCount = 0;
-    /// A value represeting alignment orientations.
-    Alignment alignment = Alignment.left;
-    /// Indicates whether the content of the text flows in a right-to-left direction.
-    bool isRightToLeft = false;
-
-    /// Sets the visibility ratio to the given value.
-    this(float visibilityRatio);
-    /// Sets the alignment (and its width) to the given value(s).
-    this(Alignment alignment, int alignmentWidth = 0);
-}
-
 /// A camera.
 struct Camera {
     /// The position of the camera.
@@ -724,75 +793,6 @@ struct Camera {
     void followTarget(float delta);
     /// Moves the camera to follow the target position with gradual slowdown.
     void followTargetWithSlowdown(float delta, float slowdown);
-}
-
-/// Maps one logical action to gamepad and keyboard inputs.
-struct InputBinding {
-    Gamepad button;   /// The gamepad button.
-    Keyboard[4] keys; /// The keyboard keys.
-
-    /// Sets the gamepad button and keys to the given values.
-    this(Gamepad button, Keyboard[] keys...);
-}
-
-/// A timer with pause/resume and repeat support.
-struct Timer {
-    /// The duration of the timer, in seconds.
-    float duration = 0.0f;
-    /// The elapsed time when the timer was paused.
-    float pauseTime = 0.0f;
-    /// The elapsed time when the timer was started.
-    float startTime = 0.0f;
-    /// Buffer storing the elapsed time after stopping.
-    float stopTimeElapsedTimeBuffer = 0.0f;
-    /// Whether the timer restarts automatically after completion.
-    bool canRepeat;
-
-    /// Initializes the timer with the specified duration and repeat behavior.
-    this(float duration, bool canRepeat = false);
-
-    /// Returns true if the timer is currently paused.
-    bool isPaused();
-    /// Returns true if the timer is currently active (running).
-    bool isActive();
-    /// Returns true if the timer has just started.
-    bool hasStarted();
-    /// Returns true if the timer has just stopped.
-    bool hasStopped();
-
-    /// Starts the timer with new duration and repeat behavior.
-    void start(float newDuration, bool newCanRepeat);
-    /// Starts the timer with an optional new duration.
-    void start(float newDuration = -1.0f);
-    /// Stops the timer and records the time at which it stopped.
-    void stop();
-    /// Toggles the active state of the timer.
-    void toggleIsActive();
-    /// Pauses the time.
-    void pause();
-    /// Resumes the timer from the paused state.
-    void resume();
-    /// Toggles the paused state of the timer.
-    void toggleIsPaused();
-
-    /// Returns the current time of the timer and handles stop/repeat logic.
-    float time();
-    /// Returns the remaining time of the timer and handles stop/repeat logic.
-    float timeLeft();
-    /// Returns the remaining time, or zero if inactive.
-    float timeLeftOrZero();
-    /// Sets the current time of the timer.
-    void setTime(float newTime);
-    /// Returns the current progress (between 0.0 to 1.0).
-    float progress();
-    /// Returns the remaining progress (between 0.0 to 1.0).
-    float progressLeft();
-    /// Returns the remaining progress (between 0.0 to 1.0), or zero if inactive.
-    float progressLeftOrZero();
-    /// Sets the progress to a specific value (between 0.0 to 1.0).
-    void setProgress(float value);
-    /// Sets the remaining progress to a specific value (between 0.0 to 1.0).
-    void setProgressLeft(float value);
 }
 
 /// A tile with a texture atlas id, size, and position.

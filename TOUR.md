@@ -15,33 +15,38 @@ dub init -t parin
 If everything is set up correctly, there should be some new files inside the folder.
 Three of them are particularly important:
 
-- `source`: It contains the source code.
-- `assets`: It contains the game assets.
-- `web`: It contains web related files.
+- `source`: Contains the source code
+- `assets`: Contains the game assets
+- `web`: Contains web related files
 
-Additionally, an app.d file is inside the source folder that looks like this:
+Additionally, an `app.d` file is inside the source folder that looks like this:
 
 ```d
 import parin;
 
+// Called once when the game starts.
 void ready() {
     lockResolution(320, 180);
 }
 
+// Called every frame while the game is running.
+// If true is returned, then the game will stop running.
 bool update(float dt) {
     drawText("Hello world!", Vec2(8));
     return false;
 }
 
+// Called once when the game ends.
 void finish() {}
 
+// Creates a main function that calls the given functions.
 mixin runGame!(ready, update, finish);
 ```
 
 This code will create a window that displays the message "Hello world!".
-Here is a breakdown of how it works:
+Below is a breakdown of how it works.
 
-1. The Ready Function
+1. The `ready` function:
 
     ```d
     void ready() {
@@ -52,7 +57,7 @@ Here is a breakdown of how it works:
     This function is the starting point of the game.
     It is called once when the game starts and, in this example, locks the game resolution to 320x180.
 
-2. The Update Function
+2. The `update` function:
 
     ```d
     bool update(float dt) {
@@ -66,7 +71,7 @@ Here is a breakdown of how it works:
     The `return false` statement at the end indicates that the game should continue running.
     If `true` were returned, then the game would stop running.
 
-3. The Finish Function
+3. The `finish` function:
 
     ```d
     void finish() {}
@@ -75,7 +80,7 @@ Here is a breakdown of how it works:
     This function is the ending point of the game.
     It is called once when the game ends and, in this example, does nothing.
 
-4. The Mixin
+4. The `runGame` mixin template:
 
     ```d
     mixin runGame!(ready, update, finish);
@@ -84,11 +89,11 @@ Here is a breakdown of how it works:
     This mixin sets up a main function that opens a window and calls the ready, update and finish functions.
     By default, the window has a size of 960x540.
 
-In essence, a Parin game typically relies on three functions:
+A Parin game typically (can be changed) relies on three functions:
 
-- A ready function.
-- An update function.
-- A finish function.
+- A function that is called at the start
+- A function that is called every frame
+- A function that is called at the end
 
 To run the game, use the following command:
 
@@ -98,8 +103,7 @@ dub run
 
 And that's the basics.
 As a fun exercise, try changing the message to "DVD" and make it bounce inside the window.
-The engine font has characters that have a size of 6x12.
-A solution can be found in the [examples](examples/basics/_003_dvd.d).
+A solution can be found in the [examples folder](examples/basics/_003_dvd.d).
 
 ## Modules
 
@@ -108,18 +112,21 @@ Parin consists of the following modules:
 - `parin.engine`: Engine functionality
 - `parin.types`: Common engine types
 - `parin.ui`: UI library (WIP)
+- `parin.addons`: Extras like microui
+- `parin.backend`: Backend functionality
+- `parin.bindings`: Bindings like Emscripten
+- `parin.joka`: Joka library
 
-The `parin.engine` and `parin.types` modules are the only mandatory ones for creating a game.
-They are referred to as the core modules.
+The `parin.engine`, `parin.types` modules are the only mandatory ones for creating a game.
 All other modules are optional and can be included as needed.
-The `import parin` statement in the first example is a convenience import that includes all modules in the above list.
+The `import parin` statement in the first example is a convenience import that includes `parin.engine`, `parin.types`, and `parin.ui`.
 
 > [!NOTE]
-> The core modules are the most stable ones. Other modules may change as the engine grows.
+> The `parin.engine` and `parin.types` modules are the most stable ones. Other modules may change as the engine grows.
 
 ## Input
 
-Parin provides a set of input functions. These include:
+Parin provides a set of input functions and types. These include:
 
 ```d
 /// Returns the current mouse position on the window.
@@ -179,11 +186,20 @@ Vec2 wasdReleased();
 Keyboard dequeuePressedKey();
 /// Returns the next recently pressed character.
 dchar dequeuePressedRune();
+
+/// Maps one logical action to gamepad and keyboard inputs.
+struct InputBinding {
+    Gamepad button;   /// The gamepad button.
+    Keyboard[4] keys; /// The keyboard keys.
+
+    /// Sets the gamepad button and keys to the given values.
+    this(Gamepad button, Keyboard[] keys...);
+}
 ```
 
-Below are examples showing how to use these input functions to move text.
+Below are examples showing how to to move text.
 
-- Using the Mouse
+- Using the mouse:
 
     ```d
     bool update(float dt) {
@@ -192,7 +208,7 @@ Below are examples showing how to use these input functions to move text.
     }
     ```
 
-- Using the Arrow Keys
+- Using the arrow keys:
 
     ```d
     auto position = Vec2(8);
@@ -205,7 +221,7 @@ Below are examples showing how to use these input functions to move text.
     }
     ```
 
-- Using the WASD Keys
+- Using the WASD keys:
 
     ```d
     auto position = Vec2(8);
@@ -218,7 +234,7 @@ Below are examples showing how to use these input functions to move text.
     }
     ```
 
-- Using the WASD or Arrow Keys
+- Using the WASD or arrow keys
 
     ```d
     auto position = Vec2(8);
@@ -232,7 +248,7 @@ Below are examples showing how to use these input functions to move text.
 
 ## Drawing
 
-Parin provides a set of drawing functions. These include:
+Parin provides a set of drawing functions and types. These include:
 
 ```d
 /// Attaches the given camera and makes it active.
@@ -321,15 +337,8 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions());
 /// Draws a tile map with a texture. The camera controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions());
-```
 
-To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
-
-### Draw Options
-
-Draw options are used for configuring drawing parameters.
-
-```d
+/// Options for configuring drawing parameters.
 struct DrawOptions {
     /// The origin point of the drawn object. This value can be used to force a specific origin.
     Vec2 origin = Vec2(0.0f);
@@ -345,12 +354,19 @@ struct DrawOptions {
     Flip flip = Flip.none;
     /// A value that can be used by depth sorting functions.
     ubyte layer = 0;
+
+    /// Sets the rotation to the given value.
+    this(float rotation, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the scale to the given value.
+    this(Vec2 scale, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the color to the given value.
+    this(Rgba color, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the flip to the given value.
+    this(Flip flip, Hook hook = Hook.topLeft, ubyte layer = 0);
+    /// Sets the hook to the given value.
+    this(Hook hook, ubyte layer = 0);
 }
-```
 
-There is also an additional options type for text drawing.
-
-```d
 /// Options for configuring extra drawing parameters for text.
 struct TextOptions {
     /// Controls the visibility ratio of the text when visibilityCount is zero, where 0.0 means fully hidden and 1.0 means fully visible.
@@ -363,10 +379,18 @@ struct TextOptions {
     Alignment alignment = Alignment.left;
     /// Indicates whether the content of the text flows in a right-to-left direction.
     bool isRightToLeft = false;
+
+    /// Sets the visibility ratio to the given value.
+    this(float visibilityRatio);
+    /// Sets the alignment (and its width) to the given value(s).
+    this(Alignment alignment, int alignmentWidth = 0);
 }
 ```
 
-- Changing the Origin and Scale
+To change the default filtering mode for textures, fonts or viewports, call `setDefaultFilter`.
+Below are some drawing examples.
+
+- Changing the origin and scale:
 
     ```d
     bool update(float dt) {
@@ -377,7 +401,7 @@ struct TextOptions {
     }
     ```
 
-- Changing the Origin and Visibility Ratio
+- Changing the origin and visibility ratio
 
     ```d
     bool update(float dt) {
@@ -414,9 +438,9 @@ float masterVolume();
 void setMasterVolume(float value);
 ```
 
-Below are examples showing how to use these sound functions.
+Below is a sound example.
 
-- Playing a Sound
+- Playing a sound:
 
     ```d
     SoundId sound;
