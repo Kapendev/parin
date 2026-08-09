@@ -124,8 +124,8 @@ sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-deve
 ## Documentation
 
 Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
-For more details, see the [tour page](TOUR.md).
-The [DDOX](https://github.com/dlang/ddox) documentation engine can also be used to create an overview with:
+For more details, see the [tour page](TOUR.md) or the [DDOX page](https://kapendev.xyz/parin/).
+The [DDOX](https://github.com/dlang/ddox) documentation engine can also be used locally to create an overview with:
 
 ```sh
 git clone --depth=1 https://github.com/Kapendev/parin parin_package
