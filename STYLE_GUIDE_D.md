@@ -11,7 +11,7 @@ This guide should be used as a reference, not as a hard rule.
 - Comments are always above attributes and functions
 - Use `// --- Title Case` for splitting code into sections
 - Use `// +-- Title Case` for creating a section with an end. The section should end with `// +--`
-- Use `// @--` for attribute groups that use `:`
+- Use `// @-- Optional Title` for attribute groups that use `:`
 
 ## Names
 
@@ -50,7 +50,7 @@ Organize members in this order:
 
 With `alias this` being part of the variables,
 and with `@disable this();` being the first constructor (if it exists).
-Immutables variables can be placed after enums.
+More information about the order of some of the above members is available in the next section.
 
 ## Module Layout
 
@@ -101,6 +101,9 @@ _Attached!T Attached(T)(ref T object) {
 
 In this specific case it's fine to have functions after the struct definition and then continue with other structs or classes.
 
+- About the variables section: the order of them should be mutable varibles -> immutable variables.
+- About the enum section: the order of them should be single enums -> enum groups.
+
 ## Project Layout
 
 - Avoid cross-module dependencies
@@ -111,8 +114,9 @@ In this specific case it's fine to have functions after the struct definition an
 
 - Attributes and pragmas should always be on a different line than a function or type definition
 - Prefer groupping attributes with `{}`
-- Prefer using `:` only at the start of an implementation section (see structs, classes and modules)
-- If `:` needs to be used more than one time in the same implementation section, then add a `// @--` comment above every use of `:`
+- Prefer using only one `:` at the start of an implementation section (see structs, classes and modules)
+- Add a `// @--` comment above every use of `:` inside the module scope
+- The `// @--` comment can be skipped inside structs and classes
 - Function aliases should be inside attribute groups, even if it's only one function
 - Preferred order of attributes and pragmas: `pragma(xyz) @safe nothrow @nogc @customAttribute`
 - Never use the `pure` attribute

@@ -977,6 +977,95 @@ struct TileMap {
     auto tiles(Rect viewArea, Sz layerId = 0);
 }
 
+/// A single sprite animation, defined by its position in an atlas and playback settings.
+struct SpriteAnimation {
+    /// The atlas row this animation plays from.
+    ubyte frameRow;
+    /// The number of frames in the animation.
+    ubyte frameCount;
+    /// The playback speed of the animation.
+    ubyte frameSpeed;
+    /// Whether the animation loops.
+    bool canRepeat;
+}
+
+/// A sprite with support for animation, positioning, and movement.
+struct Sprite {
+    /// The width of the sprite.
+    short width;
+    /// The height of the sprite.
+    short height;
+    /// X offset in the texture atlas.
+    ushort atlasLeft;
+    /// Y offset in the texture atlas.
+    ushort atlasTop;
+    /// The current animation progress. The value is between 0 and animation.frameCount (exclusive).
+    float frameProgress = 0.0f;
+    /// The pause state of the sprite.
+    bool isPaused;
+    /// The current animation.
+    SpriteAnimation animation;
+    /// The position of the sprite.
+    Vec2 position;
+    /// A value representing the origin point of the drawn object when origin is zero.
+    Hook hook;
+    /// A value representing flipping orientations.
+    Flip flip;
+
+    /// Initializes the sprite with the specified size, atlas position, and optional world position.
+    this(short width, short height, ushort atlasLeft, ushort atlasTop, Vec2 position = Vec2(), Hook hook = Hook.topLeft);
+    /// Initializes the sprite with the specified size, atlas position, and world position.
+    this(short width, short height, ushort atlasLeft, ushort atlasTop, float x, float y, Hook hook = Hook.topLeft);
+    /// Initializes the sprite with the specified size, atlas position, and world position.
+    this(short width, short height, ushort atlasLeft, ushort atlasTop, Hook hook);
+
+    /// Returns a reference to the x component of the sprite position.
+    ref float x();
+    /// Returns a reference to the y component of the sprite position.
+    ref float y();
+    /// Returns the size of the sprite as a 2D vector.
+    Vec2 size();
+    /// Returns the bounding rectangle of the sprite, adjusted by the hook.
+    Rect area();
+    /// Returns true if the sprite has a non-zero size.
+    bool hasSize();
+
+    /// Returns true if the sprite is currently active (running).
+    bool isActive();
+    /// Returns true if the sprite has an animation assigned.
+    bool hasAnimation();
+    /// Returns true if the sprite is on the first animation frame.
+    bool hasFirstFrame();
+    /// Returns true if the sprite is on the last animation frame.
+    bool hasLastFrame();
+    /// Returns true if the sprite is on the first animation frame progress.
+    bool hasFirstFrameProgress();
+    /// Returns true if the sprite is on the last animation frame progress.
+    bool hasLastFrameProgress();
+
+    /// Returns the current animation frame of the sprite.
+    int frame();
+    /// Resets the animation frame of the sprite.
+    void reset(int resetFrame = 0);
+    /// Starts playing a new animation, optionally preserving current frame progress.
+    void play(SpriteAnimation newAnimation, bool canKeepProgress = false);
+    /// Stops the current animation of the sprite.
+    void stop();
+    /// Pauses the current animation of the sprite.
+    void pause();
+    /// Resumes the current animation of the sprite.
+    void resume();
+    /// Toggles the paused state of the sprite.
+    void toggleIsPaused();
+    /// Updates the state of the sprite.
+    void update(float dt);
+
+    /// Moves the sprite to follow the target position at the specified speed.
+    void followPosition(Vec2 target, float delta);
+    /// Moves the sprite to follow the target position with gradual slowdown.
+    void followPositionWithSlowdown(Vec2 target, float delta, float slowdown);
+}
+
 /// A set of 4 integer margins.
 struct Margin {
     /// The left side.

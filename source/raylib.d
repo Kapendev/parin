@@ -5,7 +5,8 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-// Mostly a thing for porting raylib-d games to the web.
+// Used to be a thing for porting raylib-d games to the web.
+// You can now use: https://github.com/Kapendev/raylib-d-template
 module raylib;
 
 public import parin.bindings.rl;

@@ -119,7 +119,7 @@ Parin consists of the following modules:
 
 The `parin.engine`, `parin.types` modules are the only mandatory ones for creating a game.
 All other modules are optional and can be included as needed.
-The `import parin` statement in the first example is a convenience import that includes `parin.engine`, `parin.types`, and `parin.ui`.
+The `import parin` statement in the first example is a convenience module that publicly imports `parin.engine`, `parin.types`, and `parin.ui`.
 
 > [!NOTE]
 > The `parin.engine` and `parin.types` modules are the most stable ones. Other modules may change as the engine grows.

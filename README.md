@@ -74,24 +74,24 @@ dub init -t parin -- entity
 
 ### Install Without DUB
 
-Create a new folder and run inside the following commands to...
+Create a new folder and run inside the following commands.
 
-1. Prepare the folder:
+Prepare the folder:
 
-    ```sh
-    git clone --depth 1 https://github.com/Kapendev/parin parin_package
-    ./parin_package/scripts/prepare
-    # Or: .\parin_package\scripts\prepare.bat
-    ```
+```sh
+git clone --depth 1 https://github.com/Kapendev/parin parin_package
+./parin_package/scripts/prepare
+# Or: .\parin_package\scripts\prepare.bat
+```
 
-2. Run the project:
+Run the project:
 
-    ```sh
-    ./parin_package/scripts/run
-    # Or: .\parin_package\scripts\run.bat
-    # Or: ./parin_package/scripts/run ldc2 macos
-    # Or: ./parin_package/scripts/run opend
-    ```
+```sh
+./parin_package/scripts/run
+# Or: .\parin_package\scripts\run.bat
+# Or: ./parin_package/scripts/run ldc2 macos
+# Or: ./parin_package/scripts/run opend
+```
 
 ### Required Libraries on Linux
 

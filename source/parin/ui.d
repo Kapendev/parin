@@ -17,8 +17,6 @@ import rl = parin.bindings.rl;
 import parin.joka.memory;
 import parin.engine;
 
-@safe nothrow:
-
 UiState* _uiState;
 UiState* _uiPreviousState;
 
@@ -40,6 +38,9 @@ enum UiDragLimit: ubyte {
     customAndX,   /// Limited to custom limits and on the X-axis.
     customAndY,   /// Limited to custom limits and on the Y-axis.
 }
+
+// @--
+@safe nothrow:
 
 // TODO: Have to think what to do with it when I rewrite things. Pointer or global thing like microui.
 //   Probably microui thing because I want to keep the options structs values.

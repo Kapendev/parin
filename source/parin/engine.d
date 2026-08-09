@@ -19,6 +19,8 @@ public import parin.types;
 
 EngineState* _engineState;
 
+/// A timer with pause/resume and repeat support.
+alias Timer = GTimer!elapsedTickTime;
 /// A container type holding scheduled engine tasks.
 alias EngineTasks = GenList!(
     Task,
@@ -29,8 +31,13 @@ alias EngineTasks = GenList!(
 alias EngineTaskId = GenIndex;
 /// Type representing the internal engine flags.
 alias EngineFlags = uint;
-/// A timer with pause/resume and repeat support.
-alias Timer = GTimer!elapsedTickTime;
+
+/// The engine font identifier.
+enum engineFont = FontId(ResourceId(1));
+/// The second engine font identifier.
+enum engineFontSmall = FontId(ResourceId(2));
+/// The engine viewport identifier.
+enum engineViewport = ViewportId(ResourceId(1));
 
 // +-- Engine Defaults
 enum defaultEngineTitle           = "Parin";
@@ -69,13 +76,6 @@ enum defaultEngineDprintFont           = engineFont;
 enum defaultEngineDebugColor1 = white.alpha(120);
 enum defaultEngineDebugColor2 = black.alpha(170);
 // +--
-
-/// The engine font identifier.
-enum engineFont = FontId(ResourceId(1));
-/// The second engine font identifier.
-enum engineFontSmall = FontId(ResourceId(2));
-/// The engine viewport identifier.
-enum engineViewport = ViewportId(ResourceId(1));
 
 ///  The internal engine flags.
 enum EngineFlag : EngineFlags {

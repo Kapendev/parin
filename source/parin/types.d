@@ -188,6 +188,7 @@ enum Gamepad : ubyte {
     middle, /// The middle button.
 }
 
+// @--
 @safe nothrow @nogc:
 
 /// Maps one logical action to gamepad and keyboard inputs.
