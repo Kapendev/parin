@@ -92,6 +92,10 @@ void printf(StdStream stream = StdStream.output, A...)(InterpolationHeader heade
 /// For details on formatting, see the `fmtIntoBuffer` function.
 @trusted
 void printfln(StdStream stream = StdStream.output, A...)(IStr fmtStr, A args) {
+    version (JokaPrintfOnly) {
+        static assert(0, "Some `print`, `println`, and `printfln` style functions are disabled under `JokaPrintfOnly`. Use `printf` style functions.");
+    }
+
     auto text = fmtStr.fmt(args);
     auto textData = cast(Str) text.ptr[0 .. defaultAsciiFmtBufferSize];
     if (text.length >= textData.length - eolStr.length) return;
@@ -130,6 +134,10 @@ void printfln(StdStream stream = StdStream.output, A...)(InterpolationHeader hea
 
 /// Prints text to stdout.
 void print(StdStream stream = StdStream.output, A...)(A args) {
+    version (JokaPrintfOnly) {
+        static assert(0, "Some `print`, `println`, and `printfln` style functions are disabled under `JokaPrintfOnly`. Use `printf` style functions.");
+    }
+
     static if (is(A[0] == Sep)) {
         static foreach (i, arg; args[1 .. $]) {
             if (i) printf!stream("{}", args[0].value);
@@ -144,6 +152,10 @@ void print(StdStream stream = StdStream.output, A...)(A args) {
 
 /// Prints text with a new line at the end to stdout.
 void println(StdStream stream = StdStream.output, A...)(A args) {
+    version (JokaPrintfOnly) {
+        static assert(0, "Some `print`, `println`, and `printfln` style functions are disabled under `JokaPrintfOnly`. Use `printf` style functions.");
+    }
+
     print!stream(args);
     print!stream(eolStr);
 }

@@ -838,7 +838,7 @@ void closeWindow() {
     _engineState = null;
     bk.closeWindow();
     static if (isTrackingMemory) {
-        if (isLogging) print(memoryTrackingInfo(filter));
+        if (isLogging) printf(memoryTrackingInfo(filter));
     }
 }
 
@@ -1809,7 +1809,7 @@ bool didLoadOrSaveSucceed(Fault fault, IStr message) {
                 dprintln(message);
             }
         } else {
-            eprintln(message);
+            eprintf("{}{}", message, eolStr);
         }
     }
     return false;
@@ -2528,7 +2528,8 @@ void dprintfln(A...)(IStr fmtStr, A args) {
             _engineState.dprintLineCount -= 1;
         }
     }
-    sprintfln(_engineState.dprintBuffer, fmtStr, args);
+    sprintf(_engineState.dprintBuffer, fmtStr, args);
+    sprintf(_engineState.dprintBuffer, "\n");
     _engineState.dprintLineCount += 1;
 }
 
@@ -2542,7 +2543,19 @@ void dprintln(A...)(A args) {
             _engineState.dprintLineCount -= 1;
         }
     }
-    sprintln(_engineState.dprintBuffer, args);
+
+    // NOTE: Copy-paste of `sprint` to avoid errors with `JokaPrintfOnly` version.
+    //   The dprint*ln functions are a special case because the "ln" part is important.
+    static if (is(A[0] == Sep)) {
+        foreach (i, arg; args[1 .. $]) {
+            if (i) sprintf(_engineState.dprintBuffer, "{}", args[0].value);
+            sprintf(_engineState.dprintBuffer, "{}", arg);
+        }
+    } else {
+        foreach (arg; args) sprintf(_engineState.dprintBuffer, "{}", arg);
+    }
+    sprintf(_engineState.dprintBuffer, "\n");
+
     _engineState.dprintLineCount += 1;
 }
 
@@ -2669,14 +2682,15 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     drawRect(Rect(a.toCanvasPoint(camera), s), defaultEngineDebugColor2, 1);
     drawText(text, screenPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
-        printfln(
-            "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {})",
+        printf(
+            "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {}){}",
             cast(int) a.x,
             cast(int) a.y,
             cast(int) b.x,
             cast(int) b.y,
             cast(int) s.x,
             cast(int) s.y,
+            eolStr,
         );
     }
 }
@@ -2696,12 +2710,13 @@ void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera c
     drawRect(Rect(tile.position.toCanvasPoint(camera), tile.size), defaultEngineDebugColor2, 1);
     drawText(text, screenPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
-        printfln(
-            "Debug Tile Info\n Grid: Vec2({}, {})\n World: Vec2({}, {})",
+        printf(
+            "Debug Tile Info\n Grid: Vec2({}, {})\n World: Vec2({}, {}){}",
             cast(int) gridPoint.x,
             cast(int) gridPoint.y,
             cast(int) tile.x,
             cast(int) tile.y,
+            eolStr,
         );
     }
 }

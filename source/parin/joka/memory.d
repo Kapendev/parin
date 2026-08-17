@@ -332,7 +332,7 @@ void jokaFree(void* ptr, Sz oldSize = 0, IStr file = __FILE__, Sz line = __LINE_
     /// Allocates memory for a value without initializing it.
     T* jokaMakeBlank(T)(IStr file = __FILE__, Sz line = __LINE__) {
         version (JokaMallocOnly) {
-            static assert(0, "Templated single-allocation functions (`jokaMake*`) are disabled under `JokaMallocOnly`. Use `jokaMalloc` or containers.");
+            static assert(0, "Templated single-allocation functions are disabled under `JokaMallocOnly`. Use `jokaMalloc` or containers.");
         }
         return cast(T*) jokaMalloc(T.sizeof, file, line);
     }
@@ -2503,6 +2503,10 @@ IStr sprintf(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args, I
 /// Prints formatted text with a new line at the end to the given buffer.
 /// For details on formatting, see the `fmtIntoBuffer` function.
 IStr sprintfln(S = LStr, A...)(ref S buffer, IStr fmtStr, A args) {
+    version (JokaPrintfOnly) {
+        static assert(0, "Some `print`, `println`, and `printfln` style functions are disabled under `JokaPrintfOnly`. Use `printf` style functions.");
+    }
+
     auto text = sprintf(buffer, fmtStr, args);
     if (text.length == 0) return buffer[0 .. 0];
     static if (isStrContainerType!S) {
@@ -2546,6 +2550,10 @@ IStr sprintfln(S = LStr, A...)(ref S buffer, InterpolationHeader header, A args,
 
 /// Prints text to the given buffer.
 void sprint(S = LStr, A...)(ref S buffer, A args) {
+    version (JokaPrintfOnly) {
+        static assert(0, "Some `print`, `println`, and `printfln` style functions are disabled under `JokaPrintfOnly`. Use `printf` style functions.");
+    }
+
     static if (is(A[0] == Sep)) {
         foreach (i, arg; args[1 .. $]) {
             if (i) sprintf(buffer, "{}", args[0].value);
@@ -2558,6 +2566,10 @@ void sprint(S = LStr, A...)(ref S buffer, A args) {
 
 /// Prints text with a new line at the end to the given buffer.
 void sprintln(S = LStr, A...)(ref S buffer, A args) {
+    version (JokaPrintfOnly) {
+        static assert(0, "Some `print`, `println`, and `printfln` style functions are disabled under `JokaPrintfOnly`. Use `printf` style functions.");
+    }
+
     sprint(buffer, args);
     sprint(buffer, "\n");
 }
