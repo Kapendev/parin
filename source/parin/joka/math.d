@@ -161,14 +161,6 @@ struct Rgba {
 
     @safe nothrow @nogc:
 
-    @trusted
-    IStr toStr() {
-        IStr[4] fmtStrs = ["({}", " {}", " {}", " {})"];
-        return fmtSignedGroup(fmtStrs, r, g, b, a);
-    }
-
-    alias toString = toStr;
-
     pragma(inline, true) {
         this(ubyte r, ubyte g, ubyte b, ubyte a = 255) {
             this.r = r;
@@ -253,18 +245,6 @@ struct GVec2(T) {
     alias This = typeof(this);
 
     @safe nothrow @nogc:
-
-    @trusted
-    IStr toStr() {
-        IStr[2] fmtStrs = ["({}", " {})"];
-        static if (__traits(isFloating, T)) {
-            return fmtFloatingGroup(fmtStrs, x, y);
-        } else {
-            return fmtSignedGroup(fmtStrs, x, y);
-        }
-    }
-
-    alias toString = toStr;
 
     pragma(inline, true) {
         this(T x, T y) {
@@ -440,18 +420,6 @@ struct GVec3(T) {
     alias This = typeof(this);
 
     @safe nothrow @nogc:
-
-    @trusted
-    IStr toStr() {
-        IStr[3] fmtStrs = ["({}", " {}", " {})"];
-        static if (__traits(isFloating, T)) {
-            return fmtFloatingGroup(fmtStrs, x, y, z);
-        } else {
-            return fmtSignedGroup(fmtStrs, x, y, z);
-        }
-    }
-
-    alias toString = toStr;
 
     pragma(inline, true) {
         this(T x, T y, T z) {
@@ -632,18 +600,6 @@ struct GVec4(T) {
 
     @safe nothrow @nogc:
 
-    @trusted
-    IStr toStr() {
-        IStr[4] fmtStrs = ["({}", " {}", " {}", " {})"];
-        static if (__traits(isFloating, T)) {
-            return fmtFloatingGroup(fmtStrs, x, y, z, w);
-        } else {
-            return fmtSignedGroup(fmtStrs, x, y, z, w);
-        }
-    }
-
-    alias toString = toStr;
-
     pragma(inline, true) {
         this(T x, T y, T z, T w) {
             this.x = x;
@@ -821,18 +777,6 @@ struct GRect(P, S = P) if (P.sizeof >= S.sizeof) {
     alias This     = typeof(this);
 
     @safe nothrow @nogc:
-
-    @trusted
-    IStr toStr() {
-        IStr[4] fmtStrs = ["P({}", " {})", " S({}", " {})"];
-        static if (__traits(isFloating, P)) {
-            return fmtFloatingGroup(fmtStrs, position.x, position.y, size.x, size.y);
-        } else {
-            return fmtSignedGroup(fmtStrs, position.x, position.y, size.x, size.y);
-        }
-    }
-
-    alias toString = toStr;
 
     pragma(inline, true) {
         this(GVec2!P position, GVec2!S size) {
@@ -1155,18 +1099,6 @@ struct GCirc(T) {
 
     @safe nothrow @nogc:
 
-    @trusted
-    IStr toStr() {
-        IStr[3] fmtStrs = ["P({}", " {})", " R({})"];
-        static if (__traits(isFloating, T)) {
-            return fmtFloatingGroup(fmtStrs, position.x, position.y, radius);
-        } else {
-            return fmtSignedGroup(fmtStrs, position.x, position.y, radius);
-        }
-    }
-
-    alias toString = toStr;
-
     pragma(inline, true) {
         this(GVec2!T position, T radius) {
             this.position = position;
@@ -1215,18 +1147,6 @@ struct GLine(T) {
     GVec2!T b; /// The end point of the line.
 
     @safe nothrow @nogc:
-
-    @trusted
-    IStr toStr() {
-        IStr[4] fmtStrs = ["A({}", " {})", " B({}", " {})"];
-        static if (__traits(isFloating, T)) {
-            return fmtFloatingGroup(fmtStrs, a.x, a.y, b.x, b.y);
-        } else {
-            return fmtSignedGroup(fmtStrs, a.x, a.y, b.x, b.y);
-        }
-    }
-
-    alias toString = toStr;
 
     pragma(inline, true) {
         this(GVec2!T a, GVec2!T b) {

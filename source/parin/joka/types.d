@@ -1250,33 +1250,54 @@ template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral
 template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
 // === END IES Support
 
-/// Converts the value to its string representation.
+/// Converts the given value to a temporary string representation.
+/// Assume that the returned string will be invalid after the next call to this function.
 @trusted
 IStr toStr(T)(T value) {
     static assert(
-        !(is(T : const(A)[N], A, Sz N)), // !isArrayType
+        !(is(T : const(A)[N], A, Sz N)),
         "Static arrays can't be passed to `toStr`. This may also happen indirectly when using printing functions. Convert to a slice first."
     );
-    static if (is(T == enum)) { // isEnumType
+
+    static if (is(T == enum)) {
         return enumToStr(value);
-    } else static if (is(immutable(T) == immutable(char))) { // isCharType
+    } else static if (is(immutable(T) == immutable(char))) {
         return charToStr(value);
-    } else static if (is(immutable(T) == immutable(bool))) { // isBoolType
+    } else static if (is(immutable(T) == immutable(bool))) {
         return boolToStr(value);
-    } else static if (__traits(isUnsigned, T)) { // isUnsignedType
+    } else static if (__traits(isUnsigned, T)) {
         return unsignedToStr(value);
-    } else static if (__traits(isIntegral, T)) { // isSignedType
+    } else static if (__traits(isIntegral, T)) {
         return signedToStr(value);
-    } else static if (__traits(isFloating, T)) { // isFloating
+    } else static if (__traits(isFloating, T)) {
         return floatingToStr(value, 2);
     } else static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {
         return value.toString();
-    } else static if (is(T : IStr)) { // isStrType
+    } else static if (is(T : IStr)) {
         return value;
-    } else static if (is(T : IStrz)) { // isStrzType
+    } else static if (is(T : IStrz)) {
         return strzToStr(value);
+    } else static if (is(T == struct)) {
+        static if (T.tupleof.length == 0) {
+            return T.stringof;
+        } else {
+            static char[256] buffer = void;
+            IStr temp = void;
+
+            buffer[0] = '(';
+            auto bufferLength = Sz(1);
+            static foreach (i, TT; T.tupleof) {
+                temp = value.tupleof[i].toStr();
+                buffer[bufferLength .. bufferLength + temp.length] = temp;
+                bufferLength += temp.length;
+                buffer[bufferLength++] = ' ';
+            }
+
+            buffer[bufferLength - 1] = ')';
+            return buffer[0 .. bufferLength];
+        }
     } else {
         static assert(0, "Type doesn't implement the `toStr` function.");
     }

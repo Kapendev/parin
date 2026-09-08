@@ -931,6 +931,8 @@ struct List(T) {
         }
     }
 
+    alias toString = toStr;
+
     // NOTE: This is the `sliceOps` mixin. It was replaced with this to make compile-times faster.
     //   Original: mixin sliceOps!(List!T, T);
     pragma(inline, true) @trusted nothrow @nogc {
@@ -1113,6 +1115,8 @@ struct BufferList(T) {
         }
     }
 
+    alias toString = toStr;
+
     void free(IStr file = __FILE__, Sz line = __LINE__) {}
     void ignoreLeak() {}
     MemoryContext capture() { return MemoryContext(); }
@@ -1268,6 +1272,8 @@ struct FixedList(T, Sz N) {
             assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
         }
     }
+
+    alias toString = toStr;
 
     void free(IStr file = __FILE__, Sz line = __LINE__) {}
     void ignoreLeak() {}
