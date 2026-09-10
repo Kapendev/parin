@@ -10,7 +10,7 @@ bool update(float dt) {
     // Change the debug mode.
     if (Keyboard.space.isPressed) toggleIsDebugMode();
     // Update based on debug mode.
-    if (debugMode) drawDebugEngineInfo(Vec2(8));
+    if (isDebugMode) drawDebugEngineInfo(Vec2(8));
     return false;
 }
 
