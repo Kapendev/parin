@@ -2725,7 +2725,7 @@ mixin template runGame(
 }
 
 /// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
-mixin template runGameMinimal(
+mixin template runDemo(
     alias updateFunc,
     IStr title = defaultEngineTitle,
     bool vsyncOff = false,
@@ -2737,9 +2737,6 @@ mixin template runGameMinimal(
         defaultEngineWidth,
         defaultEngineHeight,
         title,
-        null,
-        null,
-        null,
         vsyncOff
     );
 }

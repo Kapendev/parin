@@ -10,5 +10,6 @@ bool update(float dt) {
     return false;
 }
 
-// There is also a `runGameMinimal` mixin for cases that don't need all the options.
+// There is also a `runDemo` mixin for cases that don't need all the options.
+// Example: `mixin runDemo!update`
 mixin runGame!(null, update, null);
