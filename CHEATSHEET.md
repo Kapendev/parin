@@ -415,33 +415,8 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 /// Draws text with the default font at the given position with the provided draw options.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-/// Append a formatted line to the overlay text buffer.
-void dprintfln(A...)(IStr fmtStr, A args);
-/// Append a line to the overlay text buffer.
-void dprintln(A...)(A args);
-/// Returns the contents of the overlay text buffer.
-IStr dprintBuffer();
-/// Sets the font of the overlay text.
-void setDprintFont(FontId value);
-/// Sets the position of the overlay text.
-void setDprintPosition(Vec2 value);
-/// Sets the drawing options for the overlay text.
-void setDprintOptions(DrawOptions value);
-/// Sets the maximum number of overlay text lines.
-void setDprintLineCountLimit(Sz value);
-/// Sets the visibility state of the overlay text.
-void setDprintVisibility(bool value);
-/// Toggles the visibility state of the overlay text.
-void toggleDprintVisibility();
-/// Clears the overlay text.
-void clearDprintBuffer();
-/// Draws the overlay text now instead of at the end of the frame.
-void drawDprintBuffer();
-
 /// Draws debug engine information at the given position with the provided draw options.
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
-/// Draws debug tile information at the given position with the provided draw options.
-void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 
 /// Draws a tile with a texture.
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions());

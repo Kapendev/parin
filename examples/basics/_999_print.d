@@ -10,21 +10,21 @@ bool update(float dt) {
     auto buffer = FStr!256();
     auto i = 0;
 
-    i = 1;
+    i++;
     printf(i"Time $(i): $(elapsedTime)\n");
     print(i"Time $(i): $(elapsedTime)\n");
     printfln(i"Time $(i): $(elapsedTime)");
     println(i"Time $(i): $(elapsedTime)");
     println();
 
-    i = 2;
+    i++;
     eprintf(i"Time $(i): $(elapsedTime)\n");
     eprint(i"Time $(i): $(elapsedTime)\n");
     eprintfln(i"Time $(i): $(elapsedTime)");
     eprintln(i"Time $(i): $(elapsedTime)");
     eprintln();
 
-    i = 3;
+    i++;
     sprintf(buffer, i"Time $(i): $(elapsedTime)\n");
     sprint(buffer, i"Time $(i): $(elapsedTime)\n");
     sprintfln(buffer, i"Time $(i): $(elapsedTime)");
@@ -32,15 +32,11 @@ bool update(float dt) {
     sprintln(buffer);
     println(buffer);
 
-    i = 4;
-    dprintfln(i"Time $(i): $(elapsedTime)");
-    dprintln(i"Time $(i): $(elapsedTime)");
-
-    i = 5;
+    i++;
     drawText(i"Time $(i): $(elapsedTime)", resolution * 0.5);
     drawText(engineFont, i"Time $(i): $(elapsedTime)", resolution * 0.5 + Vec2(0, 32));
 
-    i = 6;
+    i++;
     fmt(i"Time $(i): $(elapsedTime)");
     fmtIntoBuffer(buffer[], i"Time $(i): $(elapsedTime)");
     fmtIntoList(buffer, false,  i"Time $(i): $(elapsedTime)");

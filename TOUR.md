@@ -303,33 +303,8 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 /// Draws text with the default font at the given position with the provided draw options.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
-/// Append a formatted line to the overlay text buffer.
-void dprintfln(A...)(IStr fmtStr, A args);
-/// Append a line to the overlay text buffer.
-void dprintln(A...)(A args);
-/// Returns the contents of the overlay text buffer.
-IStr dprintBuffer();
-/// Sets the font of the overlay text.
-void setDprintFont(FontId value);
-/// Sets the position of the overlay text.
-void setDprintPosition(Vec2 value);
-/// Sets the drawing options for the overlay text.
-void setDprintOptions(DrawOptions value);
-/// Sets the maximum number of overlay text lines.
-void setDprintLineCountLimit(Sz value);
-/// Sets the visibility state of the overlay text.
-void setDprintVisibility(bool value);
-/// Toggles the visibility state of the overlay text.
-void toggleDprintVisibility();
-/// Clears the overlay text.
-void clearDprintBuffer();
-/// Draws the overlay text now instead of at the end of the frame.
-void drawDprintBuffer();
-
 /// Draws debug engine information at the given position with the provided draw options.
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
-/// Draws debug tile information at the given position with the provided draw options.
-void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 
 /// Draws a tile with a texture.
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions());
@@ -568,7 +543,7 @@ By default, leaks will be printed when the game ends only if they are detected.
 /// Returns true if memory tracking logs are enabled.
 bool isLoggingMemoryTrackingInfo();
 /// Enables or disables memory tracking logs.
-void setIsLoggingMemoryTrackingInfo(bool value, IStr pathFilter = "");
+void setIsLoggingMemoryTrackingInfo(bool value);
 ```
 
 Example output:
@@ -578,16 +553,6 @@ Memory Leaks: 4 (total 699 bytes, 5 ignored)
   1 leak, 20 bytes, source/app.d:24
   1 leak, 53 bytes, source/app.d:31
   2 leak, 32 bytes, source/app.d:123
-```
-
-The leak summary above can be filtered, showing only leaks with paths containing the filter string.
-For example, `setIsLoggingMemoryTrackingInfo(true, "app.d")` shows only leaks with `"app.d"` in the path.
-Specific allocations can be ignored with `ignoreLeak` like this:
-
-```d
-// struct Game { int hp; int mp; }
-// Game* game;
-game = jokaMake!Game().ignoreLeak();
 ```
 
 Allocations can also be grouped to make it easier to understand what each allocation is used for with `ScopedAllocationGroup` like this:

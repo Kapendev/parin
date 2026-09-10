@@ -43,7 +43,6 @@ enum engineViewport = ViewportId(ResourceId(1));
 enum defaultEngineTitle           = "Parin";
 enum defaultEngineWidth           = 1280;
 enum defaultEngineHeight          = 720;
-enum defaultEngineVsync           = true;
 enum defaultEngineFpsMax          = 60;
 enum defaultEngineWindowMinWidth  = 320;
 enum defaultEngineWindowMinHeight = 180;
@@ -67,11 +66,6 @@ enum defaultEngineEngineTasksCapacity          = (64 / defaultEngineResourceScal
 enum defaultEngineAssetsPathCapacity           = (8  / defaultEngineResourceScaleDenominator) * kilobyte;
 enum defaultEngineScreenshotTargetPathCapacity = (2  / defaultEngineResourceScaleDenominator) * kilobyte;
 enum defaultEngineArenaCapacity                = (4  / defaultEngineResourceScaleDenominator) * megabyte;
-enum defaultEngineDprintCapacity               = (4  / defaultEngineResourceScaleDenominator) * kilobyte;
-
-enum defaultEngineDprintPosition       = Vec2(3, 3);
-enum defaultEngineDprintLineCountLimit = 13;
-enum defaultEngineDprintFont           = engineFont;
 
 enum defaultEngineDebugColor1 = white.alpha(120);
 enum defaultEngineDebugColor2 = black.alpha(170);
@@ -88,8 +82,7 @@ enum EngineFlag : EngineFlags {
     isNullFontVisible           = 0x000020,
     isLoggingLoadOrSaveFaults   = 0x000040,
     isLoggingMemoryTrackingInfo = 0x000080,
-    isLoggingWithDprint         = 0x000100,
-    isDebugMode                 = 0x000200,
+    isDebugMode                 = 0x000100,
 }
 
 /// Depth sorting modes.
@@ -99,9 +92,6 @@ enum DepthSortMode : ubyte {
     topDownFastest, /// Sorts with: Y
     layered,        /// Sorts with: Layer + Call Order
 }
-
-// @--
-@safe:
 
 /// Internal representation of a viewport within the engine.
 struct EngineViewport {
@@ -116,9 +106,6 @@ struct EngineViewport {
 struct EngineState {
     EngineFlags flags = defaultEngineFlags;
     UpdateFunc updateFunc;
-    CallFunc debugModeFunc;
-    CallFunc debugModeBeginFunc;
-    CallFunc debugModeEndFunc;
     Keyboard debugModeKey = defaultEngineDebugModeKey;
     bool debugModePreviousState;
     bool debugModeEnteringFrameState;
@@ -140,7 +127,6 @@ struct EngineState {
     Camera userCamera;
     ViewportId userViewport;
     Fault lastLoadOrSaveFault;
-    IStr memoryTrackingInfoFilter;
     FStr!defaultEngineAssetsPathCapacity assetsPath;
     FStr!defaultEngineScreenshotTargetPathCapacity screenshotTargetPath;
     FStr!defaultEngineScreenshotTargetPathCapacity screenshotLastFaultPath;
@@ -148,14 +134,6 @@ struct EngineState {
     Sz screenshotLastFaultLine;
     FixedList!(IStr, defaultEngineEnvArgsCapacity) envArgsBuffer;
     EngineTasks tasks;
-
-    FStr!defaultEngineDprintCapacity dprintBuffer;
-    FontId dprintFont = defaultEngineDprintFont;
-    Vec2 dprintPosition = defaultEngineDprintPosition;
-    DrawOptions dprintOptions;
-    Sz dprintLineCount;
-    Sz dprintLineCountLimit = defaultEngineDprintLineCountLimit;
-    bool dprintIsVisible = true;
 
     DepthSortData depthSortData;
     DepthSortMode depthSortMode;
@@ -672,7 +650,7 @@ extern(C) @trusted nothrow @nogc {
 /// Opens the window with the given information.
 /// Avoid calling this function manually.
 @trusted
-void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin", bool vsync = defaultEngineVsync) {
+void openWindow(int width, int height, const(IStr)[] args, IStr title = defaultEngineTitle, bool vsyncOff = false) {
     _engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
     *_engineState = EngineState();
     _engineState.depthSortData = DepthSortData(32768); // NOTE: MAGIC NUMBER LOL.
@@ -702,17 +680,17 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
                 }
             }
         }
-        if (argFlags.vsyncOff)    vsync = false;
-        if (argFlags.vsyncOn)     vsync = true;
+        if (argFlags.vsyncOff)    vsyncOff = true;
+        if (argFlags.vsyncOn)     vsyncOff = false;
         if (argFlags.debugMode)   setIsDebugMode(true);
         if (argFlags.largeWindow) { width *= 2; height *= 2; }
     }
 
-    bk.openWindow(width, height, title, vsync, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
+    bk.openWindow(width, height, title, !vsyncOff, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
     _engineState.viewport.data = loadViewport(0, 0, gray);
-    if (!vsync) setFpsMax(0);
+    if (vsyncOff) setFpsMax(0);
 
     loadTexture(cast(const(ubyte)[]) import("parin_monogram.png")).loadFont(6, 12);
     loadTexture(cast(const(ubyte)[]) import("parin_minigram.png")).loadFont(3, 6);
@@ -723,17 +701,18 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = "Parin",
 /// Opens the window with the given information using C strings.
 /// Avoid calling this function manually.
 @trusted
-void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = "Parin", bool vsync = defaultEngineVsync) {
+void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = defaultEngineTitle, bool vsyncOff = false) {
     IStr[128] argsBuffer = void;
     auto args = argsBuffer[0 .. argc];
     foreach (i, ref arg; args) arg = argv[i].toStr();
-    openWindow(width, height, args, title.strzToStr(), vsync);
+    openWindow(width, height, args, title.strzToStr(), vsyncOff);
 }
 
 /// Starts the main window loop. Accepts an update function and optional debug callbacks.
 /// Returns when the update function returns true.
 /// Avoid calling this function manually.
-void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc debugModeBeginFunc = null, CallFunc debugModeEndFunc = null) {
+@trusted
+void updateWindow(UpdateFunc updateFunc) {
     static bool updateWindowLoop() {
         // Update buffers and resources.
         bk.pumpEvents();
@@ -756,14 +735,6 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
             _engineState.elapsedTickTimeBuffer = elapsedTime;
             result = _engineState.updateFunc(deltaTime);
             if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
-            if (isDebugMode || isExitingDebugMode || _engineState.debugModePreviousState) {
-                if (_engineState.debugModeBeginFunc) _engineState.debugModeBeginFunc();
-                if (_engineState.debugModeFunc) _engineState.debugModeFunc();
-                if (_engineState.debugModeEndFunc) _engineState.debugModeEndFunc();
-            }
-            if (_engineState.dprintIsVisible) {
-                drawText(_engineState.dprintFont, _engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
-            }
             _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
             _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
             bk.endDroppedPaths();
@@ -818,9 +789,6 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
     }
 
     _engineState.updateFunc = updateFunc;
-    _engineState.debugModeFunc = debugModeFunc;
-    _engineState.debugModeBeginFunc = debugModeBeginFunc;
-    _engineState.debugModeEndFunc = debugModeEndFunc;
     _engineState.flags |= EngineFlag.isUpdating;
     bk.updateWindow!(updateWindowLoop);
     _engineState.flags &= ~EngineFlag.isUpdating;
@@ -830,16 +798,13 @@ void updateWindow(UpdateFunc updateFunc, CallFunc debugModeFunc = null, CallFunc
 /// Avoid calling this function manually.
 @trusted
 void closeWindow() {
-    auto filter = _engineState.memoryTrackingInfoFilter; // NOTE: I assume `filter` is a static string or managed by the user.
     auto isLogging = isLoggingMemoryTrackingInfo;
     _engineState.arena.free();
     _engineState.depthSortData.free();
     _engineState.jokaFree();
     _engineState = null;
     bk.closeWindow();
-    static if (isTrackingMemory) {
-        if (isLogging) printf(memoryTrackingInfo(filter));
-    }
+    if (isLogging) printf(memoryTrackingInfo);
 }
 
 Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
@@ -848,27 +813,6 @@ Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, Interpolati
 
 Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(fmt(header, args, footer), position, options, extra);
-}
-
-void dprintfln(A...)(InterpolationHeader header, A args, InterpolationFooter footer) {
-    // NOTE: Both `fmtStr` and `fmtArgs` can be copy-pasted when working with IES. Main copy is in the `fmt` function.
-    enum fmtStr = () {
-        Str result;
-        static foreach (i, T; A) {
-            static if (isInterLitType!T) { result ~= args[i].toString(); }
-            else static if (isInterExpType!T) { result ~= defaultAsciiFmtArgStr; }
-        }
-        return result;
-    }();
-    enum fmtArgs = () {
-        Str result;
-        static foreach (i, T; A) {
-            static if (isInterLitType!T || isInterExpType!T) {}
-            else { result ~= "args[" ~ i.stringof ~ "],"; }
-        }
-        return result;
-    }();
-    mixin("dprintfln(fmtStr,", fmtArgs, ");");
 }
 
 // @--
@@ -1280,23 +1224,10 @@ bool isLoggingMemoryTrackingInfo() {
 }
 
 /// Enables or disables memory tracking logs.
-void setIsLoggingMemoryTrackingInfo(bool value, IStr pathFilter = "") {
+void setIsLoggingMemoryTrackingInfo(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isLoggingMemoryTrackingInfo
         : _engineState.flags & ~EngineFlag.isLoggingMemoryTrackingInfo;
-    _engineState.memoryTrackingInfoFilter = pathFilter;
-}
-
-/// Returns true if load or save faults should be logged with the `dprint` functions.
-bool isLoggingWithDprint() {
-    return cast(bool) (_engineState.flags & EngineFlag.isLoggingWithDprint);
-}
-
-/// Sets whether load or save faults should be logged with the `dprint` functions.
-void setIsLoggingWithDprint(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isLoggingWithDprint
-        : _engineState.flags & ~EngineFlag.isLoggingWithDprint;
 }
 
 /// Returns true if debug mode is active.
@@ -1776,42 +1707,8 @@ Fault lastLoadOrSaveFault() {
 /// Returns true if the fault is none, false otherwise.
 bool didLoadOrSaveSucceed(Fault fault, IStr message) {
     if (fault == Fault.none) return true;
-
     _engineState.lastLoadOrSaveFault = fault;
-    if (isLoggingLoadOrSaveFaults) {
-        if (isLoggingWithDprint) {
-            enum space = " ";
-            enum splitter = ": ";
-            auto tempIndex = message.findStart(splitter);
-            if (tempIndex != -1) {
-                auto start = message[0 .. tempIndex];
-                if (start.startsWith("ERROR(source/")) {
-                    dprintln("ERROR(", start["ERROR(source/".length .. $]);
-                } else if (start.startsWith("ERROR(src/")) {
-                    dprintln("ERROR(", start["ERROR(src/".length .. $]);
-                } else {
-                    dprintln(start);
-                }
-
-                auto content = message[tempIndex + splitter.length .. $];
-                if (content.findEnd("from ") != -1) {
-                    tempIndex = content.findEnd("from ");
-                    dprintln(space, content[0 .. tempIndex]);
-                    dprintln(space, content[tempIndex .. $]);
-                } else if (content.findEnd("to ") != -1) {
-                    tempIndex = content.findEnd("to ");
-                    dprintln(space, content[0 .. tempIndex]);
-                    dprintln(space, content[tempIndex .. $]);
-                } else {
-                    dprintln(space, content);
-                }
-            } else {
-                dprintln(message);
-            }
-        } else {
-            eprintf("{}{}", message, eolStr);
-        }
-    }
+    if (isLoggingLoadOrSaveFaults) eprintf("{}{}", message, eolStr);
     return false;
 }
 
@@ -2518,98 +2415,6 @@ Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), Tex
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
 
-/// Append a formatted line to the overlay text buffer.
-/// Drawn after everything else using the current default font.
-void dprintfln(A...)(IStr fmtStr, A args) {
-    if (_engineState.dprintLineCountLimit != 0) {
-        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
-            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
-            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
-            _engineState.dprintLineCount -= 1;
-        }
-    }
-    sprintf(_engineState.dprintBuffer, fmtStr, args);
-    sprintf(_engineState.dprintBuffer, "\n");
-    _engineState.dprintLineCount += 1;
-}
-
-/// Append a line to the overlay text buffer.
-/// Drawn after everything else using the current default font.
-void dprintln(A...)(A args) {
-    if (_engineState.dprintLineCountLimit != 0) {
-        while (_engineState.dprintLineCount >= _engineState.dprintLineCountLimit) {
-            while (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] != '\n') _engineState.dprintBuffer.removeShift(0);
-            if (_engineState.dprintBuffer.length && _engineState.dprintBuffer[0] == '\n') _engineState.dprintBuffer.removeShift(0);
-            _engineState.dprintLineCount -= 1;
-        }
-    }
-
-    // NOTE: Copy-paste of `sprint` to avoid errors with `JokaPrintfOnly` version.
-    //   The dprint*ln functions are a special case because the "ln" part is important.
-    static if (is(A[0] == Sep)) {
-        foreach (i, arg; args[1 .. $]) {
-            if (i) sprintf(_engineState.dprintBuffer, "{}", args[0].value);
-            sprintf(_engineState.dprintBuffer, "{}", arg);
-        }
-    } else {
-        foreach (arg; args) sprintf(_engineState.dprintBuffer, "{}", arg);
-    }
-    sprintf(_engineState.dprintBuffer, "\n");
-
-    _engineState.dprintLineCount += 1;
-}
-
-/// Returns the contents of the overlay text buffer.
-/// The returned string references the internal buffer and may change if more text is printed.
-IStr dprintBuffer() {
-    return _engineState.dprintBuffer.items;
-}
-
-/// Sets the font of the overlay text.
-void setDprintFont(FontId value) {
-    _engineState.dprintFont = value;
-}
-
-/// Sets the position of the overlay text.
-void setDprintPosition(Vec2 value) {
-    _engineState.dprintPosition = value;
-}
-
-/// Sets the drawing options for the overlay text.
-void setDprintOptions(DrawOptions value) {
-    _engineState.dprintOptions = value;
-}
-
-/// Sets the maximum number of overlay text lines.
-/// Older lines are removed once this limit is reached. Use 0 for unlimited.
-void setDprintLineCountLimit(Sz value) {
-    _engineState.dprintLineCountLimit = value;
-}
-
-/// Sets the visibility state of the overlay text.
-/// Does not affect manual drawing via `drawDprintBuffer`.
-void setDprintVisibility(bool value) {
-    _engineState.dprintIsVisible = value;
-}
-
-/// Toggles the visibility state of the overlay text.
-/// Does not affect manual drawing via `drawDprintBuffer`.
-void toggleDprintVisibility() {
-    setDprintVisibility(!_engineState.dprintIsVisible);
-}
-
-/// Clears the overlay text.
-void clearDprintBuffer() {
-    _engineState.dprintBuffer.clear();
-    _engineState.dprintLineCount = 0;
-}
-
-/// Draws the overlay text now instead of at the end of the frame.
-/// The text will still be drawn automatically later unless the buffer is cleared with `clearDprintBuffer`, or visibility is disabled with `setDprintVisibility`.
-void drawDprintBuffer() {
-    drawText(_engineState.dprintBuffer.items, _engineState.dprintPosition, _engineState.dprintOptions);
-}
-
 /// Draws debug engine information at the given position with the provided draw options.
 /// Hold the left mouse button to create and resize a debug area.
 /// Hold the right mouse button to move the debug area.
@@ -2690,32 +2495,6 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             cast(int) b.y,
             cast(int) s.x,
             cast(int) s.y,
-            eolStr,
-        );
-    }
-}
-
-/// Draws debug tile information at the given position with the provided draw options.
-void drawDebugTileInfo(int tileWidth, int tileHeight, Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false) {
-    auto mouse = mouse.toScenePoint(camera);
-    auto gridPoint = Vec2(mouse.x / tileWidth, mouse.y / tileHeight).floor();
-    auto tile = Rect(gridPoint.x * tileWidth, gridPoint.y * tileHeight, tileWidth, tileHeight);
-    auto text = "Grid: ({} {})\nWorld: ({} {})".fmt(
-        cast(int) gridPoint.x,
-        cast(int) gridPoint.y,
-        cast(int) tile.x,
-        cast(int) tile.y,
-    );
-    drawRect(Rect(tile.position.toCanvasPoint(camera), tile.size), defaultEngineDebugColor1);
-    drawRect(Rect(tile.position.toCanvasPoint(camera), tile.size), defaultEngineDebugColor2, 1);
-    drawText(text, screenPoint, options);
-    if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
-        printf(
-            "Debug Tile Info\n Grid: Vec2({}, {})\n World: Vec2({}, {}){}",
-            cast(int) gridPoint.x,
-            cast(int) gridPoint.y,
-            cast(int) tile.x,
-            cast(int) tile.y,
             eolStr,
         );
     }
@@ -2918,58 +2697,49 @@ mixin template runGame(
     int width = defaultEngineWidth,
     int height = defaultEngineHeight,
     IStr title = defaultEngineTitle,
-    alias debugModeFunc = null,
-    alias debugModeBeginFunc = null,
-    alias debugModeEndFunc = null,
-    bool vsyncOffHack = false,
+    bool vsyncOff = false,
 ) {
-    int _runGame() {
-        import mypr = parin.engine;
-        static if (__traits(isStaticFunction, debugModeFunc))      { enum debugMode1 = &debugModeFunc;      } else { enum debugMode1 = null; }
-        static if (__traits(isStaticFunction, debugModeBeginFunc)) { enum debugMode2 = &debugModeBeginFunc; } else { enum debugMode2 = null; }
-        static if (__traits(isStaticFunction, debugModeEndFunc))   { enum debugMode3 = &debugModeEndFunc;   } else { enum debugMode3 = null; }
-
+    int _prMain() {
+        import _pr = parin.engine;
         static if (__traits(isStaticFunction, readyFunc))  readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) mypr.updateWindow(&updateFunc, debugMode1, debugMode2, debugMode3);
+        static if (__traits(isStaticFunction, updateFunc)) _pr.updateWindow(&updateFunc);
         static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        mypr.closeWindow();
+        _pr.closeWindow();
         return 0;
     }
 
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
-            import mypr = parin.engine;
-            mypr.openWindowC(width, height, argc, argv, title, vsyncOffHack ? false : defaultEngineVsync);
-            return _runGame();
+            import _pr = parin.engine;
+            _pr.openWindowC(width, height, argc, argv, title, !vsyncOff);
+            return _prMain();
         }
     } else {
         int main(immutable(char)[][] args) {
-            import mypr = parin.engine;
-            mypr.openWindow(width, height, args, title, vsyncOffHack ? false : defaultEngineVsync);
-            return _runGame();
+            import _pr = parin.engine;
+            _pr.openWindow(width, height, args, title, !vsyncOff);
+            return _prMain();
         }
     }
 }
 
 /// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
 mixin template runGameMinimal(
-    alias readyFunc,
     alias updateFunc,
-    alias finishFunc,
     IStr title = defaultEngineTitle,
-    bool vsyncOffHack = false,
+    bool vsyncOff = false,
 ) {
     mixin runGame!(
-        readyFunc,
+        null,
         updateFunc,
-        finishFunc,
+        null,
         defaultEngineWidth,
         defaultEngineHeight,
         title,
         null,
         null,
         null,
-        vsyncOffHack
+        vsyncOff
     );
 }
