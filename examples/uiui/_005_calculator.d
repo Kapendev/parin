@@ -1,6 +1,7 @@
 /// This example shows how to create a simple calculator.
 
 import parin;
+import parin.addons.uiui;
 
 bool update(float dt) {
     prepareUi();

@@ -1,6 +1,7 @@
 /// This example shows how to use viewports with UI items.
 
 import parin;
+import parin.addons.uiui;
 
 auto viewport = ViewportId();
 auto viewportPosition = Vec2(32);

@@ -8,10 +8,10 @@
 /// Common parin types.
 module parin.types;
 
+import parin.joka.game;
 import parin.joka.math;
-import parin.joka.types;
 import parin.joka.memory;
-public import parin.joka.game;
+import parin.joka.types;
 
 alias UpdateFunc = bool function(float dt);
 alias CallFunc   = void function();

@@ -2,7 +2,7 @@
 /// EXPERIMENTAL!!!
 
 import parin;
-import parin.ui2;
+import parin.ui;
 
 auto ui = UiContext();
 

@@ -3,6 +3,7 @@
 /// Learn more about RectCut here: https://halt.software/p/rectcut-for-dead-simple-ui-layouts
 
 import parin;
+import parin.addons.uiui;
 
 auto groupHeight = 20;
 auto groupMargin = 2;

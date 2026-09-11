@@ -109,20 +109,15 @@ A solution can be found in the [examples folder](examples/basics/_003_dvd.d).
 
 Parin consists of the following modules:
 
-- `parin.engine`: Engine functionality
-- `parin.types`: Common engine types
-- `parin.ui`: UI library (WIP)
-- `parin.addons`: Extras like microui
-- `parin.backend`: Backend functionality
-- `parin.bindings`: Bindings like Emscripten
+- `parin.engine`: Core engine functionality
+- `parin.types`: Core engine types
+- `parin.ui`: Immediate-mode UI library (WIP)
+- `parin.addons`: Single-file D libraries that extend Parin
+- `parin.backend`: Platform dependent code
+- `parin.bindings`: Bindings to primarily C libraries
 - `parin.joka`: Joka library
 
-The `parin.engine`, `parin.types` modules are the only mandatory ones for creating a game.
-All other modules are optional and can be included as needed.
-The `import parin` statement in the first example is a convenience module that publicly imports `parin.engine`, `parin.types`, and `parin.ui`.
-
-> [!NOTE]
-> The `parin.engine` and `parin.types` modules are the most stable ones. Other modules may change as the engine grows.
+The `import parin` statement in the first example is a convenience module that publicly imports `parin.engine` and `parin.types`.
 
 ## Input
 

@@ -1,6 +1,7 @@
 /// This example shows how to use the drag handle.
 
 import parin;
+import parin.addons.uiui;
 
 auto handleArea = Rect(40, 60, 60, 60);
 auto handleOptions = UiOptions();

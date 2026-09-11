@@ -11,7 +11,8 @@ module parin.engine;
 import stdc = parin.joka.stdc;
 import bk   = parin.backend;
 
-import parin.joka.io;
+public import parin.joka.game;
+public import parin.joka.io;
 public import parin.joka.math;
 public import parin.joka.memory;
 public import parin.joka.types;
@@ -2689,7 +2690,6 @@ void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColo
 }
 
 /// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
-/// Optional callbacks for debug mode can also be provided.
 mixin template runGame(
     alias readyFunc,
     alias updateFunc,
@@ -2699,32 +2699,32 @@ mixin template runGame(
     IStr title = defaultEngineTitle,
     bool vsyncOff = false,
 ) {
-    int _prMain() {
-        import _pr = parin.engine;
+    int __parinMain() {
+        import __parin = parin.engine;
         static if (__traits(isStaticFunction, readyFunc))  readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) _pr.updateWindow(&updateFunc);
+        static if (__traits(isStaticFunction, updateFunc)) __parin.updateWindow(&updateFunc);
         static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        _pr.closeWindow();
+        __parin.closeWindow();
         return 0;
     }
 
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
-            import _pr = parin.engine;
-            _pr.openWindowC(width, height, argc, argv, title, !vsyncOff);
-            return _prMain();
+            import __parin = parin.engine;
+            __parin.openWindowC(width, height, argc, argv, title, !vsyncOff);
+            return __parinMain();
         }
     } else {
         int main(immutable(char)[][] args) {
-            import _pr = parin.engine;
-            _pr.openWindow(width, height, args, title, !vsyncOff);
-            return _prMain();
+            import __parin = parin.engine;
+            __parin.openWindow(width, height, args, title, !vsyncOff);
+            return __parinMain();
         }
     }
 }
 
-/// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
+/// This mixin sets up a main function that opens and updates the window using the `update` function.
 mixin template runDemo(
     alias updateFunc,
     IStr title = defaultEngineTitle,

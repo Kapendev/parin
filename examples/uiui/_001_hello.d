@@ -1,6 +1,7 @@
 /// This example serves as a classic hello world example, introducing the UI system of Parin.
 
 import parin;
+import parin.addons.uiui;
 
 void ready() {
     lockResolution(320, 180);

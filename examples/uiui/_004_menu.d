@@ -1,6 +1,7 @@
 /// This example shows how to create a simple menu.
 
 import parin;
+import parin.addons.uiui;
 
 auto activeMenu = 0;
 auto buttonWidth = 70;

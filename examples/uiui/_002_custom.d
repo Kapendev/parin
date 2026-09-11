@@ -1,6 +1,7 @@
 /// This example shows how to create a custom UI button.
 
 import parin;
+import parin.addons.uiui;
 
 auto atlas = TextureId();
 

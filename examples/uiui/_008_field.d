@@ -1,6 +1,7 @@
 /// This example shows how to use the text field.
 
 import parin;
+import parin.addons.uiui;
 
 Str text;
 char[32] textBuffer;
