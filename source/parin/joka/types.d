@@ -1492,15 +1492,6 @@ IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
     }
 }
 
-/// Halts the program with a TODO message indicating unimplemented code.
-noreturn debugTodo(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
-    debug {
-        assert(0, "TODO({}:{}): {}".fmt(file, line, text));
-    } else {
-        static assert(0, "Can't have TODOs in release builds.");
-    }
-}
-
 pragma(inline, true) {
     /// Hashes a string using the FNV-1a algorithm with a 32-bit output.
     uint hashFnv32a(IStr text) {
