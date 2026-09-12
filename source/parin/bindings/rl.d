@@ -10,6 +10,8 @@ module parin.bindings.rl;
 
 import joka = parin.joka.math;
 
+pragma(lib, "raylib");
+
 nothrow @nogc extern(C):
 
 // --- Header: raylib.h
