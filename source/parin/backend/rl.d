@@ -773,7 +773,7 @@ void beginDroppedPaths() {
         _backendState.droppedPaths.clear();
         auto list = rl.LoadDroppedFiles();
         foreach (i; 0 .. min(list.count, defaultBackendResourcesCapacity)) {
-            _backendState.droppedPaths.append(list.paths[i].toStr());
+            _backendState.droppedPaths.append(list.paths[i].strzToStr());
         }
     }
 }

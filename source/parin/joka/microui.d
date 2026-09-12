@@ -578,7 +578,7 @@ struct MuContext {
     }
 
     void drawControlTextLegacy(IStrz str, IRect rect, MuColor colorId, MuOptFlags opt) {
-        drawControlText(str.toStr(), rect, colorId, opt);
+        drawControlText(str.strzToStr(), rect, colorId, opt);
     }
 
     @trusted
@@ -749,7 +749,7 @@ struct MuContext {
     }
 
     void textLegacy(IStrz str) {
-        text(str.toStr());
+        text(str.strzToStr());
     }
 
     void label(IStr str) {
@@ -757,7 +757,7 @@ struct MuContext {
     }
 
     void labelLegacy(IStrz str) {
-        label(str.toStr());
+        label(str.strzToStr());
     }
 
     @trusted
@@ -1841,7 +1841,7 @@ private @safe nothrow @nogc {
             auto res = ctx.textBoxRaw(ctx.numberEditBuffer, id, r, textBoxLength, MuOptFlag.none);
             if (res & MuResFlag.submit || ctx.focus != id) {
                 // Old: *value = strtod(ctx.numberEditBuffer.ptr, null);
-                *value = ctx.numberEditBuffer.ptr.toStr().toFloating().getOr();
+                *value = ctx.numberEditBuffer.ptr.strzToStr().toFloating().getOr();
                 ctx.numberEdit = 0;
             } else {
                 return MuResFlag.active;

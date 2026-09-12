@@ -705,7 +705,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = defaultE
 void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = defaultEngineTitle, bool vsyncOff = false) {
     IStr[128] argsBuffer = void;
     auto args = argsBuffer[0 .. argc];
-    foreach (i, ref arg; args) arg = argv[i].toStr();
+    foreach (i, ref arg; args) arg = argv[i].strzToStr();
     openWindow(width, height, args, title.strzToStr(), vsyncOff);
 }
 

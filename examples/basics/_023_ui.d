@@ -34,7 +34,7 @@ bool update(float dt) {
 
         enum Animal { cat, dog, moose }
         static animal = Animal.moose;
-        if (ui.cycler(menu.pop(), animal)) println("New animal is: ", animal);
+        if (ui.cycler(menu.pop(), animal)) println("New animal is: ", animal.enumToStr());
     }
 
     // Use layouts and options to control the UI elements.

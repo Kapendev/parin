@@ -783,7 +783,11 @@ struct UiContext {
     }
 
     UiResultFlags cycler(T)(IRect area, ref T enumNumber, IStr info = "", bool canLoop = true, bool canKeepFirstChar = false, UiFlags optionFlags = defaultUiFlags) {
-        auto enumText = enumNumber.toStr();
+        static if (is(T == enum)) {
+            auto enumText = enumNumber.enumToStr();
+        } else {
+            auto enumText = enumNumber.toStr();
+        }
         if (!canKeepFirstChar) enumText = "{}{}".fmt(enumText[0].toUpper, enumText[1 .. $]);
 
         auto number = cast(int) enumNumber;

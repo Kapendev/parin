@@ -1250,6 +1250,42 @@ template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral
 template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
 // === END IES Support
 
+// Those functions exist to avoid template bloat for basic types while using the generic `toStr` function.
+// The only issue with them is that they force unsigned numbers and enum values to be a specific type.
+// For unsigned numbers, the `unsignedToStr` function can be used.
+// For enum values, the `enumToStr` function can be used.
+@trusted nothrow @nogc {
+    /// Converts the given value to a temporary string representation.
+    /// Assume that the returned string will be invalid after the next call to this function
+    IStr toStr(char value) {
+        return charToStr(value);
+    }
+
+    /// Converts the given value to a temporary string representation.
+    /// Assume that the returned string will be invalid after the next call to this function
+    IStr toStr(bool value) {
+        return boolToStr(value);
+    }
+
+    /// Converts the given value to a temporary string representation.
+    /// Assume that the returned string will be invalid after the next call to this function
+    IStr toStr(long value) {
+        return signedToStr(value);
+    }
+
+    /// Converts the given value to a temporary string representation.
+    /// Assume that the returned string will be invalid after the next call to this function
+    IStr toStr(double value) {
+        return floatingToStr(value, 2);
+    }
+
+    /// Converts the given value to a temporary string representation.
+    /// Assume that the returned string will be invalid after the next call to this function
+    IStr toStr(IStr value) {
+        return value;
+    }
+}
+
 /// Converts the given value to a temporary string representation.
 /// Assume that the returned string will be invalid after the next call to this function.
 @trusted
@@ -1259,31 +1295,15 @@ IStr toStr(T)(T value) {
         "Static arrays can't be passed to `toStr`. This may also happen indirectly when using printing functions. Convert to a slice first."
     );
 
-    static if (is(T == enum)) {
-        return enumToStr(value);
-    } else static if (is(immutable(T) == immutable(char))) {
-        return charToStr(value);
-    } else static if (is(immutable(T) == immutable(bool))) {
-        return boolToStr(value);
-    } else static if (__traits(isUnsigned, T)) {
-        return unsignedToStr(value);
-    } else static if (__traits(isIntegral, T)) {
-        return signedToStr(value);
-    } else static if (__traits(isFloating, T)) {
-        return floatingToStr(value, 2);
-    } else static if (__traits(hasMember, T, "toStr")) {
+    static if (__traits(hasMember, T, "toStr")) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {
         return value.toString();
-    } else static if (is(T : IStr)) {
-        return value;
-    } else static if (is(T : IStrz)) {
-        return strzToStr(value);
     } else static if (is(T == struct)) {
         static if (T.tupleof.length == 0) {
             return T.stringof;
         } else {
-            static char[256] buffer = void;
+            static char[512] buffer = void;
             IStr temp = void;
 
             buffer[0] = '(';
@@ -1346,17 +1366,6 @@ byte _fmtBufferIndex = 0;
 /// Writes into the buffer and returns the formatted string.
 @trusted
 IStr fmtIntoBuffer(A...)(Str buffer, IStr fmtStr, A args) {
-    /*
-    // The old loop that got replaced.
-    // It has 3 lines in the static foreach. The current one has only 1 line.
-    Str tempSlice;
-    foreach (i, arg; args) {
-        tempSlice = _fmtIntoBufferDataBuffer[i][];
-        if (tempSlice.copyStr(arg.toStr())) return buffer[0 .. 0]; // "An argument did not fit in the internal temporary buffer."
-        _fmtIntoBufferSliceBuffer[i] = tempSlice;
-    }
-    */
-
     static assert(args.length <= defaultAsciiFmtArgBufferCount, "Too many format arguments.");
     foreach (i, ref dataBuffer; _fmtIntoBufferDataBuffer) {
         auto tempSlice = dataBuffer[];
