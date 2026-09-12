@@ -5,84 +5,14 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `rayib` module provides access to the raylib.h functions.
-module parin.bindings.rl.raylib;
-pragma(lib, "raylib");
+/// The `rl` module provides access to raylib functions.
+module parin.bindings.rl;
 
-// NOTE: I prefer simple bindings, but people using Parin as "raylib-d with web support" are a thing.
-//   Well, raylib-d uses operator overloading for vectors and turns some constants into enums.
-//   I will use the Joka vectors and just copy-paste the raylib-d enums at the end of this file.
 import joka = parin.joka.math;
 
-// --- Stupid section for raylib-d stuff.
-
-nothrow @nogc:
-
-void validateRaylibBinding() {};
-
-// Vector with components value 0.0f
-Vector2 Vector2Zero() {
-    return Vector2.zero;
-}
-
-// Vector with components value 1.0f
-Vector2 Vector2One() {
-    return Vector2.one;
-}
-
-// Add two vectors (v1 + v2)
-Vector2 Vector2Add(Vector2 v1, Vector2 v2) {
-    return v1 + v2;
-}
-
-// Add vector and float value
-Vector2 Vector2AddValue(Vector2 v, float add) {
-    return v + Vector2(add);
-}
-
-// Subtract two vectors (v1 - v2)
-Vector2 Vector2Subtract(Vector2 v1, Vector2 v2) {
-    return v1 - v2;
-}
-
-// Subtract vector by float value
-Vector2 Vector2SubtractValue(Vector2 v, float sub) {
-    return v - Vector2(sub);
-}
-
-// Calculate vector length
-float Vector2Length(Vector2 v) {
-    return v.magnitude;
-}
-
-// Calculate vector square length
-float Vector2LengthSqr(Vector2 v) {
-    return v.magnitudeSquared;
-}
-
-// Scale vector (multiply by value)
-Vector2 Vector2Scale(Vector2 v, float scale) {
-    return v * Vector2(scale);
-}
-
-// Multiply vector by vector
-Vector2 Vector2Multiply(Vector2 v1, Vector2 v2) {
-    return v1 * v2;
-}
-
-// Divide vector by vector
-Vector2 Vector2Divide(Vector2 v1, Vector2 v2) {
-    return v1 / v2;
-}
-
-// Normalize provided vector
-Vector2 Vector2Normalize(Vector2 v) {
-    return v.normalize();
-}
-
-// --- Normal section for raylib stuff.
-
 nothrow @nogc extern(C):
+
+// --- Header: raylib.h
 
 enum RAYLIB_VERSION_MAJOR = 5;
 enum RAYLIB_VERSION_MINOR = 0;
@@ -1558,460 +1488,515 @@ void DetachAudioStreamProcessor (AudioStream stream, AudioCallback processor); /
 void AttachAudioMixedProcessor (AudioCallback processor); // Attach audio stream processor to the entire audio pipeline, receives the samples as <float>s
 void DetachAudioMixedProcessor (AudioCallback processor); // Detach audio stream processor from the entire audio pipeline
 
-const(char)* TextFormat(const(char)* text, ...); // Text formatting with variables (sprintf() style)
+// --- Header: rlgl.h
 
-// --- Copy-paste section for raylib-d stuff.
+enum RLGL_VERSION = "4.5";
+
+enum RL_DEFAULT_BATCH_BUFFER_ELEMENTS   = 8192;
+enum RL_DEFAULT_BATCH_BUFFERS           = 1;   /// Default number of batch buffers (multi-buffering)
+enum RL_DEFAULT_BATCH_DRAWCALLS         = 256; /// Default number of batch draw calls (by state changes: mode, texture)
+enum RL_DEFAULT_BATCH_MAX_TEXTURE_UNITS = 4;   /// Maximum number of textures units that can be activated on batch drawing (SetShaderValueTexture())
+
+// Internal Matrix stack
+enum RL_MAX_MATRIX_STACK_SIZE = 32; /// Maximum size of Matrix stack
+
+// Shader limits
+enum RL_MAX_SHADER_LOCATIONS = 32; /// Maximum number of shader locations supported
+
+// Projection matrix culling
+enum RL_CULL_DISTANCE_NEAR = 0.01;   /// Default near cull distance
+enum RL_CULL_DISTANCE_FAR  = 1000.0; /// Default far cull distance
+
+// Texture parameters (equivalent to OpenGL defines)
+enum RL_TEXTURE_WRAP_S     = 0x2802; /// GL_TEXTURE_WRAP_S
+enum RL_TEXTURE_WRAP_T     = 0x2803; /// GL_TEXTURE_WRAP_T
+enum RL_TEXTURE_MAG_FILTER = 0x2800; /// GL_TEXTURE_MAG_FILTER
+enum RL_TEXTURE_MIN_FILTER = 0x2801; /// GL_TEXTURE_MIN_FILTER
+
+enum RL_TEXTURE_FILTER_NEAREST            = 0x2600; /// GL_NEAREST
+enum RL_TEXTURE_FILTER_LINEAR             = 0x2601; /// GL_LINEAR
+enum RL_TEXTURE_FILTER_MIP_NEAREST        = 0x2700; /// GL_NEAREST_MIPMAP_NEAREST
+enum RL_TEXTURE_FILTER_NEAREST_MIP_LINEAR = 0x2702; /// GL_NEAREST_MIPMAP_LINEAR
+enum RL_TEXTURE_FILTER_LINEAR_MIP_NEAREST = 0x2701; /// GL_LINEAR_MIPMAP_NEAREST
+enum RL_TEXTURE_FILTER_MIP_LINEAR         = 0x2703; /// GL_LINEAR_MIPMAP_LINEAR
+enum RL_TEXTURE_FILTER_ANISOTROPIC        = 0x3000; /// Anisotropic filter (custom identifier)
+enum RL_TEXTURE_MIPMAP_BIAS_RATIO         = 0x4000; /// Texture mipmap bias, percentage ratio (custom identifier)
+
+enum RL_TEXTURE_WRAP_REPEAT        = 0x2901; /// GL_REPEAT
+enum RL_TEXTURE_WRAP_CLAMP         = 0x812F; /// GL_CLAMP_TO_EDGE
+enum RL_TEXTURE_WRAP_MIRROR_REPEAT = 0x8370; /// GL_MIRRORED_REPEAT
+enum RL_TEXTURE_WRAP_MIRROR_CLAMP  = 0x8742; /// GL_MIRROR_CLAMP_EXT
+
+// Matrix modes (equivalent to OpenGL)
+enum RL_MODELVIEW  = 0x1700; /// GL_MODELVIEW
+enum RL_PROJECTION = 0x1701; /// GL_PROJECTION
+enum RL_TEXTURE    = 0x1702; /// GL_TEXTURE
+
+// Primitive assembly draw modes
+enum RL_LINES     = 0x0001; /// GL_LINES
+enum RL_TRIANGLES = 0x0004; /// GL_TRIANGLES
+enum RL_QUADS     = 0x0007; /// GL_QUADS
+
+// GL equivalent data types
+enum RL_UNSIGNED_BYTE = 0x1401; /// GL_UNSIGNED_BYTE
+enum RL_FLOAT         = 0x1406; /// GL_FLOAT
+
+// GL buffer usage hint
+enum RL_STREAM_DRAW  = 0x88E0; /// GL_STREAM_DRAW
+enum RL_STREAM_READ  = 0x88E1; /// GL_STREAM_READ
+enum RL_STREAM_COPY  = 0x88E2; /// GL_STREAM_COPY
+enum RL_STATIC_DRAW  = 0x88E4; /// GL_STATIC_DRAW
+enum RL_STATIC_READ  = 0x88E5; /// GL_STATIC_READ
+enum RL_STATIC_COPY  = 0x88E6; /// GL_STATIC_COPY
+enum RL_DYNAMIC_DRAW = 0x88E8; /// GL_DYNAMIC_DRAW
+enum RL_DYNAMIC_READ = 0x88E9; /// GL_DYNAMIC_READ
+enum RL_DYNAMIC_COPY = 0x88EA; /// GL_DYNAMIC_COPY
+
+// GL Shader type
+enum RL_FRAGMENT_SHADER = 0x8B30; /// GL_FRAGMENT_SHADER
+enum RL_VERTEX_SHADER   = 0x8B31; /// GL_VERTEX_SHADER
+enum RL_COMPUTE_SHADER  = 0x91B9; /// GL_COMPUTE_SHADER
+
+// GL blending factors
+enum RL_ZERO                     = 0;      /// GL_ZERO
+enum RL_ONE                      = 1;      /// GL_ONE
+enum RL_SRC_COLOR                = 0x0300; /// GL_SRC_COLOR
+enum RL_ONE_MINUS_SRC_COLOR      = 0x0301; /// GL_ONE_MINUS_SRC_COLOR
+enum RL_SRC_ALPHA                = 0x0302; /// GL_SRC_ALPHA
+enum RL_ONE_MINUS_SRC_ALPHA      = 0x0303; /// GL_ONE_MINUS_SRC_ALPHA
+enum RL_DST_ALPHA                = 0x0304; /// GL_DST_ALPHA
+enum RL_ONE_MINUS_DST_ALPHA      = 0x0305; /// GL_ONE_MINUS_DST_ALPHA
+enum RL_DST_COLOR                = 0x0306; /// GL_DST_COLOR
+enum RL_ONE_MINUS_DST_COLOR      = 0x0307; /// GL_ONE_MINUS_DST_COLOR
+enum RL_SRC_ALPHA_SATURATE       = 0x0308; /// GL_SRC_ALPHA_SATURATE
+enum RL_CONSTANT_COLOR           = 0x8001; /// GL_CONSTANT_COLOR
+enum RL_ONE_MINUS_CONSTANT_COLOR = 0x8002; /// GL_ONE_MINUS_CONSTANT_COLOR
+enum RL_CONSTANT_ALPHA           = 0x8003; /// GL_CONSTANT_ALPHA
+enum RL_ONE_MINUS_CONSTANT_ALPHA = 0x8004; /// GL_ONE_MINUS_CONSTANT_ALPHA
+
+// GL blending functions/equations
+enum RL_FUNC_ADD              = 0x8006; /// GL_FUNC_ADD
+enum RL_MIN                   = 0x8007; /// GL_MIN
+enum RL_MAX                   = 0x8008; /// GL_MAX
+enum RL_FUNC_SUBTRACT         = 0x800A; /// GL_FUNC_SUBTRACT
+enum RL_FUNC_REVERSE_SUBTRACT = 0x800B; /// GL_FUNC_REVERSE_SUBTRACT
+enum RL_BLEND_EQUATION        = 0x8009; /// GL_BLEND_EQUATION
+enum RL_BLEND_EQUATION_RGB    = 0x8009; /// GL_BLEND_EQUATION_RGB (Same as BLEND_EQUATION)
+enum RL_BLEND_EQUATION_ALPHA  = 0x883D; /// GL_BLEND_EQUATION_ALPHA
+enum RL_BLEND_DST_RGB         = 0x80C8; /// GL_BLEND_DST_RGB
+enum RL_BLEND_SRC_RGB         = 0x80C9; /// GL_BLEND_SRC_RGB
+enum RL_BLEND_DST_ALPHA       = 0x80CA; /// GL_BLEND_DST_ALPHA
+enum RL_BLEND_SRC_ALPHA       = 0x80CB; /// GL_BLEND_SRC_ALPHA
+enum RL_BLEND_COLOR           = 0x8005; /// GL_BLEND_COLOR
 
 //----------------------------------------------------------------------------------
-// Enumerators Definition
+// Types and Structures Definition
 //----------------------------------------------------------------------------------
-// System/Window config flags
-// NOTE: Every bit registers one state (use it with bit masks)
-// By default all flags are set to 0
-enum ConfigFlags
-{
-    FLAG_VSYNC_HINT = 0x00000040, // Set to try enabling V-Sync on GPU
-    FLAG_FULLSCREEN_MODE = 0x00000002, // Set to run program in fullscreen
-    FLAG_WINDOW_RESIZABLE = 0x00000004, // Set to allow resizable window
-    FLAG_WINDOW_UNDECORATED = 0x00000008, // Set to disable window decoration (frame and buttons)
-    FLAG_WINDOW_HIDDEN = 0x00000080, // Set to hide window
-    FLAG_WINDOW_MINIMIZED = 0x00000200, // Set to minimize window (iconify)
-    FLAG_WINDOW_MAXIMIZED = 0x00000400, // Set to maximize window (expanded to monitor)
-    FLAG_WINDOW_UNFOCUSED = 0x00000800, // Set to window non focused
-    FLAG_WINDOW_TOPMOST = 0x00001000, // Set to window always on top
-    FLAG_WINDOW_ALWAYS_RUN = 0x00000100, // Set to allow windows running while minimized
-    FLAG_WINDOW_TRANSPARENT = 0x00000010, // Set to allow transparent framebuffer
-    FLAG_WINDOW_HIGHDPI = 0x00002000, // Set to support HighDPI
-    FLAG_WINDOW_MOUSE_PASSTHROUGH = 0x00004000, // Set to support mouse passthrough, only supported when FLAG_WINDOW_UNDECORATED
-    FLAG_BORDERLESS_WINDOWED_MODE = 0x00008000, // Set to run program in borderless windowed mode
-    FLAG_MSAA_4X_HINT = 0x00000020, // Set to try enabling MSAA 4X
-    FLAG_INTERLACED_HINT = 0x00010000 // Set to try enabling interlaced video format (for V3D)
+
+/// Dynamic vertex buffers (position + texcoords + colors + indices arrays)
+struct rlVertexBuffer {
+    int elementCount; /// Number of elements in the buffer (QUADS)
+    float* vertices;  /// Vertex position (XYZ - 3 components per vertex) (shader-location = 0)
+    float* texcoords; /// Vertex texture coordinates (UV - 2 components per vertex) (shader-location = 1)
+    ubyte* colors;    /// Vertex colors (RGBA - 4 components per vertex) (shader-location = 3)
+
+    uint* indices; /// Vertex indices (in case vertex data comes indexed) (6 indices per quad)
+
+    // Vertex indices (in case vertex data comes indexed) (6 indices per quad)
+    uint vaoId;    /// OpenGL Vertex Array Object id
+    uint[4] vboId; /// OpenGL Vertex Buffer Objects id (4 types of vertex data)
 }
 
-// Trace log level
-// NOTE: Organized by priority level
-enum TraceLogLevel
-{
-    LOG_ALL = 0, // Display all logs
-    LOG_TRACE = 1, // Trace logging, intended for internal use only
-    LOG_DEBUG = 2, // Debug logging, used for internal debugging, it should be disabled on release builds
-    LOG_INFO = 3, // Info logging, used for program execution info
-    LOG_WARNING = 4, // Warning logging, used on recoverable failures
-    LOG_ERROR = 5, // Error logging, used on unrecoverable failures
-    LOG_FATAL = 6, // Fatal logging, used to abort program: exit(EXIT_FAILURE)
-    LOG_NONE = 7 // Disable logging
+/// Draw call type
+/// used at this moment (vaoId, shaderId, matrices), raylib just forces a batch draw call if any
+/// of those state-change happens (this is done in core module)
+struct rlDrawCall {
+    int mode;            /// Drawing mode: LINES, TRIANGLES, QUADS
+    int vertexCount;     /// Number of vertex of the draw
+    int vertexAlignment; /// Number of vertex required for index alignment (LINES, TRIANGLES)
+
+    //unsigned int vaoId;    // Vertex array id to be used on the draw -> Using RLGL.currentBatch->vertexBuffer.vaoId
+    //unsigned int shaderId; // Shader id to be used on the draw -> Using RLGL.currentShaderId
+    uint textureId; /// Texture id to be used on the draw -> Use to create new draw call if changes
+
+    //Matrix projection; // Projection matrix for this draw -> Using RLGL.projection by default
+    //Matrix modelview;  // Modelview matrix for this draw -> Using RLGL.modelview by default
 }
 
-// Keyboard keys (US keyboard layout)
-// NOTE: Use GetKeyPressed() to allow redefining
-// required keys for alternative layouts
-enum KeyboardKey
-{
-    KEY_NULL = 0, // Key: NULL, used for no key pressed
-    // Alphanumeric keys
-    KEY_APOSTROPHE = 39, // Key: '
-    KEY_COMMA = 44, // Key: ,
-    KEY_MINUS = 45, // Key: -
-    KEY_PERIOD = 46, // Key: .
-    KEY_SLASH = 47, // Key: /
-    KEY_ZERO = 48, // Key: 0
-    KEY_ONE = 49, // Key: 1
-    KEY_TWO = 50, // Key: 2
-    KEY_THREE = 51, // Key: 3
-    KEY_FOUR = 52, // Key: 4
-    KEY_FIVE = 53, // Key: 5
-    KEY_SIX = 54, // Key: 6
-    KEY_SEVEN = 55, // Key: 7
-    KEY_EIGHT = 56, // Key: 8
-    KEY_NINE = 57, // Key: 9
-    KEY_SEMICOLON = 59, // Key: ;
-    KEY_EQUAL = 61, // Key: =
-    KEY_A = 65, // Key: A | a
-    KEY_B = 66, // Key: B | b
-    KEY_C = 67, // Key: C | c
-    KEY_D = 68, // Key: D | d
-    KEY_E = 69, // Key: E | e
-    KEY_F = 70, // Key: F | f
-    KEY_G = 71, // Key: G | g
-    KEY_H = 72, // Key: H | h
-    KEY_I = 73, // Key: I | i
-    KEY_J = 74, // Key: J | j
-    KEY_K = 75, // Key: K | k
-    KEY_L = 76, // Key: L | l
-    KEY_M = 77, // Key: M | m
-    KEY_N = 78, // Key: N | n
-    KEY_O = 79, // Key: O | o
-    KEY_P = 80, // Key: P | p
-    KEY_Q = 81, // Key: Q | q
-    KEY_R = 82, // Key: R | r
-    KEY_S = 83, // Key: S | s
-    KEY_T = 84, // Key: T | t
-    KEY_U = 85, // Key: U | u
-    KEY_V = 86, // Key: V | v
-    KEY_W = 87, // Key: W | w
-    KEY_X = 88, // Key: X | x
-    KEY_Y = 89, // Key: Y | y
-    KEY_Z = 90, // Key: Z | z
-    KEY_LEFT_BRACKET = 91, // Key: [
-    KEY_BACKSLASH = 92, // Key: '\'
-    KEY_RIGHT_BRACKET = 93, // Key: ]
-    KEY_GRAVE = 96, // Key: `
-    // Function keys
-    KEY_SPACE = 32, // Key: Space
-    KEY_ESCAPE = 256, // Key: Esc
-    KEY_ENTER = 257, // Key: Enter
-    KEY_TAB = 258, // Key: Tab
-    KEY_BACKSPACE = 259, // Key: Backspace
-    KEY_INSERT = 260, // Key: Ins
-    KEY_DELETE = 261, // Key: Del
-    KEY_RIGHT = 262, // Key: Cursor right
-    KEY_LEFT = 263, // Key: Cursor left
-    KEY_DOWN = 264, // Key: Cursor down
-    KEY_UP = 265, // Key: Cursor up
-    KEY_PAGE_UP = 266, // Key: Page up
-    KEY_PAGE_DOWN = 267, // Key: Page down
-    KEY_HOME = 268, // Key: Home
-    KEY_END = 269, // Key: End
-    KEY_CAPS_LOCK = 280, // Key: Caps lock
-    KEY_SCROLL_LOCK = 281, // Key: Scroll down
-    KEY_NUM_LOCK = 282, // Key: Num lock
-    KEY_PRINT_SCREEN = 283, // Key: Print screen
-    KEY_PAUSE = 284, // Key: Pause
-    KEY_F1 = 290, // Key: F1
-    KEY_F2 = 291, // Key: F2
-    KEY_F3 = 292, // Key: F3
-    KEY_F4 = 293, // Key: F4
-    KEY_F5 = 294, // Key: F5
-    KEY_F6 = 295, // Key: F6
-    KEY_F7 = 296, // Key: F7
-    KEY_F8 = 297, // Key: F8
-    KEY_F9 = 298, // Key: F9
-    KEY_F10 = 299, // Key: F10
-    KEY_F11 = 300, // Key: F11
-    KEY_F12 = 301, // Key: F12
-    KEY_LEFT_SHIFT = 340, // Key: Shift left
-    KEY_LEFT_CONTROL = 341, // Key: Control left
-    KEY_LEFT_ALT = 342, // Key: Alt left
-    KEY_LEFT_SUPER = 343, // Key: Super left
-    KEY_RIGHT_SHIFT = 344, // Key: Shift right
-    KEY_RIGHT_CONTROL = 345, // Key: Control right
-    KEY_RIGHT_ALT = 346, // Key: Alt right
-    KEY_RIGHT_SUPER = 347, // Key: Super right
-    KEY_KB_MENU = 348, // Key: KB menu
-    // Keypad keys
-    KEY_KP_0 = 320, // Key: Keypad 0
-    KEY_KP_1 = 321, // Key: Keypad 1
-    KEY_KP_2 = 322, // Key: Keypad 2
-    KEY_KP_3 = 323, // Key: Keypad 3
-    KEY_KP_4 = 324, // Key: Keypad 4
-    KEY_KP_5 = 325, // Key: Keypad 5
-    KEY_KP_6 = 326, // Key: Keypad 6
-    KEY_KP_7 = 327, // Key: Keypad 7
-    KEY_KP_8 = 328, // Key: Keypad 8
-    KEY_KP_9 = 329, // Key: Keypad 9
-    KEY_KP_DECIMAL = 330, // Key: Keypad .
-    KEY_KP_DIVIDE = 331, // Key: Keypad /
-    KEY_KP_MULTIPLY = 332, // Key: Keypad *
-    KEY_KP_SUBTRACT = 333, // Key: Keypad -
-    KEY_KP_ADD = 334, // Key: Keypad +
-    KEY_KP_ENTER = 335, // Key: Keypad Enter
-    KEY_KP_EQUAL = 336, // Key: Keypad =
-    // Android key buttons
-    KEY_BACK = 4, // Key: Android back button
-    KEY_MENU = 5, // Key: Android menu button
-    KEY_VOLUME_UP = 24, // Key: Android volume up button
-    KEY_VOLUME_DOWN = 25 // Key: Android volume down button
+/// rlRenderBatch type
+struct rlRenderBatch {
+    int bufferCount;              /// Number of vertex buffers (multi-buffering support)
+    int currentBuffer;            /// Current buffer tracking in case of multi-buffering
+    rlVertexBuffer* vertexBuffer; /// Dynamic buffer(s) for vertex data
+
+    rlDrawCall* draws;         /// Draw calls array, depends on textureId
+    int drawCounter;           /// Draw calls counter
+    float currentDepth = 0.0f; /// Current depth value for next draw
 }
 
-// Mouse buttons
-enum MouseButton
-{
-    MOUSE_BUTTON_LEFT = 0, // Mouse button left
-    MOUSE_BUTTON_RIGHT = 1, // Mouse button right
-    MOUSE_BUTTON_MIDDLE = 2, // Mouse button middle (pressed wheel)
-    MOUSE_BUTTON_SIDE = 3, // Mouse button side (advanced mouse device)
-    MOUSE_BUTTON_EXTRA = 4, // Mouse button extra (advanced mouse device)
-    MOUSE_BUTTON_FORWARD = 5, // Mouse button forward (advanced mouse device)
-    MOUSE_BUTTON_BACK = 6 // Mouse button back (advanced mouse device)
+/// OpenGL version
+enum {
+    RL_OPENGL_11 = 1,    /// OpenGL 1.1
+    RL_OPENGL_21 = 2,    /// OpenGL 2.1 (GLSL 120)
+    RL_OPENGL_33 = 3,    /// OpenGL 3.3 (GLSL 330)
+    RL_OPENGL_43 = 4,    /// OpenGL 4.3 (using GLSL 330)
+    RL_OPENGL_ES_20 = 5, /// OpenGL ES 2.0 (GLSL 100)
+    RL_OPENGL_ES_30 = 6  /// OpenGL ES 3.0 (GLSL 300 es)
 }
 
-// Mouse cursor
-enum MouseCursor
-{
-    MOUSE_CURSOR_DEFAULT = 0, // Default pointer shape
-    MOUSE_CURSOR_ARROW = 1, // Arrow shape
-    MOUSE_CURSOR_IBEAM = 2, // Text writing cursor shape
-    MOUSE_CURSOR_CROSSHAIR = 3, // Cross shape
-    MOUSE_CURSOR_POINTING_HAND = 4, // Pointing hand cursor
-    MOUSE_CURSOR_RESIZE_EW = 5, // Horizontal resize/move arrow shape
-    MOUSE_CURSOR_RESIZE_NS = 6, // Vertical resize/move arrow shape
-    MOUSE_CURSOR_RESIZE_NWSE = 7, // Top-left to bottom-right diagonal resize/move arrow shape
-    MOUSE_CURSOR_RESIZE_NESW = 8, // The top-right to bottom-left diagonal resize/move arrow shape
-    MOUSE_CURSOR_RESIZE_ALL = 9, // The omnidirectional resize/move cursor shape
-    MOUSE_CURSOR_NOT_ALLOWED = 10 // The operation-not-allowed shape
+/// Trace log level
+enum {
+    RL_LOG_ALL = 0,     /// Display all logs
+    RL_LOG_TRACE = 1,   /// Trace logging, intended for internal use only
+    RL_LOG_DEBUG = 2,   /// Debug logging, used for internal debugging, it should be disabled on release builds
+    RL_LOG_INFO = 3,    /// Info logging, used for program execution info
+    RL_LOG_WARNING = 4, /// Warning logging, used on recoverable failures
+    RL_LOG_ERROR = 5,   /// Error logging, used on unrecoverable failures
+    RL_LOG_FATAL = 6,   /// Fatal logging, used to abort program: exit(EXIT_FAILURE)
+    RL_LOG_NONE = 7     /// Disable logging
 }
 
-// Gamepad buttons
-enum GamepadButton
-{
-    GAMEPAD_BUTTON_UNKNOWN = 0, // Unknown button, just for error checking
-    GAMEPAD_BUTTON_LEFT_FACE_UP = 1, // Gamepad left DPAD up button
-    GAMEPAD_BUTTON_LEFT_FACE_RIGHT = 2, // Gamepad left DPAD right button
-    GAMEPAD_BUTTON_LEFT_FACE_DOWN = 3, // Gamepad left DPAD down button
-    GAMEPAD_BUTTON_LEFT_FACE_LEFT = 4, // Gamepad left DPAD left button
-    GAMEPAD_BUTTON_RIGHT_FACE_UP = 5, // Gamepad right button up (i.e. PS3: Triangle, Xbox: Y)
-    GAMEPAD_BUTTON_RIGHT_FACE_RIGHT = 6, // Gamepad right button right (i.e. PS3: Circle, Xbox: B)
-    GAMEPAD_BUTTON_RIGHT_FACE_DOWN = 7, // Gamepad right button down (i.e. PS3: Cross, Xbox: A)
-    GAMEPAD_BUTTON_RIGHT_FACE_LEFT = 8, // Gamepad right button left (i.e. PS3: Square, Xbox: X)
-    GAMEPAD_BUTTON_LEFT_TRIGGER_1 = 9, // Gamepad top/back trigger left (first), it could be a trailing button
-    GAMEPAD_BUTTON_LEFT_TRIGGER_2 = 10, // Gamepad top/back trigger left (second), it could be a trailing button
-    GAMEPAD_BUTTON_RIGHT_TRIGGER_1 = 11, // Gamepad top/back trigger right (first), it could be a trailing button
-    GAMEPAD_BUTTON_RIGHT_TRIGGER_2 = 12, // Gamepad top/back trigger right (second), it could be a trailing button
-    GAMEPAD_BUTTON_MIDDLE_LEFT = 13, // Gamepad center buttons, left one (i.e. PS3: Select)
-    GAMEPAD_BUTTON_MIDDLE = 14, // Gamepad center buttons, middle one (i.e. PS3: PS, Xbox: XBOX)
-    GAMEPAD_BUTTON_MIDDLE_RIGHT = 15, // Gamepad center buttons, right one (i.e. PS3: Start)
-    GAMEPAD_BUTTON_LEFT_THUMB = 16, // Gamepad joystick pressed button left
-    GAMEPAD_BUTTON_RIGHT_THUMB = 17 // Gamepad joystick pressed button right
+/// Texture pixel formats
+enum {
+    RL_PIXELFORMAT_UNCOMPRESSED_GRAYSCALE = 1,     /// 8 bit per pixel (no alpha)
+    RL_PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA = 2,    /// 8*2 bpp (2 channels)
+    RL_PIXELFORMAT_UNCOMPRESSED_R5G6B5 = 3,        /// 16 bpp
+    RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8 = 4,        /// 24 bpp
+    RL_PIXELFORMAT_UNCOMPRESSED_R5G5B5A1 = 5,      /// 16 bpp (1 bit alpha)
+    RL_PIXELFORMAT_UNCOMPRESSED_R4G4B4A4 = 6,      /// 16 bpp (4 bit alpha)
+    RL_PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 = 7,      /// 32 bpp
+    RL_PIXELFORMAT_UNCOMPRESSED_R32 = 8,           /// 32 bpp (1 channel - float)
+    RL_PIXELFORMAT_UNCOMPRESSED_R32G32B32 = 9,     /// 32*3 bpp (3 channels - float)
+    RL_PIXELFORMAT_UNCOMPRESSED_R32G32B32A32 = 10, /// 32*4 bpp (4 channels - float)
+    RL_PIXELFORMAT_UNCOMPRESSED_R16 = 11,          /// 16 bpp (1 channel - half float)
+    RL_PIXELFORMAT_UNCOMPRESSED_R16G16B16 = 12,    /// 16*3 bpp (3 channels - half float)
+    RL_PIXELFORMAT_UNCOMPRESSED_R16G16B16A16 = 13, /// 16*4 bpp (4 channels - half float)
+    RL_PIXELFORMAT_COMPRESSED_DXT1_RGB = 14,       /// 4 bpp (no alpha)
+    RL_PIXELFORMAT_COMPRESSED_DXT1_RGBA = 15,      /// 4 bpp (1 bit alpha)
+    RL_PIXELFORMAT_COMPRESSED_DXT3_RGBA = 16,      /// 8 bpp
+    RL_PIXELFORMAT_COMPRESSED_DXT5_RGBA = 17,      /// 8 bpp
+    RL_PIXELFORMAT_COMPRESSED_ETC1_RGB = 18,       /// 4 bpp
+    RL_PIXELFORMAT_COMPRESSED_ETC2_RGB = 19,       /// 4 bpp
+    RL_PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA = 20,  /// 8 bpp
+    RL_PIXELFORMAT_COMPRESSED_PVRT_RGB = 21,       /// 4 bpp
+    RL_PIXELFORMAT_COMPRESSED_PVRT_RGBA = 22,      /// 4 bpp
+    RL_PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA = 23,  /// 8 bpp
+    RL_PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA = 24   /// 2 bpp
 }
 
-// Gamepad axis
-enum GamepadAxis
-{
-    GAMEPAD_AXIS_LEFT_X = 0, // Gamepad left stick X axis
-    GAMEPAD_AXIS_LEFT_Y = 1, // Gamepad left stick Y axis
-    GAMEPAD_AXIS_RIGHT_X = 2, // Gamepad right stick X axis
-    GAMEPAD_AXIS_RIGHT_Y = 3, // Gamepad right stick Y axis
-    GAMEPAD_AXIS_LEFT_TRIGGER = 4, // Gamepad back trigger left, pressure level: [1..-1]
-    GAMEPAD_AXIS_RIGHT_TRIGGER = 5 // Gamepad back trigger right, pressure level: [1..-1]
+/// Texture parameters: filter mode
+enum {
+    RL_TEXTURE_FILTER_POINT = 0,          /// No filter, just pixel approximation
+    RL_TEXTURE_FILTER_BILINEAR = 1,       /// Linear filtering
+    RL_TEXTURE_FILTER_TRILINEAR = 2,      /// Trilinear filtering (linear with mipmaps)
+    RL_TEXTURE_FILTER_ANISOTROPIC_4X = 3, /// Anisotropic filtering 4x
+    RL_TEXTURE_FILTER_ANISOTROPIC_8X = 4, /// Anisotropic filtering 8x
+    RL_TEXTURE_FILTER_ANISOTROPIC_16X = 5 /// Anisotropic filtering 16x
 }
 
-// Material map index
-enum MaterialMapIndex
-{
-    MATERIAL_MAP_ALBEDO = 0, // Albedo material (same as: MATERIAL_MAP_DIFFUSE)
-    MATERIAL_MAP_METALNESS = 1, // Metalness material (same as: MATERIAL_MAP_SPECULAR)
-    MATERIAL_MAP_NORMAL = 2, // Normal material
-    MATERIAL_MAP_ROUGHNESS = 3, // Roughness material
-    MATERIAL_MAP_OCCLUSION = 4, // Ambient occlusion material
-    MATERIAL_MAP_EMISSION = 5, // Emission material
-    MATERIAL_MAP_HEIGHT = 6, // Heightmap material
-    MATERIAL_MAP_CUBEMAP = 7, // Cubemap material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
-    MATERIAL_MAP_IRRADIANCE = 8, // Irradiance material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
-    MATERIAL_MAP_PREFILTER = 9, // Prefilter material (NOTE: Uses GL_TEXTURE_CUBE_MAP)
-    MATERIAL_MAP_BRDF = 10 // Brdf material
+/// Color blending modes (pre-defined)
+enum {
+    RL_BLEND_ALPHA = 0,             /// Blend textures considering alpha (default)
+    RL_BLEND_ADDITIVE = 1,          /// Blend textures adding colors
+    RL_BLEND_MULTIPLIED = 2,        /// Blend textures multiplying colors
+    RL_BLEND_ADD_COLORS = 3,        /// Blend textures adding colors (alternative)
+    RL_BLEND_SUBTRACT_COLORS = 4,   /// Blend textures subtracting colors (alternative)
+    RL_BLEND_ALPHA_PREMULTIPLY = 5, /// Blend premultiplied textures considering alpha
+    RL_BLEND_CUSTOM = 6,            /// Blend textures using custom src/dst factors (use rlSetBlendFactors())
+    RL_BLEND_CUSTOM_SEPARATE = 7    /// Blend textures using custom src/dst factors (use rlSetBlendFactorsSeparate())
 }
 
-// Shader location index
-enum ShaderLocationIndex
-{
-    SHADER_LOC_VERTEX_POSITION = 0, // Shader location: vertex attribute: position
-    SHADER_LOC_VERTEX_TEXCOORD01 = 1, // Shader location: vertex attribute: texcoord01
-    SHADER_LOC_VERTEX_TEXCOORD02 = 2, // Shader location: vertex attribute: texcoord02
-    SHADER_LOC_VERTEX_NORMAL = 3, // Shader location: vertex attribute: normal
-    SHADER_LOC_VERTEX_TANGENT = 4, // Shader location: vertex attribute: tangent
-    SHADER_LOC_VERTEX_COLOR = 5, // Shader location: vertex attribute: color
-    SHADER_LOC_MATRIX_MVP = 6, // Shader location: matrix uniform: model-view-projection
-    SHADER_LOC_MATRIX_VIEW = 7, // Shader location: matrix uniform: view (camera transform)
-    SHADER_LOC_MATRIX_PROJECTION = 8, // Shader location: matrix uniform: projection
-    SHADER_LOC_MATRIX_MODEL = 9, // Shader location: matrix uniform: model (transform)
-    SHADER_LOC_MATRIX_NORMAL = 10, // Shader location: matrix uniform: normal
-    SHADER_LOC_VECTOR_VIEW = 11, // Shader location: vector uniform: view
-    SHADER_LOC_COLOR_DIFFUSE = 12, // Shader location: vector uniform: diffuse color
-    SHADER_LOC_COLOR_SPECULAR = 13, // Shader location: vector uniform: specular color
-    SHADER_LOC_COLOR_AMBIENT = 14, // Shader location: vector uniform: ambient color
-    SHADER_LOC_MAP_ALBEDO = 15, // Shader location: sampler2d texture: albedo (same as: SHADER_LOC_MAP_DIFFUSE)
-    SHADER_LOC_MAP_METALNESS = 16, // Shader location: sampler2d texture: metalness (same as: SHADER_LOC_MAP_SPECULAR)
-    SHADER_LOC_MAP_NORMAL = 17, // Shader location: sampler2d texture: normal
-    SHADER_LOC_MAP_ROUGHNESS = 18, // Shader location: sampler2d texture: roughness
-    SHADER_LOC_MAP_OCCLUSION = 19, // Shader location: sampler2d texture: occlusion
-    SHADER_LOC_MAP_EMISSION = 20, // Shader location: sampler2d texture: emission
-    SHADER_LOC_MAP_HEIGHT = 21, // Shader location: sampler2d texture: height
-    SHADER_LOC_MAP_CUBEMAP = 22, // Shader location: samplerCube texture: cubemap
-    SHADER_LOC_MAP_IRRADIANCE = 23, // Shader location: samplerCube texture: irradiance
-    SHADER_LOC_MAP_PREFILTER = 24, // Shader location: samplerCube texture: prefilter
-    SHADER_LOC_MAP_BRDF = 25, // Shader location: sampler2d texture: brdf
-    SHADER_LOC_VERTEX_BONEIDS = 26, // Shader location: vertex attribute: boneIds
-    SHADER_LOC_VERTEX_BONEWEIGHTS = 27, // Shader location: vertex attribute: boneWeights
-    SHADER_LOC_BONE_MATRICES = 28 // Shader location: array of matrices uniform: boneMatrices
+/// Shader location point type
+enum {
+    RL_SHADER_LOC_VERTEX_POSITION = 0,   /// Shader location: vertex attribute: position
+    RL_SHADER_LOC_VERTEX_TEXCOORD01 = 1, /// Shader location: vertex attribute: texcoord01
+    RL_SHADER_LOC_VERTEX_TEXCOORD02 = 2, /// Shader location: vertex attribute: texcoord02
+    RL_SHADER_LOC_VERTEX_NORMAL = 3,     /// Shader location: vertex attribute: normal
+    RL_SHADER_LOC_VERTEX_TANGENT = 4,    /// Shader location: vertex attribute: tangent
+    RL_SHADER_LOC_VERTEX_COLOR = 5,      /// Shader location: vertex attribute: color
+    RL_SHADER_LOC_MATRIX_MVP = 6,        /// Shader location: matrix uniform: model-view-projection
+    RL_SHADER_LOC_MATRIX_VIEW = 7,       /// Shader location: matrix uniform: view (camera transform)
+    RL_SHADER_LOC_MATRIX_PROJECTION = 8, /// Shader location: matrix uniform: projection
+    RL_SHADER_LOC_MATRIX_MODEL = 9,      /// Shader location: matrix uniform: model (transform)
+    RL_SHADER_LOC_MATRIX_NORMAL = 10,    /// Shader location: matrix uniform: normal
+    RL_SHADER_LOC_VECTOR_VIEW = 11,      /// Shader location: vector uniform: view
+    RL_SHADER_LOC_COLOR_DIFFUSE = 12,    /// Shader location: vector uniform: diffuse color
+    RL_SHADER_LOC_COLOR_SPECULAR = 13,   /// Shader location: vector uniform: specular color
+    RL_SHADER_LOC_COLOR_AMBIENT = 14,    /// Shader location: vector uniform: ambient color
+    RL_SHADER_LOC_MAP_ALBEDO = 15,       /// Shader location: sampler2d texture: albedo (same as: RL_SHADER_LOC_MAP_DIFFUSE)
+    RL_SHADER_LOC_MAP_METALNESS = 16,    /// Shader location: sampler2d texture: metalness (same as: RL_SHADER_LOC_MAP_SPECULAR)
+    RL_SHADER_LOC_MAP_NORMAL = 17,       /// Shader location: sampler2d texture: normal
+    RL_SHADER_LOC_MAP_ROUGHNESS = 18,    /// Shader location: sampler2d texture: roughness
+    RL_SHADER_LOC_MAP_OCCLUSION = 19,    /// Shader location: sampler2d texture: occlusion
+    RL_SHADER_LOC_MAP_EMISSION = 20,     /// Shader location: sampler2d texture: emission
+    RL_SHADER_LOC_MAP_HEIGHT = 21,       /// Shader location: sampler2d texture: height
+    RL_SHADER_LOC_MAP_CUBEMAP = 22,      /// Shader location: samplerCube texture: cubemap
+    RL_SHADER_LOC_MAP_IRRADIANCE = 23,   /// Shader location: samplerCube texture: irradiance
+    RL_SHADER_LOC_MAP_PREFILTER = 24,    /// Shader location: samplerCube texture: prefilter
+    RL_SHADER_LOC_MAP_BRDF = 25          /// Shader location: sampler2d texture: brdf
 }
 
-// Shader uniform data type
-enum ShaderUniformDataType
-{
-    SHADER_UNIFORM_FLOAT = 0, // Shader uniform type: float
-    SHADER_UNIFORM_VEC2 = 1, // Shader uniform type: vec2 (2 float)
-    SHADER_UNIFORM_VEC3 = 2, // Shader uniform type: vec3 (3 float)
-    SHADER_UNIFORM_VEC4 = 3, // Shader uniform type: vec4 (4 float)
-    SHADER_UNIFORM_INT = 4, // Shader uniform type: int
-    SHADER_UNIFORM_IVEC2 = 5, // Shader uniform type: ivec2 (2 int)
-    SHADER_UNIFORM_IVEC3 = 6, // Shader uniform type: ivec3 (3 int)
-    SHADER_UNIFORM_IVEC4 = 7, // Shader uniform type: ivec4 (4 int)
-    SHADER_UNIFORM_SAMPLER2D = 8 // Shader uniform type: sampler2d
+/// Alias `RL_SHADER_LOC_MAP_ALBEDO`
+enum RL_SHADER_LOC_MAP_DIFFUSE = RL_SHADER_LOC_MAP_ALBEDO;
+/// Alias `RL_SHADER_LOC_MAP_METALNESS`
+enum RL_SHADER_LOC_MAP_SPECULAR = RL_SHADER_LOC_MAP_METALNESS;
+
+/// Shader uniform data type
+enum {
+    RL_SHADER_UNIFORM_FLOAT = 0,    /// Shader uniform type: float
+    RL_SHADER_UNIFORM_VEC2 = 1,     /// Shader uniform type: vec2 (2 float)
+    RL_SHADER_UNIFORM_VEC3 = 2,     /// Shader uniform type: vec3 (3 float)
+    RL_SHADER_UNIFORM_VEC4 = 3,     /// Shader uniform type: vec4 (4 float)
+    RL_SHADER_UNIFORM_INT = 4,      /// Shader uniform type: int
+    RL_SHADER_UNIFORM_IVEC2 = 5,    /// Shader uniform type: ivec2 (2 int)
+    RL_SHADER_UNIFORM_IVEC3 = 6,    /// Shader uniform type: ivec3 (3 int)
+    RL_SHADER_UNIFORM_IVEC4 = 7,    /// Shader uniform type: ivec4 (4 int)
+    RL_SHADER_UNIFORM_SAMPLER2D = 8 /// Shader uniform type: sampler2d
 }
 
-// Shader attribute data types
-enum ShaderAttributeDataType
-{
-    SHADER_ATTRIB_FLOAT = 0, // Shader attribute type: float
-    SHADER_ATTRIB_VEC2 = 1, // Shader attribute type: vec2 (2 float)
-    SHADER_ATTRIB_VEC3 = 2, // Shader attribute type: vec3 (3 float)
-    SHADER_ATTRIB_VEC4 = 3 // Shader attribute type: vec4 (4 float)
+/// Shader attribute data types
+enum {
+    RL_SHADER_ATTRIB_FLOAT = 0, /// Shader attribute type: float
+    RL_SHADER_ATTRIB_VEC2 = 1,  /// Shader attribute type: vec2 (2 float)
+    RL_SHADER_ATTRIB_VEC3 = 2,  /// Shader attribute type: vec3 (3 float)
+    RL_SHADER_ATTRIB_VEC4 = 3   /// Shader attribute type: vec4 (4 float)
 }
 
-// Pixel formats
-// NOTE: Support depends on OpenGL version and platform
-enum PixelFormat
-{
-    PIXELFORMAT_UNCOMPRESSED_GRAYSCALE = 1, // 8 bit per pixel (no alpha)
-    PIXELFORMAT_UNCOMPRESSED_GRAY_ALPHA = 2, // 8*2 bpp (2 channels)
-    PIXELFORMAT_UNCOMPRESSED_R5G6B5 = 3, // 16 bpp
-    PIXELFORMAT_UNCOMPRESSED_R8G8B8 = 4, // 24 bpp
-    PIXELFORMAT_UNCOMPRESSED_R5G5B5A1 = 5, // 16 bpp (1 bit alpha)
-    PIXELFORMAT_UNCOMPRESSED_R4G4B4A4 = 6, // 16 bpp (4 bit alpha)
-    PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 = 7, // 32 bpp
-    PIXELFORMAT_UNCOMPRESSED_R32 = 8, // 32 bpp (1 channel - float)
-    PIXELFORMAT_UNCOMPRESSED_R32G32B32 = 9, // 32*3 bpp (3 channels - float)
-    PIXELFORMAT_UNCOMPRESSED_R32G32B32A32 = 10, // 32*4 bpp (4 channels - float)
-    PIXELFORMAT_UNCOMPRESSED_R16 = 11, // 16 bpp (1 channel - half float)
-    PIXELFORMAT_UNCOMPRESSED_R16G16B16 = 12, // 16*3 bpp (3 channels - half float)
-    PIXELFORMAT_UNCOMPRESSED_R16G16B16A16 = 13, // 16*4 bpp (4 channels - half float)
-    PIXELFORMAT_COMPRESSED_DXT1_RGB = 14, // 4 bpp (no alpha)
-    PIXELFORMAT_COMPRESSED_DXT1_RGBA = 15, // 4 bpp (1 bit alpha)
-    PIXELFORMAT_COMPRESSED_DXT3_RGBA = 16, // 8 bpp
-    PIXELFORMAT_COMPRESSED_DXT5_RGBA = 17, // 8 bpp
-    PIXELFORMAT_COMPRESSED_ETC1_RGB = 18, // 4 bpp
-    PIXELFORMAT_COMPRESSED_ETC2_RGB = 19, // 4 bpp
-    PIXELFORMAT_COMPRESSED_ETC2_EAC_RGBA = 20, // 8 bpp
-    PIXELFORMAT_COMPRESSED_PVRT_RGB = 21, // 4 bpp
-    PIXELFORMAT_COMPRESSED_PVRT_RGBA = 22, // 4 bpp
-    PIXELFORMAT_COMPRESSED_ASTC_4x4_RGBA = 23, // 8 bpp
-    PIXELFORMAT_COMPRESSED_ASTC_8x8_RGBA = 24 // 2 bpp
+/// Framebuffer attachment type
+enum {
+    RL_ATTACHMENT_COLOR_CHANNEL0 = 0, /// Framebuffer attachment type: color 0
+    RL_ATTACHMENT_COLOR_CHANNEL1 = 1, /// Framebuffer attachment type: color 1
+    RL_ATTACHMENT_COLOR_CHANNEL2 = 2, /// Framebuffer attachment type: color 2
+    RL_ATTACHMENT_COLOR_CHANNEL3 = 3, /// Framebuffer attachment type: color 3
+    RL_ATTACHMENT_COLOR_CHANNEL4 = 4, /// Framebuffer attachment type: color 4
+    RL_ATTACHMENT_COLOR_CHANNEL5 = 5, /// Framebuffer attachment type: color 5
+    RL_ATTACHMENT_COLOR_CHANNEL6 = 6, /// Framebuffer attachment type: color 6
+    RL_ATTACHMENT_COLOR_CHANNEL7 = 7, /// Framebuffer attachment type: color 7
+    RL_ATTACHMENT_DEPTH = 100,        /// Framebuffer attachment type: depth
+    RL_ATTACHMENT_STENCIL = 200       /// Framebuffer attachment type: stencil
 }
 
-// Texture parameters: filter mode
-// NOTE 1: Filtering considers mipmaps if available in the texture
-// NOTE 2: Filter is accordingly set for minification and magnification
-enum TextureFilter
-{
-    TEXTURE_FILTER_POINT = 0, // No filter, just pixel approximation
-    TEXTURE_FILTER_BILINEAR = 1, // Linear filtering
-    TEXTURE_FILTER_TRILINEAR = 2, // Trilinear filtering (linear with mipmaps)
-    TEXTURE_FILTER_ANISOTROPIC_4X = 3, // Anisotropic filtering 4x
-    TEXTURE_FILTER_ANISOTROPIC_8X = 4, // Anisotropic filtering 8x
-    TEXTURE_FILTER_ANISOTROPIC_16X = 5 // Anisotropic filtering 16x
+/// Framebuffer texture attachment type
+enum {
+    RL_ATTACHMENT_CUBEMAP_POSITIVE_X = 0, /// Framebuffer texture attachment type: cubemap, +X side
+    RL_ATTACHMENT_CUBEMAP_NEGATIVE_X = 1, /// Framebuffer texture attachment type: cubemap, -X side
+    RL_ATTACHMENT_CUBEMAP_POSITIVE_Y = 2, /// Framebuffer texture attachment type: cubemap, +Y side
+    RL_ATTACHMENT_CUBEMAP_NEGATIVE_Y = 3, /// Framebuffer texture attachment type: cubemap, -Y side
+    RL_ATTACHMENT_CUBEMAP_POSITIVE_Z = 4, /// Framebuffer texture attachment type: cubemap, +Z side
+    RL_ATTACHMENT_CUBEMAP_NEGATIVE_Z = 5, /// Framebuffer texture attachment type: cubemap, -Z side
+    RL_ATTACHMENT_TEXTURE2D = 100,        /// Framebuffer texture attachment type: texture2d
+    RL_ATTACHMENT_RENDERBUFFER = 200      /// Framebuffer texture attachment type: renderbuffer
 }
 
-// Texture parameters: wrap mode
-enum TextureWrap
-{
-    TEXTURE_WRAP_REPEAT = 0, // Repeats texture in tiled mode
-    TEXTURE_WRAP_CLAMP = 1, // Clamps texture to edge pixel in tiled mode
-    TEXTURE_WRAP_MIRROR_REPEAT = 2, // Mirrors and repeats the texture in tiled mode
-    TEXTURE_WRAP_MIRROR_CLAMP = 3 // Mirrors and clamps to border the texture in tiled mode
+/// Face culling mode
+enum {
+    RL_CULL_FACE_FRONT = 0, /// Front culling
+    RL_CULL_FACE_BACK = 1   /// Back culling
 }
 
-// Cubemap layouts
-enum CubemapLayout
-{
-    CUBEMAP_LAYOUT_AUTO_DETECT = 0, // Automatically detect layout type
-    CUBEMAP_LAYOUT_LINE_VERTICAL = 1, // Layout is defined by a vertical line with faces
-    CUBEMAP_LAYOUT_LINE_HORIZONTAL = 2, // Layout is defined by a horizontal line with faces
-    CUBEMAP_LAYOUT_CROSS_THREE_BY_FOUR = 3, // Layout is defined by a 3x4 cross with cubemap faces
-    CUBEMAP_LAYOUT_CROSS_FOUR_BY_THREE = 4 // Layout is defined by a 4x3 cross with cubemap faces
-}
+//------------------------------------------------------------------------------------
+// Functions Declaration - Matrix operations
+//------------------------------------------------------------------------------------
 
-// Font type, defines generation method
-enum FontType
-{
-    FONT_DEFAULT = 0, // Default font generation, anti-aliased
-    FONT_BITMAP = 1, // Bitmap font generation, no anti-aliasing
-    FONT_SDF = 2 // SDF font generation, requires external shader
-}
+// Prevents name mangling of functions
 
-// Color blending modes (pre-defined)
-enum BlendMode
-{
-    BLEND_ALPHA = 0, // Blend textures considering alpha (default)
-    BLEND_ADDITIVE = 1, // Blend textures adding colors
-    BLEND_MULTIPLIED = 2, // Blend textures multiplying colors
-    BLEND_ADD_COLORS = 3, // Blend textures adding colors (alternative)
-    BLEND_SUBTRACT_COLORS = 4, // Blend textures subtracting colors (alternative)
-    BLEND_ALPHA_PREMULTIPLY = 5, // Blend premultiplied textures considering alpha
-    BLEND_CUSTOM = 6, // Blend textures using custom src/dst factors (use rlSetBlendFactors())
-    BLEND_CUSTOM_SEPARATE = 7 // Blend textures using custom rgb/alpha separate src/dst factors (use rlSetBlendFactorsSeparate())
-}
+void rlMatrixMode (int mode); // Choose the current matrix to be transformed
+void rlPushMatrix (); // Push the current matrix to stack
+void rlPopMatrix (); // Pop latest inserted matrix from stack
+void rlLoadIdentity (); // Reset current matrix to identity matrix
+void rlTranslatef (float x, float y, float z); // Multiply the current matrix by a translation matrix
+void rlRotatef (float angle, float x, float y, float z); // Multiply the current matrix by a rotation matrix
+void rlScalef (float x, float y, float z); // Multiply the current matrix by a scaling matrix
+void rlMultMatrixf (const(float)* matf); // Multiply the current matrix by another matrix
+void rlFrustum (double left, double right, double bottom, double top, double znear, double zfar);
+void rlOrtho (double left, double right, double bottom, double top, double znear, double zfar);
+void rlViewport (int x, int y, int width, int height); // Set the viewport area
 
-// Gesture
-// NOTE: Provided as bit-wise flags to enable only desired gestures
-enum Gesture
-{
-    GESTURE_NONE = 0, // No gesture
-    GESTURE_TAP = 1, // Tap gesture
-    GESTURE_DOUBLETAP = 2, // Double tap gesture
-    GESTURE_HOLD = 4, // Hold gesture
-    GESTURE_DRAG = 8, // Drag gesture
-    GESTURE_SWIPE_RIGHT = 16, // Swipe right gesture
-    GESTURE_SWIPE_LEFT = 32, // Swipe left gesture
-    GESTURE_SWIPE_UP = 64, // Swipe up gesture
-    GESTURE_SWIPE_DOWN = 128, // Swipe down gesture
-    GESTURE_PINCH_IN = 256, // Pinch in gesture
-    GESTURE_PINCH_OUT = 512 // Pinch out gesture
-}
+//------------------------------------------------------------------------------------
+// Functions Declaration - Vertex level operations
+//------------------------------------------------------------------------------------
+void rlBegin (int mode); // Initialize drawing mode (how to organize vertex)
+void rlEnd (); // Finish vertex providing
+void rlVertex2i (int x, int y); // Define one vertex (position) - 2 int
+void rlVertex2f (float x, float y); // Define one vertex (position) - 2 float
+void rlVertex3f (float x, float y, float z); // Define one vertex (position) - 3 float
+void rlTexCoord2f (float x, float y); // Define one vertex (texture coordinate) - 2 float
+void rlNormal3f (float x, float y, float z); // Define one vertex (normal) - 3 float
+void rlColor4ub (ubyte r, ubyte g, ubyte b, ubyte a); // Define one vertex (color) - 4 byte
+void rlColor3f (float x, float y, float z); // Define one vertex (color) - 3 float
+void rlColor4f (float x, float y, float z, float w); // Define one vertex (color) - 4 float
 
-// Camera system modes
-enum CameraMode
-{
-    CAMERA_CUSTOM = 0, // Camera custom, controlled by user (UpdateCamera() does nothing)
-    CAMERA_FREE = 1, // Camera free mode
-    CAMERA_ORBITAL = 2, // Camera orbital, around target, zoom supported
-    CAMERA_FIRST_PERSON = 3, // Camera first person
-    CAMERA_THIRD_PERSON = 4 // Camera third person
-}
+//------------------------------------------------------------------------------------
+// Functions Declaration - OpenGL style functions (common to 1.1, 3.3+, ES2)
+// some of them are direct wrappers over OpenGL calls, some others are custom
+//------------------------------------------------------------------------------------
 
-// Camera projection
-enum CameraProjection
-{
-    CAMERA_PERSPECTIVE = 0, // Perspective projection
-    CAMERA_ORTHOGRAPHIC = 1 // Orthographic projection
-}
+// Vertex buffers state
+bool rlEnableVertexArray (uint vaoId); // Enable vertex array (VAO, if supported)
+void rlDisableVertexArray (); // Disable vertex array (VAO, if supported)
+void rlEnableVertexBuffer (uint id); // Enable vertex buffer (VBO)
+void rlDisableVertexBuffer (); // Disable vertex buffer (VBO)
+void rlEnableVertexBufferElement (uint id); // Enable vertex buffer element (VBO element)
+void rlDisableVertexBufferElement (); // Disable vertex buffer element (VBO element)
+void rlEnableVertexAttribute (uint index); // Enable vertex attribute index
+void rlDisableVertexAttribute (uint index); // Disable vertex attribute index
 
-// N-patch layout
-enum NPatchLayout
-{
-    NPATCH_NINE_PATCH = 0, // Npatch layout: 3x3 tiles
-    NPATCH_THREE_PATCH_VERTICAL = 1, // Npatch layout: 1x3 tiles
-    NPATCH_THREE_PATCH_HORIZONTAL = 2 // Npatch layout: 3x1 tiles
-}
+// Enable attribute state pointer
+// Disable attribute state pointer
 
-enum Colors
-{
-    // Some Basic Colors
-    // NOTE: Custom raylib color palette for amazing visuals on WHITE background
-    LIGHTGRAY = Color(200, 200, 200, 255), // Light Gray
-    GRAY = Color(130, 130, 130, 255), // Gray
-    DARKGRAY = Color(80, 80, 80, 255), // Dark Gray
-    YELLOW = Color(253, 249, 0, 255), // Yellow
-    GOLD = Color(255, 203, 0, 255), // Gold
-    ORANGE = Color(255, 161, 0, 255), // Orange
-    PINK = Color(255, 109, 194, 255), // Pink
-    RED = Color(230, 41, 55, 255), // Red
-    MAROON = Color(190, 33, 55, 255), // Maroon
-    GREEN = Color(0, 228, 48, 255), // Green
-    LIME = Color(0, 158, 47, 255), // Lime
-    DARKGREEN = Color(0, 117, 44, 255), // Dark Green
-    SKYBLUE = Color(102, 191, 255, 255), // Sky Blue
-    BLUE = Color(0, 121, 241, 255), // Blue
-    DARKBLUE = Color(0, 82, 172, 255), // Dark Blue
-    PURPLE = Color(200, 122, 255, 255), // Purple
-    VIOLET = Color(135, 60, 190, 255), // Violet
-    DARKPURPLE = Color(112, 31, 126, 255), // Dark Purple
-    BEIGE = Color(211, 176, 131, 255), // Beige
-    BROWN = Color(127, 106, 79, 255), // Brown
-    DARKBROWN = Color(76, 63, 47, 255), // Dark Brown
+// Textures state
+void rlActiveTextureSlot (int slot); // Select and active a texture slot
+void rlEnableTexture (uint id); // Enable texture
+void rlDisableTexture (); // Disable texture
+void rlEnableTextureCubemap (uint id); // Enable texture cubemap
+void rlDisableTextureCubemap (); // Disable texture cubemap
+void rlTextureParameters (uint id, int param, int value); // Set texture parameters (filter, wrap)
+void rlCubemapParameters (uint id, int param, int value); // Set cubemap parameters (filter, wrap)
 
-    WHITE = Color(255, 255, 255, 255), // White
-    BLACK = Color(0, 0, 0, 255), // Black
-    BLANK = Color(0, 0, 0, 0), // Blank (Transparent)
-    MAGENTA = Color(255, 0, 255, 255), // Magenta
-    RAYWHITE = Color(245, 245, 245, 255), // My own White (raylib logo)
-}
+// Shader state
+void rlEnableShader (uint id); // Enable shader program
+void rlDisableShader (); // Disable shader program
+
+// Framebuffer state
+void rlEnableFramebuffer (uint id); // Enable render texture (fbo)
+void rlDisableFramebuffer (); // Disable render texture (fbo), return to default framebuffer
+void rlActiveDrawBuffers (int count); // Activate multiple draw color buffers
+void rlBlitFramebuffer (int srcX, int srcY, int srcWidth, int srcHeight, int dstX, int dstY, int dstWidth, int dstHeight, int bufferMask); // Blit active framebuffer to main framebuffer
+
+// General render state
+void rlEnableColorBlend (); // Enable color blending
+void rlDisableColorBlend (); // Disable color blending
+void rlEnableDepthTest (); // Enable depth test
+void rlDisableDepthTest (); // Disable depth test
+void rlEnableDepthMask (); // Enable depth write
+void rlDisableDepthMask (); // Disable depth write
+void rlEnableBackfaceCulling (); // Enable backface culling
+void rlDisableBackfaceCulling (); // Disable backface culling
+void rlSetCullFace (int mode); // Set face culling mode
+void rlEnableScissorTest (); // Enable scissor test
+void rlDisableScissorTest (); // Disable scissor test
+void rlScissor (int x, int y, int width, int height); // Scissor test
+void rlEnableWireMode (); // Enable wire mode
+void rlEnablePointMode (); //  Enable point mode
+void rlDisableWireMode (); // Disable wire mode ( and point ) maybe rename
+void rlSetLineWidth (float width); // Set the line drawing width
+float rlGetLineWidth (); // Get the line drawing width
+void rlEnableSmoothLines (); // Enable line aliasing
+void rlDisableSmoothLines (); // Disable line aliasing
+void rlEnableStereoRender (); // Enable stereo rendering
+void rlDisableStereoRender (); // Disable stereo rendering
+bool rlIsStereoRenderEnabled (); // Check if stereo render is enabled
+
+void rlClearColor (ubyte r, ubyte g, ubyte b, ubyte a); // Clear color buffer with color
+void rlClearScreenBuffers (); // Clear used screen buffers (color and depth)
+void rlCheckErrors (); // Check and log OpenGL error codes
+void rlSetBlendMode (int mode); // Set blending mode
+void rlSetBlendFactors (int glSrcFactor, int glDstFactor, int glEquation); // Set blending mode factor and equation (using OpenGL factors)
+void rlSetBlendFactorsSeparate (int glSrcRGB, int glDstRGB, int glSrcAlpha, int glDstAlpha, int glEqRGB, int glEqAlpha); // Set blending mode factors and equations separately (using OpenGL factors)
+
+//------------------------------------------------------------------------------------
+// Functions Declaration - rlgl functionality
+//------------------------------------------------------------------------------------
+// rlgl initialization functions
+void rlglInit (int width, int height); // Initialize rlgl (buffers, shaders, textures, states)
+void rlglClose (); // De-initialize rlgl (buffers, shaders, textures)
+void rlLoadExtensions (void* loader); // Load OpenGL extensions (loader function required)
+int rlGetVersion (); // Get current OpenGL version
+void rlSetFramebufferWidth (int width); // Set current framebuffer width
+int rlGetFramebufferWidth (); // Get default framebuffer width
+void rlSetFramebufferHeight (int height); // Set current framebuffer height
+int rlGetFramebufferHeight (); // Get default framebuffer height
+
+uint rlGetTextureIdDefault (); // Get default texture id
+uint rlGetShaderIdDefault (); // Get default shader id
+int* rlGetShaderLocsDefault (); // Get default shader locations
+
+// Render batch management
+// but this render batch API is exposed in case of custom batches are required
+rlRenderBatch rlLoadRenderBatch (int numBuffers, int bufferElements); // Load a render batch system
+void rlUnloadRenderBatch (rlRenderBatch batch); // Unload render batch system
+void rlDrawRenderBatch (rlRenderBatch* batch); // Draw render batch data (Update->Draw->Reset)
+void rlSetRenderBatchActive (rlRenderBatch* batch); // Set the active render batch for rlgl (NULL for default internal)
+void rlDrawRenderBatchActive (); // Update and draw internal render batch
+bool rlCheckRenderBatchLimit (int vCount); // Check internal buffer overflow for a given number of vertex
+
+void rlSetTexture (uint id); // Set current texture for render batch and check buffers limits
+
+//------------------------------------------------------------------------------------------------------------------------
+
+// Vertex buffers management
+uint rlLoadVertexArray (); // Load vertex array (vao) if supported
+uint rlLoadVertexBuffer (const(void)* buffer, int size, bool dynamic); // Load a vertex buffer attribute
+uint rlLoadVertexBufferElement (const(void)* buffer, int size, bool dynamic); // Load a new attributes element buffer
+void rlUpdateVertexBuffer (uint bufferId, const(void)* data, int dataSize, int offset); // Update GPU buffer with new data
+void rlUpdateVertexBufferElements (uint id, const(void)* data, int dataSize, int offset); // Update vertex buffer elements with new data
+void rlUnloadVertexArray (uint vaoId);
+void rlUnloadVertexBuffer (uint vboId);
+void rlSetVertexAttribute (uint index, int compSize, int type, bool normalized, int stride, const(void)* pointer);
+void rlSetVertexAttributeDivisor (uint index, int divisor);
+void rlSetVertexAttributeDefault (int locIndex, const(void)* value, int attribType, int count); // Set vertex attribute default value
+void rlDrawVertexArray (int offset, int count);
+void rlDrawVertexArrayElements (int offset, int count, const(void)* buffer);
+void rlDrawVertexArrayInstanced (int offset, int count, int instances);
+void rlDrawVertexArrayElementsInstanced (int offset, int count, const(void)* buffer, int instances);
+
+// Textures management
+uint rlLoadTexture (const(void)* data, int width, int height, int format, int mipmapCount); // Load texture in GPU
+uint rlLoadTextureDepth (int width, int height, bool useRenderBuffer); // Load depth texture/renderbuffer (to be attached to fbo)
+uint rlLoadTextureCubemap (const(void)* data, int size, int format); // Load texture cubemap
+void rlUpdateTexture (uint id, int offsetX, int offsetY, int width, int height, int format, const(void)* data); // Update GPU texture with new data
+void rlGetGlTextureFormats (int format, uint* glInternalFormat, uint* glFormat, uint* glType); // Get OpenGL internal formats
+const(char)* rlGetPixelFormatName (uint format); // Get name string for pixel format
+void rlUnloadTexture (uint id); // Unload texture from GPU memory
+void rlGenTextureMipmaps (uint id, int width, int height, int format, int* mipmaps); // Generate mipmap data for selected texture
+void* rlReadTexturePixels (uint id, int width, int height, int format); // Read texture pixel data
+ubyte* rlReadScreenPixels (int width, int height); // Read screen pixel data (color buffer)
+
+// Framebuffer management (fbo)
+uint rlLoadFramebuffer (int width, int height); // Load an empty framebuffer
+void rlFramebufferAttach (uint fboId, uint texId, int attachType, int texType, int mipLevel); // Attach texture/renderbuffer to a framebuffer
+bool rlFramebufferComplete (uint id); // Verify framebuffer is complete
+void rlUnloadFramebuffer (uint id); // Delete framebuffer from GPU
+
+// Shaders management
+uint rlLoadShaderCode (const(char)* vsCode, const(char)* fsCode); // Load shader from code strings
+uint rlCompileShader (const(char)* shaderCode, int type); // Compile custom shader and return shader id (type: RL_VERTEX_SHADER, RL_FRAGMENT_SHADER, RL_COMPUTE_SHADER)
+uint rlLoadShaderProgram (uint vShaderId, uint fShaderId); // Load custom shader program
+void rlUnloadShaderProgram (uint id); // Unload shader program
+int rlGetLocationUniform (uint shaderId, const(char)* uniformName); // Get shader location uniform
+int rlGetLocationAttrib (uint shaderId, const(char)* attribName); // Get shader location attribute
+void rlSetUniform (int locIndex, const(void)* value, int uniformType, int count); // Set shader value uniform
+void rlSetUniformMatrix (int locIndex, Matrix mat); // Set shader value matrix
+void rlSetUniformSampler (int locIndex, uint textureId); // Set shader value sampler
+void rlSetShader (uint id, int* locs); // Set shader currently active (id and locations)
+
+// Compute shader management
+uint rlLoadComputeShaderProgram (uint shaderId); // Load compute shader program
+void rlComputeShaderDispatch (uint groupX, uint groupY, uint groupZ); // Dispatch compute shader (equivalent to *draw* for graphics pipeline)
+
+// Shader buffer storage object management (ssbo)
+uint rlLoadShaderBuffer (uint size, const(void)* data, int usageHint); // Load shader storage buffer object (SSBO)
+void rlUnloadShaderBuffer (uint ssboId); // Unload shader storage buffer object (SSBO)
+void rlUpdateShaderBuffer (uint id, const(void)* data, uint dataSize, uint offset); // Update SSBO buffer data
+void rlBindShaderBuffer (uint id, uint index); // Bind SSBO buffer
+void rlReadShaderBuffer (uint id, void* dest, uint count, uint offset); // Read SSBO buffer data (GPU->CPU)
+void rlCopyShaderBuffer (uint destId, uint srcId, uint destOffset, uint srcOffset, uint count); // Copy SSBO data between buffers
+uint rlGetShaderBufferSize (uint id); // Get SSBO buffer size
+
+// Buffer management
+void rlBindImageTexture (uint id, uint index, int format, bool readonly); // Bind image texture
+
+// Matrix state management
+Matrix rlGetMatrixModelview (); // Get internal modelview matrix
+Matrix rlGetMatrixProjection (); // Get internal projection matrix
+Matrix rlGetMatrixTransform (); // Get internal accumulated transform matrix
+Matrix rlGetMatrixProjectionStereo (int eye); // Get internal projection matrix for stereo render (selected eye)
+Matrix rlGetMatrixViewOffsetStereo (int eye); // Get internal view offset matrix for stereo render (selected eye)
+void rlSetMatrixProjection (Matrix proj); // Set a custom projection matrix (replaces internal projection matrix)
+void rlSetMatrixModelview (Matrix view); // Set a custom modelview matrix (replaces internal modelview matrix)
+void rlSetMatrixProjectionStereo (Matrix right, Matrix left); // Set eyes projection matrices for stereo rendering
+void rlSetMatrixViewOffsetStereo (Matrix right, Matrix left); // Set eyes view offsets matrices for stereo rendering
+
+// Quick and dirty cube/quad buffers load->draw->unload
+void rlLoadDrawCube (); // Load and draw a cube
+void rlLoadDrawQuad (); // Load and draw a quad

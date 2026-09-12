@@ -194,51 +194,6 @@ void eprintln(A...)(A args) {
     println!(StdStream.error)(args);
 }
 
-/// Prints values and their source location to stdout.
-void debugPrint(A)(A a, IStr file = __FILE__, Sz line = __LINE__) {
-    printf("DEBUG({}:{}):", file, line);
-    printf(" {}", a);
-    printf(eolStr);
-}
-
-/// Prints values and their source location to stdout.
-void debugPrint(A, B)(A a, B b, IStr file = __FILE__, Sz line = __LINE__) {
-    printf("DEBUG({}:{}):", file, line);
-    printf(" {}", a);
-    printf(" {}", b);
-    printf(eolStr);
-}
-
-/// Prints values and their source location to stdout.
-void debugPrint(A, B, C)(A a, B b, C c, IStr file = __FILE__, Sz line = __LINE__) {
-    printf("DEBUG({}:{}):", file, line);
-    printf(" {}", a);
-    printf(" {}", b);
-    printf(" {}", c);
-    printf(eolStr);
-}
-
-/// Prints values and their source location to stdout.
-void debugPrint(A, B, C, D)(A a, B b, C c, D d, IStr file = __FILE__, Sz line = __LINE__) {
-    printf("DEBUG({}:{}):", file, line);
-    printf(" {}", a);
-    printf(" {}", b);
-    printf(" {}", c);
-    printf(" {}", d);
-    printf(eolStr);
-}
-
-/// Prints values and their source location to stdout.
-void debugPrint(A, B, C, D, E)(A a, B b, C c, D d, E e, IStr file = __FILE__, Sz line = __LINE__) {
-    printf("DEBUG({}:{}):", file, line);
-    printf(" {}", a);
-    printf(" {}", b);
-    printf(" {}", c);
-    printf(" {}", d);
-    printf(" {}", e);
-    printf(eolStr);
-}
-
 /// Basic print function that can be used with types that have an `EchonFunc` field.
 /// Works like the `echo -n` command in POS*X compliant shells.
 @safe nothrow @nogc

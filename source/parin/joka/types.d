@@ -1304,7 +1304,7 @@ IStr toStr(T)(T value) {
     } else static if (__traits(isFloating, T)) {
         return floatingToStr(value, 2);
     } else {
-        static assert(0, "Type doesn't implement the `toStr` function.");
+        static assert(0, "Type doesn't implement the `toStr` function or includes a slice as a member.");
     }
 }
 
@@ -1493,16 +1493,11 @@ IStr fmtFloatingGroup(IStr[] fmtStrs, double[] args...) {
 }
 
 /// Halts the program with a TODO message indicating unimplemented code.
-/// Debug builds: runtime assert. Release builds: runtime assert or compile-time error.
-noreturn debugTodo(bool errorInRelease = true)(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
+noreturn debugTodo(IStr text, IStr file = __FILE__, Sz line = __LINE__) {
     debug {
         assert(0, "TODO({}:{}): {}".fmt(file, line, text));
     } else {
-        static if (errorInRelease) {
-            static assert(0, "Can't have TODOs in release builds.");
-        } else {
-            assert(0, "TODO({}:{}): {}".fmt(file, line, text));
-        }
+        static assert(0, "Can't have TODOs in release builds.");
     }
 }
 

@@ -5,17 +5,32 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-/// The `html5` module provides access to the html5.h functions.
-module parin.bindings.em.html5;
+/// The `em` module provides access to Emscripten functions.
+module parin.bindings.em;
 
 import parin.joka.types;
 
 nothrow @nogc extern(C):
 
-alias pthread_t = uint;
+// --- Header: emscripten.h
 
-enum EM_CALLBACK_THREAD_CONTEXT_MAIN_RUNTIME_THREAD = cast(pthread_t) 0x1;
-enum EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD      = cast(pthread_t) 0x2;
+enum EM_TIMING_SETTIMEOUT = 0;
+enum EM_TIMING_RAF = 1;
+enum EM_TIMING_SETIMMEDIATE = 2;
+
+void emscripten_set_main_loop(void* ptr, int fps, bool loop);
+void emscripten_cancel_main_loop();
+double emscripten_get_device_pixel_ratio();
+void emscripten_set_window_title(const(char)* title);
+void emscripten_hide_mouse();
+int emscripten_set_main_loop_timing(int mode, int value);
+
+// --- Header: html5.h
+
+alias em_pthread_t = uint;
+
+enum EM_CALLBACK_THREAD_CONTEXT_MAIN_RUNTIME_THREAD = cast(em_pthread_t) 0x1;
+enum EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD      = cast(em_pthread_t) 0x2;
 
 enum EMSCRIPTEN_EVENT_KEYPRESS              = 1;
 enum EMSCRIPTEN_EVENT_KEYDOWN               = 2;
@@ -115,16 +130,16 @@ struct EmscriptenTouchEvent {
 EMSCRIPTEN_RESULT emscripten_get_canvas_element_size(const(char)* target, int* width, int* height);
 EMSCRIPTEN_RESULT emscripten_get_element_css_size(const(char)* target, double* width, double* height);
 
-EMSCRIPTEN_RESULT emscripten_set_click_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_mousedown_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_mouseup_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_dblclick_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_mousemove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_mouseenter_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_mouseleave_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_click_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mousedown_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mouseup_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_dblclick_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mousemove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mouseenter_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_mouseleave_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_mouse_callback_func callback, em_pthread_t targetThread);
 EMSCRIPTEN_RESULT emscripten_get_mouse_status(EmscriptenMouseEvent* mouseState);
 
-EMSCRIPTEN_RESULT emscripten_set_touchstart_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_touchend_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_touchmove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
-EMSCRIPTEN_RESULT emscripten_set_touchcancel_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchstart_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchend_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchmove_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, em_pthread_t targetThread);
+EMSCRIPTEN_RESULT emscripten_set_touchcancel_callback_on_thread(const(char)* target, void* userData, bool useCapture, em_touch_callback_func callback, em_pthread_t targetThread);
