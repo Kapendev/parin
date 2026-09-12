@@ -16,6 +16,7 @@ public import parin.joka.io;
 public import parin.joka.math;
 public import parin.joka.memory;
 public import parin.joka.types;
+public import parin.joka.ui;
 public import parin.types;
 
 EngineState* _engineState;
@@ -613,7 +614,8 @@ struct DepthSort {
     }
 }
 
-extern(C) @trusted nothrow @nogc {
+@trusted nothrow @nogc {
+    extern(C)
     int _parinSortTopDown(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
@@ -622,7 +624,7 @@ extern(C) @trusted nothrow @nogc {
             : 1;
     }
 
-
+    extern(C)
     int _parinSortTopDownFast(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
@@ -631,6 +633,7 @@ extern(C) @trusted nothrow @nogc {
             : 1;
     }
 
+    extern(C)
     int _parinSortTopDownFastest(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
@@ -639,12 +642,19 @@ extern(C) @trusted nothrow @nogc {
             : 1;
     }
 
+    extern(C)
     int _parinSortLayered(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
         return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.i < pair2.i) )
             ? -1
             : 1;
+    }
+
+    IVec2 _parinTempUiTextSizeFunc(UiFont font, uint fontScale, const(char)[] text) {
+        auto data = cast(FontId*) font;
+        auto scale = Vec2(fontScale);
+        return measureTextSize(*data, text, DrawOptions(scale)).toIVec();
     }
 }
 
@@ -2689,6 +2699,118 @@ void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColo
     foreach (ref actor; world.actors) drawRect(actor.area.toRect(), actorColor.alpha(defaultEngineDebugColor1.a));
 }
 
+// --- UI Helpers
+
+/// Initializes the microui context and sets temporary text size functions. Value `font` should be a `FontId*`.
+@trusted
+void readyUi(ref UiContext ui, UiCommand[] commandsBuffer, char[] charDataBuffer, UiFont font = null, uint fontScale = 1, UiIconIdSizeFunc iconSizeFunc = null) {
+    auto data = font ? cast(FontId*) font : &_engineState.defaultFont;
+    ui.ready(&_parinTempUiTextSizeFunc, commandsBuffer, charDataBuffer, data, fontScale, iconSizeFunc);
+    ui.manualBordersMode = true;
+    if (data) {
+        auto size = data.size * ui.style.fontScale;
+        auto t = (size - 16.0f) / (38.0f - 16.0f);
+        if (t > 0.0f) {
+            // Scale factor: 0.0 at size=16, 1.0 at size=38.
+            ui.style.border = cast(int) lerp(1, 3, t);
+            ui.style.padding += cast(int) lerp(0, 8, t);
+        }
+    }
+}
+
+/// Handles input events and updates the microui context accordingly.
+void handleUiInput(ref UiContext ui) {
+    ui.input.mousePosition = mouse.toIVec();
+    ui.input.mouseButtonDown |= Mouse.left.isDown ? UiMouseButtonFlag.left : 0;
+    ui.input.mouseButtonPressed |= Mouse.left.isPressed ? UiMouseButtonFlag.left : 0;
+    ui.input.mouseButtonReleased |= Mouse.left.isReleased ? UiMouseButtonFlag.left : 0;
+    ui.input.mouseButtonDown |= Mouse.right.isDown ? UiMouseButtonFlag.right : 0;
+    ui.input.mouseButtonPressed |= Mouse.right.isPressed ? UiMouseButtonFlag.right : 0;
+    ui.input.mouseButtonReleased |= Mouse.right.isReleased ? UiMouseButtonFlag.right : 0;
+    ui.input.mouseButtonDown |= Mouse.middle.isDown ? UiMouseButtonFlag.middle : 0;
+    ui.input.mouseButtonPressed |= Mouse.middle.isPressed ? UiMouseButtonFlag.middle : 0;
+    ui.input.mouseButtonReleased |= Mouse.middle.isReleased ? UiMouseButtonFlag.middle : 0;
+
+    ui.input.keyDown |= Key.left.isDown ? UiKeyFlag.left : 0;
+    ui.input.keyPressed |= Key.left.isPressed ? UiKeyFlag.left : 0;
+    ui.input.keyReleased |= Key.left.isReleased ? UiKeyFlag.left : 0;
+
+    ui.input.keyDown |= Key.right.isDown ? UiKeyFlag.right : 0;
+    ui.input.keyPressed |= Key.right.isPressed ? UiKeyFlag.right : 0;
+    ui.input.keyReleased |= Key.right.isReleased ? UiKeyFlag.right : 0;
+
+    ui.input.keyDown |= Key.up.isDown ? UiKeyFlag.up : 0;
+    ui.input.keyPressed |= Key.up.isPressed ? UiKeyFlag.up : 0;
+    ui.input.keyReleased |= Key.up.isReleased ? UiKeyFlag.up : 0;
+
+    ui.input.keyDown |= Key.down.isDown ? UiKeyFlag.down : 0;
+    ui.input.keyPressed |= Key.down.isPressed ? UiKeyFlag.down : 0;
+    ui.input.keyReleased |= Key.down.isReleased ? UiKeyFlag.down : 0;
+
+    ui.input.keyDown |= Key.tab.isDown ? UiKeyFlag.tab : 0;
+    ui.input.keyPressed |= Key.tab.isPressed ? UiKeyFlag.tab : 0;
+    ui.input.keyReleased |= Key.tab.isReleased ? UiKeyFlag.tab : 0;
+
+    ui.input.keyDown |= Key.enter.isDown ? UiKeyFlag.enter : 0;
+    ui.input.keyPressed |= Key.enter.isPressed ? UiKeyFlag.enter : 0;
+    ui.input.keyReleased |= Key.enter.isReleased ? UiKeyFlag.enter : 0;
+
+    ui.input.keyDown |= Key.esc.isDown ? UiKeyFlag.esc : 0;
+    ui.input.keyPressed |= Key.esc.isPressed ? UiKeyFlag.esc : 0;
+    ui.input.keyReleased |= Key.esc.isReleased ? UiKeyFlag.esc : 0;
+
+    ui.input.keyDown |= Key.shift.isDown ? UiKeyFlag.shift : 0;
+    ui.input.keyPressed |= Key.shift.isPressed ? UiKeyFlag.shift : 0;
+    ui.input.keyReleased |= Key.shift.isReleased ? UiKeyFlag.shift : 0;
+}
+
+/// Draws the microui context to the screen.
+@trusted
+void drawUiState(ref UiContext ui) {
+    auto styleFont = cast(FontId*) ui.style.font;
+    auto styleTexture = cast(TextureId*) ui.style.texture;
+    auto parinOptions = DrawOptions(); // NOTE: Can be weird, but works if you are not a noob.
+
+    foreach (ref command; ui.commands) {
+        auto color = ui.style.colors[command.base.colorType];
+        parinOptions.color = color;
+        parinOptions.scale = Vec2(1);
+        with (UiCommandType) final switch (command.type) {
+            case none:
+                break;
+            case rect:
+                if (ui.manualBordersMode) {
+                    auto borderColor = ui.style.colors[(command.rect.flags & UiCommandFlag.off) ? UiColorType.borderOff : UiColorType.border];
+                    auto borderRect = command.rect.data;
+                    borderRect.addAll(ui.style.border);
+                    drawRect(borderRect.toRect(), borderColor);
+                    drawRect(command.rect.toRect(), color);
+                } else {
+                    drawRect(command.rect.toRect(), color);
+                }
+                break;
+            case text:
+                parinOptions.scale = Vec2(ui.style.fontScale);
+                drawText(*styleFont, command.text, command.text.area.position.toVec(), parinOptions);
+                break;
+            case icon:
+                break; // TODO: Probably needs a function pointer??
+        }
+    }
+}
+
+/// Begins input handling and UI processing.
+void beginUiFrame(ref UiContext ui) {
+    ui.handleUiInput();
+    ui.begin();
+}
+
+/// Ends UI processing and performs drawing.
+void endUiFrame(ref UiContext ui) {
+    ui.end();
+    ui.drawUiState();
+}
+
 /// This mixin sets up a main function that opens and updates the window using the `ready`, `update`, and `finish` functions.
 mixin template runGame(
     alias readyFunc,
@@ -2699,27 +2821,27 @@ mixin template runGame(
     IStr title = defaultEngineTitle,
     bool vsyncOff = false,
 ) {
-    int __parinMain() {
-        import __parin = parin.engine;
+    int _parinMain() {
+        import _parinModule = parin.engine;
         static if (__traits(isStaticFunction, readyFunc))  readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) __parin.updateWindow(&updateFunc);
+        static if (__traits(isStaticFunction, updateFunc)) _parinModule.updateWindow(&updateFunc);
         static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        __parin.closeWindow();
+        _parinModule.closeWindow();
         return 0;
     }
 
     version (D_BetterC) {
         extern(C)
         int main(int argc, const(char)** argv) {
-            import __parin = parin.engine;
-            __parin.openWindowC(width, height, argc, argv, title, !vsyncOff);
-            return __parinMain();
+            import _parinModule = parin.engine;
+            _parinModule.openWindowC(width, height, argc, argv, title, !vsyncOff);
+            return _parinMain();
         }
     } else {
         int main(immutable(char)[][] args) {
-            import __parin = parin.engine;
-            __parin.openWindow(width, height, args, title, !vsyncOff);
-            return __parinMain();
+            import _parinModule = parin.engine;
+            _parinModule.openWindow(width, height, args, title, !vsyncOff);
+            return _parinMain();
         }
     }
 }

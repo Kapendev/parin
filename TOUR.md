@@ -111,13 +111,12 @@ Parin consists of the following modules:
 
 - `parin.engine`: Core engine functionality
 - `parin.types`: Core engine types
-- `parin.ui`: Immediate-mode UI library (WIP)
 - `parin.addons`: Single-file D libraries that extend Parin
 - `parin.backend`: Platform dependent code
 - `parin.bindings`: Bindings to primarily C libraries
 - `parin.joka`: Joka library
 
-The `import parin` statement in the first example is a convenience module that publicly imports `parin.engine` and `parin.types`.
+The `import parin` statement in the first example is a convenience module that publicly imports `parin.engine`.
 
 ## Input
 

@@ -1,8 +1,6 @@
-/// This example shows how to use the new UI library.
-/// EXPERIMENTAL!!!
+/// This example shows how to use the new UI library. EXPERIMENTAL!!!
 
 import parin;
-import parin.ui;
 
 auto ui = UiContext();
 
