@@ -1250,40 +1250,11 @@ template isInterLitType(TT) { enum isInterLitType = is(TT == InterpolatedLiteral
 template isInterExpType(TT) { enum isInterExpType = is(TT == InterpolatedExpression!_, alias _); }
 // === END IES Support
 
-// Those functions exist to avoid template bloat for basic types while using the generic `toStr` function.
-// The only issue with them is that they force unsigned numbers and enum values to be a specific type.
-// For unsigned numbers, the `unsignedToStr` function can be used.
-// For enum values, the `enumToStr` function can be used.
-@trusted nothrow @nogc {
-    /// Converts the given value to a temporary string representation.
-    /// Assume that the returned string will be invalid after the next call to this function
-    IStr toStr(char value) {
-        return charToStr(value);
-    }
-
-    /// Converts the given value to a temporary string representation.
-    /// Assume that the returned string will be invalid after the next call to this function
-    IStr toStr(bool value) {
-        return boolToStr(value);
-    }
-
-    /// Converts the given value to a temporary string representation.
-    /// Assume that the returned string will be invalid after the next call to this function
-    IStr toStr(long value) {
-        return signedToStr(value);
-    }
-
-    /// Converts the given value to a temporary string representation.
-    /// Assume that the returned string will be invalid after the next call to this function
-    IStr toStr(double value) {
-        return floatingToStr(value, 2);
-    }
-
-    /// Converts the given value to a temporary string representation.
-    /// Assume that the returned string will be invalid after the next call to this function
-    IStr toStr(IStr value) {
-        return value;
-    }
+/// Converts the given value to a temporary string representation.
+/// Assume that the returned string will be invalid after the next call to this function.
+@trusted nothrow @nogc pure
+IStr toStr(IStr value) {
+    return value;
 }
 
 /// Converts the given value to a temporary string representation.
@@ -1299,6 +1270,8 @@ IStr toStr(T)(T value) {
         return value.toStr();
     } else static if (__traits(hasMember, T, "toString")) {
         return value.toString();
+    } else static if (is(T == enum)) {
+        return enumToStr(value);
     } else static if (is(T == struct)) {
         static if (T.tupleof.length == 0) {
             return T.stringof;
@@ -1308,16 +1281,28 @@ IStr toStr(T)(T value) {
 
             buffer[0] = '(';
             auto bufferLength = Sz(1);
-            static foreach (i, TT; T.tupleof) {
+            static foreach (i, member; T.tupleof) {
+                static if (is(typeof(T.tupleof[i]) : IStr)) buffer[bufferLength++] = '"';
                 temp = value.tupleof[i].toStr();
                 buffer[bufferLength .. bufferLength + temp.length] = temp;
                 bufferLength += temp.length;
+                static if (is(typeof(T.tupleof[i]) : IStr)) buffer[bufferLength++] = '"';
                 buffer[bufferLength++] = ' ';
             }
 
             buffer[bufferLength - 1] = ')';
             return buffer[0 .. bufferLength];
         }
+    } else static if (is(immutable(T) == immutable(char))) {
+        return charToStr(value);
+    } else static if (is(immutable(T) == immutable(bool))) {
+        return boolToStr(value);
+    } else static if (__traits(isUnsigned, T)) {
+        return unsignedToStr(value);
+    } else static if (__traits(isIntegral, T)) {
+        return signedToStr(value);
+    } else static if (__traits(isFloating, T)) {
+        return floatingToStr(value, 2);
     } else {
         static assert(0, "Type doesn't implement the `toStr` function.");
     }
