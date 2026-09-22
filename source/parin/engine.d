@@ -42,14 +42,15 @@ enum engineFontSmall = FontId(ResourceId(2));
 enum engineViewport = ViewportId(ResourceId(1));
 
 // +-- Engine Defaults
-enum defaultEngineTitle           = "Parin";
-enum defaultEngineWidth           = 1280;
-enum defaultEngineHeight          = 720;
-enum defaultEngineFpsMax          = 60;
-enum defaultEngineWindowMinWidth  = 320;
-enum defaultEngineWindowMinHeight = 180;
-enum defaultEngineWindowMinSize   = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
-enum defaultEngineDebugModeKey    = Keyboard.f3;
+enum defaultEngineTitle                 = "Parin";
+enum defaultEngineWidth                 = 1280;
+enum defaultEngineHeight                = 720;
+enum defaultEngineFpsMax                = 60;
+enum defaultEngineWindowMinWidth        = 320;
+enum defaultEngineWindowMinHeight       = 180;
+enum defaultEngineWindowBackgroundColor = 0x406060.toRgb();
+enum defaultEngineWindowMinSize         = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
+enum defaultEngineDebugModeKey          = Keyboard.f3;
 
 enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
@@ -700,7 +701,7 @@ void openWindow(int width, int height, const(IStr)[] args, IStr title = defaultE
     bk.openWindow(width, height, title, !vsyncOff, defaultEngineFpsMax, defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
     _engineState.tasks.push(Task());
     _engineState.arena.ready(defaultEngineArenaCapacity);
-    _engineState.viewport.data = loadViewport(0, 0, gray);
+    _engineState.viewport.data = loadViewport(0, 0, defaultEngineWindowBackgroundColor);
     if (vsyncOff) setFpsMax(0);
 
     loadTexture(cast(const(ubyte)[]) import("parin_monogram.png")).loadFont(6, 12);

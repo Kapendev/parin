@@ -5,14 +5,14 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
+// TODO: Use some wasip1libc math stubs. They are better than the ones here.
+
 /// The `math` module provides mathematical data structures and functions.
 module parin.joka.math;
 
 import parin.joka.types;
 
-version (WASI) {
-    version = JokaMathStubs;
-} else version (WASM4) {
+version (WASM4) {
     version = JokaMathStubs;
 }
 

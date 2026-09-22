@@ -937,9 +937,7 @@ version (JokaCustomMemory) {
         private extern(C) pragma(mangle, "memcmp") @system nothrow @nogc int stdc_memcmp(const(void)* s1, const(void)* s2, size_t count) {
             auto p1 = cast(const(ubyte)*) s1;
             auto p2 = cast(const(ubyte)*) s2;
-            foreach (i; 0 .. count) {
-                if (p1[i] != p2[i]) return p1[i] - p2[i];
-            }
+            foreach (i; 0 .. count) if (p1[i] != p2[i]) return p1[i] - p2[i];
             return 0;
         }
     }
