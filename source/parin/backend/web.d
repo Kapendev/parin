@@ -5,7 +5,7 @@
 // Project: https://github.com/Kapendev/parin
 // ---
 
-module parin.backend.rl;
+module parin.backend.web;
 
 import parin.joka.math;
 import parin.joka.memory;
