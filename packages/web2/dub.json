@@ -1,0 +1,8 @@
+{
+    "authors": ["Alexandros F. G. Kapretsos"],
+    "copyright": "Copyright © 2026, Alexandros F. G. Kapretsos",
+    "description": "A helper script to assist with the web export process.",
+    "license": "MIT",
+    "name": "web2",
+    "stringImportPaths": ["source"]
+}

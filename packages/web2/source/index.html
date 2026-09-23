@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Parin</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧶</text></svg>">
+
+    <script>
+    const decoder = new TextDecoder();
+    let memory = null;
+    let outBuf = "";
+
+    class WasmExit extends Error {
+        constructor(code) {
+            super(`wasm exited with code ${code}`);
+            this.code = code;
+        }
+    }
+
+    const wasi_snapshot_preview1 = {
+        fd_write(fd, iovecPtr, iovecLen, nwrittenPtr) {
+            const view = new DataView(memory.buffer);
+            let written = 0;
+            let text = "";
+            for (let i = 0; i < iovecLen; i += 1) {
+                const ptr = view.getUint32(iovecPtr + i * 8, true);
+                const len = view.getUint32(iovecPtr + i * 8 + 4, true);
+                text += decoder.decode(new Uint8Array(memory.buffer, ptr, len));
+                written += len;
+            }
+
+            if (fd === 1 || fd === 2) {
+                outBuf += text;
+                if (outBuf.includes("\n")) {
+                    const lines = outBuf.split("\n");
+                    outBuf = lines.pop();
+                    for (const line of lines) console.log(line);
+                }
+            }
+
+            view.setUint32(nwrittenPtr, written, true);
+            return 0;
+        },
+
+        proc_exit(code) {
+            throw new WasmExit(code);
+        },
+
+        clock_res_get(clockId, resPtr) {
+            const view = new DataView(memory.buffer);
+            view.setBigUint64(resPtr, 1000000n, true);
+            return 0;
+        },
+
+        clock_time_get(clockId, precision, timePtr) {
+            const view = new DataView(memory.buffer);
+            const nanos = clockId === 1
+                ? BigInt(Math.round(performance.now() * 1e6))
+                : BigInt(Date.now()) * 1000000n;
+            view.setBigUint64(timePtr, nanos, true);
+            return 0;
+        },
+    };
+
+    (async () => {
+        const { instance } = await WebAssembly.instantiateStreaming(
+            fetch("index.wasm"),
+            { wasi_snapshot_preview1 }
+        );
+
+        memory = instance.exports.memory;
+
+        try {
+            instance.exports._start();
+        } catch (e) {
+            if (e instanceof WasmExit) {
+                console.log("Exited via `proc_exit` with code: ", e.code);
+            } else {
+                throw e;
+            }
+        }
+    })();
+    </script>
+</head>
+<body style="background-color:#606060; color: white; font-size: 200%;">
+    <h1>✨ Hello D World ✨</h1>
+    <p>Press F12 to pay respects...</p>
+</body>
+</html>

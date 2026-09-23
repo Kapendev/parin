@@ -12,6 +12,7 @@
         "packages/rin",
         "packages/setup",
         "packages/web",
+        "packages/web2",
         "packages/mapy",
         "packages/hello",
         {

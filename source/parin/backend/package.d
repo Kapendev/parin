@@ -7,8 +7,8 @@
 
 module parin.backend;
 
-version (ParinWebBackend) {
-    static assert(0, "Not done!");
+version (ParinBackendWeb) {
+    public import parin.backend.web;
 } else {
     public import parin.backend.rl;
 }
