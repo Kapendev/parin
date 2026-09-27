@@ -8,7 +8,7 @@
 /// The `types` module provides basic type definitions, compile-time functions and ASCII string helpers.
 module parin.joka.types;
 
-version (WebAssembly) {
+version (Emscripten) {
     version = JokaTypesStubs;
 }
 

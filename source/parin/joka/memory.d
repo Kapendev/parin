@@ -14,9 +14,7 @@ module parin.joka.memory;
 
 import parin.joka.types;
 
-version (WASI) {
-    version = JokaMemoryStubs;
-} else version (WASM4) {
+version (WASM4) {
     version = JokaMemoryStubs;
 }
 

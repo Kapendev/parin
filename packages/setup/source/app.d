@@ -75,12 +75,8 @@ enum dubFileContent = `
     "description" : "A game made with Parin.",
     "license" : "proprietary",
     "name" : "game",
-    "stringImportPaths": [
-        "assets"
-    ],
-    "dependencies": {
-        "parin": "*"
-    },
+    "stringImportPaths": ["assets"],
+    "dependencies": {"parin": "*"},
     "configurations": [
         {
             "name": "default",

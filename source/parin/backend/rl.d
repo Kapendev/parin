@@ -8,7 +8,7 @@
 module parin.backend.rl;
 
 import rl = parin.bindings.rl;
-version (WebAssembly) {
+version (Emscripten) {
     import em = parin.bindings.em;
 }
 
@@ -20,7 +20,7 @@ import parin.types;
 __gshared BackendState* _backendState;
 
 // ---------- Config
-version (WebAssembly) {
+version (Emscripten) {
     enum defaultBackendResourcesCapacity = 256;
 } else {
     enum defaultBackendResourcesCapacity = 2048;
@@ -114,7 +114,7 @@ struct BackendState {
 /// Updates the window every frame with the given function.
 /// Returns when the given function returns true.
 void updateWindow(alias loopFunc)() {
-    version (WebAssembly) {
+    version (Emscripten) {
         extern(C) static void loopWebFunc() {
             if (loopFunc) em.emscripten_cancel_main_loop();
         }
@@ -166,7 +166,7 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
         jokaFree(image.data);
     }
 
-    version (WebAssembly) {
+    version (Emscripten) {
         static extern(C) nothrow @nogc bool _webMouseCallback(int eventType, em.EmscriptenMouseEvent* mouseEvent, void* userData) {
             switch (eventType) {
                 case em.EMSCRIPTEN_EVENT_MOUSEMOVE:
@@ -812,7 +812,7 @@ bool isFullscreen() {
 }
 
 void setIsFullscreen(bool value) {
-    version (WebAssembly) {
+    version (Emscripten) {
         // NOTE: Add Emscripten code later.
     } else {
         if (_backendState.windowIsChanging) return;
@@ -852,7 +852,7 @@ void updateIsFullscreen() {
 }
 
 bool isWindowCloseButtonPressed() {
-    version (WebAssembly) {
+    version (Emscripten) {
         return false;
     } else {
         return rl.WindowShouldClose();
@@ -873,7 +873,7 @@ void setWindowMaxSize(int width, int height) {
 
 void setWindowTitle(IStr value) {
     auto temp = value.toStrz().getOr();
-    version (WebAssembly) {
+    version (Emscripten) {
         em.emscripten_set_window_title(temp);
     } else {
         rl.SetWindowTitle(temp);
@@ -881,7 +881,7 @@ void setWindowTitle(IStr value) {
 }
 
 Fault setWindowIconFromFiles(IStr path) {
-    version (WebAssembly) {
+    version (Emscripten) {
         return Fault.none;
     } else {
         auto image = rl.LoadImage(path.toStrz().getOr());
@@ -895,7 +895,7 @@ Fault setWindowIconFromFiles(IStr path) {
 Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
     if (!path.endsWith(".png")) return Fault.invalid;
 
-    version (WebAssembly) {
+    version (Emscripten) {
         return Fault.none;
     } else {
         auto image = rl.Image();
@@ -1040,7 +1040,7 @@ void setVsync(bool value) {
 
 void updateVsync() {
     if (!_backendState.vsyncIsChanging) return;
-    version (WebAssembly) {
+    version (Emscripten) {
         // NOTE: Will not really do something, but anyway. We try.
         if (_backendState.vsync) em.emscripten_set_main_loop_timing(em.EM_TIMING_RAF, 1);
         else em.emscripten_set_main_loop_timing(em.EM_TIMING_SETTIMEOUT, 0);
@@ -1056,7 +1056,7 @@ bool isCursorVisible() {
 }
 
 void setIsCursorVisible(bool value) {
-    version (WebAssembly) {
+    version (Emscripten) {
         if (value) {}
         else em.emscripten_hide_mouse();
     } else {
@@ -1069,7 +1069,7 @@ void setIsCursorVisible(bool value) {
 // raylib does stuff internally.
 // NOTE: No idea if this is a good name.
 void pumpEvents() {
-    version (WebAssembly) {
+    version (Emscripten) {
         // Check the `_webMouseCallback` function.
     } else {
         auto vec = rl.GetTouchPosition(0);
@@ -1144,7 +1144,7 @@ Vec2 deltaMouse() {
 // TODO: The value still depends on target. Fix that one day?
 float deltaWheel() {
     float result = void;
-    version (WebAssembly) {
+    version (Emscripten) {
         result = rl.GetMouseWheelMove();
     } else version (OSX) {
         result = rl.GetMouseWheelMove();

@@ -24,6 +24,7 @@ private {
 /// The WASI Preview 1 import module.
 enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
 
+/* TODO: ASSERT MEME
 version (WASI) {
     @trusted nothrow @nogc
     extern(C) noreturn __assert(IStrz exp, IStrz file, Sz line) {
@@ -33,6 +34,7 @@ version (WASI) {
         procExit(1);
     }
 }
+*/
 
 /// Error codes returned by functions.
 /// Not all of these error codes are returned by the functions provided by this API;

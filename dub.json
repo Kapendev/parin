@@ -1,7 +1,5 @@
 {
-    "authors": [
-        "Alexandros F. G. Kapretsos"
-    ],
+    "authors": ["Alexandros F. G. Kapretsos"],
     "copyright": "Copyright © 2026, Alexandros F. G. Kapretsos",
     "description": "A delightfully simple 2D game engine.",
     "license": "MIT",
@@ -9,12 +7,12 @@
     "libs": ["raylib"],
     "stringImportPaths": ["source/parin"],
     "subPackages" : [
+        "packages/hello",
         "packages/rin",
+        "packages/server",
         "packages/setup",
         "packages/web",
-        "packages/web2",
-        "packages/mapy",
-        "packages/hello",
+        "packages/web-wasi",
         {
             "name": "init-exec",
             "sourceFiles": ["packages/setup/source/app.d"],

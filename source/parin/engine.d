@@ -48,7 +48,7 @@ enum defaultEngineHeight                = 720;
 enum defaultEngineFpsMax                = 60;
 enum defaultEngineWindowMinWidth        = 320;
 enum defaultEngineWindowMinHeight       = 180;
-enum defaultEngineWindowBackgroundColor = 0x406060.toRgb();
+enum defaultEngineWindowBackgroundColor = gray;
 enum defaultEngineWindowMinSize         = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
 enum defaultEngineDebugModeKey          = Keyboard.f3;
 

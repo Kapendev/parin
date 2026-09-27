@@ -15,7 +15,7 @@ import parin.types;
 BackendState* _backendState;
 
 // ---------- Config
-version (WebAssembly) {
+version (Emscripten) {
     enum defaultBackendResourcesCapacity = 256;
 } else {
     enum defaultBackendResourcesCapacity = 2048;

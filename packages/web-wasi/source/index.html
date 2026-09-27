@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Parin</title>
+    <title>App</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧶</text></svg>">
 
     <script>
@@ -63,10 +63,10 @@
     };
 
     (async () => {
-        const { instance } = await WebAssembly.instantiateStreaming(
-            fetch("index.wasm"),
-            { wasi_snapshot_preview1 }
-        );
+        const resource = await fetch("index.wasm");
+        const { instance } = await WebAssembly.instantiate(await resource.arrayBuffer(), {
+            wasi_snapshot_preview1,
+        });
 
         memory = instance.exports.memory;
 
@@ -77,6 +77,11 @@
                 console.log("Exited via `proc_exit` with code: ", e.code);
             } else {
                 throw e;
+            }
+        } finally {
+            if (outBuf) {
+                console.log(outBuf);
+                outBuf = "";
             }
         }
     })();
