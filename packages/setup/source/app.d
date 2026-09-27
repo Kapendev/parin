@@ -86,7 +86,7 @@ enum dubFileContent = `
             "name": "wasm",
             "targetType": "library",
             "targetName": "game_wasm",
-            "dflags": ["-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-i", "--release", "-betterC"]
+            "dflags": ["-mtriple=wasm32-emscripten", "-checkaction=halt", "-i", "--release", "-betterC"]
         }
     ]
 }

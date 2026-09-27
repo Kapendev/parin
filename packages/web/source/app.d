@@ -41,7 +41,7 @@ enum cflagsExtraForRl = [
 int doDefaultProject(IStr sourceDir, bool isSimpProject) {
     // Compile the game.
     if (isSimpProject) {
-        IStr[] args = ["ldc2", "-i", "-c", "-mtriple=wasm32-unknown-unknown-wasm", "-checkaction=halt", "-betterC"];
+        IStr[] args = ["ldc2", "-i", "-c", "-mtriple=wasm32-emscripten", "-checkaction=halt", "-betterC"];
         if (isReleaseBuild) args ~= "--release";
         args ~= "-I=" ~ sourceDir;
         args ~= "-J=" ~ join(sourceDir, "parin");
