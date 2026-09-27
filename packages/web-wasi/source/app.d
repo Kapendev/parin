@@ -40,11 +40,7 @@ int main(string[] args) {
         "--d-version=ParinBackendWeb",
     ];
     if (flags.betterc) dflags ~= "-betterC";
-    if (flags.release) {
-        dflags ~= "-release";
-    } else {
-        dflags ~= ["--d-debug", "-g"];
-    }
+    dflags ~= flags.release ? ["-release"] : ["--d-debug", "-g"];
 
     auto command = ["ldc2", "--mtriple=wasm32-wasip1"] ~ dflags;
     command ~= mainFilePaths;
@@ -65,28 +61,6 @@ int main(string[] args) {
         if (entry.name.endsWith(".o") || entry.name.endsWith(".obj")) entry.remove();
     }
     return 0;
-}
-
-string getImportPathFromDub(string packageName, string packageSourceName = "source") {
-    auto target = buildPath(packageName, packageSourceName);
-    version (Windows) {
-        target ~= `\"`;
-    } else {
-        target ~= `/"`;
-    }
-
-    auto content = execute(["dub", "describe"]).output;
-    auto lineIndex = 0UL;
-    foreach (i, c; content) {
-        if (c != '\n') continue;
-        auto line = content[lineIndex .. i].strip().strip(",");
-        if (line.endsWith(target)) {
-            return line[line.indexOf('"') + 1 .. $ - 1];
-        }
-        lineIndex = i + 1;
-    }
-
-    return "";
 }
 
 import std.stdio;
@@ -122,4 +96,26 @@ int run(string[] args...) {
     } catch (Exception e) {
         return 1;
     }
+}
+
+string getImportPathFromDub(string packageName, string packageSourceName = "source") {
+    auto target = buildPath(packageName, packageSourceName);
+    version (Windows) {
+        target ~= `\"`;
+    } else {
+        target ~= `/"`;
+    }
+
+    auto content = execute(["dub", "describe"]).output;
+    auto lineIndex = 0UL;
+    foreach (i, c; content) {
+        if (c != '\n') continue;
+        auto line = content[lineIndex .. i].strip().strip(",");
+        if (line.endsWith(target)) {
+            return line[line.indexOf('"') + 1 .. $ - 1];
+        }
+        lineIndex = i + 1;
+    }
+
+    return "";
 }
