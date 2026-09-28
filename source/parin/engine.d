@@ -1590,12 +1590,9 @@ void setIsPixelPerfect(bool value) {
 /// Returns the size of the text.
 @trusted
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (font.isNull) {
-            if (isNullFontVisible) font = engineFont;
-            else return Vec2();
-        }
+    if (font.isNull) {
+        if (isNullFontVisible) font = engineFont;
+        else return Vec2();
     }
 
     auto lineCodepointCount = 0;
@@ -2122,17 +2119,13 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
         }
         _engineState.depthSortData.pairBuffer.push(DepthSortPair(position.y, cast(ushort) (_engineState.depthSortData.commandBuffer.length - 1), options.layer));
     } else {
-        version (ParinSkipDrawChecks) {
-            pragma(msg, "Parin: Skipping draw checks.");
-        } else {
-            if (texture.isNull) {
-                if (isNullTextureVisible) {
-                    auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-                    drawRect(rect, defaultEngineDebugColor1);
-                    drawRect(rect, defaultEngineDebugColor2, 1);
-                }
-                return;
+        if (texture.isNull) {
+            if (isNullTextureVisible) {
+                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+                drawRect(rect, defaultEngineDebugColor1);
+                drawRect(rect, defaultEngineDebugColor2, 1);
             }
+            return;
         }
 
         auto target = Rect(position, area.size * options.scale);
@@ -2167,15 +2160,12 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (texture.isNull) {
-            if (isNullTextureVisible) {
-                drawRect(target, defaultEngineDebugColor1);
-                drawRect(target, defaultEngineDebugColor2, 1);
-            }
-            return;
+    if (texture.isNull) {
+        if (isNullTextureVisible) {
+            drawRect(target, defaultEngineDebugColor1);
+            drawRect(target, defaultEngineDebugColor2, 1);
         }
+        return;
     }
 
     // NOTE: New rule for options. Functions are allowed to ignore values. Should they handle bad values? Ehhh.
@@ -2210,16 +2200,13 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (!viewport.isValid) {
-            if (isNullTextureVisible) {
-                auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
-                drawRect(rect, defaultEngineDebugColor1);
-                drawRect(rect, defaultEngineDebugColor2, 1);
-            }
-            return;
+    if (!viewport.isValid) {
+        if (isNullTextureVisible) {
+            auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
         }
+        return;
     }
 
     // NOTE: JUST COPY PASTED THE TEXUTYRE CODE, but changed how the flip works.
@@ -2259,12 +2246,9 @@ void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = Draw
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (font.isNull) {
-            if (isNullFontVisible) font = engineFont;
-            else return Vec2();
-        }
+    if (font.isNull) {
+        if (isNullFontVisible) font = engineFont;
+        else return Vec2();
     }
 
     auto rect = font.glyphInfo(rune).rect.toRect();
@@ -2296,12 +2280,9 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
 
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (font.isNull) {
-            if (isNullFontVisible) font = engineFont;
-            else return Vec2();
-        }
+    if (font.isNull) {
+        if (isNullFontVisible) font = engineFont;
+        else return Vec2();
     }
 
     // NOTE: Text drawing needs to go over the text 3 times. This can be made into 2 times in the future if needed by copy-pasting the measureTextSize inside this function.
@@ -2566,16 +2547,13 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
     auto tempOptions = options;
     tempOptions.flip = tile.flip;
 
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (texture.isNull) {
-            if (isNullTextureVisible) {
-                auto rect = tile.area;
-                drawRect(rect, defaultEngineDebugColor1);
-                drawRect(rect, defaultEngineDebugColor2, 1);
-            }
-            return;
+    if (texture.isNull) {
+        if (isNullTextureVisible) {
+            auto rect = tile.area;
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
         }
+        return;
     }
 
     if (!tile.hasSize) return;
@@ -2584,16 +2562,13 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 
 /// Draws a tile map with a texture. The view area controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (texture.isNull) {
-            if (isNullTextureVisible) {
-                auto rect = Rect(map.position, map.size);
-                drawRect(rect, defaultEngineDebugColor1);
-                drawRect(rect, defaultEngineDebugColor2, 1);
-            }
-            return;
+    if (texture.isNull) {
+        if (isNullTextureVisible) {
+            auto rect = Rect(map.position, map.size);
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
         }
+        return;
     }
 
     if (!map.hasSize) return;
@@ -2639,26 +2614,19 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
     tempOptions.hook = sprite.hook;
     tempOptions.flip = sprite.flip;
 
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (texture.isNull) {
-            if (isNullTextureVisible) {
-                auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
-                drawRect(rect, defaultEngineDebugColor1);
-                drawRect(rect, defaultEngineDebugColor2, 1);
-            }
-            return;
+    if (texture.isNull) {
+        if (isNullTextureVisible) {
+            auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
+            drawRect(rect, defaultEngineDebugColor1);
+            drawRect(rect, defaultEngineDebugColor2, 1);
         }
+        return;
     }
 
     if (!sprite.hasSize) return;
     auto top = sprite.atlasTop + sprite.animation.frameRow * sprite.height;
     auto gridWidth = (texture.width - sprite.atlasLeft) / sprite.width;
-
-    version (ParinSkipDrawChecks) {
-    } else {
-        if (gridWidth == 0) return;
-    }
+    if (gridWidth == 0) return;
 
     auto row = sprite.frame / gridWidth;
     auto col = sprite.frame % gridWidth;

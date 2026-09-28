@@ -5,13 +5,9 @@
 // Project: https://github.com/Kapendev/joka
 // ---
 
+/// The `stdc` module provides access to C standard library functions.
 module parin.joka.stdc;
 
-extern(C) nothrow @nogc:
-
-// --- config.d
-
-// Map OSX/iOS/TVOS/WatchOS to Darwin.
 version (OSX) {
     version = Darwin;
 } else version (iOS) {
@@ -22,10 +18,10 @@ version (OSX) {
     version = Darwin;
 }
 
-version (WebAssembly) version = CLongIsInt;
-version (Windows)     version = CLongIsInt;
-
-version (CLongIsInt) {
+version (WebAssembly) {
+    alias CLong  = ptrdiff_t;
+    alias CULong = size_t;
+} else version (Windows) {
     alias CLong  = int;
     alias CULong = uint;
 } else {
@@ -33,7 +29,20 @@ version (CLongIsInt) {
     alias CULong = ulong;
 }
 
-// --- errno.h
+extern(C) @system nothrow @nogc {
+    alias QsortCompFunc = int function(const(void)* a, const(void)* b);
+}
+
+enum SEEK_SET      = 0;
+enum SEEK_CUR      = 1;
+enum SEEK_END      = 2;
+enum STDIN_FILENO  = 0;
+enum STDOUT_FILENO = 1;
+enum STDERR_FILENO = 2;
+
+struct FILE;
+
+extern(C) @system nothrow @nogc:
 
 // NOTE: Code from the D standard library.
 version (CRuntime_Microsoft) {
@@ -79,27 +88,14 @@ version (CRuntime_Microsoft) {
     // https://github.com/haiku/haiku/blob/master/headers/posix/errno.h
     ref int _errnop();
     alias errno = _errnop;
-} else {
-    // TODO: Works with Emscripten, no idea about other stuff. Change later.
+} else version (Emscripten) {
     ref int __errno_location();
     alias errno = __errno_location;
 }
 
-// --- stdio.h
-
-struct FILE;
-
-enum SEEK_SET = 0;
-enum SEEK_CUR = 1;
-enum SEEK_END = 2;
-
-enum STDIN_FILENO  = 0;
-enum STDOUT_FILENO = 1;
-enum STDERR_FILENO = 2;
-
 // NOTE: Code from the D standard library.
 version (CRuntime_Microsoft) {
-    FILE* __acrt_iob_func(int hnd);     // VS2015+, reimplemented in msvc.d for VS2013-
+    FILE* __acrt_iob_func(int hnd); // VS2015+, reimplemented in msvc.d for VS2013-
     FILE* stdin()() { return __acrt_iob_func(0); }
     FILE* stdout()() { return __acrt_iob_func(1); }
     FILE* stderr()() { return __acrt_iob_func(2); }
@@ -179,8 +175,7 @@ version (CRuntime_Microsoft) {
     extern __gshared FILE* stdin;
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
-} else {
-    // TODO: Works with Emscripten, no idea about other stuff. Change later.
+} else version (Emscripten) {
     extern __gshared FILE* stdin;
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
@@ -195,12 +190,8 @@ int fputs(const(char)* str, FILE* stream);
 size_t fwrite(const(void)* buffer, size_t size, size_t count, FILE* stream);
 int ferror(FILE* stream);
 
-// --- stdlib.h
-
 void* malloc(size_t size);
 void* calloc(size_t objectCount, size_t objectSize);
 void* realloc(void* ptr, size_t newSize);
 void free(void* ptr);
-
-alias STDLIB_QSORT_FUNC = int function(const(void)* a, const(void)* b);
-void qsort(void* ptr, size_t count, size_t size, STDLIB_QSORT_FUNC comp);
+void qsort(void* ptr, size_t count, size_t size, QsortCompFunc comp);

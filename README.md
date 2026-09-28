@@ -6,7 +6,7 @@ It's easy to set up, hackable, and comes with the essentials built in.
 *Some games made with Parin:*
 
 | Worms Within | Runani |
-| :--------------------------: | :----------: |
+| :----------: | :----: |
 | [![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within) | [![Runani](https://img.itch.zone/aW1hZ2UvMjkyMDM2OC8xNzQ5NDI5OS5wbmc=/original/cHymOJ.png)](https://kapendev.itch.io/runani) |
 
 ## Why Parin

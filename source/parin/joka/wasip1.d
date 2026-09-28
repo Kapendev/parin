@@ -12,29 +12,23 @@ import parin.joka.types;
 
 // LLVM copy-pasta.
 private {
-    version (LDC) {
+    version (WebAssembly) {
         import ldc = ldc.attributes;
         alias llvmAttr = ldc.llvmAttr;
     } else {
-        struct llvmAttr { immutable(char)[] a, b; }
+        struct llvmAttr {
+            immutable(char)[] a, b;
+        }
     }
-    @__ctfe llvmAttr importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
-}
 
-/// The WASI Preview 1 import module.
-enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
-
-/* TODO: ASSERT MEME
-version (WASI) {
-    @trusted nothrow @nogc
-    extern(C) noreturn __assert(IStrz exp, IStrz file, Sz line) {
-        Size bytes = void;
-        auto text = "ASSERT({}:{}): {}\n".fmt(file, line, exp).toCiovec();
-        fdWrite(stderr, &text, 1, &bytes);
-        procExit(1);
+    @trusted nothrow @nogc {
+        llvmAttr importName(immutable(char)[] name) {
+            return llvmAttr("wasm-import-name", name);
+        }
     }
+
+    enum wasi = llvmAttr("wasm-import-module", "wasi_snapshot_preview1");
 }
-*/
 
 /// Error codes returned by functions.
 /// Not all of these error codes are returned by the functions provided by this API;

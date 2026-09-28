@@ -10,7 +10,7 @@ extern(C) __gshared {
 }
 
 // No idea why I'm adding attributes, but it is what it is.
-extern(C) @trusted nothrow @nogc {
+extern(C) @system nothrow @nogc {
     alias QsortCompFunc = int function(const(void)* a, const(void)* b);
 }
 
@@ -84,7 +84,7 @@ enum M_SQRT1_2  = 0.70710678118654752440084436210484904;
 
 // LLVM copy-pasta.
 private {
-    version (LDC) {
+    version (WebAssembly) {
         import ldc = ldc.attributes;
         import ldcn = ldc.intrinsics;
 

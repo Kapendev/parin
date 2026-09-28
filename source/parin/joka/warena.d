@@ -1,52 +1,77 @@
 module parin.joka.warena;
 
-import parin.joka.types;
+enum defaultWarenaPageSize  = cast(size_t) (1U << 16U);
+enum defaultWarenaAlignment = cast(size_t) 16U;
 
-private @trusted nothrow @nogc {
+// LLVM copy-pasta.
+private {
     version (WebAssembly) {
-        import ldc = ldc.intrinsics;
-        extern(C) extern __gshared ubyte __heap_base;
-        alias llvm_wasm_memory_size = ldc.llvm_wasm_memory_size;
-        alias llvm_wasm_memory_grow = ldc.llvm_wasm_memory_grow;
+        import ldcn = ldc.intrinsics;
+
+        extern(C) __gshared extern ubyte __heap_base;
+        alias llvm_wasm_memory_size = ldcn.llvm_wasm_memory_size;
+        alias llvm_wasm_memory_grow = ldcn.llvm_wasm_memory_grow;
+        alias llvm_memcpy = ldcn.llvm_memcpy;
+
+        // With bulk memory, the LLVM memory intrinsics become the `memory.copy` and `memory.fill` instructions.
+        // Without it, they become calls to `memcpy` and friends, so using them in there would call itself forever.
+        enum hasBulkMemory = __traits(targetHasFeature, "bulk-memory");
     } else {
-        __gshared ubyte __heap_base;
-        int llvm_wasm_memory_size(int mem) => 0;
-        int llvm_wasm_memory_grow(int mem, int delta) => -1;
+        enum hasBulkMemory = false;
+
+        extern(C) __gshared ubyte __heap_base;
+
+        @trusted nothrow @nogc {
+            int llvm_wasm_memory_size(int) {
+                return 0;
+            }
+
+            int llvm_wasm_memory_grow(int, int) {
+                return -1;
+            }
+        }
+    }
+
+    @trusted nothrow @nogc {
+        void* heapBasePtr() {
+            return &__heap_base;
+        }
+
+        void* defaultWarenaMemcpy(void* dest, const(void)* src, size_t count) {
+            static if (hasBulkMemory) {
+                llvm_memcpy(dest, src, count);
+            } else {
+                foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+            }
+            return dest;
+        }
     }
 }
 
 struct WasmArena {
-    Sz initialTotalPageCount;
-    Sz offset;
-    Sz previousOffset;
+    size_t initialTotalPageCount;
+    size_t offset;
+    size_t checkpointOffset;
+    size_t previousOffset;
     void* lastPtr;
 
-    enum pageSize        = cast(Sz) (1U << 16U);
-    enum defaulAlignment = cast(Sz) 16U;
+    @trusted nothrow @nogc:
 
-    @safe nothrow @nogc:
-
-    @trusted
-    static void* heapBasePtr() {
-        return &__heap_base;
-    }
-
-    Sz totalPageCount() {
+    size_t totalPageCount() {
         if (initialTotalPageCount == 0) initialTotalPageCount = llvm_wasm_memory_size(0);
         return llvm_wasm_memory_size(0) - initialTotalPageCount;
     }
 
-    Sz totalPageSize() {
-        return cast(Sz) (totalPageCount << 16U);
+    size_t totalPageSize() {
+        return cast(size_t) (totalPageCount << 16U);
     }
 
-    @system
-    void* malloc(Sz alignment, Sz size) {
-        if (alignment == 0) alignment = defaulAlignment;
+    void* malloc(size_t alignment, size_t size) {
+        if (alignment == 0) alignment = defaultWarenaAlignment;
 
-        Sz alignedOffset = void;
+        size_t alignedOffset = void;
         if (offset == 0) {
-            auto ptr = cast(Sz) heapBasePtr;
+            auto ptr = cast(size_t) heapBasePtr;
             alignedOffset = ((ptr + (alignment - 1)) & ~(alignment - 1)) - ptr;
         } else {
             alignedOffset = (offset + (alignment - 1)) & ~(alignment - 1);
@@ -54,7 +79,7 @@ struct WasmArena {
 
         if (alignedOffset + size > totalPageSize) {
             auto neededByteCount = alignedOffset + size - totalPageSize;
-            auto pageGrowCount = (neededByteCount + (pageSize - 1)) >> 16U;
+            auto pageGrowCount = (neededByteCount + (defaultWarenaPageSize - 1)) >> 16U;
             if (llvm_wasm_memory_grow(0, cast(int) pageGrowCount) == -1) return null;
         }
         previousOffset = offset;
@@ -63,9 +88,8 @@ struct WasmArena {
         return lastPtr;
     }
 
-    @system
-    void* realloc(Sz alignment, void* oldPtr, Sz oldSize, Sz newSize) {
-        if (alignment == 0) alignment = defaulAlignment;
+    void* realloc(size_t alignment, void* oldPtr, size_t oldSize, size_t newSize) {
+        if (alignment == 0) alignment = defaultWarenaAlignment;
 
         auto shouldMemcpy = true;
         if (oldPtr == null) return malloc(alignment, newSize);
@@ -77,54 +101,34 @@ struct WasmArena {
         if (newPtr == null) return null;
         if (shouldMemcpy) {
             if (oldSize <= newSize) {
-                jokaMemcpy(newPtr, oldPtr, oldSize);
+                defaultWarenaMemcpy(newPtr, oldPtr, oldSize);
             } else {
-                jokaMemcpy(newPtr, oldPtr, newSize);
+                defaultWarenaMemcpy(newPtr, oldPtr, newSize);
             }
         }
         return newPtr;
     }
 
-    void clear() {
-        offset = 0;
-        previousOffset = 0;
+    void checkpoint() {
+        checkpointOffset = offset;
+    }
+
+    void rollback(size_t value) {
+        offset = value;
+        previousOffset = value;
         lastPtr = null;
     }
-}
 
-@trusted nothrow @nogc
-Sz testWasmArena() {
-    WasmArena arena;
-    ubyte* ptr;
-    ubyte* otherPtr;
+    void rollback() {
+        rollback(checkpointOffset);
+    }
 
-    if (arena.totalPageCount != 0) return __LINE__;
+    void dropCheckpoint() {
+        checkpointOffset = 0;
+    }
 
-    ptr = cast(ubyte*) arena.malloc(8, 64);
-    if (ptr == null) return __LINE__;
-    if ((cast(Sz) ptr) % 8 != 0) return __LINE__;
-    if (arena.totalPageCount != 1) return __LINE__;
-    ptr[0] = 0xAB;
-    if (ptr[0] != 0xAB) return __LINE__;
-
-    otherPtr = cast(ubyte*) arena.malloc(8, 64);
-    otherPtr[0] = 0xFE;
-    if ((cast(Sz) otherPtr) <= (cast(Sz) ptr)) return __LINE__;
-    if (arena.realloc(8, otherPtr, 64, 128) == ptr) return __LINE__;
-    if (otherPtr[0] != 0xFE) return __LINE__;
-
-    ptr = cast(ubyte*) arena.malloc(8, arena.pageSize + 1);
-    if (ptr == null) return __LINE__;
-    ptr[arena.pageSize] = 0xCD;
-    if (ptr[arena.pageSize] != 0xCD) return __LINE__;
-    if (arena.totalPageCount != 2) return __LINE__;
-
-    arena.clear();
-    if (arena.offset != 0) return __LINE__;
-    if (arena.previousOffset != 0) return __LINE__;
-    if (arena.lastPtr != null) return __LINE__;
-    ptr = cast(ubyte*) arena.malloc(8, 64);
-    if (ptr == null) return __LINE__;
-
-    return 0;
+    void clear() {
+        checkpointOffset = 0;
+        rollback(0);
+    }
 }

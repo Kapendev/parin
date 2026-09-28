@@ -12,10 +12,6 @@ module parin.joka.math;
 
 import parin.joka.types;
 
-version (WASM4) {
-    version = JokaMathStubs;
-}
-
 @safe nothrow @nogc:
 
 enum epsilon = 0.0001;                                /// The value of epsilon.

@@ -10,24 +10,13 @@ module parin.bindings.em;
 
 import parin.joka.types;
 
-nothrow @nogc extern(C):
-
-// --- Header: emscripten.h
-
-enum EM_TIMING_SETTIMEOUT = 0;
-enum EM_TIMING_RAF = 1;
-enum EM_TIMING_SETIMMEDIATE = 2;
-
-void emscripten_set_main_loop(void* ptr, int fps, bool loop);
-void emscripten_cancel_main_loop();
-double emscripten_get_device_pixel_ratio();
-void emscripten_set_window_title(const(char)* title);
-void emscripten_hide_mouse();
-int emscripten_set_main_loop_timing(int mode, int value);
-
-// --- Header: html5.h
+extern(C) @system nothrow @nogc:
 
 alias em_pthread_t = uint;
+
+enum EM_TIMING_SETTIMEOUT   = 0;
+enum EM_TIMING_RAF          = 1;
+enum EM_TIMING_SETIMMEDIATE = 2;
 
 enum EM_CALLBACK_THREAD_CONTEXT_MAIN_RUNTIME_THREAD = cast(em_pthread_t) 0x1;
 enum EM_CALLBACK_THREAD_CONTEXT_CALLING_THREAD      = cast(em_pthread_t) 0x2;
@@ -126,6 +115,13 @@ struct EmscriptenTouchEvent {
     bool metaKey;
     StaticArray!(EmscriptenTouchPoint, 32) touches;
 }
+
+void emscripten_set_main_loop(void* ptr, int fps, bool loop);
+void emscripten_cancel_main_loop();
+double emscripten_get_device_pixel_ratio();
+void emscripten_set_window_title(const(char)* title);
+void emscripten_hide_mouse();
+int emscripten_set_main_loop_timing(int mode, int value);
 
 EMSCRIPTEN_RESULT emscripten_get_canvas_element_size(const(char)* target, int* width, int* height);
 EMSCRIPTEN_RESULT emscripten_get_element_css_size(const(char)* target, double* width, double* height);

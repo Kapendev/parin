@@ -10,17 +10,23 @@ module parin.joka.wasm4;
 
 // LLVM copy-pasta.
 private {
-    version (LDC) {
+    version (WebAssembly) {
         import ldc = ldc.attributes;
         alias llvmAttr = ldc.llvmAttr;
     } else {
-        struct llvmAttr { immutable(char)[] a, b; }
+        struct llvmAttr {
+            immutable(char)[] a, b;
+        }
     }
-    @__ctfe llvmAttr importName(immutable(char)[] name) => llvmAttr("wasm-import-name", name);
-}
 
-/// The WASM-4 import module.
-enum wasm4 = llvmAttr("wasm-import-module", "env");
+    @trusted nothrow @nogc {
+        llvmAttr importName(immutable(char)[] name) {
+            return llvmAttr("wasm-import-name", name);
+        }
+    }
+
+    enum wasm4 = llvmAttr("wasm-import-module", "env");
+}
 
 // --- Platform Constants
 

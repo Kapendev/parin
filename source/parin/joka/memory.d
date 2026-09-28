@@ -14,13 +14,7 @@ module parin.joka.memory;
 
 import parin.joka.types;
 
-version (WASM4) {
-    version = JokaMemoryStubs;
-}
-
-// --- Core
-
-MemoryContext __memoryContext; // NOTE: Prefer using `_` instead of `__`. This is here for very cool history reasons.
+MemoryContext __memoryContext;
 enum defaultJokaMemoryAlignment = 16;
 
 // NOTE: Memory tracking related things are here.
