@@ -13,51 +13,26 @@ It's easy to set up, hackable, and comes with the essentials built in.
 
 Parin sits somewhere between a small library like [raylib](https://www.raylib.com/) and a big engine like [Godot](https://godotengine.org/).
 It offers more direction than small libraries, but far less overhead than big engines.
-It mainly focuses on:
+Its main ideas are:
 
 - **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
-- **Batteries included**: Arcady physics, debug UI, fixed aspect ratio...
 - **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or avoid it entirely when needed.
-- **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used directly without the engine. A [raylib example using Joka](https://kapendev.itch.io/k-merge-with-me) is available on Itch.
+- **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used on its own (see this [raylib example](https://kapendev.itch.io/k-merge-with-me)).
 
-### Major Features
+## Major Features
 
 - Pixel-perfect physics engine
 - Flexible dialogue system
 - Atlas-based animation library
 - Efficient tile map structures
-- Intuitive UI library (WIP)
-- Includes extras like [microui](examples/integrations/microui.d) and memory allocators ([tracking](https://github.com/Kapendev/parin/blob/main/TOUR.md#memory-tracking), [frame](https://github.com/Kapendev/parin/blob/main/TOUR.md#frame-allocator), [arena](https://github.com/Kapendev/joka/blob/main/examples/_003_memory.d#L25))
+- Simple UI library (WIP)
+- Includes extras like microui and memory allocators
 - Support for Windows, Linux, Web, and macOS
-
-## Basic Window Example
-
-```d
-import parin;
-
-// Called once when the game starts.
-void ready() {
-    lockResolution(320, 180);
-}
-
-// Called every frame while the game is running.
-// If true is returned, then the game will stop running.
-bool update(float dt) {
-    drawText("Hello world!", Vec2(8));
-    return false;
-}
-
-// Called once when the game ends.
-void finish() {}
-
-// Creates a main function that calls the given functions.
-mixin runGame!(ready, update, finish);
-```
 
 ## Quick Start
 
 This section shows how to install Parin using [DUB](https://dub.pm/).
-Create a new folder and run inside the following commands:
+Create a new folder and run the following commands inside it:
 
 ```sh
 dub init -t parin
@@ -65,6 +40,7 @@ dub run
 ```
 
 If everything is set up correctly, a window will appear showing a simple message.
+
 Available starting templates:
 
 ```sh
@@ -74,7 +50,7 @@ dub init -t parin -- entity
 
 ### Install Without DUB
 
-Create a new folder and run inside the following commands.
+Create a new folder and run the following commands inside it:
 
 Prepare the folder:
 
@@ -187,10 +163,6 @@ Flags:
 6. Enable the option "This file will be played in the browser."
 7. Save the changes.
 
-The web build script provides the `itch` flag to automate the first two steps.
-This flag currently only works on Linux.
-Contributions to add Windows and macOS support are welcome.
-
 ## Recommended Tools
 
 - Editor: [Zed](https://zed.dev/), [Pulsar](https://pulsar-edit.dev/)
@@ -207,11 +179,11 @@ Most ideas are welcome, except hot reloading.
 
 ## Frequently Asked Questions
 
-#### Is there a list of games made with Parin?
+### Is there a list of games made with Parin?
 
 Yes. Check the [projects](PROJECTS.md) page.
 
-#### Does Parin have a scene or entity system?
+### Does Parin have a scene or entity system?
 
 No. However, there are examples of how to build them using the `Union` type in the examples folder:
 
@@ -219,17 +191,7 @@ No. However, there are examples of how to build them using the `Union` type in t
 - [State (Scene) system](examples/basics/_019_state.d)
 - [Project template](examples/basics/_020_entity_template.d)
 
-#### Does Parin have a UI library?
-
-Yes. However, it's WIP and will change in the future.
-Check the [examples](examples/ui) folder for more information about how the current version works.
-
-The following libraries are also compatible with Parin:
-
-- [microui-d](examples/integrations/microui.d): A tiny immediate-mode UI library. A custom fork is included by default in `parin.addons`.
-- [Fluid](examples/integrations/fluid.d): A declarative cross-platform user interface library.
-
-#### Does Parin have a scripting language?
+### Does Parin have a scripting language?
 
 No. The following projects might be useful:
 
@@ -237,48 +199,42 @@ No. The following projects might be useful:
 - [arsd.script](https://arsd-official.dpldocs.info/arsd.script.html): The language is based on a hybrid of D and Javascript.
 - [bindbc-lua](https://github.com/BindBC/bindbc-lua): Static & dynamic D bindings to the C API of Lua.
 
-#### Any other helpful libraries that I can use?
+### Any other helpful libraries that I can use?
 
 - [arsd.ini](https://github.com/adamdruppe/arsd/blob/master/ini.d): INI configuration file support.
 - [newsdlang](https://codeberg.org/ZILtoid1991/newsdlang): SDLang/XDL configuration file support.
 - [dex-cf](https://codeberg.org/configuration-file/d): CF (Configuration File) support.
 - [dtiled](https://github.com/rcorre/dtiled): D language parser for Tiled map files.
 - [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
-- [Inochi2D](https://github.com/Inochi2D/inochi2d): A library for realtime 2D puppet animation. Using it with Parin = using the current Parin backend directly.
 - [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
 - [gameserver](https://github.com/schveiguy/gameserver): Simple game server for toying with online games.
 
-#### How can I load an asset outside of the assets folder?
+### How can I load an asset outside of the assets folder?
 
 Call `setIsUsingAssetsPath(false)` to disable the default behavior.
 Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
 
-#### How do I use the `Vec2` type?
+### How do I use the `Vec2` type?
 
 The `Vec2` type is provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
 An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in the Joka repository.
 It's a good idea to learn how Joka works in general.
 
-#### How can I hot reload assets or code?
+### How can I hot reload assets or code?
 
 Hot reloading is not supported out of the box because I (Kapendev) don't care about that feature.
 The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
-#### Are the Parin assets free to use?
+### Are the Parin assets free to use?
 
 Yes. Be sure to check the associated [README](assets/README.md) for any licensing notes.
 
-#### Is Parin a raylib wrapper?
+### Is Parin a raylib wrapper?
 
-No. Raylib is the current backend.
-A custom backend may be added in the future, but it's not a priority.
+No. Raylib is one of its backends.
+A custom backend is being worked on, but it's still experimental.
 Contributions are welcome.
 
-#### What are Parin's priorities?
-
-The goal is a smooth experience, similar to Godot or Unity.
-Its main design inspirations are [Processing](https://processing.org/) and [RPG Maker](https://rpgmakerofficial.com/en/).
-
-#### Can I use Parin for HD games?
+### Can I use Parin for HD games?
 
 Yes.
