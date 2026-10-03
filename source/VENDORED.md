@@ -5,7 +5,7 @@ Commit hashes and other details in this file are updated with every new release.
 
 ## Libraries
 
-- `./parin/joka` - commit `9a90869` (https://github.com/Kapendev/joka)
+- `./parin/joka` - commit `64a4b79` (https://github.com/Kapendev/joka)
 
 ## Assets
 
