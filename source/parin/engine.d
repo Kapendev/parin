@@ -823,11 +823,11 @@ void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
     }
 }
 
-Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(font, fmt(header, args, footer), position, options, extra);
 }
 
-Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(fmt(header, args, footer), position, options, extra);
 }
 
@@ -2279,7 +2279,7 @@ Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 @trusted
-Vec2 drawText(FontId font, IStr text, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 512;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
@@ -2408,7 +2408,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position = Vec2(8), DrawOptions optio
 
 /// Draws text with the default font at the given position with the provided draw options.
 /// Call `setDefaultFont` before using this function.
-Vec2 drawText(IStr text, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
 
