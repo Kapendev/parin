@@ -35,11 +35,7 @@ int main(string[] args) {
 
     auto libPath = buildPath(webPath, "libraylib.a");
     if (!libPath.exists) libPath = buildPath(webPath, "libraylib.web.a");
-    if (!libPath.exists) {
-        writeln(`Missing: `, libPath);
-        writeln(`Download the webassembly zip from "https://github.com/raysan5/raylib/releases".`);
-        return 1;
-    }
+    if (!libPath.exists) std.file.write(libPath, import("libraylib.a"));
 
     auto mainFilePaths = dirEntries(sourcePath, SpanMode.shallow)
         .filter!(entry => entry.name.endsWith(".d"))
