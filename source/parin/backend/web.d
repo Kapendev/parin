@@ -15,7 +15,8 @@ import parin.types;
 BackendState* _backendState;
 
 // ---------- Config
-version (Emscripten) {
+version (WASI) {
+    import ldc.attributes;
     enum defaultBackendResourcesCapacity = 256;
 } else {
     enum defaultBackendResourcesCapacity = 2048;
@@ -31,13 +32,35 @@ struct BackendState {}
 
 /// Updates the window every frame with the given function.
 /// Returns when the given function returns true.
-void updateWindow(alias loopFunc)() {}
+void updateWindow(alias updateWindowLoop, alias finishWindowLoop)() {
+    version (WASI) {
+        static extern(C) @llvmAttr("wasm-export-name", "_update") bool _update(float dt) {
+            if (updateWindowLoop) {
+                finishWindowLoop();
+                return true;
+            } else {
+                return false;
+            }
+        }
+    } else {
+        while (true) if (updateWindowLoop) {
+            finishWindowLoop();
+            break;
+        }
+    }
+}
 
 @trusted nothrow:
 
-void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {}
+void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int windowMinWidth, int windowMinHeight) {
+    _backendState = cast(BackendState*) jokaMalloc(BackendState.sizeof);
+    *_backendState = BackendState();
+}
 
-void closeWindow() {}
+void closeWindow() {
+    jokaFree(_backendState);
+    _backendState = null;
+}
 
 Maybe!Surface loadSurface(IStr path, IStr file = __FILE__, Sz line = __LINE__) {
     return Maybe!Surface();

@@ -109,6 +109,7 @@ struct EngineViewport {
 struct EngineState {
     EngineFlags flags = defaultEngineFlags;
     UpdateFunc updateFunc;
+    CallFunc finishFunc;
     Keyboard debugModeKey = defaultEngineDebugModeKey;
     bool debugModePreviousState;
     bool debugModeEnteringFrameState;
@@ -724,7 +725,7 @@ void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = def
 /// Returns when the update function returns true.
 /// Avoid calling this function manually.
 @trusted
-void updateWindow(UpdateFunc updateFunc) {
+void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
     static bool updateWindowLoop() {
         // Update buffers and resources.
         bk.pumpEvents();
@@ -800,30 +801,33 @@ void updateWindow(UpdateFunc updateFunc) {
         return result;
     }
 
-    _engineState.updateFunc = updateFunc;
-    _engineState.flags |= EngineFlag.isUpdating;
-    bk.updateWindow!(updateWindowLoop);
-    _engineState.flags &= ~EngineFlag.isUpdating;
-}
+    static void finishWindowLoop() {
+        if (_engineState.finishFunc) _engineState.finishFunc();
+    }
 
-/// Closes the window.
-/// Avoid calling this function manually.
-@trusted
-void closeWindow() {
+    _engineState.updateFunc = updateFunc;
+    _engineState.finishFunc = finishFunc;
+    _engineState.flags |= EngineFlag.isUpdating;
+    bk.updateWindow!(updateWindowLoop, finishWindowLoop);
+    _engineState.flags &= ~EngineFlag.isUpdating;
+
     auto isLogging = isLoggingMemoryTrackingInfo;
     _engineState.arena.free();
     _engineState.depthSortData.free();
     _engineState.jokaFree();
     _engineState = null;
     bk.closeWindow();
-    if (isLogging) printf(memoryTrackingInfo);
+    version (D_BetterC) {
+    } else {
+        if (isLogging) printf(memoryTrackingInfo);
+    }
 }
 
-Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(font, fmt(header, args, footer), position, options, extra);
 }
 
-Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(fmt(header, args, footer), position, options, extra);
 }
 
@@ -2275,7 +2279,7 @@ Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 
 /// Draws the specified text with the given font at the given position using the provided draw options.
 @trusted
-Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(FontId font, IStr text, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 512;
     static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
     static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
@@ -2404,7 +2408,7 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
 
 /// Draws text with the default font at the given position with the provided draw options.
 /// Call `setDefaultFont` before using this function.
-Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
+Vec2 drawText(IStr text, Vec2 position = Vec2(8), DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(_engineState.defaultFont, text, position, options, extra);
 }
 
@@ -2793,18 +2797,29 @@ mixin template runGame(
     int _parinMain() {
         import _parinModule = parin.engine;
         static if (__traits(isStaticFunction, readyFunc))  readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) _parinModule.updateWindow(&updateFunc);
-        static if (__traits(isStaticFunction, finishFunc)) finishFunc();
-        _parinModule.closeWindow();
+        static if (__traits(isStaticFunction, updateFunc)) {
+            static if (__traits(isStaticFunction, finishFunc)) {
+                _parinModule.updateWindow(&updateFunc, &finishFunc);
+            } else {
+                _parinModule.updateWindow(&updateFunc);
+            }
+        }
         return 0;
     }
 
     version (D_BetterC) {
-        extern(C)
-        int main(int argc, const(char)** argv) {
-            import _parinModule = parin.engine;
-            _parinModule.openWindowC(width, height, argc, argv, title, !vsyncOff);
-            return _parinMain();
+        version (Emscripten) {
+            extern(C) int main(int argc, const(char)** argv) {
+                import _parinModule = parin.engine;
+                _parinModule.openWindowC(width, height, argc, argv, title, !vsyncOff);
+                return _parinMain();
+            }
+        } else version (WASI) {
+            extern(C) void main() {
+                import _parinModule = parin.engine;
+                _parinModule.openWindowC(width, height, 0, null, title, !vsyncOff);
+                _parinMain();
+            }
         }
     } else {
         int main(immutable(char)[][] args) {

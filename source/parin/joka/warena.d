@@ -37,7 +37,7 @@ private {
             return &__heap_base;
         }
 
-        void* defaultWarenaMemcpy(void* dest, const(void)* src, size_t count) {
+        void* warenaMemcpy(void* dest, const(void)* src, size_t count) {
             static if (hasBulkMemory) {
                 llvm_memcpy(dest, src, count);
             } else {
@@ -101,9 +101,9 @@ struct WasmArena {
         if (newPtr == null) return null;
         if (shouldMemcpy) {
             if (oldSize <= newSize) {
-                defaultWarenaMemcpy(newPtr, oldPtr, oldSize);
+                warenaMemcpy(newPtr, oldPtr, oldSize);
             } else {
-                defaultWarenaMemcpy(newPtr, oldPtr, newSize);
+                warenaMemcpy(newPtr, oldPtr, newSize);
             }
         }
         return newPtr;

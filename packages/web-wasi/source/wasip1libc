@@ -59,8 +59,6 @@ enum EINVAL   = 28;
 alias CLong  = ptrdiff_t;
 alias CULong = size_t;
 
-alias defaultWarenaMemcpy = memcpy;
-
 enum defaultWarenaPageSize  = cast(size_t) (1U << 16U);
 enum defaultWarenaAlignment = cast(size_t) 16U;
 
@@ -129,6 +127,15 @@ private {
         void* heapBasePtr() {
             return &__heap_base;
         }
+
+        void* warenaMemcpy(void* dest, const(void)* src, size_t count) {
+            static if (hasBulkMemory) {
+                llvm_memcpy(dest, src, count);
+            } else {
+                foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
+            }
+            return dest;
+        }
     }
 }
 
@@ -185,9 +192,9 @@ struct WasmArena {
         if (newPtr == null) return null;
         if (shouldMemcpy) {
             if (oldSize <= newSize) {
-                defaultWarenaMemcpy(newPtr, oldPtr, oldSize);
+                warenaMemcpy(newPtr, oldPtr, oldSize);
             } else {
-                defaultWarenaMemcpy(newPtr, oldPtr, newSize);
+                warenaMemcpy(newPtr, oldPtr, newSize);
             }
         }
         return newPtr;
@@ -266,12 +273,7 @@ void* memset(void* dest, int ch, size_t count) {
 }
 
 void* memcpy(void* dest, const(void)* src, size_t count) {
-    static if (hasBulkMemory) {
-        llvm_memcpy(dest, src, count);
-    } else {
-        foreach (i; 0 .. count) (cast(ubyte*) dest)[i] = (cast(ubyte*) src)[i];
-    }
-    return dest;
+    return warenaMemcpy(dest, src, count);
 }
 
 void* memmove(void* dest, const(void)* src, size_t count) {
@@ -599,6 +601,13 @@ void abort() {
 
 void exit(int status) {
     proc_exit(status);
+}
+
+void __assert_fail(const(char)* expr, const(char)* file, uint line, const(char)* func) {
+    write(fdstderr, "Assertion failed: ".ptr, 18);
+    write(fdstderr, expr, expr.strlen);
+    write(fdstderr, "\n".ptr, 1);
+    abort();
 }
 
 int isspace(int c) {
