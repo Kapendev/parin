@@ -124,7 +124,7 @@ sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-deve
 ## Documentation
 
 Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
-For more details, see the [tour page](TOUR.md) or the [DDOX page](https://kapendev.xyz/parin/).
+For more details, see the [tour page](TOUR.md).
 The [DDOX](https://github.com/dlang/ddox) documentation engine can also be used locally to create an overview with:
 
 ```sh
@@ -133,27 +133,11 @@ cd parin_package
 dub run -b ddox
 ```
 
-## Ideas
-
-If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
-You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
-Most ideas are welcome, except ECS or hot reloading.
-
-## Devlogs & Articles
+### Articles
 
 - Latest: [I Stopped Fighting My Tools](https://blog.dlang.org/2026/05/29/i-stopped-fighting-my-tools-and-built-a-game-engine-in-d/)
 - More: [dev.to/kapendev](https://dev.to/kapendev)
 - Archive: [parin/archive](archive/)
-
-## Recommended Tools
-
-While it is possible to use any tool with Parin, these open-source ones are simple to use and work well:
-
-- Editor: [Micro](https://micro-editor.github.io/), [Pulsar](https://pulsar-edit.dev/)
-- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
-- Levels: [Tiled](https://www.mapeditor.org/)
-- Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
-- Music: [MilkyTracker](https://milkytracker.org/)
 
 ## Web Builds
 
@@ -207,6 +191,22 @@ Flags:
 The web build script provides the `itch` flag to automate the first two steps.
 This flag currently only works on Linux.
 Contributions to add Windows and macOS support are welcome.
+
+## Recommended Tools
+
+While it is possible to use any tool with Parin, these open-source ones are simple to use and work well:
+
+- Editor: [Micro](https://micro-editor.github.io/), [Pulsar](https://pulsar-edit.dev/)
+- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
+- Levels: [Tiled](https://www.mapeditor.org/)
+- Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
+- Music: [MilkyTracker](https://milkytracker.org/)
+
+## Ideas
+
+If you notice anything missing, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
+You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
+Most ideas are welcome, except hot reloading.
 
 ## Frequently Asked Questions
 
