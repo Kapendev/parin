@@ -53,7 +53,7 @@ favicon.ico
 lib*
 test*
 index.*
-emscripten_shell.html
+*shell.html
 game_web.zip
 *.wasm
 *.so
@@ -76,19 +76,7 @@ enum dubFileContent = `
     "license" : "proprietary",
     "name" : "game",
     "stringImportPaths": ["assets"],
-    "dependencies": {"parin": "*"},
-    "configurations": [
-        {
-            "name": "default",
-            "targetType": "executable"
-        },
-        {
-            "name": "wasm",
-            "targetType": "library",
-            "targetName": "game_wasm",
-            "dflags": ["-mtriple=wasm32-emscripten", "-checkaction=halt", "-i", "--release", "-betterC"]
-        }
-    ]
+    "dependencies": {"parin": "*"}
 }
 `[1 .. $];
 

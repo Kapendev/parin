@@ -158,7 +158,8 @@ While it is possible to use any tool with Parin, these open-source ones are simp
 ## Web Builds
 
 Parin includes a build script for the web in the [packages](packages/) folder.
-Building for the web requires [Emscripten](https://emscripten.org/) (version `4.0.23` is recommended).
+Building for the web requires [LDC](https://github.com/ldc-developers/ldc/releases) and [Emscripten](https://emscripten.org/) (version `4.0.23` is recommended).
+While installing LDC, unpack `ldc2-X.Y.Z-addon-emscripten.tar.xz` from the same [releases page](https://github.com/ldc-developers/ldc/releases) into the LDC installation folder.
 
 Running the script with DUB:
 
@@ -173,26 +174,16 @@ Without DUB:
 # Or: .\parin_package\scripts\web.bat
 ```
 
-Projects requiring the D runtime can be built using the `gc` flag provided by the build script.
-This flag also requires [OpenD](https://opendlang.org/index.html).
-Note that exceptions are not supported and that currently some DUB related limitations apply like having to include all dependencies inside the source folder.
-Make sure `opend install xpack-emscripten` has been run at least once before using it.
+Help:
 
-Using the flag with DUB:
-
-```sh
-dub run parin:web -- gc
 ```
-
-Without DUB:
-
-```sh
-./parin_package/scripts/web gc
-# Or: .\parin_package\scripts\web.bat gc
+Usage:
+  dub run parin:web -- [flags]
+Flags:
+  -betterc  Use the `-betterC` flag.
+  -release  Use the `-release` flag.
+  -build    Avoid emrun after a successful build.
 ```
-
-To speed up build times, use the `debug` flag.
-The `build` flag can be used to build the project without running the game.
 
 ### Uploading Web Builds to itch.io
 

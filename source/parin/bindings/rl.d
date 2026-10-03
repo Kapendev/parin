@@ -7,7 +7,6 @@
 
 /// The `rl` module provides access to raylib functions.
 module parin.bindings.rl;
-pragma(lib, "raylib");
 
 import joka = parin.joka.math;
 
