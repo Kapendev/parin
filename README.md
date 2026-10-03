@@ -175,7 +175,6 @@ Flags:
 2. Select these files and add them to a ZIP file:
 
     ```
-    favicon.ico
     index.data
     index.html
     index.js
@@ -194,9 +193,7 @@ Contributions to add Windows and macOS support are welcome.
 
 ## Recommended Tools
 
-While it is possible to use any tool with Parin, these open-source ones are simple to use and work well:
-
-- Editor: [Micro](https://micro-editor.github.io/), [Pulsar](https://pulsar-edit.dev/)
+- Editor: [Zed](https://zed.dev/), [Pulsar](https://pulsar-edit.dev/)
 - Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
 - Levels: [Tiled](https://www.mapeditor.org/)
 - Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
