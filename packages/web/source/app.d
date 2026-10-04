@@ -44,7 +44,7 @@ int main(string[] args) {
 
     auto dflags = ["-i"];
     if (flags.betterc) dflags ~= ["-betterC", "--checkaction=halt"];
-    dflags ~= flags.release ? ["-release"] : ["--d-debug", "-g"];
+    dflags ~= flags.release ? ["-release", "-O2"] : ["--d-debug", "-g"];
 
     auto command = ["ldc2", "--mtriple=wasm32-emscripten"] ~ dflags;
     command ~= mainFilePaths;

@@ -40,7 +40,7 @@ int main(string[] args) {
         "--d-version=ParinBackendWeb",
     ];
     if (flags.betterc) dflags ~= "-betterC";
-    dflags ~= flags.release ? ["-release"] : ["--d-debug", "-g"];
+    dflags ~= flags.release ? ["-release", "-O2"] : ["--d-debug", "-g"];
 
     auto command = ["ldc2", "--mtriple=wasm32-wasip1"] ~ dflags;
     command ~= mainFilePaths;
