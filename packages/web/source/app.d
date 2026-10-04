@@ -49,6 +49,7 @@ int main(string[] args) {
     auto command = ["ldc2", "--mtriple=wasm32-emscripten"] ~ dflags;
     command ~= mainFilePaths;
     command ~= libPath;
+    if (sourcePath != parinImportPath) command ~= "-I=" ~ sourcePath;
     command ~= "-I=" ~ parinImportPath;
     command ~= "-J=" ~ buildPath(parinImportPath, "parin");
     command ~= "-of=" ~ outputPath;

@@ -44,6 +44,7 @@ int main(string[] args) {
 
     auto command = ["ldc2", "--mtriple=wasm32-wasip1"] ~ dflags;
     command ~= mainFilePaths;
+    if (sourcePath != parinImportPath) command ~= "-I=" ~ sourcePath;
     command ~= "-I=" ~ parinImportPath;
     command ~= "-J=" ~ buildPath(parinImportPath, "parin");
     if (!flags.libc) {
