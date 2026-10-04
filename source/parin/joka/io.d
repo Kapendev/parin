@@ -14,6 +14,7 @@ import parin.joka.types;
 // TODO: Should be changed with something better?
 //   There could be a backend file like in Parin that has an IO interface.
 version (Emscripten) {
+    import stdc = parin.joka.stdc;
 } else version (WASI) {
     version = ReadWriteFileIsEmpty;
     import wasi = parin.joka.wasip1;
@@ -35,7 +36,11 @@ enum StdStream : ubyte {
 @trusted nothrow @nogc
 void basicPrint(IStr text, StdStream stream = StdStream.output, Sz* writtenCount = null) {
     if (text.length == 0 || stream == StdStream.input) return;
-    version (WASI) {
+    version (Emscripten) {
+        auto targetStream = stream == StdStream.output ? stdc.stdout : stdc.stderr;
+        auto stdcBytes = stdc.fwrite(text.ptr, 1, text.length, targetStream);
+        if (writtenCount) *writtenCount = stdcBytes;
+    } else version (WASI) {
         auto targetStream = stream == StdStream.output ? wasi.stdout : wasi.stderr;
         auto wasiBytes = wasi.Size();
         auto wasiText = wasi.toCiovec(text);
