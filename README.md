@@ -5,9 +5,9 @@ It's easy to set up, hackable, and comes with the essentials built in.
 
 *Some games made with Parin:*
 
-| Worms Within | Runani |
-| :----------: | :----: |
-| [![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within) | [![Runani](https://img.itch.zone/aW1hZ2UvMjkyMDM2OC8xNzQ5NDI5OS5wbmc=/original/cHymOJ.png)](https://kapendev.itch.io/runani) |
+| Worms Within | A Short Metamorphosis |
+| :----------: | :-------------------: |
+| [![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within) | [![A Short Metamorphosis](https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png)](https://kapendev.itch.io/a-short-metamorphosis) |
 
 ## Why Parin
 
@@ -52,22 +52,22 @@ dub init -t parin -- entity
 
 Create a new folder and run the following commands inside it:
 
-Prepare the folder:
+1. Prepare the folder:
 
-```sh
-git clone --depth 1 https://github.com/Kapendev/parin parin_package
-./parin_package/scripts/prepare
-# Or: .\parin_package\scripts\prepare.bat
-```
+    ```sh
+    git clone --depth 1 https://github.com/Kapendev/parin parin_package
+    ./parin_package/scripts/prepare
+    # Or: .\parin_package\scripts\prepare.bat
+    ```
 
-Run the project:
+2. Run the project:
 
-```sh
-./parin_package/scripts/run
-# Or: .\parin_package\scripts\run.bat
-# Or: ./parin_package/scripts/run ldc2 macos
-# Or: ./parin_package/scripts/run opend
-```
+    ```sh
+    ./parin_package/scripts/run
+    # Or: .\parin_package\scripts\run.bat
+    # Or: ./parin_package/scripts/run ldc2 macos
+    # Or: ./parin_package/scripts/run opend
+    ```
 
 ### Required Libraries on Linux
 
@@ -109,7 +109,7 @@ cd parin_package
 dub run -b ddox
 ```
 
-### Articles
+Articles:
 
 - Latest: [I Stopped Fighting My Tools](https://blog.dlang.org/2026/05/29/i-stopped-fighting-my-tools-and-built-a-game-engine-in-d/)
 - More: [dev.to/kapendev](https://dev.to/kapendev)
@@ -134,7 +134,7 @@ Without DUB:
 # Or: .\parin_package\scripts\web.bat
 ```
 
-Help:
+API:
 
 ```
 Usage:
@@ -148,34 +148,19 @@ Flags:
 ### Uploading Web Builds to itch.io
 
 1. Open the web folder.
-2. Select these files and add them to a ZIP file:
-
-    ```
-    index.data
-    index.html
-    index.js
-    index.wasm
-    ```
-
+2. Select the `index.*` files and add them to a ZIP file.
 3. Go to itch.io and create a new project.
 4. Under "Kind of project", choose "HTML."
-5. Upload the ZIP file.
-6. Enable the option "This file will be played in the browser."
-7. Save the changes.
-
-## Recommended Tools
-
-- Editor: [Zed](https://zed.dev/), [Pulsar](https://pulsar-edit.dev/)
-- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
-- Levels: [Tiled](https://www.mapeditor.org/)
-- Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
-- Music: [MilkyTracker](https://milkytracker.org/)
+5. Upload the ZIP file and enable the option "This file will be played in the browser."
 
 ## Ideas
 
 If you notice anything missing, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except hot reloading.
+
+Small extras that don't belong in the core can live in the [addons](addons/) folder as single-file D libraries.
+Open a PR and add the file there.
 
 ## Frequently Asked Questions
 
@@ -208,6 +193,14 @@ No. The following projects might be useful:
 - [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
 - [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
 - [gameserver](https://github.com/schveiguy/gameserver): Simple game server for toying with online games.
+
+### Recommended tools?
+
+- Editor: [Zed](https://zed.dev/), [Pulsar](https://pulsar-edit.dev/)
+- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
+- Levels: [Tiled](https://www.mapeditor.org/)
+- Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
+- Music: [MilkyTracker](https://milkytracker.org/)
 
 ### How can I load an asset outside of the assets folder?
 

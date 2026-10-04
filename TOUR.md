@@ -1,7 +1,7 @@
 # Parin Tour (WIP)
 
 This guide will go over **some of the features** of the engine and provide examples of how to use them.
-If you notice anything missing or want to contribute, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
+If you notice anything missing, feel free to open an [issue](https://github.com/Kapendev/parin/issues)!
 
 ## Getting Started
 
