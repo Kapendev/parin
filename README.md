@@ -159,7 +159,7 @@ If you notice anything missing, feel free to open an [issue](https://github.com/
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except hot reloading.
 
-Small extras that don't belong in the core can live in the [addons](addons/) folder as single-file D libraries.
+Small extras that don't belong in the core can live in the [addons](source/parin/addons) folder as single-file D libraries.
 Open a PR and add the file there.
 
 ## Frequently Asked Questions
