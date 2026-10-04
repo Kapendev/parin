@@ -171,11 +171,11 @@ version (CRuntime_Microsoft) {
     extern __gshared FILE* stdin;
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
-} else version (WASI) {
+} else version (Emscripten) {
     extern __gshared FILE* stdin;
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
-} else version (Emscripten) {
+} else version (WASI) {
     extern __gshared FILE* stdin;
     extern __gshared FILE* stdout;
     extern __gshared FILE* stderr;
