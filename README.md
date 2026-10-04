@@ -3,11 +3,9 @@
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
 It's easy to set up, hackable, and comes with the essentials built in.
 
-*Some games made with Parin:*
+*Game Made with Parin: [Worms Within](https://kapendev.itch.io/worms-within)*
 
-| Worms Within | A Short Metamorphosis |
-| :----------: | :-------------------: |
-| [![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within) | [![A Short Metamorphosis](https://img.itch.zone/aW1hZ2UvMjYzNzg0Ni8xNTcxOTU0Ny5wbmc=/original/JxyUQe.png)](https://kapendev.itch.io/a-short-metamorphosis) |
+[![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within)
 
 ## Why Parin
 
@@ -71,7 +69,8 @@ Create a new folder and run the following commands inside it:
 
 ### Required Libraries on Linux
 
-Some libraries for sound, graphics, and input handling are required before using Parin on Linux. Below are installation commands for some Linux distributions.
+Some libraries for sound, graphics, and input handling are required before using Parin on Linux.
+Below are installation commands for some Linux distributions.
 
 Ubuntu:
 
@@ -166,7 +165,7 @@ Open a PR and add the file there.
 
 ### Is there a list of games made with Parin?
 
-Yes. Check the [projects](PROJECTS.md) page.
+Check the [projects](PROJECTS.md) page.
 
 ### Does Parin have a scene or entity system?
 
