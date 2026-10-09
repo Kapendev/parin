@@ -2811,20 +2811,20 @@ mixin template runGame(
         version (Emscripten) {
             extern(C) int main(int argc, const(char)** argv) {
                 import _parinModule = parin.engine;
-                _parinModule.openWindowC(width, height, argc, argv, title, !vsyncOff);
+                _parinModule.openWindowC(width, height, argc, argv, title, vsyncOff);
                 return _parinMain();
             }
         } else version (WASI) {
             extern(C) void main() {
                 import _parinModule = parin.engine;
-                _parinModule.openWindowC(width, height, 0, null, title, !vsyncOff);
+                _parinModule.openWindowC(width, height, 0, null, title, vsyncOff);
                 _parinMain();
             }
         }
     } else {
         int main(immutable(char)[][] args) {
             import _parinModule = parin.engine;
-            _parinModule.openWindow(width, height, args, title, !vsyncOff);
+            _parinModule.openWindow(width, height, args, title, vsyncOff);
             return _parinMain();
         }
     }

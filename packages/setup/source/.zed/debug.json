@@ -1,0 +1,14 @@
+[{
+    "label": "Debug Game",
+    "adapter": "CodeLLDB",
+    "request": "launch",
+    "program": "$ZED_WORKTREE_ROOT/game",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "relativePathBase": "$ZED_WORKTREE_ROOT",
+    "breakpointMode": "file",
+    "expressions": "simple",
+    "stopOnEntry": false,
+    "initCommands": ["command script import \"$ZED_WORKTREE_ROOT/.zed/dlang_formatters.py\""],
+    "preRunCommands": ["type category enable dlang"],
+    "build": {"command": "dub", "args": ["build"], "cwd": "$ZED_WORKTREE_ROOT"}
+}]

@@ -3,7 +3,7 @@
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
 It's easy to set up, hackable, and comes with the essentials built in.
 
-*Game Made with Parin: [Worms Within](https://kapendev.itch.io/worms-within)*
+Game Made with Parin: [Worms Within](https://kapendev.itch.io/worms-within)
 
 [![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within)
 
@@ -13,8 +13,8 @@ Parin sits somewhere between a small library like [raylib](https://www.raylib.co
 It offers more direction than small libraries, but far less overhead than big engines.
 Its main ideas are:
 
-- **Code-driven design**: No engine-mandated architecture, so code can be structured however fits the game.
-- **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or avoid it entirely when needed.
+- **Code-driven design**: No engine-mandated architecture, so gameplay code can be structured however fits the game.
+- **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or avoid it entirely.
 - **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used on its own (see this [raylib example](https://kapendev.itch.io/k-merge-with-me)).
 
 ## Major Features
@@ -25,7 +25,7 @@ Its main ideas are:
 - Efficient tile map structures
 - Simple UI library (WIP)
 - Includes extras like microui and memory allocators
-- Support for Windows, Linux, Web, and macOS
+- Support for Web, Windows, Linux, and macOS
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ dub init -t parin -- entity
 
 ### Install Without DUB
 
-Create a new folder and run the following commands inside it:
+Create a new folder and run the following to...
 
 1. Prepare the folder:
 
@@ -100,7 +100,7 @@ sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-deve
 
 Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
 For more details, see the [tour page](TOUR.md).
-The [DDOX](https://github.com/dlang/ddox) documentation engine can also be used locally to create an overview with:
+The [DDOX](https://github.com/dlang/ddox) documentation engine can also be used to create an overview with:
 
 ```sh
 git clone --depth=1 https://github.com/Kapendev/parin parin_package
@@ -144,7 +144,7 @@ Flags:
   -build    Avoid emrun after a successful build.
 ```
 
-### Uploading Web Builds to itch.io
+Uploading to itch.io:
 
 1. Open the web folder.
 2. Select the `index.*` files and add them to a ZIP file.
@@ -165,7 +165,11 @@ Open a PR and add the file there.
 
 ### Is there a list of games made with Parin?
 
-Check the [projects](PROJECTS.md) page.
+- [Twenty Seconds, Twenty Steps](https://kapendev.itch.io/twenty-seconds-twenty-steps)
+- [Worms Within](https://kapendev.itch.io/worms-within)
+- [Clean & Haunted](https://kapendev.itch.io/clean-haunted)
+- [Runani](https://kapendev.itch.io/runani)
+- [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
 
 ### Does Parin have a scene or entity system?
 
@@ -183,7 +187,7 @@ No. The following projects might be useful:
 - [arsd.script](https://arsd-official.dpldocs.info/arsd.script.html): The language is based on a hybrid of D and Javascript.
 - [bindbc-lua](https://github.com/BindBC/bindbc-lua): Static & dynamic D bindings to the C API of Lua.
 
-### Any other helpful libraries that I can use?
+### Any other libraries that I can use?
 
 - [arsd.ini](https://github.com/adamdruppe/arsd/blob/master/ini.d): INI configuration file support.
 - [newsdlang](https://codeberg.org/ZILtoid1991/newsdlang): SDLang/XDL configuration file support.
@@ -195,9 +199,9 @@ No. The following projects might be useful:
 
 ### Recommended tools?
 
-- Editor: [Zed](https://zed.dev/), [Pulsar](https://pulsar-edit.dev/)
-- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
+- Editor: [Zed](https://zed.dev/)
 - Levels: [Tiled](https://www.mapeditor.org/)
+- Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
 - Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
 - Music: [MilkyTracker](https://milkytracker.org/)
 
@@ -205,12 +209,6 @@ No. The following projects might be useful:
 
 Call `setIsUsingAssetsPath(false)` to disable the default behavior.
 Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
-
-### How do I use the `Vec2` type?
-
-The `Vec2` type is provided by the [Joka](https://github.com/Kapendev/joka) library, which Parin depends on.
-An [example](https://github.com/Kapendev/joka/blob/main/examples/_002_math.d) using this type can be found in the Joka repository.
-It's a good idea to learn how Joka works in general.
 
 ### How can I hot reload assets or code?
 

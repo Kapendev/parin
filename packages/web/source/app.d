@@ -53,6 +53,7 @@ int main(string[] args) {
     command ~= "-I=" ~ parinImportPath;
     command ~= "-J=" ~ buildPath(parinImportPath, "parin");
     command ~= "-of=" ~ outputPath;
+    command ~= "--Xcc=" ~ (flags.release ? "-O2" : "-g");
     command ~= "--Xcc=-DPLATFORM_WEB";
     command ~= "--Xcc=-sUSE_GLFW=3";
     command ~= "--Xcc=-sEXPORTED_RUNTIME_METHODS=HEAPF32,requestFullscreen";

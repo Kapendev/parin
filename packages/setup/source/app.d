@@ -1,4 +1,6 @@
 // [Noby Script]
+// NOTE: I hate this Noby meme so much lol.
+//   Needs a rewrite, but not now.
 
 enum assetsDir   = "assets";
 enum webDir      = "web";
@@ -124,6 +126,14 @@ int runDubSetup(string[] args, bool isFirstRun) {
     }
     restore(dubFile);
     restore(dubLockFile);
+
+    // Zed Editor
+    auto zedDir = join(appDir, "..", ".zed");
+    mkdir(zedDir);
+    auto zedDebugFile = join(zedDir, "debug.json");
+    auto zedDlangFormattersFile = join(zedDir, "dlang_formatters.py");
+    paste(zedDebugFile, import(".zed/debug.json"), true);
+    paste(zedDlangFormattersFile, import(".zed/dlang_formatters.py"), true);
     return 0;
 }
 
