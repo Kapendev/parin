@@ -87,7 +87,7 @@ Below is a breakdown of how it works.
     ```
 
     This mixin sets up a main function that opens a window and calls the ready, update and finish functions.
-    By default, the window has a size of 960x540.
+    By default, the window has a size of 1280x720.
 
 A Parin game typically (can be changed) relies on three functions:
 
@@ -169,16 +169,18 @@ bool isReleased(Gamepad key, int id = 0);
 /// Returns true if any of the keyboard keys or the gamepad button in the specified binding was released this frame.
 bool isReleased(InputBinding binding);
 
-/// Returns the direction from the WASD and arrow keys that are currently down.
+/// Returns the direction from the WASD and arrow keys that are currently down. The result is not normalized.
 Vec2 wasd();
-/// Returns the direction from the WASD and arrow keys that were pressed this frame.
+/// Returns the direction from the WASD and arrow keys that were pressed this frame. The result is not normalized.
 Vec2 wasdPressed();
-/// Returns the direction from the WASD and arrow keys that were released this frame.
+/// Returns the direction from the WASD and arrow keys that were released this frame. The result is not normalized.
 Vec2 wasdReleased();
 
 /// Returns the next recently pressed keyboard key.
+/// This acts like a queue. Returns `Keyboard.none` if the queue is empty.
 Keyboard dequeuePressedKey();
 /// Returns the next recently pressed character.
+/// This acts like a queue. Returns `\0` if the queue is empty.
 dchar dequeuePressedRune();
 
 /// Maps one logical action to gamepad and keyboard inputs.
@@ -272,8 +274,10 @@ void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
 void drawLine(Line area, Rgba color = white, float thickness = 9.0f);
 
 /// Draws the surface at the given position with the specified draw options.
+/// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.
 void drawSurface(ref Surface surface, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a portion of the specified surface at the given position with the specified draw options.
+/// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.
 void drawSurfaceArea(ref Surface surface, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 /// Draws the texture at the given position with the specified draw options.
@@ -291,13 +295,18 @@ void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = Draw
 /// Draws a single character from the specified font at the given position with the specified draw options.
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a single character from the default font at the given position with the specified draw options.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws the specified text with the given font at the given position using the provided draw options.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 /// Draws text with the default font at the given position with the provided draw options.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
 /// Draws debug engine information at the given position with the provided draw options.
+/// Hold the left mouse button to create and resize a debug area.
+/// Hold the right mouse button to move the debug area.
+/// Press the middle mouse button to clear the debug area.
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 
 /// Draws a tile with a texture.
@@ -440,6 +449,7 @@ FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1,
 /// Loads a font file (TTF) from memory with default filter and wrap modes.
 FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf");
 /// Loads a font file (TTF) from a texture with default filter and wrap modes.
+/// The input texture will be invalidated after loading.
 FontId loadFont(TextureId texture, int tileWidth, int tileHeight);
 
 /// Loads a sound file (WAV, OGG, MP3) with default playback settings.
@@ -582,7 +592,7 @@ bool isDebugMode();
 bool isEnteringDebugMode();
 /// Returns true when exiting debug mode this frame.
 bool isExitingDebugMode();
-/// Sets whether debug mode should be active
+/// Sets whether debug mode should be active.
 void setIsDebugMode(bool value);
 /// Toggles the debug mode on or off.
 void toggleIsDebugMode();
@@ -590,10 +600,7 @@ void toggleIsDebugMode();
 void setDebugModeKey(Keyboard value);
 ```
 
-Additionally, you can pass an `inspect` function to `runGame`.
-When debug mode is on, this function runs after `update` and can be used for debug tools.
-
-For example:
+Example:
 
 ```d
 // It assumes you are using: `parin.addons.microui`
@@ -606,7 +613,12 @@ void inspect() {
     endUiFrame();
 }
 
-mixin runGame!(ready, update, finish, 960, 540, "Parin", inspect);
+bool update(float dt) {
+    if (isDebugMode) inspect();
+    return false;
+}
+
+mixin runGame!(ready, update, finish);
 ```
 
 ## Scheduling
@@ -617,6 +629,8 @@ Scheduled functions run before `update`.
 
 ```d
 /// Schedules a task to run every interval.
+/// Set `count` to limit how many times it runs. Use -1 to run indefinitely.
+/// If `canCallNow` is true, the task runs immediately.
 EngineTaskId repeatTask(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
 /// Cancels a scheduled task by its ID.
 void cancelTask(EngineTaskId id);

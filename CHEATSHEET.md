@@ -12,7 +12,7 @@ bool isDebugMode();
 bool isEnteringDebugMode();
 /// Returns true when exiting debug mode this frame.
 bool isExitingDebugMode();
-/// Sets whether debug mode should be active
+/// Sets whether debug mode should be active.
 void setIsDebugMode(bool value);
 /// Toggles the debug mode on or off.
 void toggleIsDebugMode();
@@ -70,7 +70,7 @@ void unlockResolution();
 /// Toggles resolution lock using the specified width and height.
 void toggleResolution(int width, int height);
 /// Returns information about the engine viewport, including its size and position.
-EngineViewportInfo engineViewportInfo();
+ViewportInfo engineViewportInfo();
 
 /// Returns true if the application is in fullscreen mode.
 bool isFullscreen();
@@ -155,6 +155,7 @@ struct Timer {
     /// Returns the remaining time, or zero if inactive.
     float timeLeftOrZero();
     /// Sets the current time of the timer.
+    /// If the given value is non-zero, the timer becomes active.
     void setTime(float newTime);
     /// Returns the current progress (between 0.0 to 1.0).
     float progress();
@@ -236,6 +237,7 @@ void takeScreenshot(IStr path, bool isUsingLockedResolution = false, bool hasAlp
 /// Takes a screenshot and creates a texture from it that can be used with the `getRequestedScreenshot` function.
 void requestScreenshot(bool isUsingLockedResolution = false, bool hasAlpha = false);
 /// Returns the texture created by the last screenshot request, if available (true).
+/// When `canFreeGivenTexture` is true, the existing texture in `result` is freed.
 bool getRequestedScreenshot(ref TextureId result, bool canFreeGivenTexture);
 /// Opens a URL in the default web browser.
 void openUrl(IStr url);
@@ -243,6 +245,7 @@ void openUrl(IStr url);
 /// Returns the last fault from a load or save call.
 Fault lastLoadOrSaveFault();
 /// Helper for checking the result of a load or save call.
+/// Returns true if the fault is none, false otherwise.
 bool didLoadOrSaveSucceed(Fault fault, IStr message);
 
 /// Frees all loaded textures.
@@ -281,9 +284,12 @@ T[] frameResizeSlice(T)(T* values, Sz oldLength, Sz newLength);
 /// Returns a memory context from the frame allocator.
 MemoryContext frameMemoryContext();
 /// Allocates a temporary text buffer for this frame.
+/// Each call returns a new buffer.
 BStr prepareTempText(Sz capacity = defaultEngineLoadOrSaveTextCapacity);
 
 /// Schedules a task to run every interval.
+/// Set `count` to limit how many times it runs. Use -1 to run indefinitely.
+/// If `canCallNow` is true, the task runs immediately.
 EngineTaskId repeatTask(UpdateFunc func, float interval, int count = -1, bool canCallNow = false);
 /// Cancels a scheduled task by its ID.
 void cancelTask(EngineTaskId id);
@@ -338,16 +344,18 @@ bool isReleased(Gamepad key, int id = 0);
 /// Returns true if any of the keyboard keys or the gamepad button in the specified binding was released this frame.
 bool isReleased(InputBinding binding);
 
-/// Returns the direction from the WASD and arrow keys that are currently down.
+/// Returns the direction from the WASD and arrow keys that are currently down. The result is not normalized.
 Vec2 wasd();
-/// Returns the direction from the WASD and arrow keys that were pressed this frame.
+/// Returns the direction from the WASD and arrow keys that were pressed this frame. The result is not normalized.
 Vec2 wasdPressed();
-/// Returns the direction from the WASD and arrow keys that were released this frame.
+/// Returns the direction from the WASD and arrow keys that were released this frame. The result is not normalized.
 Vec2 wasdReleased();
 
 /// Returns the next recently pressed keyboard key.
+/// This acts like a queue. Returns `Keyboard.none` if the queue is empty.
 Keyboard dequeuePressedKey();
 /// Returns the next recently pressed character.
+/// This acts like a queue. Returns `\0` if the queue is empty.
 dchar dequeuePressedRune();
 
 /// Maps one logical action to gamepad and keyboard inputs.
@@ -390,8 +398,10 @@ void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
 void drawLine(Line area, Rgba color = white, float thickness = 9.0f);
 
 /// Draws the surface at the given position with the specified draw options.
+/// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.
 void drawSurface(ref Surface surface, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a portion of the specified surface at the given position with the specified draw options.
+/// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.
 void drawSurfaceArea(ref Surface surface, Rect area, Vec2 position, DrawOptions options = DrawOptions());
 
 /// Draws the texture at the given position with the specified draw options.
@@ -409,13 +419,18 @@ void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = Draw
 /// Draws a single character from the specified font at the given position with the specified draw options.
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws a single character from the default font at the given position with the specified draw options.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
 /// Draws the specified text with the given font at the given position using the provided draw options.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 /// Draws text with the default font at the given position with the provided draw options.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
 /// Draws debug engine information at the given position with the provided draw options.
+/// Hold the left mouse button to create and resize a debug area.
+/// Hold the right mouse button to move the debug area.
+/// Press the middle mouse button to clear the debug area.
 void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
 
 /// Draws a tile with a texture.
@@ -519,6 +534,7 @@ FontId loadFont(IStr path, int size, int runeSpacing = -1, int lineSpacing = -1,
 /// Loads a font file (TTF) from memory with default filter and wrap modes.
 FontId loadFont(const(ubyte)[] memory, int size, int runeSpacing = -1, int lineSpacing = -1, IStr32 runes = "", IStr ext = ".ttf");
 /// Loads a font file (TTF) from a texture with default filter and wrap modes.
+/// The input texture will be invalidated after loading.
 FontId loadFont(TextureId texture, int tileWidth, int tileHeight);
 
 /// Loads a sound file (WAV, OGG, MP3) with default playback settings.
@@ -915,12 +931,17 @@ struct TileMap {
     IVec2 gridPointAt(Vec2 worldPoint) ;
 
     /// Parses a CSV string into the specified layer, using the given tile size.
+    /// Returns a fault if the CSV is empty, contains invalid values, or exceeds the hard layer bounds.
+    /// If `isMinZero` is true, tile ids are decremented by one to convert from 1-based to 0-based indexing.
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false);
     /// Parses a CSV string into the specified layer using the current tile size.
+    /// Returns a fault if parsing fails.
     Fault parseCsv(IStr csv, Sz layerId = 0, bool isMinZero = false);
     /// Parses a TMX (Tiled XML) map file, extracting tile size and all CSV data layers.
+    /// Does not support infinite maps. Returns a fault if parsing fails.
     Fault parseTmx(IStr tmx);
     /// Allocates or resizes all layers to the given hard row and column counts.
+    /// Clamps to `maxLayerRowColCount`. Creates a default layer if the map is empty.
     void resizeHard(Sz newHardRowCount, Sz newHardColCount);
     /// Frees all layers and associated memory.
     void free();
@@ -947,6 +968,7 @@ struct TileMap {
     /// Returns a lazy range of grid points visible within the given view rectangle.
     auto gridPoints(Rect viewArea);
     /// Returns a lazy range of `Tile` values visible within the given view corners on the specified layer.
+    /// Each tile carries its size, id, and world-space position. Includes one extra tile of padding on the far edges.
     auto tiles(Vec2 topLeftViewPoint, Vec2 bottomRightViewPoint, Sz layerId = 0);
     /// Returns a lazy range of `Tile` values visible within the given view rectangle on the specified layer.
     auto tiles(Rect viewArea, Sz layerId = 0);
@@ -1052,9 +1074,9 @@ struct Margin {
     /// The bottom side.
     int bottom;
 
-    /// Creates a maring with four different sides.
+    /// Creates a margin with four different sides.
     this(int left, int top, int right, int bottom);
-    /// Creates a maring with sides that have the same size.
+    /// Creates a margin with sides that have the same size.
     this(int left);
 }
 ```
