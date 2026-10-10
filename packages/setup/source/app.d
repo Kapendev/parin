@@ -132,8 +132,10 @@ int runDubSetup(string[] args, bool isFirstRun) {
     mkdir(zedDir);
     auto zedDebugFile = join(zedDir, "debug.json");
     auto zedDlangFormattersFile = join(zedDir, "dlang_formatters.py");
+    auto zedSettingsFile = join(zedDir, "settings.json");
     paste(zedDebugFile, import(".zed/debug.json"), true);
     paste(zedDlangFormattersFile, import(".zed/dlang_formatters.py"), true);
+    paste(zedSettingsFile, import(".zed/settings.json"), true);
     return 0;
 }
 
@@ -161,9 +163,9 @@ bool isCmdOutputHidden = false;
 
 enum cloneExt = "._cl";
 
-alias Sz      = size_t;         /// The result of sizeof, ...
-alias Str     = char[];         /// A string slice of chars.
-alias IStr    = const(char)[];  /// A string slice of constant chars.
+alias Sz   = size_t;         /// The result of sizeof, ...
+alias Str  = char[];         /// A string slice of chars.
+alias IStr = const(char)[];  /// A string slice of constant chars.
 
 enum Level : ubyte {
     none,

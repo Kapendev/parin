@@ -17,6 +17,22 @@ Its main ideas are:
 - **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or avoid it entirely.
 - **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used on its own (see this [raylib example](https://kapendev.itch.io/k-merge-with-me)).
 
+Basic code example:
+
+```d
+import parin;
+
+// Called every frame while the game is running.
+bool hello(float dt) {
+    lockResolution(320, 180);
+    drawText("Helloo!!!", mouse);
+    return false;
+}
+
+// Creates a main function that calls the given function.
+mixin runDemo!hello;
+```
+
 ## Major Features
 
 - Pixel-perfect physics engine
@@ -204,6 +220,8 @@ No. The following projects might be useful:
 - Art: [Pixelorama](https://orama-interactive.itch.io/pixelorama), [GIMP](https://www.gimp.org/)
 - Sounds: [Bfxr](https://www.bfxr.net/), [Jfxr](https://jfxr.frozenfractal.com/)
 - Music: [MilkyTracker](https://milkytracker.org/)
+
+For Zed, install the [Path Server](https://github.com/kunlinglio/path-server) extension to get autocomplete for paths inside the assets folder.
 
 ### How can I load an asset outside of the assets folder?
 

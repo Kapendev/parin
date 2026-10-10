@@ -1,0 +1,17 @@
+{
+    "completions": {
+        "words": "enabled",
+    },
+    "lsp": {
+        "path-server-lsp": {
+            "settings": { "basePath": ["${workspaceFolder}/assets"] },
+        },
+    },
+    "languages": {
+        "D": {
+            "tab_size": 4,
+            "hard_tabs": false,
+            "language_servers": ["path-server-lsp"],
+        },
+    },
+}
