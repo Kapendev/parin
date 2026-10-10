@@ -3,9 +3,7 @@
 A delightfully simple 2D game engine for the [D programming language](https://dlang.org/).
 It's easy to set up, hackable, and comes with the essentials built in.
 
-Game Made with Parin: [Worms Within](https://kapendev.itch.io/worms-within)
-
-[![Worms Within](https://img.itch.zone/aW1hZ2UvMzU4OTk2OC8yMTM5MTYyMC5wbmc=/original/fWBA1L.png)](https://kapendev.itch.io/worms-within)
+![Parin demo](https://github.com/user-attachments/assets/650c9a3f-7392-48dd-836a-477d8dbd4c94)
 
 ## Why Parin
 
