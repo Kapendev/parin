@@ -184,6 +184,7 @@ Open a PR and add the file there.
 - [Clean & Haunted](https://kapendev.itch.io/clean-haunted)
 - [Runani](https://kapendev.itch.io/runani)
 - [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
+- [K, Merge With Me](https://kapendev.itch.io/k-merge-with-me)
 
 ### Does Parin have a scene or entity system?
 
