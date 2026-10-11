@@ -15,11 +15,11 @@ dub init -t parin
 If everything is set up correctly, there should be some new files inside the folder.
 Three of them are particularly important:
 
-- `source`: Contains the source code
-- `assets`: Contains the game assets
-- `web`: Contains web related files
+- source: Contains the source code
+- assets: Contains the game assets
+- web: Contains web related files
 
-Additionally, an `app.d` file is inside the source folder that looks like this:
+Additionally, an app.d file is inside the source folder that looks like this:
 
 ```d
 import parin;
@@ -80,7 +80,7 @@ Below is a breakdown of how it works.
     This function is the ending point of the game.
     It is called once when the game ends and, in this example, does nothing.
 
-4. The `runGame` mixin template:
+4. The `runGame` mixin:
 
     ```d
     mixin runGame!(ready, update, finish);
@@ -89,7 +89,7 @@ Below is a breakdown of how it works.
     This mixin sets up a main function that opens a window and calls the ready, update and finish functions.
     By default, the window has a size of 1280x720.
 
-A Parin game typically (can be changed) relies on three functions:
+A Parin game typically relies on three functions:
 
 - A function that is called at the start
 - A function that is called every frame
@@ -99,6 +99,35 @@ To run the game, use the following command:
 
 ```sh
 dub run
+```
+
+There are ways to make the above code shorter. For example, the `ready` and `finish` functions can be omitted:
+
+```d
+import parin;
+
+bool update(float dt) {
+    // The `lockResolution` call does nothing if the target resolution is the same as the current one.
+    lockResolution(320, 180);
+    drawText("Hello world!", Vec2(8));
+    return false;
+}
+
+mixin runGame!(null, update, null);
+```
+
+An even shorter version is available through the `runDemo` mixin:
+
+```d
+import parin;
+
+bool hello(float dt) {
+    lockResolution(320, 180);
+    drawText("Helloo!!!", Vec2(8));
+    return false;
+}
+
+mixin runDemo!hello;
 ```
 
 And that's the basics.
@@ -114,7 +143,7 @@ Parin consists of the following modules:
 - `parin.addons`: Single-file D libraries that extend Parin
 - `parin.backend`: Platform dependent code
 - `parin.bindings`: Bindings to primarily C libraries
-- `parin.joka`: Joka library
+- `parin.joka`: [Joka](https://github.com/Kapendev/joka) library
 
 The `import parin` statement in the first example is a convenience module that publicly imports `parin.engine`.
 
@@ -194,6 +223,7 @@ struct InputBinding {
 ```
 
 Below are examples showing how to to move text.
+Note: `Key` is an alias for `Keyboard`.
 
 - Using the mouse:
 
@@ -210,8 +240,8 @@ Below are examples showing how to to move text.
     auto position = Vec2(8);
 
     bool update(float dt) {
-        position.x += Keyboard.right.isDown - Keyboard.left.isDown;
-        position.y += Keyboard.down.isDown - Keyboard.up.isDown;
+        position.x += Key.right.isDown - Key.left.isDown;
+        position.y += Key.down.isDown - Key.up.isDown;
         drawText("Text", position);
         return false;
     }

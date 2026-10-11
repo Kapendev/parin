@@ -1,6 +1,7 @@
 // [Noby Script]
 // NOTE: I hate this Noby meme so much lol.
 //   Needs a rewrite, but not now.
+//   Also make it work without DUB? I see it has some code that reminds me of when it was using raylib-d:install.
 
 enum assetsDir   = "assets";
 enum webDir      = "web";
@@ -49,6 +50,7 @@ dub run
 "[1 .. $];
 
 enum gitFileContent = `
+.zed
 .dub
 game
 favicon.ico
