@@ -24,6 +24,11 @@ int main(string[] args) {
         }
     }
 
+    if (flags.help) {
+        writeln(helpText);
+        return 0;
+    }
+
     auto sourcePath = "source";
     if (!sourcePath.exists) sourcePath = "src";
     if (!sourcePath.exists) sourcePath = ".";
@@ -97,6 +102,7 @@ enum helpText = "
 Usage:
   dub run parin:web -- [flags] [libs]
 Flags:
+  -help     Show this.
   -betterc  Use the `-betterC` flag.
   -release  Use the `-release` flag.
   -build    Avoid emrun after a successful build.
@@ -197,6 +203,7 @@ version (Windows) {
 }
 
 struct Flags {
+    bool help;    // Show this.
     bool betterc; // Use the `-betterC` flag.
     bool release; // Use the `-release` flag.
     bool build;   // Avoid emrun after a successful build.

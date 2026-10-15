@@ -22,6 +22,11 @@ int main(string[] args) {
         }
     }
 
+    if (flags.help) {
+        writeln(helpText);
+        return 0;
+    }
+
     auto sourcePath = "source";
     if (!sourcePath.exists) sourcePath = "src";
     if (!sourcePath.exists) sourcePath = ".";
@@ -82,6 +87,7 @@ enum helpText = "
 Usage:
   dub run parin:web-wasi -- [flags] [libs]
 Flags:
+  -help     Show this.
   -betterc  Use the `-betterC` flag.
   -libc     Use wasi-libc instead of the wasip1libc module.
   -release  Use the `-release` flag.
@@ -91,6 +97,7 @@ Libs:
 "[1 .. $ - 1];
 
 struct Flags {
+    bool help;    // Show this.
     bool betterc; // Use the `-betterC` flag.
     bool libc;    // Use wasi-libc instead of the wasip1libc module.
     bool release; // Use the `-release` flag.

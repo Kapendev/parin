@@ -152,11 +152,15 @@ API:
 
 ```
 Usage:
-  dub run parin:web -- [flags]
+  dub run parin:web -- [flags] [libs]
 Flags:
+  -help     Show this.
   -betterc  Use the `-betterC` flag.
   -release  Use the `-release` flag.
   -build    Avoid emrun after a successful build.
+Libs:
+  Any non-flag argument is linked as an extra library.
+  Example: dub run parin:web -- web/libbox2d.a
 ```
 
 Uploading to itch.io:
