@@ -390,12 +390,19 @@ void endDepthSort();
 
 /// Draws a rectangle with the specified area and color.
 void drawRect(Rect area, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f);
+void drawRect(Vec2 position, Vec2 size, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f);
+void drawRect(float x, float y, float w, float h, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f);
 /// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f);
+void drawVec2(float x, float y, Rgba color = white, float thickness = 9.0f);
 /// Draws a circle with the specified area and color.
 void drawCirc(Circ area, Rgba color = white, float thickness = -1.0f);
+void drawCirc(Vec2 position, float radius, Rgba color = white, float thickness = -1.0f);
+void drawCirc(float x, float y, float radius, Rgba color = white, float thickness = -1.0f);
 /// Draws a line with the specified area, thickness, and color.
 void drawLine(Line area, Rgba color = white, float thickness = 9.0f);
+void drawLine(Vec2 a, Vec2 b, Rgba color = white, float thickness = 9.0f);
+void drawLine(float x1, float y1, float x2, float y2, Rgba color = white, float thickness = 9.0f);
 
 /// Draws the surface at the given position with the specified draw options.
 /// Note: Surfaces are uploaded to a GPU atlas every frame they are drawn.

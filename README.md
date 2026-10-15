@@ -39,7 +39,7 @@ mixin runDemo!hello;
 - Atlas-based animation library
 - Efficient tile map structures
 - Simple UI library (WIP)
-- Includes extras like microui and memory allocators
+- Includes extras like Box2D, microui and memory allocators
 - Support for Web, Windows, Linux, and macOS
 
 ## Quick Start
