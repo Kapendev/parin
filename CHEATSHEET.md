@@ -389,7 +389,7 @@ void beginDepthSort(DepthSortMode mode = DepthSortMode.topDown);
 void endDepthSort();
 
 /// Draws a rectangle with the specified area and color.
-void drawRect(Rect area, Rgba color = white, float thickness = -1.0f);
+void drawRect(Rect area, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f);
 /// Draws a point at the specified location with the given size and color.
 void drawVec2(Vec2 point, Rgba color = white, float thickness = 9.0f);
 /// Draws a circle with the specified area and color.

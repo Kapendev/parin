@@ -1357,9 +1357,9 @@ void popMatrix() {
     rl.rlPopMatrix();
 }
 
-void drawRect(Rect area, Rgba color, float thickness) {
+void drawRect(Rect area, Rgba color, float thickness, Vec2 origin, float rotation) {
     if (thickness < 0) {
-        rl.DrawRectanglePro(area, Vec2(), 0.0f, color);
+        rl.DrawRectanglePro(area, origin, rotation, color);
     } else {
         rl.DrawRectangleLinesEx(area, thickness, color);
     }

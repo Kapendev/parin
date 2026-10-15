@@ -561,7 +561,7 @@ void matrixScale(float x, float y, float z) {}
 
 void popMatrix() {}
 
-void drawRect(Rect area, Rgba color, float thickness) {}
+void drawRect(Rect area, Rgba color, float thickness, Vec2 origin, float rotation) {}
 
 void drawCirc(Circ area, Rgba color, float thickness) {}
 

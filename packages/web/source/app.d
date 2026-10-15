@@ -1,9 +1,11 @@
 #!/bin/env -S dmd -run
 
 int main(string[] args) {
+    string[] extraLibs;
     auto flags = Flags();
     foreach (arg; args[1 .. $]) {
         if (arg.length < 2) arg = "lol";
+        auto isFlag = arg[0] == '-';
         if (arg[0] == '-') arg = arg[1 .. $];
         if (arg[0] == '-') arg = arg[1 .. $];
         auto hasInvalidFlag = true;
@@ -14,8 +16,11 @@ int main(string[] args) {
             }
         }
         if (hasInvalidFlag) {
-            writeln(helpText);
-            return 0;
+            if (!isFlag) extraLibs ~= arg;
+            else {
+                writeln(helpText);
+                return 0;
+            }
         }
     }
 
@@ -49,6 +54,7 @@ int main(string[] args) {
     auto command = ["ldc2", "--mtriple=wasm32-emscripten"] ~ dflags;
     command ~= mainFilePaths;
     command ~= libPath;
+    command ~= extraLibs;
     if (sourcePath != parinImportPath) command ~= "-I=" ~ sourcePath;
     command ~= "-I=" ~ parinImportPath;
     command ~= "-J=" ~ buildPath(parinImportPath, "parin");
@@ -76,9 +82,6 @@ int main(string[] args) {
     foreach (entry; dirEntries(".", SpanMode.shallow)) {
         if (entry.name.endsWith(".o") || entry.name.endsWith(".obj")) entry.remove();
     }
-    foreach (entry; dirEntries(webPath, SpanMode.shallow)) {
-        if (entry.name.endsWith(".o") || entry.name.endsWith(".obj")) entry.remove();
-    }
     return (flags.build || !outputPath.exists) ? 0 : run([emrunName, outputPath]);
 }
 
@@ -92,11 +95,14 @@ import std.string;
 
 enum helpText = "
 Usage:
-  ldc2 -run build_web.d [flags]
+  dub run parin:web -- [flags] [libs]
 Flags:
   -betterc  Use the `-betterC` flag.
   -release  Use the `-release` flag.
   -build    Avoid emrun after a successful build.
+Libs:
+  Any non-flag argument is linked as an extra library.
+  Example: dub run parin:web -- web/libbox2d.a
 "[1 .. $ - 1];
 
 enum shellText = `

@@ -2016,18 +2016,18 @@ void endDepthSort() {
 }
 
 /// Draws a rectangle with the specified area and color.
-void drawRect(Rect area, Rgba color = white, float thickness = -1.0f) {
-    bk.drawRect(isPixelSnapped ? area.floor() : area, color, thickness);
+void drawRect(Rect area, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f) {
+    bk.drawRect(isPixelSnapped ? area.floor() : area, color, thickness, origin, rotation);
 }
 
 /// Draws a rectangle with the specified area and color.
-void drawRect(Vec2 position, Vec2 size, Rgba color = white, float thickness = -1.0f) {
-    drawRect(Rect(position, size), color, thickness);
+void drawRect(Vec2 position, Vec2 size, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f) {
+    drawRect(Rect(position, size), color, thickness, origin, rotation);
 }
 
 /// Draws a rectangle with the specified area and color.
-void drawRect(float x, float y, float w, float h, Rgba color = white, float thickness = -1.0f) {
-    drawRect(Rect(x, y, w, h), color, thickness);
+void drawRect(float x, float y, float w, float h, Rgba color = white, float thickness = -1.0f, Vec2 origin = Vec2(), float rotation = 0.0f) {
+    drawRect(Rect(x, y, w, h), color, thickness, origin, rotation);
 }
 
 /// Draws a point at the specified location with the given size and color.
