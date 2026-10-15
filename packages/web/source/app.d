@@ -16,7 +16,7 @@ int main(string[] args) {
             }
         }
         if (hasInvalidFlag) {
-            if (!isFlag) extraLibs ~= arg;
+            if (!isFlag) { if (arg.indexOf("libraylib") == -1) extraLibs ~= arg; }
             else {
                 writeln(helpText);
                 return 0;
@@ -38,6 +38,10 @@ int main(string[] args) {
     if (!assetsPath.exists) assetsPath = sourcePath;
     auto parinImportPath = buildPath(sourcePath, "parin").exists ? sourcePath : "";
     if (!parinImportPath.exists) parinImportPath = getImportPathFromDub("parin");
+
+    foreach (entry; dirEntries(webPath, SpanMode.shallow)) {
+        if (entry.name.endsWith(".a") && entry.name.indexOf("libraylib") == -1) extraLibs ~= entry.name;
+    }
 
     auto outputPath = buildPath(webPath, "index.html");
     auto shellPath = buildPath(webPath, "shell.html");

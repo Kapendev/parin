@@ -35,6 +35,10 @@ int main(string[] args) {
     auto parinImportPath = buildPath(sourcePath, "parin").exists ? sourcePath : "";
     if (!parinImportPath.exists) parinImportPath = getImportPathFromDub("parin");
 
+    foreach (entry; dirEntries(webPath, SpanMode.shallow)) {
+        if (entry.name.endsWith(".a")) extraLibs ~= entry.name;
+    }
+
     auto indexPath = buildPath(webPath, "index.html");
     if (!indexPath.exists) std.file.write(indexPath, indexText);
 
