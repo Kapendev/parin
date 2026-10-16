@@ -39,7 +39,7 @@ mixin runDemo!hello;
 - Atlas-based animation library
 - Efficient tile map structures
 - Simple UI library (WIP)
-- Includes extras like Box2D, microui and memory allocators
+- Includes extras like Box2D, Steamworks, ENet, and microui
 - Support for Web, Windows, Linux, and macOS
 
 ## Quick Start
@@ -216,6 +216,12 @@ No. The following projects might be useful:
 - [text-mode](https://github.com/AuburnSounds/text-mode): Virtual text mode with 8x8 Unicode font and markup language.
 - [Gamut](https://github.com/AuburnSounds/gamut): Image encoding and decoding library.
 - [gameserver](https://github.com/schveiguy/gameserver): Simple game server for toying with online games.
+
+### Can I release on Steam or make multiplayer games?
+
+Yes. Parin includes bindings for [Steamworks](https://partner.steamgames.com/doc/sdk) and [ENet](https://github.com/lsalzman/enet) in `parin.bindings`.
+See the [integration](examples/integrations/) examples.
+The binaries themselves are not included, so they need to be downloaded or built and linked separately.
 
 ### Recommended tools?
 
