@@ -328,11 +328,18 @@ Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = Draw
 /// Draws a single character from the default font at the given position with the specified draw options.
 /// Call `setDefaultFont` before using this function.
 Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions());
-/// Draws the specified text with the given font at the given position using the provided draw options.
+/// Draws text with the given font at the given position using the provided draw options.
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 /// Draws text with the default font at the given position with the provided draw options.
 /// Call `setDefaultFont` before using this function.
 Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+/// Draws interpolated text with the given font at the given position using the provided draw options.
+/// The text is formatted from an interpolated expression string, e.g. `drawText(font, i"Score: $(score)", position)`.
+Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
+/// Draws interpolated text with the default font at the given position with the provided draw options.
+/// The text is formatted from an interpolated expression string, e.g. `drawText(i"Score: $(score)", position)`.
+/// Call `setDefaultFont` before using this function.
+Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 
 /// Draws debug engine information at the given position with the provided draw options.
 /// Hold the left mouse button to create and resize a debug area.

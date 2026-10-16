@@ -1,123 +1,94 @@
 /// This example shows how to use Parin with Box2D.
+/// Box2D uses meters with Y pointing up, so positions are converted before drawing.
 /// Repository: https://github.com/erincatto/box2d
 
 import parin;
 import parin.bindings.box2d;
 
-b2WorldId world;
-b2BodyId ground;
-b2BodyId leftWall;
-b2BodyId rightWall;
-List!b2BodyId boxes;
-b2BodyId dragged;
+auto world = b2WorldId();
+auto dragged = b2BodyId();
+auto boxes = List!Box();
 
-enum scale = 30.0;
-enum center = Vec2(320, 180);
+enum scale = 30.0; // Pixels per meter.
 
-Vec2 worldPoint(b2Vec2 p) {
-    return Vec2(p.x * scale + center.x, -p.y * scale + center.y);
+struct Box {
+    b2BodyId id;
+    b2ShapeId shape;
+    Vec2 halfSize;
 }
 
-b2Vec2 screenPoint(Vec2 p) {
-    return b2Vec2((p.x - center.x) / scale, -(p.y - center.y) / scale);
+Vec2 toScreen(b2Vec2 point) {
+    return Vec2(point.x * scale, -point.y * scale) + resolution * Vec2(0.5);
+}
+
+b2Vec2 toWorld(Vec2 point) {
+    auto result = point - resolution * Vec2(0.5);
+    return b2Vec2(result.x / scale, -result.y / scale);
+}
+
+void addBox(b2BodyType type, b2Vec2 position, Vec2 halfSize) {
+    auto bodyDef = b2DefaultBodyDef();
+    bodyDef.type = type;
+    bodyDef.position = position;
+    auto id = b2CreateBody(world, &bodyDef);
+    auto shapeDef = b2DefaultShapeDef();
+    auto polygon = b2MakeBox(halfSize.x, halfSize.y);
+    boxes.append(Box(id, b2CreatePolygonShape(id, &shapeDef, &polygon), halfSize));
 }
 
 void ready() {
     lockResolution(640, 360);
     setWindowBackgroundColor(gray3);
-
+    // Create the world.
     auto worldDef = b2DefaultWorldDef();
     worldDef.gravity = b2Vec2(0, -10);
     world = b2CreateWorld(&worldDef);
-
-    // Static ground (bottom edge flush with window)
-    auto groundDef = b2DefaultBodyDef();
-    groundDef.position = b2Vec2(0, -5.5);
-    ground = b2CreateBody(world, &groundDef);
-    auto groundShape = b2DefaultShapeDef();
-    auto groundBox = b2MakeBox(11, 0.5);
-    b2CreatePolygonShape(ground, &groundShape, &groundBox);
-
-    // Left wall (flush with left edge)
-    auto leftDef = b2DefaultBodyDef();
-    leftDef.position = b2Vec2(-10.5, 2);
-    leftWall = b2CreateBody(world, &leftDef);
-    auto wallShape = b2DefaultShapeDef();
-    auto wallBox = b2MakeBox(0.5, 8);
-    b2CreatePolygonShape(leftWall, &wallShape, &wallBox);
-
-    // Right wall (flush with right edge)
-    auto rightDef = b2DefaultBodyDef();
-    rightDef.position = b2Vec2(10.5, 2);
-    rightWall = b2CreateBody(world, &rightDef);
-    b2CreatePolygonShape(rightWall, &wallShape, &wallBox);
-
-    // Dynamic boxes
+    // Add the ground and the walls. They line up with the window edges.
+    addBox(b2_staticBody, b2Vec2(0, -5.5), Vec2(11, 0.5));
+    addBox(b2_staticBody, b2Vec2(-10.5, 2), Vec2(0.5, 8));
+    addBox(b2_staticBody, b2Vec2(10.5, 2), Vec2(0.5, 8));
+    // Add a stack of dynamic boxes.
     foreach (i; 0 .. 16) {
-        auto bodyDef = b2DefaultBodyDef();
-        bodyDef.type = b2_dynamicBody;
-        bodyDef.position = b2Vec2((i % 4 - 1.5) * 1.4, 2 + (i / 4) * 1.4);
-        auto id = b2CreateBody(world, &bodyDef);
-        auto shapeDef = b2DefaultShapeDef();
-        shapeDef.density = 1.0f;
-        auto box = b2MakeBox(0.6, 0.6);
-        b2CreatePolygonShape(id, &shapeDef, &box);
-        boxes.append(id);
+        addBox(b2_dynamicBody, b2Vec2((i % 4 - 1.5) * 1.4, 2 + (i / 4) * 1.4), Vec2(0.6));
     }
 }
 
 bool update(float dt) {
-    if (Key.f11.isPressed) toggleIsFullscreen();
-
-    b2World_Step(world, 1.0 / 60.0, 4);
-
-    auto worldMouse = screenPoint(mouse());
-
-    if (isPressed(Mouse.left)) {
-        dragged = b2BodyId.init;
-        foreach (id; boxes) {
-            auto pos = b2Body_GetPosition(id);
-            if (abs(worldMouse.x - pos.x) < 0.6 && abs(worldMouse.y - pos.y) < 0.6) {
-                dragged = id;
+    if (Keyboard.f11.isPressed) toggleIsFullscreen();
+    // Pick up or drop a box.
+    auto worldMouse = toWorld(mouse);
+    if (Mouse.left.isPressed) {
+        foreach (box; boxes) {
+            if (b2Body_GetType(box.id) == b2_dynamicBody && b2Shape_TestPoint(box.shape, worldMouse)) {
+                dragged = box.id;
                 break;
             }
         }
     }
-    if (isReleased(Mouse.left)) dragged = b2BodyId.init;
-
+    if (Mouse.left.isReleased) dragged = b2BodyId.init;
+    // Pull the dragged box toward the mouse with a damped spring.
     if (dragged != b2BodyId.init) {
-        auto current = b2Body_GetPosition(dragged);
-        auto vel = b2Body_GetLinearVelocity(dragged);
-        auto force = (worldMouse - current) * 200 - vel * 20;
-        b2Body_ApplyForceToCenter(dragged, force, true);
+        auto offset = worldMouse - b2Body_GetPosition(dragged);
+        auto velocity = b2Body_GetLinearVelocity(dragged);
+        b2Body_ApplyForceToCenter(dragged, offset * 200 - velocity * 20, true);
     }
-
-    // Draw ground
-    auto gpos = worldPoint(b2Body_GetPosition(ground));
-    drawRect(Rect(gpos.x - 330, gpos.y - 15, 660, 30), gray);
-
-    // Draw walls
-    auto lpos = worldPoint(b2Body_GetPosition(leftWall));
-    drawRect(Rect(lpos.x - 15, lpos.y - 240, 30, 480), gray);
-    auto rpos = worldPoint(b2Body_GetPosition(rightWall));
-    drawRect(Rect(rpos.x - 15, rpos.y - 240, 30, 480), gray);
-
-    // Draw boxes
-    foreach (i, id; boxes) {
-        auto pos = worldPoint(b2Body_GetPosition(id));
-        auto rot = b2Body_GetRotation(id);
-        auto angle = -atan2(rot.s, rot.c) * 180 / pi;
-        auto size = 36;
+    // Update the world.
+    b2World_Step(world, dt, 4);
+    // Draw the boxes.
+    foreach (i, box; boxes) {
+        auto size = box.halfSize * Vec2(scale * 2);
+        auto rotation = b2Body_GetRotation(box.id);
+        auto color = gray;
+        if (b2Body_GetType(box.id) == b2_dynamicBody) color = box.id == dragged ? yellow : (i % 2 ? cyan : pink);
         drawRect(
-            Rect(pos.x, pos.y, size, size),
-            id == dragged ? yellow : (i % 2 ? cyan : pink),
+            Rect(toScreen(b2Body_GetPosition(box.id)), size),
+            color,
             -1,
-            Vec2(size / 2, size / 2),
-            angle,
+            size * Vec2(0.5),
+            -atan2(rotation.s, rotation.c).toDegrees,
         );
     }
-
-    drawText("Click and drag boxes~", Vec2(32, 16));
+    drawText("Click and drag boxes!", Vec2(30, 8));
     return false;
 }
 

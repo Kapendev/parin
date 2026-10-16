@@ -80,7 +80,10 @@ enum dubFileContent = `
     "license" : "proprietary",
     "name" : "game",
     "stringImportPaths": ["assets"],
-    "dependencies": {"parin": "*"}
+    "dependencies": {"parin": "*"},
+    "lflags-posix": ["-L."],
+    "lflags-osx": ["-rpath", "@executable_path/"],
+    "lflags-linux": ["-rpath=$$ORIGIN"]
 }
 `[1 .. $];
 

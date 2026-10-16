@@ -12,7 +12,7 @@ import joka = parin.joka.types;
 
 extern(C) @system nothrow @nogc:
 
-alias em_pthread_t = uint;
+alias em_pthread_t = size_t;
 
 enum EM_TIMING_SETTIMEOUT   = 0;
 enum EM_TIMING_RAF          = 1;

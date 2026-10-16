@@ -823,10 +823,15 @@ void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
     }
 }
 
+/// Draws interpolated text with the given font at the given position using the provided draw options.
+/// The text is formatted from an interpolated expression string, e.g. `drawText(font, i"Score: $(score)", position)`.
 Vec2 drawText(A...)(FontId font, InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(font, fmt(header, args, footer), position, options, extra);
 }
 
+/// Draws interpolated text with the default font at the given position with the provided draw options.
+/// The text is formatted from an interpolated expression string, e.g. `drawText(i"Score: $(score)", position)`.
+/// Call `setDefaultFont` before using this function.
 Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter footer, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     return drawText(fmt(header, args, footer), position, options, extra);
 }
@@ -2277,7 +2282,7 @@ Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
     return drawRune(_engineState.defaultFont, rune, position, options);
 }
 
-/// Draws the specified text with the given font at the given position using the provided draw options.
+/// Draws text with the given font at the given position using the provided draw options.
 @trusted
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
     enum lineCountOfBuffers = 512;
