@@ -255,4 +255,5 @@ Contributions are welcome.
 
 ### Can I use Parin for HD games?
 
-Yes.
+Yes. Use `Filter.linear` for smooth textures, or `Filter.trilinear` if they are often drawn much smaller than their real size.
+See the [mipmaps](examples/basics/_030_mipmaps.d) example.

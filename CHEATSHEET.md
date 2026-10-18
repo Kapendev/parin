@@ -732,7 +732,7 @@ struct Camera {
     Vec2 position;
     /// The offset of the view area of the camera.
     Vec2 offset;
-    /// The target position of the camera. Used by the `folloTarget*` functions.
+    /// The target position of the camera. Used by the `followTarget*` functions.
     Maybe!Vec2 target;
     /// The rotation angle of the camera, in degrees.
     float rotation = 0.0f;
@@ -1131,8 +1131,9 @@ enum Alignment : ubyte {
 
 /// Texture filtering modes.
 enum Filter : ubyte {
-    nearest, /// Nearest neighbor filtering (blocky).
-    linear,  /// Bilinear filtering (smooth).
+    nearest,   /// Nearest neighbor filtering (blocky).
+    linear,    /// Bilinear filtering (smooth).
+    trilinear, /// Trilinear filtering (smooth, even when scaled down a lot).
 }
 
 /// Texture wrapping modes.

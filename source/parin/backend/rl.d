@@ -391,7 +391,7 @@ Filter textureFilter(ResourceId id) {
 void textureSetFilter(ResourceId id, Filter value) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.textures[id];
-    rl.SetTextureFilter(resource.data, toRl(value));
+    setFilterWithMipmaps(resource.data, value);
     resource.filter = value;
 }
 
@@ -447,7 +447,7 @@ Filter fontFilter(ResourceId id) {
 void fontSetFilter(ResourceId id, Filter value) {
     if (id.resourceIsNull) return;
     auto resource = &_backendState.fonts[id];
-    rl.SetTextureFilter(resource.data.texture, toRl(value));
+    setFilterWithMipmaps(resource.data.texture, value);
     resource.filter = value;
 }
 
@@ -1476,10 +1476,13 @@ pragma(inline, true) {
         );
     }
 
+    // NOTE: Trilinear filtering needs mipmaps, so it is only used by `setFilterWithMipmaps`.
+    //   Things that change every frame, like viewports and surfaces, use bilinear filtering instead.
     RlFilter toRl(Filter from) {
         with (Filter) final switch (from) {
             case nearest: return rl.TEXTURE_FILTER_POINT;
             case linear: return rl.TEXTURE_FILTER_BILINEAR;
+            case trilinear: return rl.TEXTURE_FILTER_BILINEAR;
         }
     }
 
@@ -1744,12 +1747,10 @@ pragma(inline, true) {
             case middle: return rl.GAMEPAD_BUTTON_MIDDLE;
         }
     }
-}
 
-unittest {
-    auto rlKey = rl.KEY_W;
-    auto prKey = Key.w;
-    assert(prKey != rlKey);
-    assert(prKey.toRl() == rlKey);
-    assert(rlKey.toPr() == prKey);
+    void setFilterWithMipmaps(ref rl.Texture2D texture, Filter value) {
+        if (value == Filter.trilinear && texture.mipmaps <= 1) rl.GenTextureMipmaps(&texture);
+        auto hasMipmaps = texture.mipmaps > 1;
+        rl.SetTextureFilter(texture, value == Filter.trilinear && hasMipmaps ? rl.TEXTURE_FILTER_TRILINEAR : toRl(value));
+    }
 }

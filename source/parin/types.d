@@ -36,8 +36,9 @@ enum Alignment : ubyte {
 
 /// Texture filtering modes.
 enum Filter : ubyte {
-    nearest, /// Nearest neighbor filtering (blocky).
-    linear,  /// Bilinear filtering (smooth).
+    nearest,   /// Nearest neighbor filtering (blocky).
+    linear,    /// Bilinear filtering (smooth).
+    trilinear, /// Trilinear filtering (smooth, even when scaled down a lot).
 }
 
 /// Texture wrapping modes.
