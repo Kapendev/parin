@@ -62,8 +62,10 @@ immutable HexPalette!16 pico8 = [
     0xFFCCAA,
 ];
 
-/// A tile map.
+/// A tile map for grids with up to 128x128 cells.
 alias TileMap = GTileMap!128;
+/// A path finder for grids with up to 128x128 cells.
+alias Astar = GAstar!128;
 /// A generic color palette of RGBA colors.
 alias Palette(Sz N)    = StaticArray!(Rgba, N);
 /// A generic color palette of hexadecimal numbers.
@@ -279,12 +281,13 @@ struct Tile {
 // Idea: Have an object map struct that just parses the csv again. Doing that is not slow anyway and keeps the TileMap focused.
 /// A generic tile map. `N` is the maximum layer row or column size.
 struct GTileMap(Sz N) {
-    TileMapLayers layers; /// The list of tile layers in this map.
-    Sz rowCount;          /// The number of active rows in the map.
-    Sz colCount;          /// The number of active columns in the map.
-    short tileWidth;      /// The width of each tile in pixels.
-    short tileHeight;     /// The height of each tile in pixels.
-    Vec2 position;        /// The world position of the top-left corner of the map.
+    TileMapLayers layers;   /// The list of tile layers in this map.
+    Sz rowCount;            /// The number of active rows in the map.
+    Sz colCount;            /// The number of active columns in the map.
+    short tileWidth;        /// The width of each tile in pixels.
+    short tileHeight;       /// The height of each tile in pixels.
+    Vec2 position;          /// The world position of the top-left corner of the map.
+    short emptyTileId = -1; /// The tile id used for empty tiles.
 
     alias TileMapLayerData = FixedList!(short, maxLayerCapacity);            /// The tile map layer data.
     alias TileMapLayer     = Grid!(TileMapLayerData.Item, TileMapLayerData); /// The tile map layer.
@@ -335,13 +338,13 @@ struct GTileMap(Sz N) {
 
         /// Applies a compound assignment operator to the tile id at the given row, column, and layer.
         @trusted
-        void opIndexOpAssign(IStr op)(T rhs, Sz row, Sz col, Sz layerId = 0) {
+        void opIndexOpAssign(IStr op)(short rhs, Sz row, Sz col, Sz layerId = 0) {
             if (!has(row, col)) assert(0, "Tile `[{}, {}]` does not exist.".fmt(row, col));
-            mixin("layers[layerId][findGridIndex(row, col, colCount)]", op, "= rhs;");
+            mixin("layers[layerId][row, col]", op, "= rhs;");
         }
 
         /// Applies a compound assignment operator to the tile id at the given grid position and layer.
-        void opIndexOpAssign(IStr op)(T rhs, IVec2 position, Sz layerId = 0) {
+        void opIndexOpAssign(IStr op)(short rhs, IVec2 position, Sz layerId = 0) {
             return opIndexOpAssign!(op)(rhs, position.y, position.x, layerId);
         }
 
@@ -436,8 +439,10 @@ struct GTileMap(Sz N) {
     /// Parses a CSV string into the specified layer, using the given tile size.
     /// Returns a fault if the CSV is empty, contains invalid values, or exceeds the hard layer bounds.
     /// If `isMinZero` is true, tile ids are decremented by one to convert from 1-based to 0-based indexing.
+    /// Sets `emptyTileId` to -1, because empty tiles are -1 in both cases.
     Fault parseCsv(IStr csv, short newTileWidth, short newTileHeight, Sz layerId = 0, bool isMinZero = false, IStr file = __FILE__, Sz line = __LINE__) {
         if (csv.length == 0) return Fault.invalid;
+        emptyTileId = -1;
         bool canResizeHard = layerId >= layers.length;
         while (layerId >= layers.length) {
             layers.appendBlank(file, line);
@@ -539,14 +544,14 @@ struct GTileMap(Sz N) {
         tileHeight = newTileHeight;
     }
 
-    /// Fills all layers with the empty tile id (-1).
+    /// Fills all layers with the empty tile id.
     void clear() {
-        foreach (ref layer; layers) layer.fill(-1);
+        foreach (ref layer; layers) layer.fill(emptyTileId);
     }
 
-    /// Fills the specified layer with the empty tile id (-1).
+    /// Fills the specified layer with the empty tile id.
     void clear(Sz layerId) {
-        layers[layerId].fill(-1);
+        layers[layerId].fill(emptyTileId);
     }
 
     /// Marks all layers as ignored for leak detection purposes.
@@ -666,6 +671,167 @@ struct GTileMap(Sz N) {
     /// Returns a lazy range of `Tile` values visible within the given view rectangle on the specified layer.
     auto tiles(Rect viewArea, Sz layerId = 0) {
         return tiles(viewArea.topLeftPoint, viewArea.bottomRightPoint, layerId);
+    }
+}
+
+/// A grid path finder using the A* algorithm. Movement is in 4 directions and every step has the same cost.
+/// The working data is stored inside the struct, so no memory is allocated. It is big, so prefer global or heap storage.
+struct GAstar(Sz N) {
+    ushort[maxCapacity] _steps;     // Steps from the start cell, or `noIndex` if the cell was not reached.
+    ushort[maxCapacity] _parents;   // The cell before this one on the path.
+    ushort[maxCapacity] _heap;      // The open cells, as a binary heap.
+    ushort[maxCapacity] _heapSlots; // The heap slot of each open cell, or `noIndex` if it is not open.
+    Sz _heapLength;
+    Sz _colCount;
+    Sz _targetRow;
+    Sz _targetCol;
+
+    enum maxRowColCount = N;                               /// Maximum grid row or column size of a square grid.
+    enum maxCapacity    = maxRowColCount * maxRowColCount; /// Maximum grid size. Any grid with this many cells or fewer works.
+    enum noIndex        = ushort.max;                      /// The value used for cells without an index.
+
+    @safe nothrow @nogc:
+
+    /// Finds the shortest path from the start cell to the target cell.
+    /// The `data` slice is a row-major grid with `colCount` columns. Cells equal to `empty` can be entered.
+    /// The start cell does not need to be empty.
+    /// Writes the path to `buffer` (without the start cell, ending at the target cell) and returns the written part.
+    /// If `buffer` is smaller than the path, only the first steps of the path are written.
+    /// Returns an empty slice when there is no path, when start and target are the same, or when the grid is too big.
+    IVec2[] find(const(short)[] data, Sz colCount, Sz startRow, Sz startCol, Sz targetRow, Sz targetCol, IVec2[] buffer, short empty = -1) {
+        if (colCount == 0) return buffer[0 .. 0];
+        return _findWithStride(data, colCount, data.length / colCount, colCount, startRow, startCol, targetRow, targetCol, buffer, empty);
+    }
+
+    /// Finds the shortest path from the start cell to the target cell. Positions use x as the column and y as the row.
+    IVec2[] find(const(short)[] data, Sz colCount, IVec2 start, IVec2 target, IVec2[] buffer, short empty = -1) {
+        return find(data, colCount, start.y, start.x, target.y, target.x, buffer, empty);
+    }
+
+    /// Finds the shortest path from the start cell to the target cell on the active area of a tile map layer.
+    /// Tiles equal to the `emptyTileId` of the map can be entered.
+    IVec2[] find(Sz M)(ref GTileMap!M map, Sz startRow, Sz startCol, Sz targetRow, Sz targetCol, IVec2[] buffer, Sz layerId = 0) {
+        if (layerId >= map.layers.length) return buffer[0 .. 0];
+        return _findWithStride(map.layers[layerId][], map.layers[layerId].colCount, map.rowCount, map.colCount, startRow, startCol, targetRow, targetCol, buffer, map.emptyTileId);
+    }
+
+    /// Finds the shortest path from the start cell to the target cell on the active area of a tile map layer.
+    /// Positions use x as the column and y as the row.
+    IVec2[] find(Sz M)(ref GTileMap!M map, IVec2 start, IVec2 target, IVec2[] buffer, Sz layerId = 0) {
+        return find(map, start.y, start.x, target.y, target.x, buffer, layerId);
+    }
+
+    IVec2[] _findWithStride(const(short)[] data, Sz stride, Sz rowCount, Sz colCount, Sz startRow, Sz startCol, Sz targetRow, Sz targetCol, IVec2[] buffer, short empty) {
+        if (rowCount * colCount > maxCapacity || rowCount > data.length / max(stride, 1) || colCount > stride) return buffer[0 .. 0];
+        if (startRow >= rowCount || startCol >= colCount || targetRow >= rowCount || targetCol >= colCount) return buffer[0 .. 0];
+        if (data[targetRow * stride + targetCol] != empty) return buffer[0 .. 0];
+        // Prepare the search.
+        _colCount = colCount;
+        _targetRow = targetRow;
+        _targetCol = targetCol;
+        _heapLength = 0;
+        _steps[0 .. rowCount * colCount] = noIndex;
+        _heapSlots[0 .. rowCount * colCount] = noIndex;
+        auto startIndex = cast(ushort) (startRow * colCount + startCol);
+        auto targetIndex = cast(ushort) (targetRow * colCount + targetCol);
+        _steps[startIndex] = 0;
+        _push(startIndex);
+        // Visit the open cell that is closest to the target until the target is reached.
+        while (_heapLength) {
+            auto index = _pop();
+            if (index == targetIndex) break;
+            auto row = index / colCount;
+            auto col = index % colCount;
+            auto nextSteps = cast(ushort) (_steps[index] + 1);
+            foreach (i; 0 .. 4) {
+                auto nextRow = row + (i == 0) - (i == 1);
+                auto nextCol = col + (i == 2) - (i == 3);
+                // NOTE: Going below zero wraps around, so one check covers both sides.
+                if (nextRow >= rowCount || nextCol >= colCount || data[nextRow * stride + nextCol] != empty) continue;
+                auto nextIndex = cast(ushort) (nextRow * colCount + nextCol);
+                if (_steps[nextIndex] <= nextSteps) continue;
+                _steps[nextIndex] = nextSteps;
+                _parents[nextIndex] = index;
+                if (_heapSlots[nextIndex] == noIndex) _push(nextIndex);
+                else _siftUp(_heapSlots[nextIndex]);
+            }
+        }
+        // Write the path to the buffer. The path is walked backwards, so the steps that do not fit are skipped first.
+        auto length = _steps[targetIndex];
+        if (length == noIndex || length == 0) return buffer[0 .. 0];
+        auto count = min(cast(Sz) length, buffer.length);
+        auto index = targetIndex;
+        foreach (i; 0 .. length - count) index = _parents[index];
+        foreach_reverse (i; 0 .. count) {
+            buffer[i] = IVec2(cast(int) (index % colCount), cast(int) (index / colCount));
+            index = _parents[index];
+        }
+        return buffer[0 .. count];
+    }
+
+    // Returns true if cell `a` should be visited before cell `b`.
+    // Cells with a lower estimated path length go first. Ties go to the cell closer to the target.
+    bool _isBefore(ushort a, ushort b) {
+        auto distanceA = _distanceToTarget(a);
+        auto distanceB = _distanceToTarget(b);
+        auto lengthA = _steps[a] + distanceA;
+        auto lengthB = _steps[b] + distanceB;
+        return lengthA < lengthB || (lengthA == lengthB && distanceA < distanceB);
+    }
+
+    Sz _distanceToTarget(ushort index) {
+        auto row = index / _colCount;
+        auto col = index % _colCount;
+        return (row > _targetRow ? row - _targetRow : _targetRow - row) + (col > _targetCol ? col - _targetCol : _targetCol - col);
+    }
+
+    void _push(ushort index) {
+        _heap[_heapLength] = index;
+        _heapSlots[index] = cast(ushort) _heapLength;
+        _heapLength += 1;
+        _siftUp(_heapLength - 1);
+    }
+
+    ushort _pop() {
+        auto result = _heap[0];
+        _heapSlots[result] = noIndex;
+        _heapLength -= 1;
+        if (_heapLength) {
+            _heap[0] = _heap[_heapLength];
+            _heapSlots[_heap[0]] = 0;
+            _siftDown(0);
+        }
+        return result;
+    }
+
+    void _siftUp(Sz slot) {
+        while (slot) {
+            auto parent = (slot - 1) / 2;
+            if (!_isBefore(_heap[slot], _heap[parent])) break;
+            _swapSlots(slot, parent);
+            slot = parent;
+        }
+    }
+
+    void _siftDown(Sz slot) {
+        while (true) {
+            auto best = slot;
+            auto left = slot * 2 + 1;
+            auto right = left + 1;
+            if (left < _heapLength && _isBefore(_heap[left], _heap[best])) best = left;
+            if (right < _heapLength && _isBefore(_heap[right], _heap[best])) best = right;
+            if (best == slot) break;
+            _swapSlots(slot, best);
+            slot = best;
+        }
+    }
+
+    void _swapSlots(Sz a, Sz b) {
+        auto temp = _heap[a];
+        _heap[a] = _heap[b];
+        _heap[b] = temp;
+        _heapSlots[_heap[a]] = cast(ushort) a;
+        _heapSlots[_heap[b]] = cast(ushort) b;
     }
 }
 

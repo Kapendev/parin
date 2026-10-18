@@ -121,10 +121,9 @@ struct StaticArray(T, Sz N) {
 
     @trusted nothrow @nogc:
 
-    /// Makes a static array. Passing a slice with a length larger than the array capacity will throw an error.
+    /// Makes a static array.
     this(const(T)[] items...) {
-        if (items.length > N) assert(0, "Too many items passed to the static array.");
-        foreach (i; 0 .. N) (cast(T*) _data.ptr)[i] = cast(T) items[i];
+        foreach (i; 0 .. min(N, items.length)) (cast(T*) _data.ptr)[i] = cast(T) items[i];
     }
 
     /// Returns the items of the array.
@@ -1142,6 +1141,7 @@ version (JokaSmallFootprint) {
 }
 
 enum defaultAsciiFmtArgStr = "{}"; /// The format argument symbol.
+enum defaultAsciiToStrStructMemberCount = 4; /// The amount of members that can be printed as one line.
 
 enum digitChars    = "0123456789";                         /// The set of decimal numeric characters.
 enum upperChars    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";         /// The set of uppercase letters.
@@ -1273,18 +1273,35 @@ IStr toStr(T)(T value) {
             static char[512] buffer = void;
             IStr temp = void;
 
-            buffer[0] = '(';
-            auto bufferLength = Sz(1);
+            static if (T.tupleof.length <= defaultAsciiToStrStructMemberCount) {
+                buffer[0] = '(';
+                Sz bufferLength = 1;
+            } else {
+                buffer[0] = '(';
+                buffer[1] = '\n';
+                Sz bufferLength = 2;
+            }
+
             static foreach (i, member; T.tupleof) {
                 static if (is(typeof(T.tupleof[i]) : IStr)) buffer[bufferLength++] = '"';
                 temp = value.tupleof[i].toStr();
                 buffer[bufferLength .. bufferLength + temp.length] = temp;
                 bufferLength += temp.length;
                 static if (is(typeof(T.tupleof[i]) : IStr)) buffer[bufferLength++] = '"';
-                buffer[bufferLength++] = ' ';
+
+                static if (T.tupleof.length <= defaultAsciiToStrStructMemberCount) {
+                    buffer[bufferLength++] = ' ';
+                } else {
+                    buffer[bufferLength++] = '\n';
+                }
             }
 
-            buffer[bufferLength - 1] = ')';
+            static if (T.tupleof.length <= defaultAsciiToStrStructMemberCount) {
+                buffer[bufferLength - 1] = ')';
+            } else {
+                buffer[bufferLength++] = ')';
+            }
+
             return buffer[0 .. bufferLength];
         }
     } else static if (is(immutable(T) == immutable(char))) {
@@ -1298,7 +1315,7 @@ IStr toStr(T)(T value) {
     } else static if (__traits(isFloating, T)) {
         return floatingToStr(value, 2);
     } else {
-        static assert(0, "Type doesn't implement the `toStr` function or includes a slice as a member.");
+        return T.stringof;
     }
 }
 
@@ -1327,7 +1344,6 @@ IStr fmtIntoBufferWithStrs(Str buffer, IStr fmtStr, IStr[] args...) {
             fmtStrIndex += 1;
         }
     }
-    if (argIndex != args.length) assert(0, "An argument doesn't have a placeholder.");
     result = result[0 .. resultLength];
     return result;
 }

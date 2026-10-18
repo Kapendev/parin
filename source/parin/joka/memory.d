@@ -916,10 +916,10 @@ struct List(T) {
 
     @nogc
     IStr toStr() {
-        static if (is(T == char)) { // isCharType
+        static if (is(T == char)) {
             return items;
         } else {
-            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
+            return typeof(items).stringof;
         }
     }
 
@@ -1100,10 +1100,10 @@ struct BufferList(T) {
     }
 
     IStr toStr() {
-        static if (is(T == char)) { // isCharType
+        static if (is(T == char)) {
             return items;
         } else {
-            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
+            return typeof(data).stringof;
         }
     }
 
@@ -1258,10 +1258,10 @@ struct FixedList(T, Sz N) {
     }
 
     IStr toStr() {
-        static if (is(T == char)) { // isCharType
+        static if (is(T == char)) {
             return items;
         } else {
-            assert(0, "Cannot call `toStr` on `List!T` when `T` is not a `char`.");
+            return typeof(items()).stringof;
         }
     }
 
@@ -2421,7 +2421,6 @@ IStr fmtIntoListWithStrs(S = LStr)(ref S list, bool canAppend, IStr fmtStr, IStr
             fmtStrIndex += 1;
         }
     }
-    if (argIndex != args.length) assert(0, "An argument doesn't have a placeholder.");
     return list.items;
 }
 

@@ -14,7 +14,7 @@ Its main ideas are:
 - **Code-driven design**: No engine-mandated architecture, so gameplay code can be structured however fits the game.
 - **Flexible abstraction**: Garbage collection is available for convenience, with the option to drop to manual management or avoid it entirely.
 - **Modular foundation**: Most of Parin is built on [Joka](https://github.com/Kapendev/joka), a portable utility library that can be used on its own (see this [raylib example](https://kapendev.itch.io/k-merge-with-me)).
-- **Batteries included**: Sensible defaults for common needs (animation helpers, timers, etc.).
+- **Batteries included**: Sensible defaults for common needs (animation helpers, timers, path finding, etc.).
 
 Basic code example:
 
