@@ -665,7 +665,7 @@ struct DepthSort {
 @trusted
 void openWindow(int width, int height, const(IStr)[] args, IStr title = defaultEngineTitle, bool vsyncOff = false) {
     _engineState = cast(EngineState*) jokaMalloc(EngineState.sizeof);
-    *_engineState = EngineState();
+    *_engineState = EngineState.init;
     _engineState.depthSortData = DepthSortData(32768); // NOTE: MAGIC NUMBER LOL.
 
     if (args.length) {
@@ -2824,6 +2824,12 @@ mixin template runGame(
                 import _parinModule = parin.engine;
                 _parinModule.openWindowC(width, height, 0, null, title, vsyncOff);
                 _parinMain();
+            }
+        } else {
+            extern(C) int main(int argc, const(char)** argv) {
+                import _parinModule = parin.engine;
+                _parinModule.openWindowC(width, height, argc, argv, title, vsyncOff);
+                return _parinMain();
             }
         }
     } else {

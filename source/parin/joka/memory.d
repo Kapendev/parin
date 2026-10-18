@@ -945,7 +945,7 @@ struct List(T) {
         }
 
         void opIndexAssign(const(T) rhs) {
-            items[] = cast(T) rhs;
+            foreach(ref item; items) item = cast(T) rhs;
         }
 
         void opIndexAssign(const(T) rhs, Sz i) {
@@ -1134,7 +1134,7 @@ struct BufferList(T) {
         }
 
         void opIndexAssign(const(T) rhs) {
-            items[] = cast(T) rhs;
+            foreach (ref item; items) item = cast(T) rhs;
         }
 
         void opIndexAssign(const(T) rhs, Sz i) {
@@ -1292,7 +1292,7 @@ struct FixedList(T, Sz N) {
         }
 
         void opIndexAssign(const(T) rhs) {
-            items[] = cast(T) rhs;
+            foreach (ref item; items) item = cast(T) rhs;
         }
 
         void opIndexAssign(const(T) rhs, Sz i) {
@@ -1927,7 +1927,7 @@ struct Grid(T, D = List!T) if (isBasicContainerType!D) {
         }
 
         void opIndexAssign(T rhs) {
-            tiles[] = rhs;
+            foreach (ref tile; tiles) tile = rhs;
         }
 
         void opIndexAssign(const(T) rhs, Sz row, Sz col) {

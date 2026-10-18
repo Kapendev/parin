@@ -20,6 +20,7 @@ jobs:
         dub run :setup -- vendor
         dub test --verbose
         ./scripts/parin_helpers/build_all_examples
+        ./scripts/parin_helpers/build_one_betterc
   test-windows:
     runs-on: windows-latest
     steps:

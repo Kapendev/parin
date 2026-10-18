@@ -90,7 +90,7 @@ struct BackendState {
     GenList!(ViewportsData.Item.Item, ViewportsData, GenData) viewports;
     BasicContainer!IStr droppedPaths;
 
-    RlTexture[defaultBackendMaxSurfaceCount] surfaceTextureBuffers;
+    StaticArray!(RlTexture, defaultBackendMaxSurfaceCount) surfaceTextureBuffers;
     IVec2 surfaceCursor;
     int surfaceRowHeight;
     int surfaceCurrentSlot;
@@ -137,7 +137,7 @@ void openWindow(int width, int height, IStr title, bool vsync, int fpsMax, int w
 
     // Create the null values.
     _backendState = cast(BackendState*) jokaMalloc(BackendState.sizeof);
-    *_backendState = BackendState();
+    *_backendState = BackendState.init;
     _backendState.textures.push(RlTexture());
     _backendState.fonts.push(RlFont());
     _backendState.sounds.push(RlSound());

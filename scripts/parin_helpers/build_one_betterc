@@ -1,0 +1,8 @@
+#!/bin/env sh
+
+## For testing if betterc compiles and links.
+## Linking is usually the issue with betterc.
+
+set -xe
+
+dmd -i -betterC -of=.temp -I=source -J=source/parin -L=-lraylib -L=-Lpackages/setup/source/vendor/linux_x86_64 examples/integrations/microui.d
