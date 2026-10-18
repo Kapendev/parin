@@ -339,7 +339,7 @@ struct TextOptions {
 struct Camera {
     Vec2 position;              /// The position of the camera.
     Vec2 offset;                /// The offset of the view area of the camera.
-    Maybe!Vec2 target;          /// The target position of the camera. Used by the `folloTarget*` functions.
+    Maybe!Vec2 target;          /// The target position of the camera. Used by the `followTarget*` functions.
     float rotation = 0.0f;      /// The rotation angle of the camera, in degrees.
     float scale = 1.0f;         /// The zoom level of the camera.
     bool isCentered;            /// Determines if the camera's origin is at the center instead of the top left.

@@ -38,7 +38,6 @@ void addBox(b2BodyType type, b2Vec2 position, Vec2 halfSize) {
 
 void ready() {
     lockResolution(640, 360);
-    setWindowBackgroundColor(gray3);
     // Create the world.
     auto worldDef = b2DefaultWorldDef();
     worldDef.gravity = b2Vec2(0, -10);
@@ -78,7 +77,7 @@ bool update(float dt) {
     foreach (i, box; boxes) {
         auto size = box.halfSize * Vec2(scale * 2);
         auto rotation = b2Body_GetRotation(box.id);
-        auto color = gray;
+        auto color = Rgba(60);
         if (b2Body_GetType(box.id) == b2_dynamicBody) color = box.id == dragged ? yellow : (i % 2 ? cyan : pink);
         drawRect(
             Rect(toScreen(b2Body_GetPosition(box.id)), size),
