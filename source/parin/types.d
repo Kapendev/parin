@@ -336,13 +336,17 @@ struct TextOptions {
 
 /// A camera.
 struct Camera {
-    Vec2 position;         /// The position of the camera.
-    Vec2 offset;           /// The offset of the view area of the camera.
-    Maybe!Vec2 target;     /// The target position of the camera. Used by the `folloTarget*` functions.
-    float rotation = 0.0f; /// The rotation angle of the camera, in degrees.
-    float scale = 1.0f;    /// The zoom level of the camera.
-    bool isCentered;       /// Determines if the camera's origin is at the center instead of the top left.
-    bool isAttached;       /// Indicates whether the camera is currently in use.
+    Vec2 position;              /// The position of the camera.
+    Vec2 offset;                /// The offset of the view area of the camera.
+    Maybe!Vec2 target;          /// The target position of the camera. Used by the `folloTarget*` functions.
+    float rotation = 0.0f;      /// The rotation angle of the camera, in degrees.
+    float scale = 1.0f;         /// The zoom level of the camera.
+    bool isCentered;            /// Determines if the camera's origin is at the center instead of the top left.
+    bool isAttached;            /// Indicates whether the camera is currently in use.
+    Vec2 shakeOffset;           /// The current shake offset. Set by `updateShake`.
+    float shakeStrength = 0.0f; /// The largest shake offset of the current shake, in pixels.
+    float shakeTime = 0.0f;     /// The time left for the current shake, in seconds.
+    float shakeDuration = 0.0f; /// The total time of the current shake, in seconds.
 
     @safe nothrow @nogc:
 
@@ -369,9 +373,36 @@ struct Camera {
         return position.y;
     }
 
-    /// The sum of the position and the offset of the camera.
+    /// The sum of the position, the offset, and the shake offset of the camera.
     Vec2 sum() {
-        return position + offset;
+        return position + offset + shakeOffset;
+    }
+
+    /// Returns true if the camera is shaking.
+    bool isShaking() {
+        return shakeTime > 0.0f;
+    }
+
+    /// Starts a shake that fades out over the given duration.
+    /// A weaker shake does not replace a stronger one that is still running.
+    void shake(float strength, float duration) {
+        if (isShaking && shakeStrength * (shakeTime / shakeDuration) > strength) return;
+        shakeStrength = strength;
+        shakeTime = duration;
+        shakeDuration = duration;
+    }
+
+    /// Updates the shake offset. Call it once every frame, like the `follow*` functions.
+    void updateShake(float dt) {
+        if (!isShaking) {
+            shakeOffset = Vec2();
+            return;
+        }
+        shakeTime = max(shakeTime - dt, 0.0f);
+        // Two sine waves with different speeds give a shake that looks random but stays smooth.
+        auto elapsedTime = shakeDuration - shakeTime;
+        auto amount = shakeStrength * (shakeTime / shakeDuration);
+        shakeOffset = Vec2(sin(elapsedTime * 37.0f), sin(elapsedTime * 53.0f + 1.3f)) * Vec2(amount);
     }
 
     /// Returns the current hook associated with the camera.
@@ -438,18 +469,21 @@ struct Camera {
     void floor() {
         position = position.floor();
         offset = offset.floor();
+        shakeOffset = shakeOffset.floor();
     }
 
     /// Ceils the position and offset of the camera.
     void ceil() {
         position = position.ceil();
         offset = offset.ceil();
+        shakeOffset = shakeOffset.ceil();
     }
 
     /// Rounds the position and offset of the camera.
     void round() {
         position = position.round();
         offset = offset.round();
+        shakeOffset = shakeOffset.round();
     }
 
     /// Moves the camera to follow the target position at the specified speed.

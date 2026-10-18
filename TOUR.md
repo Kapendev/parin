@@ -345,14 +345,15 @@ Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter foot
 /// Hold the left mouse button to create and resize a debug area.
 /// Hold the right mouse button to move the debug area.
 /// Press the middle mouse button to clear the debug area.
-void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+void drawDebugEngineInfo(Vec2 screenPoint, ref Camera camera, DrawOptions options = DrawOptions(), bool isLogging = false);
+void drawDebugEngineInfo(Vec2 canvasPoint, DrawOptions options = DrawOptions(), bool isLogging = false);
 
 /// Draws a tile with a texture.
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions());
 /// Draws a tile map with a texture. The view area controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions());
 /// Draws a tile map with a texture. The camera controls what is visible.
-void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions());
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, ref Camera camera, DrawOptions options = DrawOptions());
 
 /// Options for configuring drawing parameters.
 struct DrawOptions {

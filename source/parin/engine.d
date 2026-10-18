@@ -1636,22 +1636,22 @@ Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions()
 }
 
 /// Converts a scene point to a canvas point using the given camera and resolution.
-Vec2 toCanvasPoint(Vec2 point, Camera camera) {
+Vec2 toCanvasPoint(Vec2 point, ref Camera camera) {
     return bk.toCanvasPoint(point, camera, resolution);
 }
 
 /// Converts a scene point to a canvas point using the given camera and canvas size.
-Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+Vec2 toCanvasPoint(Vec2 point, ref Camera camera, Vec2 canvasSize) {
     return bk.toCanvasPoint(point, camera, canvasSize);
 }
 
 /// Converts a canvas point to a scene point using the given camera and resolution.
-Vec2 toScenePoint(Vec2 point, Camera camera) {
+Vec2 toScenePoint(Vec2 point, ref Camera camera) {
     return bk.toScenePoint(point, camera, resolution);
 }
 
 /// Converts a canvas point to a scene point using the given camera and canvas size.
-Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+Vec2 toScenePoint(Vec2 point, ref Camera camera, Vec2 canvasSize) {
     return bk.toScenePoint(point, camera, canvasSize);
 }
 
@@ -2421,7 +2421,7 @@ Vec2 drawText(IStr text, Vec2 position, DrawOptions options = DrawOptions(), Tex
 /// Hold the left mouse button to create and resize a debug area.
 /// Hold the right mouse button to move the debug area.
 /// Press the middle mouse button to clear the debug area.
-void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false) {
+void drawDebugEngineInfo(Vec2 canvasPoint, ref Camera camera, DrawOptions options = DrawOptions(), bool isLogging = false) {
     static clickPoint = Vec2();
     static clickOffset = Vec2();
     static a = Vec2();
@@ -2487,7 +2487,7 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
     }
     drawRect(Rect(a.toCanvasPoint(camera), s), defaultEngineDebugColor1);
     drawRect(Rect(a.toCanvasPoint(camera), s), defaultEngineDebugColor2, 1);
-    drawText(text, screenPoint, options);
+    drawText(text, canvasPoint, options);
     if (isLogging && (Mouse.left.isReleased || Mouse.right.isReleased)) {
         printf(
             "Debug Engine Info\n A: Vec2({}, {})\n B: Vec2({}, {})\n S: Vec2({}, {}){}",
@@ -2500,6 +2500,15 @@ void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions
             eolStr,
         );
     }
+}
+
+/// Draws debug engine information at the given position with the provided draw options.
+/// Hold the left mouse button to create and resize a debug area.
+/// Hold the right mouse button to move the debug area.
+/// Press the middle mouse button to clear the debug area.
+void drawDebugEngineInfo(Vec2 canvasPoint, DrawOptions options = DrawOptions(), bool isLogging = false) {
+    auto camera = Camera();
+    drawDebugEngineInfo(canvasPoint, camera, options, isLogging);
 }
 
 /// Plays the given sound. If the sound is already playing, this has no effect.
@@ -2613,7 +2622,7 @@ void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Re
 }
 
 /// Draws a tile map with a texture. The camera controls what is visible.
-void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions()) {
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, ref Camera camera, DrawOptions options = DrawOptions()) {
     drawTileMap(texture, map, camera.area(resolution), options);
 }
 

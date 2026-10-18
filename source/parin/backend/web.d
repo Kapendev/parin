@@ -409,11 +409,11 @@ float randf() {
     return 0.0f;
 }
 
-Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+Vec2 toCanvasPoint(Vec2 point, ref Camera camera, Vec2 canvasSize) {
     return Vec2();
 }
 
-Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+Vec2 toScenePoint(Vec2 point, ref Camera camera, Vec2 canvasSize) {
     return Vec2();
 }
 

@@ -1022,11 +1022,11 @@ float randf() {
     return rl.GetRandomValue(0, cast(int) float.max) / cast(float) cast(int) float.max;
 }
 
-Vec2 toCanvasPoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+Vec2 toCanvasPoint(Vec2 point, ref Camera camera, Vec2 canvasSize) {
     return rl.GetWorldToScreen2D(point, toRl(camera, canvasSize, Rounding.none));
 }
 
-Vec2 toScenePoint(Vec2 point, Camera camera, Vec2 canvasSize) {
+Vec2 toScenePoint(Vec2 point, ref Camera camera, Vec2 canvasSize) {
     return rl.GetScreenToWorld2D(point, toRl(camera, canvasSize, Rounding.none));
 }
 

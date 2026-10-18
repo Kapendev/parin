@@ -224,9 +224,9 @@ void setIsPixelPerfect(bool value);
 /// Returns the size of the text.
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions());
 /// Converts a scene point to a canvas point using the given camera and resolution.
-Vec2 toCanvasPoint(Vec2 point, Camera camera);
+Vec2 toCanvasPoint(Vec2 point, ref Camera camera);
 /// Converts a canvas point to a scene point using the given camera and resolution.
-Vec2 toScenePoint(Vec2 point, Camera camera);
+Vec2 toScenePoint(Vec2 point, ref Camera camera);
 
 /// Returns the arguments this application was started with.
 IStr[] envArgs();
@@ -445,14 +445,15 @@ Vec2 drawText(A...)(InterpolationHeader header, A args, InterpolationFooter foot
 /// Hold the left mouse button to create and resize a debug area.
 /// Hold the right mouse button to move the debug area.
 /// Press the middle mouse button to clear the debug area.
-void drawDebugEngineInfo(Vec2 screenPoint, Camera camera = Camera(), DrawOptions options = DrawOptions(), bool isLogging = false);
+void drawDebugEngineInfo(Vec2 screenPoint, ref Camera camera, DrawOptions options = DrawOptions(), bool isLogging = false);
+void drawDebugEngineInfo(Vec2 canvasPoint, DrawOptions options = DrawOptions(), bool isLogging = false);
 
 /// Draws a tile with a texture.
 void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions());
 /// Draws a tile map with a texture. The view area controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions());
 /// Draws a tile map with a texture. The camera controls what is visible.
-void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Camera camera, DrawOptions options = DrawOptions());
+void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, ref Camera camera, DrawOptions options = DrawOptions());
 
 /// Options for configuring drawing parameters.
 struct DrawOptions {
@@ -741,6 +742,14 @@ struct Camera {
     bool isCentered;
     /// Indicates whether the camera is currently in use.
     bool isAttached;
+    /// The current shake offset. Set by `updateShake`.
+    Vec2 shakeOffset;
+    /// The largest shake offset of the current shake, in pixels.
+    float shakeStrength = 0.0f;
+    /// The time left for the current shake, in seconds.
+    float shakeTime = 0.0f;
+    /// The total time of the current shake, in seconds.
+    float shakeDuration = 0.0f;
 
     /// Creates a camera with a position.
     this(Vec2 position, bool isCentered = false);
@@ -751,8 +760,15 @@ struct Camera {
     ref float x();
     /// The Y position of the camera.
     ref float y();
-    /// The sum of the position and the offset of the camera.
+    /// The sum of the position, the offset, and the shake offset of the camera.
     Vec2 sum();
+    /// Returns true if the camera is shaking.
+    bool isShaking();
+    /// Starts a shake that fades out over the given duration.
+    /// A weaker shake does not replace a stronger one that is still running.
+    void shake(float strength, float duration);
+    /// Updates the shake offset. Call it once every frame, like the `follow*` functions.
+    void updateShake(float dt);
     /// Returns the current hook associated with the camera.
     Hook hook();
 
@@ -779,11 +795,11 @@ struct Camera {
     /// Returns the bottom right point of the camera.
     Vec2 bottomRightPoint(Vec2 canvasSize);
 
-    /// Floors the position and offset of the camera.
+    /// Floors the position, offset, and shake offset of the camera.
     void floor();
-    /// Ceils the position and offset of the camera.
+    /// Ceils the position, offset, and shake offset of the camera.
     void ceil();
-    /// Rounds the position and offset of the camera.
+    /// Rounds the position, offset, and shake offset of the camera.
     void round();
 
     /// Moves the camera to follow the target position at the specified speed.
