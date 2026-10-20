@@ -243,6 +243,11 @@ Or `setAssetsPath(assetsPath.pathDirName)` to load from the executable's folder.
 Hot reloading is not supported out of the box because I (Kapendev) don't care about that feature.
 The [arsd](https://github.com/adamdruppe/arsd) libraries may help.
 
+### How can I test dialogue scripts?
+
+With Rin, a small tool that runs dialogue scripts in the terminal.
+See [packages/rin](packages/rin) for how to use it.
+
 ### Are the Parin assets free to use?
 
 Yes. Be sure to check the associated [README](assets/README.md) for any licensing notes.

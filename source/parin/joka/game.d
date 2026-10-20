@@ -72,7 +72,6 @@ alias Palette(Sz N)    = StaticArray!(Rgba, N);
 alias HexPalette(Sz N) = uint[N];
 
 enum defaultStoryFixedListCapacity = 16;
-enum defaultStoryMaxUpdateLineCount = 100000;
 
 enum blank   = Rgba();              /// #00000000
 enum black   = Rgba(0);             /// #000000FF
@@ -1674,11 +1673,8 @@ struct Story {
     /// Returns an overflow fault if it goes through too many lines, like when a script loops forever without stopping.
     Fault update(IStr file = __FILE__, Sz line = __LINE__) {
         if (lineCount == 0) return Fault.none;
-        auto stepCount = 0;
         setLineIndex(lineIndex + 1);
         while (lineIndex < lineCount && !hasPause && !hasProcedure && !hasMenu && !hasText) {
-            stepCount += 1;
-            if (stepCount > defaultStoryMaxUpdateLineCount) return Fault.overflow;
             auto scriptLine = opIndex(lineIndex);
             if (scriptLine.length) {
                 if (scriptLine[0] == StoryLineKind.expression) {

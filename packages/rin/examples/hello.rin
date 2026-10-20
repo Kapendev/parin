@@ -6,10 +6,19 @@
 * label
 | Hello world!
 | This is a text line.
-| The next is an expression line.
+| The next is a menu line.
+^ Pick one. ^ Pick two. ^ Skip.
+$ MENU SKIP
+
+*
+| Text of option one.
 $ end JUMP
 
-| You can't see me...
+*
+| Text of option two.
+$ end JUMP
 
 * end
 | JUMP goes to the label with the given name.
+| SKIP skips ahead N labels.
+| MENU returns the selected option.
