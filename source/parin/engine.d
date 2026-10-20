@@ -70,7 +70,7 @@ enum defaultEngineAssetsPathCapacity           = (8  / defaultEngineResourceScal
 enum defaultEngineScreenshotTargetPathCapacity = (2  / defaultEngineResourceScaleDenominator) * kilobyte;
 enum defaultEngineArenaCapacity                = (4  / defaultEngineResourceScaleDenominator) * megabyte;
 
-enum defaultEngineDebugColor1 = white.alpha(120);
+enum defaultEngineDebugColor1 = white.alpha(140);
 enum defaultEngineDebugColor2 = black.alpha(170);
 // +--
 
@@ -2681,8 +2681,8 @@ void drawSpriteStack(TextureId texture, SpriteStack stack, Rgba layerColor = whi
 }
 
 /// Draws debug rectangles based on the given box world.
-void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColor = maroon) {
-    foreach (ref wall; world.walls) drawRect(wall.area.toRect(), wallColor.alpha(defaultEngineDebugColor1.a));
+void drawDebugBoxWorld(ref BoxWorld world, Rgba actorColor = blue, Rgba wallColor = maroon, Rgba oneWayWallColor = orange) {
+    foreach (ref wall; world.walls) drawRect(wall.area.toRect(), (wall.properties.side ? oneWayWallColor : wallColor).alpha(defaultEngineDebugColor1.a));
     foreach (ref actor; world.actors) drawRect(actor.area.toRect(), actorColor.alpha(defaultEngineDebugColor1.a));
 }
 

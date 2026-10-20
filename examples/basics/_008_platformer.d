@@ -10,7 +10,7 @@ auto platformId = BoxWallId();
 auto liftId = BoxWallId();
 auto playerMover = BoxMover(2, 1, 0.3, 4); // Create a mover with: speed=2, acceleration=1, gravity=0.3, jump=4
 auto spawnPoint = IVec2(40, 148);
-auto wallSpeed = 120.0f; // The speed of the moving walls, in pixels per second. One pixel per frame looks smooth.
+auto wallSpeed = 60;
 
 IVec2[5] coins = [
     IVec2(56, 112),
@@ -49,9 +49,9 @@ BoxWallId groundWall() {
 }
 
 // Returns a value that goes from 0 to `length` and back at the given speed.
-float pingPong(float speed, float length) {
-    auto t = fmod(cast(float) elapsedTime * speed, length * 2);
-    return t < length ? t : length * 2 - t;
+float pingPong(float length) {
+    auto t = fmod(elapsedTickTime * wallSpeed, length * 2);
+    return cast(int) (t < length ? t : length * 2 - t);
 }
 
 void respawn() {
@@ -63,8 +63,8 @@ bool update(float dt) {
     if (Keyboard.f11.isPressed) toggleIsFullscreen();
     // Move the platform over the gap and the lift up and down.
     // The lift returns the actors it squished.
-    world.moveWallX(platformId, 104 + pingPong(wallSpeed, 80) - world.wall(platformId).x);
-    if (world.moveWallY(liftId, 76 + pingPong(wallSpeed, 72) - world.wall(liftId).y).length) respawn();
+    world.moveWallX(platformId, 104 + pingPong(80) - world.wall(platformId).x);
+    if (world.moveWallY(liftId, 76 + pingPong(72) - world.wall(liftId).y).length) respawn();
     // Move the player. Jumping is only allowed when standing on something.
     // Pressing down and jump on a one-way wall moves the player one pixel into it.
     // One-way walls ignore actors that are inside them, so the player falls through.
@@ -89,8 +89,7 @@ bool update(float dt) {
         isCollected = false;
         respawn();
     }
-    // Draw the world. One-way walls are drawn darker.
-    foreach (wall; world.walls) drawRect(wall.area.toRect(), wall.properties.side ? gray1 : gray3);
+    drawDebugBoxWorld(world);
     foreach (i, coin; coins) if (!isCollected[i]) drawRect(Rect(coin.toVec(), 8, 8), yellow);
     drawRect(player, cyan);
     if (coinCount == coins.length) drawText("You got all the coins!\nPress enter to play again.", Vec2(8));
