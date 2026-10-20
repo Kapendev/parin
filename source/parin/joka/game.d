@@ -2075,6 +2075,7 @@ struct Story {
 
 enum boxNoneId        = 0;
 enum boxUnionTypeBit  = (cast(BoxUnionId) 1) << (BoxUnionId.sizeof * 8 - 1);
+enum boxMaxCount      = boxUnionTypeBit - 1;
 enum boxErrorMessage  = "Box is invalid or was never assigned.";
 enum boxFixedCapacity = 256;
 
@@ -2195,8 +2196,6 @@ struct BoxMover {
                 velocity.x = direction.x * speed;
                 velocity.y = direction.y * speed;
             }
-            velocity.x = velocity.x;
-            velocity.y = velocity.y;
         } else {
             if (isSmooth) {
                 if (direction.x > 0.0f) {
@@ -2210,7 +2209,6 @@ struct BoxMover {
             } else {
                 velocity.x = direction.x * speed;
             }
-            velocity.x = velocity.x;
             if (velocity.y > 0.0f) velocity.y += gravity;
             else velocity.y += gravity * gravityFallFactor;
             if (direction.y < 0.0f) velocity.y = -jump;
@@ -2242,6 +2240,7 @@ struct BoxWorld {
     }
 
     BoxWallId pushWall(Box box, BoxSide side = BoxSide.none, IStr file = __FILE__, Sz line = __LINE__) {
+        if (walls.length >= boxMaxCount) assert(0, "Too many walls. The max is `{}`.".fmt(boxMaxCount));
         auto data = BoxData(box, BoxProperties());
         data.properties.side = side;
         walls.push(data, file, line);
@@ -2256,6 +2255,7 @@ struct BoxWorld {
     alias appendWall = pushWall;
 
     BoxActorId pushActor(Box box, BoxSide side = BoxSide.none, IStr file = __FILE__, Sz line = __LINE__) {
+        if (actors.length >= boxMaxCount) assert(0, "Too many actors. The max is `{}`.".fmt(boxMaxCount));
         auto data = BoxData(box, BoxProperties());
         data.properties.side = side;
         actors.push(data, file, line);
@@ -2282,7 +2282,7 @@ struct BoxWorld {
                 colCount += 1;
                 auto tile = csvLine.skipValue(',').toSigned();
                 if (tile.isNone) {
-                    walls.clear();
+                    clearWalls();
                     return Fault.invalid;
                 }
                 if (tile.xx <= -1) continue;
@@ -2297,6 +2297,8 @@ struct BoxWorld {
         actors.reserve(capacity, file, line);
     }
 
+    /// Enables the spatial grid. A box is stored in the grid cell of its top-left corner and collision checks look at the 3x3 cells around it.
+    /// The tile size should be at least as big as the biggest box, or some collisions will be missed.
     void enableGrid(Sz rowCount, Sz colCount, int tileWidth, int tileHeight, IStr file = __FILE__, Sz line = __LINE__) {
         gridTileWidth = tileWidth;
         gridTileHeight = tileHeight;
@@ -2335,25 +2337,39 @@ struct BoxWorld {
     void removeWall(BoxWallId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         // Goodbye, Mr. Anderson.
-        walls[id - 1].area.x = cast(typeof(Box.position.x)) float.max;
+        // The position is moved away to hide the box when debug drawing. Half the max avoids overflow in `x + width` math.
+        walls[id - 1].area.x = typeof(Box.position.x).max / 2;
         walls[id - 1].properties.flags |= BoxFlag.isPassable;
     }
 
     void removeActor(BoxActorId id) {
         if (id == boxNoneId) assert(0, boxErrorMessage);
         // Goodbye, Mr. Anderson.
-        actors[id - 1].area.x = cast(typeof(Box.position.x)) float.max;
+        // The position is moved away to hide the box when debug drawing. Half the max avoids overflow in `x + width` math.
+        actors[id - 1].area.x = typeof(Box.position.x).max / 2;
         actors[id - 1].properties.flags |= BoxFlag.isPassable;
     }
 
     void clearWalls() {
-        if (grid.length != 0) return;
         walls.clear();
+        foreach (ref group; grid) {
+            Sz j = 0;
+            while (j < group.length) {
+                if (group[j] & boxUnionTypeBit) j += 1;
+                else group.remove(j);
+            }
+        }
     }
 
     void clearActors() {
-        if (grid.length != 0) return;
         actors.clear();
+        foreach (ref group; grid) {
+            Sz j = 0;
+            while (j < group.length) {
+                if (group[j] & boxUnionTypeBit) group.remove(j);
+                else j += 1;
+            }
+        }
     }
 
     bool isGridPointValid(IVec2 point) {
@@ -2362,11 +2378,14 @@ struct BoxWorld {
 
     alias getGridPoint = gridPoint;
 
+    /// Returns the grid point of the box, or `IVec2(-1)` if the grid is disabled.
     IVec2 gridPoint(Box box) {
-        if (!grid.length) assert(0, "Can't get a grid point from a disabled grid.");
+        if (!grid.length) return IVec2(-1);
+        auto x = box.position.x;
+        auto y = box.position.y;
         return IVec2(
-            box.position.x / gridTileWidth - (box.position.x < 0),
-            box.position.y / gridTileHeight - (box.position.y < 0),
+            x >= 0 ? x / gridTileWidth : (x + 1) / gridTileWidth - 1,
+            y >= 0 ? y / gridTileHeight : (y + 1) / gridTileHeight - 1,
         );
     }
 
@@ -2435,7 +2454,10 @@ struct BoxWorld {
     }
 
     BoxWallId hasWallCollision(BoxWallId id) {
-        return hasWallCollision(getWall(id));
+        foreach (otherId; getWallCollisions(getWall(id))) {
+            if (otherId != id) return otherId;
+        }
+        return BoxWallId(boxNoneId);
     }
 
     BoxWallId hasWallCollision(BoxWallId id1, BoxWallId id2) {
@@ -2479,7 +2501,10 @@ struct BoxWorld {
     }
 
     BoxActorId hasActorCollision(BoxActorId id) {
-        return hasActorCollision(getActor(id));
+        foreach (otherId; getActorCollisions(getActor(id))) {
+            if (otherId != id) return otherId;
+        }
+        return BoxActorId(boxNoneId);
     }
 
     BoxActorId hasActorCollision(BoxActorId id1, BoxActorId id2) {
@@ -2497,7 +2522,7 @@ struct BoxWorld {
         properties.remainder.x -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(moveSign, 0), actor.size);
-            auto wallId = hasWallCollision(tempBox);
+            auto wallId = (properties.flags & BoxFlag.isPassable) ? BoxWallId(boxNoneId) : hasWallCollision(tempBox);
             if (wallId) {
                 // One way stuff.
                 auto wall = &getWall(wallId);
@@ -2517,7 +2542,7 @@ struct BoxWorld {
                         break;
                 }
             }
-            if ((~properties.flags & BoxFlag.isPassable) && wallId) {
+            if (wallId) {
                 return wallId;
             } else {
                 // Move.
@@ -2573,7 +2598,7 @@ struct BoxWorld {
         properties.remainder.y -= move;
         while (move != 0) {
             auto tempBox = Box(actor.position + IVec2(0, moveSign), actor.size);
-            auto wallId = hasWallCollision(tempBox);
+            auto wallId = (properties.flags & BoxFlag.isPassable) ? BoxWallId(boxNoneId) : hasWallCollision(tempBox);
             if (wallId) {
                 // One way stuff.
                 auto wall = &getWall(wallId);
@@ -2593,7 +2618,7 @@ struct BoxWorld {
                         break;
                 }
             }
-            if ((~properties.flags & BoxFlag.isPassable) && wallId) {
+            if (wallId) {
                 return wallId;
             } else {
                 // Move.
@@ -2801,7 +2826,7 @@ struct BoxWorld {
                         auto actorPushAmount = (move.y > 0) ? (wallBottom - actorTop) : (wallTop - actorBottom);
                         if (moveActorY(BoxActorId(cast(BoxId) (i + 1)), actorPushAmount)) {
                             // Squish actor.
-                            squishedIdBuffer.push(BoxActorId(cast(BoxId) (i + 1)));
+                            squishedIdBuffer.push(cast(BoxId) (i + 1));
                         }
                     } else if (actor.properties.flags & BoxFlag.isRiding) {
                         // Carry actor.
