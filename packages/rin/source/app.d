@@ -1,12 +1,10 @@
 /// A Parin script interpreter.
 
+import std.stdio;
 import parin.joka;
 import parin.joka.game;
-import stdc = parin.joka.stdc;
 
 RinState rinState;
-
-extern(C) int fflush(stdc.FILE* stream) nothrow @nogc;
 
 enum helpMsg = `
 Usage
@@ -57,35 +55,13 @@ Fault prepareStory() {
     return Fault.none;
 }
 
-@trusted
-bool readLine(char[] buffer, ref IStr line) {
-    auto length = 0LU;
-    char c;
-    while (stdc.fread(&c, 1, 1, stdc.stdin) == 1) {
-        if (c == '\n') {
-            line = buffer[0 .. length];
-            return true;
-        }
-        if (length < buffer.length) {
-            buffer[length] = c;
-            length += 1;
-        }
-    }
-    line = buffer[0 .. length];
-    return length != 0;
-}
-
 Fault readMenuOption(ref Sz option) {
     auto options = rinState.story.menu;
     foreach (i, item; options) printfln("{} | {}", i + 1, item);
-    char[64] buffer;
-    IStr line;
     while (true) {
-        // Flush so the prompt shows before reading.
-        print(">>> ");
-        fflush(stdc.stdout);
-        if (!readLine(buffer, line)) break;
-        auto number = line.trim().toUnsigned();
+        write(">>> ");
+        auto line = readln().trim();
+        auto number = line.toUnsigned();
         if (!number.isNone && number.xx >= 1 && number.xx <= options.length) {
             option = cast(Sz) (number.xx - 1);
             return Fault.none;

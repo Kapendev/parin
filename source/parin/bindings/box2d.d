@@ -6,16 +6,13 @@
 // ---
 
 /// The `box2d` module provides access to the Box2D v3 C API.
-/// By default these bindings match the Box2D v3.1.1 release.
-/// To use latest Box2D instead, compile with `-version=Box2D_Main`.
+/// By default these bindings match the Box2D v3.2.0 release.
+/// To use Box2D v3.1.1 instead, compile with `-version=Box2D_3_1`.
 /// The versions have different ABIs, so the flag must match the library you link.
+/// The bindings assume single precision, so Box2D must not be built with `BOX2D_DOUBLE_PRECISION`.
 module parin.bindings.box2d;
 
 import joka = parin.joka.math;
-
-version (Box2D_Main) {} else {
-    version = Box2D_3_1;
-}
 
 extern(C) @system nothrow @nogc:
 
@@ -25,32 +22,43 @@ alias b2WorldTransform = b2Transform;
 
 version (Box2D_3_1) {
     alias b2UserMaterialId = int;
-} else {
-    alias b2UserMaterialId = ulong;
-}
 
-alias b2OverlapResultFcn = bool function(b2ShapeId shapeId, void* context);
-alias b2CastResultFcn = float function(b2ShapeId shapeId, b2Vec2 point, b2Vec2 normal, float fraction, void* context);
-
-version (Box2D_3_1) {
     alias b2TaskCallback = void function(int startIndex, int endIndex, uint workerIndex, void* taskContext);
     alias b2EnqueueTaskCallback = void* function(b2TaskCallback task, int itemCount, int minRange, void* taskContext, void* userContext);
+    alias b2FinishTaskCallback = void function(void* userTask, void* userContext);
+    alias b2FrictionCallback = float function(float frictionA, b2UserMaterialId userMaterialIdA, float frictionB, b2UserMaterialId userMaterialIdB);
+    alias b2RestitutionCallback = float function(float restitutionA, b2UserMaterialId userMaterialIdA, float restitutionB, b2UserMaterialId userMaterialIdB);
+    alias b2OverlapResultFcn = bool function(b2ShapeId shapeId, void* context);
+    alias b2CastResultFcn = float function(b2ShapeId shapeId, b2Pos point, b2Vec2 normal, float fraction, void* context);
 } else {
-    alias b2TaskCallback = void function(void* taskContext);
-    alias b2EnqueueTaskCallback = void* function(b2TaskCallback task, void* taskContext, void* userContext);
+    alias b2UserMaterialId = ulong;
+
+    alias b2TaskCallbackFcn = void function(void* taskContext);
+    alias b2EnqueueTaskCallbackFcn = void* function(b2TaskCallbackFcn task, void* taskContext, void* userContext);
+    alias b2FinishTaskCallbackFcn = void function(void* userTask, void* userContext);
+    alias b2FrictionCallbackFcn = float function(float frictionA, b2UserMaterialId userMaterialIdA, float frictionB, b2UserMaterialId userMaterialIdB);
+    alias b2RestitutionCallbackFcn = float function(float restitutionA, b2UserMaterialId userMaterialIdA, float restitutionB, b2UserMaterialId userMaterialIdB);
+    alias b2OverlapResultCallbackFcn = bool function(b2ShapeId shapeId, void* context);
+    alias b2CastResultCallbackFcn = float function(b2ShapeId shapeId, b2Pos point, b2Vec2 normal, float fraction, void* context);
+
+    // 3.1.1 names.
+    alias b2TaskCallback = b2TaskCallbackFcn;
+    alias b2EnqueueTaskCallback = b2EnqueueTaskCallbackFcn;
+    alias b2FinishTaskCallback = b2FinishTaskCallbackFcn;
+    alias b2FrictionCallback = b2FrictionCallbackFcn;
+    alias b2RestitutionCallback = b2RestitutionCallbackFcn;
+    alias b2OverlapResultFcn = b2OverlapResultCallbackFcn;
+    alias b2CastResultFcn = b2CastResultCallbackFcn;
 }
-alias b2FinishTaskCallback = void function(void* userTask, void* userContext);
-alias b2FrictionCallback = float function(float frictionA, b2UserMaterialId userMaterialIdA, float frictionB, b2UserMaterialId userMaterialIdB);
-alias b2RestitutionCallback = float function(float restitutionA, b2UserMaterialId userMaterialIdA, float restitutionB, b2UserMaterialId userMaterialIdB);
 
 alias b2BodyType = int;
 alias b2ShapeType = int;
 alias b2JointType = int;
 
 enum : b2BodyType {
-    b2_staticBody    = 0,
+    b2_staticBody = 0,
     b2_kinematicBody = 1,
-    b2_dynamicBody   = 2,
+    b2_dynamicBody = 2,
     b2_bodyTypeCount
 }
 
@@ -117,7 +125,6 @@ struct b2JointId {
     ushort generation;
 }
 
-// Contact ids do not exist in 3.1.1.
 version (Box2D_3_1) {} else {
     struct b2ContactId {
         int index1;
@@ -180,6 +187,7 @@ version (Box2D_3_1) {} else {
         int staticBodyCount;
         int dynamicBodyCount;
         int contactCount;
+        int arenaByteCount;
     }
 }
 
@@ -288,9 +296,6 @@ struct b2Polygon {
     int count;
 }
 
-// Joint definitions.
-// In main every joint definition starts with a `b2JointDef base` that holds the bodies, the local frames and more.
-// In 3.1.1 every joint definition has its own bodies, local anchors, `collideConnected` and `userData`.
 version (Box2D_3_1) {
     struct b2DistanceJointDef {
         b2BodyId bodyIdA;
@@ -590,7 +595,6 @@ struct b2SensorEvents {
     int endCount;
 }
 
-// In 3.1.1 the begin touch event carries a manifold and the other contact events have no contact id.
 struct b2ContactBeginTouchEvent {
     b2ShapeId shapeIdA;
     b2ShapeId shapeIdB;
@@ -710,7 +714,6 @@ struct b2ChainDef {
     int internalValue;
 }
 
-// In 3.1.1 there is no contact id.
 struct b2ContactData {
     version (Box2D_3_1) {} else {
         b2ContactId contactId;
@@ -797,7 +800,11 @@ float b2Shape_GetRestitution(b2ShapeId shapeId);
 b2Filter b2Shape_GetFilter(b2ShapeId shapeId);
 void b2Shape_SetFilter(b2ShapeId shapeId, b2Filter filter);
 bool b2Shape_TestPoint(b2ShapeId shapeId, b2Pos point);
-b2AABB b2Shape_GetAABB(b2ShapeId shapeId);
+version (Box2D_3_1) {
+    b2AABB b2Shape_GetAABB(b2ShapeId shapeId);
+} else {
+    b2AABB b2Shape_GetBounds(b2ShapeId shapeId);
+}
 
 // Joints
 b2DistanceJointDef b2DefaultDistanceJointDef();
@@ -819,15 +826,13 @@ void b2Joint_SetUserData(b2JointId jointId, void* userData);
 void* b2Joint_GetUserData(b2JointId jointId);
 
 // Queries
-// In main the world queries take an `origin` (the world position that the shape or ray is relative to).
 b2TreeStats b2World_CastRay(b2WorldId worldId, b2Pos origin, b2Vec2 translation, b2QueryFilter filter, b2CastResultFcn fcn, void* context);
 
 // Helpers
-b2Vec2 b2Body_GetWorldPoint(b2BodyId bodyId, b2Vec2 localPoint);
+b2Pos b2Body_GetWorldPoint(b2BodyId bodyId, b2Vec2 localPoint);
 b2Vec2 b2Body_GetLocalPoint(b2BodyId bodyId, b2Pos worldPoint);
 b2Vec2 b2Body_GetWorldVector(b2BodyId bodyId, b2Vec2 localVector);
 b2Vec2 b2Body_GetLocalVector(b2BodyId bodyId, b2Vec2 worldVector);
-
 b2Polygon b2MakePolygon(const(b2Hull)* hull, float radius);
 b2Polygon b2MakeOffsetPolygon(const(b2Hull)* hull, b2Vec2 position, b2Rot rotation);
 b2Polygon b2MakeOffsetRoundedPolygon(const(b2Hull)* hull, b2Vec2 position, b2Rot rotation, float radius);
@@ -876,7 +881,7 @@ b2JointId b2CreateFilterJoint(b2WorldId worldId, const(b2FilterJointDef)* def);
 b2MotorJointDef b2DefaultMotorJointDef();
 b2JointId b2CreateMotorJoint(b2WorldId worldId, const(b2MotorJointDef)* def);
 
-// Mouse joint (3.1.1 only) and mover / pogo joints (main only)
+// Mouse joint (3.1.1 only) and mover / pogo joints (3.2 only)
 version (Box2D_3_1) {
     b2MouseJointDef b2DefaultMouseJointDef();
     b2JointId b2CreateMouseJoint(b2WorldId worldId, const(b2MouseJointDef)* def);
@@ -907,7 +912,7 @@ version (Box2D_3_1) {
     void b2Body_UpdateMassFromShapes(b2BodyId bodyId);
 }
 
-// Contact (main only)
+// Contact (3.2 only)
 version (Box2D_3_1) {} else {
     bool b2Contact_IsValid(b2ContactId id);
     b2ContactData b2Contact_GetData(b2ContactId contactId);

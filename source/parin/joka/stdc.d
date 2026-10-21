@@ -189,6 +189,7 @@ int fclose(FILE* stream);
 int fputs(const(char)* str, FILE* stream);
 size_t fwrite(const(void)* buffer, size_t size, size_t count, FILE* stream);
 int ferror(FILE* stream);
+int fflush(FILE* stream);
 
 void* malloc(size_t size);
 void* calloc(size_t objectCount, size_t objectSize);
