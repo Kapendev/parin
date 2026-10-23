@@ -129,6 +129,10 @@ Articles:
 - More: [dev.to/kapendev](https://dev.to/kapendev)
 - Archive: [parin/archive](archive/)
 
+Videos:
+
+- [Make Your First Pixel Art Game](https://youtu.be/CGABNKX8BJA)
+
 ## Web Builds
 
 Parin includes a build script for the web in the [packages](packages/) folder.
@@ -177,7 +181,7 @@ If you notice anything missing, feel free to open an [issue](https://github.com/
 You can also share things in the [GitHub discussions](https://github.com/Kapendev/parin/discussions).
 Most ideas are welcome, except hot reloading.
 
-Small extras that don't belong in the core can live in the [addons](source/parin/addons) folder as single-file D libraries.
+Small extras that don't belong in the core can live in the [addons](source/parin/addons) folder as single-file [D](https://youtu.be/VDvYDaTjMqc) libraries.
 Open a PR and add the file there.
 
 ## Frequently Asked Questions
