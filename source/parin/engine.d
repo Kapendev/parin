@@ -109,7 +109,9 @@ struct EngineViewport {
 struct EngineState {
     EngineFlags flags = defaultEngineFlags;
     UpdateFunc updateFunc;
+    CallFunc readyFunc;
     CallFunc finishFunc;
+    bool isFirstUpdate = true;
     Keyboard debugModeKey = defaultEngineDebugModeKey;
     bool debugModePreviousState;
     bool debugModeEnteringFrameState;
@@ -725,7 +727,7 @@ void openWindowC(int width, int height, int argc, IStrz* argv, IStrz title = def
 /// Returns when the update function returns true.
 /// Avoid calling this function manually.
 @trusted
-void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
+void updateWindow(UpdateFunc updateFunc, CallFunc readyFunc = null, CallFunc finishFunc = null) {
     static bool updateWindowLoop() {
         // Update buffers and resources.
         bk.pumpEvents();
@@ -746,6 +748,10 @@ void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
                 if (_engineState.tasks[id].update(deltaTime)) cancelTask(id);
             }
             _engineState.elapsedTickTimeBuffer = elapsedTime;
+            if (_engineState.isFirstUpdate) {
+                if (_engineState.readyFunc) _engineState.readyFunc();
+                _engineState.isFirstUpdate = false;
+            }
             result = _engineState.updateFunc(deltaTime);
             if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
             _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
@@ -798,17 +804,16 @@ void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
             }
             _engineState.viewport.isChanging = false;
         }
+
+        if (!result && _engineState.finishFunc) _engineState.finishFunc();
         return result;
     }
 
-    static void finishWindowLoop() {
-        if (_engineState.finishFunc) _engineState.finishFunc();
-    }
-
     _engineState.updateFunc = updateFunc;
+    _engineState.readyFunc = readyFunc;
     _engineState.finishFunc = finishFunc;
     _engineState.flags |= EngineFlag.isUpdating;
-    bk.updateWindow!(updateWindowLoop, finishWindowLoop);
+    bk.updateWindow!(updateWindowLoop);
     _engineState.flags &= ~EngineFlag.isUpdating;
 
     auto isLogging = isLoggingMemoryTrackingInfo;
@@ -817,6 +822,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc finishFunc = null) {
     _engineState.jokaFree();
     _engineState = null;
     bk.closeWindow();
+
     version (D_BetterC) {
     } else {
         if (isLogging) printf(memoryTrackingInfo);
@@ -2810,14 +2816,15 @@ mixin template runGame(
 ) {
     int _parinMain() {
         import _parinModule = parin.engine;
-        static if (__traits(isStaticFunction, readyFunc))  readyFunc();
-        static if (__traits(isStaticFunction, updateFunc)) {
-            static if (__traits(isStaticFunction, finishFunc)) {
-                _parinModule.updateWindow(&updateFunc, &finishFunc);
-            } else {
-                _parinModule.updateWindow(&updateFunc);
-            }
-        }
+
+        UpdateFunc targetUpdateFunc;
+        static if (__traits(isStaticFunction, updateFunc)) targetUpdateFunc = &updateFunc;
+        CallFunc targetReadyFunc;
+        static if (__traits(isStaticFunction, readyFunc)) targetReadyFunc = &readyFunc;
+        CallFunc targetFinishFunc;
+        static if (__traits(isStaticFunction, finishFunc)) targetFinishFunc = &finishFunc;
+
+        _parinModule.updateWindow(targetUpdateFunc, targetReadyFunc, targetFinishFunc);
         return 0;
     }
 
@@ -2825,18 +2832,21 @@ mixin template runGame(
         version (Emscripten) {
             extern(C) int main(int argc, const(char)** argv) {
                 import _parinModule = parin.engine;
+
                 _parinModule.openWindowC(width, height, argc, argv, title, vsyncOff);
                 return _parinMain();
             }
         } else version (WASI) {
             extern(C) void main() {
                 import _parinModule = parin.engine;
+
                 _parinModule.openWindowC(width, height, 0, null, title, vsyncOff);
                 _parinMain();
             }
         } else {
             extern(C) int main(int argc, const(char)** argv) {
                 import _parinModule = parin.engine;
+
                 _parinModule.openWindowC(width, height, argc, argv, title, vsyncOff);
                 return _parinMain();
             }
@@ -2844,6 +2854,7 @@ mixin template runGame(
     } else {
         int main(immutable(char)[][] args) {
             import _parinModule = parin.engine;
+
             _parinModule.openWindow(width, height, args, title, vsyncOff);
             return _parinMain();
         }

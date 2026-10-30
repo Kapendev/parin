@@ -32,21 +32,13 @@ struct BackendState {}
 
 /// Updates the window every frame with the given function.
 /// Returns when the given function returns true.
-void updateWindow(alias updateWindowLoop, alias finishWindowLoop)() {
+void updateWindow(alias updateWindowLoop)() {
     version (WASI) {
         static extern(C) @llvmAttr("wasm-export-name", "_update") bool _update(float dt) {
-            if (updateWindowLoop) {
-                finishWindowLoop();
-                return true;
-            } else {
-                return false;
-            }
+            return updateWindowLoop;
         }
     } else {
-        while (true) if (updateWindowLoop) {
-            finishWindowLoop();
-            break;
-        }
+        while (true) if (updateWindowLoop) break;
     }
 }
 

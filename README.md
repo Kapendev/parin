@@ -114,7 +114,7 @@ sudo xbps-install make alsa-lib-devel libglvnd-devel libX11-devel libXrandr-deve
 ## Documentation
 
 Start with the [examples](examples/) folder or the [cheatsheet](CHEATSHEET.md) for a quick overview.
-For more details, see the [tour page](TOUR.md).
+For more details, see the [tour page](TOUR.md) or [dlang.uk/parin](https://dlang.uk/parin/index.html).
 The [DDOX](https://github.com/dlang/ddox) documentation engine can also be used to create an overview with:
 
 ```sh
