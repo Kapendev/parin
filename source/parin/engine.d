@@ -1374,12 +1374,12 @@ Vec2 windowSize() {
 
 /// Returns the current resolution width.
 int resolutionWidth() {
-    return isResolutionLocked ? _engineState.viewport.data.width : windowWidth;
+    return isResolutionLocked ? _engineState.viewport.lockWidth : windowWidth;
 }
 
 /// Returns the current resolution height.
 int resolutionHeight() {
-    return isResolutionLocked ? _engineState.viewport.data.height : windowHeight;
+    return isResolutionLocked ? _engineState.viewport.lockHeight : windowHeight;
 }
 
 /// Returns the current resolution.
@@ -1389,7 +1389,7 @@ Vec2 resolution() {
 
 /// Returns true if the resolution is locked.
 bool isResolutionLocked() {
-    return !_engineState.viewport.data.size.isZero;
+    return _engineState.viewport.lockWidth != 0 && _engineState.viewport.lockHeight != 0;
 }
 
 /// Locks the resolution to the given width and height.
@@ -1407,6 +1407,8 @@ void lockResolution(int width, int height) {
 
 /// Unlocks the resolution.
 void unlockResolution() {
+    _engineState.viewport.lockWidth = 0;
+    _engineState.viewport.lockHeight = 0;
     if (_engineState.flags & EngineFlag.isUpdating) {
         _engineState.viewport.isChanging = true;
         _engineState.viewport.isLocking = false;
