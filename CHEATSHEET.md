@@ -584,7 +584,7 @@ Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha);
 ```d
 /// A texture identifier.
 struct TextureId {
-    /// Checks whether the resource is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded).
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
     TextureId validate(IStr message = defaultEngineValidateErrorMessage);
@@ -608,7 +608,7 @@ struct TextureId {
 
 /// A font identifier.
 struct FontId {
-    /// Checks whether the resource is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded).
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
     FontId validate(IStr message = defaultEngineValidateErrorMessage);
@@ -638,7 +638,7 @@ struct FontId {
 
 /// A sound identifier.
 struct SoundId {
-    /// Checks whether the resource is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded).
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
     SoundId validate(IStr message = defaultEngineValidateErrorMessage);
@@ -682,7 +682,7 @@ struct SoundId {
 
 /// A viewport identifier.
 struct ViewportId {
-    /// Checks whether the resource is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded).
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
     ViewportId validate(IStr message = defaultEngineValidateErrorMessage);

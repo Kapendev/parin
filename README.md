@@ -127,7 +127,7 @@ Articles:
 
 - Latest: [I Stopped Fighting My Tools](https://blog.dlang.org/2026/05/29/i-stopped-fighting-my-tools-and-built-a-game-engine-in-d/)
 - More: [dev.to/kapendev](https://dev.to/kapendev)
-- Archive: [parin/archive](archive/)
+- Archive: [assets/archive](assets/archive)
 
 Videos:
 

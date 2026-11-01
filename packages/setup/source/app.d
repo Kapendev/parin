@@ -135,12 +135,10 @@ int runDubSetup(string[] args, bool isFirstRun) {
     // Zed Editor
     auto zedDir = join(appDir, "..", ".zed");
     mkdir(zedDir);
-    auto zedDebugFile = join(zedDir, "debug.json");
-    auto zedDlangFormattersFile = join(zedDir, "dlang_formatters.py");
-    auto zedSettingsFile = join(zedDir, "settings.json");
-    paste(zedDebugFile, import(".zed/debug.json"), true);
-    paste(zedDlangFormattersFile, import(".zed/dlang_formatters.py"), true);
-    paste(zedSettingsFile, import(".zed/settings.json"), true);
+    paste(join(zedDir, "dlang_formatters.py"), import(".zed/dlang_formatters.py"), true);
+    paste(join(zedDir, "debug.json"), import(".zed/debug.json"), true);
+    paste(join(zedDir, "settings.json"), import(".zed/settings.json"), true);
+    paste(join(zedDir, "tasks.json"), import(".zed/tasks.json"), true);
     return 0;
 }
 
