@@ -745,7 +745,7 @@ void viewportResize(ResourceId id, int newWidth, int newHeight) {
     auto resource = &_backendState.viewports[id];
     auto hasSameSize = resource.data.texture.width == newWidth && resource.data.texture.height == newHeight;
     auto hasData = resource.data.texture.id != 0;
-    auto hasInvalidNewSize = newWidth < 0 || newHeight < 0;
+    auto hasInvalidNewSize = newWidth <= 0 || newHeight <= 0;
     if (hasSameSize) return;
     if (hasData) rl.UnloadRenderTexture(resource.data);
     if (hasInvalidNewSize) {
@@ -754,7 +754,6 @@ void viewportResize(ResourceId id, int newWidth, int newHeight) {
     }
     resource.data = rl.LoadRenderTexture(newWidth, newHeight);
     // NOTE: Could feel weird, but I think it makes sense. It's new data that was never used.
-    //   Putting logic stuff in the backend layer might be kinda bad, but ehh. Will think about it later, version 0.2.0 or something.
     resource.isFirstUse = true;
     // NOTE: The idea is that the engine will set the filter and wrap mode, but viewport resizing is a special case, so we do it here.
     rl.SetTextureFilter(resource.data.texture, toRl(resource.filter));
@@ -813,9 +812,7 @@ bool isFullscreen() {
 }
 
 void setIsFullscreen(bool value) {
-    version (Emscripten) {
-        // NOTE: Add Emscripten code later.
-    } else {
+    version (Emscripten) {} else {
         if (_backendState.windowIsChanging) return;
         if (value && !isFullscreen) {
             _backendState.windowPreviousWindowWidth = rl.GetScreenWidth();

@@ -77,15 +77,14 @@ enum defaultEngineDebugColor2 = black.alpha(170);
 ///  The internal engine flags.
 enum EngineFlag : EngineFlags {
     none                        = 0x000000,
-    isUpdating                  = 0x000001,
-    isUsingAssetsPath           = 0x000002,
-    isPixelSnapped              = 0x000004,
-    isPixelPerfect              = 0x000008,
-    isNullTextureVisible        = 0x000010,
-    isNullFontVisible           = 0x000020,
-    isLoggingLoadOrSaveFaults   = 0x000040,
-    isLoggingMemoryTrackingInfo = 0x000080,
-    isDebugMode                 = 0x000100,
+    isUsingAssetsPath           = 0x000001,
+    isPixelSnapped              = 0x000002,
+    isPixelPerfect              = 0x000004,
+    isNullTextureVisible        = 0x000008,
+    isNullFontVisible           = 0x000010,
+    isLoggingLoadOrSaveFaults   = 0x000020,
+    isLoggingMemoryTrackingInfo = 0x000040,
+    isDebugMode                 = 0x000080,
 }
 
 /// Depth sorting modes.
@@ -102,7 +101,6 @@ struct EngineViewport {
     int lockWidth;   /// The target lock width.
     int lockHeight;  /// The target lock height.
     bool isChanging; /// The flag that triggers the new lock state.
-    bool isLocking;  /// The flag that tells what the new lock state is.
 }
 
 /// Internal state of the engine.
@@ -739,18 +737,19 @@ void updateWindow(UpdateFunc updateFunc, CallFunc readyFunc = null, CallFunc fin
         bk.beginDrawing();
         if (isResolutionLocked) bk.beginViewport(_engineState.viewport.data.data);
         bk.clearBackground(_engineState.viewport.data.color);
+
         // Update and draw the game.
         auto result = false;
         with (ScopedArena(_engineState.arena)) {
             bk.beginDroppedPaths();
             _engineState.debugModePreviousState = isDebugMode;
-            foreach (id; _engineState.tasks.ids) {
-                if (_engineState.tasks[id].update(deltaTime)) cancelTask(id);
-            }
             _engineState.elapsedTickTimeBuffer = elapsedTime;
             if (_engineState.isFirstUpdate) {
                 if (_engineState.readyFunc) _engineState.readyFunc();
                 _engineState.isFirstUpdate = false;
+            }
+            foreach (id; _engineState.tasks.ids) {
+                if (_engineState.tasks[id].update(deltaTime)) cancelTask(id);
             }
             result = _engineState.updateFunc(deltaTime);
             if (_engineState.debugModeKey.isPressed) toggleIsDebugMode();
@@ -758,6 +757,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc readyFunc = null, CallFunc fin
             _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
             bk.endDroppedPaths();
         }
+
         // End drawing.
         if (isResolutionLocked) {
             auto info = engineViewportInfo;
@@ -797,11 +797,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc readyFunc = null, CallFunc fin
 
         // Viewport code.
         if (_engineState.viewport.isChanging) {
-            if (_engineState.viewport.isLocking) {
-                _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
-            } else {
-                _engineState.viewport.data.resize(0, 0);
-            }
+            _engineState.viewport.data.resize(_engineState.viewport.lockWidth, _engineState.viewport.lockHeight);
             _engineState.viewport.isChanging = false;
         }
 
@@ -812,9 +808,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc readyFunc = null, CallFunc fin
     _engineState.updateFunc = updateFunc;
     _engineState.readyFunc = readyFunc;
     _engineState.finishFunc = finishFunc;
-    _engineState.flags |= EngineFlag.isUpdating;
     bk.updateWindow!(updateWindowLoop);
-    _engineState.flags &= ~EngineFlag.isUpdating;
 
     auto isLogging = isLoggingMemoryTrackingInfo;
     _engineState.arena.free();
@@ -823,8 +817,7 @@ void updateWindow(UpdateFunc updateFunc, CallFunc readyFunc = null, CallFunc fin
     _engineState = null;
     bk.closeWindow();
 
-    version (D_BetterC) {
-    } else {
+    version (D_BetterC) {} else {
         if (isLogging) printf(memoryTrackingInfo);
     }
 }
@@ -1277,12 +1270,9 @@ void setIsDebugMode(bool value) {
     _engineState.flags = value
         ? _engineState.flags | EngineFlag.isDebugMode
         : _engineState.flags & ~EngineFlag.isDebugMode;
-    if (_engineState.flags & EngineFlag.isUpdating) {
-    } else {
-        // NOTE: Copy-paste from update window function.
-        _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
-        _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
-    }
+    // NOTE: Copy-paste from update window function.
+    _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
+    _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
 }
 
 /// Toggles the debug mode on or off.
@@ -1394,27 +1384,19 @@ bool isResolutionLocked() {
 
 /// Locks the resolution to the given width and height.
 void lockResolution(int width, int height) {
-    // NOTE: Could maybe change for weird values.
-    _engineState.viewport.lockWidth = width;
-    _engineState.viewport.lockHeight = height;
-    if (_engineState.flags & EngineFlag.isUpdating) {
-        _engineState.viewport.isChanging = true;
-        _engineState.viewport.isLocking = true;
+    if (width <= 0 || height <= 0) {
+        _engineState.viewport.lockWidth = 0;
+        _engineState.viewport.lockHeight = 0;
     } else {
-        _engineState.viewport.data.resize(width, height);
+        _engineState.viewport.lockWidth = width;
+        _engineState.viewport.lockHeight = height;
     }
+    _engineState.viewport.isChanging = true;
 }
 
 /// Unlocks the resolution.
 void unlockResolution() {
-    _engineState.viewport.lockWidth = 0;
-    _engineState.viewport.lockHeight = 0;
-    if (_engineState.flags & EngineFlag.isUpdating) {
-        _engineState.viewport.isChanging = true;
-        _engineState.viewport.isLocking = false;
-    } else {
-        _engineState.viewport.data.resize(0, 0);
-    }
+    lockResolution(0, 0);
 }
 
 /// Toggles resolution lock using the specified width and height.
@@ -1492,9 +1474,6 @@ double elapsedTime() {
 double elapsedTickTime() {
     return _engineState.elapsedTickTimeBuffer;
 }
-
-deprecated("Use `elapsedTickTime`. It's a better name.")
-alias tickTime = elapsedTickTime;
 
 /// Returns the total number of ticks since the application started.
 ulong elapsedTicks() {
@@ -1607,10 +1586,7 @@ void setIsPixelPerfect(bool value) {
 /// Returns the size of the text.
 @trusted
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    if (font.isNull) {
-        if (isNullFontVisible) font = engineFont;
-        else return Vec2();
-    }
+    if (font.isNull) return Vec2();
 
     auto lineCodepointCount = 0;
     auto lineMaxCodepointCount = 0;
@@ -2293,9 +2269,8 @@ Vec2 drawRune(dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
 /// Draws text with the given font at the given position using the provided draw options.
 @trusted
 Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    enum lineCountOfBuffers = 512;
-    static FixedList!(IStr, lineCountOfBuffers)  linesBuffer = void;
-    static FixedList!(short, lineCountOfBuffers) linesWidthBuffer = void;
+    static FixedList!(IStr, 512)  linesBuffer = void;
+    static FixedList!(short, 512) linesWidthBuffer = void;
 
     if (font.isNull) {
         if (isNullFontVisible) font = engineFont;
