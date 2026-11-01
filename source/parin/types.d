@@ -13,18 +13,18 @@ import parin.joka.math;
 import parin.joka.memory;
 import parin.joka.types;
 
-alias UpdateFunc = bool function(float dt);
-alias CallFunc   = void function();
-alias ResourceId = GenIndex;
+alias UpdateFunc = bool function(float dt); /// A function that is called every frame. Receives the delta time and returns true to stop.
+alias CallFunc = void function();           /// A function that takes no arguments and returns nothing.
+alias ResourceId = GenIndex;                /// An identifier for a resource.
 
 /// An alias for the `Keyboard` enum. Prefer using the original enum for function parameters.
 alias Key = Keyboard;
 
 // People. Are a resource. Money on the table. PEOPLE! ARE! THE FOUNDATION! OF WHAT! WE! ARE! BUILDING HERE!
 version (WebAssembly) {
-    enum defaultEngineResourceScaleDenominator = 2;
+    enum defaultEngineResourceScaleDenominator = 2; /// The denominator used to scale down the default resource capacities. A value of 1 means no scaling.
 } else {
-    enum defaultEngineResourceScaleDenominator = 1;
+    enum defaultEngineResourceScaleDenominator = 1; /// The denominator used to scale down the default resource capacities. A value of 1 means no scaling.
 }
 
 /// Alignment orientations.

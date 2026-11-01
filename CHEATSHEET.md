@@ -200,13 +200,13 @@ FontId defaultFont();
 void setDefaultFont(FontId value);
 
 /// Returns true if drawing is done when using a null texture.
-bool isNullTextureVisible();
+bool isInvalidTextureVisible();
 /// Sets whether drawing should be done when using a null texture.
-void setIsNullTextureVisible(bool value);
+void setIsInvalidTextureVisible(bool value);
 /// Returns true if drawing is done when using a null font.
-bool isNullFontVisible();
+bool isInvalidFontVisible();
 /// Sets whether drawing should be done when using a null font.
-void setIsNullFontVisible(bool value);
+void setIsInvalidFontVisible(bool value);
 
 /// Returns true if drawing is snapped to pixel coordinates.
 bool isPixelSnapped();
@@ -584,8 +584,6 @@ Fault saveScreenshot(IStr path, ViewportId viewport, bool hasAlpha);
 ```d
 /// A texture identifier.
 struct TextureId {
-    /// Checks whether the resource is null (default value).
-    bool isNull();
     /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
@@ -610,8 +608,6 @@ struct TextureId {
 
 /// A font identifier.
 struct FontId {
-    /// Checks whether the resource is null (default value).
-    bool isNull();
     /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
@@ -642,8 +638,6 @@ struct FontId {
 
 /// A sound identifier.
 struct SoundId {
-    /// Checks whether the resource is null (default value).
-    bool isNull();
     /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.
@@ -688,8 +682,6 @@ struct SoundId {
 
 /// A viewport identifier.
 struct ViewportId {
-    /// Checks whether the resource is null (default value).
-    bool isNull();
     /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid();
     /// Returns this resource if valid, or asserts with the given message if not.

@@ -121,11 +121,6 @@ Sz viewportCount() {
 }
 
 pragma(inline, true)
-bool resourceIsNull(ResourceId id) {
-    return id.value == 0;
-}
-
-pragma(inline, true)
 bool textureIsValid(ResourceId id) {
     return false;
 }

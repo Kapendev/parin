@@ -41,50 +41,69 @@ enum engineFontSmall = FontId(ResourceId(2));
 /// The engine viewport identifier.
 enum engineViewport = ViewportId(ResourceId(1));
 
-// +-- Engine Defaults
-enum defaultEngineTitle                 = "Parin";
-enum defaultEngineWidth                 = 1280;
-enum defaultEngineHeight                = 720;
-enum defaultEngineFpsMax                = 60;
-enum defaultEngineWindowMinWidth        = 320;
-enum defaultEngineWindowMinHeight       = 180;
+/// The default window title.
+enum defaultEngineTitle = "Parin";
+/// The default window width.
+enum defaultEngineWidth = 1280;
+/// The default window height.
+enum defaultEngineHeight = 720;
+/// The default maximum frames per second (FPS).
+enum defaultEngineFpsMax = 60;
+/// The default minimum window width.
+enum defaultEngineWindowMinWidth = 320;
+/// The default minimum window height.
+enum defaultEngineWindowMinHeight = 180;
+/// The default window background color.
 enum defaultEngineWindowBackgroundColor = gray;
-enum defaultEngineWindowMinSize         = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
-enum defaultEngineDebugModeKey          = Keyboard.f3;
+/// The default minimum window size.
+enum defaultEngineWindowMinSize = Vec2(defaultEngineWindowMinWidth, defaultEngineWindowMinHeight);
+/// The default key that toggles debug mode.
+enum defaultEngineDebugModeKey = Keyboard.f3;
 
+/// The default engine flags.
 enum defaultEngineFlags =
     EngineFlag.isUsingAssetsPath |
-    EngineFlag.isNullTextureVisible |
-    EngineFlag.isNullFontVisible |
+    EngineFlag.isInvalidTextureVisible |
+    EngineFlag.isInvalidFontVisible |
     EngineFlag.isLoggingLoadOrSaveFaults |
     EngineFlag.isLoggingMemoryTrackingInfo;
 
+/// The default message used when validating an invalid resource.
 enum defaultEngineValidateErrorMessage = "Resource is invalid or was never assigned.";
-enum defaultEngineLoadErrorMessage     = "ERROR({}:{}): Can't load {} from \"{}\"";
-enum defaultEngineSaveErrorMessage     = "ERROR({}:{}): Can't save {} to \"{}\"";
+/// The default format string for load error messages.
+enum defaultEngineLoadErrorMessage = "ERROR({}:{}): Can't load {} from \"{}\"";
+/// The default format string for save error messages.
+enum defaultEngineSaveErrorMessage = "ERROR({}:{}): Can't save {} to \"{}\"";
 
-enum defaultEngineLoadOrSaveTextCapacity       = 16 * kilobyte;
-enum defaultEngineEnvArgsCapacity              = (64 / defaultEngineResourceScaleDenominator);
-enum defaultEngineEngineTasksCapacity          = (64 / defaultEngineResourceScaleDenominator);
-enum defaultEngineAssetsPathCapacity           = (8  / defaultEngineResourceScaleDenominator) * kilobyte;
-enum defaultEngineScreenshotTargetPathCapacity = (2  / defaultEngineResourceScaleDenominator) * kilobyte;
-enum defaultEngineArenaCapacity                = (4  / defaultEngineResourceScaleDenominator) * megabyte;
+/// The default capacity of the temporary text buffer used when loading or saving.
+enum defaultEngineLoadOrSaveTextCapacity = 16 * kilobyte;
+/// The default capacity of the environment arguments buffer.
+enum defaultEngineEnvArgsCapacity = (64 / defaultEngineResourceScaleDenominator);
+/// The default capacity of the engine tasks list.
+enum defaultEngineEngineTasksCapacity = (64 / defaultEngineResourceScaleDenominator);
+/// The default capacity of the assets path buffer.
+enum defaultEngineAssetsPathCapacity = (8 / defaultEngineResourceScaleDenominator) * kilobyte;
+/// The default capacity of the screenshot target path buffer.
+enum defaultEngineScreenshotTargetPathCapacity = (2 / defaultEngineResourceScaleDenominator) * kilobyte;
+/// The default capacity of the frame arena.
+enum defaultEngineArenaCapacity = (4 / defaultEngineResourceScaleDenominator) * megabyte;
 
+/// The first default color used for debug drawing.
 enum defaultEngineDebugColor1 = white.alpha(140);
+/// The second default color used for debug drawing.
 enum defaultEngineDebugColor2 = black.alpha(170);
-// +--
 
 ///  The internal engine flags.
 enum EngineFlag : EngineFlags {
-    none                        = 0x000000,
-    isUsingAssetsPath           = 0x000001,
-    isPixelSnapped              = 0x000002,
-    isPixelPerfect              = 0x000004,
-    isNullTextureVisible        = 0x000008,
-    isNullFontVisible           = 0x000010,
-    isLoggingLoadOrSaveFaults   = 0x000020,
-    isLoggingMemoryTrackingInfo = 0x000040,
-    isDebugMode                 = 0x000080,
+    none                        = 0x000000, /// None.
+    isUsingAssetsPath           = 0x000001, /// Relative paths use the assets folder as the root folder.
+    isPixelSnapped              = 0x000002, /// Drawing values are floored.
+    isPixelPerfect              = 0x000004, /// The engine vieport will always scale in a 1-1 pixel way.
+    isInvalidTextureVisible     = 0x000008, /// Invalid textures will draw gray rectangles.
+    isInvalidFontVisible        = 0x000010, /// Invalid fonts will use the engine font.
+    isLoggingLoadOrSaveFaults   = 0x000020, /// Print load or save faults to stderr.
+    isLoggingMemoryTrackingInfo = 0x000040, /// Print memory tracking info to stdout.
+    isDebugMode                 = 0x000080, /// True if the project is in debug mode.
 }
 
 /// Depth sorting modes.
@@ -153,12 +172,10 @@ struct TextureId {
 
     @safe nothrow @nogc:
 
-    /// Checks whether the resource is null (default value).
-    bool isNull() {
-        return bk.resourceIsNull(data);
-    }
+    deprecated("It works like `isValid` in all cases.")
+    alias isNull = isValid;
 
-    /// Checks whether the resource is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded).
     bool isValid() {
         return bk.textureIsValid(data);
     }
@@ -216,12 +233,10 @@ struct FontId {
 
     @safe nothrow @nogc:
 
-    /// Checks whether the resource is null (default value).
-    bool isNull() {
-        return bk.resourceIsNull(data);
-    }
+    deprecated("It works like `isValid` in all cases.")
+    alias isNull = isValid;
 
-    /// Checks whether the resource is valid (loaded). Null is invalid.
+    /// Checks whether the resource is valid (loaded).
     bool isValid() {
         return bk.fontIsValid(data);
     }
@@ -295,10 +310,8 @@ struct SoundId {
 
     @safe nothrow @nogc:
 
-    /// Checks whether the resource is null (default value).
-    bool isNull() {
-        return bk.resourceIsNull(data);
-    }
+    deprecated("It works like `isValid` in all cases.")
+    alias isNull = isValid;
 
     /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid() {
@@ -408,10 +421,8 @@ struct ViewportId {
 
     @safe nothrow @nogc:
 
-    /// Checks whether the resource is null (default value).
-    bool isNull() {
-        return bk.resourceIsNull(data);
-    }
+    deprecated("It works like `isValid` in all cases.")
+    alias isNull = isValid;
 
     /// Checks whether the resource is valid (loaded). Null is invalid.
     bool isValid() {
@@ -621,36 +632,28 @@ struct DepthSort {
     int _parinSortTopDown(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
-        return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && (pair1.y < pair2.y || (pair1.y == pair2.y && pair1.i < pair2.i))) )
-            ? -1
-            : 1;
+        return (pair1.layer < pair2.layer || (pair1.layer == pair2.layer && (pair1.y < pair2.y || (pair1.y == pair2.y && pair1.i < pair2.i)))) ? -1 : 1;
     }
 
     extern(C)
     int _parinSortTopDownFast(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
-        return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.y < pair2.y) )
-            ? -1
-            : 1;
+        return (pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.y < pair2.y)) ? -1 : 1;
     }
 
     extern(C)
     int _parinSortTopDownFastest(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
-        return ( pair1.y < pair2.y )
-            ? -1
-            : 1;
+        return (pair1.y < pair2.y) ? -1 : 1;
     }
 
     extern(C)
     int _parinSortLayered(const(void)* a, const(void)* b) {
         auto pair1 = cast(DepthSortPair*) a;
         auto pair2 = cast(DepthSortPair*) b;
-        return ( pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.i < pair2.i) )
-            ? -1
-            : 1;
+        return (pair1.layer < pair2.layer || (pair1.layer == pair2.layer && pair1.i < pair2.i)) ? -1 : 1;
     }
 
     IVec2 _parinTempUiTextSizeFunc(UiFont font, uint fontScale, const(char)[] text) {
@@ -1221,9 +1224,7 @@ bool isUsingAssetsPath() {
 
 /// Sets whether the assets path should be used when loading.
 void setIsUsingAssetsPath(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isUsingAssetsPath
-        : _engineState.flags & ~EngineFlag.isUsingAssetsPath;
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isUsingAssetsPath : _engineState.flags & ~EngineFlag.isUsingAssetsPath;
 }
 
 /// Returns true if load or save faults should be logged.
@@ -1233,9 +1234,7 @@ bool isLoggingLoadOrSaveFaults() {
 
 /// Sets whether load or save faults should be logged.
 void setIsLoggingLoadOrSaveFaults(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isLoggingLoadOrSaveFaults
-        : _engineState.flags & ~EngineFlag.isLoggingLoadOrSaveFaults;
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isLoggingLoadOrSaveFaults : _engineState.flags & ~EngineFlag.isLoggingLoadOrSaveFaults;
 }
 
 /// Returns true if memory tracking logs are enabled.
@@ -1245,9 +1244,7 @@ bool isLoggingMemoryTrackingInfo() {
 
 /// Enables or disables memory tracking logs.
 void setIsLoggingMemoryTrackingInfo(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isLoggingMemoryTrackingInfo
-        : _engineState.flags & ~EngineFlag.isLoggingMemoryTrackingInfo;
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isLoggingMemoryTrackingInfo : _engineState.flags & ~EngineFlag.isLoggingMemoryTrackingInfo;
 }
 
 /// Returns true if debug mode is active.
@@ -1267,9 +1264,7 @@ bool isExitingDebugMode() {
 
 /// Sets whether debug mode should be active.
 void setIsDebugMode(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isDebugMode
-        : _engineState.flags & ~EngineFlag.isDebugMode;
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isDebugMode : _engineState.flags & ~EngineFlag.isDebugMode;
     // NOTE: Copy-paste from update window function.
     _engineState.debugModeEnteringFrameState = isDebugMode && !_engineState.debugModePreviousState;
     _engineState.debugModeExitingFrameState = !isDebugMode && _engineState.debugModePreviousState;
@@ -1535,28 +1530,33 @@ void setDefaultFont(FontId value) {
     _engineState.defaultFont = value;
 }
 
+deprecated("Use `isInvalidTextureVisible`.")
+alias isNullTextureVisible = isInvalidTextureVisible;
+deprecated("Use `setIsInvalidTextureVisible`.")
+alias setIsNullTextureVisible = setIsInvalidTextureVisible;
+deprecated("Use `isInvalidFontVisible`.")
+alias isNullFontVisible = isInvalidFontVisible;
+deprecated("Use `setIsInvalidFontVisible`.")
+alias setIsNullFontVisible = setIsInvalidFontVisible;
+
 /// Returns true if drawing is done when using a null texture.
-bool isNullTextureVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isNullTextureVisible);
+bool isInvalidTextureVisible() {
+    return cast(bool) (_engineState.flags & EngineFlag.isInvalidTextureVisible);
 }
 
 /// Sets whether drawing should be done when using a null texture.
-void setIsNullTextureVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isNullTextureVisible
-        : _engineState.flags & ~EngineFlag.isNullTextureVisible;
+void setIsInvalidTextureVisible(bool value) {
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isInvalidTextureVisible : _engineState.flags & ~EngineFlag.isInvalidTextureVisible;
 }
 
 /// Returns true if drawing is done when using a null font.
-bool isNullFontVisible() {
-    return cast(bool) (_engineState.flags & EngineFlag.isNullFontVisible);
+bool isInvalidFontVisible() {
+    return cast(bool) (_engineState.flags & EngineFlag.isInvalidFontVisible);
 }
 
 /// Sets whether drawing should be done when using a null font.
-void setIsNullFontVisible(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isNullFontVisible
-        : _engineState.flags & ~EngineFlag.isNullFontVisible;
+void setIsInvalidFontVisible(bool value) {
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isInvalidFontVisible : _engineState.flags & ~EngineFlag.isInvalidFontVisible;
 }
 
 /// Returns true if drawing is snapped to pixel coordinates.
@@ -1566,9 +1566,7 @@ bool isPixelSnapped() {
 
 /// Sets whether drawing should snap to pixel coordinates.
 void setIsPixelSnapped(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isPixelSnapped
-        : _engineState.flags & ~EngineFlag.isPixelSnapped;
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isPixelSnapped : _engineState.flags & ~EngineFlag.isPixelSnapped;
 }
 
 /// Returns true if drawing is pixel-perfect.
@@ -1578,15 +1576,13 @@ bool isPixelPerfect() {
 
 /// Sets whether drawing should be pixel-perfect.
 void setIsPixelPerfect(bool value) {
-    _engineState.flags = value
-        ? _engineState.flags | EngineFlag.isPixelPerfect
-        : _engineState.flags & ~EngineFlag.isPixelPerfect;
+    _engineState.flags = value ? _engineState.flags | EngineFlag.isPixelPerfect : _engineState.flags & ~EngineFlag.isPixelPerfect;
 }
 
 /// Returns the size of the text.
 @trusted
 Vec2 measureTextSize(FontId font, IStr text, DrawOptions options = DrawOptions(), TextOptions extra = TextOptions()) {
-    if (font.isNull) return Vec2();
+    if (!font.isValid) return Vec2();
 
     auto lineCodepointCount = 0;
     auto lineMaxCodepointCount = 0;
@@ -2112,8 +2108,8 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
         }
         _engineState.depthSortData.pairBuffer.push(DepthSortPair(position.y, cast(ushort) (_engineState.depthSortData.commandBuffer.length - 1), options.layer));
     } else {
-        if (texture.isNull) {
-            if (isNullTextureVisible) {
+        if (!texture.isValid) {
+            if (isInvalidTextureVisible) {
                 auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
                 drawRect(rect, defaultEngineDebugColor1);
                 drawRect(rect, defaultEngineDebugColor2, 1);
@@ -2153,8 +2149,8 @@ void drawTextureArea(TextureId texture, Rect area, Vec2 position, DrawOptions op
 
 /// Draws a 9-slice from the specified texture area at the given target area.
 void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, bool canRepeat, DrawOptions options = DrawOptions()) {
-    if (texture.isNull) {
-        if (isNullTextureVisible) {
+    if (!texture.isValid) {
+        if (isInvalidTextureVisible) {
             drawRect(target, defaultEngineDebugColor1);
             drawRect(target, defaultEngineDebugColor2, 1);
         }
@@ -2194,7 +2190,7 @@ void drawTextureSlice(TextureId texture, Rect area, Rect target, Margin margin, 
 /// Draws a portion of the specified viewport at the given position with the specified draw options.
 void drawViewportArea(ViewportId viewport, Rect area, Vec2 position, DrawOptions options = DrawOptions()) {
     if (!viewport.isValid) {
-        if (isNullTextureVisible) {
+        if (isInvalidTextureVisible) {
             auto rect = Rect(position, (!area.hasSize ? Vec2(64) : area.size) * options.scale).area(options.hook);
             drawRect(rect, defaultEngineDebugColor1);
             drawRect(rect, defaultEngineDebugColor2, 1);
@@ -2239,8 +2235,8 @@ void drawViewport(ViewportId viewport, Vec2 position, DrawOptions options = Draw
 
 /// Draws a single character from the specified font at the given position with the specified draw options.
 Vec2 drawRune(FontId font, dchar rune, Vec2 position, DrawOptions options = DrawOptions()) {
-    if (font.isNull) {
-        if (isNullFontVisible) font = engineFont;
+    if (!font.isValid) {
+        if (isInvalidFontVisible) font = engineFont;
         else return Vec2();
     }
 
@@ -2272,8 +2268,8 @@ Vec2 drawText(FontId font, IStr text, Vec2 position, DrawOptions options = DrawO
     static FixedList!(IStr, 512)  linesBuffer = void;
     static FixedList!(short, 512) linesWidthBuffer = void;
 
-    if (font.isNull) {
-        if (isNullFontVisible) font = engineFont;
+    if (!font.isValid) {
+        if (isInvalidFontVisible) font = engineFont;
         else return Vec2();
     }
 
@@ -2548,8 +2544,8 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
     auto tempOptions = options;
     tempOptions.flip = tile.flip;
 
-    if (texture.isNull) {
-        if (isNullTextureVisible) {
+    if (!texture.isValid) {
+        if (isInvalidTextureVisible) {
             auto rect = tile.area;
             drawRect(rect, defaultEngineDebugColor1);
             drawRect(rect, defaultEngineDebugColor2, 1);
@@ -2563,8 +2559,8 @@ void drawTile(TextureId texture, Tile tile, DrawOptions options = DrawOptions())
 
 /// Draws a tile map with a texture. The view area controls what is visible.
 void drawTileMap(Sz N)(TextureId texture, ref GTileMap!N map, Rect viewArea = Rect(), DrawOptions options = DrawOptions()) {
-    if (texture.isNull) {
-        if (isNullTextureVisible) {
+    if (!texture.isValid) {
+        if (isInvalidTextureVisible) {
             auto rect = Rect(map.position, map.size);
             drawRect(rect, defaultEngineDebugColor1);
             drawRect(rect, defaultEngineDebugColor2, 1);
@@ -2615,8 +2611,8 @@ void drawSprite(TextureId texture, Sprite sprite, DrawOptions options = DrawOpti
     tempOptions.hook = sprite.hook;
     tempOptions.flip = sprite.flip;
 
-    if (texture.isNull) {
-        if (isNullTextureVisible) {
+    if (!texture.isValid) {
+        if (isInvalidTextureVisible) {
             auto rect = Rect(sprite.position, sprite.size * tempOptions.scale).area(tempOptions.hook);
             drawRect(rect, defaultEngineDebugColor1);
             drawRect(rect, defaultEngineDebugColor2, 1);

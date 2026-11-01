@@ -262,7 +262,7 @@ Maybe!ResourceId loadFont(const(ubyte)[] memory, int size, int runeSpacing, int 
 }
 
 Maybe!ResourceId loadFont(ResourceId texture, int tileWidth, int tileHeight) {
-    if (resourceIsNull(texture) || tileWidth <= 0|| tileHeight <= 0) return Maybe!ResourceId(Fault.invalid);
+    if (texture.value == 0 || tileWidth <= 0|| tileHeight <= 0) return Maybe!ResourceId(Fault.invalid);
     auto oldResource = &_backendState.textures[texture];
     auto newResource = rl.Font();
     auto rowCount = textureHeight(texture) / tileHeight;
@@ -368,61 +368,56 @@ Sz viewportCount() {
 }
 
 pragma(inline, true)
-bool resourceIsNull(ResourceId id) {
-    return id.value == 0;
-}
-
-pragma(inline, true)
 bool textureIsValid(ResourceId id) {
-    return !id.resourceIsNull && _backendState.textures.has(id);
+    return id.value != 0 && _backendState.textures.has(id);
 }
 
 Filter textureFilter(ResourceId id) {
-    if (id.resourceIsNull) return Filter.init;
+    if (id.value == 0) return Filter.init;
     auto resource = &_backendState.textures[id];
     return resource.filter;
 }
 
 void textureSetFilter(ResourceId id, Filter value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.textures[id];
     setFilterWithMipmaps(resource.data, value);
     resource.filter = value;
 }
 
 Wrap textureWrap(ResourceId id) {
-    if (id.resourceIsNull) return Wrap.init;
+    if (id.value == 0) return Wrap.init;
     auto resource = &_backendState.textures[id];
     return resource.wrap;
 }
 
 void textureSetWrap(ResourceId id, Wrap value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.textures[id];
     rl.SetTextureWrap(resource.data, toRl(value));
     resource.wrap = value;
 }
 
 int textureWidth(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.textures[id];
     return resource.data.width;
 }
 
 int textureHeight(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.textures[id];
     return resource.data.height;
 }
 
 Vec2 textureSize(ResourceId id) {
-    if (id.resourceIsNull) return Vec2();
+    if (id.value == 0) return Vec2();
     auto resource = &_backendState.textures[id];
     return Vec2(resource.data.width, resource.data.height);
 }
 
 void textureFree(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.textures[id];
     rl.UnloadTexture(resource.data);
     _backendState.textures.remove(id);
@@ -430,67 +425,67 @@ void textureFree(ResourceId id) {
 
 pragma(inline, true)
 bool fontIsValid(ResourceId id) {
-    return !id.resourceIsNull && _backendState.fonts.has(id);
+    return id.value != 0 && _backendState.fonts.has(id);
 }
 
 Filter fontFilter(ResourceId id) {
-    if (id.resourceIsNull) return Filter.init;
+    if (id.value == 0) return Filter.init;
     auto resource = &_backendState.fonts[id];
     return resource.filter;
 }
 
 void fontSetFilter(ResourceId id, Filter value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.fonts[id];
     setFilterWithMipmaps(resource.data.texture, value);
     resource.filter = value;
 }
 
 Wrap fontWrap(ResourceId id) {
-    if (id.resourceIsNull) return Wrap.init;
+    if (id.value == 0) return Wrap.init;
     auto resource = &_backendState.fonts[id];
     return resource.wrap;
 }
 
 void fontSetWrap(ResourceId id, Wrap value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.fonts[id];
     rl.SetTextureWrap(resource.data.texture, toRl(value));
     resource.wrap = value;
 }
 
 int fontSize(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.fonts[id];
     return resource.data.baseSize;
 }
 
 int fontRuneSpacing(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.fonts[id];
     return resource.runeSpacing;
 }
 
 void fontSetRuneSpacing(ResourceId id, int value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.fonts[id];
     resource.runeSpacing = value;
 }
 
 int fontLineSpacing(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.fonts[id];
     return resource.lineSpacing;
 }
 
 void fontSetLineSpacing(ResourceId id, int value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.fonts[id];
     resource.lineSpacing = value;
 }
 
 GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
-    if (id.resourceIsNull) return GlyphInfo();
+    if (id.value == 0) return GlyphInfo();
     auto resource = &_backendState.fonts[id];
     auto glyphIndex = rl.GetGlyphIndex(resource.data, rune);
     auto info = resource.data.glyphs[glyphIndex];
@@ -504,7 +499,7 @@ GlyphInfo fontGlyphInfo(ResourceId id, int rune) {
 }
 
 void fontFree(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.fonts[id];
     rl.UnloadFont(resource.data);
     _backendState.fonts.remove(id);
@@ -512,17 +507,17 @@ void fontFree(ResourceId id) {
 
 pragma(inline, true)
 bool soundIsValid(ResourceId id) {
-    return !id.resourceIsNull && _backendState.sounds.has(id);
+    return id.value != 0 && _backendState.sounds.has(id);
 }
 
 float soundVolume(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.volume;
 }
 
 void soundSetVolume(ResourceId id, float value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.volume = value;
     if (resource.data.isType!(rl.Sound)) {
@@ -533,13 +528,13 @@ void soundSetVolume(ResourceId id, float value) {
 }
 
 float soundPan(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pan;
 }
 
 void soundSetPan(ResourceId id, float value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.pan = value;
     if (resource.data.isType!(rl.Sound)) {
@@ -550,13 +545,13 @@ void soundSetPan(ResourceId id, float value) {
 }
 
 float soundPitch(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pitch;
 }
 
 void soundSetPitch(ResourceId id, float value, bool canUpdatePitchVarianceBase) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.pitch = value;
     if (canUpdatePitchVarianceBase) resource.pitchVarianceBase = value;
@@ -568,55 +563,55 @@ void soundSetPitch(ResourceId id, float value, bool canUpdatePitchVarianceBase) 
 }
 
 float soundPitchVariance(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pitchVariance;
 }
 
 void soundSetPitchVariance(ResourceId id, float value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.pitchVariance = value;
 }
 
 float soundPitchVarianceBase(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     return resource.pitchVarianceBase;
 }
 
 void soundSetPitchVarianceBase(ResourceId id, float value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.pitchVarianceBase = value;
 }
 
 bool soundCanRepeat(ResourceId id) {
-    if (id.resourceIsNull) return false;
+    if (id.value == 0) return false;
     auto resource = &_backendState.sounds[id];
     return resource.canRepeat;
 }
 
 void soundSetCanRepeat(ResourceId id, bool value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.canRepeat = value;
 }
 
 bool soundIsActive(ResourceId id) {
-    if (id.resourceIsNull) return false;
+    if (id.value == 0) return false;
     auto resource = &_backendState.sounds[id];
     return resource.isActive;
 }
 
 bool soundIsPaused(ResourceId id) {
-    if (id.resourceIsNull) return false;
+    if (id.value == 0) return false;
     auto resource = &_backendState.sounds[id];
     return resource.isPaused;
 }
 
 float soundTime(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     if (resource.data.isType!(rl.Sound)) {
         return 0.0f;
@@ -626,7 +621,7 @@ float soundTime(ResourceId id) {
 }
 
 float soundDuration(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     auto resource = &_backendState.sounds[id];
     if (resource.data.isType!(rl.Sound)) {
         return 0.0f;
@@ -636,12 +631,12 @@ float soundDuration(ResourceId id) {
 }
 
 float soundProgress(ResourceId id) {
-    if (id.resourceIsNull) return 0.0f;
+    if (id.value == 0) return 0.0f;
     return soundTime(id) / soundDuration(id);
 }
 
 void soundFree(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (resource.data.isType!(rl.Sound)) {
         rl.UnloadSound(resource.data.as!(rl.Sound)());
@@ -653,17 +648,17 @@ void soundFree(ResourceId id) {
 
 pragma(inline, true)
 bool viewportIsValid(ResourceId id) {
-    return !id.resourceIsNull && _backendState.viewports.has(id);
+    return id.value != 0 && _backendState.viewports.has(id);
 }
 
 Filter viewportFilter(ResourceId id) {
-    if (id.resourceIsNull) return Filter.init;
+    if (id.value == 0) return Filter.init;
     auto resource = &_backendState.viewports[id];
     return resource.filter;
 }
 
 void viewportSetFilter(ResourceId id, Filter value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
@@ -672,13 +667,13 @@ void viewportSetFilter(ResourceId id, Filter value) {
 }
 
 Wrap viewportWrap(ResourceId id) {
-    if (id.resourceIsNull) return Wrap.init;
+    if (id.value == 0) return Wrap.init;
     auto resource = &_backendState.viewports[id];
     return resource.wrap;
 }
 
 void viewportSetWrap(ResourceId id, Wrap value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
@@ -687,61 +682,61 @@ void viewportSetWrap(ResourceId id, Wrap value) {
 }
 
 Blend viewportBlend(ResourceId id) {
-    if (id.resourceIsNull) return Blend();
+    if (id.value == 0) return Blend();
     auto resource = &_backendState.viewports[id];
     return resource.blend;
 }
 
 void viewportSetBlend(ResourceId id, Blend value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     resource.blend = value;
 }
 
 Rgba viewportColor(ResourceId id) {
-    if (id.resourceIsNull) return Rgba();
+    if (id.value == 0) return Rgba();
     auto resource = &_backendState.viewports[id];
     return resource.color;
 }
 
 void viewportSetColor(ResourceId id, Rgba value) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     resource.color = value;
 }
 
 int viewportWidth(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.viewports[id];
     return resource.data.texture.width;
 }
 
 int viewportHeight(ResourceId id) {
-    if (id.resourceIsNull) return 0;
+    if (id.value == 0) return 0;
     auto resource = &_backendState.viewports[id];
     return resource.data.texture.height;
 }
 
 Vec2 viewportSize(ResourceId id) {
-    if (id.resourceIsNull) return Vec2();
+    if (id.value == 0) return Vec2();
     auto resource = &_backendState.viewports[id];
     return Vec2(resource.data.texture.width, resource.data.texture.height);
 }
 
 bool viewportIsFirstUse(ResourceId id) {
-    if (id.resourceIsNull) return false;
+    if (id.value == 0) return false;
     auto resource = &_backendState.viewports[id];
     return resource.isFirstUse;
 }
 
 bool viewportIsAttached(ResourceId id) {
-    if (id.resourceIsNull) return false;
+    if (id.value == 0) return false;
     auto resource = &_backendState.viewports[id];
     return resource.isAttached;
 }
 
 void viewportResize(ResourceId id, int newWidth, int newHeight) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     auto hasSameSize = resource.data.texture.width == newWidth && resource.data.texture.height == newHeight;
     auto hasData = resource.data.texture.id != 0;
@@ -761,7 +756,7 @@ void viewportResize(ResourceId id, int newWidth, int newHeight) {
 }
 
 void viewportFree(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     auto hasData = resource.data.texture.id != 0;
     if (hasData) rl.UnloadRenderTexture(resource.data);
@@ -897,7 +892,7 @@ Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
         return Fault.none;
     } else {
         auto image = rl.Image();
-        if (canvasViewportId.resourceIsNull) {
+        if (canvasViewportId.value == 0) {
             image = rl.LoadImageFromScreen();
             if (image.data == null) return Fault.invalid;
         } else {
@@ -936,7 +931,7 @@ Fault takeScreenshot(IStr path, ResourceId canvasViewportId, bool hasAlpha) {
 
 Maybe!ResourceId takeScreenshotAndUseAsTexture(ResourceId canvasViewportId, bool hasAlpha) {
     auto image = rl.Image();
-    if (canvasViewportId.resourceIsNull) {
+    if (canvasViewportId.value == 0) {
         image = rl.LoadImageFromScreen();
         if (image.data == null) return Maybe!ResourceId(Fault.invalid);
     } else {
@@ -1169,7 +1164,7 @@ void setMasterVolume(float value) {
 }
 
 void updateSoundPitchVariance(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (resource.pitchVariance != 1.0f) {
         soundSetPitch(
@@ -1181,7 +1176,7 @@ void updateSoundPitchVariance(ResourceId id) {
 }
 
 void activateSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.isActive = true;
     if (resource.data.isType!(rl.Sound)) {
@@ -1192,7 +1187,7 @@ void activateSound(ResourceId id) {
 }
 
 void deactivateSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     resource.isActive = false;
     if (resource.data.isType!(rl.Sound)) {
@@ -1203,7 +1198,7 @@ void deactivateSound(ResourceId id) {
 }
 
 void playSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (resource.isActive) return;
     resumeSound(id);
@@ -1212,7 +1207,7 @@ void playSound(ResourceId id) {
 }
 
 void stopSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (!resource.isActive) return;
     resumeSound(id);
@@ -1220,13 +1215,13 @@ void stopSound(ResourceId id) {
 }
 
 void startSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     stopSound(id);
     playSound(id);
 }
 
 void pauseSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (resource.isPaused) return;
     resource.isPaused = true;
@@ -1238,7 +1233,7 @@ void pauseSound(ResourceId id) {
 }
 
 void resumeSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (!resource.isPaused) return;
     resource.isPaused = false;
@@ -1250,7 +1245,7 @@ void resumeSound(ResourceId id) {
 }
 
 void updateSound(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.sounds[id];
     if (resource.isPaused || !resource.isActive) return;
     if (resource.data.isType!(rl.Sound)) {
@@ -1291,7 +1286,7 @@ void endCamera(ref Camera camera) {
 }
 
 void beginViewport(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
@@ -1301,7 +1296,7 @@ void beginViewport(ResourceId id) {
 }
 
 void endViewport(ResourceId id) {
-    if (id.resourceIsNull) return;
+    if (id.value == 0) return;
     auto resource = &_backendState.viewports[id];
     auto isEmpty = resource.data.texture.id == 0;
     if (isEmpty) return;
