@@ -136,8 +136,11 @@ Videos:
 ## Web Builds
 
 Parin includes a build script for the web in the [packages](packages/) folder.
-Building for the web requires [LDC](https://github.com/ldc-developers/ldc/releases) and [Emscripten](https://emscripten.org/) (version `4.0.23` is recommended).
-While installing LDC, unpack `ldc2-X.Y.Z-addon-emscripten.tar.xz` from the same [releases page](https://github.com/ldc-developers/ldc/releases) into the LDC installation folder.
+Building for the web requires:
+
+- [LDC](https://github.com/ldc-developers/ldc/releases): Add to path
+- [Emscripten](https://emscripten.org/): Add to path
+- [ldc*-addon-emscripten.tar.xz](https://github.com/ldc-developers/ldc/releases): Unpack into the LDC folder
 
 Running the script with DUB:
 
@@ -174,6 +177,7 @@ Uploading to itch.io:
 3. Go to itch.io and create a new project.
 4. Under "Kind of project", choose "HTML."
 5. Upload the ZIP file and enable the option "This file will be played in the browser."
+6. Ignore everything in "Frame options" except "Fullscreen button."
 
 ## Ideas
 
@@ -188,12 +192,13 @@ Open a PR and add the file there.
 
 ### Is there a list of games made with Parin?
 
+- [Knightfall](https://gini-games.itch.io/knightfall)
+- [K, Merge With Me](https://kapendev.itch.io/k-merge-with-me)
 - [Twenty Seconds, Twenty Steps](https://kapendev.itch.io/twenty-seconds-twenty-steps)
 - [Worms Within](https://kapendev.itch.io/worms-within)
 - [Clean & Haunted](https://kapendev.itch.io/clean-haunted)
 - [Runani](https://kapendev.itch.io/runani)
 - [A Short Metamorphosis](https://kapendev.itch.io/a-short-metamorphosis)
-- [K, Merge With Me](https://kapendev.itch.io/k-merge-with-me)
 
 ### Does Parin have a scene or entity system?
 
